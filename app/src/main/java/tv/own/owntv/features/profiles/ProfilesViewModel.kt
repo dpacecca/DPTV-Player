@@ -1,5 +1,6 @@
 package tv.own.owntv.features.profiles
 
+import kotlinx.coroutines.flow.first
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -10,6 +11,7 @@ import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.entity.ProfileEntity
 import tv.own.owntv.core.database.entity.ProfileSourceCrossRef
+import tv.own.owntv.core.tv.TvHomeRepository
 import tv.own.owntv.core.util.Pin
 import tv.own.owntv.features.settings.data.SettingsRepository
 
@@ -21,14 +23,18 @@ class ProfilesViewModel(
     private val profileDao: ProfileDao,
     private val sourceDao: SourceDao,
     private val settings: SettingsRepository,
+    private val tvHomeRepository: TvHomeRepository,
 ) : ViewModel() {
 
     val profiles: StateFlow<List<ProfileEntity>> = profileDao.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** Make [profile] active (routes the app into the shell). */
-    fun switchTo(profile: ProfileEntity) {
-        viewModelScope.launch { settings.setActiveProfile(profile.id) }
+    /** Make [profile] active (routes the app into the shell) once the preference write commits. */
+    fun switchTo(profile: ProfileEntity, onSwitched: () -> Unit = {}) {
+        viewModelScope.launch {
+            settings.setActiveProfile(profile.id)
+            onSwitched()
+        }
     }
 
     fun verifyPin(profile: ProfileEntity, pin: String): Boolean = Pin.verify(pin, profile.pinHash)
@@ -82,7 +88,13 @@ class ProfilesViewModel(
         viewModelScope.launch {
             // Never delete the last profile.
             if (profileDao.count() <= 1) return@launch
+            val activeProfileId = settings.activeProfileId.first()
+            val remainingProfileId = profileDao.getAllOnce().firstOrNull { it.id != profile.id }?.id
+            runCatching { tvHomeRepository.clearProfile(profile.id) }
             profileDao.delete(profile)
+            if (activeProfileId == profile.id) {
+                settings.setActiveProfile(remainingProfileId ?: -1L)
+            }
         }
     }
 }

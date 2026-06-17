@@ -28,15 +28,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
+import tv.own.owntv.core.tv.TvHomeDeepLink
+import tv.own.owntv.core.tv.TvHomeLaunch
+import tv.own.owntv.core.tv.TvHomeRepository
 import tv.own.owntv.core.update.UpdateManager
 import tv.own.owntv.features.update.UpdateDialog
 import tv.own.owntv.features.update.UpdateStatusToast
 import tv.own.owntv.features.downloads.DownloadsScreen
 import tv.own.owntv.features.epg.EpgScreen
 import tv.own.owntv.features.live.LiveScreen
+import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MoviesScreen
+import tv.own.owntv.features.movies.MovieViewModel
 import tv.own.owntv.features.search.SearchScreen
 import tv.own.owntv.features.series.SeriesScreen
+import tv.own.owntv.features.series.SeriesViewModel
 import tv.own.owntv.player.MiniPlayer
 import tv.own.owntv.player.MpvVideoSurface
 import tv.own.owntv.player.OwnTVPlayer
@@ -77,6 +83,9 @@ fun OwnTVShell(
     onSetAvatar: (Int) -> Unit,
     profileName: String,
     sourceSummary: String,
+    activeProfileId: Long?,
+    pendingDeepLink: TvHomeDeepLink?,
+    onDeepLinkConsumed: () -> Unit,
     isOffline: Boolean = false,
     onExitApp: () -> Unit,
     onSwitchProfile: () -> Unit,
@@ -98,12 +107,13 @@ fun OwnTVShell(
     var restoreFocus by remember { mutableStateOf(false) }
     val player = koinInject<OwnTVPlayer>()
     val mpvEngine = remember(player) { tv.own.owntv.player.MpvPlaybackEngine(player) }
+    val tvHomeRepository = koinInject<TvHomeRepository>()
+    val movieVm = org.koin.androidx.compose.koinViewModel<MovieViewModel>()
+    val seriesVm = org.koin.androidx.compose.koinViewModel<SeriesViewModel>()
     // Same activity-scoped instances the Live/Guide screens use — lets the fullscreen HUD zap channels
     // up/down (CH+/CH-) through whichever section's list opened the stream.
-    val liveVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.live.LiveViewModel>()
+    val liveVm = org.koin.androidx.compose.koinViewModel<LiveViewModel>()
     val epgVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.epg.EpgViewModel>()
-    // Shared with SeriesScreen — lets a global-search series result open the actual show.
-    val seriesVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.series.SeriesViewModel>()
     val liveCanZap by liveVm.canZap.collectAsStateWithLifecycle()
     val epgCanZap by epgVm.canZap.collectAsStateWithLifecycle()
     // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
@@ -117,11 +127,12 @@ fun OwnTVShell(
     // Opening content from a browse screen goes fullscreen — UNLESS the player is already docked as a
     // mini-player, in which case it stays docked and just swaps to the newly-selected stream (the VM
     // already started it), so picking a channel updates the PiP window in place (#6).
-    val openFullscreen = {
-        restoreFocus = false; zapSource = selectedSection
+    fun openFullscreen(source: MainSection = selectedSection) {
+        restoreFocus = false
+        zapSource = source
         // Only Live TV promotes a channel to the ExoPlayer engine. Movies/Series/Search/EPG/Downloads all
         // play on mpv — clear any stale live-on-ExoPlayer flag so the shell renders mpv, not the old channel.
-        if (selectedSection != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
+        if (source != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
         if (playerMode != PlayerMode.MINI) playerMode = PlayerMode.FULLSCREEN
     }
     // The mini-player's own expand button always maximizes.
@@ -141,6 +152,46 @@ fun OwnTVShell(
     }
 
     LaunchedEffect(Unit) { runCatching { sidebarFocus.requestFocus() } }
+
+    LaunchedEffect(pendingDeepLink, activeProfileId) {
+        val deepLink = pendingDeepLink ?: return@LaunchedEffect
+        val pid = activeProfileId ?: return@LaunchedEffect
+        if (pid < 0) return@LaunchedEffect
+        when (deepLink) {
+            TvHomeDeepLink.OpenLiveSection -> {
+                onSelectSection(MainSection.LIVE_TV)
+                onDeepLinkConsumed()
+            }
+            else -> when (val launch = tvHomeRepository.resolveLaunch(pid, deepLink)) {
+                is TvHomeLaunch.Movie -> {
+                    onSelectSection(MainSection.MOVIES)
+                    movieVm.play(launch.movie, launch.startPositionMs)
+                    openFullscreen(MainSection.MOVIES)
+                    onDeepLinkConsumed()
+                }
+                is TvHomeLaunch.Episode -> {
+                    onSelectSection(MainSection.SERIES)
+                    seriesVm.playEpisodeQueue(launch.show, launch.queue, launch.episode, launch.startPositionMs)
+                    openFullscreen(MainSection.SERIES)
+                    onDeepLinkConsumed()
+                }
+                is TvHomeLaunch.Live -> {
+                    onSelectSection(MainSection.LIVE_TV)
+                    liveVm.ensurePlaying(launch.channel)
+                    openFullscreen(MainSection.LIVE_TV)
+                    onDeepLinkConsumed()
+                }
+                is TvHomeLaunch.Series -> {
+                    onSelectSection(MainSection.SERIES)
+                    seriesVm.openSeries(launch.show)
+                    onDeepLinkConsumed()
+                }
+                null -> {
+                    onDeepLinkConsumed()
+                }
+            }
+        }
+    }
 
     // Stop a leftover live preview when you leave the Live section (but never while fullscreen/mini plays).
     LaunchedEffect(selectedSection, playerMode) {
@@ -196,7 +247,7 @@ fun OwnTVShell(
                     )
 
                     selectedSection == MainSection.SEARCH -> SearchScreen(
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         // Open the actual series (its episode list), then switch to the Series section —
                         // the screen shares this SeriesViewModel, so it shows the opened show.
                         onOpenSeries = { series -> seriesVm.openSeries(series); onSelectSection(MainSection.SERIES) },
@@ -205,7 +256,7 @@ fun OwnTVShell(
                     )
 
                     selectedSection == MainSection.LIVE_TV -> LiveScreen(
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                         previewEnabled = playerMode == PlayerMode.NONE,
                         restoreFocus = restoreFocus,
@@ -214,7 +265,7 @@ fun OwnTVShell(
                     )
 
                     selectedSection == MainSection.MOVIES -> MoviesScreen(
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                         restoreFocus = restoreFocus,
                         onRestored = { restoreFocus = false },
@@ -222,7 +273,7 @@ fun OwnTVShell(
                     )
 
                     selectedSection == MainSection.SERIES -> SeriesScreen(
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                         restoreFocus = restoreFocus,
                         onRestored = { restoreFocus = false },
@@ -230,7 +281,7 @@ fun OwnTVShell(
                     )
 
                     selectedSection == MainSection.DOWNLOADS -> DownloadsScreen(
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                         restoreFocus = restoreFocus,
                         onRestored = { restoreFocus = false },
@@ -239,7 +290,7 @@ fun OwnTVShell(
 
                     selectedSection == MainSection.EPG -> EpgScreen(
                         onBack = { runCatching { sidebarFocus.requestFocus() } },
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         onAddEpg = { openEpgAdd = true; onSelectSection(MainSection.SETTINGS) },
                         restoreFocus = restoreFocus,
                         onRestored = { restoreFocus = false },

@@ -20,6 +20,7 @@ import tv.own.owntv.core.sync.ImportStage
 import tv.own.owntv.core.sync.SyncResult
 import tv.own.owntv.core.util.Pin
 import tv.own.owntv.core.util.friendlySyncError
+import tv.own.owntv.core.tv.TvHomeRepository
 import tv.own.owntv.features.settings.data.SettingsRepository
 import java.io.File
 
@@ -36,6 +37,7 @@ class SetupViewModel(
     private val settings: SettingsRepository,
     private val connectivity: ConnectivityObserver,
     private val importFinalizer: tv.own.owntv.core.sync.ImportFinalizer,
+    private val tvHomeRepository: TvHomeRepository,
 ) : ViewModel() {
 
     sealed interface ImportState {
@@ -55,7 +57,7 @@ class SetupViewModel(
     private var createdProfileId = -1L
 
     /** Creates the profile (not active yet); the rest of onboarding attaches content to it. */
-    fun createProfile(name: String, avatarId: Int, isKids: Boolean, pin: String?) {
+    fun createProfile(name: String, avatarId: Int, isKids: Boolean, pin: String?, onCreated: (Long) -> Unit = {}) {
         viewModelScope.launch {
             createdProfileId = profileDao.insert(
                 ProfileEntity(
@@ -66,6 +68,7 @@ class SetupViewModel(
                     pinHash = pin?.takeIf { it.isNotBlank() }?.let { Pin.hash(it) },
                 ),
             )
+            onCreated(createdProfileId)
         }
     }
 
@@ -105,6 +108,7 @@ class SetupViewModel(
                     SyncResult.Success -> {
                         // Just the playlist content — EPG is added separately (Settings → EPG sources).
                         val counts = importFinalizer.finalize(source)
+                        runCatching { tvHomeRepository.refreshProfile(profileId) }
                         _state.value = ImportState.Success(counts.summary(includeEpg = false))
                     }
                     is SyncResult.Failed -> _state.value = ImportState.Failed(friendlySyncError(result.message, connectivity.isOnlineNow()))
@@ -154,6 +158,7 @@ class SetupViewModel(
                         SyncResult.Cancelled -> {}
                     }
                 }
+                runCatching { tvHomeRepository.refreshProfile(pid) }
                 _state.value = failure?.let { ImportState.Failed(friendlySyncError(it, connectivity.isOnlineNow())) } ?: ImportState.Success(total.summary(includeEpg = true))
             } catch (c: CancellationException) {
                 throw c
@@ -186,9 +191,10 @@ class SetupViewModel(
     }
 
     /** Completes onboarding → makes the new profile active, routing the app into the shell. */
-    fun finish() {
+    fun finish(onDone: () -> Unit = {}) {
         viewModelScope.launch {
             if (createdProfileId > 0) settings.setActiveProfile(createdProfileId)
+            onDone()
         }
     }
 }

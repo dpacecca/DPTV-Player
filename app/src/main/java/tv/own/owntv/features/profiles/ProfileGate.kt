@@ -57,7 +57,7 @@ fun ProfileGate(onEnter: () -> Unit, onAddProfile: () -> Unit, modifier: Modifie
     }
 
     fun choose(p: ProfileEntity) {
-        if (p.pinHash != null) { pinError = false; pinFor = p } else { vm.switchTo(p); onEnter() }
+        if (p.pinHash != null) { pinError = false; pinFor = p } else { vm.switchTo(p, onEnter) }
     }
 
     Box(
@@ -87,7 +87,7 @@ fun ProfileGate(onEnter: () -> Unit, onAddProfile: () -> Unit, modifier: Modifie
         PinDialog(
             title = if (pinError) "Wrong PIN — try again" else "Enter PIN for ${p.name}",
             onSubmit = { pin ->
-                if (vm.verifyPin(p, pin)) { vm.switchTo(p); onEnter() } else pinError = true
+                if (vm.verifyPin(p, pin)) { vm.switchTo(p, onEnter) } else pinError = true
             },
             onDismiss = { pinFor = null },
         )

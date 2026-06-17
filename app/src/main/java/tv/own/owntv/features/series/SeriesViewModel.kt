@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.series
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -33,8 +35,10 @@ import tv.own.owntv.core.database.dao.CategoryDao
 import tv.own.owntv.core.database.dao.FavoriteDao
 import tv.own.owntv.core.database.dao.HistoryDao
 import tv.own.owntv.core.database.dao.ProgressDao
+import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SeriesDao
 import tv.own.owntv.core.database.dao.SourceDao
+import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.DownloadEntity
 import tv.own.owntv.core.database.entity.EpisodeEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
@@ -45,6 +49,7 @@ import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.download.DownloadManager
 import tv.own.owntv.core.repository.SeriesRepository
 import tv.own.owntv.core.storage.StorageAccess
+import tv.own.owntv.core.tv.TvHomeRepository
 import tv.own.owntv.features.live.LiveKey
 import tv.own.owntv.features.live.LiveRailItem
 import tv.own.owntv.features.settings.data.SettingsRepository
@@ -59,12 +64,14 @@ class SeriesViewModel(
     private val favoriteDao: FavoriteDao,
     private val historyDao: HistoryDao,
     private val progressDao: ProgressDao,
+    private val profileDao: ProfileDao,
     private val sourceDao: SourceDao,
     private val seriesRepository: SeriesRepository,
     private val settings: SettingsRepository,
     private val customize: CustomizationStore,
     private val player: OwnTVPlayer,
     private val downloadManager: DownloadManager,
+    private val tvHomeRepository: TvHomeRepository,
 ) : ViewModel() {
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
@@ -150,9 +157,16 @@ class SeriesViewModel(
         val dur = player.duration.value
         if (pos > 0 && dur > 0) {
             viewModelScope.launch {
-                progressDao.save(
-                    PlaybackProgressEntity(profileId = ctx.value.profileId, mediaType = MediaType.EPISODE, itemId = ep.id, positionMs = pos, durationMs = dur),
-                )
+                val pid = currentProfileId() ?: return@launch
+                Log.d(TAG, "saveEpisodeProgressNow episodeId=${ep.id} profile=$pid positionMs=$pos durationMs=$dur")
+                runCatching {
+                    progressDao.save(
+                        PlaybackProgressEntity(profileId = pid, mediaType = MediaType.EPISODE, itemId = ep.id, positionMs = pos, durationMs = dur),
+                    )
+                }.onFailure { t ->
+                    Log.w(TAG, "saveEpisodeProgressNow progress save failed episodeId=${ep.id} profile=$pid", t)
+                }
+                tvHomeRepository.publishEpisodeProgress(pid, ep.id, pos, dur)
             }
         }
     }
@@ -205,6 +219,7 @@ class SeriesViewModel(
         _openedSeries.value = s
         _selectedSeason.value = 1 // reset season when opening a different show
         _lastPlayedEpisodeId.value = null
+        Log.d(TAG, "openSeries seriesId=${s.id} profile=${ctx.value.profileId}")
         viewModelScope.launch {
             _episodesLoading.value = true
             seriesRepository.loadEpisodes(s)
@@ -231,35 +246,54 @@ class SeriesViewModel(
 
     /** Saved resume position for [episode] (0 when none) — used by the screen to decide the prompt. */
     suspend fun savedPositionMs(episode: EpisodeEntity): Long =
-        progressDao.get(ctx.value.profileId, MediaType.EPISODE, episode.id)?.positionMs ?: 0
+        currentProfileId()?.let { progressDao.get(it, MediaType.EPISODE, episode.id)?.positionMs ?: 0 } ?: 0
 
     fun playEpisode(episode: EpisodeEntity, startPositionMs: Long = 0) {
+        val show = _openedSeries.value ?: return
+        val seasonEpisodes = episodes.value
+            .filter { it.seasonNumber == episode.seasonNumber }
+            .sortedBy { it.episodeNumber }
+        playEpisodeQueue(show, seasonEpisodes, episode, startPositionMs)
+    }
+
+    fun playEpisodeQueue(show: SeriesEntity, queue: List<EpisodeEntity>, episode: EpisodeEntity, startPositionMs: Long = 0) {
+        _openedSeries.value = show
         _lastPlayedEpisodeId.value = episode.id
         viewModelScope.launch {
-            val pid = ctx.value.profileId
-            // Queue the whole season so prev/next work in the player.
-            val seasonEpisodes = episodes.value
-                .filter { it.seasonNumber == episode.seasonNumber }
-                .sortedBy { it.episodeNumber }
-            val startIndex = seasonEpisodes.indexOfFirst { it.id == episode.id }.coerceAtLeast(0)
-            val showName = _openedSeries.value?.name
+            val pid = currentProfileId()
+            val startIndex = queue.indexOfFirst { it.id == episode.id }.coerceAtLeast(0)
+            Log.d(TAG, "playEpisodeQueue seriesId=${show.id} episodeId=${episode.id} profile=$pid queue=${queue.size} startIndex=$startIndex startPositionMs=$startPositionMs")
             player.playEpisodes(
-                items = seasonEpisodes.map { ep ->
+                items = queue.map { ep ->
                     PlaylistItem(
                         url = ep.streamUrl,
                         meta = MediaMeta(
                             title = ep.name,
-                            subtitle = listOfNotNull(showName, "Season ${ep.seasonNumber}").joinToString(" · "),
+                            subtitle = listOfNotNull(show.name, "Season ${ep.seasonNumber}").joinToString(" · "),
                         ),
                     )
                 },
                 startIndex = startIndex,
                 startPositionMs = startPositionMs,
             )
-            historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.EPISODE, itemId = episode.id))
-            // Also mark the show as recently-watched so it appears under Series → HIS.
-            historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.SERIES, itemId = episode.seriesId))
+            if (pid != null) {
+                runCatching {
+                    historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.EPISODE, itemId = episode.id))
+                }.onFailure { t ->
+                    Log.w(TAG, "playEpisodeQueue episode history record failed episodeId=${episode.id} profile=$pid", t)
+                }
+                runCatching {
+                    historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.SERIES, itemId = episode.seriesId))
+                }.onFailure { t ->
+                    Log.w(TAG, "playEpisodeQueue series history record failed seriesId=${episode.seriesId} profile=$pid", t)
+                }
+            }
         }
+    }
+
+    private suspend fun currentProfileId(): Long? {
+        val preferred = settings.activeProfileId.first()
+        return if (preferred >= 0) profileDao.resolveExistingProfileId(preferred) else null
     }
 
     /** Download states for the open show's episodes, keyed by episode id. */
@@ -272,21 +306,24 @@ class SeriesViewModel(
         val show = _openedSeries.value
         val showDir = StorageAccess.sanitize(show?.name ?: "Series")
         val ext = episode.containerExt ?: StorageAccess.extOf(episode.streamUrl)
-        downloadManager.enqueue(
-            profileId = ctx.value.profileId,
-            mediaType = MediaType.EPISODE,
-            itemId = episode.id,
-            title = episode.name,
-            posterUrl = show?.posterUrl,
-            streamUrl = episode.streamUrl,
-            relativeDir = "Series/$showDir/Season ${episode.seasonNumber}",
-            fileName = "${StorageAccess.sanitize(episode.name)}.$ext",
-        )
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            downloadManager.enqueue(
+                profileId = pid,
+                mediaType = MediaType.EPISODE,
+                itemId = episode.id,
+                title = episode.name,
+                posterUrl = show?.posterUrl,
+                streamUrl = episode.streamUrl,
+                relativeDir = "Series/$showDir/Season ${episode.seasonNumber}",
+                fileName = "${StorageAccess.sanitize(episode.name)}.$ext",
+            )
+        }
     }
 
     fun toggleFavorite(s: SeriesEntity) {
         viewModelScope.launch {
-            val pid = ctx.value.profileId
+            val pid = currentProfileId() ?: return@launch
             if (favoriteIds.value.contains(s.id)) favoriteDao.remove(pid, MediaType.SERIES, s.id)
             else favoriteDao.add(FavoriteEntity(profileId = pid, mediaType = MediaType.SERIES, itemId = s.id))
         }
@@ -319,6 +356,7 @@ class SeriesViewModel(
     }
 
     private companion object {
+        const val TAG = "OwnTVHome"
         val defaultRail = listOf(
             LiveRailItem(LiveKey.Favorites, "FAV", "Favorites", OwnTVIcon.STAR),
             LiveRailItem(LiveKey.History, "HIS", "History", OwnTVIcon.HISTORY),

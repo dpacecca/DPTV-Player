@@ -1,5 +1,6 @@
 package tv.own.owntv.features.shell
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,11 +12,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tv.own.owntv.core.network.ConnectivityObserver
+import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.tv.TvHomeRepository
 import tv.own.owntv.ui.theme.AccentColor
 import tv.own.owntv.ui.theme.ThemeMode
 import tv.own.owntv.ui.theme.UiZoom
@@ -39,14 +43,29 @@ class ShellViewModel(
     private val sourceRepository: SourceRepository,
     private val profileDao: tv.own.owntv.core.database.dao.ProfileDao,
     connectivity: ConnectivityObserver,
+    private val tvHomeRepository: TvHomeRepository,
     private val epgMigration: tv.own.owntv.core.epg.EpgMigration,
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "OwnTVHome"
+    }
 
     private var refreshedThisSession = false
 
     init {
         // One-time: move any existing playlist EPG into the new standalone EPG sources (v2.2.0).
         viewModelScope.launch { runCatching { epgMigration.run() } }
+        viewModelScope.launch {
+            settings.activeProfileId
+                .distinctUntilChanged()
+                .collect { pid ->
+                    Log.d(TAG, "activeProfileChanged profile=$pid androidTvHomeEnabled=${settings.androidTvHomeEnabled.first()}")
+                    if (pid >= 0 && settings.androidTvHomeEnabled.first()) {
+                        runCatching { tvHomeRepository.refreshProfile(pid, allowBrowsableRequest = true) }
+                    }
+                }
+        }
     }
 
     /** Whether the device currently has internet (drives the offline banner). */
@@ -60,11 +79,19 @@ class ShellViewModel(
         viewModelScope.launch {
             val ids = settings.refreshSourceIds.first()
             if (ids.isEmpty()) return@launch
-            val pid = settings.activeProfileId.first()
-            if (pid < 0) return@launch
+            val pid = currentProfileId() ?: return@launch
+            Log.d(TAG, "refreshOnStartIfEnabled profile=$pid sourceIds=$ids androidTvHomeEnabled=${settings.androidTvHomeEnabled.first()}")
             sourceRepository.observeSources(pid).first()
                 .filter { it.id in ids }
-                .forEach { source -> runCatching { sourceRepository.sync(source) {} } }
+                .forEach { source ->
+                    Log.d(TAG, "refreshOnStartIfEnabled syncing sourceId=${source.id} profile=$pid")
+                    runCatching { sourceRepository.sync(source) {} }
+                        .onSuccess { Log.d(TAG, "refreshOnStartIfEnabled synced sourceId=${source.id} profile=$pid") }
+                        .onFailure { t -> Log.w(TAG, "refreshOnStartIfEnabled sync failed sourceId=${source.id} profile=$pid", t) }
+                }
+            if (settings.androidTvHomeEnabled.first()) {
+                runCatching { tvHomeRepository.refreshProfile(pid, allowBrowsableRequest = true) }
+            }
         }
     }
 
@@ -138,8 +165,8 @@ class ShellViewModel(
 
     fun setAvatar(id: Int) {
         viewModelScope.launch {
-            val pid = settings.activeProfileId.first()
-            if (pid >= 0) profileDao.setAvatar(pid, id)
+            val pid = currentProfileId() ?: return@launch
+            profileDao.setAvatar(pid, id)
         }
     }
 
@@ -148,5 +175,10 @@ class ShellViewModel(
         val values = AccentColor.entries
         val next = values[(accent.value.ordinal + 1) % values.size]
         setAccent(next)
+    }
+
+    private suspend fun currentProfileId(): Long? {
+        val preferred = settings.activeProfileId.first()
+        return profileDao.resolveExistingProfileId(preferred)
     }
 }

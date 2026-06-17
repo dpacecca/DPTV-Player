@@ -83,7 +83,7 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
             )
             Step.CREATE_PROFILE -> ProfileEditorDialog(
                 initial = null,
-                onConfirm = { name, avatar, kids, pin -> vm.createProfile(name, avatar, kids, pin); step = Step.ADD_CONTENT },
+                onConfirm = { name, avatar, kids, pin -> vm.createProfile(name, avatar, kids, pin) { step = Step.ADD_CONTENT } },
                 onDismiss = { if (firstRun) step = Step.SETUP_CHOICE else onCancel() },
             )
             Step.ADD_CONTENT -> AddContentScreen(
@@ -91,7 +91,7 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
                 onNew = { step = Step.ADD_SOURCE },
                 onExisting = { step = Step.EXISTING },
                 onImport = { backupOrigin = Step.ADD_CONTENT; step = Step.IMPORT_BACKUP },
-                onSkip = { vm.finish(); onDone() },
+                onSkip = { vm.finish(onDone) },
             )
             Step.ADD_SOURCE -> AddSourceScreen(
                 onStartXtream = { name, server, user, pass, ua, epg, refresh -> vm.startXtream(name, server, user, pass, ua, epg, refresh); importOrigin = Step.ADD_SOURCE; step = Step.IMPORTING },
@@ -102,7 +102,7 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
                 state = importState,
                 stageLabel = progress?.label ?: "content",
                 processed = progress?.processed ?: 0,
-                onContinue = { vm.finish(); onDone() }, // playlist + its EPG synced (auto)
+                onContinue = { vm.finish(onDone) }, // playlist + its EPG synced (auto)
                 onRetry = { vm.reset(); step = importOrigin },
             )
             Step.EXISTING -> ExistingSourcesScreen(

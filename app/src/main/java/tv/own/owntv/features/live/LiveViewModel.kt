@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.live
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.Job
@@ -41,7 +43,9 @@ import tv.own.owntv.core.database.dao.CategoryDao
 import tv.own.owntv.core.database.dao.ChannelDao
 import tv.own.owntv.core.database.dao.FavoriteDao
 import tv.own.owntv.core.database.dao.HistoryDao
+import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
+import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
@@ -49,6 +53,7 @@ import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.parser.XtEpgEntry
 import tv.own.owntv.core.parser.XtreamClient
+import tv.own.owntv.core.tv.TvHomeRepository
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -72,10 +77,12 @@ class LiveViewModel(
     private val categoryDao: CategoryDao,
     private val favoriteDao: FavoriteDao,
     private val historyDao: HistoryDao,
+    private val profileDao: ProfileDao,
     private val sourceDao: SourceDao,
     private val settings: SettingsRepository,
     private val xtreamClient: XtreamClient,
     private val customize: CustomizationStore,
+    private val tvHomeRepository: TvHomeRepository,
     private val epgDao: tv.own.owntv.core.database.dao.EpgDao,
     private val epgSourceStore: tv.own.owntv.core.epg.EpgSourceStore,
     val player: OwnTVPlayer,
@@ -131,7 +138,6 @@ class LiveViewModel(
         .distinctUntilChanged { a, b -> a?.id == b?.id }
         .mapLatest { ch -> ch?.let { loadEpg(it) } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-
     /** This profile's hide/rename/reorder customizations for Live TV. */
     private val custom: StateFlow<SectionCustomizations> = ctx
         .flatMapLatest { c ->
@@ -208,21 +214,24 @@ class LiveViewModel(
     fun hideChannel(channel: ChannelEntity) {
         if (_previewChannel.value?.id == channel.id) stopPreview()
         viewModelScope.launch {
-            customize.setItemHidden(ctx.value.profileId, MediaType.LIVE, CustomizeKeys.channel(channel), channel.name, true)
+            val pid = currentProfileId() ?: return@launch
+            customize.setItemHidden(pid, MediaType.LIVE, CustomizeKeys.channel(channel), channel.name, true)
         }
     }
 
     /** Rename the channel for this profile (blank restores the provider's name). */
     fun renameChannel(channel: ChannelEntity, newName: String?) {
         viewModelScope.launch {
-            customize.renameItem(ctx.value.profileId, MediaType.LIVE, CustomizeKeys.channel(channel), newName)
+            val pid = currentProfileId() ?: return@launch
+            customize.renameItem(pid, MediaType.LIVE, CustomizeKeys.channel(channel), newName)
         }
     }
 
     /** Manually map a channel to an EPG channel id (null clears the override → auto-match). */
     fun setEpgMatch(channel: ChannelEntity, epgChannelId: String?) {
         viewModelScope.launch {
-            customize.setEpgMatch(ctx.value.profileId, MediaType.LIVE, CustomizeKeys.channel(channel), epgChannelId)
+            val pid = currentProfileId() ?: return@launch
+            customize.setEpgMatch(pid, MediaType.LIVE, CustomizeKeys.channel(channel), epgChannelId)
         }
     }
 
@@ -231,6 +240,7 @@ class LiveViewModel(
 
     /** Distinct EPG channels for the "Match EPG" picker (across the profile's playlists + EPG feeds). */
     suspend fun availableEpgChannels(query: String): List<tv.own.owntv.core.database.entity.EpgChannelEntity> {
+        if (currentProfileId() == null) return emptyList()
         val ids = ctx.value.sourceIds + epgSourceStore.getAll().map { it.id }
         if (ids.isEmpty()) return emptyList()
         return epgDao.listEpgChannels(ids, query.trim().lowercase(), 300)
@@ -333,6 +343,7 @@ class LiveViewModel(
     fun ensurePlaying(channel: ChannelEntity) {
         _previewChannel.value = channel
         timeshiftJob?.cancel(); tickJob?.cancel(); _timeshiftOffsetSec.value = null // normal live = not timeshifted
+        Log.d(TAG, "ensurePlaying channelId=${channel.id} profile=${ctx.value.profileId}")
         _liveOnExo.value = true
         player.stop() // free mpv (decoder/connection) if a previous full-screen used it
         if (previewEngine.currentUrl == channel.streamUrl) {
@@ -380,7 +391,15 @@ class LiveViewModel(
 
     private fun recordLiveHistory(channel: ChannelEntity) {
         viewModelScope.launch {
-            historyDao.record(WatchHistoryEntity(profileId = ctx.value.profileId, mediaType = MediaType.LIVE, itemId = channel.id))
+            val pid = currentProfileId()
+            if (pid == null) return@launch
+            Log.d(TAG, "ensurePlaying history profile=$pid channelId=${channel.id}")
+            runCatching {
+                historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.LIVE, itemId = channel.id))
+            }.onFailure { t ->
+                Log.w(TAG, "ensurePlaying history record failed channelId=${channel.id} profile=$pid", t)
+            }
+            runCatching { tvHomeRepository.refreshRecentLive(pid) }
         }
     }
 
@@ -505,7 +524,7 @@ class LiveViewModel(
 
     fun toggleFavorite(channel: ChannelEntity) {
         viewModelScope.launch {
-            val pid = ctx.value.profileId
+            val pid = currentProfileId() ?: return@launch
             if (favoriteIds.value.contains(channel.id)) {
                 favoriteDao.remove(pid, MediaType.LIVE, channel.id)
             } else {
@@ -553,6 +572,11 @@ class LiveViewModel(
         result
     }
 
+    private suspend fun currentProfileId(): Long? {
+        val preferred = settings.activeProfileId.first()
+        return if (preferred >= 0) profileDao.resolveExistingProfileId(preferred) else null
+    }
+
     private fun tv.own.owntv.core.database.entity.EpgProgrammeEntity.toXt() =
         XtEpgEntry(title = title, description = description, startMs = startMs, stopMs = stopMs)
 
@@ -587,6 +611,7 @@ class LiveViewModel(
     }
 
     private companion object {
+        const val TAG = "OwnTVHome"
         val defaultRail = listOf(
             LiveRailItem(LiveKey.Favorites, "FAV", "Favorites", OwnTVIcon.STAR),
             LiveRailItem(LiveKey.History, "HIS", "History", OwnTVIcon.HISTORY),

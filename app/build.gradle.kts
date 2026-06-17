@@ -58,10 +58,16 @@ android {
         buildConfig = true
     }
 
+    sourceSets["androidTest"].assets.directories.add("$projectDir/schemas")
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -80,6 +86,7 @@ dependencies {
 
     // Compose for TV
     implementation(libs.androidx.tv.material)
+    implementation(libs.androidx.tvprovider)
 
     // Lifecycle / Navigation
     implementation(libs.androidx.lifecycle.runtime.compose)
