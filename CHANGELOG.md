@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.0.1 — Unreleased
+
+### 🐛 Bug fixes
+
+- **Big-library import no longer gets stuck** — the per-category fallback (for providers that truncate
+  the bulk movie/series list, #15) used to make the import counter look like it was *restarting* each
+  category, and on panels that **ignore the category filter** it could loop forever re-fetching the same
+  list. Progress now climbs **continuously** across the whole import, and the fallback **stops** when the
+  provider clearly isn't honoring per-category requests (keeping everything fetched so far). (#15)
+
 ## v3.0.0 — 2026-06-17
 
 *Big release — bundling the open feature requests + Catch-up TV.*
