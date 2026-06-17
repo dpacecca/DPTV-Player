@@ -163,13 +163,13 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
 @Composable
 private fun EpgRow(
     source: EpgSource,
-    counts: suspend () -> Pair<Int, Int>,
+    counts: suspend () -> Triple<Int, Int, Int>,
     onResync: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
-    val count by produceState<Pair<Int, Int>?>(initialValue = null, source.id, source.lastSyncAt) { value = runCatching { counts() }.getOrNull() }
+    val count by produceState<Triple<Int, Int, Int>?>(initialValue = null, source.id, source.lastSyncAt) { value = runCatching { counts() }.getOrNull() }
     Row(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -178,10 +178,11 @@ private fun EpgRow(
             Text(source.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Text(source.url, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
             Spacer(Modifier.height(4.dp))
+            val catchupNote = count?.third?.takeIf { it > 0 }?.let { " · $it with catch-up" } ?: ""
             val status = when {
                 source.lastError != null -> "⚠ ${source.lastError}"
-                count != null && count!!.second > 0 -> "✓ ${count!!.first} channels · ${count!!.second} programmes"
-                source.lastSyncAt != null -> "Synced, no programmes in window"
+                count != null && count!!.second > 0 -> "✓ ${count!!.first} channels · ${count!!.second} programmes$catchupNote"
+                source.lastSyncAt != null -> "Synced, no programmes in window$catchupNote"
                 else -> "Not synced yet"
             }
             Text(status, style = MaterialTheme.typography.labelMedium, color = if (source.lastError != null) Color(0xFFEF4444) else colors.primary)

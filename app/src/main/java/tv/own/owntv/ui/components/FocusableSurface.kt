@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
@@ -40,6 +41,7 @@ fun FocusableSurface(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     enabled: Boolean = true,
+    onLongClick: (() -> Unit)? = null,
     shape: Shape = RoundedCornerShape(Dimens.CardCorner),
     focusedContainerColor: Color = OwnTVTheme.colors.card,
     unfocusedContainerColor: Color = Color.Transparent,
@@ -80,12 +82,26 @@ fun FocusableSurface(
                 if (showBorder) Modifier.border(Dimens.FocusBorderWidth, colors.focusBorder, shape)
                 else Modifier
             )
-            .selectable(
-                selected = selected,
-                enabled = enabled,
-                interactionSource = interaction,
-                indication = null,
-                onClick = onClick,
+            .then(
+                // Long-press support (e.g. "Match EPG" on a guide channel) uses combinedClickable; the
+                // default path keeps `selectable` for its selected a11y semantics.
+                if (onLongClick != null) {
+                    Modifier.combinedClickable(
+                        interactionSource = interaction,
+                        indication = null,
+                        enabled = enabled,
+                        onLongClick = onLongClick,
+                        onClick = onClick,
+                    )
+                } else {
+                    Modifier.selectable(
+                        selected = selected,
+                        enabled = enabled,
+                        interactionSource = interaction,
+                        indication = null,
+                        onClick = onClick,
+                    )
+                },
             ),
         contentAlignment = contentAlignment,
     ) {

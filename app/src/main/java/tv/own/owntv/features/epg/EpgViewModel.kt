@@ -1,4 +1,4 @@
-@file:OptIn(FlowPreview::class) // debounce
+@file:OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class) // debounce, flatMapLatest
 
 package tv.own.owntv.features.epg
 
@@ -6,18 +6,28 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.database.dao.ChannelDao
 import tv.own.owntv.core.database.dao.EpgDao
 import tv.own.owntv.core.database.dao.HistoryDao
+import tv.own.owntv.core.database.dao.SourceDao
+import tv.own.owntv.core.epg.CatchupUrl
+import tv.own.owntv.core.model.SourceType
+import tv.own.owntv.core.parser.XtreamClient
 import tv.own.owntv.core.customize.CustomizationStore
 import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.database.entity.ChannelEntity
@@ -45,6 +55,8 @@ data class EpgUiState(
     val hasEpgSources: Boolean = true,
     /** "N channels · M programmes" once a guide is stored — the visible proof the EPG feed works. */
     val stats: String? = null,
+    /** How many of the profile's channels advertise catch-up — 0 hides the Catch-up sort option. */
+    val catchupCount: Int = 0,
 )
 
 /**
@@ -61,6 +73,8 @@ class EpgViewModel(
     private val connectivity: ConnectivityObserver,
     private val customize: CustomizationStore,
     private val historyDao: HistoryDao,
+    private val sourceDao: SourceDao,
+    private val xtream: XtreamClient,
     val player: OwnTVPlayer,
 ) : ViewModel() {
 
@@ -98,6 +112,32 @@ class EpgViewModel(
             .distinctUntilChanged()
             .onEach { load() }
             .launchIn(viewModelScope)
+        // Reload the guide when its own sort, or (for the LIVE_TV mode) the Live sort, changes.
+        // drop(1): the screen triggers the initial load itself.
+        settings.sortGuide
+            .drop(1)
+            .distinctUntilChanged()
+            .onEach { load() }
+            .launchIn(viewModelScope)
+        settings.sortLive
+            .drop(1)
+            .distinctUntilChanged()
+            .onEach { if (settings.sortGuide.first() == SettingsRepository.GuideSort.LIVE_TV) load() }
+            .launchIn(viewModelScope)
+    }
+
+    /** The Guide's current sort, for the header button. */
+    val sortGuide: StateFlow<SettingsRepository.GuideSort> = settings.sortGuide
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.GuideSort.LIVE_TV)
+
+    /** Cycle the Guide sort: A–Z → Provider → Live TV → Catch-up → … (Catch-up only when one exists). */
+    fun cycleGuideSort() {
+        viewModelScope.launch {
+            val modes = SettingsRepository.GuideSort.entries
+                .filter { it != SettingsRepository.GuideSort.CATCHUP || _state.value.catchupCount > 0 }
+            val cur = modes.indexOf(sortGuide.value).let { if (it < 0) 0 else it }
+            settings.setSortGuide(modes[(cur + 1) % modes.size])
+        }
     }
 
     fun setQuery(q: String) {
@@ -124,14 +164,223 @@ class EpgViewModel(
         }
     }
 
-    /** Zap to the neighbouring guide channel ([delta] = +1 down / -1 up), CH+/CH- from the player. */
+    /**
+     * Play a past programme from the channel's catch-up archive (seekable, like VOD). Used by the
+     * Guide's "Watch from start / Play recording" action on catch-up channels.
+     */
+    fun playCatchup(channel: ChannelEntity, programme: EpgProgrammeEntity) {
+        viewModelScope.launch {
+            val url = withContext(kotlinx.coroutines.Dispatchers.IO) { catchupUrlFor(channel, programme) }
+            if (url == null) {
+                _matchSummary.value = "Catch-up isn't available for this channel."
+                return@launch
+            }
+            lastTunedChannelId = channel.id
+            _canZap.value = false // archive playback isn't part of the live zap list
+            // isLive = false → the archive plays back seekable, with a normal progress bar.
+            // preferSoftware → tolerate mid-GOP archive segments the hardware decoder can't (blank/crash).
+            player.play(url, title = channel.name, subtitle = programme.title, logoUrl = channel.logoUrl, isLive = false, preferSoftware = true)
+        }
+    }
+
+    /** Build the catch-up URL for a [programme] on [channel], or null if the provider can't serve it. */
+    private suspend fun catchupUrlFor(channel: ChannelEntity, programme: EpgProgrammeEntity): String? {
+        if (!channel.catchup) return null
+        val source = sourceDao.getById(channel.sourceId) ?: return null
+        return when (source.type) {
+            SourceType.XTREAM -> channel.remoteId?.let { streamId ->
+                val durationMin = (((programme.stopMs - programme.startMs) / 60_000L).toInt()).coerceAtLeast(1)
+                val tz = when (settings.catchupTimezone.first()) {
+                    SettingsRepository.CatchupTimezone.DEVICE -> java.util.TimeZone.getDefault()
+                    SettingsRepository.CatchupTimezone.MANUAL ->
+                        java.util.SimpleTimeZone(settings.catchupOffsetMinutes.first() * 60_000, "catchup")
+                }
+                xtream.timeshiftUrl(source, streamId, programme.startMs, durationMin, tz)
+            }
+            SourceType.M3U -> CatchupUrl.forM3u(channel.streamUrl, null, channel.catchupSource, programme.startMs, programme.stopMs)
+            else -> null
+        }
+    }
+
+    /** True when a programme can be played from the archive: a catch-up channel, already started, and
+     *  still inside the channel's archive window. The Guide gates its "Watch from start" button on this. */
+    fun canCatchup(channel: ChannelEntity, programme: EpgProgrammeEntity, now: Long): Boolean {
+        if (!channel.catchup || programme.startMs > now) return false
+        val windowMs = channel.catchupDays.coerceAtLeast(1) * 24L * 60 * 60 * 1000
+        return now - programme.startMs <= windowMs
+    }
+
+    // This profile's customizations — for changing a channel's manual EPG match from the Guide (#10).
+    private val custom: StateFlow<SectionCustomizations> = settings.activeProfileId
+        .flatMapLatest { pid -> if (pid < 0) flowOf(SectionCustomizations()) else customize.observe(pid, MediaType.LIVE) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SectionCustomizations())
+
+    /** The channel's current manual EPG match (or null if auto-matched). */
+    fun currentEpgMatch(channel: ChannelEntity): String? = custom.value.epgMatches[CustomizeKeys.channel(channel)]
+
+    /** Set/clear a channel's manual EPG match (null clears → auto-match), then reload the guide. */
+    fun setEpgMatch(channel: ChannelEntity, epgChannelId: String?) {
+        viewModelScope.launch {
+            val pid = settings.activeProfileId.first()
+            customize.setEpgMatch(pid, MediaType.LIVE, CustomizeKeys.channel(channel), epgChannelId)
+            load()
+        }
+    }
+
+    // ---- Smart EPG matching (#13): scan channels with no working guide and match them by name ----
+
+    /** A proposed EPG match for a channel that didn't auto-resolve confidently enough to apply. */
+    data class EpgMatchSuggestion(
+        val channel: ChannelEntity,
+        val epgChannelId: String,
+        val epgName: String?,
+        val score: Double,
+    )
+
+    private val _matching = MutableStateFlow(false)
+    val matching: StateFlow<Boolean> = _matching.asStateFlow()
+
+    /** Low-confidence suggestions awaiting the user's accept/skip (high-confidence ones auto-apply). */
+    private val _review = MutableStateFlow<List<EpgMatchSuggestion>>(emptyList())
+    val review: StateFlow<List<EpgMatchSuggestion>> = _review.asStateFlow()
+
+    /** One-line outcome of the last auto-match run, shown as a transient banner. */
+    private val _matchSummary = MutableStateFlow<String?>(null)
+    val matchSummary: StateFlow<String?> = _matchSummary.asStateFlow()
+
+    /**
+     * Scan every channel that has no working guide (no manual match and its tvg-id isn't in the EPG
+     * feed), match it by name, auto-apply high-confidence hits and queue the rest for review.
+     */
+    fun autoMatchEpg() {
+        if (_matching.value) return
+        viewModelScope.launch {
+            _matching.value = true
+            try {
+                val pid = settings.activeProfileId.first()
+                val playlistIds = if (pid < 0) emptyList() else sourceRepository.observeSources(pid).first().map { it.id }
+                if (playlistIds.isEmpty()) { _matchSummary.value = "Add a playlist first."; return@launch }
+                val ids = playlistIds + epgSourceStore.getAll().map { it.id }
+                val cust = customize.observe(pid, MediaType.LIVE).first()
+
+                val candidates = epgDao.listEpgChannels(ids, "", MAX_EPG_CANDIDATES)
+                if (candidates.isEmpty()) { _matchSummary.value = "No EPG data to match against yet."; return@launch }
+                val knownIds = candidates.mapTo(HashSet()) { it.epgChannelId.trim().lowercase() }
+
+                val (applied, review) = withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    val prepared = tv.own.owntv.core.epg.EpgMatcher.prepare(
+                        candidates.map { tv.own.owntv.core.epg.EpgMatcher.Candidate(it.epgChannelId, it.displayName) },
+                    )
+                    val channels = channelDao.allForSources(playlistIds, MAX_CHANNELS)
+                    var applied = 0
+                    val toApply = mutableListOf<Pair<String, String>>() // key -> epgId
+                    val review = mutableListOf<EpgMatchSuggestion>()
+                    for (ch in channels) {
+                        val key = CustomizeKeys.channel(ch)
+                        if (key in cust.epgMatches || key in cust.hiddenItems) continue // already matched/hidden
+                        val tvg = ch.epgChannelId?.trim()?.lowercase()
+                        if (!tvg.isNullOrEmpty() && tvg in knownIds) continue // already has a working guide
+                        val best = tv.own.owntv.core.epg.EpgMatcher.bestEpgMatchPrepared(ch.name, prepared) ?: continue
+                        if (best.score >= tv.own.owntv.core.epg.EpgMatcher.AUTO_THRESHOLD) {
+                            toApply.add(key to best.epgChannelId)
+                            applied++
+                        } else {
+                            review.add(EpgMatchSuggestion(ch, best.epgChannelId, best.displayName, best.score))
+                        }
+                    }
+                    // Persist the confident matches (DataStore writes are cheap but do them off the scan).
+                    for ((key, epgId) in toApply) customize.setEpgMatch(pid, MediaType.LIVE, key, epgId)
+                    applied to review.sortedByDescending { it.score }
+                }
+
+                _review.value = review
+                _matchSummary.value = buildString {
+                    append("Auto-matched $applied channel${if (applied == 1) "" else "s"}.")
+                    if (review.isNotEmpty()) append(" ${review.size} need review.")
+                    if (applied == 0 && review.isEmpty()) { setLength(0); append("Everything's already matched.") }
+                }
+                if (applied > 0) load()
+            } finally {
+                _matching.value = false
+            }
+        }
+    }
+
+    /**
+     * Auto-match a SINGLE channel by name (Guide long-press → "Auto-match"). Applies the best candidate
+     * found (the user asked for this one specifically, so we apply even a middling match) or reports none.
+     */
+    fun autoMatchOne(channel: ChannelEntity) {
+        if (_matching.value) return
+        viewModelScope.launch {
+            _matching.value = true
+            try {
+                val pid = settings.activeProfileId.first()
+                val playlistIds = if (pid < 0) emptyList() else sourceRepository.observeSources(pid).first().map { it.id }
+                val ids = playlistIds + epgSourceStore.getAll().map { it.id }
+                val candidates = epgDao.listEpgChannels(ids, "", MAX_EPG_CANDIDATES)
+                if (candidates.isEmpty()) { _matchSummary.value = "No EPG data to match against yet."; return@launch }
+                val best = withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    val prepared = tv.own.owntv.core.epg.EpgMatcher.prepare(
+                        candidates.map { tv.own.owntv.core.epg.EpgMatcher.Candidate(it.epgChannelId, it.displayName) },
+                    )
+                    tv.own.owntv.core.epg.EpgMatcher.bestEpgMatchPrepared(channel.name, prepared)
+                }
+                if (best == null) {
+                    _matchSummary.value = "No EPG match found for “${channel.name}” — try picking manually."
+                } else {
+                    customize.setEpgMatch(pid, MediaType.LIVE, CustomizeKeys.channel(channel), best.epgChannelId)
+                    _matchSummary.value = "Matched “${channel.name}” → ${best.displayName ?: best.epgChannelId} (${(best.score * 100).toInt()}%)."
+                    load()
+                }
+            } finally {
+                _matching.value = false
+            }
+        }
+    }
+
+    /** Accept a reviewed suggestion → persist the match and drop it from the review list. */
+    fun acceptSuggestion(s: EpgMatchSuggestion) {
+        viewModelScope.launch {
+            val pid = settings.activeProfileId.first()
+            customize.setEpgMatch(pid, MediaType.LIVE, CustomizeKeys.channel(s.channel), s.epgChannelId)
+            _review.value = _review.value.filterNot { it.channel.id == s.channel.id }
+            load()
+        }
+    }
+
+    /** Skip a suggestion without matching it (just remove it from the review list). */
+    fun dismissSuggestion(s: EpgMatchSuggestion) {
+        _review.value = _review.value.filterNot { it.channel.id == s.channel.id }
+    }
+
+    /** Accept every remaining suggestion at once, then clear the review list and reload the guide. */
+    fun acceptAllSuggestions() {
+        val all = _review.value
+        if (all.isEmpty()) return
+        viewModelScope.launch {
+            val pid = settings.activeProfileId.first()
+            for (s in all) customize.setEpgMatch(pid, MediaType.LIVE, CustomizeKeys.channel(s.channel), s.epgChannelId)
+            _review.value = emptyList()
+            load()
+        }
+    }
+
+    /** Close the review list / clear the summary banner. */
+    fun clearReview() {
+        _review.value = emptyList()
+        _matchSummary.value = null
+    }
+
+    /** Zap to the neighbouring guide channel ([delta] = +1 down / -1 up), wrapping at the ends so it
+     *  never dead-ends (last → first, first → last). */
     fun zap(delta: Int) {
         val list = _state.value.channels
         if (list.size < 2) return
         val i = list.indexOfFirst { it.id == lastTunedChannelId }
         if (i < 0) return
-        val next = (i + delta).coerceIn(0, list.size - 1)
-        if (next == i) return // already at an end
+        val next = ((i + delta) % list.size + list.size) % list.size // modulo wrap (handles negatives)
+        if (next == i) return
         play(list[next])
     }
 
@@ -151,8 +400,14 @@ class EpgViewModel(
             }
 
             val now = System.currentTimeMillis()
-            val windowStart = now - (now % HALF_HOUR_MS) // align to the half hour
-            val windowEnd = windowStart + GRID_HOURS * 60L * 60 * 1000
+            val nowAligned = now - (now % HALF_HOUR_MS) // align to the half hour
+            // When the profile has catch-up channels, extend the guide BACKWARD so archived programmes
+            // are visible (and playable), bounded by both the archive depth and what EPG we retain.
+            val maxCatchupDays = channelDao.maxCatchupDays(playlistIds)
+            val lookbackMs = if (maxCatchupDays > 0)
+                minOf(maxCatchupDays * DAY_MS, CATCHUP_LOOKBACK_CAP_MS) else 0L
+            val windowStart = nowAligned - lookbackMs
+            val windowEnd = nowAligned + GRID_HOURS * 60L * 60 * 1000
 
             // Respect customizations: hidden channels stay out of the guide, renames show.
             val cust = customize.observe(pid, MediaType.LIVE).first()
@@ -162,7 +417,25 @@ class EpgViewModel(
                 .map { ch -> cust.itemNames[CustomizeKeys.channel(ch)]?.let { ch.copy(name = it) } ?: ch }
             // Manual EPG matches: override the matched channels' epg id, and pull in any matched
             // channel that wouldn't otherwise appear (its own epg id didn't auto-match).
-            val channels = applyEpgMatches(auto, cust, playlistIds, q)
+            val matched = applyEpgMatches(auto, cust, playlistIds, q)
+            // Catch-up count comes from the playlist channels (the tv_archive flag), so it shows even
+            // before any XMLTV guide is downloaded — it tells the user their provider supports catch-up.
+            val catchupCount = channelDao.countCatchup(playlistIds)
+            // Order the guide by its own sort. LIVE_TV mirrors the Live sort; CATCHUP floats archive
+            // channels to the top; ALPHA/PROVIDER are explicit. CATCHUP with none available falls to LIVE_TV.
+            val byAlpha = compareBy<ChannelEntity> { it.name.lowercase() }
+            val byProvider = compareBy<ChannelEntity>({ it.sourceId }, { it.sortOrder }, { it.name.lowercase() })
+            val liveOrdered = when (settings.sortLive.first()) {
+                SettingsRepository.SortMode.ALPHA -> matched.sortedWith(byAlpha)
+                SettingsRepository.SortMode.PLAYLIST -> matched.sortedWith(byProvider)
+            }
+            val channels = when (settings.sortGuide.first()) {
+                SettingsRepository.GuideSort.ALPHA -> matched.sortedWith(byAlpha)
+                SettingsRepository.GuideSort.PROVIDER -> matched.sortedWith(byProvider)
+                SettingsRepository.GuideSort.CATCHUP ->
+                    if (catchupCount > 0) matched.sortedWith(compareByDescending<ChannelEntity> { it.catchup }.then(byAlpha)) else liveOrdered
+                SettingsRepository.GuideSort.LIVE_TV -> liveOrdered
+            }
             val stored = epgDao.countForSources(ids)
 
             // New window/data → drop the per-row cache so rows re-query the fresh window.
@@ -178,14 +451,19 @@ class EpgViewModel(
                         "this EPG feed may belong to a different provider lineup."
                 else -> null
             }
+            val catchupNote = if (catchupCount > 0) "$catchupCount with catch-up" else "no catch-up channels"
             val stats = if (stored > 0) {
                 val guideChannels = epgDao.countGuideChannels(ids)
-                "Guide loaded: $guideChannels channels · $stored programmes"
-            } else null
+                "Guide loaded: $guideChannels channels · $stored programmes · $catchupNote"
+            } else if (catchupCount > 0) {
+                "Catch-up available on $catchupCount channels"
+            } else {
+                "No catch-up channels available"
+            }
 
             _state.value = EpgUiState(
                 channels = channels, windowStart = windowStart, windowEnd = windowEnd, now = now,
-                loading = false, message = message, hasEpgSources = hasEpg, stats = stats,
+                loading = false, message = message, hasEpgSources = hasEpg, stats = stats, catchupCount = catchupCount,
             )
         }
     }
@@ -235,7 +513,12 @@ class EpgViewModel(
     companion object {
         const val GRID_HOURS = 24
         private const val HALF_HOUR_MS = 30L * 60 * 1000
+        private const val DAY_MS = 24L * 60 * 60 * 1000
+        // How far back the Guide may extend for catch-up (must stay within EpgRepository's retention).
+        private const val CATCHUP_LOOKBACK_CAP_MS = 48L * 60 * 60 * 1000
         // Generous safety bound only (rows load lazily, so this is about the channel list itself).
         private const val MAX_CHANNELS = 20_000
+        // Cap the candidate set the bulk matcher scans against (keeps the O(channels×candidates) scan bounded).
+        private const val MAX_EPG_CANDIDATES = 20_000
     }
 }

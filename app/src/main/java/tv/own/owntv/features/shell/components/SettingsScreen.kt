@@ -1,6 +1,7 @@
 package tv.own.owntv.features.shell.components
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
@@ -43,6 +44,7 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.features.customize.CustomizeScreen
+import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.update.UpdateDialog
 import tv.own.owntv.features.settings.BackupScreen
 import tv.own.owntv.features.settings.ManageProfilesScreen
@@ -90,6 +92,7 @@ fun SettingsScreen(
     var showFolderPicker by remember { mutableStateOf(false) }
     var showUpdate by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
+    var showCatchupTime by remember { mutableStateOf(false) }
 
     // Dialog-close focus return: closing a dialog/picker refocuses the row that opened it (focus
     // would otherwise fall spatially back to the sidebar).
@@ -99,12 +102,13 @@ fun SettingsScreen(
     val zoomRowFocus = remember { FocusRequester() }
     val updateRowFocus = remember { FocusRequester() }
     val aboutRowFocus = remember { FocusRequester() }
+    val catchupRowFocus = remember { FocusRequester() }
     // NOTE: this restore request crosses INTO the root focus group from outside (the dialog), so
     // the group's onEnter intercepts it — onEnter must consult dialogReturn first (it does, below)
     // or it would hijack the restore to its own default target. dialogReturn is cleared by onEnter.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout) {
-        if (!showZoom && !showTheme && !showAccent && !showFolderPicker && !showUpdate && !showAbout) {
+    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime) {
+        if (!showZoom && !showTheme && !showAccent && !showFolderPicker && !showUpdate && !showAbout && !showCatchupTime) {
             dialogReturn?.let { row ->
                 kotlinx.coroutines.delay(80)
                 runCatching { row.requestFocus() }
@@ -117,6 +121,9 @@ fun SettingsScreen(
     val previewAudio by settingsVm.livePreviewAudio.collectAsStateWithLifecycle()
     val hdr by settingsVm.hdrEnabled.collectAsStateWithLifecycle()
     val updateCheckOnStart by settingsVm.updateCheckOnStart.collectAsStateWithLifecycle()
+    val catchupTz by settingsVm.catchupTimezone.collectAsStateWithLifecycle()
+    val catchupOffset by settingsVm.catchupOffsetMinutes.collectAsStateWithLifecycle()
+    val catchupChannels by settingsVm.catchupChannelCount.collectAsStateWithLifecycle()
     val accent by settingsVm.accent.collectAsStateWithLifecycle()
     val customAccent by settingsVm.customAccent.collectAsStateWithLifecycle()
 
@@ -269,6 +276,19 @@ fun SettingsScreen(
             onClick = { settingsVm.setHdrEnabled(!hdr) },
         )
         SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.EPG,
+            title = "Catch-up time",
+            desc = if (catchupChannels > 0) "$catchupChannels channels support catch-up · timezone for archive playback"
+                else "No catch-up channels available on this playlist",
+            chip = when (catchupTz) {
+                SettingsRepository.CatchupTimezone.DEVICE -> "Device"
+                SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
+            },
+            chipTone = TileTone.PRIMARY,
+            onClick = { dialogReturn = catchupRowFocus; showCatchupTime = true }, showChevron = true,
+            modifier = Modifier.focusRequester(catchupRowFocus),
+        )
+        SettingsRow(
             tone = TileTone.TERTIARY, icon = OwnTVIcon.VIDEO,
             title = "Video Player Settings", desc = "Decoder, subtitles, sync",
             onClick = { open(SettingsTab.VIDEO) }, showChevron = true,
@@ -301,6 +321,16 @@ fun SettingsScreen(
 
     if (showUpdate) {
         UpdateDialog(onDismiss = { showUpdate = false }, checkOnOpen = true)
+    }
+    if (showCatchupTime) {
+        CatchupTimeDialog(
+            mode = catchupTz,
+            offsetMinutes = catchupOffset,
+            offsetRange = settingsVm.catchupOffsetRangeMinutes,
+            onSetMode = settingsVm::setCatchupTimezone,
+            onAdjustOffset = settingsVm::adjustCatchupOffset,
+            onDismiss = { showCatchupTime = false },
+        )
     }
     if (showAbout) {
         AboutDialog(onDismiss = { showAbout = false })
@@ -477,6 +507,7 @@ private fun Swatch(
 }
 
 private const val GITHUB_REPO = "github.com/ahXN00/OwnTV"
+private const val TELEGRAM_LINK = "t.me/owntvplayer"
 
 /** About OwnTV: version, license, author and project link — all readable on screen (no TV browser). */
 @Composable
@@ -508,7 +539,29 @@ private fun AboutDialog(onDismiss: () -> Unit) {
             Text("© 2026 Ashiq Hasan · MIT License", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
             Spacer(Modifier.height(4.dp))
             Text(GITHUB_REPO, style = MaterialTheme.typography.bodyMedium, color = colors.primary)
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(16.dp))
+            // Community: Telegram link + a QR, side-by-side to keep the dialog compact, so TV users can
+            // join from their phone — no TV browser needed.
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text("Join us on Telegram", style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+                    Spacer(Modifier.height(2.dp))
+                    Text(TELEGRAM_LINK, style = MaterialTheme.typography.bodyMedium, color = colors.primary)
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Scan the QR to join from your phone, or open the link above.",
+                        style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+                    )
+                }
+                Box(Modifier.clip(RoundedCornerShape(10.dp)).background(Color.White).padding(6.dp)) {
+                    Image(
+                        painter = androidx.compose.ui.res.painterResource(tv.own.owntv.R.drawable.telegram_qr),
+                        contentDescription = "Telegram group QR code",
+                        modifier = Modifier.size(120.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
             Text(
                 "Contributions, bug reports & stars are welcome on GitHub.",
                 style = MaterialTheme.typography.bodySmall,
@@ -559,6 +612,78 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
                 Spacer(Modifier.weight(1f))
                 OwnTVButton("Done", onClick = onDismiss)
             }
+        }
+    }
+}
+
+/** "UTC", "UTC+05:00", "UTC-03:30" — labels a UTC offset (in minutes) for catch-up. */
+private fun utcOffsetLabel(minutes: Int): String {
+    if (minutes == 0) return "UTC"
+    val sign = if (minutes < 0) "-" else "+"
+    val abs = kotlin.math.abs(minutes)
+    return "UTC$sign%02d:%02d".format(abs / 60, abs % 60)
+}
+
+@Composable
+private fun CatchupTimeDialog(
+    mode: SettingsRepository.CatchupTimezone,
+    offsetMinutes: Int,
+    offsetRange: IntRange,
+    onSetMode: (SettingsRepository.CatchupTimezone) -> Unit,
+    onAdjustOffset: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+    val manual = mode == SettingsRepository.CatchupTimezone.MANUAL
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier.width(480.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Catch-up time", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "How catch-up timestamps are sent. Use your device timezone, or set the offset your provider's server expects.",
+                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Spacer(Modifier.height(20.dp))
+            // Mode toggle: Device / Manual.
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton(
+                    "Device",
+                    onClick = { onSetMode(SettingsRepository.CatchupTimezone.DEVICE) },
+                    style = if (!manual) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                    modifier = Modifier.focusRequester(firstFocus),
+                )
+                OwnTVButton(
+                    "Manual",
+                    onClick = { onSetMode(SettingsRepository.CatchupTimezone.MANUAL) },
+                    style = if (manual) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                )
+            }
+            if (manual) {
+                Spacer(Modifier.height(22.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    StepButton("–", enabled = offsetMinutes > offsetRange.first) { onAdjustOffset(-60) }
+                    Text(
+                        utcOffsetLabel(offsetMinutes),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = colors.primary,
+                        modifier = Modifier.width(150.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                    StepButton("+", enabled = offsetMinutes < offsetRange.last) { onAdjustOffset(60) }
+                }
+            }
+            Spacer(Modifier.height(24.dp))
+            OwnTVButton("Done", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
         }
     }
 }

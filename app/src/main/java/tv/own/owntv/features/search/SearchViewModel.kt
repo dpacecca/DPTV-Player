@@ -55,17 +55,18 @@ class SearchViewModel(
 ) : ViewModel() {
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
-    private val ctx = MutableStateFlow(Ctx(-1L, emptyList()))
+    // Observe the active profile's sources reactively so adding/removing a playlist refreshes Search
+    // immediately (was read once at startup, so a new playlist showed nothing until app restart).
+    private val ctx: StateFlow<Ctx> = settings.activeProfileId
+        .flatMapLatest { pid ->
+            if (pid < 0) flowOf(Ctx(pid, emptyList()))
+            else sourceDao.observeForProfile(pid).map { srcs -> Ctx(pid, srcs.map { it.id }) }
+        }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            val pid = settings.activeProfileId.first()
-            ctx.value = Ctx(pid, sourceDao.sourceIdsForProfile(pid))
-        }
-    }
 
     val results: StateFlow<SearchResults> = _query
         .map { it.trim() }

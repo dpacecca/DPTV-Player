@@ -2,6 +2,8 @@ package tv.own.owntv.features.live
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -302,6 +304,7 @@ private fun LivePreviewPane(
 ) {
     val colors = OwnTVTheme.colors
     val videoAspect by player.videoAspect.collectAsStateWithLifecycle()
+    val videoRes by player.videoRes.collectAsStateWithLifecycle()
     val playerError by player.error.collectAsStateWithLifecycle()
     val previewLoading = showVideo && videoAspect == null && playerError == null
     if (channel == null) {
@@ -309,7 +312,10 @@ private fun LivePreviewPane(
         return
     }
     Column(
-        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(Dimens.CardCorner)).background(colors.panel).padding(Dimens.GapLarge),
+        // Scrollable so the action buttons are never clipped when the EPG (Now/Next/Later) makes the
+        // pane taller than the screen — focusing a button brings it into view.
+        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(Dimens.CardCorner)).background(colors.panel)
+            .verticalScroll(rememberScrollState()).padding(Dimens.GapLarge),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
@@ -326,6 +332,17 @@ private fun LivePreviewPane(
             }
             if (previewLoading) {
                 OwnTVSpinner(sizeDp = 28)
+            }
+            // Real resolution of the stream (e.g. 1080p) — the channel NAME often lies ("…4K"), so this
+            // shows what you'll actually get before you commit to watching.
+            videoRes?.takeIf { showVideo }?.let { res ->
+                Box(
+                    Modifier.align(Alignment.TopEnd).padding(8.dp)
+                        .clip(RoundedCornerShape(6.dp)).background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f))
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                ) {
+                    Text(res, style = MaterialTheme.typography.labelMedium, color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Bold)
+                }
             }
         }
         Spacer(Modifier.height(14.dp))
@@ -395,15 +412,28 @@ private fun EpgSection(nowNext: EpgNowNext?) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        // Upcoming programmes after "next" — see what's on later without opening the Guide (#11).
+        val later = nowNext?.upcoming ?: emptyList()
+        if (later.isNotEmpty()) {
+            Spacer(Modifier.height(6.dp))
+            Text("LATER", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            later.forEach { p ->
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(formatClock(p.startMs), style = MaterialTheme.typography.labelSmall, color = colors.primary)
+                    Text(p.title, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
     }
 }
 
 private val clockFormat = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
 private fun formatClock(ms: Long): String = clockFormat.format(java.util.Date(ms))
 
-/** Manual EPG matching: pick which guide channel this channel uses (search across all EPG feeds). */
+/** Manual EPG matching: pick which guide channel this channel uses (search across all EPG feeds).
+ *  Shared with the Guide screen (long-press a channel → Match EPG). */
 @Composable
-private fun EpgMatchDialog(
+internal fun EpgMatchDialog(
     channelName: String,
     currentMatch: String?,
     loadChannels: suspend (String) -> List<tv.own.owntv.core.database.entity.EpgChannelEntity>,

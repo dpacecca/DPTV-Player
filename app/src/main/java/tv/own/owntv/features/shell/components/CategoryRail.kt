@@ -122,17 +122,24 @@ fun CategoryRail(
                 .onFocusChanged {
                     // Spatial D-pad entry would land on whatever pill is horizontally aligned —
                     // redirect every entry (from the sidebar OR back from the content list) to the
-                    // SELECTED category. Internal moves between pills don't re-trigger this. The
-                    // redirect must be deferred a frame: requesting focus inside onFocusChanged is
-                    // rejected (the focus transaction is still in progress).
+                    // SELECTED category, so you return to the folder you're actually in (e.g. pressing
+                    // Left from a channel lands back on that channel's category, not the top of the rail).
+                    // Internal moves between pills don't re-trigger this. The redirect must be deferred a
+                    // frame: requesting focus inside onFocusChanged is rejected (the focus transaction is
+                    // still in progress).
                     val entered = it.hasFocus && !hasFocus
                     hasFocus = it.hasFocus
                     if (it.hasFocus) onFocused() else query = "" // reset the search on leaving
-                    // Entering the rail lands on the search box (scrolled to the top) so you can filter
-                    // categories straight away; Down drops into the list.
                     if (entered) scope.launch {
-                        runCatching { listState.scrollToItem(0) }
-                        runCatching { searchFocus.requestFocus() }
+                        if (selectedIndex in categories.indices) {
+                            // Land on the current category; the search box (top) is one Up away.
+                            runCatching { listState.scrollToItem(selectedIndex) }
+                            runCatching { selectedFocus.requestFocus() }
+                        } else {
+                            // No selection (e.g. an empty/special rail) — fall back to the search box.
+                            runCatching { listState.scrollToItem(0) }
+                            runCatching { searchFocus.requestFocus() }
+                        }
                     }
                 }
                 .focusGroup(),

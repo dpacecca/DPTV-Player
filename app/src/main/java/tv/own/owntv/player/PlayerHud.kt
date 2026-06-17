@@ -120,10 +120,13 @@ fun PlayerHud(
         modifier = modifier.fillMaxSize().onPreviewKeyEvent { e ->
             if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
             when {
-                // Channel surfing is on the dedicated CH+/CH- keys only. The D-pad is strictly for UI
-                // navigation: Up/Down move through the HUD controls (or reveal a hidden HUD), never zap.
-                canZap && e.key == Key.ChannelUp -> { zap(-1); true }
-                canZap && e.key == Key.ChannelDown -> { zap(1); true }
+                // Channel surfing: dedicated CH+/CH- and media prev/next keys always zap. D-pad Up/Down
+                // zap ONLY while the HUD is hidden (when it's visible, Up/Down navigate the controls) —
+                // this is the only way to change channels on remotes without CH keys (e.g. Fire TV).
+                canZap && (e.key == Key.ChannelUp || e.key == Key.MediaPrevious) -> { zap(-1); true }
+                canZap && (e.key == Key.ChannelDown || e.key == Key.MediaNext) -> { zap(1); true }
+                canZap && !controlsVisible && e.key == Key.DirectionUp -> { zap(-1); true }
+                canZap && !controlsVisible && e.key == Key.DirectionDown -> { zap(1); true }
                 controlsVisible -> { wakeTick++; false }
                 else -> false
             }
@@ -192,19 +195,21 @@ private fun TopBar(
     player: OwnTVPlayer, isLive: Boolean, videoRes: String?, duration: Long,
     onBack: () -> Unit, modifier: Modifier = Modifier,
 ) {
+    // Reactive meta so the title row updates instantly on a channel zap (the plain vars aren't observed).
+    val meta by player.currentMeta.collectAsStateWithLifecycle()
     Row(modifier = modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
         CircleButton(OwnTVIcon.BACK, size = 40, onClick = onBack)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            player.currentSubtitle?.takeIf { it.isNotBlank() }?.let {
+            meta.subtitle?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.45f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            Text(player.currentTitle ?: "", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(meta.title ?: "", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val durMin = (duration / 60000)
                 val parts = buildList {
-                    player.currentYear?.takeIf { it.isNotBlank() }?.let { add(it) }
+                    meta.year?.takeIf { it.isNotBlank() }?.let { add(it) }
                     if (!isLive && durMin > 0) add("$durMin min")
                     videoRes?.let { add(it) }
                 }
@@ -234,18 +239,20 @@ private fun LiveBadge() {
 
 @Composable
 private fun ChannelCard(player: OwnTVPlayer, modifier: Modifier = Modifier) {
+    // Collect the reactive meta so the card refreshes the instant a zap changes the channel.
+    val meta by player.currentMeta.collectAsStateWithLifecycle()
     Row(
         modifier = modifier.widthIn(max = 340.dp).clip(RoundedCornerShape(14.dp)).background(Color.Black.copy(alpha = 0.55f)).padding(14.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF004F46)), contentAlignment = Alignment.Center) {
-            val logo = player.currentLogoUrl
+            val logo = meta.logoUrl
             if (!logo.isNullOrBlank()) AsyncImage(model = logo, contentDescription = null, modifier = Modifier.fillMaxSize())
-            else Text((player.currentTitle ?: "?").take(3).uppercase(), style = MaterialTheme.typography.labelMedium, color = Color(0xFF6FF8E4), fontWeight = FontWeight.Bold)
+            else Text((meta.title ?: "?").take(3).uppercase(), style = MaterialTheme.typography.labelMedium, color = Color(0xFF6FF8E4), fontWeight = FontWeight.Bold)
         }
         Column {
-            Text(player.currentTitle ?: "", style = MaterialTheme.typography.titleSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            player.currentSubtitle?.takeIf { it.isNotBlank() }?.let {
+            Text(meta.title ?: "", style = MaterialTheme.typography.titleSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            meta.subtitle?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }

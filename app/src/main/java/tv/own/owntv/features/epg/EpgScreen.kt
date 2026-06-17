@@ -2,6 +2,8 @@ package tv.own.owntv.features.epg
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +39,12 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -47,6 +55,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
+import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.ui.components.ErrorState
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
@@ -54,6 +63,7 @@ import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.SearchBar
+import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -84,12 +94,26 @@ fun EpgScreen(
     val vm: EpgViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
     val query by vm.query.collectAsStateWithLifecycle()
+    val matching by vm.matching.collectAsStateWithLifecycle()
+    val review by vm.review.collectAsStateWithLifecycle()
+    val matchSummary by vm.matchSummary.collectAsStateWithLifecycle()
+    val sortGuide by vm.sortGuide.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
     val hScroll = rememberScrollState()
     val rowListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val firstCell = remember { FocusRequester() }
     val tunedCell = remember { FocusRequester() }
+    // The channel a dialog was opened from — focus returns to its row when the dialog closes.
+    val restoreCell = remember { FocusRequester() }
+    var restoreChannelId by remember { mutableStateOf<Long?>(null) }
     var detail by remember { mutableStateOf<Pair<ChannelEntity, EpgProgrammeEntity>?>(null) }
+    var matchingChannel by remember { mutableStateOf<ChannelEntity?>(null) }
+    var matchChooser by remember { mutableStateOf<ChannelEntity?>(null) }
+    // Two-stage timeline navigation (#4): Right from a channel focuses its whole programme row (ROW
+    // stage); OK steps into per-programme browsing (CELL stage) where Left/Right move a cursor and
+    // Up/Down jump to the adjacent channel at the same time. cursorTime is the highlighted time.
+    var inCellMode by remember { mutableStateOf(false) }
+    var cursorTime by remember { mutableStateOf(0L) }
     // The pending focus target onEnter routes to: our own restore requests cross into this group
     // from outside, so onEnter must cooperate or it would hijack them to the first channel.
     var pendingEnter by remember { mutableStateOf<FocusRequester?>(null) }
@@ -122,18 +146,46 @@ fun EpgScreen(
         onRestored()
     }
 
-    // Closing the programme-detail dialog: put focus back into the guide (it would otherwise die
-    // with the dialog and fall to the sidebar).
-    var hadDetail by remember { mutableStateOf(false) }
-    LaunchedEffect(detail) {
-        if (detail != null) {
-            hadDetail = true
-        } else if (hadDetail) {
-            hadDetail = false
-            pendingEnter = firstCell
-            kotlinx.coroutines.delay(80)
-            runCatching { firstCell.requestFocus() }
+    // With a catch-up backward window the guide spans past→future; open it scrolled to "now" so the
+    // current programmes are what you see first (past sits to the left, reachable with D-pad Left).
+    val density = LocalDensity.current
+    LaunchedEffect(state.windowStart, state.channels.isNotEmpty()) {
+        if (state.channels.isEmpty()) return@LaunchedEffect
+        val minutesBack = ((state.now - state.windowStart) / 60_000L).toInt()
+        if (minutesBack <= SLOT_MIN) return@LaunchedEffect // no real lookback → leave at the start
+        val px = with(density) { (minutesBack * PX_PER_MIN.value).dp.toPx() }.toInt()
+        runCatching { hScroll.scrollTo(px) }
+    }
+
+    // In CELL mode, Back steps out to whole-row (ROW) selection instead of leaving the guide.
+    BackHandler(enabled = inCellMode) { inCellMode = false }
+
+    // Keep the highlighted (cursor) programme in view while browsing a row in CELL mode.
+    LaunchedEffect(cursorTime, inCellMode) {
+        if (!inCellMode || state.channels.isEmpty()) return@LaunchedEffect
+        val minutes = ((cursorTime - state.windowStart) / 60_000L).toInt() - SLOT_MIN // one slot of left margin
+        val px = with(density) { (minutes.coerceAtLeast(0) * PX_PER_MIN.value).dp.toPx() }.toInt()
+        runCatching { hScroll.scrollTo(px) }
+    }
+
+    // Closing ANY of the guide's overlays (programme detail, the match chooser, the manual EPG picker)
+    // would otherwise drop focus to the sidebar. Restore focus to the row the dialog was opened from.
+    val anyDialogOpen = detail != null || matchChooser != null || matchingChannel != null
+    var hadDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(anyDialogOpen) {
+        if (anyDialogOpen) {
+            hadDialog = true
+            return@LaunchedEffect
         }
+        if (!hadDialog) return@LaunchedEffect
+        hadDialog = false
+        val idx = restoreChannelId?.let { id -> state.channels.indexOfFirst { it.id == id } } ?: -1
+        val target = if (idx >= 0) restoreCell else firstCell
+        if (idx >= 0) runCatching { rowListState.scrollToItem(idx) }
+        pendingEnter = target
+        kotlinx.coroutines.delay(80)
+        if (runCatching { target.requestFocus() }.isFailure) runCatching { firstCell.requestFocus() }
+        restoreChannelId = null // focus is set; release the row so playback-restore can reuse it
     }
 
     Column(
@@ -168,10 +220,33 @@ fun EpgScreen(
                 )
             }
             Spacer(Modifier.weight(1f))
+            // Guide sort: A–Z / Provider / Live TV (mirrors Live) / Catch-up (archive first; hidden when none).
+            val sortLabel = if (sortGuide == SettingsRepository.GuideSort.CATCHUP && state.catchupCount == 0)
+                SettingsRepository.GuideSort.LIVE_TV.label else sortGuide.label
+            OwnTVButton("Sort: $sortLabel", onClick = vm::cycleGuideSort, icon = OwnTVIcon.SORT, style = OwnTVButtonStyle.SECONDARY)
+            Spacer(Modifier.width(12.dp))
+            // Smart-match: auto-link channels whose tvg-id doesn't match the EPG feed, by name (#13).
+            if (matching) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OwnTVSpinner(sizeDp = 20)
+                    Text("Matching…", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                }
+            } else {
+                OwnTVButton("Auto-match EPG", onClick = vm::autoMatchEpg, icon = OwnTVIcon.EPG, style = OwnTVButtonStyle.SECONDARY)
+            }
         }
         if (state.stats != null) {
             Spacer(Modifier.height(4.dp))
             Text(state.stats!!, style = MaterialTheme.typography.labelLarge, color = colors.primary)
+        }
+        // Outcome of the last auto-match run (auto-applied count / how many need review). Dismissible.
+        matchSummary?.let { summary ->
+            if (review.isEmpty()) {
+                Spacer(Modifier.height(6.dp))
+                FocusableSurface(onClick = vm::clearReview, shape = RoundedCornerShape(10.dp), unfocusedContainerColor = colors.surfaceContainerHigh, contentAlignment = Alignment.CenterStart) { _ ->
+                    Text(summary, style = MaterialTheme.typography.labelLarge, color = colors.primary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+                }
+            }
         }
         Spacer(Modifier.height(10.dp))
         SearchBar(
@@ -228,12 +303,19 @@ fun EpgScreen(
                             now = state.now,
                             hScroll = hScroll,
                             labelFocus = when {
+                                channel.id == restoreChannelId -> restoreCell
                                 channel.id == vm.lastTunedChannelId -> tunedCell
                                 index == 0 -> firstCell
                                 else -> null
                             },
                             onTune = { vm.play(channel); onFullscreen() },
-                            onOpen = { detail = channel to it },
+                            onOpen = { restoreChannelId = channel.id; detail = channel to it },
+                            onMatchEpg = { restoreChannelId = channel.id; matchChooser = channel },
+                            inCellMode = inCellMode,
+                            cursorTime = cursorTime,
+                            onEnterCell = { cursorTime = state.now; inCellMode = true },
+                            onExitToChannels = { inCellMode = false },
+                            onMoveCursor = { cursorTime = it },
                         )
                     }
                 }
@@ -245,9 +327,152 @@ fun EpgScreen(
         ProgrammeDetailDialog(
             channelName = channel.name,
             programme = p,
+            canCatchup = vm.canCatchup(channel, p, state.now),
             onWatch = { detail = null; vm.play(channel); onFullscreen() },
+            onPlayCatchup = { detail = null; vm.playCatchup(channel, p); onFullscreen() },
             onDismiss = { detail = null },
         )
+    }
+
+    // Long-press a channel → choose how to match its EPG: auto (match this one by name) or manual pick.
+    matchChooser?.let { channel ->
+        EpgMatchChooserDialog(
+            channelName = channel.name,
+            onAuto = { vm.autoMatchOne(channel); matchChooser = null },
+            onManual = { matchChooser = null; matchingChannel = channel },
+            onDismiss = { matchChooser = null },
+        )
+    }
+
+    matchingChannel?.let { channel ->
+        tv.own.owntv.features.live.EpgMatchDialog(
+            channelName = channel.name,
+            currentMatch = vm.currentEpgMatch(channel),
+            loadChannels = { vm.availableEpgChannels(it) },
+            onPick = { vm.setEpgMatch(channel, it); matchingChannel = null },
+            onClear = { vm.setEpgMatch(channel, null); matchingChannel = null },
+            onDismiss = { matchingChannel = null },
+        )
+    }
+
+    if (review.isNotEmpty()) {
+        EpgMatchReviewDialog(
+            suggestions = review,
+            onAccept = vm::acceptSuggestion,
+            onSkip = vm::dismissSuggestion,
+            onAcceptAll = vm::acceptAllSuggestions,
+            onSkipAll = vm::clearReview,
+            onDone = vm::clearReview,
+        )
+    }
+}
+
+/**
+ * Review screen for the smart EPG matcher (#13): lists the lower-confidence suggestions the auto-match
+ * couldn't apply on its own, so the user can accept the good ones and skip the rest. High-confidence
+ * matches are applied automatically and never reach here.
+ */
+@Composable
+private fun EpgMatchReviewDialog(
+    suggestions: List<EpgViewModel.EpgMatchSuggestion>,
+    onAccept: (EpgViewModel.EpgMatchSuggestion) -> Unit,
+    onSkip: (EpgViewModel.EpgMatchSuggestion) -> Unit,
+    onAcceptAll: () -> Unit,
+    onSkipAll: () -> Unit,
+    onDone: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    BackHandler { onDone() }
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
+
+    Box(
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(Modifier.width(640.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
+            Text("Review EPG matches", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                "These channels were matched by name but weren't a confident fit. Accept the right ones; skip the rest.",
+                style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            LazyColumn(Modifier.fillMaxWidth().height(360.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                itemsIndexed(suggestions, key = { _, s -> s.channel.id }) { index, s ->
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surface).padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(s.channel.name, style = MaterialTheme.typography.titleSmall, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                "→ ${s.epgName ?: s.epgChannelId}  ·  ${(s.score * 100).toInt()}%",
+                                style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        FocusableSurface(
+                            onClick = { onAccept(s) },
+                            modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                            shape = RoundedCornerShape(10.dp),
+                            unfocusedContainerColor = colors.primaryContainer,
+                            contentAlignment = Alignment.Center,
+                        ) { _ -> Text("Accept", style = MaterialTheme.typography.labelLarge, color = colors.onPrimaryContainer, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) }
+                        FocusableSurface(
+                            onClick = { onSkip(s) },
+                            shape = RoundedCornerShape(10.dp),
+                            unfocusedContainerColor = colors.surfaceContainerHigh,
+                            contentAlignment = Alignment.Center,
+                        ) { _ -> Text("Skip", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton("Accept all", onClick = onAcceptAll, icon = OwnTVIcon.PLAY)
+                OwnTVButton("Skip all", onClick = onSkipAll, style = OwnTVButtonStyle.SECONDARY)
+                Spacer(Modifier.weight(1f))
+                OwnTVButton("Done", onClick = onDone, style = OwnTVButtonStyle.SECONDARY)
+            }
+        }
+    }
+}
+
+/**
+ * Long-press chooser for a Guide channel's EPG: either auto-match just this channel by name, or open
+ * the manual picker to choose its guide channel from the full list (#10/#13).
+ */
+@Composable
+private fun EpgMatchChooserDialog(
+    channelName: String,
+    onAuto: () -> Unit,
+    onManual: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    BackHandler { onDismiss() }
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
+
+    Box(
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(Modifier.width(440.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
+            Text("Match EPG", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                "Set the guide data for “$channelName”.",
+                style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
+            OwnTVButton("Auto-match", onClick = onAuto, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth().focusRequester(firstFocus))
+            Spacer(Modifier.height(10.dp))
+            OwnTVButton("Pick manually", onClick = onManual, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.SEARCH, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(16.dp))
+            OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+        }
     }
 }
 
@@ -267,18 +492,33 @@ private fun GuideChannelRow(
     labelFocus: FocusRequester?,
     onTune: () -> Unit,
     onOpen: (EpgProgrammeEntity) -> Unit,
+    onMatchEpg: () -> Unit,
+    inCellMode: Boolean,
+    cursorTime: Long,
+    onEnterCell: () -> Unit,
+    onExitToChannels: () -> Unit,
+    onMoveCursor: (Long) -> Unit,
 ) {
     val colors = OwnTVTheme.colors
     // Cache peek as the initial value → rows scrolled back into view render instantly, no flash.
     val programmes by produceState(initialValue = vm.cachedProgrammes(channel), channel.id, windowStart) {
         if (value == null) value = vm.programmesFor(channel)
     }
+    val labelFR = remember { FocusRequester() }
+    val stripFR = remember { FocusRequester() }
+    var stripFocused by remember { mutableStateOf(false) }
+
     Row {
-        // Pinned channel label — press OK to tune straight to the channel.
+        // Pinned channel label — OK tunes the channel; long-press opens the EPG-match chooser; Right
+        // steps into the timeline (the strip becomes the focus target).
         FocusableSurface(
             onClick = onTune,
+            onLongClick = onMatchEpg,
             modifier = Modifier.width(CHANNEL_COL).height(ROW_HEIGHT).padding(end = 6.dp)
-                .then(if (labelFocus != null) Modifier.focusRequester(labelFocus) else Modifier),
+                .focusRequester(labelFR)
+                .then(if (labelFocus != null) Modifier.focusRequester(labelFocus) else Modifier)
+                .focusProperties { right = stripFR }
+                .onFocusChanged { if (it.isFocused) onExitToChannels() }, // back on a label ⇒ leave CELL stage
             shape = RoundedCornerShape(10.dp),
             unfocusedContainerColor = colors.surfaceContainerHigh,
             contentAlignment = Alignment.CenterStart,
@@ -291,17 +531,64 @@ private fun GuideChannelRow(
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
         }
-        // Scrollable programme strip (shared hScroll); full-width placeholder while loading keeps
-        // every row the same total width so the lock-step scroll stays aligned.
-        Row(Modifier.horizontalScroll(hScroll)) {
-            val progs = programmes
-            if (progs == null) {
-                Spacer(Modifier.width(minutesWide(windowStart, windowEnd)).height(ROW_HEIGHT))
-            } else {
-                ProgrammeStrip(progs, windowStart, windowEnd, now, onOpen)
+        // Programme strip = ONE focus target (cells aren't individually focusable). ROW stage outlines
+        // the whole strip; OK enters CELL stage where Left/Right move the cursor and Up/Down jump rows.
+        val rowSelected = stripFocused && !inCellMode
+        Box(
+            modifier = Modifier.weight(1f).height(ROW_HEIGHT)
+                .focusRequester(stripFR)
+                .onFocusChanged { stripFocused = it.isFocused }
+                .onKeyEvent { e ->
+                    if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
+                    val progs = programmes
+                    if (inCellMode) when (e.key) {
+                        Key.DirectionLeft -> { moveGuideCursor(progs, cursorTime, -1, windowStart, onMoveCursor); true }
+                        Key.DirectionRight -> { moveGuideCursor(progs, cursorTime, +1, windowStart, onMoveCursor); true }
+                        Key.DirectionCenter, Key.Enter -> { progs?.let { openAtCursor(it, cursorTime, onOpen) }; true }
+                        else -> false // Up/Down fall through to spatial nav (jump to the next channel's row)
+                    } else when (e.key) {
+                        Key.DirectionCenter, Key.Enter -> { if (!progs.isNullOrEmpty()) onEnterCell(); true }
+                        Key.DirectionLeft -> { runCatching { labelFR.requestFocus() }; true } // back to the channel
+                        Key.DirectionRight -> true // nothing further right — stay on the row
+                        else -> false
+                    }
+                }
+                .focusable()
+                .clip(RoundedCornerShape(10.dp))
+                .then(if (rowSelected) Modifier.border(Dimens.FocusBorderWidth, colors.focusBorder, RoundedCornerShape(10.dp)) else Modifier),
+        ) {
+            Row(Modifier.horizontalScroll(hScroll)) {
+                val progs = programmes
+                if (progs == null) {
+                    Spacer(Modifier.width(minutesWide(windowStart, windowEnd)).height(ROW_HEIGHT))
+                } else {
+                    ProgrammeStrip(progs, windowStart, windowEnd, now, highlightTime = if (stripFocused && inCellMode) cursorTime else null)
+                }
             }
         }
     }
+}
+
+/** Move the CELL-stage cursor [delta] programmes within [progs], reporting the new highlighted time. */
+private fun moveGuideCursor(
+    progs: List<EpgProgrammeEntity>?,
+    cursorTime: Long,
+    delta: Int,
+    windowStart: Long,
+    onMove: (Long) -> Unit,
+) {
+    if (progs.isNullOrEmpty()) return
+    val curIdx = progs.indexOfLast { it.startMs <= cursorTime }.let { if (it < 0) 0 else it }
+    val newIdx = (curIdx + delta).coerceIn(0, progs.size - 1)
+    onMove(progs[newIdx].startMs.coerceAtLeast(windowStart))
+}
+
+/** Open the programme the cursor is on (the one airing at [cursorTime], else the nearest before it). */
+private fun openAtCursor(progs: List<EpgProgrammeEntity>, cursorTime: Long, onOpen: (EpgProgrammeEntity) -> Unit) {
+    val p = progs.firstOrNull { cursorTime in it.startMs until it.stopMs }
+        ?: progs.lastOrNull { it.startMs <= cursorTime }
+        ?: progs.firstOrNull()
+    p?.let(onOpen)
 }
 
 /** Lays a channel's programmes end-to-end across the window, with gap/trailing spacers so every row is the same total width (keeping the shared scroll aligned). */
@@ -311,7 +598,7 @@ private fun ProgrammeStrip(
     windowStart: Long,
     windowEnd: Long,
     now: Long,
-    onOpen: (EpgProgrammeEntity) -> Unit,
+    highlightTime: Long?,
 ) {
     var cursor = windowStart
     programmes.forEach { p ->
@@ -319,50 +606,51 @@ private fun ProgrammeStrip(
         val stop = p.stopMs.coerceIn(windowStart, windowEnd)
         if (stop <= cursor) return@forEach
         if (start > cursor) { Spacer(Modifier.width(minutesWide(cursor, start))); cursor = start }
-        val isNow = now in p.startMs until p.stopMs
         ProgrammeCell(
             title = p.title,
             timeLabel = "${clock(p.startMs)} – ${clock(p.stopMs)}",
             width = minutesWide(start, stop),
-            isNow = isNow,
-            focusRequester = null,
-            onClick = { onOpen(p) },
+            isNow = now in p.startMs until p.stopMs,
+            highlighted = highlightTime != null && highlightTime in p.startMs until p.stopMs,
         )
         cursor = stop
     }
     if (cursor < windowEnd) Spacer(Modifier.width(minutesWide(cursor, windowEnd)))
 }
 
+/** A single, non-focusable programme block. [highlighted] = the CELL-stage cursor is on it. */
 @Composable
 private fun ProgrammeCell(
     title: String,
     timeLabel: String,
     width: Dp,
     isNow: Boolean,
-    focusRequester: FocusRequester?,
-    onClick: () -> Unit,
+    highlighted: Boolean,
 ) {
     val colors = OwnTVTheme.colors
+    val bg = when {
+        highlighted -> colors.card
+        isNow -> colors.primaryContainer
+        else -> colors.surfaceContainerHigh
+    }
+    val onBg = if (isNow && !highlighted) colors.onPrimaryContainer else colors.onSurface
     Box(Modifier.width(width).height(ROW_HEIGHT).padding(end = 4.dp)) {
-        FocusableSurface(
-            onClick = onClick,
-            modifier = (focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier).fillMaxSize(),
-            shape = RoundedCornerShape(10.dp),
-            selected = isNow,
-            selectedContainerColor = colors.primaryContainer,
+        Box(
+            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(bg)
+                .then(if (highlighted) Modifier.border(Dimens.FocusBorderWidth, colors.focusBorder, RoundedCornerShape(10.dp)) else Modifier),
             contentAlignment = Alignment.CenterStart,
-        ) { focused ->
+        ) {
             Column(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.Center) {
                 Text(
                     title,
                     style = MaterialTheme.typography.titleSmall,
-                    color = if (isNow) colors.onPrimaryContainer else colors.onSurface,
+                    color = onBg,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     if (isNow) "NOW · $timeLabel" else timeLabel,
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (isNow) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                    color = if (isNow && !highlighted) colors.onPrimaryContainer else colors.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -371,7 +659,14 @@ private fun ProgrammeCell(
 }
 
 @Composable
-private fun ProgrammeDetailDialog(channelName: String, programme: EpgProgrammeEntity, onWatch: () -> Unit, onDismiss: () -> Unit) {
+private fun ProgrammeDetailDialog(
+    channelName: String,
+    programme: EpgProgrammeEntity,
+    canCatchup: Boolean,
+    onWatch: () -> Unit,
+    onPlayCatchup: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     val colors = OwnTVTheme.colors
     val fr = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
@@ -391,7 +686,13 @@ private fun ProgrammeDetailDialog(channelName: String, programme: EpgProgrammeEn
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
-                OwnTVButton("Watch channel", onClick = onWatch, icon = OwnTVIcon.PLAY, modifier = Modifier.focusRequester(fr))
+                // Catch-up channels: replay this programme from its start (seekable archive playback).
+                if (canCatchup) {
+                    OwnTVButton("Watch from start", onClick = onPlayCatchup, icon = OwnTVIcon.PLAY, modifier = Modifier.focusRequester(fr))
+                    OwnTVButton("Watch channel", onClick = onWatch, style = OwnTVButtonStyle.SECONDARY)
+                } else {
+                    OwnTVButton("Watch channel", onClick = onWatch, icon = OwnTVIcon.PLAY, modifier = Modifier.focusRequester(fr))
+                }
             }
         }
     }

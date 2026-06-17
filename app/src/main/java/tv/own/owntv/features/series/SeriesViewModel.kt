@@ -68,7 +68,15 @@ class SeriesViewModel(
 ) : ViewModel() {
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
-    private val ctx = MutableStateFlow(Ctx(-1L, emptyList()))
+    // Observe the active profile's sources reactively so adding/removing a playlist refreshes Series
+    // immediately (was read once at startup, so a new playlist showed nothing until app restart).
+    private val ctx: StateFlow<Ctx> = settings.activeProfileId
+        .flatMapLatest { pid ->
+            if (pid < 0) flowOf(Ctx(pid, emptyList()))
+            else sourceDao.observeForProfile(pid).map { srcs -> Ctx(pid, srcs.map { it.id }) }
+        }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
 
     /** List ordering for this section (Provider order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortSeries
@@ -105,10 +113,6 @@ class SeriesViewModel(
     val episodesLoading: StateFlow<Boolean> = _episodesLoading.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            val pid = settings.activeProfileId.first()
-            ctx.value = Ctx(pid, sourceDao.sourceIdsForProfile(pid))
-        }
         // Periodically persist the playing episode's resume position (same cadence as movies).
         // Episodes were previously *read* on play but never saved — resume never actually worked.
         viewModelScope.launch {

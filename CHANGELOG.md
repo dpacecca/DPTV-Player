@@ -1,5 +1,68 @@
 # Changelog
 
+## v3.0.0 — 2026-06-17
+
+*Big release — bundling the open feature requests + Catch-up TV.*
+
+> 💬 **Join us on Telegram** — **Settings → About** now shows the OwnTV **Telegram group** link with a
+> **QR code** you can scan from your phone to join the community (also added to the README).
+
+### ✨ New features
+
+- **Browse the TV Guide timeline** — navigating the guide is now two-stage: press **Right** on a channel
+  to select its **whole programme row**, then **OK** to step in and move through programmes with
+  **Left/Right** (the row scrolls with you). **OK** on a programme opens it (watch / *Watch from start*
+  for catch-up), and **Up/Down** jumps to the next channel at the same time. **Back** steps back out.
+- **Catch-up TV (archive)** — for providers that offer it, the TV Guide now lets you **watch programmes
+  that already aired**. When you have catch-up channels, the guide extends **back in time** (up to ~2
+  days, depending on your EPG) — scroll **left** to reach earlier programmes, open one and pick **Watch
+  from start** to replay it from the archive (seekable, with a progress bar). The guide opens at *now*,
+  with past shows to the left. Works with Xtream (`tv_archive`) and M3U playlists with `catchup` tags.
+  If catch-up plays the wrong programme, **Settings → Playback → Catch-up time** lets you set the
+  timezone it uses — your **device's**, or a **manual UTC offset** (UTC−12…+14) — that your provider needs.
+- **Auto-match your channels to the guide** — the TV Guide has a new **Auto-match EPG** button that
+  links channels whose tvg-id is missing or doesn't line up with your EPG feed by matching them **by
+  name** (ignoring HD/country tags etc.). Confident matches are applied automatically; the rest are
+  shown in a quick **review** list to accept or skip (with **Accept all** / **Skip all** shortcuts).
+  Matches are saved per profile and survive re-syncing. (Fixes #13.)
+- **Match a channel's EPG from the Guide** — **long-press a channel** in the TV Guide, then choose
+  **Auto-match** (match just that channel by name) or **Pick manually** (choose its guide channel from
+  the full list, or clear the override). The choice is saved per profile and survives re-syncing. (Fixes #10.)
+- **See what's coming up in Live TV** — the channel info overlay now shows a **"Later"** row with the
+  next few programmes after *Now/Next*, so you can see the upcoming schedule without opening the Guide.
+  (Fixes #11.)
+- **Change channels with the D-pad** — while watching a channel fullscreen with the controls
+  hidden, **D-pad Up/Down** — plus the **media ⏮/⏭** keys and **CH+/CH−** — now switch channels, so
+  remotes without dedicated channel buttons (e.g. Fire TV) can zap too. When the controls are showing,
+  Up/Down navigate them as before. Zapping also **wraps around** — past the last channel it loops to the
+  first (and vice-versa) instead of dead-ending. (Fixes #9.)
+- **Sort the TV Guide** — the Guide has its own **sort** button: **A–Z**, **Provider** order, **Live TV**
+  (mirrors your Live TV sort), or **Catch-up** (channels with archive first, so you can find them fast).
+  (Fixes #12.)
+- **See a channel's real resolution before you watch** — the Live TV preview now shows the **actual
+  stream resolution** (e.g. `1080p`, `720p`, `4K`) as a badge on the preview, so a channel named
+  "…4K" that's really 1080p no longer fools you.
+
+### 🐛 Bug fixes
+
+- **New playlists show up immediately** — after deleting a playlist and adding another, Live TV / Movies /
+  Series now refresh **right away** instead of staying empty until you restarted the app.
+- **Huge playlists import fully again** — some Xtream panels cut off very large movie/series lists
+  mid-download, which aborted the whole import with an *"Unterminated string…"* error and left you
+  unable to sign in. Now, if the bulk list truncates, OwnTV automatically **fetches it category by
+  category** (small requests the server can handle) so you get your **full library** — and items keep
+  populating as it goes. (Fixes #15.)
+- **Faster channel switching in Live TV** — switching channels no longer feels slow or briefly "broken".
+  The player now recognises that the *previous* stream's cleanup isn't the *new* stream failing, so it
+  skips the needless retries/backoff (and the occasional false "Couldn't play this stream" flash) that
+  could delay the preview. The Live preview pane also shows a **loading spinner** while a stream is
+  opening. *(Thanks to **[@codeVerine](https://github.com/codeVerine)** — PR #14.)*
+- **Left from the channel list returns to your category** — pressing **Left** into the category rail now
+  lands on the folder you're actually in (e.g. the current channel's category) instead of jumping to the
+  search box at the top. The category search is still there — press **Up** from the top category to reach it.
+- **"Now watching" card shows the right channel** — the channel info card no longer keeps the *previous*
+  channel's name after a quick zap; it updates the instant the stream changes. (#9)
+
 ## v2.2.4 — 2026-06-14
 
 - **Back from a series returns to the right poster** — pressing **Back** inside a series (or its

@@ -35,6 +35,7 @@ class SettingsViewModel(
     private val connectivity: ConnectivityObserver,
     private val epgDao: tv.own.owntv.core.database.dao.EpgDao,
     private val importFinalizer: tv.own.owntv.core.sync.ImportFinalizer,
+    private val channelDao: tv.own.owntv.core.database.dao.ChannelDao,
 ) : ViewModel() {
 
     /** Stored EPG programme count for a source — the row shows it as the EPG status. */
@@ -55,6 +56,14 @@ class SettingsViewModel(
     val sources: StateFlow<List<SourceEntity>> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf(emptyList()) else sourceRepository.observeSources(pid) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** How many of the active profile's channels advertise catch-up — for the Catch-up settings note. */
+    val catchupChannelCount: StateFlow<Int> = sources
+        .flatMapLatest { srcs ->
+            val ids = srcs.map { it.id }
+            kotlinx.coroutines.flow.flow { emit(if (ids.isEmpty()) 0 else channelDao.countCatchup(ids)) }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     /** Configured download folder ("" = app-specific storage). */
     val downloadRoot: StateFlow<String> = settings.downloadRoot
@@ -91,6 +100,23 @@ class SettingsViewModel(
 
     fun setHdrEnabled(enabled: Boolean) {
         viewModelScope.launch { settings.setHdrEnabled(enabled) }
+    }
+
+    val catchupTimezone: StateFlow<SettingsRepository.CatchupTimezone> = settings.catchupTimezone
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.CatchupTimezone.MANUAL)
+
+    val catchupOffsetMinutes: StateFlow<Int> = settings.catchupOffsetMinutes
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    val catchupOffsetRangeMinutes: IntRange = settings.catchupOffsetRangeMinutes
+
+    fun setCatchupTimezone(mode: SettingsRepository.CatchupTimezone) {
+        viewModelScope.launch { settings.setCatchupTimezone(mode) }
+    }
+
+    /** Nudge the manual UTC offset by [deltaMinutes] (the picker's − / + steps), clamped to range. */
+    fun adjustCatchupOffset(deltaMinutes: Int) {
+        viewModelScope.launch { settings.setCatchupOffsetMinutes(catchupOffsetMinutes.value + deltaMinutes) }
     }
 
     // --- Video Player Settings ---

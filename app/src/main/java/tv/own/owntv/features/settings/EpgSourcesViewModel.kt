@@ -25,6 +25,7 @@ class EpgSourcesViewModel(
     private val settings: SettingsRepository,
     private val connectivity: ConnectivityObserver,
     private val epgDao: tv.own.owntv.core.database.dao.EpgDao,
+    private val channelDao: tv.own.owntv.core.database.dao.ChannelDao,
 ) : ViewModel() {
 
     sealed interface SyncState {
@@ -82,9 +83,16 @@ class EpgSourcesViewModel(
 
     fun resetSync() { _sync.value = SyncState.Idle }
 
-    /** Stored programme/channel counts for a source's status line. */
-    suspend fun counts(id: Long): Pair<Int, Int> =
-        epgDao.countGuideChannels(listOf(id)) to epgDao.countForSources(listOf(id))
+    /** A source's status line: guide channels, stored programmes, and how many of the profile's
+     *  channels advertise catch-up (the last is playlist-wide, shown so it's visible alongside the EPG). */
+    suspend fun counts(id: Long): Triple<Int, Int, Int> {
+        val channels = epgDao.countGuideChannels(listOf(id))
+        val programmes = epgDao.countForSources(listOf(id))
+        val pid = settings.activeProfileId.first()
+        val playlistIds = if (pid < 0) emptyList() else sourceRepository.observeSources(pid).first().map { it.id }
+        val catchup = if (playlistIds.isEmpty()) 0 else channelDao.countCatchup(playlistIds)
+        return Triple(channels, programmes, catchup)
+    }
 
     /** Playlists whose own EPG can pre-fill the add form (Xtream xmltv.php / M3U url-tvg). */
     suspend fun playlistEpgOptions(): List<PlaylistEpg> {

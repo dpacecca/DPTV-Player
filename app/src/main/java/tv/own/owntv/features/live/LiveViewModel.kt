@@ -62,7 +62,7 @@ sealed interface LiveKey {
 data class LiveRailItem(val key: LiveKey, val abbr: String, val title: String, val icon: OwnTVIcon? = null)
 
 /** Now-playing + up-next EPG for the focused channel (null entries when the guide is unavailable). */
-data class EpgNowNext(val now: XtEpgEntry?, val next: XtEpgEntry?)
+data class EpgNowNext(val now: XtEpgEntry?, val next: XtEpgEntry?, val upcoming: List<XtEpgEntry> = emptyList())
 
 class LiveViewModel(
     private val channelDao: ChannelDao,
@@ -99,7 +99,15 @@ class LiveViewModel(
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
 
-    private val ctx = MutableStateFlow(Ctx(-1L, emptyList()))
+    // Observe the active profile's sources REACTIVELY so adding/removing a playlist refreshes Live TV
+    // immediately (it used to be read once at startup, so a new playlist showed nothing until restart).
+    private val ctx: StateFlow<Ctx> = settings.activeProfileId
+        .flatMapLatest { pid ->
+            if (pid < 0) flowOf(Ctx(pid, emptyList()))
+            else sourceDao.observeForProfile(pid).map { srcs -> Ctx(pid, srcs.map { it.id }) }
+        }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
 
     private val _selected = MutableStateFlow<LiveKey>(LiveKey.All)
     val selectedKey: StateFlow<LiveKey> = _selected.asStateFlow()
@@ -119,13 +127,6 @@ class LiveViewModel(
         .distinctUntilChanged { a, b -> a?.id == b?.id }
         .mapLatest { ch -> ch?.let { loadEpg(it) } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-
-    init {
-        viewModelScope.launch {
-            val pid = settings.activeProfileId.first()
-            ctx.value = Ctx(pid, sourceDao.sourceIdsForProfile(pid))
-        }
-    }
 
     /** This profile's hide/rename/reorder customizations for Live TV. */
     private val custom: StateFlow<SectionCustomizations> = ctx
@@ -292,14 +293,15 @@ class LiveViewModel(
         ensurePlaying(channel)
     }
 
-    /** Zap to the neighbouring channel ([delta] = +1 down / -1 up) within the opened list. */
+    /** Zap to the neighbouring channel ([delta] = +1 down / -1 up) within the opened list, wrapping
+     *  around at the ends so you never dead-end (last → first, first → last). */
     fun zap(delta: Int) {
         val list = zapList
         if (list.size < 2) return
         val i = list.indexOfFirst { it.id == _previewChannel.value?.id }
         if (i < 0) return
-        val next = (i + delta).coerceIn(0, list.size - 1)
-        if (next == i) return // already at an end — clamp
+        val next = ((i + delta) % list.size + list.size) % list.size // modulo wrap (handles negatives)
+        if (next == i) return
         ensurePlaying(list[next])
     }
 
@@ -344,9 +346,10 @@ class LiveViewModel(
         val epgKey = (custom.value.epgMatches[CustomizeKeys.channel(ch)] ?: ch.epgChannelId)?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
         if (epgKey != null) {
             val nowProg = epgDao.nowPlaying(epgKey, now)
-            val nextProg = epgDao.upcoming(epgKey, now, 2).first().firstOrNull { it.startMs > (nowProg?.startMs ?: 0) }
+            val future = epgDao.upcoming(epgKey, now, 6).first().filter { it.startMs > (nowProg?.startMs ?: 0) }
+            val nextProg = future.firstOrNull()
             if (nowProg != null || nextProg != null) {
-                val result = EpgNowNext(nowProg?.toXt(), nextProg?.toXt())
+                val result = EpgNowNext(nowProg?.toXt(), nextProg?.toXt(), future.drop(1).take(4).map { it.toXt() })
                 epgCache[ch.id] = CachedEpg(now, result)
                 return@withContext result
             }
@@ -356,12 +359,12 @@ class LiveViewModel(
         val streamId = ch.remoteId ?: return@withContext null
         val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
         if (source.type != SourceType.XTREAM) return@withContext null
-        val entries = runCatching { xtreamClient.getShortEpg(source, streamId, limit = 6) }
+        val entries = runCatching { xtreamClient.getShortEpg(source, streamId, limit = 8) }
             .getOrNull().orEmpty()
         val current = entries.firstOrNull { it.startMs <= now && it.stopMs > now }
             ?: entries.firstOrNull { it.stopMs > now }
-        val next = entries.firstOrNull { it.startMs > (current?.startMs ?: now) }
-        val result = EpgNowNext(current, next)
+        val future = entries.filter { it.startMs > (current?.startMs ?: now) }.sortedBy { it.startMs }
+        val result = EpgNowNext(current, future.firstOrNull(), future.drop(1).take(4))
         epgCache[ch.id] = CachedEpg(now, result)
         result
     }

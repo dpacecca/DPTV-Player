@@ -37,15 +37,15 @@ val appModule = module {
     // profileDao, sourceDao, settings
     viewModel { ProfilesViewModel(get(), get(), get()) }
     // sourceDao, sourceRepository, settings, connectivity, epgDao, importFinalizer
-    viewModel { SettingsViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { SettingsViewModel(get(), get(), get(), get(), get(), get(), get()) }
     // downloadDao, settings, downloadManager, player
     viewModel { DownloadsViewModel(get(), get(), get(), get()) }
-    // settings, sourceRepository, channelDao, epgDao, epgRepository, epgSourceStore, connectivity, customize, historyDao, player
-    viewModel { EpgViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    // settings, sourceRepository, channelDao, epgDao, epgRepository, epgSourceStore, connectivity, customize, historyDao, sourceDao, xtream, player
+    viewModel { EpgViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     // settings, sourceDao, categoryDao, customizationStore
     viewModel { CustomizeViewModel(get(), get(), get(), get()) }
     // backupManager
     viewModel { BackupViewModel(get()) }
     // store, epgRepository, sourceRepository, settings, connectivity, epgDao
-    viewModel { tv.own.owntv.features.settings.EpgSourcesViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { tv.own.owntv.features.settings.EpgSourcesViewModel(get(), get(), get(), get(), get(), get(), get()) }
 }

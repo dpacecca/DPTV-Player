@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -45,17 +46,18 @@ class CustomizeViewModel(
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
 
-    private val ctx = MutableStateFlow(Ctx(-1L, emptyList()))
+    // Observe the active profile's sources reactively so adding/removing a playlist refreshes the
+    // customize lists immediately (was read once at startup, so changes needed an app restart).
+    private val ctx: StateFlow<Ctx> = settings.activeProfileId
+        .flatMapLatest { pid ->
+            if (pid < 0) flowOf(Ctx(pid, emptyList()))
+            else sourceDao.observeForProfile(pid).map { srcs -> Ctx(pid, srcs.map { it.id }) }
+        }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
 
     private val _section = MutableStateFlow(MediaType.LIVE)
     val section: StateFlow<MediaType> = _section.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            val pid = settings.activeProfileId.first()
-            ctx.value = Ctx(pid, sourceDao.sourceIdsForProfile(pid))
-        }
-    }
 
     fun selectSection(type: MediaType) {
         _section.value = type

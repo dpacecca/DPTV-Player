@@ -37,6 +37,18 @@ targets **Android TV only** (leanback launcher, D-pad-first UI).
 
 ---
 
+## 💬 Community
+
+Questions, ideas, bug reports — or just want to follow along? **Join the OwnTV Telegram group:**
+
+### 👉 [t.me/owntvplayer](https://t.me/owntvplayer)
+
+Scan to join from your phone:
+
+<a href="https://t.me/owntvplayer"><img src="extras/telegram_qr_code.jpg" alt="Scan to join the OwnTV Telegram group" width="170"></a>
+
+---
+
 ## ✨ Features
 
 ### 🎬 Playback (libmpv / FFmpeg)
@@ -48,6 +60,9 @@ targets **Android TV only** (leanback launcher, D-pad-first UI).
   streams the hardware decoder can't handle.
 - Custom TV HUD: scrubbable seek bar, prev/next, audio/subtitle/speed pickers, zoom & aspect modes,
   volume, and auto-hide controls.
+- **Channel zapping** — while watching fullscreen with the controls hidden, **D-pad Up/Down** (plus
+  **CH+/CH−** and the **media ⏮/⏭** keys) switch channels and wrap around at the ends, so remotes
+  without dedicated channel buttons (e.g. Fire TV) can zap too.
 - Large demuxer cache for smooth 4K/8K streams; **HDR passthrough** when the video and TV support it.
 - **Mini-player / PiP** — dock a movie, episode **or live channel** to a corner and keep browsing
   (it keeps streaming across the whole app); selecting another channel updates the docked window,
@@ -58,7 +73,9 @@ targets **Android TV only** (leanback launcher, D-pad-first UI).
   mockup documenting the full player HUD, PiP, popup menus, and remote-key mappings.
 
 ### 🧭 Browse
-- **Live TV**, **Movies**, **Series**, **Downloads**, and a full **EPG Guide**.
+- **Live TV**, **Movies**, **Series**, **Downloads**, and a full **EPG Guide**. The Live preview pane
+  shows the channel's video, now/next/later, and the **real stream resolution** (e.g. `1080p`/`4K`) —
+  so a channel named "…4K" that's actually 1080p can't fool you.
 - Folder rail with section-specific **Favorites** and **History** — it expands on focus to show **full
   category names**, with a **category search box** at the top to filter hundreds of groups by name.
   Inline per-folder search and a cross-section **global search** too — all TV-style: search bars take
@@ -69,15 +86,23 @@ targets **Android TV only** (leanback launcher, D-pad-first UI).
 - Built for scale — tested with ~50k channels / ~168k movies via streaming import and Paging 3.
 
 ### 🗓️ EPG
-- A full **time × channel guide grid** (XMLTV), plus per-channel **now/next** in the Live preview.
+- A full **time × channel guide grid** (XMLTV), plus per-channel **now / next / later** in the Live preview.
+- **Catch-up TV (archive)** — for providers that support it (Xtream `tv_archive` / M3U `catchup`),
+  watch programmes that **already aired**: the guide extends back in time, and *Watch from start*
+  replays a programme from the archive (seekable). A **Catch-up time** setting (device timezone or a
+  manual UTC offset) handles panels that index their archive in local time.
+- **Smart EPG matching** — an **Auto-match EPG** button links channels to the guide **by name** when
+  their tvg-id is missing or wrong (ignoring HD/country tags); confident matches apply automatically,
+  the rest go to a quick review list. Or **long-press a channel** to auto-match or pick its guide entry
+  manually. All matches are per profile and survive re-syncs.
+- **Two-stage guide navigation** — press **Right** on a channel to select its **whole programme row**,
+  then **OK** to browse programmes with Left/Right (Up/Down jumps channels at the same time), plus a
+  **sort** button (A–Z / Provider / Live TV / Catch-up).
 - **Multiple EPG sources** — add any number of XMLTV feeds in **Settings → EPG Sources** (edit /
   delete / re-sync); they merge into the guide. Adding a playlist **auto-syncs its EPG** (Xtream
-  `xmltv.php` / M3U `url-tvg`), and you can **manually match** any channel to a guide entry when the
-  auto-match misses (per profile, survives re-syncs).
-- **Tune from the guide**: OK on a channel tunes straight to it; programme details have a
-  *Watch channel* button.
-- Clear status: the Guide shows *"Guide loaded: N channels · M programmes"*, and each EPG source
-  shows its own sync state.
+  `xmltv.php` / M3U `url-tvg`).
+- Clear status: the Guide shows *"Guide loaded: N channels · M programmes · K with catch-up"*, and each
+  EPG source shows its own sync state.
 
 ### 👥 Profiles
 - Multiple profiles with their own favorites/history/resume, optional **PIN locks** (salted hash) and a
