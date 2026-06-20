@@ -185,21 +185,8 @@ class EpgViewModel(
 
     /** Build the catch-up URL for a [programme] on [channel], or null if the provider can't serve it. */
     private suspend fun catchupUrlFor(channel: ChannelEntity, programme: EpgProgrammeEntity): String? {
-        if (!channel.catchup) return null
         val source = sourceDao.getById(channel.sourceId) ?: return null
-        return when (source.type) {
-            SourceType.XTREAM -> channel.remoteId?.let { streamId ->
-                val durationMin = (((programme.stopMs - programme.startMs) / 60_000L).toInt()).coerceAtLeast(1)
-                val tz = when (settings.catchupTimezone.first()) {
-                    SettingsRepository.CatchupTimezone.DEVICE -> java.util.TimeZone.getDefault()
-                    SettingsRepository.CatchupTimezone.MANUAL ->
-                        java.util.SimpleTimeZone(settings.catchupOffsetMinutes.first() * 60_000, "catchup")
-                }
-                xtream.timeshiftUrl(source, streamId, programme.startMs, durationMin, tz)
-            }
-            SourceType.M3U -> CatchupUrl.forM3u(channel.streamUrl, null, channel.catchupSource, programme.startMs, programme.stopMs)
-            else -> null
-        }
+        return CatchupUrl.forSource(channel, programme, source, settings.resolveCatchupTimeZone(), xtream)
     }
 
     /** True when a programme can be played from the archive: a catch-up channel, already started, and

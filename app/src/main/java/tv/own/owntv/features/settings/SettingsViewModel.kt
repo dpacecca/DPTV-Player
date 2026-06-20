@@ -102,6 +102,20 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setHdrEnabled(enabled) }
     }
 
+    val audioPassthrough: StateFlow<Boolean> = settings.audioPassthrough
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setAudioPassthrough(enabled: Boolean) {
+        viewModelScope.launch { settings.setAudioPassthrough(enabled) }
+    }
+
+    val autoPlayNext: StateFlow<Boolean> = settings.autoPlayNext
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setAutoPlayNext(enabled: Boolean) {
+        viewModelScope.launch { settings.setAutoPlayNext(enabled) }
+    }
+
     val catchupTimezone: StateFlow<SettingsRepository.CatchupTimezone> = settings.catchupTimezone
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.CatchupTimezone.MANUAL)
 

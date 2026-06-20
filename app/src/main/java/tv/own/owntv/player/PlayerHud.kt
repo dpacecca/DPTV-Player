@@ -425,18 +425,35 @@ private fun SeekBar(positionMs: Long, durationMs: Long, onSeek: (Long) -> Unit) 
 private fun TrackDialog(title: String, tracks: List<TrackOption>, onSelect: (TrackOption) -> Unit, onOff: (() -> Unit)?, onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
+    // Open with focus on the CURRENTLY-selected track (so re-opening to change it lands on the right row),
+    // else the "Off" row if nothing's selected, else the first track. The requestFocus must run from
+    // INSIDE the target row (below) — a top-level LaunchedEffect fires before the LazyColumn has composed
+    // that row, so requestFocus would throw "not initialized" and focus would fall back to the first item.
+    val selectedIndex = tracks.indexOfFirst { it.selected }
+    val focusOff = onOff != null && selectedIndex < 0
     DialogScaffold(title = title, onDismiss = onDismiss) {
         if (tracks.isEmpty() && onOff == null) {
             item { Text("No tracks available.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
         }
         if (onOff != null) {
-            item { OptionRow(label = "Off", selected = tracks.none { it.selected }, modifier = Modifier.focusRequester(focus), onClick = onOff) }
+            item {
+                if (focusOff) LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos {}; runCatching { focus.requestFocus() } }
+                OptionRow(label = "Off", selected = selectedIndex < 0, modifier = if (focusOff) Modifier.focusRequester(focus) else Modifier, onClick = onOff)
+            }
         }
         items(tracks.size) { index ->
             val track = tracks[index]
-            OptionRow(label = track.label, selected = track.selected, modifier = if (onOff == null && index == 0) Modifier.focusRequester(focus) else Modifier, onClick = { onSelect(track) })
+            val focusThis = index == selectedIndex || (selectedIndex < 0 && onOff == null && index == 0)
+            if (focusThis) LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos {}; runCatching { focus.requestFocus() } }
+            OptionRow(
+                // Image-based subs (PGS/VOBSUB/DVB) play via the ExoPlayer handoff on VOD — mark them so
+                // it's clear they're a different kind of track, but they're fully selectable.
+                label = if (!track.image) track.label else "${track.label}  ·  image",
+                selected = track.selected,
+                modifier = if (focusThis) Modifier.focusRequester(focus) else Modifier,
+                onClick = { onSelect(track) },
+            )
         }
     }
 }

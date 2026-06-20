@@ -33,6 +33,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -268,17 +269,24 @@ private fun EpisodeView(
     val activeSeason = if (seasons.contains(selectedSeason)) selectedSeason else seasons.firstOrNull() ?: 1
     val seasonEpisodes = episodes.filter { it.seasonNumber == activeSeason }
 
-    // Opening a show: grab focus on the first episode (the grid that had focus is unmounted, so
-    // focus would otherwise die and fall back to the sidebar). When entering via player-return,
-    // mark done WITHOUT focusing — the restore below owns focus, and this effect re-runs when
-    // restoreFocus flips back to false (it must not steal focus to episode 1 then).
-    LaunchedEffect(seasonEpisodes.isNotEmpty(), restoreFocus) {
+    // Opening a show: grab focus on the LAST-WATCHED episode if there is one (#22), else the first
+    // episode (the grid that had focus is unmounted, so focus would otherwise die and fall back to the
+    // sidebar). Waits for !loading so the seeded last-watched id/season from the VM is settled. When
+    // entering via player-return, mark done WITHOUT focusing — the restore below owns focus.
+    LaunchedEffect(loading, seasonEpisodes.isNotEmpty(), restoreFocus) {
         if (initialFocused) return@LaunchedEffect
         if (restoreFocus) { initialFocused = true; return@LaunchedEffect }
-        if (seasonEpisodes.isNotEmpty()) {
+        if (!loading && seasonEpisodes.isNotEmpty()) {
             initialFocused = true
+            val idx = lastPlayedId?.let { id -> seasonEpisodes.indexOfFirst { it.id == id } } ?: -1
             kotlinx.coroutines.delay(80)
-            runCatching { firstEpFocus.requestFocus() }
+            if (idx >= 0) {
+                runCatching { epListState.scrollToItem(idx) }
+                kotlinx.coroutines.delay(40)
+                runCatching { selFocus.requestFocus() }
+            } else {
+                runCatching { firstEpFocus.requestFocus() }
+            }
         }
     }
 
@@ -348,7 +356,7 @@ private fun EpisodeView(
                             val epModifier = Modifier.weight(1f)
                                 .then(if (ep.id == lastPlayedId) Modifier.focusRequester(selFocus) else Modifier)
                                 .then(if (index == 0) Modifier.focusRequester(firstEpFocus) else Modifier)
-                            EpisodeRow(episode = ep, onClick = { startEpisode(ep) }, modifier = epModifier)
+                            EpisodeRow(episode = ep, lastWatched = ep.id == lastPlayedId, onClick = { startEpisode(ep) }, modifier = epModifier)
                             EpisodeDownloadBtn(download = downloads[ep.id]) { vm.downloadEpisode(ep) }
                         }
                     }
@@ -417,7 +425,7 @@ private fun EpisodeDownloadBtn(download: DownloadEntity?, onClick: () -> Unit) {
 }
 
 @Composable
-private fun EpisodeRow(episode: EpisodeEntity, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun EpisodeRow(episode: EpisodeEntity, lastWatched: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = OwnTVTheme.colors
     FocusableSurface(
         onClick = onClick,
@@ -432,7 +440,16 @@ private fun EpisodeRow(episode: EpisodeEntity, onClick: () -> Unit, modifier: Mo
             ) {
                 Text(episode.episodeNumber.toString(), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
             }
-            Text(episode.name, style = MaterialTheme.typography.titleMedium, color = if (focused) colors.primary else colors.onSurface, modifier = Modifier.weight(1f))
+            Text(episode.name, style = MaterialTheme.typography.titleMedium, color = if (focused) colors.primary else colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            // Mark the episode you last watched so it's findable even when it isn't focused (#22).
+            if (lastWatched) {
+                Text(
+                    "Last watched",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onPrimaryContainer,
+                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 3.dp),
+                )
+            }
             OwnTVIcon(OwnTVIcon.PLAY, tint = if (focused) colors.primary else colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
         }
     }

@@ -1,9 +1,56 @@
 # Changelog
 
-## v3.0.1 — Unreleased
+## v3.1.0 — Unreleased
+
+### ✨ New features
+
+- **Catch-up straight from Live TV** — focus a catch-up channel in **Live TV** and the preview now has a
+  **Catch-up** button: it opens a simple list of recent programmes — pick one and it **replays from the
+  start**. No more hunting through the Guide timeline. (The Guide still works for browsing too.)
+- **Hide/show a whole range of categories at once** — in **Settings → Customize**, long-press a category's
+  Show/Hide button to start a span, then press Show/Hide on another category to select everything in
+  between and hide or show it all in one go — a big time-saver for providers with hundreds of categories.
+  (by @dan-maloney, #20)
+- **Auto-play next episode** — when an episode finishes, OwnTV automatically starts the next one, and
+  **rolls into the next season** after a season's last episode — great for binge-watching. There's a new
+  **Settings → Auto-play next episode** toggle (on by default) for anyone who prefers manual playback. (#21)
+- **Series open on your last-watched episode** — reopening a show now jumps straight to the episode you
+  last watched (correct season, scrolled into view and focused) instead of always starting at episode 1,
+  and that episode is tagged **"Last watched"** so it's easy to spot. (#22)
+- **Surround sound passthrough** — a new **Settings → Surround passthrough** toggle sends **Dolby
+  (AC-3/E-AC-3, incl. Atmos) and DTS** audio straight to your TV or AV receiver to decode, instead of
+  mixing down to stereo. OwnTV only passes through the formats your audio output reports it can handle,
+  and you can switch it off if a stream goes silent. (Off by default.)
 
 ### 🐛 Bug fixes
 
+- **Faster channel zapping** — live channels and HLS streams now start with a **trimmed stream probe**,
+  so the picture comes up noticeably quicker when switching channels. If a trimmed probe ever misses a
+  stream's audio (rare, on sparse feeds), OwnTV automatically **re-probes that channel in full** so it
+  still plays with sound. On-demand movies/series keep the full probe for rock-solid HDR/audio detection.
+- **Live channels that dropped out every few seconds now play continuously** — some live servers close the
+  connection on a schedule (common with 4K feeds); OwnTV now **reconnects automatically at the stream level**
+  and keeps playing, instead of stalling and re-buffering on a loop.
+- **Smoother video on TVs** — the player now asks the display to **match the video's frame rate** (e.g.
+  switch a 60 Hz panel to 24/48 Hz for 24fps content). On TVs that support it, this removes the subtle
+  *judder* of film-rate content on a fixed 60 Hz screen (the "looks slightly slow/uneven, but not
+  buffering" feel). No effect on panels that can't switch — it just stays as-is.
+- **Installs on non-TV devices now** — OwnTV required the Android **TV (leanback)** feature, so it
+  wouldn't install on plain phones / non-TV boxes (incl. some armv7a Android 11 devices) and showed
+  **no launcher icon** on phones. It's now installable on regular Android too, with a normal home-screen
+  icon — while still appearing in the TV launcher on Android TV. (Also resolves #16.)
+- **EPG sources that failed with a "protocol error" now load** — some EPG/host CDNs have flaky HTTP/2
+  and would reset large downloads (e.g. a big US guide) with *"stream was reset: PROTOCOL_ERROR"*.
+  OwnTV now uses HTTP/1.1 for its downloads, which those servers handle reliably. (#17)
+- **Image-based subtitles now play smoothly** — text subtitles (SRT/ASS) display on the fast HDR path as
+  before. **Image-based** subtitles (PGS/VOBSUB/DVB) on **movies & series** now display *without* slowing
+  the video down: picking one seamlessly hands that title to a second engine (ExoPlayer) that keeps the
+  picture on the same zero-copy/HDR path and draws the bitmap subtitle on its own layer — no more stutter,
+  and still only **one** connection to your provider. (The old approach composited inside the video and
+  could make 4K/HDR unwatchable on TV hardware — that's gone.) Image tracks are tagged **"image"** in the
+  picker; turning subtitles off or choosing a text track hands straight back. If a title's audio is a
+  format the second engine can't play (e.g. DTS), it stays on the main engine and tells you. (Image
+  subtitles aren't shown on live channels, where they're virtually never present.)
 - **Big-library import no longer gets stuck** — the per-category fallback (for providers that truncate
   the bulk movie/series list, #15) used to make the import counter look like it was *restarting* each
   category, and on panels that **ignore the category filter** it could loop forever re-fetching the same

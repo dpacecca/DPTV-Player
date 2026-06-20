@@ -14,13 +14,14 @@
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
 
-    <!-- This is an Android TV app: touchscreen is not required, leanback is. -->
+    <!-- TV-first app, but allow non-TV installs too: touchscreen optional, and leanback is NOT required
+         (required=true blocked plain phones / non-TV armv7a boxes that don't report the leanback feature). -->
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
     <uses-feature
         android:name="android.software.leanback"
-        android:required="true" />
+        android:required="false" />
 
     <application
         android:name=".OwnTVApp"
@@ -53,10 +54,12 @@
             android:banner="@drawable/tv_banner"
             android:exported="true"
             android:theme="@style/Theme.OwnTV">
-            <!-- TV launchers use LEANBACK_LAUNCHER, not the phone LAUNCHER category. -->
+            <!-- LEANBACK_LAUNCHER shows it on TV launchers; LAUNCHER shows it on phone/tablet/box home
+                 screens (so non-TV devices get an app icon, not just an install). -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 

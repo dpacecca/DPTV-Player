@@ -6,6 +6,6 @@ import tv.own.owntv.player.OwnTVPlayer
 
 /** App-wide libmpv player. */
 val playerModule = module {
-    // context, settings, connectivity
-    single { OwnTVPlayer(androidContext(), get(), get()) }
+    // context, settings, connectivity, okHttpClient (for the ExoPlayer image-subtitle handoff)
+    single { OwnTVPlayer(androidContext(), get(), get(), get()) }
 }

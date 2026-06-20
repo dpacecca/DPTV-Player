@@ -121,6 +121,23 @@ class SeriesViewModel(
                 saveEpisodeProgressNow()
             }
         }
+        // Auto-play continuation across seasons: the player advances within a season itself, then signals
+        // here when a season's last episode finishes so we can start the next season's first episode.
+        viewModelScope.launch {
+            player.queueEnded.collect { continueToNextSeason() }
+        }
+    }
+
+    /** A season's last episode finished with auto-play on — start the next season's first episode, if any.
+     *  Matches the just-finished episode by its stream URL (robust to in-season auto-advance). */
+    private fun continueToNextSeason() {
+        val url = player.currentMediaUrl ?: return
+        val all = episodes.value
+        val finished = all.firstOrNull { it.streamUrl == url } ?: return // not one of this series' episodes
+        val nextEpisode = all
+            .filter { it.seasonNumber == finished.seasonNumber + 1 }
+            .minByOrNull { it.episodeNumber } ?: return // no next season — series finished
+        playEpisode(nextEpisode)
     }
 
     /** Saves the currently playing episode's position (matched by stream URL, so prev/next in the
@@ -187,9 +204,19 @@ class SeriesViewModel(
     fun openSeries(s: SeriesEntity) {
         _openedSeries.value = s
         _selectedSeason.value = 1 // reset season when opening a different show
+        _lastPlayedEpisodeId.value = null
         viewModelScope.launch {
             _episodesLoading.value = true
             seriesRepository.loadEpisodes(s)
+            // Jump to where you left off: seed the last-watched episode (and its season) from saved progress
+            // BEFORE clearing loading, so the screen's focus effect lands on it instead of episode 1 (#22).
+            val eps = seriesDao.episodesBySeries(s.id).first()
+            val lastEp = progressDao.lastWatchedEpisodeId(ctx.value.profileId, s.id)
+                ?.let { id -> eps.firstOrNull { it.id == id } }
+            if (lastEp != null) {
+                _selectedSeason.value = lastEp.seasonNumber
+                _lastPlayedEpisodeId.value = lastEp.id
+            }
             _episodesLoading.value = false
         }
     }

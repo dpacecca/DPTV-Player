@@ -32,6 +32,7 @@ import androidx.paging.filter
 import androidx.paging.map
 import tv.own.owntv.core.customize.CustomizationStore
 import tv.own.owntv.core.customize.CustomizeKeys
+import tv.own.owntv.core.epg.CatchupUrl
 import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.customize.applyCustomizations
 import tv.own.owntv.core.database.dao.CategoryDao
@@ -320,6 +321,36 @@ class LiveViewModel(
         }
     }
 
+    // ---- Catch-up from Live TV: pick a recent programme to replay from the archive (#proposal) ----
+
+    /** Recent (already-aired) programmes for a catch-up channel, newest first — drives the Live TV
+     *  catch-up picker. Bounded to the EPG we retain (≈ 2 days) and the channel's archive window. */
+    suspend fun catchupProgrammes(ch: ChannelEntity): List<tv.own.owntv.core.database.entity.EpgProgrammeEntity> = withContext(Dispatchers.IO) {
+        if (!ch.catchup) return@withContext emptyList()
+        val epgKey = (custom.value.epgMatches[CustomizeKeys.channel(ch)] ?: ch.epgChannelId)
+            ?.trim()?.lowercase()?.takeIf { it.isNotEmpty() } ?: return@withContext emptyList()
+        val now = System.currentTimeMillis()
+        val windowMs = (ch.catchupDays.coerceAtLeast(1) * 24L * 60 * 60 * 1000).coerceAtMost(CATCHUP_LOOKBACK_CAP_MS)
+        val ids = ctx.value.sourceIds + epgSourceStore.getAll().map { it.id }
+        epgDao.programmesForChannel(ids, epgKey, now - windowMs, now + 60 * 60 * 1000)
+            .filter { it.startMs <= now }          // already started → catch-up applies
+            .sortedByDescending { it.startMs }      // most recent first
+            .take(80)
+    }
+
+    /** Replay a past programme from the channel's archive (seekable, like the Guide's "Watch from start"). */
+    fun playCatchupProgramme(ch: ChannelEntity, programme: tv.own.owntv.core.database.entity.EpgProgrammeEntity) {
+        viewModelScope.launch {
+            val url = withContext(Dispatchers.IO) {
+                val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
+                CatchupUrl.forSource(ch, programme, source, settings.resolveCatchupTimeZone(), xtreamClient)
+            } ?: return@launch
+            _previewChannel.value = ch
+            // isLive=false → seekable archive; preferSoftware → tolerate mid-GOP archive segments.
+            player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.logoUrl, isLive = false, preferSoftware = true)
+        }
+    }
+
     fun toggleFavorite(channel: ChannelEntity) {
         viewModelScope.launch {
             val pid = ctx.value.profileId
@@ -408,6 +439,7 @@ class LiveViewModel(
             LiveRailItem(LiveKey.History, "HIS", "History", OwnTVIcon.HISTORY),
             LiveRailItem(LiveKey.All, "ALL", "All Channels"),
         )
+        const val CATCHUP_LOOKBACK_CAP_MS = 48L * 60 * 60 * 1000 // bounded by the EPG we retain (~2 days)
     }
 }
 

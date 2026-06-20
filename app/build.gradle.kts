@@ -102,6 +102,12 @@ dependencies {
 
     // Media playback — libmpv (FFmpeg) engine
     implementation(libs.libmpv)
+    // Media3 / ExoPlayer — used ONLY for the VOD + image-subtitle (PGS/VOBSUB/DVB) handoff, where it
+    // keeps video zero-copy AND renders bitmap subs on its own layer (mpv's direct path can't). Not a
+    // sidecar: mpv is stopped first, so the provider only ever sees one connection.
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.datasource.okhttp)
 
     // Image loading
     implementation(libs.coil.compose)

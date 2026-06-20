@@ -103,6 +103,7 @@ fun LiveScreen(
     val firstItemFocus = remember { FocusRequester() }
     var renaming by remember { mutableStateOf<ChannelEntity?>(null) }
     var matchingEpg by remember { mutableStateOf<ChannelEntity?>(null) }
+    var catchupChannel by remember { mutableStateOf<ChannelEntity?>(null) }
     // Returning from fullscreen: scroll to and focus the channel you were watching (waits for the list to load).
     LaunchedEffect(restoreFocus, channels.itemCount) {
         if (!restoreFocus || channels.itemCount == 0) return@LaunchedEffect
@@ -219,8 +220,18 @@ fun LiveScreen(
                 onRename = { renaming = previewChannel },
                 onHide = { previewChannel?.let { vm.hideChannel(it) } },
                 onMatchEpg = { matchingEpg = previewChannel },
+                onCatchup = { catchupChannel = previewChannel },
             )
         }
+    }
+
+    catchupChannel?.let { ch ->
+        CatchupDialog(
+            channelName = ch.name,
+            loadProgrammes = { vm.catchupProgrammes(ch) },
+            onPick = { prog -> catchupChannel = null; vm.playCatchupProgramme(ch, prog); onFullscreen() },
+            onDismiss = { catchupChannel = null },
+        )
     }
 
     renaming?.let { ch ->
@@ -301,6 +312,7 @@ private fun LivePreviewPane(
     onRename: () -> Unit,
     onHide: () -> Unit,
     onMatchEpg: () -> Unit,
+    onCatchup: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
     val videoAspect by player.videoAspect.collectAsStateWithLifecycle()
@@ -349,6 +361,12 @@ private fun LivePreviewPane(
         Text(channel.name, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
 
         EpgSection(nowNext)
+
+        // Catch-up channels: jump straight to a recent programme to replay it (no Guide gymnastics).
+        if (channel.catchup) {
+            Spacer(Modifier.height(16.dp))
+            OwnTVButton(label = "Catch-up", onClick = onCatchup, icon = OwnTVIcon.HISTORY)
+        }
 
         Spacer(Modifier.height(16.dp))
         OwnTVButton(
@@ -429,6 +447,68 @@ private fun EpgSection(nowNext: EpgNowNext?) {
 
 private val clockFormat = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
 private fun formatClock(ms: Long): String = clockFormat.format(java.util.Date(ms))
+
+private val catchupDayTimeFormat = java.text.SimpleDateFormat("EEE HH:mm", java.util.Locale.getDefault())
+private fun formatCatchupTime(startMs: Long, stopMs: Long): String =
+    "${catchupDayTimeFormat.format(java.util.Date(startMs))} – ${clockFormat.format(java.util.Date(stopMs))}"
+
+/** Live TV catch-up: pick a recent (already-aired) programme on a catch-up channel to replay from start. */
+@Composable
+private fun CatchupDialog(
+    channelName: String,
+    loadProgrammes: suspend () -> List<tv.own.owntv.core.database.entity.EpgProgrammeEntity>,
+    onPick: (tv.own.owntv.core.database.entity.EpgProgrammeEntity) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val list by androidx.compose.runtime.produceState<List<tv.own.owntv.core.database.entity.EpgProgrammeEntity>?>(initialValue = null) {
+        value = runCatching { loadProgrammes() }.getOrDefault(emptyList())
+    }
+    androidx.activity.compose.BackHandler { onDismiss() }
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(list) {
+        if (list.isNullOrEmpty()) return@LaunchedEffect
+        kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() }
+    }
+    Box(
+        Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)).focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(Modifier.width(620.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
+            Text("Catch-up · $channelName", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(2.dp))
+            Text("Pick a recent programme to replay from the start.", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            Spacer(Modifier.height(12.dp))
+            when (val progs = list) {
+                null -> Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 28) }
+                else -> if (progs.isEmpty()) {
+                    Text(
+                        "No recent guide data for this channel yet — make sure its EPG is matched (long-press it, or use Match EPG).",
+                        style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                    )
+                } else {
+                    LazyColumn(Modifier.fillMaxWidth().height(360.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(progs, key = { it.id }) { p ->
+                            FocusableSurface(
+                                onClick = { onPick(p) },
+                                modifier = if (p == progs.first()) Modifier.fillMaxWidth().focusRequester(firstFocus) else Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                contentAlignment = Alignment.CenterStart,
+                            ) { _ ->
+                                Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
+                                    Text(p.title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(formatCatchupTime(p.startMs, p.stopMs), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+        }
+    }
+}
 
 /** Manual EPG matching: pick which guide channel this channel uses (search across all EPG feeds).
  *  Shared with the Guide screen (long-press a channel → Match EPG). */

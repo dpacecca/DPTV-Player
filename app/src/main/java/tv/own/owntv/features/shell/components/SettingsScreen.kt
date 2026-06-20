@@ -120,6 +120,8 @@ fun SettingsScreen(
     val livePreview by settingsVm.livePreviewEnabled.collectAsStateWithLifecycle()
     val previewAudio by settingsVm.livePreviewAudio.collectAsStateWithLifecycle()
     val hdr by settingsVm.hdrEnabled.collectAsStateWithLifecycle()
+    val audioPassthrough by settingsVm.audioPassthrough.collectAsStateWithLifecycle()
+    val autoPlayNext by settingsVm.autoPlayNext.collectAsStateWithLifecycle()
     val updateCheckOnStart by settingsVm.updateCheckOnStart.collectAsStateWithLifecycle()
     val catchupTz by settingsVm.catchupTimezone.collectAsStateWithLifecycle()
     val catchupOffset by settingsVm.catchupOffsetMinutes.collectAsStateWithLifecycle()
@@ -274,6 +276,22 @@ fun SettingsScreen(
             chip = if (hdr) "On" else "Off",
             chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setHdrEnabled(!hdr) },
+        )
+        SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
+            title = "Surround passthrough",
+            desc = "Send Dolby/DTS audio to your TV or receiver for surround, instead of stereo. Turn off if audio goes silent.",
+            chip = if (audioPassthrough) "On" else "Off",
+            chipTone = if (audioPassthrough) TileTone.PRIMARY else TileTone.SECONDARY,
+            onClick = { settingsVm.setAudioPassthrough(!audioPassthrough) },
+        )
+        SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.SKIP_NEXT,
+            title = "Auto-play next episode",
+            desc = "When an episode ends, automatically start the next one — and roll into the next season.",
+            chip = if (autoPlayNext) "On" else "Off",
+            chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY,
+            onClick = { settingsVm.setAutoPlayNext(!autoPlayNext) },
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.EPG,

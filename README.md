@@ -64,11 +64,19 @@ Scan to join from your phone:
   **CH+/CH−** and the **media ⏮/⏭** keys) switch channels and wrap around at the ends, so remotes
   without dedicated channel buttons (e.g. Fire TV) can zap too.
 - Large demuxer cache for smooth 4K/8K streams; **HDR passthrough** when the video and TV support it.
+- **Surround sound passthrough** (optional) — bitstreams **Dolby (AC-3/E-AC-3, incl. Atmos) and DTS** to
+  your TV or AV receiver instead of mixing to stereo, for the formats your audio output supports.
+- **Image-based subtitles** (PGS/VOBSUB/DVB) on movies & series display on their own layer — keeping the
+  video on the smooth zero-copy/HDR path — alongside the usual text (SRT/ASS) subtitles.
 - **Mini-player / PiP** — dock a movie, episode **or live channel** to a corner and keep browsing
   (it keeps streaming across the whole app); selecting another channel updates the docked window,
   and you can expand or close it.
 - **Resume, your way** — movies & episodes remember where you stopped; replaying shows a small
   *"Resume at 23:45?"* prompt, with a setting for **Always / Ask / Never** resume.
+- **Auto-play next episode** — episodes roll on automatically (and into the **next season** when one
+  finishes), with a Settings toggle for anyone who prefers to pick the next episode themselves.
+- **Resume on the right episode** — reopening a series jumps to your **last-watched episode** (right
+  season, scrolled into view, tagged *"Last watched"*) instead of always starting at episode 1.
 - 📺 **[Complete player design & feature reference →](extras/player.html)** — an interactive Material 3
   mockup documenting the full player HUD, PiP, popup menus, and remote-key mappings.
 
@@ -81,8 +89,8 @@ Scan to join from your phone:
   Inline per-folder search and a cross-section **global search** too — all TV-style: search bars take
   focus like any control and only open the keyboard on **OK**.
 - **Sort toggle** per section: your **playlist's own order** or **A–Z** (Live TV defaults to playlist order).
-- **Customize everything (per profile):** hide, rename & reorder categories; hide & rename channels —
-  and it all survives re-syncs.
+- **Customize everything (per profile):** hide, rename & reorder categories (including **hide/show a whole
+  range at once** via long-press); hide & rename channels — and it all survives re-syncs.
 - Built for scale — tested with ~50k channels / ~168k movies via streaming import and Paging 3.
 
 ### 🗓️ EPG
@@ -237,9 +245,10 @@ https://github.com/ahXN00/OwnTV/releases/latest/download/OwnTV.apk
 ## 🛠️ Building & running
 
 1. Open the project in **Android Studio** (a version matching AGP 9.x) and let Gradle sync.
-2. Run the `app` configuration on an **Android TV** emulator or device. The app declares
-   `LEANBACK_LAUNCHER` and requires the leanback feature, so it appears in the **TV launcher**, not the
-   phone launcher.
+2. Run the `app` configuration on an **Android TV** emulator or device. The app declares a
+   `LEANBACK_LAUNCHER` **and** a regular `LAUNCHER` entry and marks the leanback feature **optional**, so
+   it shows in the **TV launcher** on Android TV and as a normal app icon on phones/tablets and non-TV
+   boxes too (minimum **Android 8.0 / API 26**).
 3. Or from the command line:
 
 ```bash
