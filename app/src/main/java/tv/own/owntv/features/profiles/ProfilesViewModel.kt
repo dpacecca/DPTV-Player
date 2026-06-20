@@ -11,7 +11,7 @@ import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.entity.ProfileEntity
 import tv.own.owntv.core.database.entity.ProfileSourceCrossRef
-import tv.own.owntv.core.tv.TvHomeRepository
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.util.Pin
 import tv.own.owntv.features.settings.data.SettingsRepository
 
@@ -23,7 +23,7 @@ class ProfilesViewModel(
     private val profileDao: ProfileDao,
     private val sourceDao: SourceDao,
     private val settings: SettingsRepository,
-    private val tvHomeRepository: TvHomeRepository,
+    private val launcherIntegrationRepository: LauncherIntegrationRepository,
 ) : ViewModel() {
 
     val profiles: StateFlow<List<ProfileEntity>> = profileDao.observeAll()
@@ -90,7 +90,7 @@ class ProfilesViewModel(
             if (profileDao.count() <= 1) return@launch
             val activeProfileId = settings.activeProfileId.first()
             val remainingProfileId = profileDao.getAllOnce().firstOrNull { it.id != profile.id }?.id
-            runCatching { tvHomeRepository.clearProfile(profile.id) }
+            runCatching { launcherIntegrationRepository.clearProfile(profile.id) }
             profileDao.delete(profile)
             if (activeProfileId == profile.id) {
                 settings.setActiveProfile(remainingProfileId ?: -1L)

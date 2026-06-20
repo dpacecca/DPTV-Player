@@ -25,7 +25,7 @@ import tv.own.owntv.core.sync.ImportStage
 import tv.own.owntv.core.sync.SyncResult
 import tv.own.owntv.core.util.friendlySyncError
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
-import tv.own.owntv.core.tv.TvHomeRepository
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.ui.theme.AccentColor
 import tv.own.owntv.ui.theme.ThemeMode
@@ -41,7 +41,7 @@ class SettingsViewModel(
     private val epgDao: tv.own.owntv.core.database.dao.EpgDao,
     private val importFinalizer: tv.own.owntv.core.sync.ImportFinalizer,
     private val channelDao: tv.own.owntv.core.database.dao.ChannelDao,
-    private val tvHomeRepository: TvHomeRepository,
+    private val launcherIntegrationRepository: LauncherIntegrationRepository,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OwnTVHome"
@@ -152,7 +152,7 @@ class SettingsViewModel(
             if (enabled) {
                 refreshActiveTvHome(allowBrowsableRequest = true)
             } else {
-                profileDao.getAllOnce().forEach { profile -> tvHomeRepository.clearProfile(profile.id) }
+                profileDao.getAllOnce().forEach { profile -> launcherIntegrationRepository.clearProfile(profile.id) }
             }
         }
     }
@@ -319,6 +319,6 @@ class SettingsViewModel(
     private suspend fun refreshActiveTvHome(allowBrowsableRequest: Boolean = true) {
         val pid = profileDao.resolveExistingProfileId(settings.activeProfileId.first()) ?: return
         Log.d(TAG, "refreshActiveTvHome profile=$pid allowBrowsable=$allowBrowsableRequest")
-        tvHomeRepository.refreshProfile(pid, allowBrowsableRequest)
+        launcherIntegrationRepository.refreshProfile(pid, allowBrowsableRequest)
     }
 }

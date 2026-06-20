@@ -18,8 +18,8 @@ import kotlinx.coroutines.launch
 import tv.own.owntv.core.network.ConnectivityObserver
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.repository.SourceRepository
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.features.settings.data.SettingsRepository
-import tv.own.owntv.core.tv.TvHomeRepository
 import tv.own.owntv.ui.theme.AccentColor
 import tv.own.owntv.ui.theme.ThemeMode
 import tv.own.owntv.ui.theme.UiZoom
@@ -43,7 +43,7 @@ class ShellViewModel(
     private val sourceRepository: SourceRepository,
     private val profileDao: tv.own.owntv.core.database.dao.ProfileDao,
     connectivity: ConnectivityObserver,
-    private val tvHomeRepository: TvHomeRepository,
+    private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val epgMigration: tv.own.owntv.core.epg.EpgMigration,
 ) : ViewModel() {
 
@@ -62,7 +62,7 @@ class ShellViewModel(
                 .collect { pid ->
                     Log.d(TAG, "activeProfileChanged profile=$pid androidTvHomeEnabled=${settings.androidTvHomeEnabled.first()}")
                     if (pid >= 0 && settings.androidTvHomeEnabled.first()) {
-                        runCatching { tvHomeRepository.refreshProfile(pid, allowBrowsableRequest = true) }
+                        runCatching { launcherIntegrationRepository.refreshProfile(pid, allowBrowsableRequest = true) }
                     }
                 }
         }
@@ -90,7 +90,7 @@ class ShellViewModel(
                         .onFailure { t -> Log.w(TAG, "refreshOnStartIfEnabled sync failed sourceId=${source.id} profile=$pid", t) }
                 }
             if (settings.androidTvHomeEnabled.first()) {
-                runCatching { tvHomeRepository.refreshProfile(pid, allowBrowsableRequest = true) }
+                runCatching { launcherIntegrationRepository.refreshProfile(pid, allowBrowsableRequest = true) }
             }
         }
     }

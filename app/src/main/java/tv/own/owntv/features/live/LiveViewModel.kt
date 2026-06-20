@@ -49,11 +49,11 @@ import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.parser.XtEpgEntry
 import tv.own.owntv.core.parser.XtreamClient
-import tv.own.owntv.core.tv.TvHomeRepository
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -82,7 +82,7 @@ class LiveViewModel(
     private val settings: SettingsRepository,
     private val xtreamClient: XtreamClient,
     private val customize: CustomizationStore,
-    private val tvHomeRepository: TvHomeRepository,
+    private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val epgDao: tv.own.owntv.core.database.dao.EpgDao,
     private val epgSourceStore: tv.own.owntv.core.epg.EpgSourceStore,
     val player: OwnTVPlayer,
@@ -399,7 +399,7 @@ class LiveViewModel(
             }.onFailure { t ->
                 Log.w(TAG, "ensurePlaying history record failed channelId=${channel.id} profile=$pid", t)
             }
-            runCatching { tvHomeRepository.refreshRecentLive(pid) }
+            runCatching { launcherIntegrationRepository.refreshRecentLive(pid) }
         }
     }
 

@@ -28,9 +28,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
-import tv.own.owntv.core.tv.TvHomeDeepLink
-import tv.own.owntv.core.tv.TvHomeLaunch
-import tv.own.owntv.core.tv.TvHomeRepository
+import tv.own.owntv.core.launcher.LauncherDeepLink
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
+import tv.own.owntv.core.launcher.LauncherLaunch
 import tv.own.owntv.core.update.UpdateManager
 import tv.own.owntv.features.update.UpdateDialog
 import tv.own.owntv.features.update.UpdateStatusToast
@@ -84,7 +84,7 @@ fun OwnTVShell(
     profileName: String,
     sourceSummary: String,
     activeProfileId: Long?,
-    pendingDeepLink: TvHomeDeepLink?,
+    pendingDeepLink: LauncherDeepLink?,
     onDeepLinkConsumed: () -> Unit,
     isOffline: Boolean = false,
     onExitApp: () -> Unit,
@@ -107,7 +107,7 @@ fun OwnTVShell(
     var restoreFocus by remember { mutableStateOf(false) }
     val player = koinInject<OwnTVPlayer>()
     val mpvEngine = remember(player) { tv.own.owntv.player.MpvPlaybackEngine(player) }
-    val tvHomeRepository = koinInject<TvHomeRepository>()
+    val launcherIntegrationRepository = koinInject<LauncherIntegrationRepository>()
     val movieVm = org.koin.androidx.compose.koinViewModel<MovieViewModel>()
     val seriesVm = org.koin.androidx.compose.koinViewModel<SeriesViewModel>()
     // Same activity-scoped instances the Live/Guide screens use — lets the fullscreen HUD zap channels
@@ -158,30 +158,30 @@ fun OwnTVShell(
         val pid = activeProfileId ?: return@LaunchedEffect
         if (pid < 0) return@LaunchedEffect
         when (deepLink) {
-            TvHomeDeepLink.OpenLiveSection -> {
+            LauncherDeepLink.OpenLiveSection -> {
                 onSelectSection(MainSection.LIVE_TV)
                 onDeepLinkConsumed()
             }
-            else -> when (val launch = tvHomeRepository.resolveLaunch(pid, deepLink)) {
-                is TvHomeLaunch.Movie -> {
+            else -> when (val launch = launcherIntegrationRepository.resolveLaunch(pid, deepLink)) {
+                is LauncherLaunch.Movie -> {
                     onSelectSection(MainSection.MOVIES)
                     movieVm.play(launch.movie, launch.startPositionMs)
                     openFullscreen(MainSection.MOVIES)
                     onDeepLinkConsumed()
                 }
-                is TvHomeLaunch.Episode -> {
+                is LauncherLaunch.Episode -> {
                     onSelectSection(MainSection.SERIES)
                     seriesVm.playEpisodeQueue(launch.show, launch.queue, launch.episode, launch.startPositionMs)
                     openFullscreen(MainSection.SERIES)
                     onDeepLinkConsumed()
                 }
-                is TvHomeLaunch.Live -> {
+                is LauncherLaunch.Live -> {
                     onSelectSection(MainSection.LIVE_TV)
                     liveVm.ensurePlaying(launch.channel)
                     openFullscreen(MainSection.LIVE_TV)
                     onDeepLinkConsumed()
                 }
-                is TvHomeLaunch.Series -> {
+                is LauncherLaunch.Series -> {
                     onSelectSection(MainSection.SERIES)
                     seriesVm.openSeries(launch.show)
                     onDeepLinkConsumed()

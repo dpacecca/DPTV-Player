@@ -44,12 +44,12 @@ import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.MovieEntity
 import tv.own.owntv.core.database.entity.PlaybackProgressEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.features.live.LiveRailItem
 import tv.own.owntv.features.live.LiveKey
 import tv.own.owntv.core.download.DownloadManager
 import tv.own.owntv.core.storage.StorageAccess
-import tv.own.owntv.core.tv.TvHomeRepository
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -66,7 +66,7 @@ class MovieViewModel(
     private val customize: CustomizationStore,
     private val player: OwnTVPlayer,
     private val downloadManager: DownloadManager,
-    private val tvHomeRepository: TvHomeRepository,
+    private val launcherIntegrationRepository: LauncherIntegrationRepository,
 ) : ViewModel() {
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
@@ -236,7 +236,7 @@ class MovieViewModel(
                 }.onFailure { t ->
                     Log.w(TAG, "saveProgressNow progress save failed movieId=${m.id} profile=$pid", t)
                 }
-                tvHomeRepository.publishMovieProgress(pid, m.id, pos, dur)
+                launcherIntegrationRepository.publishMovieProgress(pid, m.id, pos, dur)
             }
         }
     }

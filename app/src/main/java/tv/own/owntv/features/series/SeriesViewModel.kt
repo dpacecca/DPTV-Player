@@ -45,11 +45,11 @@ import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.PlaybackProgressEntity
 import tv.own.owntv.core.database.entity.SeriesEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.download.DownloadManager
 import tv.own.owntv.core.repository.SeriesRepository
 import tv.own.owntv.core.storage.StorageAccess
-import tv.own.owntv.core.tv.TvHomeRepository
 import tv.own.owntv.features.live.LiveKey
 import tv.own.owntv.features.live.LiveRailItem
 import tv.own.owntv.features.settings.data.SettingsRepository
@@ -71,7 +71,7 @@ class SeriesViewModel(
     private val customize: CustomizationStore,
     private val player: OwnTVPlayer,
     private val downloadManager: DownloadManager,
-    private val tvHomeRepository: TvHomeRepository,
+    private val launcherIntegrationRepository: LauncherIntegrationRepository,
 ) : ViewModel() {
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
@@ -166,7 +166,7 @@ class SeriesViewModel(
                 }.onFailure { t ->
                     Log.w(TAG, "saveEpisodeProgressNow progress save failed episodeId=${ep.id} profile=$pid", t)
                 }
-                tvHomeRepository.publishEpisodeProgress(pid, ep.id, pos, dur)
+                launcherIntegrationRepository.publishEpisodeProgress(pid, ep.id, pos, dur)
             }
         }
     }
