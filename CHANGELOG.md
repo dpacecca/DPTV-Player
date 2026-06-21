@@ -1,5 +1,24 @@
 # Changelog
 
+## v3.1.2 — 2026-06-21
+
+### 🐛 Bug fixes
+
+- **Surround sound is now off by default (opt-in), with a safety net** — v3.1.1's multichannel-LPCM surround
+  (on by default) broke playback on some TVs that *claim* 5.1 over HDMI but mis-play it: series with
+  multichannel (Dolby/DTS) audio played at **double speed with no sound** (movies/live were fine). Surround
+  is now **off by default** — leave it off on TV speakers / stereo soundbars (clean stereo), turn it **on**
+  for a real 5.1/7.1 receiver. When on, OwnTV pins a widely-compatible **16-bit / 48 kHz** output and, if it
+  still detects that double-speed/no-sound runaway, **auto-switches that session to stereo** so playback
+  never breaks. (#25)
+- **Live TV recovers from connection drops** — if a live channel froze mid-watch (a brief Wi-Fi/provider
+  hiccup), it used to stay stuck until you backed out and re-opened it. Live now **auto-reconnects** from the
+  live edge after a drop or stall, retrying with back-off; if it still can't recover, the on-screen **Retry**
+  takes over.
+- **Screen no longer sleeps during Live TV** — because live plays on the ExoPlayer engine, the TV
+  screensaver could start mid-channel; the screen is now held awake while watching live (full-screen and
+  PiP), just as it already was for movies and series.
+
 ## v3.1.1 — 2026-06-21
 
 ### ✨ New features

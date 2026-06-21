@@ -297,7 +297,7 @@ fun OwnTVShell(
             // full-screen AND the docked mini-player (same call site = the surface persists across dock/
             // expand, so playback never blips). Everything else (mpv) renders mpv's surface.
             if (liveOnExo) {
-                tv.own.owntv.player.ExoPreviewSurface(engine = liveVm.previewEngine, modifier = Modifier.fillMaxSize())
+                tv.own.owntv.player.ExoPreviewSurface(engine = liveVm.previewEngine, modifier = Modifier.fillMaxSize(), keepAwake = true)
             } else {
                 MpvVideoSurface(player = player, modifier = Modifier.fillMaxSize())
             }

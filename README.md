@@ -72,9 +72,10 @@ Scan to join from your phone:
   **CH+/CH−** and the **media ⏮/⏭** keys) switch channels and wrap around at the ends, so remotes
   without dedicated channel buttons (e.g. Fire TV) can zap too.
 - Large demuxer cache for smooth 4K/8K streams; **HDR passthrough** when the video and TV support it.
-- **Surround sound** (on by default) — decodes **Dolby (AC-3/E-AC-3) and DTS** to **multichannel LPCM
-  (5.1/7.1)** over HDMI, so your TV or AV receiver gets surround while 4K/HDR video stays smooth; turn it
-  off for a stereo downmix.
+- **Surround sound** (**off by default — opt-in**) — leave it off on TV speakers / stereo soundbars for a
+  clean stereo downmix; turn it **on** with a 5.1/7.1 receiver to decode **Dolby (AC-3/E-AC-3) and DTS** to
+  **multichannel LPCM** over HDMI while 4K/HDR video stays smooth. If a TV claims 5.1 but mis-plays it, a
+  built-in safety net auto-falls-back to stereo, so playback never breaks.
 - **Image-based subtitles** (PGS/VOBSUB/DVB) on movies & series display on their own layer — keeping the
   video on the smooth zero-copy/HDR path — alongside the usual text (SRT/ASS) subtitles.
 - **Mini-player / PiP** — dock a movie, episode **or live channel** to a corner and keep browsing

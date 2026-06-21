@@ -161,10 +161,11 @@ fun MpvVideoSurface(player: OwnTVPlayer, modifier: Modifier = Modifier) {
 /**
  * Hosts the [LivePreviewEngine]'s ExoPlayer video (a [SurfaceView]) for the Live preview pane. A plain
  * fill — the pane is a fixed 16:9 box and ExoPlayer letterboxes within it. The surface is handed to the
- * engine on create and released on destroy.
+ * engine on create and released on destroy. [keepAwake] holds the screen on (TV screensaver off) while
+ * actively watching full-screen/PiP — mpv playback is covered separately by the activity.
  */
 @Composable
-fun ExoPreviewSurface(engine: LivePreviewEngine, modifier: Modifier = Modifier) {
+fun ExoPreviewSurface(engine: LivePreviewEngine, modifier: Modifier = Modifier, keepAwake: Boolean = false) {
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
@@ -176,5 +177,6 @@ fun ExoPreviewSurface(engine: LivePreviewEngine, modifier: Modifier = Modifier) 
                 })
             }
         },
+        update = { it.keepScreenOn = keepAwake },
     )
 }
