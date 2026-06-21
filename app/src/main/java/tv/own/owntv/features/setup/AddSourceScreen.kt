@@ -34,8 +34,10 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.SourceType
+import tv.own.owntv.ui.components.BrowseMode
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
+import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -62,6 +64,7 @@ fun AddSourceScreen(
     var epgUrl by remember { mutableStateOf(initial?.epgUrl ?: "") }
     var userAgent by remember { mutableStateOf(initial?.userAgent ?: "") }
     var refreshOnStart by remember { mutableStateOf(initialRefresh) }
+    var showFileBrowser by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
 
@@ -70,8 +73,9 @@ fun AddSourceScreen(
         SourceKind.M3U -> m3uUrl.isNotBlank()
     }
 
-    Column(
-        modifier = modifier
+    Box(modifier.fillMaxSize()) {
+      Column(
+        modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 48.dp, vertical = 36.dp),
@@ -107,7 +111,17 @@ fun AddSourceScreen(
                     OwnTVTextField(password, { password = it }, label = if (editing) "Password (leave blank to keep)" else "Password", isPassword = true, modifier = Modifier.fillMaxWidth())
                 }
                 SourceKind.M3U -> {
-                    OwnTVTextField(m3uUrl, { m3uUrl = it }, label = "Playlist URL", placeholder = "http://…/playlist.m3u", keyboardType = KeyboardType.Uri, modifier = Modifier.fillMaxWidth())
+                    val pickedName = remember(m3uUrl) {
+                        if (m3uUrl.startsWith("/")) java.io.File(m3uUrl).name else null
+                    }
+                    OwnTVTextField(m3uUrl, { m3uUrl = it }, label = "Playlist URL or local file", placeholder = "http://…/playlist.m3u", keyboardType = KeyboardType.Uri, modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(10.dp))
+                    OwnTVButton(
+                        label = if (pickedName != null) "Local file: $pickedName" else "Choose a local .m3u / .m3u8 file…",
+                        onClick = { showFileBrowser = true },
+                        style = OwnTVButtonStyle.SECONDARY,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
 
@@ -135,6 +149,21 @@ fun AddSourceScreen(
                 )
             }
         }
+      }
+      // In-app, TV-safe file picker (SAF / system file picker is missing on many TVs).
+      if (showFileBrowser) {
+          StorageBrowser(
+              title = "Pick a playlist file (.m3u / .m3u8)",
+              mode = BrowseMode.FILE,
+              fileExtensions = setOf("m3u", "m3u8"),
+              onPick = { file ->
+                  showFileBrowser = false
+                  m3uUrl = file.absolutePath
+                  if (name.isBlank()) name = file.nameWithoutExtension
+              },
+              onDismiss = { showFileBrowser = false },
+          )
+      }
     }
 }
 

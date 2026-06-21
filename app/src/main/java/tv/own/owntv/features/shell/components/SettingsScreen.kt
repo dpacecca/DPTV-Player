@@ -120,7 +120,7 @@ fun SettingsScreen(
     val livePreview by settingsVm.livePreviewEnabled.collectAsStateWithLifecycle()
     val previewAudio by settingsVm.livePreviewAudio.collectAsStateWithLifecycle()
     val hdr by settingsVm.hdrEnabled.collectAsStateWithLifecycle()
-    val audioPassthrough by settingsVm.audioPassthrough.collectAsStateWithLifecycle()
+    val surroundSound by settingsVm.surroundSound.collectAsStateWithLifecycle()
     val autoPlayNext by settingsVm.autoPlayNext.collectAsStateWithLifecycle()
     val updateCheckOnStart by settingsVm.updateCheckOnStart.collectAsStateWithLifecycle()
     val catchupTz by settingsVm.catchupTimezone.collectAsStateWithLifecycle()
@@ -279,11 +279,11 @@ fun SettingsScreen(
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
-            title = "Surround passthrough",
-            desc = "Send Dolby/DTS audio to your TV or receiver for surround, instead of stereo. Turn off if audio goes silent.",
-            chip = if (audioPassthrough) "On" else "Off",
-            chipTone = if (audioPassthrough) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setAudioPassthrough(!audioPassthrough) },
+            title = "Surround sound",
+            desc = "Decode Dolby/DTS to surround (5.1/7.1) for your TV or receiver. Turn off for a stereo downmix.",
+            chip = if (surroundSound) "On" else "Off",
+            chipTone = if (surroundSound) TileTone.PRIMARY else TileTone.SECONDARY,
+            onClick = { settingsVm.setSurroundSound(!surroundSound) },
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.SKIP_NEXT,

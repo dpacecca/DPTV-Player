@@ -102,11 +102,11 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setHdrEnabled(enabled) }
     }
 
-    val audioPassthrough: StateFlow<Boolean> = settings.audioPassthrough
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val surroundSound: StateFlow<Boolean> = settings.surroundSound
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    fun setAudioPassthrough(enabled: Boolean) {
-        viewModelScope.launch { settings.setAudioPassthrough(enabled) }
+    fun setSurroundSound(enabled: Boolean) {
+        viewModelScope.launch { settings.setSurroundSound(enabled) }
     }
 
     val autoPlayNext: StateFlow<Boolean> = settings.autoPlayNext

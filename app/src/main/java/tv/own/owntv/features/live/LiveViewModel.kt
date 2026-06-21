@@ -12,6 +12,7 @@ import androidx.paging.cachedIn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -77,6 +79,7 @@ class LiveViewModel(
     private val epgDao: tv.own.owntv.core.database.dao.EpgDao,
     private val epgSourceStore: tv.own.owntv.core.epg.EpgSourceStore,
     val player: OwnTVPlayer,
+    val previewEngine: tv.own.owntv.player.LivePreviewEngine,
 ) : ViewModel() {
 
     val livePreviewEnabled: StateFlow<Boolean> = settings.livePreviewEnabled
@@ -265,19 +268,21 @@ class LiveViewModel(
         _previewChannel.value = channel
     }
 
-    /** True when [channel] is already streaming healthily — then we only need to flip the mute. */
-    private fun alreadyStreaming(channel: ChannelEntity): Boolean =
-        player.currentMediaUrl == channel.streamUrl && player.error.value == null
 
-    /** In-pane preview playback (no history) — triggered by the UI after the focus settles. */
+    /** In-pane preview playback (no history) — triggered by the UI after the focus settles. Runs on the
+     *  lightweight ExoPlayer engine (fast HLS start), not mpv; the full/fullscreen player stays on mpv. */
     fun playPreview(channel: ChannelEntity) {
-        // Same stream already running (e.g. back from fullscreen)? Just apply the preview mute —
-        // reloading would open a second connection and trip strict providers' limits (HTTP 509).
-        if (alreadyStreaming(channel)) {
-            player.setMuted(!livePreviewAudio.value)
+        // Already previewing this channel (e.g. re-focus)? Just re-apply the preview mute, no reload.
+        if (previewEngine.currentUrl == channel.streamUrl &&
+            previewEngine.state.value != tv.own.owntv.player.LivePreviewEngine.State.ERROR
+        ) {
+            previewEngine.setMuted(!livePreviewAudio.value)
             return
         }
-        player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, muted = !livePreviewAudio.value)
+        previewEngine.play(
+            channel.streamUrl, muted = !livePreviewAudio.value,
+            meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
+        )
     }
 
     // The ordered channel list of the row the user opened fullscreen from, so the player HUD can
@@ -286,6 +291,20 @@ class LiveViewModel(
     private var zapList: List<ChannelEntity> = emptyList()
     private val _canZap = MutableStateFlow(false)
     val canZap: StateFlow<Boolean> = _canZap.asStateFlow()
+
+    /** True when full-screen is running on the **ExoPlayer** engine (a promoted preview) rather than mpv.
+     *  The shell renders the ExoPlayer surface instead of mpv's when this is set. */
+    private val _liveOnExo = MutableStateFlow(false)
+    val liveOnExo: StateFlow<Boolean> = _liveOnExo.asStateFlow()
+
+    /** Called when anything OTHER than a promoted live channel takes over full-screen (a movie/episode,
+     *  catch-up, an EPG/search channel — all play on mpv). Clears the ExoPlayer flag so the shell renders
+     *  mpv's surface (not the leftover live channel) and stops the preview so it doesn't hold a connection. */
+    fun clearLiveOnExo() {
+        exoOutcomeJob?.cancel()
+        _liveOnExo.value = false
+        previewEngine.stop()
+    }
 
     /** Open a channel fullscreen, remembering [list] so the remote can zap up/down from here. */
     fun watchFullscreen(channel: ChannelEntity, list: List<ChannelEntity>) {
@@ -306,16 +325,49 @@ class LiveViewModel(
         ensurePlaying(list[next])
     }
 
-    /** Explicit watch (e.g. going fullscreen): plays with sound and records history. */
+    /** Go full-screen on [channel]. ExoPlayer is the **primary** live engine (instant for HLS, and it plays
+     *  the channels mpv struggles to open): promote the running preview if it's already this channel, else
+     *  (re)start ExoPlayer on it. We fall back to the full **mpv** player ONLY if ExoPlayer **errors** (a
+     *  stream it can't open) — never just because it's still loading (clicking OK before the preview is ready
+     *  used to drop to mpv and stick on a black screen for HLS). */
     fun ensurePlaying(channel: ChannelEntity) {
         _previewChannel.value = channel
-        // The preview is usually already streaming this exact channel — keep the connection and just
-        // unmute, instead of reloading (which briefly doubles connections → 509 on 1-conn accounts).
-        if (alreadyStreaming(channel)) {
-            player.setMuted(false)
+        _liveOnExo.value = true
+        player.stop() // free mpv (decoder/connection) if a previous full-screen used it
+        if (previewEngine.currentUrl == channel.streamUrl) {
+            previewEngine.setMuted(false) // promote — instant if already PLAYING, otherwise keeps loading
         } else {
-            player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, muted = false)
+            previewEngine.play(
+                channel.streamUrl, muted = false,
+                meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
+            )
         }
+        watchExoOutcome(channel)
+        recordLiveHistory(channel)
+    }
+
+    /** One-shot: if ExoPlayer fails to OPEN [channel] (errors before it ever plays), hand it to mpv. */
+    private var exoOutcomeJob: Job? = null
+    private fun watchExoOutcome(channel: ChannelEntity) {
+        exoOutcomeJob?.cancel()
+        exoOutcomeJob = viewModelScope.launch {
+            val terminal = previewEngine.state.first {
+                it == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
+                    it == tv.own.owntv.player.LivePreviewEngine.State.ERROR
+            }
+            val stillThisChannel = _liveOnExo.value && _previewChannel.value?.streamUrl == channel.streamUrl
+            if (terminal == tv.own.owntv.player.LivePreviewEngine.State.ERROR && stillThisChannel) {
+                _liveOnExo.value = false        // shell flips to mpv's surface
+                previewEngine.stop()
+                delay(500)                      // let ExoPlayer's decoder release before mpv inits
+                if (_previewChannel.value?.streamUrl == channel.streamUrl) {
+                    player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, muted = false)
+                }
+            }
+        }
+    }
+
+    private fun recordLiveHistory(channel: ChannelEntity) {
         viewModelScope.launch {
             historyDao.record(WatchHistoryEntity(profileId = ctx.value.profileId, mediaType = MediaType.LIVE, itemId = channel.id))
         }
@@ -346,6 +398,7 @@ class LiveViewModel(
                 CatchupUrl.forSource(ch, programme, source, settings.resolveCatchupTimeZone(), xtreamClient)
             } ?: return@launch
             _previewChannel.value = ch
+            clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
             // isLive=false → seekable archive; preferSoftware → tolerate mid-GOP archive segments.
             player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.logoUrl, isLive = false, preferSoftware = true)
         }
@@ -363,6 +416,7 @@ class LiveViewModel(
     }
 
     fun stopPreview() {
+        previewEngine.stop()
         player.stop()
         _previewChannel.value = null
     }

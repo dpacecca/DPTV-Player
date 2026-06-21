@@ -96,19 +96,30 @@ fun OwnTVShell(
     // One-shot: set when leaving the player so the returning browse screen re-focuses the item you played.
     var restoreFocus by remember { mutableStateOf(false) }
     val player = koinInject<OwnTVPlayer>()
+    val mpvEngine = remember(player) { tv.own.owntv.player.MpvPlaybackEngine(player) }
     // Same activity-scoped instances the Live/Guide screens use — lets the fullscreen HUD zap channels
     // up/down (CH+/CH-) through whichever section's list opened the stream.
     val liveVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.live.LiveViewModel>()
     val epgVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.epg.EpgViewModel>()
+    // Shared with SeriesScreen — lets a global-search series result open the actual show.
+    val seriesVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.series.SeriesViewModel>()
     val liveCanZap by liveVm.canZap.collectAsStateWithLifecycle()
     val epgCanZap by epgVm.canZap.collectAsStateWithLifecycle()
+    // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
+    val liveOnExo by liveVm.liveOnExo.collectAsStateWithLifecycle()
     // Which section armed the current fullscreen stream — picks whose channel list CH+/CH- step through.
     var zapSource by remember { mutableStateOf<MainSection?>(null) }
 
     // Opening content from a browse screen goes fullscreen — UNLESS the player is already docked as a
     // mini-player, in which case it stays docked and just swaps to the newly-selected stream (the VM
     // already started it), so picking a channel updates the PiP window in place (#6).
-    val openFullscreen = { restoreFocus = false; zapSource = selectedSection; if (playerMode != PlayerMode.MINI) playerMode = PlayerMode.FULLSCREEN }
+    val openFullscreen = {
+        restoreFocus = false; zapSource = selectedSection
+        // Only Live TV promotes a channel to the ExoPlayer engine. Movies/Series/Search/EPG/Downloads all
+        // play on mpv — clear any stale live-on-ExoPlayer flag so the shell renders mpv, not the old channel.
+        if (selectedSection != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
+        if (playerMode != PlayerMode.MINI) playerMode = PlayerMode.FULLSCREEN
+    }
     // The mini-player's own expand button always maximizes.
     val expandPlayer = { restoreFocus = false; playerMode = PlayerMode.FULLSCREEN }
     val exitPlayer = {
@@ -181,7 +192,9 @@ fun OwnTVShell(
 
                     selectedSection == MainSection.SEARCH -> SearchScreen(
                         onFullscreen = openFullscreen,
-                        onOpenSeries = { onSelectSection(MainSection.SERIES) },
+                        // Open the actual series (its episode list), then switch to the Series section —
+                        // the screen shares this SeriesViewModel, so it shows the opened show.
+                        onOpenSeries = { series -> seriesVm.openSeries(series); onSelectSection(MainSection.SERIES) },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -280,9 +293,16 @@ fun OwnTVShell(
                     .clip(RoundedCornerShape(14.dp)).background(Color.Black)
             },
         ) {
-            MpvVideoSurface(player = player, modifier = Modifier.fillMaxSize())
+            // "Promote Preview": a Live channel playing on ExoPlayer renders the ExoPlayer surface — in BOTH
+            // full-screen AND the docked mini-player (same call site = the surface persists across dock/
+            // expand, so playback never blips). Everything else (mpv) renders mpv's surface.
+            if (liveOnExo) {
+                tv.own.owntv.player.ExoPreviewSurface(engine = liveVm.previewEngine, modifier = Modifier.fillMaxSize())
+            } else {
+                MpvVideoSurface(player = player, modifier = Modifier.fillMaxSize())
+            }
             // Direct render mode: mpv can't draw subtitles on the decoder-owned surface — the app does.
-            if (isFull) tv.own.owntv.player.SubtitleOverlay(player = player, modifier = Modifier.fillMaxSize())
+            if (isFull && !liveOnExo) tv.own.owntv.player.SubtitleOverlay(player = player, modifier = Modifier.fillMaxSize())
             if (isFull) {
                 // CH+/CH- zap through the channel list of whichever section opened the current stream
                 // (Live TV or the Guide); never for VOD.
@@ -293,15 +313,15 @@ fun OwnTVShell(
                     else -> null
                 }
                 PlayerHud(
-                    player = player,
+                    player = if (liveOnExo) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
                     onBack = exitPlayer,
-                    onPip = dockPlayer, // PiP/dock now available for live too (#6)
+                    onPip = dockPlayer, // PiP/dock works for live on either engine now
                     onChannelUp = zap?.let { z -> { z(-1) } },
                     onChannelDown = zap?.let { z -> { z(1) } },
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
-                MiniPlayer(player = player, onExpand = expandPlayer, onClose = exitPlayer, modifier = Modifier.fillMaxSize())
+                MiniPlayer(player = if (liveOnExo) liveVm.previewEngine else mpvEngine, onExpand = expandPlayer, onClose = exitPlayer, modifier = Modifier.fillMaxSize())
             }
         }
       }

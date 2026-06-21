@@ -44,12 +44,12 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
  * Phase 11 — global search across channels, movies and series. Channels & movies play straight to
- * fullscreen; a series result jumps to the Series section.
+ * fullscreen; a series result opens that series (its episode list) in the Series section.
  */
 @Composable
 fun SearchScreen(
     onFullscreen: () -> Unit,
-    onOpenSeries: () -> Unit,
+    onOpenSeries: (tv.own.owntv.core.database.entity.SeriesEntity) -> Unit,
     onChildFocused: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -119,7 +119,7 @@ fun SearchScreen(
                                         posterUrl = s.posterUrl,
                                         title = s.name,
                                         rating = s.rating,
-                                        onClick = onOpenSeries,
+                                        onClick = { onOpenSeries(s) },
                                     )
                                 }
                             }

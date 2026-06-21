@@ -259,7 +259,7 @@ private fun ImportBackupScreen(state: SetupViewModel.ImportState, onPick: (java.
         else -> StorageBrowser(
             title = "Pick a backup file to restore",
             mode = BrowseMode.FILE,
-            fileExtension = "json",
+            fileExtensions = setOf("json"),
             onPick = onPick,
             onDismiss = onBack,
         )

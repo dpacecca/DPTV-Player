@@ -26,8 +26,8 @@ val appModule = module {
     viewModel { ShellViewModel(get(), get(), get(), get(), get()) }
     // profileDao, sourceDao, sourceRepository, backup, settings, connectivity, importFinalizer
     viewModel { SetupViewModel(get(), get(), get(), get(), get(), get(), get()) }
-    // channelDao, categoryDao, favoriteDao, historyDao, sourceDao, settings, xtreamClient, customize, epgDao, epgSourceStore, player
-    viewModel { LiveViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    // channelDao, categoryDao, favoriteDao, historyDao, sourceDao, settings, xtreamClient, customize, epgDao, epgSourceStore, player, previewEngine
+    viewModel { LiveViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     // movieDao, categoryDao, favoriteDao, historyDao, progressDao, sourceDao, settings, customize, player, downloadManager
     viewModel { MovieViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     // seriesDao, categoryDao, favoriteDao, historyDao, progressDao, sourceDao, seriesRepository, settings, customize, player, downloadManager

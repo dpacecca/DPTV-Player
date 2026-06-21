@@ -157,3 +157,24 @@ fun MpvVideoSurface(player: OwnTVPlayer, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/**
+ * Hosts the [LivePreviewEngine]'s ExoPlayer video (a [SurfaceView]) for the Live preview pane. A plain
+ * fill — the pane is a fixed 16:9 box and ExoPlayer letterboxes within it. The surface is handed to the
+ * engine on create and released on destroy.
+ */
+@Composable
+fun ExoPreviewSurface(engine: LivePreviewEngine, modifier: Modifier = Modifier) {
+    AndroidView(
+        modifier = modifier,
+        factory = { ctx ->
+            SurfaceView(ctx).apply {
+                holder.addCallback(object : SurfaceHolder.Callback {
+                    override fun surfaceCreated(holder: SurfaceHolder) = engine.setSurface(holder.surface)
+                    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
+                    override fun surfaceDestroyed(holder: SurfaceHolder) = engine.setSurface(null)
+                })
+            }
+        },
+    )
+}

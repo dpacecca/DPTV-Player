@@ -66,7 +66,7 @@ private enum class HudDialog { NONE, AUDIO, SUBS, SPEED, ZOOM, VOLUME }
 
 @Composable
 fun PlayerHud(
-    player: OwnTVPlayer,
+    player: PlaybackEngine,
     onBack: () -> Unit,
     onPip: (() -> Unit)? = null,
     onChannelUp: (() -> Unit)? = null,
@@ -192,7 +192,7 @@ fun PlayerHud(
 
 @Composable
 private fun TopBar(
-    player: OwnTVPlayer, isLive: Boolean, videoRes: String?, duration: Long,
+    player: PlaybackEngine, isLive: Boolean, videoRes: String?, duration: Long,
     onBack: () -> Unit, modifier: Modifier = Modifier,
 ) {
     // Reactive meta so the title row updates instantly on a channel zap (the plain vars aren't observed).
@@ -238,7 +238,7 @@ private fun LiveBadge() {
 }
 
 @Composable
-private fun ChannelCard(player: OwnTVPlayer, modifier: Modifier = Modifier) {
+private fun ChannelCard(player: PlaybackEngine, modifier: Modifier = Modifier) {
     // Collect the reactive meta so the card refreshes the instant a zap changes the channel.
     val meta by player.currentMeta.collectAsStateWithLifecycle()
     Row(
@@ -263,7 +263,7 @@ private fun ChannelCard(player: OwnTVPlayer, modifier: Modifier = Modifier) {
 
 @Composable
 private fun CenterControls(
-    player: OwnTVPlayer, nav: NavState, isPlaying: Boolean, isLive: Boolean,
+    player: PlaybackEngine, nav: NavState, isPlaying: Boolean, isLive: Boolean,
     playFocus: FocusRequester, modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier.focusGroup(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(28.dp)) {
@@ -279,7 +279,7 @@ private fun CenterControls(
 
 @Composable
 private fun BottomBar(
-    player: OwnTVPlayer, isLive: Boolean, position: Long, duration: Long,
+    player: PlaybackEngine, isLive: Boolean, position: Long, duration: Long,
     volume: Int, audioCount: Int, subCount: Int, zoomMode: ZoomMode, speedLabel: String,
     onOpenDialog: (HudDialog) -> Unit, onPip: (() -> Unit)?, onBack: () -> Unit, modifier: Modifier = Modifier,
 ) {
@@ -493,7 +493,7 @@ private fun ZoomDialog(current: ZoomMode, onSelect: (ZoomMode) -> Unit, onDismis
 }
 
 @Composable
-private fun VolumeDialog(player: OwnTVPlayer, onDismiss: () -> Unit) {
+private fun VolumeDialog(player: PlaybackEngine, onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
     val volume by player.volume.collectAsStateWithLifecycle()
     val focus = remember { FocusRequester() }

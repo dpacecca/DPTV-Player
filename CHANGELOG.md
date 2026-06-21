@@ -1,5 +1,49 @@
 # Changelog
 
+## v3.1.1 — 2026-06-21
+
+### ✨ New features
+
+- **Near-instant Live TV (two playback engines)** — live channels now play on a dedicated **ExoPlayer**
+  engine: the channel-list **preview** comes up almost instantly as you scroll, and pressing **OK promotes
+  that same stream straight to full-screen** with no reload — so opening a channel and **zapping** (CH± /
+  D-pad) are immediate, especially on HLS/M3U. The robust **mpv** engine still runs **all movies & series**
+  (4K/HDR direct path, broad stream compatibility) and automatically backs up any live stream ExoPlayer
+  can't open. Live PiP/dock works on either engine.
+- **Import a playlist from a local file** — adding an **M3U / M3U8** source now has a **"Choose a local
+  file"** button that opens an in-app, TV-friendly file browser, so you can load a `.m3u`/`.m3u8` saved on
+  the device (USB drive, Downloads, etc.) instead of a URL. The file is re-read on each refresh. (#24)
+
+### 🔧 Changes
+
+- **EPG is now opt-in** — adding a playlist **no longer auto-downloads its guide** (that could make every
+  import slow). Add a guide when you want it via **Settings → EPG sources**, where the form **pre-fills the
+  playlist's own guide URL** (Xtream `xmltv.php` / M3U `url-tvg`) — so it's still one step, just on demand.
+
+### 🐛 Bug fixes
+
+- **Surround sound no longer stutters video** — the v3.1.0 *Surround passthrough* toggle bit-streamed raw
+  Dolby/DTS to the TV/receiver, but on some TVs (e.g. Realtek) the passthrough audio path returns no
+  timing to the player, which starved the video into a **1–2 fps slideshow** on Dolby/DTS titles (most
+  noticeable on 4K). The setting is now simply **Settings → Surround sound** (on by default): OwnTV
+  **decodes** Dolby/DTS to **multichannel LPCM (5.1/7.1)** over HDMI, so your TV or AV receiver still gets
+  surround **and** the picture stays smooth on the fast 4K/HDR path. Turn it off for a stereo downmix.
+  (Raw bitstream passthrough has been removed.)
+- **M3U live channels that wouldn't play now work** — after v3.1.0's faster channel-zapping, some live
+  channels from a plain **M3U/HLS** playlist could hang on a black screen (the trimmed startup probe
+  couldn't open those streams), while Xtream live was unaffected. OwnTV now uses the full probe for
+  HLS/non-TS live (as it did before), and keeps the fast trimmed probe for direct **MPEG-TS** (`.ts`) live
+  — so M3U live plays again *and* TS zapping stays quick.
+- **4K channel zapping no longer hangs** — switching between **4K** channels with the D-pad / CH± in
+  full-screen could freeze the picture until you backed out and re-entered. The player now starts each
+  4K-class channel on a fresh video surface, so zapping plays cleanly (a TV-decoder quirk on back-to-back
+  4K decodes).
+- **Episodes now appear for every Xtream series** — some providers return a series' episode data in a
+  different JSON shape, which OwnTV didn't read, so those shows opened with **no episodes** (they worked in
+  other apps). The parser now handles both shapes, so episodes populate. (#23)
+- **Global search opens the right series** — picking a series from the **main search** now opens that
+  show's **episode list** directly, instead of just jumping to the Series tab.
+
 ## v3.1.0 — 2026-06-20
 
 ### ✨ New features

@@ -167,7 +167,7 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         StorageBrowser(
             title = if (browser == BrowseMode.FOLDER) "Choose a folder to save the backup" else "Pick a backup file to restore",
             mode = browser,
-            fileExtension = "json",
+            fileExtensions = setOf("json"),
             onPick = { file -> showBrowser = false; if (browser == BrowseMode.FOLDER) vm.export(file, exportSections) else vm.inspect(file) },
             onDismiss = { showBrowser = false },
         )

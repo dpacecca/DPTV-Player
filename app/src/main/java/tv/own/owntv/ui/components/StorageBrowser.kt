@@ -53,7 +53,7 @@ fun StorageBrowser(
     mode: BrowseMode,
     onPick: (File) -> Unit,
     onDismiss: () -> Unit,
-    fileExtension: String? = null,
+    fileExtensions: Set<String>? = null,
 ) {
     val context = LocalContext.current
     val colors = OwnTVTheme.colors
@@ -85,7 +85,7 @@ fun StorageBrowser(
             val children = remember(dir, refresh) { runCatching { dir?.listFiles()?.toList() }.getOrNull().orEmpty() }
             val folders = children.filter { it.isDirectory }.sortedBy { it.name.lowercase() }
             val files = if (mode == BrowseMode.FILE) {
-                children.filter { it.isFile && (fileExtension == null || it.extension.equals(fileExtension, true)) }.sortedBy { it.name.lowercase() }
+                children.filter { it.isFile && (fileExtensions == null || it.extension.lowercase() in fileExtensions) }.sortedBy { it.name.lowercase() }
             } else emptyList()
 
             LazyColumn(Modifier.heightIn(max = 360.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {

@@ -103,9 +103,9 @@ class SetupViewModel(
                 settings.setSourceRefresh(source.id, refreshOnStart)
                 when (val result = sourceRepository.sync(source) { _progress.value = it }) {
                     SyncResult.Success -> {
-                        // Onboarding: also auto-sync the playlist's EPG and show the full breakdown.
+                        // Just the playlist content — EPG is added separately (Settings → EPG sources).
                         val counts = importFinalizer.finalize(source)
-                        _state.value = ImportState.Success(counts.summary(includeEpg = true))
+                        _state.value = ImportState.Success(counts.summary(includeEpg = false))
                     }
                     is SyncResult.Failed -> _state.value = ImportState.Failed(friendlySyncError(result.message, connectivity.isOnlineNow()))
                     SyncResult.Cancelled -> _state.value = ImportState.Idle

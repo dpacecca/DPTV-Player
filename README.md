@@ -11,7 +11,7 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%20TV-3DDC84?logo=android&logoColor=white">
   <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.10-7F52FF?logo=kotlin&logoColor=white">
   <img alt="Compose for TV" src="https://img.shields.io/badge/Jetpack%20Compose-for%20TV-4285F4?logo=jetpackcompose&logoColor=white">
-  <img alt="Player" src="https://img.shields.io/badge/player-libmpv%20%2B%20FFmpeg-FB8C00">
+  <img alt="Player" src="https://img.shields.io/badge/engines-libmpv%20%2B%20ExoPlayer-FB8C00">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-blue">
   <img alt="Built with the help of AI" src="https://img.shields.io/badge/built%20with-the%20help%20of%20AI-8A2BE2">
 </p>
@@ -24,9 +24,12 @@
 
 ---
 
-OwnTV is a native **Android TV** IPTV **player** built with Kotlin, Jetpack Compose for TV, and
-**libmpv** (FFmpeg). It's a *player only* — you bring your own M3U or Xtream sources, and OwnTV gives
-you a fast, modern, remote-first way to browse and watch them.
+OwnTV is a native **Android TV** IPTV **player** built with Kotlin, Jetpack Compose for TV, and a
+**dual playback engine** — **libmpv (FFmpeg)** for movies/series and maximum compatibility, **ExoPlayer
+(Media3)** for near-instant Live TV. It's a *player only* — you bring your own Xtream login or M3U playlist
+(by **URL or a local `.m3u`/`.m3u8` file** on the device), and OwnTV gives you a fast, modern, remote-first
+way to browse
+and watch them.
 
 > ⚠️ OwnTV does **not** provide any channels, playlists, subscriptions, streams, or media content.
 > You are responsible for adding your own legally accessible sources.
@@ -51,7 +54,12 @@ Scan to join from your phone:
 
 ## ✨ Features
 
-### 🎬 Playback (libmpv / FFmpeg)
+### 🎬 Playback (two engines: libmpv + ExoPlayer)
+- **Dual-engine design** — **libmpv (FFmpeg)** is the primary player for **movies, series, and any stream
+  ExoPlayer can't open**: maximum codec/container compatibility, every audio/subtitle track, and the
+  zero-copy 4K/HDR direct path. **ExoPlayer (Media3)** powers **Live TV** — it opens HLS almost instantly,
+  so the channel-list preview and full-screen come up with no wait. Live automatically falls back to mpv
+  when a stream needs it.
 - Plays virtually any codec/container, and exposes **every** audio and subtitle track (not just the
   ones the device can decode).
 - **TV-optimized rendering** — the decoder writes frames **directly to the display** (the zero-copy
@@ -64,8 +72,9 @@ Scan to join from your phone:
   **CH+/CH−** and the **media ⏮/⏭** keys) switch channels and wrap around at the ends, so remotes
   without dedicated channel buttons (e.g. Fire TV) can zap too.
 - Large demuxer cache for smooth 4K/8K streams; **HDR passthrough** when the video and TV support it.
-- **Surround sound passthrough** (optional) — bitstreams **Dolby (AC-3/E-AC-3, incl. Atmos) and DTS** to
-  your TV or AV receiver instead of mixing to stereo, for the formats your audio output supports.
+- **Surround sound** (on by default) — decodes **Dolby (AC-3/E-AC-3) and DTS** to **multichannel LPCM
+  (5.1/7.1)** over HDMI, so your TV or AV receiver gets surround while 4K/HDR video stays smooth; turn it
+  off for a stereo downmix.
 - **Image-based subtitles** (PGS/VOBSUB/DVB) on movies & series display on their own layer — keeping the
   video on the smooth zero-copy/HDR path — alongside the usual text (SRT/ASS) subtitles.
 - **Mini-player / PiP** — dock a movie, episode **or live channel** to a corner and keep browsing
@@ -83,7 +92,9 @@ Scan to join from your phone:
 ### 🧭 Browse
 - **Live TV**, **Movies**, **Series**, **Downloads**, and a full **EPG Guide**. The Live preview pane
   shows the channel's video, now/next/later, and the **real stream resolution** (e.g. `1080p`/`4K`) —
-  so a channel named "…4K" that's actually 1080p can't fool you.
+  so a channel named "…4K" that's actually 1080p can't fool you. The preview plays on the **ExoPlayer**
+  engine for near-instant pictures while scrolling, and pressing OK **promotes that same stream to
+  full-screen** with no reload — instant. (mpv takes over only for streams ExoPlayer can't open.)
 - Folder rail with section-specific **Favorites** and **History** — it expands on focus to show **full
   category names**, with a **category search box** at the top to filter hundreds of groups by name.
   Inline per-folder search and a cross-section **global search** too — all TV-style: search bars take
@@ -107,8 +118,9 @@ Scan to join from your phone:
   then **OK** to browse programmes with Left/Right (Up/Down jumps channels at the same time), plus a
   **sort** button (A–Z / Provider / Live TV / Catch-up).
 - **Multiple EPG sources** — add any number of XMLTV feeds in **Settings → EPG Sources** (edit /
-  delete / re-sync); they merge into the guide. Adding a playlist **auto-syncs its EPG** (Xtream
-  `xmltv.php` / M3U `url-tvg`).
+  delete / re-sync); they merge into the guide. EPG is **opt-in** — importing a playlist doesn't pull its
+  guide automatically (which kept imports fast); when you add a guide, the form **pre-fills the playlist's
+  own URL** (Xtream `xmltv.php` / M3U `url-tvg`), so it's still one step.
 - Clear status: the Guide shows *"Guide loaded: N channels · M programmes · K with catch-up"*, and each
   EPG source shows its own sync state.
 
@@ -176,7 +188,7 @@ profiles & sources settings.
 | Language | Kotlin 2.3.10 (AGP 9 **built-in Kotlin**, no `kotlin-android` plugin) |
 | Build | AGP 9.2.1 / Gradle 9.4.1, KSP2 2.3.9 |
 | UI | Jetpack Compose for TV (`androidx.tv:tv-material` 1.1.0), Compose BOM 2026.05.00 |
-| Media | **libmpv** (FFmpeg) — `dev.jdtech.mpv:libmpv` |
+| Media | **libmpv** (FFmpeg) — `dev.jdtech.mpv:libmpv` · **ExoPlayer/Media3** (Live TV + image subs) |
 | Database | Room 2.8.4 + Paging 3.5.0 + FTS4 (WAL) |
 | DI | Koin 4.1.1 |
 | Networking | OkHttp |
@@ -199,8 +211,10 @@ profiles & sources settings.
   downloads, EPG channels/programmes, and FTS4 search tables. Totals come from indexed `COUNT` queries.
 - **Lists** — Paging 3 with a bounded `maxSize` keeps memory flat across 50k+ item lists.
 - **EPG** — bulk XMLTV is stream-parsed (gzip-aware) into a rolling now→+48h window and pruned.
-- **Player** — a single hoisted `libmpv` surface drives preview, fullscreen, and the mini-player, with
-  state published as `StateFlow`s for the Compose HUD.
+- **Player** — two engines behind a small `PlaybackEngine` interface: **libmpv** (movies/series, and any
+  live stream ExoPlayer can't open) and **ExoPlayer/Media3** (Live TV — instant HLS). Live "promotes" the
+  running preview straight to full-screen (no reload); the shell hoists the active surface across full ↔
+  mini-player. Player state is published as `StateFlow`s for the Compose HUD.
 - **DI** — Koin modules (`appModule`, `databaseModule`, `dataModule`, `playerModule`).
 
 ### Project layout
@@ -208,7 +222,7 @@ profiles & sources settings.
 ```
 tv.own.owntv/
 ├── core/        database (Room), network, parser (M3U/Xtream/XMLTV), repository, sync, util
-├── player/      libmpv player + Compose surface + HUD + mini-player
+├── player/      libmpv + ExoPlayer engines (PlaybackEngine) + Compose surfaces + HUD + mini-player
 ├── ui/          theme + reusable components (focus surface, cards, state views, avatars)
 ├── features/    setup, shell, live, movies, series, search, downloads, epg, profiles, settings
 └── di/          Koin modules

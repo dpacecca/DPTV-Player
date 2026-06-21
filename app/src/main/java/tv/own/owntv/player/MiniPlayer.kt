@@ -31,8 +31,9 @@ import tv.own.owntv.ui.components.OwnTVIcon
  * to it with the D-pad to use it; expand returns to fullscreen.
  */
 @Composable
-fun MiniPlayer(player: OwnTVPlayer, onExpand: () -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
+fun MiniPlayer(player: PlaybackEngine, onExpand: () -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
     val isPlaying by player.isPlaying.collectAsStateWithLifecycle()
+    val meta by player.currentMeta.collectAsStateWithLifecycle()
     Box(modifier = modifier) {
         // Title (top, on a slight scrim).
         Row(
@@ -40,7 +41,7 @@ fun MiniPlayer(player: OwnTVPlayer, onExpand: () -> Unit, onClose: () -> Unit, m
                 .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)))
                 .padding(horizontal = 10.dp, vertical = 6.dp),
         ) {
-            Text(player.currentTitle ?: "", style = MaterialTheme.typography.labelMedium, color = Color.White, maxLines = 1)
+            Text(meta.title ?: "", style = MaterialTheme.typography.labelMedium, color = Color.White, maxLines = 1)
         }
 
         // Controls (bottom).

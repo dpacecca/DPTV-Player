@@ -213,7 +213,7 @@ fun LiveScreen(
             LivePreviewPane(
                 channel = previewChannel,
                 nowNext = nowNext,
-                player = vm.player,
+                previewEngine = vm.previewEngine,
                 showVideo = effectivePreview,
                 isFavorite = previewChannel?.let { favoriteIds.contains(it.id) } ?: false,
                 onToggleFavorite = { previewChannel?.let { vm.toggleFavorite(it) } },
@@ -305,7 +305,7 @@ private fun ChannelRow(
 private fun LivePreviewPane(
     channel: ChannelEntity?,
     nowNext: EpgNowNext?,
-    player: tv.own.owntv.player.OwnTVPlayer,
+    previewEngine: tv.own.owntv.player.LivePreviewEngine,
     showVideo: Boolean,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
@@ -315,10 +315,13 @@ private fun LivePreviewPane(
     onCatchup: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
-    val videoAspect by player.videoAspect.collectAsStateWithLifecycle()
-    val videoRes by player.videoRes.collectAsStateWithLifecycle()
-    val playerError by player.error.collectAsStateWithLifecycle()
-    val previewLoading = showVideo && videoAspect == null && playerError == null
+    val previewState by previewEngine.state.collectAsStateWithLifecycle()
+    val previewHeight by previewEngine.videoHeight.collectAsStateWithLifecycle()
+    // Show the ExoPlayer surface once it's playing/buffering; on ERROR fall back to the channel logo.
+    val previewPlaying = showVideo && previewState != tv.own.owntv.player.LivePreviewEngine.State.ERROR &&
+        previewState != tv.own.owntv.player.LivePreviewEngine.State.IDLE
+    val previewLoading = showVideo && previewState == tv.own.owntv.player.LivePreviewEngine.State.LOADING
+    val videoRes = previewHeight?.let { "${it}p" }
     if (channel == null) {
         PreviewPane(hint = "Focus a channel to see it here.")
         return
@@ -339,15 +342,15 @@ private fun LivePreviewPane(
             } else {
                 OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(56.dp))
             }
-            if (showVideo) {
-                tv.own.owntv.player.MpvVideoSurface(player = player, modifier = Modifier.fillMaxSize())
+            if (previewPlaying) {
+                tv.own.owntv.player.ExoPreviewSurface(engine = previewEngine, modifier = Modifier.fillMaxSize())
             }
             if (previewLoading) {
                 OwnTVSpinner(sizeDp = 28)
             }
             // Real resolution of the stream (e.g. 1080p) — the channel NAME often lies ("…4K"), so this
             // shows what you'll actually get before you commit to watching.
-            videoRes?.takeIf { showVideo }?.let { res ->
+            videoRes?.takeIf { previewPlaying }?.let { res ->
                 Box(
                     Modifier.align(Alignment.TopEnd).padding(8.dp)
                         .clip(RoundedCornerShape(6.dp)).background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f))
