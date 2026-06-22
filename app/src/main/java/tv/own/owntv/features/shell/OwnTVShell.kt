@@ -79,6 +79,7 @@ fun OwnTVShell(
     sourceSummary: String,
     isOffline: Boolean = false,
     onExitApp: () -> Unit,
+    onSwitchProfile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -107,6 +108,9 @@ fun OwnTVShell(
     val epgCanZap by epgVm.canZap.collectAsStateWithLifecycle()
     // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
     val liveOnExo by liveVm.liveOnExo.collectAsStateWithLifecycle()
+    // Live rewind / timeshift: whether the live channel supports catch-up, and how far behind live we are.
+    val canRewindLive by liveVm.canRewindLive.collectAsStateWithLifecycle()
+    val timeshiftOffset by liveVm.timeshiftOffsetSec.collectAsStateWithLifecycle()
     // Which section armed the current fullscreen stream — picks whose channel list CH+/CH- step through.
     var zapSource by remember { mutableStateOf<MainSection?>(null) }
 
@@ -166,6 +170,7 @@ fun OwnTVShell(
                 onPickAvatar = { showAvatarPicker = true },
                 profileName = profileName,
                 sourceSummary = sourceSummary,
+                onSwitchProfile = onSwitchProfile,
                 selectedItemFocusRequester = sidebarFocus,
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
             )
@@ -312,12 +317,19 @@ fun OwnTVShell(
                     zapSource == MainSection.LIVE_TV && liveCanZap -> liveVm::zap
                     else -> null
                 }
+                // Live rewind controls apply to a Live-TV channel (live OR its timeshift archive).
+                val isLiveChannel = zapSource == MainSection.LIVE_TV
                 PlayerHud(
                     player = if (liveOnExo) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
                     onBack = exitPlayer,
                     onPip = dockPlayer, // PiP/dock works for live on either engine now
                     onChannelUp = zap?.let { z -> { z(-1) } },
                     onChannelDown = zap?.let { z -> { z(1) } },
+                    onRewindLive = if (isLiveChannel && canRewindLive) liveVm::rewindLive else null,
+                    onForwardLive = if (isLiveChannel) liveVm::forwardLive else null,
+                    onGoToLive = if (isLiveChannel) liveVm::goToLive else null,
+                    onScrubLive = if (isLiveChannel && canRewindLive) liveVm::scrubLive else null,
+                    timeshiftOffsetSec = if (isLiveChannel) timeshiftOffset else null,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {

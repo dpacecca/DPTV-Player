@@ -14,7 +14,7 @@ object Dimens {
 
     // Layer 2 — category rail (expands to show full names when it holds focus)
     val RailWidth = 92.dp
-    val RailWidthExpanded = 232.dp
+    val RailWidthExpanded = 325.dp // expanded (focused overlay) width — fits long category names
     val RailPillSize = 56.dp
 
     // MD3 settings tonal icon tile

@@ -59,6 +59,7 @@ fun Sidebar(
     onPickAvatar: () -> Unit,
     profileName: String,
     sourceSummary: String,
+    onSwitchProfile: () -> Unit,
     selectedItemFocusRequester: FocusRequester,
     onFocused: () -> Unit,
     counts: (MainSection) -> Int = { 0 },
@@ -105,6 +106,7 @@ fun Sidebar(
             profileName = profileName,
             sourceSummary = sourceSummary,
             onPickAvatar = onPickAvatar,
+            onSwitchProfile = onSwitchProfile,
         )
 
         Spacer(Modifier.height(16.dp))
@@ -164,6 +166,7 @@ private fun ProfileCard(
     profileName: String,
     sourceSummary: String,
     onPickAvatar: () -> Unit,
+    onSwitchProfile: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
 
@@ -205,6 +208,26 @@ private fun ProfileCard(
                 maxLines = 1,
                 textAlign = TextAlign.Center,
             )
+            Spacer(Modifier.height(12.dp))
+            // Switch profile without quitting the app (routes back to the "Who's watching?" gate).
+            FocusableSurface(
+                onClick = onSwitchProfile,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                focusedContainerColor = colors.surfaceContainerHigh,
+                unfocusedContainerColor = colors.surfaceContainer,
+                contentAlignment = Alignment.Center,
+            ) { focused ->
+                val c = if (focused) colors.onSurface else colors.onSurfaceVariant
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OwnTVIcon(icon = OwnTVIcon.PERSON, tint = c, modifier = Modifier.size(18.dp))
+                    Text("Switch Profile", style = MaterialTheme.typography.labelLarge, color = c, maxLines = 1)
+                }
+            }
         }
     }
 }

@@ -108,9 +108,12 @@ Scan to join from your phone:
 ### 🗓️ EPG
 - A full **time × channel guide grid** (XMLTV), plus per-channel **now / next / later** in the Live preview.
 - **Catch-up TV (archive)** — for providers that support it (Xtream `tv_archive` / M3U `catchup`),
-  watch programmes that **already aired**: the guide extends back in time, and *Watch from start*
-  replays a programme from the archive (seekable). A **Catch-up time** setting (device timezone or a
-  manual UTC offset) handles panels that index their archive in local time.
+  watch programmes that **already aired**: the guide extends back in time (up to 7 days), and *Watch from
+  start* replays a programme from the archive (seekable). A **Catch-up time** setting (device timezone — the
+  default — or a manual UTC offset) handles panels that index their archive in local time.
+- **Live rewind (timeshift)** — on a catch-up channel, **rewind the live stream** to re-watch a moment you
+  missed and jump back to the live edge, without leaving for the Guide. A scrubbable live timeline plus
+  ⏪/⏩ 30-second steps and a **● Live** button, with a "behind live" counter.
 - **Smart EPG matching** — an **Auto-match EPG** button links channels to the guide **by name** when
   their tvg-id is missing or wrong (ignoring HD/country tags); confident matches apply automatically,
   the rest go to a quick review list. Or **long-press a channel** to auto-match or pick its guide entry

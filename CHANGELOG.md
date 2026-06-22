@@ -1,5 +1,66 @@
 # Changelog
 
+## v3.2.0 — 2026-06-22
+
+### ✨ New features
+
+- **Live rewind (timeshift)** — on a channel your provider records (Xtream catch-up / archive), you can now
+  **rewind the live stream** to re-watch a moment you missed (a goal, a play) and then jump back to the live
+  edge — without leaving the channel for the Guide. On a catch-up live channel the player gains a **⏪ rewind**
+  control; while rewound it shows how far behind live you are, the clock time you're watching, and a **● Live**
+  button to snap back to the edge. There's both a **scrubbable timeline** (the last 2 hours up to the live
+  edge, with a red live marker — hold ◀/▶ to scrub) **and** ⏪/⏩ buttons for precise 30-second steps, plus a
+  **"behind live" counter** that ticks down as the archive catches up (and grows if you pause).
+
+### ✨ Improvements
+
+- **Switch profile without leaving the app** — the profile card (top-left) now has a **Switch Profile**
+  button that stops playback and returns to the "Who's watching?" screen, so you can change profile without
+  force-quitting the app.
+- **Wider category folders** — the Live TV / Movies / Series category rail now expands wider when focused,
+  so long category names are fully readable; it still shrinks back when you move into the list.
+- **Catch-up defaults to your device timezone** — catch-up / live-rewind timestamps now default to the
+  **device's timezone** (was UTC), which matches most providers' server-local archives out of the box; you
+  can still override it in **Settings → Catch-up time**.
+- **Longer Guide catch-up** — the guide now keeps up to **7 days** of just-aired programmes (was ~2 days), so
+  you can browse and replay further back when your provider records that long and its EPG feed supplies it.
+- **Clearer audio-track icon** — the player's audio-track button is now a music note, so it's no longer
+  easily confused with the volume button.
+
+### 🐛 Bug fixes
+
+- **Audio & subtitle selection now works on Live TV** — the ExoPlayer live engine wasn't exposing any
+  tracks, so multi-language live channels (and a dual-audio file added via an **M3U** playlist, which
+  imports as a live channel) showed **"No tracks available."** Live now enumerates **audio** and
+  **subtitle** tracks: the HUD's Audio/Subtitle menus list them with language labels and switch them on
+  the fly, and a selected subtitle renders on screen (the overlay mounts only while subtitles are on, so
+  4K live keeps its direct hardware-overlay path).
+- **No more silent playback for AC3/DTS files played as live** — a movie file with **AC3 / E-AC3 / DTS**
+  audio (e.g. a dual-audio rip added via an M3U playlist, which imports as a live channel) played **video
+  with no sound** on devices whose hardware can't decode those codecs, because the live ExoPlayer engine
+  relies on the device's audio decoders. Such streams now **automatically fall back to the mpv engine**
+  (which decodes them in software), so they play **with sound** — and on hardware that *can* decode the
+  codec, playback stays on the fast ExoPlayer engine as before.
+- **Live audio no longer keeps playing after you exit/log out** — a **live channel** plays on the ExoPlayer
+  engine, but leaving the app only stopped the mpv player, so the live stream's **audio kept playing in the
+  background**. Exiting/backgrounding now stops **both** engines.
+- **Clearer error for an unplayable movie** — when a movie/episode can't be decoded, the player showed the
+  *catch-up* "recording/archive" error text; it now shows a video-appropriate message (only real catch-up
+  recordings use the archive wording).
+- **Playback errors now show the real reason** — the error screen now lays the failure out in three parts so
+  the actual cause is visible **without adb/logcat**: a **plain-English reason**, the **media spec** (codec •
+  resolution • decoder, e.g. `HEVC 3840×1920 • hardware decoder`), and the **raw** engine line. It surfaces,
+  in order of usefulness:
+  the **hardware codec / audio error** (Android MediaCodec/AudioTrack — e.g. the cryptic `0x80001000` is shown
+  as *"video decoder error — the TV's hardware decoder is busy or can't handle this stream [MediaCodec: …]"*),
+  the **network/format** reason from mpv (`http: HTTP error 400`, `unrecognized file format`), or the
+  **ExoPlayer** code for live (`ERROR_CODE_DECODING_FORMAT_UNSUPPORTED`). On live, codec/audio failures are
+  read **programmatically** from ExoPlayer (reliable across devices, no logcat needed). Common cryptic cases
+  are translated to plain English — e.g. **HTTP 509** → "Provider blocked — too many streams at once", **403**
+  → "Provider denied access", an expired **SSL** certificate, out-of-memory, and unsupported codec profiles.
+  Works for video **and** audio failures, on movies, series and Live TV — turning "guess and rebuild" into
+  "read the line."
+
 ## v3.1.2 — 2026-06-21
 
 ### 🐛 Bug fixes

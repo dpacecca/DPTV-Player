@@ -214,17 +214,11 @@ fun OwnTVIcon(
                 drawPath(triangle(p(19f, 6f), p(10f, 12f), p(19f, 18f)), tint, style = Fill)
             }
             OwnTVIcon.AUDIO -> {
-                val speaker = Path().apply {
-                    moveTo(p(4f, 9f).x, p(4f, 9f).y)
-                    lineTo(p(8f, 9f).x, p(8f, 9f).y)
-                    lineTo(p(12f, 5f).x, p(12f, 5f).y)
-                    lineTo(p(12f, 19f).x, p(12f, 19f).y)
-                    lineTo(p(8f, 15f).x, p(8f, 15f).y)
-                    lineTo(p(4f, 15f).x, p(4f, 15f).y)
-                    close()
-                }
-                drawPath(speaker, tint, style = Fill)
-                drawArc(tint, -55f, 110f, false, topLeft = p(13f, 7f), size = Size(8f * s, 10f * s), style = stroke)
+                // Music note (audio track) — clearly distinct from the speaker/volume icon.
+                drawCircle(tint, radius = 3f * s, center = p(8.5f, 17.5f))    // filled note head
+                drawLineStroke(p(11.5f, 17.5f), p(11.5f, 5f), tint, stroke)   // stem
+                drawLineStroke(p(11.5f, 5f), p(16.5f, 7f), tint, stroke)      // upper flag
+                drawLineStroke(p(11.5f, 8.5f), p(16.5f, 10.5f), tint, stroke) // lower flag
             }
             OwnTVIcon.SUBTITLE -> {
                 drawRoundRectStroke(p(3f, 5f), p(21f, 19f), 2.5f * s, tint, stroke)

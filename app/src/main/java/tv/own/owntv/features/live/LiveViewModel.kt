@@ -332,6 +332,7 @@ class LiveViewModel(
      *  used to drop to mpv and stick on a black screen for HLS). */
     fun ensurePlaying(channel: ChannelEntity) {
         _previewChannel.value = channel
+        timeshiftJob?.cancel(); tickJob?.cancel(); _timeshiftOffsetSec.value = null // normal live = not timeshifted
         _liveOnExo.value = true
         player.stop() // free mpv (decoder/connection) if a previous full-screen used it
         if (previewEngine.currentUrl == channel.streamUrl) {
@@ -346,7 +347,9 @@ class LiveViewModel(
         recordLiveHistory(channel)
     }
 
-    /** One-shot: if ExoPlayer fails to OPEN [channel] (errors before it ever plays), hand it to mpv. */
+    /** One-shot: hand [channel] to mpv if ExoPlayer can't play it fully — either it **errors** opening, or it
+     *  plays but ExoPlayer can decode **none of its audio** (e.g. an AC3/E-AC3/DTS movie file added via M3U,
+     *  on a device without that decoder — it'd play silently). mpv (FFmpeg) decodes everything. */
     private var exoOutcomeJob: Job? = null
     private fun watchExoOutcome(channel: ChannelEntity) {
         exoOutcomeJob?.cancel()
@@ -355,15 +358,23 @@ class LiveViewModel(
                 it == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
                     it == tv.own.owntv.player.LivePreviewEngine.State.ERROR
             }
-            val stillThisChannel = _liveOnExo.value && _previewChannel.value?.streamUrl == channel.streamUrl
-            if (terminal == tv.own.owntv.player.LivePreviewEngine.State.ERROR && stillThisChannel) {
-                _liveOnExo.value = false        // shell flips to mpv's surface
-                previewEngine.stop()
-                delay(500)                      // let ExoPlayer's decoder release before mpv inits
-                if (_previewChannel.value?.streamUrl == channel.streamUrl) {
-                    player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, muted = false)
-                }
-            }
+            if (!isStill(channel)) return@launch
+            if (terminal == tv.own.owntv.player.LivePreviewEngine.State.ERROR) { fallbackToMpv(channel); return@launch }
+            // PLAYING: give the track list a moment to settle, then route silent (undecodable-audio) streams to mpv.
+            delay(300)
+            if (isStill(channel) && previewEngine.audioUnsupported.value) fallbackToMpv(channel)
+        }
+    }
+
+    private fun isStill(channel: ChannelEntity) =
+        _liveOnExo.value && _previewChannel.value?.streamUrl == channel.streamUrl
+
+    private suspend fun fallbackToMpv(channel: ChannelEntity) {
+        _liveOnExo.value = false            // shell flips to mpv's surface
+        previewEngine.stop()
+        delay(500)                          // let ExoPlayer's decoder release before mpv inits
+        if (_previewChannel.value?.streamUrl == channel.streamUrl) {
+            player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, muted = false)
         }
     }
 
@@ -398,9 +409,97 @@ class LiveViewModel(
                 CatchupUrl.forSource(ch, programme, source, settings.resolveCatchupTimeZone(), xtreamClient)
             } ?: return@launch
             _previewChannel.value = ch
+            _timeshiftOffsetSec.value = null // guide archive isn't the live-rewind timeshift
             clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
             // isLive=false → seekable archive; preferSoftware → tolerate mid-GOP archive segments.
             player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.logoUrl, isLive = false, preferSoftware = true)
+        }
+    }
+
+    // ---- Live rewind / timeshift -------------------------------------------------------------------
+    // Watch a catch-up-capable live channel a few minutes behind the live edge (a missed goal, etc.) using
+    // the provider's rolling archive (Xtream timeshift / M3U catchup), then jump back to live. The archive
+    // is a VOD-style stream on mpv (preferSoftware, mid-GOP tolerant); "Go to live" returns to ExoPlayer.
+    private val _timeshiftOffsetSec = MutableStateFlow<Int?>(null) // null = at the live edge; >0 = N s behind
+    val timeshiftOffsetSec: StateFlow<Int?> = _timeshiftOffsetSec.asStateFlow()
+
+    /** True when the channel on screen records an archive — the HUD then offers "Rewind" on live. */
+    val canRewindLive: StateFlow<Boolean> =
+        _previewChannel.map { it?.catchup == true }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    private var timeshiftJob: Job? = null
+    private var tickJob: Job? = null
+    private var timeshiftStartWall = 0L // wall-clock time of the loaded archive's start (for the live counter)
+    private val rewindStepSec = 30
+
+    /** 30 s buttons. */
+    fun rewindLive() = scrubLive(rewindStepSec)
+    fun forwardLive() = scrubLive(-rewindStepSec)
+
+    /** Move [deltaSec] further back (+) or toward live (−) into the archive (also drives the timeline
+     *  scrubber). Coalesced so holding a key scrubs freely and loads the archive once at the final point;
+     *  reaching the live edge returns to the real-time stream. */
+    fun scrubLive(deltaSec: Int) {
+        val ch = _previewChannel.value ?: return
+        if (!ch.catchup) return
+        val maxBack = (ch.catchupDays.takeIf { it > 0 } ?: 7) * 24 * 3600
+        val next = ((_timeshiftOffsetSec.value ?: 0) + deltaSec).coerceIn(0, maxBack)
+        if (next == 0) { goToLive(); return }
+        _timeshiftOffsetSec.value = next
+        scheduleTimeshiftLoad(ch, next)
+    }
+
+    /** Jump back to the real-time live edge (back on the fast ExoPlayer engine). */
+    fun goToLive() {
+        timeshiftJob?.cancel(); tickJob?.cancel()
+        _timeshiftOffsetSec.value = null
+        _previewChannel.value?.let { ensurePlaying(it) }
+    }
+
+    private fun scheduleTimeshiftLoad(ch: ChannelEntity, offsetSec: Int) {
+        timeshiftJob?.cancel(); tickJob?.cancel()
+        timeshiftJob = viewModelScope.launch {
+            delay(350) // coalesce rapid rewind/forward presses into one archive load
+            val nowMs = System.currentTimeMillis()
+            val startMs = nowMs - offsetSec * 1000L
+            val tz = withContext(Dispatchers.IO) { settings.resolveCatchupTimeZone() }
+            val url = withContext(Dispatchers.IO) {
+                val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
+                buildLiveTimeshiftUrl(ch, source, startMs, offsetSec, tz)
+            } ?: return@launch
+            if (_timeshiftOffsetSec.value == null) return@launch // user jumped back to live meanwhile
+            // Show the clock time being watched (handy for the user; no credentials in logs).
+            val localLabel = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                .apply { timeZone = java.util.TimeZone.getDefault() }.format(java.util.Date(startMs))
+            _previewChannel.value = ch
+            clearLiveOnExo() // archive plays as a VOD-style mpv stream, not the live ExoPlayer channel
+            player.play(url, title = ch.name, subtitle = "Rewind · $localLabel", logoUrl = ch.logoUrl, isLive = false, preferSoftware = true)
+            timeshiftStartWall = startMs
+            startOffsetTick()
+        }
+    }
+
+    /** Tick the "behind live" counter down as the archive plays forward (offset = realNow − watched time =
+     *  realNow − (archive start + playback position)). Pausing makes it grow (you fall further behind). */
+    private fun startOffsetTick() {
+        tickJob?.cancel()
+        tickJob = viewModelScope.launch {
+            while (true) {
+                delay(1_000)
+                if (_timeshiftOffsetSec.value == null) break
+                val behindSec = ((System.currentTimeMillis() - (timeshiftStartWall + player.position.value)) / 1000)
+                _timeshiftOffsetSec.value = behindSec.toInt().coerceAtLeast(0)
+            }
+        }
+    }
+
+    private fun buildLiveTimeshiftUrl(ch: ChannelEntity, source: tv.own.owntv.core.database.entity.SourceEntity, startMs: Long, offsetSec: Int, tz: java.util.TimeZone): String? {
+        val durationMin = (offsetSec / 60 + 5).coerceAtLeast(1) // rewound window + buffer to play up to live
+        return when (source.type) {
+            SourceType.XTREAM -> ch.remoteId?.let { xtreamClient.timeshiftUrl(source, it, startMs, durationMin, tz) }
+            SourceType.M3U -> CatchupUrl.forM3u(ch.streamUrl, null, ch.catchupSource, startMs, startMs + durationMin * 60_000L)
+            else -> null
         }
     }
 

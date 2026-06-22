@@ -166,17 +166,29 @@ fun MpvVideoSurface(player: OwnTVPlayer, modifier: Modifier = Modifier) {
  */
 @Composable
 fun ExoPreviewSurface(engine: LivePreviewEngine, modifier: Modifier = Modifier, keepAwake: Boolean = false) {
-    AndroidView(
-        modifier = modifier,
-        factory = { ctx ->
-            SurfaceView(ctx).apply {
-                holder.addCallback(object : SurfaceHolder.Callback {
-                    override fun surfaceCreated(holder: SurfaceHolder) = engine.setSurface(holder.surface)
-                    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
-                    override fun surfaceDestroyed(holder: SurfaceHolder) = engine.setSurface(null)
-                })
-            }
-        },
-        update = { it.keepScreenOn = keepAwake },
-    )
+    androidx.compose.foundation.layout.Box(modifier) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                SurfaceView(ctx).apply {
+                    holder.addCallback(object : SurfaceHolder.Callback {
+                        override fun surfaceCreated(holder: SurfaceHolder) = engine.setSurface(holder.surface)
+                        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
+                        override fun surfaceDestroyed(holder: SurfaceHolder) = engine.setSurface(null)
+                    })
+                }
+            },
+            update = { it.keepScreenOn = keepAwake },
+        )
+        // Subtitle overlay — mounted ONLY while subs are on, so 4K live keeps its direct hardware-overlay path.
+        val subOn by engine.subtitleOn.collectAsStateWithLifecycle()
+        val cues by engine.cues.collectAsStateWithLifecycle()
+        if (subOn) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx -> androidx.media3.ui.SubtitleView(ctx) },
+                update = { it.setCues(cues) },
+            )
+        }
+    }
 }

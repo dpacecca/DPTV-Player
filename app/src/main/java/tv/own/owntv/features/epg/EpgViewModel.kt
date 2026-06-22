@@ -502,7 +502,7 @@ class EpgViewModel(
         private const val HALF_HOUR_MS = 30L * 60 * 1000
         private const val DAY_MS = 24L * 60 * 60 * 1000
         // How far back the Guide may extend for catch-up (must stay within EpgRepository's retention).
-        private const val CATCHUP_LOOKBACK_CAP_MS = 48L * 60 * 60 * 1000
+        private const val CATCHUP_LOOKBACK_CAP_MS = 7L * 24 * 60 * 60 * 1000
         // Generous safety bound only (rows load lazily, so this is about the channel list itself).
         private const val MAX_CHANNELS = 20_000
         // Cap the candidate set the bulk matcher scans against (keeps the O(channels×candidates) scan bounded).

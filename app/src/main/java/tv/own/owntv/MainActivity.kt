@@ -30,12 +30,16 @@ import tv.own.owntv.ui.theme.UiZoom
 
 class MainActivity : ComponentActivity() {
     private val player: tv.own.owntv.player.OwnTVPlayer by inject()
+    private val previewEngine: tv.own.owntv.player.LivePreviewEngine by inject()
 
     override fun onStop() {
         super.onStop()
-        // Backgrounded (Home / another app): stop playback and free the demuxer cache + decoder
-        // buffers — holding them while invisible got the process LMK-killed on real TVs.
-        if (!isChangingConfigurations) player.onAppBackgrounded()
+        // Backgrounded (Home / another app), exited, or logged out: stop playback and free the demuxer
+        // cache + decoder buffers — holding them while invisible got the process LMK-killed on real TVs.
+        if (!isChangingConfigurations) {
+            player.onAppBackgrounded()
+            previewEngine.stop() // live runs on ExoPlayer — must stop it too, or its audio keeps playing
+        }
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
@@ -120,6 +124,10 @@ class MainActivity : ComponentActivity() {
                                 sourceSummary = sourceSummary,
                                 isOffline = !isOnline,
                                 onExitApp = { finish() },
+                                onSwitchProfile = {
+                                    // Stop playback and return to the "Who's watching?" gate — no app restart.
+                                    player.onAppBackgrounded(); previewEngine.stop(); gatePassed = false
+                                },
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }

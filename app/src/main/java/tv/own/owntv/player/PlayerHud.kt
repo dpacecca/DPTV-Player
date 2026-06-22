@@ -71,6 +71,13 @@ fun PlayerHud(
     onPip: (() -> Unit)? = null,
     onChannelUp: (() -> Unit)? = null,
     onChannelDown: (() -> Unit)? = null,
+    // Live rewind / timeshift (catch-up channels). onRewindLive non-null = this live channel can rewind;
+    // timeshiftOffsetSec non-null = currently watching that many seconds behind the live edge.
+    onRewindLive: (() -> Unit)? = null,
+    onForwardLive: (() -> Unit)? = null,
+    onGoToLive: (() -> Unit)? = null,
+    onScrubLive: ((Int) -> Unit)? = null, // timeline scrub: +sec = back, −sec = toward live
+    timeshiftOffsetSec: Int? = null,
     modifier: Modifier = Modifier,
 ) {
     val isPlaying by player.isPlaying.collectAsStateWithLifecycle()
@@ -78,6 +85,7 @@ fun PlayerHud(
     val duration by player.duration.collectAsStateWithLifecycle()
     val buffering by player.buffering.collectAsStateWithLifecycle()
     val error by player.error.collectAsStateWithLifecycle()
+    val errorInfo by player.errorInfo.collectAsStateWithLifecycle()
     val nav by player.nav.collectAsStateWithLifecycle()
     val volume by player.volume.collectAsStateWithLifecycle()
     val videoRes by player.videoRes.collectAsStateWithLifecycle()
@@ -154,15 +162,20 @@ fun PlayerHud(
             TopBar(player, isLive, videoRes, duration, onBack, modifier = Modifier.align(Alignment.TopStart))
             if (isLive) ChannelCard(player, modifier = Modifier.align(Alignment.TopStart).padding(start = 28.dp, top = 92.dp))
 
-            CenterControls(player, nav, isPlaying, isLive, playFocus, modifier = Modifier.align(Alignment.Center))
+            // Hide the transport (play/seek/prev/next) and bottom bar while an error is up — the error
+            // overlay owns the screen with its own Retry, so the play/rewind/forward must not show behind it.
+            if (error == null) {
+                CenterControls(player, nav, isPlaying, isLive, onRewindLive, onForwardLive, onGoToLive, timeshiftOffsetSec, playFocus, modifier = Modifier.align(Alignment.Center))
 
-            BottomBar(
-                player = player, isLive = isLive, position = position, duration = duration,
-                volume = volume, audioCount = audioCount, subCount = subCount, zoomMode = zoomMode,
-                speedLabel = formatSpeed(speed),
-                onOpenDialog = { dialog = it }, onPip = onPip, onBack = onBack,
-                modifier = Modifier.align(Alignment.BottomStart),
-            )
+                BottomBar(
+                    player = player, isLive = isLive, position = position, duration = duration,
+                    volume = volume, audioCount = audioCount, subCount = subCount, zoomMode = zoomMode,
+                    speedLabel = formatSpeed(speed),
+                    onScrubLive = onScrubLive, timeshiftOffsetSec = timeshiftOffsetSec,
+                    onOpenDialog = { dialog = it }, onPip = onPip, onBack = onBack,
+                    modifier = Modifier.align(Alignment.BottomStart),
+                )
+            }
         }
 
         // Status overlay (always shown).
@@ -171,6 +184,22 @@ fun PlayerHud(
                 Text("Playback error", style = MaterialTheme.typography.titleLarge, color = Color.White)
                 Spacer(Modifier.height(8.dp))
                 Text(error ?: "", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+                // Structured technical detail so a user can report the real cause without adb/logcat:
+                // plain reason → media spec (codec • resolution • decoder) → raw engine/codec line.
+                errorInfo?.let { info ->
+                    info.reason?.takeIf { it.isNotBlank() }?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.92f), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(0.8f))
+                    }
+                    info.spec?.takeIf { it.isNotBlank() }?.let {
+                        Spacer(Modifier.height(4.dp))
+                        Text(it, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.55f), textAlign = TextAlign.Center)
+                    }
+                    info.raw?.takeIf { it.isNotBlank() }?.let {
+                        Spacer(Modifier.height(4.dp))
+                        Text("err: $it", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(0.8f))
+                    }
+                }
                 Spacer(Modifier.height(18.dp))
                 OwnTVButton("Retry", onClick = { player.retry() }, icon = OwnTVIcon.PLAY, modifier = Modifier.focusRequester(retryFocus))
             }
@@ -264,16 +293,42 @@ private fun ChannelCard(player: PlaybackEngine, modifier: Modifier = Modifier) {
 @Composable
 private fun CenterControls(
     player: PlaybackEngine, nav: NavState, isPlaying: Boolean, isLive: Boolean,
+    onRewindLive: (() -> Unit)?, onForwardLive: (() -> Unit)?, onGoToLive: (() -> Unit)?, timeshiftOffsetSec: Int?,
     playFocus: FocusRequester, modifier: Modifier = Modifier,
 ) {
-    Row(modifier = modifier.focusGroup(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-        if (nav.hasPrev) CircleButton(OwnTVIcon.SKIP_PREVIOUS, size = 52) { player.previous() }
-        if (!isLive) CircleButton(OwnTVIcon.REWIND, size = 52) { player.seekBy(-10_000) }
-        CircleButton(if (isPlaying) OwnTVIcon.PAUSE else OwnTVIcon.PLAY, size = 72, primary = true, modifier = Modifier.focusRequester(playFocus)) { player.togglePlayPause() }
-        if (!isLive) CircleButton(OwnTVIcon.FORWARD, size = 52) { player.seekBy(10_000) }
-        if (nav.hasNext) CircleButton(OwnTVIcon.SKIP_NEXT, size = 52) { player.next() }
+    val rewindMode = onRewindLive != null // this is a catch-up-capable Live channel
+    val timeshifting = timeshiftOffsetSec != null
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        if (timeshifting) {
+            // Counts down as the archive catches up to the live edge; grows if you pause.
+            Text(
+                if (timeshiftOffsetSec!! <= 1) "● At the live edge" else "● ${mmss(timeshiftOffsetSec)} behind live",
+                style = MaterialTheme.typography.labelLarge,
+                color = OwnTVTheme.colors.accent,
+            )
+            Spacer(Modifier.height(12.dp))
+        }
+        Row(Modifier.focusGroup(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            if (nav.hasPrev) CircleButton(OwnTVIcon.SKIP_PREVIOUS, size = 52) { player.previous() }
+            when {
+                rewindMode -> CircleButton(OwnTVIcon.REWIND, size = 52) { onRewindLive!!() } // step back into the archive
+                !isLive -> CircleButton(OwnTVIcon.REWIND, size = 52) { player.seekBy(-10_000) }
+            }
+            CircleButton(if (isPlaying) OwnTVIcon.PAUSE else OwnTVIcon.PLAY, size = 72, primary = true, modifier = Modifier.focusRequester(playFocus)) { player.togglePlayPause() }
+            when {
+                rewindMode && timeshifting -> CircleButton(OwnTVIcon.FORWARD, size = 52) { onForwardLive!!() } // toward live
+                !isLive && !rewindMode -> CircleButton(OwnTVIcon.FORWARD, size = 52) { player.seekBy(10_000) }
+            }
+            if (rewindMode && timeshifting && onGoToLive != null) {
+                CircleButton(OwnTVIcon.LIVE_TV, size = 52, primary = true) { onGoToLive() } // jump to the live edge
+            }
+            if (nav.hasNext) CircleButton(OwnTVIcon.SKIP_NEXT, size = 52) { player.next() }
+        }
     }
 }
+
+/** mm:ss for a seconds offset (e.g. 150 → "2:30"). */
+private fun mmss(sec: Int): String = "${sec / 60}:${(sec % 60).toString().padStart(2, '0')}"
 
 // ---------------- Bottom bar ----------------
 
@@ -281,18 +336,26 @@ private fun CenterControls(
 private fun BottomBar(
     player: PlaybackEngine, isLive: Boolean, position: Long, duration: Long,
     volume: Int, audioCount: Int, subCount: Int, zoomMode: ZoomMode, speedLabel: String,
+    onScrubLive: ((Int) -> Unit)?, timeshiftOffsetSec: Int?,
     onOpenDialog: (HudDialog) -> Unit, onPip: (() -> Unit)?, onBack: () -> Unit, modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
-        if (!isLive && duration > 0) {
-            SeekBar(positionMs = position, durationMs = duration, onSeek = { player.seekBy(it) })
-            Spacer(Modifier.height(6.dp))
-            Row(Modifier.fillMaxWidth()) {
-                Text(formatTime(position), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
-                Spacer(Modifier.weight(1f))
-                Text(formatTime(duration), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+        when {
+            // Catch-up live channel → a scrubbable live timeline (last LIVE_WINDOW up to the live edge).
+            onScrubLive != null -> {
+                LiveTimelineBar(offsetSec = timeshiftOffsetSec ?: 0, onScrub = onScrubLive)
+                Spacer(Modifier.height(10.dp))
             }
-            Spacer(Modifier.height(10.dp))
+            !isLive && duration > 0 -> {
+                SeekBar(positionMs = position, durationMs = duration, onSeek = { player.seekBy(it) })
+                Spacer(Modifier.height(6.dp))
+                Row(Modifier.fillMaxWidth()) {
+                    Text(formatTime(position), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+                    Spacer(Modifier.weight(1f))
+                    Text(formatTime(duration), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+                }
+                Spacer(Modifier.height(10.dp))
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().focusGroup()) {
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -413,6 +476,50 @@ private fun SeekBar(positionMs: Long, durationMs: Long, onSeek: (Long) -> Unit) 
                     Modifier.padding(bottom = 30.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp),
                 ) {
                     Text(formatTime(positionMs), style = MaterialTheme.typography.labelMedium, color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+private const val LIVE_WINDOW_SEC = 2 * 3600   // the live timeline shows the last 2 hours up to the edge
+private const val LIVE_SCRUB_STEP_SEC = 60     // per Left/Right press (hold to scrub fast); buttons stay 30 s
+
+/** Scrubbable live timeline for a catch-up channel: spans the last [LIVE_WINDOW_SEC] up to the live edge.
+ *  Left = back in time, Right = toward live; the thumb is the watched point and the gap to the red LIVE dot
+ *  on the right is how far behind live you are. Holding a key scrubs freely; the archive loads when you
+ *  settle (the VM debounces). Going past the window keeps working via the ⏪ button — the bar just pins left. */
+@Composable
+private fun LiveTimelineBar(offsetSec: Int, onScrub: (Int) -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val frac = (1f - offsetSec.toFloat() / LIVE_WINDOW_SEC).coerceIn(0f, 1f) // 1 = live edge, 0 = far edge
+    Box(
+        modifier = Modifier.fillMaxWidth().height(24.dp)
+            .onKeyEvent { e ->
+                if (e.type == KeyEventType.KeyDown) when (e.key) {
+                    Key.DirectionLeft -> { onScrub(LIVE_SCRUB_STEP_SEC); true }    // back in time
+                    Key.DirectionRight -> { onScrub(-LIVE_SCRUB_STEP_SEC); true }  // toward live
+                    else -> false
+                } else false
+            }
+            .focusable(interactionSource = interaction),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Box(Modifier.fillMaxWidth().height(if (focused) 6.dp else 4.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = if (focused) 0.4f else 0.22f))) {
+            Box(Modifier.fillMaxWidth(frac).fillMaxHeight().clip(RoundedCornerShape(50)).background(TEAL))
+        }
+        // Live-edge marker (red dot) at the far right.
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(Color(0xFFFF4D4D)))
+        }
+        if (focused) {
+            Box(Modifier.fillMaxWidth(frac), contentAlignment = Alignment.CenterEnd) {
+                Box(Modifier.size(14.dp).clip(CircleShape).background(TEAL))
+            }
+            Box(Modifier.fillMaxWidth(frac), contentAlignment = Alignment.CenterEnd) {
+                Box(Modifier.padding(bottom = 30.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                    Text(if (offsetSec <= 1) "LIVE" else "-${mmss(offsetSec)}", style = MaterialTheme.typography.labelMedium, color = Color.White)
                 }
             }
         }
