@@ -7,6 +7,7 @@ import tv.own.owntv.features.customize.CustomizeViewModel
 import tv.own.owntv.features.downloads.DownloadsViewModel
 import tv.own.owntv.features.epg.EpgViewModel
 import tv.own.owntv.features.live.LiveViewModel
+import tv.own.owntv.features.home.HomeViewModel
 import tv.own.owntv.features.movies.MovieViewModel
 import tv.own.owntv.features.profiles.ProfilesViewModel
 import tv.own.owntv.features.search.SearchViewModel
@@ -25,6 +26,8 @@ val appModule = module {
     single { SettingsRepository(androidContext()) }
     // settings, sourceRepository, profileDao, connectivity, tvHomeRepository, epgMigration
     viewModel { ShellViewModel(get(), get(), get(), get(), get(), get()) }
+    // planner, movieDao, seriesDao, channelDao, settings, profileDao, heroPreviewEngine
+    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
     // profileDao, sourceDao, sourceRepository, backup, settings, connectivity, importFinalizer, tvHomeRepository
     viewModel { SetupViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     // channelDao, categoryDao, favoriteDao, historyDao, profileDao, sourceDao, settings, xtreamClient, customize, tvHomeRepository, epgDao, epgSourceStore, player, previewEngine
