@@ -404,10 +404,13 @@ class LiveViewModel(
         }
     }
 
+    private var historyJob: Job? = null
+
     private fun recordLiveHistory(channel: ChannelEntity) {
-        viewModelScope.launch {
-            val pid = currentProfileId()
-            if (pid == null) return@launch
+        historyJob?.cancel()
+        historyJob = viewModelScope.launch {
+            delay(5_000L)
+            val pid = currentProfileId() ?: return@launch
             Log.d(TAG, "ensurePlaying history profile=$pid channelId=${channel.id}")
             runCatching {
                 historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.LIVE, itemId = channel.id))
