@@ -152,10 +152,12 @@ fun OwnTVShell(
                     playerMode = PlayerMode.FULLSCREEN
                 }
             }
-            // Open straight to Live TV on the Favorites folder.
+            // Open straight to Live TV on the Favorites folder, with focus landing inside the channel list
+            // (restoreFocus drives LiveScreen to focus the first/last channel, not the nav panel).
             tv.own.owntv.features.settings.data.StartupMode.FAVORITES -> {
                 onSelectSection(MainSection.LIVE_TV)
                 liveVm.select(tv.own.owntv.features.live.LiveKey.Favorites)
+                restoreFocus = true
             }
             tv.own.owntv.features.settings.data.StartupMode.HOME -> Unit
         }

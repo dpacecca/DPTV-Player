@@ -2,12 +2,17 @@ package tv.own.owntv.features.series
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -157,7 +162,7 @@ private fun SeriesGrid(
 
         Column(
             modifier = Modifier
-                .weight(1.5f)
+                .weight(1.8f)
                 .fillMaxSize()
                 // Entering this pane must land on a poster, never the search bar: prefer the
                 // last-focused series, else the first one. onEnter fires only for directional entry
@@ -254,8 +259,23 @@ private fun SeriesGrid(
                 PreviewPane(hint = "Focus a series, press OK to view episodes.")
             } else {
                 Column(
-                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(Dimens.CardCorner)).background(OwnTVTheme.colors.panel).padding(Dimens.GapLarge),
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(Dimens.CardCorner)).background(OwnTVTheme.colors.panel).verticalScroll(rememberScrollState()).padding(Dimens.GapLarge),
                 ) {
+                    val art = s.posterUrl ?: s.backdropUrl
+                    // Tall portrait poster (like the list / a phone screen), centred in the pane.
+                    Box(modifier = Modifier.fillMaxWidth().height(340.dp), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxHeight().aspectRatio(2f / 3f).clip(RoundedCornerShape(12.dp)).background(OwnTVTheme.colors.surfaceContainerLowest),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (!art.isNullOrBlank()) {
+                                AsyncImage(model = art, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            } else {
+                                OwnTVIcon(OwnTVIcon.SERIES, tint = OwnTVTheme.colors.onSurfaceVariant, modifier = Modifier.height(48.dp))
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(14.dp))
                     Text(s.name, style = MaterialTheme.typography.titleLarge, color = OwnTVTheme.colors.onSurface)
                     if (s.year != null) {
                         Spacer(Modifier.height(4.dp))

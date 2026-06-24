@@ -57,12 +57,14 @@ fun PosterCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(2f / 3f)
+                    // Taller, phone-screen-like poster. Crop (not Fit) so a standard 2:3 poster fills the
+                    // slightly taller box instead of letterboxing.
+                    .aspectRatio(2f / 3.2f)
                     .clip(RoundedCornerShape(10.dp))
                     .background(colors.surfaceContainerLowest),
             ) {
                 if (!posterUrl.isNullOrBlank()) {
-                    AsyncImage(model = posterUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
+                    AsyncImage(model = posterUrl, contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 } else {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         OwnTVIcon(OwnTVIcon.MOVIES, tint = colors.onSurfaceVariant, modifier = Modifier.size(36.dp))

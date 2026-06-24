@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tv.own.owntv.core.customize.SectionCustomizations
@@ -110,6 +111,13 @@ class EpgViewModel(
     // when scrolled back into view; cleared whenever the window/data reloads.
     private val rowCache = java.util.concurrent.ConcurrentHashMap<String, List<EpgProgrammeEntity>>()
     @Volatile private var loadedSourceIds: List<Long> = emptyList()
+    // The window the rowCache was filled for — re-batch only when it actually changes (a sort/filter change
+    // keeps the same window, so the cache stays valid and we skip the reload entirely).
+    @Volatile private var cachedWindow: Pair<Long, Long>? = null
+    @Volatile private var lastStored = -1 // stored programme count the cache was built from (data-change guard)
+    // Bumped when the background catch-up lookback (pass 2) merges into rowCache, so visible rows re-read it.
+    private val _cacheRevision = MutableStateFlow(0)
+    val cacheRevision: StateFlow<Int> = _cacheRevision.asStateFlow()
 
     /** Synchronous cache peek — lets a re-composed row render instantly without a loading flash. */
     fun cachedProgrammes(channel: ChannelEntity): List<EpgProgrammeEntity>? =
@@ -462,42 +470,63 @@ class EpgViewModel(
             // Respect customizations: hidden channels stay out of the guide, renames show.
             val cust = customize.observe(pid, MediaType.LIVE).first()
             val q = _query.value.trim()
-            val auto = channelDao.channelsWithGuide(ids, q, MAX_CHANNELS)
-                .filter { CustomizeKeys.channel(it) !in cust.hiddenItems }
-                .map { ch -> cust.itemNames[CustomizeKeys.channel(ch)]?.let { ch.copy(name = it) } ?: ch }
-            // Manual EPG matches: override the matched channels' epg id, and pull in any matched
-            // channel that wouldn't otherwise appear (its own epg id didn't auto-match).
-            val matched = applyEpgMatches(auto, cust, playlistIds, q)
+            val rawChannels = channelDao.channelsWithGuide(ids, q, MAX_CHANNELS)
             // Catch-up count comes from the playlist channels (the tv_archive flag), so it shows even
             // before any XMLTV guide is downloaded — it tells the user their provider supports catch-up.
             val catchupCount = channelDao.countCatchup(playlistIds)
             val favoriteIds = favoriteDao.observeFavoriteIds(pid, MediaType.LIVE).first().toSet()
-            // Order the guide by its own sort. LIVE_TV mirrors the Live sort; CATCHUP floats archive
-            // channels to the top; ALPHA/PROVIDER are explicit. CATCHUP with none available falls to LIVE_TV.
-            val byAlpha = compareBy<ChannelEntity> { it.name.lowercase() }
-            val byProvider = compareBy<ChannelEntity>({ it.sourceId }, { it.sortOrder }, { it.name.lowercase() })
-            val liveOrdered = when (settings.sortLive.first()) {
-                SettingsRepository.SortMode.ALPHA -> matched.sortedWith(byAlpha)
-                SettingsRepository.SortMode.PLAYLIST -> matched.sortedWith(byProvider)
-            }
-            val channels = when (settings.sortGuide.first()) {
-                SettingsRepository.GuideSort.ALPHA -> matched.sortedWith(byAlpha)
-                SettingsRepository.GuideSort.PROVIDER -> matched.sortedWith(byProvider)
-                SettingsRepository.GuideSort.CATCHUP ->
-                    if (catchupCount > 0) matched.sortedWith(compareByDescending<ChannelEntity> { it.catchup }.then(byAlpha)) else liveOrdered
-                // Favorites: show ONLY favourited channels (in the Live order); none favourited → fall back.
-                SettingsRepository.GuideSort.FAVORITES ->
-                    if (favoriteIds.isNotEmpty()) liveOrdered.filter { it.id in favoriteIds } else liveOrdered
-                SettingsRepository.GuideSort.LIVE_TV -> liveOrdered
-            }.let { sorted ->
-                // Category filter (#8): when a group is chosen, show only its channels.
-                _categoryFilter.value?.let { catId -> sorted.filter { it.categoryId == catId } } ?: sorted
+            val sortLiveMode = settings.sortLive.first()
+            val sortGuideMode = settings.sortGuide.first()
+            val categoryFilter = _categoryFilter.value
+            // Heavy work — filter hidden, apply renames + manual EPG matches, sort, category-filter — runs off
+            // the main thread (#3/#5) so a 50k-channel playlist never freezes the UI building the guide list.
+            val channels = withContext(Dispatchers.Default) {
+                val auto = rawChannels
+                    .filter { CustomizeKeys.channel(it) !in cust.hiddenItems }
+                    .map { ch -> cust.itemNames[CustomizeKeys.channel(ch)]?.let { ch.copy(name = it) } ?: ch }
+                val matched = applyEpgMatches(auto, cust, playlistIds, q)
+                // Order the guide by its own sort. LIVE_TV mirrors the Live sort; CATCHUP floats archive
+                // channels to the top; ALPHA/PROVIDER are explicit. CATCHUP with none available falls to LIVE_TV.
+                val byAlpha = compareBy<ChannelEntity> { it.name.lowercase() }
+                val byProvider = compareBy<ChannelEntity>({ it.sourceId }, { it.sortOrder }, { it.name.lowercase() })
+                val liveOrdered = when (sortLiveMode) {
+                    SettingsRepository.SortMode.ALPHA -> matched.sortedWith(byAlpha)
+                    SettingsRepository.SortMode.PLAYLIST -> matched.sortedWith(byProvider)
+                }
+                when (sortGuideMode) {
+                    SettingsRepository.GuideSort.ALPHA -> matched.sortedWith(byAlpha)
+                    SettingsRepository.GuideSort.PROVIDER -> matched.sortedWith(byProvider)
+                    SettingsRepository.GuideSort.CATCHUP ->
+                        if (catchupCount > 0) matched.sortedWith(compareByDescending<ChannelEntity> { it.catchup }.then(byAlpha)) else liveOrdered
+                    // Favorites: show ONLY favourited channels (in the Live order); none favourited → fall back.
+                    SettingsRepository.GuideSort.FAVORITES ->
+                        if (favoriteIds.isNotEmpty()) liveOrdered.filter { it.id in favoriteIds } else liveOrdered
+                    SettingsRepository.GuideSort.LIVE_TV -> liveOrdered
+                }.let { sorted ->
+                    // Category filter (#8): when a group is chosen, show only its channels.
+                    categoryFilter?.let { catId -> sorted.filter { it.categoryId == catId } } ?: sorted
+                }
             }
             val stored = epgDao.countForSources(ids)
 
-            // New window/data → drop the per-row cache so rows re-query the fresh window.
-            rowCache.clear()
+            // Per-row programmes are loaded in ONE batched query and grouped into rowCache here, instead of
+            // each row firing its own programmesForChannel (an N+1 query storm on cold open). Only re-batch
+            // when the window or sources actually change — a sort / filter / category change keeps the same
+            // window, so the cache stays valid and we reuse it. Grouping runs off the main thread.
+            // Also re-batch when the stored programme count changed (a sync, or a post-match top-up, added
+            // data) even if the window is unchanged — so freshly-matched channels' guides appear.
+            val windowChanged = cachedWindow != (windowStart to windowEnd) || loadedSourceIds != ids || stored != lastStored
             loadedSourceIds = ids
+            lastStored = stored
+            if (windowChanged) {
+                cachedWindow = windowStart to windowEnd
+                rowCache.clear()
+                // Pass 1 (blocking): the forward window only, so the Guide opens instantly and fully from cache.
+                val forward = withContext(Dispatchers.Default) {
+                    epgDao.programmesInWindow(ids, nowAligned, windowEnd).groupBy { it.epgChannelId }
+                }
+                forward.forEach { (k, list) -> rowCache[k] = list }
+            }
 
             val hasEpg = epgIds.isNotEmpty()
             val message = when {
@@ -523,6 +552,24 @@ class EpgViewModel(
                 loading = false, message = message, hasEpgSources = hasEpg, stats = stats, catchupCount = catchupCount,
                 favoriteCount = favoriteIds.size,
             )
+
+            // Pass 2 (background): merge the catch-up lookback into rowCache gradually, so a multi-day × many-
+            // channel window never blocks the open or spikes memory on low-RAM (1.8 GB) boxes. Only runs when
+            // there's a real lookback (catch-up channels). distinctBy(id): a programme straddling `now` is in
+            // both window queries. The revision bump makes already-visible rows re-read the completed cache.
+            if (windowChanged && windowStart < nowAligned) {
+                viewModelScope.launch {
+                    val back = withContext(Dispatchers.Default) {
+                        epgDao.programmesInWindow(ids, windowStart, nowAligned).groupBy { it.epgChannelId }
+                    }
+                    if (back.isNotEmpty()) {
+                        back.forEach { (k, extra) ->
+                            rowCache[k] = (extra + (rowCache[k] ?: emptyList())).distinctBy { it.id }.sortedBy { it.startMs }
+                        }
+                        _cacheRevision.value++
+                    }
+                }
+            }
         }
     }
 

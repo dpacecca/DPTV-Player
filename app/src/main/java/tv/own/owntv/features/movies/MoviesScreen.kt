@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -130,7 +132,7 @@ fun MoviesScreen(
 
         Column(
             modifier = Modifier
-                .weight(1.5f)
+                .weight(1.8f)
                 .fillMaxSize()
                 // Entering this pane must land on a poster, never the search bar: prefer the
                 // last-focused movie, else the first one. onEnter fires only for directional entry
@@ -279,22 +281,23 @@ private fun MovieDetailsPane(
             .verticalScroll(rememberScrollState())
             .padding(Dimens.GapLarge),
     ) {
-        Box(
-            modifier = Modifier.fillMaxWidth().height(190.dp).clip(RoundedCornerShape(12.dp)).background(colors.surfaceContainerLowest),
-            contentAlignment = Alignment.Center,
-        ) {
-            val art = movie.backdropUrl ?: movie.posterUrl
-            if (!art.isNullOrBlank()) {
-                // Crop to fill the banner box — the default (Fit) letterboxes wide backdrops and shows
-                // the portrait-poster fallback as a thin clipped strip (issue #5).
-                AsyncImage(
-                    model = art,
-                    contentDescription = null,
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                OwnTVIcon(OwnTVIcon.MOVIES, tint = colors.onSurfaceVariant, modifier = Modifier.height(48.dp))
+        // Tall portrait poster (like the list / a phone screen), centred in the pane.
+        Box(modifier = Modifier.fillMaxWidth().height(340.dp), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.fillMaxHeight().aspectRatio(2f / 3f).clip(RoundedCornerShape(12.dp)).background(colors.surfaceContainerLowest),
+                contentAlignment = Alignment.Center,
+            ) {
+                val art = movie.posterUrl ?: movie.backdropUrl
+                if (!art.isNullOrBlank()) {
+                    AsyncImage(
+                        model = art,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    OwnTVIcon(OwnTVIcon.MOVIES, tint = colors.onSurfaceVariant, modifier = Modifier.height(48.dp))
+                }
             }
         }
         Spacer(Modifier.height(14.dp))
@@ -307,28 +310,31 @@ private fun MovieDetailsPane(
             Text(plot, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 6)
         }
         Spacer(Modifier.height(20.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        // Stacked (one per row): the narrow detail pane can't fit Resume + Favorite side by side without
+        // clipping the longer labels, so lay them out vertically and stretch each pill to the pane width.
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             OwnTVButton(
                 label = if (resumePositionMs > 0) "Resume" else "Play",
                 onClick = onPlay,
                 icon = OwnTVIcon.PLAY,
+                modifier = Modifier.fillMaxWidth(),
             )
             OwnTVButton(
                 label = if (isFavorite) "Favorited" else "Favorite",
                 onClick = onToggleFavorite,
                 style = OwnTVButtonStyle.SECONDARY,
                 icon = OwnTVIcon.STAR,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OwnTVButton(
+                label = downloadLabel(download),
+                onClick = onDownload,
+                style = OwnTVButtonStyle.SECONDARY,
+                icon = OwnTVIcon.DOWNLOADS,
+                enabled = download == null || download.status == DownloadStatus.FAILED,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
-        // Own row — squeezed into the row above, its label wrapped and stretched the pill vertically.
-        Spacer(Modifier.height(10.dp))
-        OwnTVButton(
-            label = downloadLabel(download),
-            onClick = onDownload,
-            style = OwnTVButtonStyle.SECONDARY,
-            icon = OwnTVIcon.DOWNLOADS,
-            enabled = download == null || download.status == DownloadStatus.FAILED,
-        )
     }
 }
 

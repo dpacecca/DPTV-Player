@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -99,7 +100,7 @@ fun SearchBar(
             Spacer(Modifier.width(10.dp))
             Box(modifier = Modifier.weight(1f)) {
                 if (query.isEmpty()) {
-                    Text(placeholder, style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+                    Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 BasicTextField(
                     value = query,
@@ -122,7 +123,7 @@ fun SearchBar(
                                 false
                             }
                         },
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.onSurface),
                     singleLine = true,
                     cursorBrush = SolidColor(colors.primary),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),

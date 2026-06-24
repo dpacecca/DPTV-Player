@@ -42,6 +42,7 @@ class SettingsViewModel(
     private val importFinalizer: tv.own.owntv.core.sync.ImportFinalizer,
     private val channelDao: tv.own.owntv.core.database.dao.ChannelDao,
     private val historyDao: tv.own.owntv.core.database.dao.HistoryDao,
+    private val progressDao: tv.own.owntv.core.database.dao.ProgressDao,
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
     private val epgSourceStore: tv.own.owntv.core.epg.EpgSourceStore,
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
@@ -70,7 +71,23 @@ class SettingsViewModel(
         viewModelScope.launch {
             val pid = settings.activeProfileId.first()
             if (pid < 0) return@launch
-            if (type == null) historyDao.clear(pid) else historyDao.clearType(pid, type)
+            if (type == null) {
+                historyDao.clear(pid)
+                progressDao.clearProfile(pid) // also wipe resume positions → empties Home's continue-watching
+            } else {
+                historyDao.clearType(pid, type)
+                // Home's Movies/Series continue-watching comes from the resume (progress) table, not history;
+                // series progress is stored under EPISODE. Live has no resume progress to clear.
+                when (type) {
+                    tv.own.owntv.core.model.MediaType.MOVIE ->
+                        progressDao.clearProfileType(pid, tv.own.owntv.core.model.MediaType.MOVIE)
+                    tv.own.owntv.core.model.MediaType.SERIES ->
+                        progressDao.clearProfileType(pid, tv.own.owntv.core.model.MediaType.EPISODE)
+                    else -> Unit
+                }
+            }
+            // Rebuild the Android TV home cards so the cleared items also leave the system Continue Watching row.
+            runCatching { launcherIntegrationRepository.refreshProfile(pid) }
         }
     }
 
@@ -184,8 +201,20 @@ class SettingsViewModel(
         }
     }
 
+    /** Status of the manual "Refresh now" so the UI can show Rebuilding… → Done. */
+    enum class TvHomeRefresh { IDLE, REFRESHING, DONE }
+    private val _tvHomeRefresh = MutableStateFlow(TvHomeRefresh.IDLE)
+    val tvHomeRefresh: StateFlow<TvHomeRefresh> = _tvHomeRefresh.asStateFlow()
+
     fun refreshAndroidTvHome() {
-        viewModelScope.launch { refreshActiveTvHome(allowBrowsableRequest = true) }
+        if (_tvHomeRefresh.value == TvHomeRefresh.REFRESHING) return
+        viewModelScope.launch {
+            _tvHomeRefresh.value = TvHomeRefresh.REFRESHING
+            runCatching { refreshActiveTvHome(allowBrowsableRequest = true) }
+            _tvHomeRefresh.value = TvHomeRefresh.DONE
+            kotlinx.coroutines.delay(1_800)
+            if (_tvHomeRefresh.value == TvHomeRefresh.DONE) _tvHomeRefresh.value = TvHomeRefresh.IDLE
+        }
     }
 
     // --- Video Player Settings ---

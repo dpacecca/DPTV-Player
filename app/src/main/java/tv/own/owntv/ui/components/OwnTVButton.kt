@@ -66,6 +66,8 @@ fun OwnTVButton(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
                 color = contentColor,
+                maxLines = 1,
+                softWrap = false,
             )
         }
     }

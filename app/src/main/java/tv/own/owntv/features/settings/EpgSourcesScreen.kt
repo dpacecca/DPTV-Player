@@ -95,6 +95,10 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
         CenterStatus(modifier) {
             OwnTVSpinner(sizeDp = 40); Spacer(Modifier.height(16.dp))
             Text("Downloading ${it.name}…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            if (it.count > 0) {
+                Spacer(Modifier.height(8.dp))
+                Text(tv.own.owntv.ui.components.formatCount(it.count) + " programmes", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
+            }
         }
         return
     }

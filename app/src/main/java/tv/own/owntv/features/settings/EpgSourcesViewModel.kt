@@ -30,7 +30,7 @@ class EpgSourcesViewModel(
 
     sealed interface SyncState {
         data object Idle : SyncState
-        data class Working(val name: String) : SyncState
+        data class Working(val name: String, val count: Int = 0) : SyncState
         data class Done(val message: String) : SyncState
         data class Failed(val message: String) : SyncState
     }
@@ -70,7 +70,7 @@ class EpgSourcesViewModel(
     private suspend fun sync(source: EpgSource) {
         _sync.value = SyncState.Working(source.name)
         val now = System.currentTimeMillis()
-        runCatching { epgRepository.refreshUrl(source.id, source.url, source.userAgent) }
+        runCatching { epgRepository.refreshUrl(source.id, source.url, source.userAgent) { c -> _sync.value = SyncState.Working(source.name, c) } }
             .onSuccess { count ->
                 store.setSynced(source.id, now, null)
                 _sync.value = SyncState.Done("${source.name}: $count EPG programmes synced")

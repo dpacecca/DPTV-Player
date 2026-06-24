@@ -303,7 +303,7 @@ fun SettingsScreen(
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
             title = "Surround sound",
-            desc = "Decode Dolby/DTS to surround (5.1/7.1) for your TV or receiver. Turn off for a stereo downmix.",
+            desc = "Decode Dolby/DTS to surround (5.1/7.1) for a real 5.1/7.1 receiver. Leave OFF for TV speakers or a stereo soundbar — multichannel can lag audio behind video on some TVs/soundbars. If it drifts, nudge the player's Audio menu → A/V sync.",
             chip = if (surroundSound) "On" else "Off",
             chipTone = if (surroundSound) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setSurroundSound(!surroundSound) },
@@ -345,10 +345,21 @@ fun SettingsScreen(
             onClick = { settingsVm.setAndroidTvHomeEnabled(!androidTvHomeEnabled) },
         )
         if (androidTvHomeEnabled) {
+            val tvHomeRefresh by settingsVm.tvHomeRefresh.collectAsStateWithLifecycle()
             SettingsRow(
                 tone = TileTone.TERTIARY, icon = OwnTVIcon.SHARE,
-                title = "Refresh now", desc = "Rebuild the Android TV cards now",
-                onClick = { settingsVm.refreshAndroidTvHome() },
+                title = "Refresh now", desc = "Rebuild the Continue Watching / recent cards on the Android TV home",
+                chip = when (tvHomeRefresh) {
+                    tv.own.owntv.features.settings.SettingsViewModel.TvHomeRefresh.REFRESHING -> "Rebuilding…"
+                    tv.own.owntv.features.settings.SettingsViewModel.TvHomeRefresh.DONE -> "Done ✓"
+                    else -> null
+                },
+                chipTone = TileTone.PRIMARY,
+                onClick = {
+                    if (tvHomeRefresh == tv.own.owntv.features.settings.SettingsViewModel.TvHomeRefresh.IDLE) {
+                        settingsVm.refreshAndroidTvHome()
+                    }
+                },
             )
         }
         SettingsRow(

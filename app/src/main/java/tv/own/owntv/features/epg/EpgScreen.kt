@@ -1,7 +1,15 @@
 package tv.own.owntv.features.epg
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
@@ -76,7 +84,6 @@ private val PX_PER_MIN = 4.dp
 private const val SLOT_MIN = 30
 
 private fun clock(ms: Long) = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
-private fun minutesWide(fromMs: Long, toMs: Long): Dp = (((toMs - fromMs) / 60_000L).toInt().coerceAtLeast(0) * PX_PER_MIN.value).dp
 
 /**
  * The full EPG guide: a time × channel grid. Channel labels are pinned on the left; every channel row
@@ -525,9 +532,12 @@ private fun GuideChannelRow(
     onMoveCursor: (Long) -> Unit,
 ) {
     val colors = OwnTVTheme.colors
-    // Cache peek as the initial value → rows scrolled back into view render instantly, no flash.
-    val programmes by produceState(initialValue = vm.cachedProgrammes(channel), channel.id, windowStart) {
-        if (value == null) value = vm.programmesFor(channel)
+    // Cache peek as the initial value → rows render instantly from the batch-loaded cache, no flash, no
+    // per-row query. Re-key on cacheRevision so a row re-reads the cache when the background catch-up
+    // lookback (pass 2) merges in.
+    val cacheRevision by vm.cacheRevision.collectAsStateWithLifecycle()
+    val programmes by produceState(initialValue = vm.cachedProgrammes(channel), channel.id, windowStart, cacheRevision) {
+        value = vm.cachedProgrammes(channel) ?: vm.programmesFor(channel)
     }
     val labelFR = remember { FocusRequester() }
     val stripFR = remember { FocusRequester() }
@@ -582,13 +592,15 @@ private fun GuideChannelRow(
                 .clip(RoundedCornerShape(10.dp))
                 .then(if (rowSelected) Modifier.border(Dimens.FocusBorderWidth, colors.focusBorder, RoundedCornerShape(10.dp)) else Modifier),
         ) {
-            Row(Modifier.horizontalScroll(hScroll)) {
-                val progs = programmes
-                if (progs == null) {
-                    Spacer(Modifier.width(minutesWide(windowStart, windowEnd)).height(ROW_HEIGHT))
-                } else {
-                    ProgrammeStrip(progs, windowStart, windowEnd, now, highlightTime = if (stripFocused && inCellMode) cursorTime else null)
-                }
+            programmes?.let { progs ->
+                ProgrammeStripCanvas(
+                    programmes = progs,
+                    windowStart = windowStart,
+                    windowEnd = windowEnd,
+                    now = now,
+                    highlightTime = if (stripFocused && inCellMode) cursorTime else null,
+                    hScroll = hScroll,
+                )
             }
         }
     }
@@ -616,68 +628,68 @@ private fun openAtCursor(progs: List<EpgProgrammeEntity>, cursorTime: Long, onOp
     p?.let(onOpen)
 }
 
-/** Lays a channel's programmes end-to-end across the window, with gap/trailing spacers so every row is the same total width (keeping the shared scroll aligned). */
+/**
+ * One channel's programme strip, drawn in a SINGLE Canvas (not ~48–336 composables per row). It reads the
+ * shared [hScroll] offset to translate + cull to just the visible programmes, so a 7-day window stays cheap.
+ * Per the perf review: a cached [rememberTextMeasurer] and pre-computed styles/labels keep allocations out of
+ * the draw loop (no GC thrash → no scroll micro-stutter).
+ */
 @Composable
-private fun ProgrammeStrip(
+private fun ProgrammeStripCanvas(
     programmes: List<EpgProgrammeEntity>,
     windowStart: Long,
     windowEnd: Long,
     now: Long,
     highlightTime: Long?,
-) {
-    var cursor = windowStart
-    programmes.forEach { p ->
-        val start = p.startMs.coerceIn(windowStart, windowEnd)
-        val stop = p.stopMs.coerceIn(windowStart, windowEnd)
-        if (stop <= cursor) return@forEach
-        if (start > cursor) { Spacer(Modifier.width(minutesWide(cursor, start))); cursor = start }
-        ProgrammeCell(
-            title = p.title,
-            timeLabel = "${clock(p.startMs)} – ${clock(p.stopMs)}",
-            width = minutesWide(start, stop),
-            isNow = now in p.startMs until p.stopMs,
-            highlighted = highlightTime != null && highlightTime in p.startMs until p.stopMs,
-        )
-        cursor = stop
-    }
-    if (cursor < windowEnd) Spacer(Modifier.width(minutesWide(cursor, windowEnd)))
-}
-
-/** A single, non-focusable programme block. [highlighted] = the CELL-stage cursor is on it. */
-@Composable
-private fun ProgrammeCell(
-    title: String,
-    timeLabel: String,
-    width: Dp,
-    isNow: Boolean,
-    highlighted: Boolean,
+    hScroll: androidx.compose.foundation.ScrollState,
 ) {
     val colors = OwnTVTheme.colors
-    val bg = when {
-        highlighted -> colors.card
-        isNow -> colors.primaryContainer
-        else -> colors.surfaceContainerHigh
+    val density = LocalDensity.current
+    val measurer = rememberTextMeasurer(cacheSize = 64)
+
+    // Pre-computed once — nothing here is allocated inside the draw loop.
+    val pxPerMin = with(density) { PX_PER_MIN.toPx() }
+    val gapPx = with(density) { 4.dp.toPx() }
+    val padPx = with(density) { 10.dp.toPx() }
+    val borderPx = with(density) { Dimens.FocusBorderWidth.toPx() }
+    val corner = with(density) { CornerRadius(10.dp.toPx(), 10.dp.toPx()) }
+    val titleStyle = MaterialTheme.typography.titleSmall.copy(color = colors.onSurface)
+    val titleNowStyle = MaterialTheme.typography.titleSmall.copy(color = colors.onPrimaryContainer)
+    val timeStyle = MaterialTheme.typography.labelSmall.copy(color = colors.onSurfaceVariant)
+    val timeNowStyle = MaterialTheme.typography.labelSmall.copy(color = colors.onPrimaryContainer)
+    // Time labels built once (string formatting kept out of the per-frame draw loop).
+    val labels = remember(programmes, now) {
+        programmes.map { p ->
+            val t = "${clock(p.startMs)} – ${clock(p.stopMs)}"
+            if (now in p.startMs until p.stopMs) "NOW · $t" else t
+        }
     }
-    val onBg = if (isNow && !highlighted) colors.onPrimaryContainer else colors.onSurface
-    Box(Modifier.width(width).height(ROW_HEIGHT).padding(end = 4.dp)) {
-        Box(
-            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(bg)
-                .then(if (highlighted) Modifier.border(Dimens.FocusBorderWidth, colors.focusBorder, RoundedCornerShape(10.dp)) else Modifier),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            Column(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.Center) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = onBg,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    if (isNow) "NOW · $timeLabel" else timeLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isNow && !highlighted) colors.onPrimaryContainer else colors.onSurfaceVariant,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
+
+    Canvas(Modifier.fillMaxSize()) {
+        val scrollPx = hScroll.value.toFloat()
+        val viewW = size.width
+        val h = size.height
+        programmes.forEachIndexed { i, p ->
+            val s = p.startMs.coerceIn(windowStart, windowEnd)
+            val e = p.stopMs.coerceIn(windowStart, windowEnd)
+            if (e <= s) return@forEachIndexed
+            val x = ((s - windowStart) / 60_000f) * pxPerMin - scrollPx
+            val w = (((e - s) / 60_000f) * pxPerMin - gapPx).coerceAtLeast(0f)
+            if (x + w <= 0f || x >= viewW) return@forEachIndexed // cull off-screen programmes
+            val isNow = now in p.startMs until p.stopMs
+            val hi = highlightTime != null && highlightTime in p.startMs until p.stopMs
+            val bg = when { hi -> colors.card; isNow -> colors.primaryContainer; else -> colors.surfaceContainerHigh }
+            drawRoundRect(color = bg, topLeft = Offset(x, 0f), size = Size(w, h), cornerRadius = corner)
+            if (hi) drawRoundRect(color = colors.focusBorder, topLeft = Offset(x, 0f), size = Size(w, h), cornerRadius = corner, style = Stroke(borderPx))
+            val textW = (w - padPx * 2f).toInt()
+            if (textW > 8) {
+                val tStyle = if (isNow && !hi) titleNowStyle else titleStyle
+                val mStyle = if (isNow && !hi) timeNowStyle else timeStyle
+                val title = measurer.measure(p.title, tStyle, overflow = TextOverflow.Ellipsis, maxLines = 1, constraints = Constraints(maxWidth = textW))
+                val time = measurer.measure(labels[i], mStyle, overflow = TextOverflow.Ellipsis, maxLines = 1, constraints = Constraints(maxWidth = textW))
+                val top = (h - (title.size.height + time.size.height + 2)) / 2f
+                drawText(title, topLeft = Offset(x + padPx, top))
+                drawText(time, topLeft = Offset(x + padPx, top + title.size.height + 2))
             }
         }
     }

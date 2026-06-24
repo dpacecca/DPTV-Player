@@ -38,6 +38,10 @@ This is an **open-source** project — the code is original (not derived from an
 **built with the help of AI**. **Contributions are welcome**: clone, build, and test it freely. It
 targets **Android TV only** (leanback launcher, D-pad-first UI).
 
+> ### 📖 New here? Read the [**User Guide & Hidden Features →**](extras/USER_GUIDE.md)
+> Long‑press to favourite, **Left** for the channel list, the gear button's **compatibility mode**,
+> catch‑up from the Guide, startup landing, A/V‑sync — all the remote shortcuts in one place.
+
 ---
 
 ## 💬 Community
@@ -107,6 +111,11 @@ Scan to join from your phone:
   mockup documenting the full player HUD, PiP, popup menus, and remote-key mappings.
 
 ### 🧭 Browse
+- **Home screen with Continue Watching** — a **Home** tab with a hero carousel of your partially‑watched
+  movies, episodes and recent live channels (newest first): the selected card shows large with its poster and
+  plays a muted preview when focused, and **OK** resumes where you left off — plus a **Favourite Channels**
+  rail. On stock Android TV it also feeds the system **"Continue Watching"** (Watch Next) row so you can resume
+  from the launcher; on Fire TV / Google TV the in‑app Home is the universal landing.
 - **Live TV**, **Movies**, **Series**, **Downloads**, and a full **EPG Guide**. The Live preview pane
   shows the channel's video, now/next/later, and the **real stream resolution** (e.g. `1080p`/`4K`) —
   so a channel named "…4K" that's actually 1080p can't fool you. The preview plays on the **ExoPlayer**
@@ -115,7 +124,8 @@ Scan to join from your phone:
 - **Fixed, roomy layout** — a stable grid (slim **icon nav** · **full-label category column** · content list ·
   preview) that **never expands or collapses as you move the D-pad**, so nothing jumps around (and it feels
   noticeably faster on lower-end boxes). The profile avatar stays pinned top-left — **click to switch
-  profiles**, long-press to change your picture.
+  profiles**, long-press to change your picture. A fresh **monochrome duotone** Material 3 nav‑icon set (it
+  tints with your theme) and **taller, phone-style posters** round out the look.
 - Folder rail with section-specific **Favorites** and **History** — **full category names** always shown, with
   a **category search box** to filter hundreds of groups by name. Inline per-folder search and a cross-section
   **global search** too — all TV-style: search bars take focus like any control and only open the keyboard on **OK**.
@@ -204,20 +214,24 @@ Scan to join from your phone:
 
 <table>
   <tr>
+    <td align="center"><img src="extras/screenshots/Home.png" alt="Home screen"><br><sub>Home — Continue Watching</sub></td>
     <td align="center"><img src="extras/screenshots/Main_View.png" alt="Main view"><br><sub>Main view</sub></td>
+  </tr>
+  <tr>
     <td align="center"><img src="extras/screenshots/LiveTV_with_PreviewON.png" alt="Live TV with preview"><br><sub>Live TV — preview playing</sub></td>
-  </tr>
-  <tr>
     <td align="center"><img src="extras/screenshots/Movies.png" alt="Movies"><br><sub>Movies</sub></td>
+  </tr>
+  <tr>
     <td align="center"><img src="extras/screenshots/Profile_Selection.png" alt="Profile selection"><br><sub>"Who's watching?" profile gate</sub></td>
-  </tr>
-  <tr>
     <td align="center"><img src="extras/screenshots/Downloads.png" alt="Downloads"><br><sub>Downloads</sub></td>
-    <td align="center"><img src="extras/screenshots/Settings_Main.png" alt="Settings"><br><sub>Settings</sub></td>
   </tr>
   <tr>
+    <td align="center"><img src="extras/screenshots/Settings_Main.png" alt="Settings"><br><sub>Settings</sub></td>
     <td align="center"><img src="extras/screenshots/EPG_loaded.png" alt="TV Guide"><br><sub>TV Guide (EPG)</sub></td>
+  </tr>
+  <tr>
     <td align="center"><img src="extras/screenshots/Settings_Personalization.png" alt="Personalization"><br><sub>Personalization</sub></td>
+    <td align="center"></td>
   </tr>
 </table>
 

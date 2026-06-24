@@ -1,12 +1,21 @@
 # Changelog
 
-## v4.0.0 — unreleased
+## v4.0.0 — 2026-06-25
 
 Big release — the community‑feedback **UI upgrade** (3 phases; Phase 1's quick wins are the first two
 entries below) folded together with a large batch of new features, performance work and fixes.
 
 ### ✨ New features
 
+- **Home screen with Continue Watching** — a new **Home** tab opens to a hero carousel of your partially‑watched
+  movies, episodes and recent live channels (newest first); the selected card is shown large with its poster and
+  starts a muted video preview when focused, and pressing **OK** resumes right where you left off. Below it is a
+  **Favourite Channels** rail. On **stock Android TV** launchers it also feeds the system **"Continue Watching"**
+  (Watch Next) row, so you can resume straight from the TV home screen — Settings → Android TV home → **Refresh
+  now** rebuilds those cards (with a *Rebuilding… → Done* status). (Sideloaded Fire TV / Google TV don't surface
+  system Watch Next rows, so the in‑app Home screen is the universal landing for everyone.)
+  🙏 **Huge thanks to [@codeVerine](https://github.com/codeVerine) (Sagar Mukundan UV) for building and
+  contributing this entire Home screen feature ([PR #31](https://github.com/ahXN00/OwnTV/pull/31)).**
 - **Stream technical info overlay** — in the player, the bottom-bar **info** button toggles a live readout of
   the current stream: video codec · resolution · fps · bit-depth, HDR type, bitrate, decoder (hardware/software
   · direct), audio codec · channels · sample rate, buffer & dropped frames, and the (credential-masked) source.
@@ -20,6 +29,12 @@ entries below) folded together with a large batch of new features, performance w
   **channel list**, and a large **preview** — each a fixed size. The same fixed nav + category column apply
   across **Movies, Series and the Guide**. The **profile avatar** stays pinned top‑left: **click it to switch
   profiles**, long‑press to change your picture. The result also feels noticeably faster on lower‑end boxes.
+- **Redesigned navigation icons** — a fresh, **monochrome duotone** Material 3 icon set (Home, Live TV,
+  Movies, Series, Search, Downloads, Guide, Settings) that tints with your theme — muted when idle, your
+  accent when selected. Plus layout polish: a wider Live channel list, a slightly narrower category column,
+  cleaner single‑line search bars, **taller phone‑style posters** in the Movies/Series grids, a **portrait
+  poster in the detail pane** (Series now shows its poster too), and the detail‑pane action buttons stacked
+  so longer labels (e.g. "Resume") never get clipped.
 - **Clear watch history** — Settings → Content → **Clear watch history** lets you wipe this profile's
   recently-watched / "continue watching" rows — **all of it, or just Live TV, Movies or Series** (with a
   Yes/No confirmation). Playlists, favorites and downloads are untouched.
@@ -73,9 +88,31 @@ entries below) folded together with a large batch of new features, performance w
 - **Much faster EPG sync** — the guide sync now stores programmes **only for the channels you actually have**
   instead of the entire feed (public XMLTV feeds often carry 10–20× more channels than your playlist). Far
   fewer rows to parse and write means a dramatically quicker, lighter sync.
+- **Leaner TV Guide internals** — the guide now loads every row's programmes in **one batched query**
+  (grouped into a cache) instead of a separate query per channel row (an N+1 storm), and draws each row's
+  timeline in a **single Canvas pass** instead of dozens–hundreds of per‑cell composables. The catch‑up
+  lookback streams in on a background thread (memory‑safe on low‑RAM boxes), the channel list is built off
+  the main thread, and re‑sorting/filtering reuses the cache. Mostly an efficiency/memory win — lighter on
+  large channel lists and multi‑day catch‑up windows.
 
 ### 🐛 Bug fixes
 
+- **Startup focus rests on the nav** — on a cold start (or switching to the Home tab) focus now stays on the
+  **Home item in the sidebar** instead of being pulled into the content; it only jumps into the hero when you
+  return from the player. (Builds on [@codeVerine](https://github.com/codeVerine)'s empty‑Home focus fix,
+  [PR #32](https://github.com/ahXN00/OwnTV/pull/32).)
+- **Clear watch history now empties Movies/Series from Home too** — clearing history (all, or just Movies /
+  Series) now also wipes the **resume positions** that feed Home's "Continue Watching", so those titles
+  actually leave the row (previously only Live cleared).
+- **Live preview shows full stream spec** — the preview pane's badge now shows **aspect · resolution · fps ·
+  audio** (e.g. `16:9 · 4K · 50 FPS · STEREO`) instead of resolution alone.
+- **Startup → Live · Favorites lands inside the list** — choosing this startup mode now drops focus on the
+  first favourite channel instead of the navigation panel, so you can start zapping immediately.
+- **Long‑press channel menu keeps focus on the channel** — closing the Live TV long‑press menu (Cancel /
+  Favourite / Hide) now returns focus to that channel instead of jumping back to the navigation panel.
+- **Clearer Surround sound warning** — the setting now explains that multichannel can drift audio behind
+  video (lip‑sync) on some TVs/soundbars, and points to the player's **Audio → A/V sync** nudge to correct it.
+  (Surround stays **off by default**; the drift is a hardware‑latency reality of multichannel LPCM over HDMI/ARC.)
 - **Imports survive a provider that errors on the full Movies/Series list** — some providers (e.g. peoplestv)
   return a non-standard **HTTP 512** on the giant bulk `get_series` / VOD response, which used to abort the
   whole import after the channels had loaded. Now a bulk error **automatically falls back to fetching that

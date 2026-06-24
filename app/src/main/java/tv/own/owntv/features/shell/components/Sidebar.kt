@@ -41,6 +41,7 @@ import androidx.tv.material3.Text
 import tv.own.owntv.features.shell.MainSection
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVAvatar
+import tv.own.owntv.ui.components.NavDuotoneIcon
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -284,7 +285,13 @@ private fun NavItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = if (expanded) Arrangement.spacedBy(16.dp, Alignment.Start) else Arrangement.Center,
         ) {
-            OwnTVIcon(icon = section.navIcon, tint = content, filled = active, modifier = Modifier.size(22.dp))
+            // Monochrome duotone nav icon — tints with the theme (muted idle, accent when selected) via the
+            // shared `content` colour. Still — no per-frame animation on the always-visible nav.
+            NavDuotoneIcon(
+                section = section,
+                color = content,
+                modifier = Modifier.size(28.dp),
+            )
             if (expanded) {
                 Text(
                     text = section.label,
@@ -324,3 +331,4 @@ private val MainSection.navIcon: OwnTVIcon
         MainSection.EPG -> OwnTVIcon.EPG
         MainSection.SETTINGS -> OwnTVIcon.SETTINGS
     }
+

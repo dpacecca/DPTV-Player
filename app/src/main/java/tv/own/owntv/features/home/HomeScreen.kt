@@ -107,18 +107,17 @@ fun HomeScreen(
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val heroFocus = remember { FocusRequester() }
     val fallbackFocus = remember { FocusRequester() }
-    val emptyFocus = remember { FocusRequester() }
     val firstRowFocus = remember { FocusRequester() }
-    var initialFocusApplied by remember { mutableStateOf(false) }
-    var restoreFocusHandled by remember { mutableStateOf(false) }
-    var expandedHeroIndex by remember { mutableStateOf(-1) }
+    // The SELECTED hero is always shown wide (with its poster) — default the first one, even before the row
+    // is focused. Video only plays once the row is focused (see the preview effect below). Expansion is
+    // decoupled from playback, so the wide card never collapses just because the video hasn't started.
+    var expandedHeroIndex by remember { mutableStateOf(0) }
     var focusedHeroIndex by remember { mutableStateOf(-1) }
 
     val onNonHeroFocused = remember(vm, heroPreviewEngine) {
         {
             vm.setHeroFocused(false)
-            expandedHeroIndex = -1
-            heroPreviewEngine.stop()
+            heroPreviewEngine.stop() // stop the video, but keep the selected hero expanded (poster)
             onChildFocused()
         }
     }
@@ -130,55 +129,38 @@ fun HomeScreen(
         kotlinx.coroutines.delay(40L)
         if (focusedHeroIndex != -1) return@LaunchedEffect
         vm.setHeroFocused(false)
-        expandedHeroIndex = -1
-        heroPreviewEngine.stop()
+        heroPreviewEngine.stop() // keep the selected hero expanded (poster); just stop the video
     }
 
     LaunchedEffect(previewEnabled) {
         vm.setPreviewEnabled(previewEnabled)
         if (!previewEnabled) {
-            expandedHeroIndex = -1
-            vm.stopPreview()
+            vm.stopPreview() // keep the hero expanded (poster); just stop the video
         }
     }
 
-    LaunchedEffect(restoreFocus) {
-        if (!restoreFocus) restoreFocusHandled = false
-    }
-
-    LaunchedEffect(restoreFocus, state.heroItems, state.continueMovies, state.continueSeries, state.favoriteLive) {
-        if (state.isEmpty && !restoreFocus && initialFocusApplied) return@LaunchedEffect
-        if (restoreFocus && restoreFocusHandled) return@LaunchedEffect
-        val hasContent = !state.isEmpty
-        if (!hasContent) {
-            if (!initialFocusApplied || restoreFocus) {
-                runCatching { emptyFocus.requestFocus() }
-                initialFocusApplied = true
-                restoreFocusHandled = restoreFocusHandled || restoreFocus
-                if (restoreFocus) onRestored()
-            }
+    LaunchedEffect(state.heroItems, state.continueMovies, state.continueSeries, state.favoriteLive, restoreFocus) {
+        if (state.isEmpty) {
+            if (restoreFocus) onRestored()
             return@LaunchedEffect
         }
-
-        if (!restoreFocus && initialFocusApplied) return@LaunchedEffect
-
         runCatching { listState.scrollToItem(0) }
-        kotlinx.coroutines.delay(60)
-        if (state.heroItems.isNotEmpty()) {
-            runCatching { heroFocus.requestFocus() }
-        } else {
-            runCatching { fallbackFocus.requestFocus() }
+        // Only pull focus INTO the Home content when returning from the player (restoreFocus). On a cold
+        // start or a tab switch, leave focus on the sidebar's Home item so the nav is immediately navigable.
+        if (restoreFocus) {
+            kotlinx.coroutines.delay(60)
+            if (state.heroItems.isNotEmpty()) {
+                runCatching { heroFocus.requestFocus() }
+            } else {
+                runCatching { fallbackFocus.requestFocus() }
+            }
+            onRestored()
         }
-        initialFocusApplied = true
-        restoreFocusHandled = restoreFocusHandled || restoreFocus
-        if (restoreFocus) onRestored()
     }
 
     if (state.isEmpty) {
         EmptyHomeState(
             modifier = modifier.fillMaxSize(),
-            focusRequester = emptyFocus,
-            onChildFocused = onChildFocused,
         )
         return
     }
@@ -215,9 +197,9 @@ fun HomeScreen(
                     onHeroFocusChanged = { index, hasFocus ->
                         if (hasFocus) {
                             if (expandedHeroIndex != index) {
-                                expandedHeroIndex = -1
-                                heroPreviewEngine.stop()
+                                heroPreviewEngine.stop() // stop the previous hero's video before switching
                             }
+                            expandedHeroIndex = index // expand the focused hero immediately (poster shows first)
                             focusedHeroIndex = index
                             vm.onHeroUserNavigate(index)
                             vm.setHeroFocused(true)
@@ -279,15 +261,15 @@ fun HomeScreen(
         }
     }
 
+    // Video preview: only the EXPANSION is immediate (on navigation, above) — the muted video starts a
+    // moment later, on top of the already-wide card's poster, and only while the row is focused.
     LaunchedEffect(isPreviewActive, hero, lastInteractionMs) {
-        expandedHeroIndex = -1
         if (!isPreviewActive || hero == null) {
             heroPreviewEngine.stop()
             return@LaunchedEffect
         }
 
         val scheduledHero = hero
-        val scheduledIndex = state.activeHeroIndex
         val interactionStamp = lastInteractionMs
 
         heroPreviewEngine.stop()
@@ -295,7 +277,6 @@ fun HomeScreen(
         if (!isPreviewActive || interactionStamp != lastInteractionMs) return@LaunchedEffect
         if (scheduledHero != state.heroItems.getOrNull(state.activeHeroIndex)) return@LaunchedEffect
 
-        expandedHeroIndex = scheduledIndex
         heroPreviewEngine.play(scheduledHero.streamUrl, scheduledHero.seekToMs)
     }
 }
@@ -960,15 +941,11 @@ private fun HeroFallbackPane(
 @Composable
 private fun EmptyHomeState(
     modifier: Modifier = Modifier,
-    focusRequester: FocusRequester,
-    onChildFocused: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
     Box(
         modifier = modifier
-            .focusRequester(focusRequester)
-            .focusable()
-            .onFocusChanged { if (it.hasFocus) onChildFocused() }
+            .focusProperties { canFocus = false }
             .background(colors.surface),
         contentAlignment = Alignment.Center,
     ) {

@@ -110,7 +110,22 @@ fun LiveScreen(
     var matchingEpg by remember { mutableStateOf<ChannelEntity?>(null) }
     var catchupChannel by remember { mutableStateOf<ChannelEntity?>(null) }
     var contextChannel by remember { mutableStateOf<ChannelEntity?>(null) } // long-press quick menu
+    // When the long-press menu closes (Cancel, Favourite, Hide) WITHOUT opening another dialog, return focus
+    // to the channel it was opened from — otherwise focus falls back to the nav panel.
+    var contextMenuOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(contextChannel) {
+        if (contextChannel != null) { contextMenuOpen = true; return@LaunchedEffect }
+        if (contextMenuOpen) {
+            contextMenuOpen = false
+            if (renaming == null && matchingEpg == null && catchupChannel == null) {
+                delay(60)
+                runCatching { selFocus.requestFocus() }
+            }
+        }
+    }
     // Returning from fullscreen: scroll to and focus the channel you were watching (waits for the list to load).
+    // Also used by "Startup → Live · Favorites": there's no remembered channel yet, so land on the first row
+    // (not the nav panel).
     LaunchedEffect(restoreFocus, channels.itemCount) {
         if (!restoreFocus || channels.itemCount == 0) return@LaunchedEffect
         val ch = previewChannel
@@ -119,6 +134,9 @@ fun LiveScreen(
             runCatching { listState.scrollToItem(idx) }
             delay(60)
             runCatching { selFocus.requestFocus() }
+        } else {
+            delay(60)
+            runCatching { firstItemFocus.requestFocus() }
         }
         onRestored()
     }
@@ -159,7 +177,13 @@ fun LiveScreen(
                 .focusGroup()
                 .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
         ) {
-            Text("Live TV / ${selectedItem?.title ?: "All"}", style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface)
+            Text(
+                "Live TV / ${selectedItem?.title ?: "All"}",
+                style = MaterialTheme.typography.headlineMedium,
+                color = OwnTVTheme.colors.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
             Spacer(Modifier.height(4.dp))
             Text(
                 "${selectedItem?.abbr ?: "ALL"} (${formatCount(count)} channels)",
@@ -384,6 +408,7 @@ private fun LivePreviewPane(
     val colors = OwnTVTheme.colors
     val previewState by previewEngine.state.collectAsStateWithLifecycle()
     val previewHeight by previewEngine.videoHeight.collectAsStateWithLifecycle()
+    val streamChips by previewEngine.streamChips.collectAsStateWithLifecycle()
     // Show the ExoPlayer surface once it's playing/buffering; on ERROR fall back to the channel logo.
     val previewPlaying = showVideo && previewState != tv.own.owntv.player.LivePreviewEngine.State.ERROR &&
         previewState != tv.own.owntv.player.LivePreviewEngine.State.IDLE
@@ -415,15 +440,24 @@ private fun LivePreviewPane(
             if (previewLoading) {
                 OwnTVSpinner(sizeDp = 28)
             }
-            // Real resolution of the stream (e.g. 1080p) — the channel NAME often lies ("…4K"), so this
-            // shows what you'll actually get before you commit to watching.
-            videoRes?.takeIf { previewPlaying }?.let { res ->
-                Box(
-                    Modifier.align(Alignment.TopEnd).padding(8.dp)
-                        .clip(RoundedCornerShape(6.dp)).background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f))
-                        .padding(horizontal = 8.dp, vertical = 3.dp),
+            // Real stream spec — aspect · resolution · fps · audio. The channel NAME often lies ("…4K"),
+            // so this shows what you'll actually get before you commit to watching. Falls back to just the
+            // resolution until the full format is known.
+            val chips = streamChips.takeIf { it.isNotEmpty() } ?: videoRes?.let { listOf(it) }.orEmpty()
+            chips.takeIf { previewPlaying && it.isNotEmpty() }?.let { list ->
+                Row(
+                    Modifier.align(Alignment.TopStart).padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text(res, style = MaterialTheme.typography.labelMedium, color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Bold)
+                    list.forEach { label ->
+                        Box(
+                            Modifier.clip(RoundedCornerShape(6.dp))
+                                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f))
+                                .padding(horizontal = 8.dp, vertical = 3.dp),
+                        ) {
+                            Text(label, style = MaterialTheme.typography.labelMedium, color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
