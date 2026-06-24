@@ -358,6 +358,21 @@ class LiveViewModel(
         recordLiveHistory(channel)
     }
 
+    fun ensurePlayingById(channelId: Long) {
+        viewModelScope.launch {
+            val channel = channelDao.getById(channelId) ?: return@launch
+            ensurePlaying(channel)
+        }
+    }
+
+    suspend fun ensurePlayingByIdAsync(channelId: Long, zapChannels: List<ChannelEntity> = emptyList()): Boolean {
+        val channel = channelDao.getById(channelId) ?: return false
+        zapList = zapChannels
+        _canZap.value = zapChannels.size > 1
+        ensurePlaying(channel)
+        return true
+    }
+
     /** One-shot: hand [channel] to mpv if ExoPlayer can't play it fully — either it **errors** opening, or it
      *  plays but ExoPlayer can decode **none of its audio** (e.g. an AC3/E-AC3/DTS movie file added via M3U,
      *  on a device without that decoder — it'd play silently). mpv (FFmpeg) decodes everything. */

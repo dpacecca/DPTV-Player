@@ -189,6 +189,19 @@ class MovieViewModel(
         }
     }
 
+    fun playById(movieId: Long, startPositionMs: Long = 0) {
+        viewModelScope.launch {
+            val movie = movieDao.getById(movieId) ?: return@launch
+            play(movie, startPositionMs)
+        }
+    }
+
+    suspend fun playByIdAsync(movieId: Long, startPositionMs: Long = 0): Boolean {
+        val movie = movieDao.getById(movieId) ?: return false
+        play(movie, startPositionMs)
+        return true
+    }
+
     /** Download states for the currently visible movies, keyed by movie id. */
     val downloadStates: StateFlow<Map<Long, DownloadEntity>> = ctx
         .flatMapLatest { c -> if (c.profileId < 0) flowOf(emptyList()) else downloadManager.observe(c.profileId) }

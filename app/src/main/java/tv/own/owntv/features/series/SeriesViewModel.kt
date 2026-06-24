@@ -236,6 +236,31 @@ class SeriesViewModel(
         }
     }
 
+    fun openSeriesById(seriesId: Long) {
+        viewModelScope.launch {
+            val show = seriesDao.getSeriesById(seriesId) ?: return@launch
+            openSeries(show)
+        }
+    }
+
+    fun playFromHome(seriesId: Long, episodeId: Long, startPositionMs: Long = 0) {
+        viewModelScope.launch {
+            playFromHomeAsync(seriesId, episodeId, startPositionMs)
+        }
+    }
+
+    suspend fun playFromHomeAsync(seriesId: Long, episodeId: Long, startPositionMs: Long = 0): Boolean {
+        val episode = seriesDao.getEpisodeById(episodeId) ?: return false
+        val showId = if (seriesId > 0) seriesId else episode.seriesId
+        val show = seriesDao.getSeriesById(showId) ?: return false
+        if (episode.seriesId != show.id) return false
+        seriesRepository.loadEpisodes(show)
+        val queue = seriesDao.episodesBySeries(show.id).first()
+        if (queue.isEmpty()) return false
+        playEpisodeQueue(show, queue, episode, startPositionMs)
+        return true
+    }
+
     fun closeSeries() {
         _openedSeries.value = null
     }
