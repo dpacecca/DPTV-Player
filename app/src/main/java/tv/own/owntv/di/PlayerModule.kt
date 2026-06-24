@@ -2,6 +2,7 @@ package tv.own.owntv.di
 
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
+import tv.own.owntv.player.HeroPreviewEngine
 import tv.own.owntv.player.LivePreviewEngine
 import tv.own.owntv.player.OwnTVPlayer
 
@@ -13,4 +14,6 @@ val playerModule = module {
     single { OwnTVPlayer(androidContext(), get(), get(), get(), get()) }
     // ExoPlayer engine for the fast Live preview pane (mpv stays the full/fullscreen player).
     single { LivePreviewEngine(androidContext(), get(), get()) }
+    // Muted ExoPlayer engine for the Home hero preview.
+    single { HeroPreviewEngine(androidContext(), get()) }
 }
