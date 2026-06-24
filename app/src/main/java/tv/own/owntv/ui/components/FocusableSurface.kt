@@ -25,16 +25,6 @@ import androidx.compose.ui.unit.dp
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
 
-/**
- * The single reusable focus primitive for OwnTV: a clickable/selectable surface that, on D-pad
- * focus, lifts with a brand-colored glow, draws the focus border, and optionally scales up.
- * Selected items keep a persistent border.
- *
- * Every focusable element in the app (sidebar items, rail pills, settings rows, buttons, cards)
- * should be built on this so focus styling stays consistent.
- *
- * The [content] lambda receives the current `focused` state so callers can tint text/icons.
- */
 @Composable
 fun FocusableSurface(
     onClick: () -> Unit,
@@ -83,8 +73,6 @@ fun FocusableSurface(
                 else Modifier
             )
             .then(
-                // Long-press support (e.g. "Match EPG" on a guide channel) uses combinedClickable; the
-                // default path keeps `selectable` for its selected a11y semantics.
                 if (onLongClick != null) {
                     Modifier.combinedClickable(
                         interactionSource = interaction,

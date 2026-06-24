@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
  * grid and scaled to fit. Line style by default; some support [filled].
  */
 enum class OwnTVIcon {
-    LIVE_TV, MOVIES, SERIES, DOWNLOADS, MENU, STAR, PLAY, SEARCH, HISTORY,
+    LIVE_TV, MOVIES, SERIES, DOWNLOADS, MENU, STAR, PLAY, SEARCH, HOME, HISTORY,
     PERSON, ADD, SETTINGS, PALETTE, THEME, ZOOM, PLAYLIST, EPG, VIDEO, SHARE, CHEVRON, FAVORITE,
     PAUSE, REWIND, FORWARD, AUDIO, SUBTITLE, SKIP_NEXT, SKIP_PREVIOUS,
     BACK, VOLUME_HIGH, VOLUME_LOW, VOLUME_MUTE, ASPECT, FULLSCREEN, FULLSCREEN_EXIT, PIP, CLOSE,
@@ -80,6 +80,19 @@ fun OwnTVIcon(
             OwnTVIcon.SEARCH -> {
                 drawCircleStroke(p(10.5f, 10.5f), 6.5f * s, tint, stroke)
                 drawLineStroke(p(15.5f, 15.5f), p(20f, 20f), tint, stroke)
+            }
+            OwnTVIcon.HOME -> {
+                val roof = Path().apply {
+                    moveTo(p(12f, 3f).x, p(12f, 3f).y)
+                    lineTo(p(3f, 12f).x, p(3f, 12f).y)
+                    lineTo(p(21f, 12f).x, p(21f, 12f).y)
+                    close()
+                }
+                drawPath(roof, tint, style = stroke)
+                drawRoundRectStroke(p(5f, 12f), p(19f, 21f), 2f * s, tint, stroke)
+                drawLineStroke(p(10f, 21f), p(10f, 15f), tint, stroke)
+                drawLineStroke(p(14f, 21f), p(14f, 15f), tint, stroke)
+                drawLineStroke(p(10f, 15f), p(14f, 15f), tint, stroke)
             }
             OwnTVIcon.STAR -> {
                 val star = starPath(center = p(12f, 12f), outer = 9f * s, inner = 3.7f * s)
