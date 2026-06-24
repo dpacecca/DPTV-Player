@@ -20,6 +20,7 @@ import tv.own.owntv.core.sync.ImportStage
 import tv.own.owntv.core.sync.SyncResult
 import tv.own.owntv.core.util.Pin
 import tv.own.owntv.core.util.friendlySyncError
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.features.settings.data.SettingsRepository
 import java.io.File
 
@@ -38,6 +39,7 @@ class SetupViewModel(
     private val importFinalizer: tv.own.owntv.core.sync.ImportFinalizer,
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
     private val epgSourceStore: tv.own.owntv.core.epg.EpgSourceStore,
+    private val launcherIntegrationRepository: LauncherIntegrationRepository,
 ) : ViewModel() {
 
     // Semi-auto EPG: after the first playlist imports, offer a one-tap guide sync (with a live count) if it
@@ -72,7 +74,7 @@ class SetupViewModel(
     private var createdProfileId = -1L
 
     /** Creates the profile (not active yet); the rest of onboarding attaches content to it. */
-    fun createProfile(name: String, avatarId: Int, isKids: Boolean, pin: String?) {
+    fun createProfile(name: String, avatarId: Int, isKids: Boolean, pin: String?, onCreated: (Long) -> Unit = {}) {
         viewModelScope.launch {
             createdProfileId = profileDao.insert(
                 ProfileEntity(
@@ -83,6 +85,7 @@ class SetupViewModel(
                     pinHash = pin?.takeIf { it.isNotBlank() }?.let { Pin.hash(it) },
                 ),
             )
+            onCreated(createdProfileId)
         }
     }
 
@@ -122,6 +125,7 @@ class SetupViewModel(
                     SyncResult.Success -> {
                         // Just the playlist content — EPG is added separately (Settings → EPG sources).
                         val counts = importFinalizer.finalize(source)
+                        runCatching { launcherIntegrationRepository.refreshProfile(profileId) }
                         _state.value = ImportState.Success(counts.summary(includeEpg = false))
                         if (epgRepository.guideUrl(source) != null) {
                             pendingEpgSource = source
@@ -175,6 +179,7 @@ class SetupViewModel(
                         SyncResult.Cancelled -> {}
                     }
                 }
+                runCatching { launcherIntegrationRepository.refreshProfile(pid) }
                 _state.value = failure?.let { ImportState.Failed(friendlySyncError(it, connectivity.isOnlineNow())) } ?: ImportState.Success(total.summary(includeEpg = true))
             } catch (c: CancellationException) {
                 throw c
@@ -207,9 +212,10 @@ class SetupViewModel(
     }
 
     /** Completes onboarding → makes the new profile active, routing the app into the shell. */
-    fun finish() {
+    fun finish(onDone: () -> Unit = {}) {
         viewModelScope.launch {
             if (createdProfileId > 0) settings.setActiveProfile(createdProfileId)
+            onDone()
         }
     }
 }

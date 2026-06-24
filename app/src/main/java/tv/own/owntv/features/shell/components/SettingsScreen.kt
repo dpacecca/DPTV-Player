@@ -128,6 +128,7 @@ fun SettingsScreen(
     val hdr by settingsVm.hdrEnabled.collectAsStateWithLifecycle()
     val surroundSound by settingsVm.surroundSound.collectAsStateWithLifecycle()
     val autoPlayNext by settingsVm.autoPlayNext.collectAsStateWithLifecycle()
+    val androidTvHomeEnabled by settingsVm.androidTvHomeEnabled.collectAsStateWithLifecycle()
     val updateCheckOnStart by settingsVm.updateCheckOnStart.collectAsStateWithLifecycle()
     val resumeLastChannel by settingsVm.resumeLastChannel.collectAsStateWithLifecycle()
     val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
@@ -336,6 +337,20 @@ fun SettingsScreen(
             onClick = { dialogReturn = catchupRowFocus; showCatchupTime = true }, showChevron = true,
             modifier = Modifier.focusRequester(catchupRowFocus),
         )
+        SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.HISTORY,
+            title = "Android TV home", desc = "Show Continue Watching and recent live channels on the TV home screen",
+            chip = if (androidTvHomeEnabled) "On" else "Off",
+            chipTone = if (androidTvHomeEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
+            onClick = { settingsVm.setAndroidTvHomeEnabled(!androidTvHomeEnabled) },
+        )
+        if (androidTvHomeEnabled) {
+            SettingsRow(
+                tone = TileTone.TERTIARY, icon = OwnTVIcon.SHARE,
+                title = "Refresh now", desc = "Rebuild the Android TV cards now",
+                onClick = { settingsVm.refreshAndroidTvHome() },
+            )
+        }
         SettingsRow(
             tone = TileTone.TERTIARY, icon = OwnTVIcon.VIDEO,
             title = "Video Player Settings", desc = "Decoder, subtitles, sync",

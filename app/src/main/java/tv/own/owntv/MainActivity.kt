@@ -1,6 +1,8 @@
 package tv.own.owntv
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -20,6 +22,7 @@ import androidx.compose.ui.unit.Density
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
+import tv.own.owntv.core.launcher.LauncherDeepLink
 import tv.own.owntv.features.profiles.ProfileGate
 import tv.own.owntv.features.profiles.ProfilesViewModel
 import tv.own.owntv.features.setup.Onboarding
@@ -29,8 +32,21 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.UiZoom
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        private const val TAG = "OwnTVHome"
+    }
+
     private val player: tv.own.owntv.player.OwnTVPlayer by inject()
     private val previewEngine: tv.own.owntv.player.LivePreviewEngine by inject()
+    private val heroPreviewEngine: tv.own.owntv.player.HeroPreviewEngine by inject()
+    private var pendingDeepLink by mutableStateOf<LauncherDeepLink?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingDeepLink = LauncherDeepLink.parse(intent.data)
+        Log.d(TAG, "onNewIntent deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}")
+    }
 
     override fun onStop() {
         super.onStop()
@@ -40,6 +56,7 @@ class MainActivity : ComponentActivity() {
             player.onAppBackgrounded()
             // Live runs on ExoPlayer — remember the channel and free the stream (its audio must stop too).
             previewEngine.onAppBackgrounded()
+            heroPreviewEngine.stop()
         }
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
@@ -55,6 +72,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingDeepLink = LauncherDeepLink.parse(intent.data)
+        Log.d(TAG, "onCreate deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}")
         setContent {
             // Hold the screen on while video is actually playing, so the TV screensaver doesn't
             // start mid-channel/episode; released when paused/stopped (then the screensaver is fine).
@@ -86,6 +105,7 @@ class MainActivity : ComponentActivity() {
             // out of Settings → Backup & Restore mid-restore. Only the cold start waits for the load.
             var everHadProfiles by remember { mutableStateOf(false) }
             LaunchedEffect(profiles) { if (profiles.isNotEmpty()) everHadProfiles = true }
+            val shouldShowProfileGate = profiles.size > 1 || profiles.singleOrNull()?.pinHash != null
 
             // "Refresh on startup" — re-sync sources once the active profile is known.
             LaunchedEffect(activeProfileId) {
@@ -117,8 +137,8 @@ class MainActivity : ComponentActivity() {
                             )
                             // Profiles still loading (≥0 means at least one exists) — avoid a gate/shell flicker.
                             profiles.isEmpty() && !everHadProfiles -> Unit
-                            // Run 2+: "Who's watching?" — choose a profile or add one.
-                            !gatePassed -> ProfileGate(
+                            // Run 2+ (or a single locked profile): "Who's watching?" — choose a profile or add one.
+                            shouldShowProfileGate && !gatePassed -> ProfileGate(
                                 onEnter = { gatePassed = true },
                                 onAddProfile = { addingProfile = true },
                                 modifier = Modifier.fillMaxSize(),
@@ -133,11 +153,14 @@ class MainActivity : ComponentActivity() {
                                 onSetAvatar = viewModel::setAvatar,
                                 profileName = profileName,
                                 sourceSummary = sourceSummary,
+                                activeProfileId = activeProfileId,
+                                pendingDeepLink = pendingDeepLink,
+                                onDeepLinkConsumed = { pendingDeepLink = null },
                                 isOffline = !isOnline,
                                 onExitApp = { finish() },
                                 onSwitchProfile = {
                                     // Stop playback and return to the "Who's watching?" gate — no app restart.
-                                    player.onAppBackgrounded(); player.discardBackgroundRestore(); previewEngine.stop(); previewEngine.discardBackgroundRestore(); gatePassed = false
+                                    player.onAppBackgrounded(); player.discardBackgroundRestore(); previewEngine.stop(); previewEngine.discardBackgroundRestore(); heroPreviewEngine.stop(); gatePassed = false
                                 },
                                 modifier = Modifier.fillMaxSize(),
                             )

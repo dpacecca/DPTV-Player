@@ -7,6 +7,7 @@ import tv.own.owntv.features.customize.CustomizeViewModel
 import tv.own.owntv.features.downloads.DownloadsViewModel
 import tv.own.owntv.features.epg.EpgViewModel
 import tv.own.owntv.features.live.LiveViewModel
+import tv.own.owntv.features.home.HomeViewModel
 import tv.own.owntv.features.movies.MovieViewModel
 import tv.own.owntv.features.profiles.ProfilesViewModel
 import tv.own.owntv.features.search.SearchViewModel
@@ -23,25 +24,19 @@ import tv.own.owntv.features.shell.ShellViewModel
  */
 val appModule = module {
     single { SettingsRepository(androidContext()) }
-    viewModel { ShellViewModel(get(), get(), get(), get(), get()) }
-    // profileDao, sourceDao, sourceRepository, backup, settings, connectivity, importFinalizer, epgRepository, epgSourceStore
-    viewModel { SetupViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    // channelDao, categoryDao, favoriteDao, historyDao, sourceDao, settings, xtreamClient, customize, epgDao, epgSourceStore, player, previewEngine, forceMpvStore
-    viewModel { LiveViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    // movieDao, categoryDao, favoriteDao, historyDao, progressDao, sourceDao, settings, customize, player, downloadManager
-    viewModel { MovieViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    // seriesDao, categoryDao, favoriteDao, historyDao, progressDao, sourceDao, seriesRepository, settings, customize, player, downloadManager
-    viewModel { SeriesViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    // channelDao, movieDao, seriesDao, historyDao, sourceDao, settings, customize, player
-    viewModel { SearchViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    // profileDao, sourceDao, settings
-    viewModel { ProfilesViewModel(get(), get(), get()) }
-    // sourceDao, sourceRepository, settings, connectivity, epgDao, importFinalizer, channelDao, historyDao, epgRepository, epgSourceStore
-    viewModel { SettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    // downloadDao, settings, downloadManager, player
+    // Merged (v4.0.0 + PR#31 Home/launcher). Koin resolves each get() by type, so only the count must match
+    // each ViewModel's merged constructor.
+    viewModel { ShellViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { SetupViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { LiveViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { MovieViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { SeriesViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { SearchViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { ProfilesViewModel(get(), get(), get(), get()) }
+    viewModel { SettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { DownloadsViewModel(get(), get(), get(), get()) }
-    // settings, sourceRepository, channelDao, epgDao, epgRepository, epgSourceStore, connectivity, customize, historyDao, sourceDao, xtream, player
-    viewModel { EpgViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { EpgViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     // settings, sourceDao, categoryDao, customizationStore
     viewModel { CustomizeViewModel(get(), get(), get(), get()) }
     // backupManager

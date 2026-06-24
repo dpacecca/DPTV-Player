@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,16 +29,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import tv.own.owntv.core.launcher.LauncherDeepLink
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
+import tv.own.owntv.core.launcher.LauncherLaunch
 import tv.own.owntv.core.update.UpdateManager
 import tv.own.owntv.features.update.UpdateDialog
 import tv.own.owntv.features.update.UpdateStatusToast
 import tv.own.owntv.features.downloads.DownloadsScreen
 import tv.own.owntv.features.epg.EpgScreen
+import tv.own.owntv.features.home.HomeScreen
+import tv.own.owntv.features.home.HomeViewModel
 import tv.own.owntv.features.live.LiveScreen
+import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MoviesScreen
+import tv.own.owntv.features.movies.MovieViewModel
 import tv.own.owntv.features.search.SearchScreen
 import tv.own.owntv.features.series.SeriesScreen
+import tv.own.owntv.features.series.SeriesViewModel
 import tv.own.owntv.player.MiniPlayer
 import tv.own.owntv.player.MpvVideoSurface
 import tv.own.owntv.player.OwnTVPlayer
@@ -78,6 +88,9 @@ fun OwnTVShell(
     onSetAvatar: (Int) -> Unit,
     profileName: String,
     sourceSummary: String,
+    activeProfileId: Long?,
+    pendingDeepLink: LauncherDeepLink?,
+    onDeepLinkConsumed: () -> Unit,
     isOffline: Boolean = false,
     onExitApp: () -> Unit,
     onSwitchProfile: () -> Unit,
@@ -88,6 +101,7 @@ fun OwnTVShell(
     val selectedRail = railSelection[selectedSection] ?: 0
     val categories = railCategoriesFor(selectedSection)
 
+    val scope = rememberCoroutineScope()
     val sidebarFocus = remember { FocusRequester() }
     var focusedLayer by remember { mutableStateOf(ShellLayer.SIDEBAR) }
     var showExit by remember { mutableStateOf(false) }
@@ -99,12 +113,14 @@ fun OwnTVShell(
     var restoreFocus by remember { mutableStateOf(false) }
     val player = koinInject<OwnTVPlayer>()
     val mpvEngine = remember(player) { tv.own.owntv.player.MpvPlaybackEngine(player) }
+    val launcherIntegrationRepository = koinInject<LauncherIntegrationRepository>()
+    val homeVm = org.koin.androidx.compose.koinViewModel<HomeViewModel>()
+    val movieVm = org.koin.androidx.compose.koinViewModel<MovieViewModel>()
+    val seriesVm = org.koin.androidx.compose.koinViewModel<SeriesViewModel>()
     // Same activity-scoped instances the Live/Guide screens use — lets the fullscreen HUD zap channels
     // up/down (CH+/CH-) through whichever section's list opened the stream.
-    val liveVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.live.LiveViewModel>()
+    val liveVm = org.koin.androidx.compose.koinViewModel<LiveViewModel>()
     val epgVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.epg.EpgViewModel>()
-    // Shared with SeriesScreen — lets a global-search series result open the actual show.
-    val seriesVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.series.SeriesViewModel>()
     val liveCanZap by liveVm.canZap.collectAsStateWithLifecycle()
     val epgCanZap by epgVm.canZap.collectAsStateWithLifecycle()
     // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
@@ -155,11 +171,13 @@ fun OwnTVShell(
     // Opening content from a browse screen goes fullscreen — UNLESS the player is already docked as a
     // mini-player, in which case it stays docked and just swaps to the newly-selected stream (the VM
     // already started it), so picking a channel updates the PiP window in place (#6).
-    val openFullscreen = {
-        restoreFocus = false; zapSource = selectedSection
+    fun openFullscreen(source: MainSection = selectedSection) {
+        restoreFocus = false
+        zapSource = source
+        homeVm.stopPreview()
         // Only Live TV promotes a channel to the ExoPlayer engine. Movies/Series/Search/EPG/Downloads all
         // play on mpv — clear any stale live-on-ExoPlayer flag so the shell renders mpv, not the old channel.
-        if (selectedSection != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
+        if (source != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
         if (playerMode != PlayerMode.MINI) playerMode = PlayerMode.FULLSCREEN
     }
     // The mini-player's own expand button always maximizes.
@@ -169,8 +187,9 @@ fun OwnTVShell(
         showChannelList = false
         liveVm.onFullscreenExited() // no longer full-screen on ExoPlayer → let the preview re-take the engine
         player.stop()
+        if (selectedSection != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
         restoreFocus = true
-        runCatching { sidebarFocus.requestFocus() } // fallback if the screen has nothing to restore
+        runCatching { sidebarFocus.requestFocus() }
         Unit
     }
     val dockPlayer = {
@@ -182,9 +201,56 @@ fun OwnTVShell(
 
     LaunchedEffect(Unit) { runCatching { sidebarFocus.requestFocus() } }
 
+    LaunchedEffect(pendingDeepLink, activeProfileId) {
+        val deepLink = pendingDeepLink ?: return@LaunchedEffect
+        val pid = activeProfileId ?: return@LaunchedEffect
+        if (pid < 0) return@LaunchedEffect
+        when (deepLink) {
+            LauncherDeepLink.OpenLiveSection -> {
+                onSelectSection(MainSection.LIVE_TV)
+                onDeepLinkConsumed()
+            }
+            else -> when (val launch = launcherIntegrationRepository.resolveLaunch(pid, deepLink)) {
+                is LauncherLaunch.Movie -> {
+                    onSelectSection(MainSection.MOVIES)
+                    movieVm.play(launch.movie, launch.startPositionMs)
+                    openFullscreen(MainSection.MOVIES)
+                    onDeepLinkConsumed()
+                }
+                is LauncherLaunch.Episode -> {
+                    onSelectSection(MainSection.SERIES)
+                    seriesVm.playEpisodeQueue(launch.show, launch.queue, launch.episode, launch.startPositionMs)
+                    openFullscreen(MainSection.SERIES)
+                    onDeepLinkConsumed()
+                }
+                is LauncherLaunch.Live -> {
+                    onSelectSection(MainSection.LIVE_TV)
+                    liveVm.ensurePlaying(launch.channel)
+                    openFullscreen(MainSection.LIVE_TV)
+                    onDeepLinkConsumed()
+                }
+                is LauncherLaunch.Series -> {
+                    onSelectSection(MainSection.SERIES)
+                    seriesVm.openSeries(launch.show)
+                    onDeepLinkConsumed()
+                }
+                null -> {
+                    onDeepLinkConsumed()
+                }
+            }
+        }
+    }
+
     // Stop a leftover live preview when you leave the Live section (but never while fullscreen/mini plays).
     LaunchedEffect(selectedSection, playerMode) {
         if (selectedSection != MainSection.LIVE_TV && playerMode == PlayerMode.NONE) player.stop()
+        if (selectedSection != MainSection.HOME || playerMode != PlayerMode.NONE) homeVm.stopPreview()
+    }
+
+    LaunchedEffect(selectedSection, playerMode, activeProfileId) {
+        if (selectedSection == MainSection.HOME && playerMode == PlayerMode.NONE && (activeProfileId?.let { it >= 0 } == true)) {
+            homeVm.refresh()
+        }
     }
 
     BackHandler {
@@ -235,8 +301,20 @@ fun OwnTVShell(
                             .focusGroup(),
                     )
 
+                    selectedSection == MainSection.HOME -> HomeScreen(
+                        vm = homeVm,
+                        onPlayMovie = { id, pos -> scope.launch { if (movieVm.playByIdAsync(id, pos)) openFullscreen(MainSection.MOVIES) } },
+                        onPlayEpisode = { seriesId, epId, pos -> scope.launch { if (seriesVm.playFromHomeAsync(seriesId, epId, pos)) openFullscreen(MainSection.SERIES) } },
+                        onPlayChannel = { id, zap -> scope.launch { if (liveVm.ensurePlayingByIdAsync(id, zap)) openFullscreen(MainSection.LIVE_TV) } },
+                        onChildFocused = { focusedLayer = ShellLayer.CONTENT },
+                        restoreFocus = restoreFocus,
+                        onRestored = { restoreFocus = false },
+                        previewEnabled = playerMode == PlayerMode.NONE,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+
                     selectedSection == MainSection.SEARCH -> SearchScreen(
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         // Open the actual series (its episode list), then switch to the Series section —
                         // the screen shares this SeriesViewModel, so it shows the opened show.
                         onOpenSeries = { series -> seriesVm.openSeries(series); onSelectSection(MainSection.SERIES) },
@@ -245,7 +323,7 @@ fun OwnTVShell(
                     )
 
                     selectedSection == MainSection.LIVE_TV -> LiveScreen(
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                         previewEnabled = playerMode == PlayerMode.NONE,
                         restoreFocus = restoreFocus,
@@ -254,7 +332,7 @@ fun OwnTVShell(
                     )
 
                     selectedSection == MainSection.MOVIES -> MoviesScreen(
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                         restoreFocus = restoreFocus,
                         onRestored = { restoreFocus = false },
@@ -262,7 +340,7 @@ fun OwnTVShell(
                     )
 
                     selectedSection == MainSection.SERIES -> SeriesScreen(
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                         restoreFocus = restoreFocus,
                         onRestored = { restoreFocus = false },
@@ -270,7 +348,7 @@ fun OwnTVShell(
                     )
 
                     selectedSection == MainSection.DOWNLOADS -> DownloadsScreen(
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                         restoreFocus = restoreFocus,
                         onRestored = { restoreFocus = false },
@@ -279,7 +357,7 @@ fun OwnTVShell(
 
                     selectedSection == MainSection.EPG -> EpgScreen(
                         onBack = { runCatching { sidebarFocus.requestFocus() } },
-                        onFullscreen = openFullscreen,
+                        onFullscreen = { openFullscreen() },
                         onAddEpg = { openEpgAdd = true; onSelectSection(MainSection.SETTINGS) },
                         restoreFocus = restoreFocus,
                         onRestored = { restoreFocus = false },
@@ -455,6 +533,7 @@ private fun OfflineBanner() {
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {
         MainSection.SEARCH -> OwnTVIcon.SEARCH
+        MainSection.HOME -> OwnTVIcon.HOME
         MainSection.LIVE_TV -> OwnTVIcon.LIVE_TV
         MainSection.MOVIES -> OwnTVIcon.MOVIES
         MainSection.SERIES -> OwnTVIcon.SERIES
@@ -465,6 +544,7 @@ private val MainSection.emptyIcon: OwnTVIcon
 
 private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (section) {
     MainSection.SEARCH -> emptyList()
+    MainSection.HOME -> emptyList()
     MainSection.EPG -> emptyList()
     MainSection.LIVE_TV -> listOf(
         RailCategory("FAV", "Favorites"),
@@ -503,6 +583,7 @@ private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (
 
 private fun placeholderCount(section: MainSection): String = when (section) {
     MainSection.SEARCH -> ""
+    MainSection.HOME -> ""
     MainSection.LIVE_TV -> "0 channels"
     MainSection.MOVIES -> "0 movies"
     MainSection.SERIES -> "0 series"

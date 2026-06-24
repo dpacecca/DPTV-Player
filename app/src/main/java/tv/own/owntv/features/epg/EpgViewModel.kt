@@ -24,7 +24,9 @@ import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.database.dao.ChannelDao
 import tv.own.owntv.core.database.dao.EpgDao
 import tv.own.owntv.core.database.dao.HistoryDao
+import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
+import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.epg.CatchupUrl
 import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.parser.XtreamClient
@@ -70,6 +72,7 @@ class EpgViewModel(
     private val sourceRepository: SourceRepository,
     private val channelDao: ChannelDao,
     private val epgDao: EpgDao,
+    private val profileDao: ProfileDao,
     private val epgRepository: EpgRepository,
     private val epgSourceStore: tv.own.owntv.core.epg.EpgSourceStore,
     private val connectivity: ConnectivityObserver,
@@ -185,8 +188,12 @@ class EpgViewModel(
         _canZap.value = _state.value.channels.size > 1
         player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true)
         viewModelScope.launch {
-            val pid = settings.activeProfileId.first()
-            if (pid >= 0) historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.LIVE, itemId = channel.id))
+            val pid = currentProfileId() ?: return@launch
+            runCatching {
+                historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.LIVE, itemId = channel.id))
+            }.onFailure { t ->
+                android.util.Log.w("OwnTVHome", "play history record failed channelId=${channel.id} profile=$pid", t)
+            }
         }
     }
 
@@ -422,8 +429,16 @@ class EpgViewModel(
             // is already populated — keep the existing list on screen and refresh it silently, so opening the
             // Guide menu is instant instead of flashing a spinner and re-rendering from scratch every time.
             if (_state.value.channels.isEmpty()) _state.value = _state.value.copy(loading = true, message = null)
-            val pid = settings.activeProfileId.first()
-            val playlistIds = if (pid < 0) emptyList() else sourceRepository.observeSources(pid).first().map { it.id }
+            val pid = currentProfileId()
+            if (pid == null) {
+                _state.value = EpgUiState(
+                    loading = false,
+                    message = "Create a profile to see the guide.",
+                    hasEpgSources = epgSourceStore.getAll().isNotEmpty(),
+                )
+                return@launch
+            }
+            val playlistIds = sourceRepository.observeSources(pid).first().map { it.id }
             val epgIds = epgSourceStore.getAll().map { it.id }
             // Channels come from the playlists; guide data is matched from BOTH the playlists' own EPG
             // (kept for compatibility) and the standalone EPG sources — by epgChannelId across all ids.
@@ -545,11 +560,16 @@ class EpgViewModel(
 
     /** Distinct EPG channels for the manual "Match EPG" picker (across the profile's feeds). */
     suspend fun availableEpgChannels(query: String): List<tv.own.owntv.core.database.entity.EpgChannelEntity> {
-        val pid = settings.activeProfileId.first()
-        val playlistIds = if (pid < 0) emptyList() else sourceRepository.observeSources(pid).first().map { it.id }
+        val pid = currentProfileId() ?: return emptyList()
+        val playlistIds = sourceRepository.observeSources(pid).first().map { it.id }
         val ids = playlistIds + epgSourceStore.getAll().map { it.id }
         if (ids.isEmpty()) return emptyList()
         return epgDao.listEpgChannels(ids, query.trim().lowercase(), 300)
+    }
+
+    private suspend fun currentProfileId(): Long? {
+        val preferred = settings.activeProfileId.first()
+        return if (preferred >= 0) profileDao.resolveExistingProfileId(preferred) else null
     }
 
     companion object {

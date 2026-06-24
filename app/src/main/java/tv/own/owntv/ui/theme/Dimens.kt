@@ -34,4 +34,17 @@ object Dimens {
     val CardCorner = 20.dp
 
     val FocusBorderWidth = 2.5.dp
+
+    val HomeRowPaddingH = 20.dp
+
+    // Hero carousel
+    val HeroBaseWidth = 180.dp
+    val HeroMetaHeight = 84.dp
+    val HeroGap = 14.dp
+    val HeroCardCorner = 18.dp
+    val HeroPosterCorner = 14.dp
+    val HeroMaxCardHeight = 354.dp
+    val HeroMinCardHeight = 200.dp
+    val HeroOverlayMaxWidth = 400.dp
+    val HeroProgressHeight = 3.dp
 }

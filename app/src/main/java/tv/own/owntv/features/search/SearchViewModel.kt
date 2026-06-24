@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.search
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -24,8 +26,10 @@ import tv.own.owntv.core.database.dao.ChannelDao
 import tv.own.owntv.core.database.dao.FavoriteDao
 import tv.own.owntv.core.database.dao.HistoryDao
 import tv.own.owntv.core.database.dao.MovieDao
+import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SeriesDao
 import tv.own.owntv.core.database.dao.SourceDao
+import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.MovieEntity
@@ -50,6 +54,7 @@ class SearchViewModel(
     private val movieDao: MovieDao,
     private val seriesDao: SeriesDao,
     private val historyDao: HistoryDao,
+    private val profileDao: ProfileDao,
     private val sourceDao: SourceDao,
     private val settings: SettingsRepository,
     private val customize: CustomizationStore,
@@ -70,7 +75,6 @@ class SearchViewModel(
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
-
     val results: StateFlow<SearchResults> = _query
         .map { it.trim() }
         .debounce(300)
@@ -87,9 +91,10 @@ class SearchViewModel(
     fun setQuery(q: String) { _query.value = q }
 
     private suspend fun search(q: String): SearchResults {
+        val pid = currentProfileId() ?: return SearchResults()
         val ids = ctx.value.sourceIds.ifEmpty { return SearchResults() }
         // Respect this profile's customizations: hidden channels never surface, renames are shown.
-        val cust = customize.observe(ctx.value.profileId, MediaType.LIVE).first()
+        val cust = customize.observe(pid, MediaType.LIVE).first()
         return SearchResults(
             channels = channelDao.searchListDetailed(q, ids, LIMIT)
                 .filter { CustomizeKeys.channel(it.channel) !in cust.hiddenItems }
@@ -130,11 +135,22 @@ class SearchViewModel(
 
     private fun record(type: MediaType, itemId: Long) {
         viewModelScope.launch {
-            historyDao.record(WatchHistoryEntity(profileId = ctx.value.profileId, mediaType = type, itemId = itemId))
+            val pid = currentProfileId() ?: return@launch
+            runCatching {
+                historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = type, itemId = itemId))
+            }.onFailure { t ->
+                Log.w(TAG, "record history failed profile=$pid type=$type itemId=$itemId", t)
+            }
         }
     }
 
+    private suspend fun currentProfileId(): Long? {
+        val preferred = settings.activeProfileId.first()
+        return if (preferred >= 0) profileDao.resolveExistingProfileId(preferred) else null
+    }
+
     private companion object {
+        const val TAG = "OwnTVHome"
         const val LIMIT = 40
     }
 }

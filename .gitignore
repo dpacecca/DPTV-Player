@@ -12,6 +12,7 @@ local.properties
 .cxx
 # Local tooling / agent state
 .claude/
+.planning/
 
 # Signing keys & secrets — NEVER commit these
 *.keystore

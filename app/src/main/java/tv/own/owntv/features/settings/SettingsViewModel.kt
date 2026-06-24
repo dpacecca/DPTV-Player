@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.settings
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.network.ConnectivityObserver
@@ -22,6 +24,8 @@ import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.sync.ImportStage
 import tv.own.owntv.core.sync.SyncResult
 import tv.own.owntv.core.util.friendlySyncError
+import tv.own.owntv.core.database.dao.resolveExistingProfileId
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.ui.theme.AccentColor
 import tv.own.owntv.ui.theme.ThemeMode
@@ -29,6 +33,7 @@ import tv.own.owntv.ui.theme.UiZoom
 
 /** Phase 13 — manage IPTV sources (list / add / re-sync / delete) for the active profile. */
 class SettingsViewModel(
+    private val profileDao: ProfileDao,
     private val sourceDao: SourceDao,
     private val sourceRepository: SourceRepository,
     private val settings: SettingsRepository,
@@ -39,7 +44,11 @@ class SettingsViewModel(
     private val historyDao: tv.own.owntv.core.database.dao.HistoryDao,
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
     private val epgSourceStore: tv.own.owntv.core.epg.EpgSourceStore,
+    private val launcherIntegrationRepository: LauncherIntegrationRepository,
 ) : ViewModel() {
+    companion object {
+        private const val TAG = "OwnTVHome"
+    }
 
     // Semi-auto EPG: after a playlist import, if the playlist has a guide URL we offer to sync the EPG now
     // (instead of the old slow auto-sync). "Sync now" shows a live programme count, just like the import.
@@ -160,6 +169,25 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setCatchupOffsetMinutes(catchupOffsetMinutes.value + deltaMinutes) }
     }
 
+    val androidTvHomeEnabled: StateFlow<Boolean> = settings.androidTvHomeEnabled
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setAndroidTvHomeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            Log.d(TAG, "setAndroidTvHomeEnabled enabled=$enabled")
+            settings.setAndroidTvHomeEnabled(enabled)
+            if (enabled) {
+                refreshActiveTvHome(allowBrowsableRequest = true)
+            } else {
+                profileDao.getAllOnce().forEach { profile -> launcherIntegrationRepository.clearProfile(profile.id) }
+            }
+        }
+    }
+
+    fun refreshAndroidTvHome() {
+        viewModelScope.launch { refreshActiveTvHome(allowBrowsableRequest = true) }
+    }
+
     // --- Video Player Settings ---
     val hwDecoding: StateFlow<Boolean> = settings.hwDecoding.stateIn(viewModelScope, SharingStarted.Eagerly, true)
     fun setHwDecoding(enabled: Boolean) { viewModelScope.launch { settings.setHwDecoding(enabled) } }
@@ -276,7 +304,8 @@ class SettingsViewModel(
             _importState.value = ImportState.Running
             _progress.value = null
             try {
-                val pid = settings.activeProfileId.first()
+                val pid = profileDao.resolveExistingProfileId(settings.activeProfileId.first()) ?: return@launch
+                Log.d(TAG, "runImport profile=$pid refreshOnStart=$refreshOnStart")
                 val source = addSource(pid)
                 settings.setSourceRefresh(source.id, refreshOnStart)
                 when (val r = sourceRepository.sync(source) { _progress.value = it }) {
@@ -284,6 +313,8 @@ class SettingsViewModel(
                         // Settings playlist add: content breakdown only (EPG syncs silently and is
                         // shown on the EPG Sources screen, per the separated-EPG design).
                         val counts = importFinalizer.finalize(source)
+                        Log.d(TAG, "runImport sync success sourceId=${source.id} profile=$pid")
+                        refreshActiveTvHome(allowBrowsableRequest = true)
                         _importState.value = ImportState.Success(counts.summary(includeEpg = false))
                         // Offer a one-tap EPG sync if this playlist actually has a guide feed.
                         if (epgRepository.guideUrl(source) != null) {
@@ -307,9 +338,12 @@ class SettingsViewModel(
         viewModelScope.launch {
             _importState.value = ImportState.Running
             _progress.value = null
+            Log.d(TAG, "resync sourceId=${source.id}")
             when (val r = sourceRepository.sync(source) { _progress.value = it }) {
                 SyncResult.Success -> {
                     val counts = importFinalizer.finalize(source)
+                    Log.d(TAG, "resync sync success sourceId=${source.id}")
+                    refreshActiveTvHome(allowBrowsableRequest = true)
                     _importState.value = ImportState.Success(counts.summary(includeEpg = false))
                 }
                 is SyncResult.Failed -> _importState.value = ImportState.Failed(friendlySyncError(r.message, connectivity.isOnlineNow()))
@@ -320,13 +354,21 @@ class SettingsViewModel(
 
     fun delete(source: SourceEntity) {
         viewModelScope.launch {
+            Log.d(TAG, "delete sourceId=${source.id}")
             sourceRepository.deleteSource(source)
             if (defaultSourceId.value == source.id) settings.setDefaultSource(-1L)
+            refreshActiveTvHome(allowBrowsableRequest = true)
         }
     }
 
     fun resetImport() {
         _importState.value = ImportState.Idle
         _progress.value = null
+    }
+
+    private suspend fun refreshActiveTvHome(allowBrowsableRequest: Boolean = true) {
+        val pid = profileDao.resolveExistingProfileId(settings.activeProfileId.first()) ?: return
+        Log.d(TAG, "refreshActiveTvHome profile=$pid allowBrowsable=$allowBrowsableRequest")
+        launcherIntegrationRepository.refreshProfile(pid, allowBrowsableRequest)
     }
 }

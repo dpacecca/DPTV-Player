@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.movies
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -34,12 +36,15 @@ import tv.own.owntv.core.database.dao.FavoriteDao
 import tv.own.owntv.core.database.dao.HistoryDao
 import tv.own.owntv.core.database.dao.MovieDao
 import tv.own.owntv.core.database.dao.ProgressDao
+import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
+import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.DownloadEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.MovieEntity
 import tv.own.owntv.core.database.entity.PlaybackProgressEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
+import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.features.live.LiveRailItem
 import tv.own.owntv.features.live.LiveKey
@@ -55,11 +60,13 @@ class MovieViewModel(
     private val favoriteDao: FavoriteDao,
     private val historyDao: HistoryDao,
     private val progressDao: ProgressDao,
+    private val profileDao: ProfileDao,
     private val sourceDao: SourceDao,
     private val settings: SettingsRepository,
     private val customize: CustomizationStore,
     private val player: OwnTVPlayer,
     private val downloadManager: DownloadManager,
+    private val launcherIntegrationRepository: LauncherIntegrationRepository,
 ) : ViewModel() {
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
@@ -170,10 +177,12 @@ class MovieViewModel(
 
     /** Saved resume position for [movie] (0 when none) — used by the screen to decide the prompt. */
     suspend fun savedPositionMs(movie: MovieEntity): Long =
-        progressDao.get(ctx.value.profileId, MediaType.MOVIE, movie.id)?.positionMs ?: 0
+        currentProfileId()?.let { progressDao.get(it, MediaType.MOVIE, movie.id)?.positionMs ?: 0 } ?: 0
 
     fun play(movie: MovieEntity, startPositionMs: Long = 0) {
         viewModelScope.launch {
+            val pid = currentProfileId()
+            Log.d(TAG, "play movieId=${movie.id} profile=$pid startPositionMs=$startPositionMs")
             player.play(
                 movie.streamUrl,
                 title = movie.name,
@@ -182,8 +191,27 @@ class MovieViewModel(
                 startPositionMs = startPositionMs,
             )
             playingMovie = movie
-            historyDao.record(WatchHistoryEntity(profileId = ctx.value.profileId, mediaType = MediaType.MOVIE, itemId = movie.id))
+            if (pid != null) {
+                runCatching {
+                    historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.MOVIE, itemId = movie.id))
+                }.onFailure { t ->
+                    Log.w(TAG, "play history record failed movieId=${movie.id} profile=$pid", t)
+                }
+            }
         }
+    }
+
+    fun playById(movieId: Long, startPositionMs: Long = 0) {
+        viewModelScope.launch {
+            val movie = movieDao.getById(movieId) ?: return@launch
+            play(movie, startPositionMs)
+        }
+    }
+
+    suspend fun playByIdAsync(movieId: Long, startPositionMs: Long = 0): Boolean {
+        val movie = movieDao.getById(movieId) ?: return false
+        play(movie, startPositionMs)
+        return true
     }
 
     /** Download states for the currently visible movies, keyed by movie id. */
@@ -193,21 +221,24 @@ class MovieViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     fun download(movie: MovieEntity) {
-        downloadManager.enqueue(
-            profileId = ctx.value.profileId,
-            mediaType = MediaType.MOVIE,
-            itemId = movie.id,
-            title = movie.name,
-            posterUrl = movie.posterUrl,
-            streamUrl = movie.streamUrl,
-            relativeDir = "Movies",
-            fileName = "${StorageAccess.sanitize(movie.name)}.${movie.containerExt ?: StorageAccess.extOf(movie.streamUrl)}",
-        )
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            downloadManager.enqueue(
+                profileId = pid,
+                mediaType = MediaType.MOVIE,
+                itemId = movie.id,
+                title = movie.name,
+                posterUrl = movie.posterUrl,
+                streamUrl = movie.streamUrl,
+                relativeDir = "Movies",
+                fileName = "${StorageAccess.sanitize(movie.name)}.${movie.containerExt ?: StorageAccess.extOf(movie.streamUrl)}",
+            )
+        }
     }
 
     fun toggleFavorite(movie: MovieEntity) {
         viewModelScope.launch {
-            val pid = ctx.value.profileId
+            val pid = currentProfileId() ?: return@launch
             if (favoriteIds.value.contains(movie.id)) favoriteDao.remove(pid, MediaType.MOVIE, movie.id)
             else favoriteDao.add(FavoriteEntity(profileId = pid, mediaType = MediaType.MOVIE, itemId = movie.id))
         }
@@ -221,11 +252,23 @@ class MovieViewModel(
         val dur = player.duration.value
         if (pos > 0 && dur > 0) {
             viewModelScope.launch {
-                progressDao.save(
-                    PlaybackProgressEntity(profileId = ctx.value.profileId, mediaType = MediaType.MOVIE, itemId = m.id, positionMs = pos, durationMs = dur),
-                )
+                val pid = currentProfileId() ?: return@launch
+                Log.d(TAG, "saveProgressNow movieId=${m.id} profile=$pid positionMs=$pos durationMs=$dur")
+                runCatching {
+                    progressDao.save(
+                        PlaybackProgressEntity(profileId = pid, mediaType = MediaType.MOVIE, itemId = m.id, positionMs = pos, durationMs = dur),
+                    )
+                }.onFailure { t ->
+                    Log.w(TAG, "saveProgressNow progress save failed movieId=${m.id} profile=$pid", t)
+                }
+                launcherIntegrationRepository.publishMovieProgress(pid, m.id, pos, dur)
             }
         }
+    }
+
+    private suspend fun currentProfileId(): Long? {
+        val preferred = settings.activeProfileId.first()
+        return if (preferred >= 0) profileDao.resolveExistingProfileId(preferred) else null
     }
 
     private fun pagingSource(key: LiveKey, c: Ctx, query: String, sort: SettingsRepository.SortMode): PagingSource<Int, MovieEntity> {
@@ -255,6 +298,7 @@ class MovieViewModel(
     }
 
     private companion object {
+        const val TAG = "OwnTVHome"
         val defaultRail = listOf(
             LiveRailItem(LiveKey.Favorites, "FAV", "Favorites", OwnTVIcon.STAR),
             LiveRailItem(LiveKey.History, "HIS", "History", OwnTVIcon.HISTORY),
