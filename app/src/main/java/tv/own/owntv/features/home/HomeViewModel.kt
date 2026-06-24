@@ -85,6 +85,7 @@ data class HomeUiState(
     val continueMovies: List<LauncherContinuationItem> = emptyList(),
     val continueSeries: List<LauncherContinuationItem> = emptyList(),
     val recentLive: List<ChannelEntity> = emptyList(),
+    val favoriteLive: List<ChannelEntity> = emptyList(),
     val isEmpty: Boolean = true,
 )
 
@@ -147,6 +148,7 @@ class HomeViewModel(
             val series = items.filter { it.kind == LauncherContinuationKind.EPISODE }
             val liveWithTs = channelDao.recentlyWatchedWithTimestamp(profileId, 10).first()
             val live = liveWithTs.map { it.channel }
+            val favLive = channelDao.favoritesListAlpha(profileId, 50).first()
             val heroItems = buildHeroItems(items, liveWithTs)
 
             HomeUiState(
@@ -155,7 +157,8 @@ class HomeViewModel(
                 continueMovies = movies,
                 continueSeries = series,
                 recentLive = live,
-                isEmpty = movies.isEmpty() && series.isEmpty() && live.isEmpty(),
+                favoriteLive = favLive,
+                isEmpty = movies.isEmpty() && series.isEmpty() && live.isEmpty() && favLive.isEmpty(),
             )
         }
         _uiState.value = state

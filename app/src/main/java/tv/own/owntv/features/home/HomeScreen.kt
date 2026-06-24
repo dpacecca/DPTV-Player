@@ -92,7 +92,7 @@ fun HomeScreen(
     vm: HomeViewModel,
     onPlayMovie: (movieId: Long, positionMs: Long) -> Unit,
     onPlayEpisode: (seriesId: Long, episodeId: Long, positionMs: Long) -> Unit,
-    onPlayChannel: (channelId: Long) -> Unit,
+    onPlayChannel: (channelId: Long, zapChannels: List<ChannelEntity>) -> Unit,
     onChildFocused: () -> Unit,
     restoreFocus: Boolean = false,
     onRestored: () -> Unit = {},
@@ -146,7 +146,7 @@ fun HomeScreen(
         if (!restoreFocus) restoreFocusHandled = false
     }
 
-    LaunchedEffect(restoreFocus, state.heroItems, state.continueMovies, state.continueSeries, state.recentLive) {
+    LaunchedEffect(restoreFocus, state.heroItems, state.continueMovies, state.continueSeries, state.favoriteLive) {
         if (state.isEmpty && !restoreFocus && initialFocusApplied) return@LaunchedEffect
         if (restoreFocus && restoreFocusHandled) return@LaunchedEffect
         val hasContent = !state.isEmpty
@@ -186,11 +186,11 @@ fun HomeScreen(
     val hero = state.heroItems.getOrNull(state.activeHeroIndex)
     val hasMovies = state.continueMovies.isNotEmpty()
     val hasSeries = state.continueSeries.isNotEmpty()
-    val hasLive = state.recentLive.isNotEmpty()
+    val hasFavorites = state.favoriteLive.isNotEmpty()
     val firstRowKind = when {
+        hasFavorites -> RowKind.FAVORITES
         hasMovies -> RowKind.MOVIES
         hasSeries -> RowKind.SERIES
-        hasLive -> RowKind.LIVE
         else -> null
     }
 
@@ -198,10 +198,10 @@ fun HomeScreen(
         modifier = modifier
             .fillMaxSize()
             .background(OwnTVTheme.colors.surface)
-            .padding(vertical = Dimens.ScreenPaddingV)
             .onFocusChanged { if (it.hasFocus) onChildFocused() }
             .focusGroup(),
         state = listState,
+        contentPadding = PaddingValues(vertical = Dimens.ScreenPaddingV),
         verticalArrangement = Arrangement.spacedBy(Dimens.GapLarge),
     ) {
         item {
@@ -230,7 +230,7 @@ fun HomeScreen(
                         when (item) {
                             is HeroItem.MovieHero -> onPlayMovie(item.movie.id, item.positionMs)
                             is HeroItem.SeriesHero -> onPlayEpisode(item.series.id, item.episode.id, item.positionMs)
-                            is HeroItem.LiveHero -> onPlayChannel(item.channel.id)
+                            is HeroItem.LiveHero -> onPlayChannel(item.channel.id, state.recentLive)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -244,6 +244,17 @@ fun HomeScreen(
             }
         }
 
+        if (hasFavorites) {
+            item {
+                ChannelRailRow(
+                    title = "Favourite Channels",
+                    channels = state.favoriteLive,
+                    onChannelClick = { id -> onPlayChannel(id, state.favoriteLive) },
+                    onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = if (firstRowKind == RowKind.FAVORITES) firstRowFocus else null,
+                )
+            }
+        }
         if (hasMovies) {
             item {
                 ContinueWatchingRow(
@@ -263,16 +274,6 @@ fun HomeScreen(
                     onItemClick = { onPlayEpisode(0L, it.targetItemId, it.positionMs) },
                     onFocus = onNonHeroFocused,
                     firstItemFocusRequester = if (firstRowKind == RowKind.SERIES) firstRowFocus else null,
-                )
-            }
-        }
-        if (hasLive) {
-            item {
-                RecentLiveRow(
-                    channels = state.recentLive,
-                    onChannelClick = onPlayChannel,
-                    onFocus = onNonHeroFocused,
-                    firstItemFocusRequester = if (firstRowKind == RowKind.LIVE) firstRowFocus else null,
                 )
             }
         }
@@ -299,7 +300,7 @@ fun HomeScreen(
     }
 }
 
-private enum class RowKind { MOVIES, SERIES, LIVE }
+private enum class RowKind { FAVORITES, MOVIES, SERIES }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -834,7 +835,8 @@ private fun ContinueWatchingRow(
 }
 
 @Composable
-private fun RecentLiveRow(
+private fun ChannelRailRow(
+    title: String,
     channels: List<ChannelEntity>,
     onChannelClick: (Long) -> Unit,
     onFocus: () -> Unit,
@@ -845,7 +847,7 @@ private fun RecentLiveRow(
         modifier = modifier.fillMaxWidth(),
     ) {
         Text(
-            text = "RECENTLY WATCHED LIVE",
+            text = title.uppercase(),
             style = MaterialTheme.typography.titleSmall,
             color = OwnTVTheme.colors.primary,
             fontWeight = FontWeight.Bold,

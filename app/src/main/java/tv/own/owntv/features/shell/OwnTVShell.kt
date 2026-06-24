@@ -265,7 +265,7 @@ fun OwnTVShell(
                         vm = homeVm,
                         onPlayMovie = { id, pos -> scope.launch { if (movieVm.playByIdAsync(id, pos)) openFullscreen(MainSection.MOVIES) } },
                         onPlayEpisode = { seriesId, epId, pos -> scope.launch { if (seriesVm.playFromHomeAsync(seriesId, epId, pos)) openFullscreen(MainSection.SERIES) } },
-                        onPlayChannel = { id -> scope.launch { if (liveVm.ensurePlayingByIdAsync(id, homeVm.uiState.value.recentLive)) openFullscreen(MainSection.LIVE_TV) } },
+                        onPlayChannel = { id, zap -> scope.launch { if (liveVm.ensurePlayingByIdAsync(id, zap)) openFullscreen(MainSection.LIVE_TV) } },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                         restoreFocus = restoreFocus,
                         onRestored = { restoreFocus = false },
