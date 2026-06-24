@@ -1,5 +1,6 @@
 package tv.own.owntv.features.home
 
+import android.content.Context
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -35,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import android.graphics.BlurMaskFilter
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.clip
@@ -55,6 +57,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,12 +75,17 @@ import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.PosterCard
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.compose.foundation.layout.widthIn
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -306,6 +314,7 @@ private fun HeroRowSection(
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
+    val context = LocalContext.current
     val density = LocalDensity.current
     val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
     val approxRowWidth = screenWidthDp - Dimens.SidebarWidthCollapsed - Dimens.HomeRowPaddingH
@@ -639,6 +648,18 @@ private fun HeroRowSection(
                                 )
                             }
 
+                            val statText = heroStatLabel(context, expandedItem, System.currentTimeMillis())
+                            if (statText != null) {
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = statText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colors.primary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+
                             Spacer(Modifier.height(10.dp))
                             OwnTVButton(
                                 label = when (expandedItem.watchNextType) {
@@ -670,11 +691,80 @@ private fun HeroRowSection(
                                 )
                             }
                         }
+
+                        if (engineState == HeroPreviewEngine.State.LOADING) {
+                            OwnTVSpinner(
+                                sizeDp = 18,
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(end = 16.dp, bottom = 16.dp)
+                                    .alpha(0.3f),
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
+
+private fun heroStatLabel(context: Context, item: HeroItem, nowMs: Long): String? =
+    when (item) {
+        is HeroItem.MovieHero,
+        is HeroItem.SeriesHero -> finishByLabel(context, item.positionMs, item.durationMs, nowMs)
+        is HeroItem.LiveHero -> relativeLastWatchedLabel(item.lastEngagementAt, nowMs)
+    }
+
+private fun finishByLabel(context: Context, positionMs: Long, durationMs: Long, nowMs: Long): String? {
+    if (durationMs <= 0) return null
+
+    val safePosition = positionMs.coerceIn(0L, durationMs)
+    val remainingMs = durationMs - safePosition
+    if (remainingMs <= 0L) return null
+
+    val finishMs = roundUpToNextQuarterHour(nowMs + remainingMs)
+    val pattern = if (android.text.format.DateFormat.is24HourFormat(context)) "H:mm" else "h:mm a"
+    val time = SimpleDateFormat(pattern, Locale.getDefault()).format(Date(finishMs))
+    return "Finish by $time"
+}
+
+private fun roundUpToNextQuarterHour(ms: Long): Long {
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = ms
+    }
+    val minute = calendar.get(Calendar.MINUTE)
+    val second = calendar.get(Calendar.SECOND)
+    val millisecond = calendar.get(Calendar.MILLISECOND)
+    val remainder = minute % 15
+    val shouldAdvance = remainder != 0 || second != 0 || millisecond != 0
+
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
+
+    if (shouldAdvance) {
+        val minutesToAdd = if (remainder == 0) 15 else 15 - remainder
+        calendar.add(Calendar.MINUTE, minutesToAdd)
+    }
+
+    return calendar.timeInMillis
+}
+
+private fun relativeLastWatchedLabel(lastEngagementAt: Long, nowMs: Long): String {
+    val elapsedMs = nowMs - lastEngagementAt
+    if (elapsedMs < 60_000L) return "Last watched just now"
+
+    val elapsedMinutes = elapsedMs / 60_000L
+    if (elapsedMinutes < 60L) {
+        return "Last watched ${elapsedMinutes} ${if (elapsedMinutes == 1L) "minute" else "minutes"} ago"
+    }
+
+    val elapsedHours = elapsedMinutes / 60L
+    if (elapsedHours < 24L) {
+        return "Last watched ${elapsedHours} ${if (elapsedHours == 1L) "hour" else "hours"} ago"
+    }
+
+    val elapsedDays = elapsedHours / 24L
+    return "Last watched ${elapsedDays} ${if (elapsedDays == 1L) "day" else "days"} ago"
 }
 
 @Composable
