@@ -37,8 +37,8 @@ import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.sync.importProgressDisplay
+import tv.own.owntv.core.sync.syncProgressCountsLabel
 import tv.own.owntv.core.sync.syncProgressCountsForSource
-import tv.own.owntv.core.sync.syncProgressRowText
 import tv.own.owntv.core.sync.work.CatalogSyncState
 import tv.own.owntv.features.setup.AddSourceScreen
 import tv.own.owntv.ui.components.OwnTVButton
@@ -230,6 +230,7 @@ private fun SourceRow(
 ) {
     val colors = OwnTVTheme.colors
     val activeSync = syncState as? CatalogSyncState.Syncing
+    val activeCountsLabel = activeSync?.countsLabel(source.type)
     Row(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -237,6 +238,15 @@ private fun SourceRow(
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(source.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                activeSync?.let {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Syncing ${it.overallPercent.coerceIn(0, 100)}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.onPrimaryContainer,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
                 if (isDefault) {
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -251,10 +261,11 @@ private fun SourceRow(
                 buildString {
                     append(when (source.type) { SourceType.XTREAM -> "Xtream • ${source.url}"; SourceType.M3U -> "M3U • ${source.url}"; SourceType.LOCAL_BACKUP -> "Backup" })
                     if (refreshOnStart) append("  •  ⟳ on startup")
-                    if (activeSync == null) {
-                        if (!countsLabel.isNullOrBlank()) append("  •  $countsLabel")
-                    } else {
-                        append("  •  ${activeSync.rowProgressText(source.type)}")
+                    val visibleCounts = if (activeSync == null) countsLabel else activeCountsLabel
+                    if (!visibleCounts.isNullOrBlank()) {
+                        append("  •  $visibleCounts")
+                    } else if (activeSync != null) {
+                        append("  •  Preparing catalog")
                     }
                 },
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1,
@@ -277,9 +288,8 @@ private fun SourceRow(
     }
 }
 
-private fun CatalogSyncState.Syncing.rowProgressText(sourceType: SourceType): String =
-    syncProgressRowText(
-        overallPercent,
+private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType): String? =
+    syncProgressCountsLabel(
         syncProgressCountsForSource(
             sourceType = sourceType,
             liveProcessed = liveProcessed,
