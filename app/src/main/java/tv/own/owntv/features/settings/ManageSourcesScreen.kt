@@ -235,6 +235,7 @@ private fun SourceRow(
     onDelete: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
+    val activeSync = syncState as? CatalogSyncState.Syncing
     Row(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -256,14 +257,15 @@ private fun SourceRow(
                 buildString {
                     append(when (source.type) { SourceType.XTREAM -> "Xtream • ${source.url}"; SourceType.M3U -> "M3U • ${source.url}"; SourceType.LOCAL_BACKUP -> "Backup" })
                     if (refreshOnStart) append("  •  ⟳ on startup")
-                    if (!countsLabel.isNullOrBlank()) append("  •  $countsLabel")
-                    if (syncState is CatalogSyncState.Syncing) {
+                    if (activeSync == null) {
+                        if (!countsLabel.isNullOrBlank()) append("  •  $countsLabel")
+                    } else {
                         append("  •  ")
                         append("Syncing")
-                        syncState.label?.let { append(" ${it}") }
-                        append(" ${syncState.overallPercent}%")
-                        if (syncState.breakdown.isNotBlank()) append(" • ${syncState.breakdown}")
-                        if (syncState.processed > 0) append(" • ${syncState.processed} items")
+                        activeSync.label?.let { append(" ${it}") }
+                        append(" ${activeSync.overallPercent}%")
+                        activeSync.runCountsLabel(source.type).takeIf { it.isNotBlank() }?.let { append(" • $it") }
+                        if (activeSync.breakdown.isNotBlank()) append(" • ${activeSync.breakdown}")
                     }
                 },
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1,
@@ -285,6 +287,25 @@ private fun SourceRow(
         OwnTVButton("Delete", onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
     }
 }
+
+private fun CatalogSyncState.Syncing.runCountsLabel(sourceType: SourceType): String = when (sourceType) {
+    SourceType.XTREAM -> listOf(
+        "${humanCount(liveProcessed)} channels",
+        "${humanCount(moviesProcessed)} movies",
+        "${humanCount(seriesProcessed)} series",
+    ).joinToString(" · ")
+    SourceType.M3U -> "${humanCount(liveProcessed)} channels"
+    SourceType.LOCAL_BACKUP -> ""
+}
+
+private fun humanCount(count: Int): String = when {
+    count >= 1_000_000 -> scaledCount(count / 1_000_000.0, "M")
+    count >= 1_000 -> scaledCount(count / 1_000.0, "K")
+    else -> count.toString()
+}
+
+private fun scaledCount(value: Double, suffix: String): String =
+    "%.1f".format(value).removeSuffix(".0") + suffix
 
 @Composable
 private fun CenterStatus(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
