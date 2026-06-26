@@ -36,6 +36,9 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.SourceType
+import tv.own.owntv.core.sync.importProgressDisplay
+import tv.own.owntv.core.sync.syncProgressCountsForSource
+import tv.own.owntv.core.sync.syncProgressRowText
 import tv.own.owntv.core.sync.work.CatalogSyncState
 import tv.own.owntv.features.setup.AddSourceScreen
 import tv.own.owntv.ui.components.OwnTVButton
@@ -107,27 +110,18 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 modifier = modifier,
             )
             SettingsViewModel.ImportState.Running -> CenterStatus {
+                val display = progress?.importProgressDisplay()
                 OwnTVSpinner(sizeDp = 56)
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    "Importing ${progress?.label?.lowercase() ?: "content"}…",
+                    display?.title ?: "Importing catalog…",
                     style = MaterialTheme.typography.titleMedium,
                     color = colors.onSurface,
                 )
-                progress?.let {
-                    Spacer(Modifier.height(6.dp))
-                    Text("${it.overallPercent}%", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
-                    Spacer(Modifier.height(4.dp))
-                    Text("${it.processed} items", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                    if (it.overallPercent == 0) {
-                        Spacer(Modifier.height(2.dp))
-                        Text("Working…", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                    }
-                    if (it.breakdown.isNotBlank()) {
-                        Spacer(Modifier.height(8.dp))
-                        Text(it.breakdown, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                    }
-                }
+                Spacer(Modifier.height(6.dp))
+                Text(display?.percent ?: "Connecting…", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
+                Spacer(Modifier.height(4.dp))
+                Text(display?.detail ?: "Preparing catalog", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Spacer(Modifier.height(20.dp))
                 OwnTVButton("Cancel", onClick = { showAdd = false; vm.cancelImport() }, style = OwnTVButtonStyle.SECONDARY)
             }
@@ -260,12 +254,7 @@ private fun SourceRow(
                     if (activeSync == null) {
                         if (!countsLabel.isNullOrBlank()) append("  •  $countsLabel")
                     } else {
-                        append("  •  ")
-                        append("Syncing")
-                        activeSync.label?.let { append(" ${it}") }
-                        append(" ${activeSync.overallPercent}%")
-                        activeSync.runCountsLabel(source.type).takeIf { it.isNotBlank() }?.let { append(" • $it") }
-                        if (activeSync.breakdown.isNotBlank()) append(" • ${activeSync.breakdown}")
+                        append("  •  ${activeSync.rowProgressText(source.type)}")
                     }
                 },
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1,
@@ -288,24 +277,19 @@ private fun SourceRow(
     }
 }
 
-private fun CatalogSyncState.Syncing.runCountsLabel(sourceType: SourceType): String = when (sourceType) {
-    SourceType.XTREAM -> listOf(
-        "${humanCount(liveProcessed)} channels",
-        "${humanCount(moviesProcessed)} movies",
-        "${humanCount(seriesProcessed)} series",
-    ).joinToString(" · ")
-    SourceType.M3U -> "${humanCount(liveProcessed)} channels"
-    SourceType.LOCAL_BACKUP -> ""
-}
-
-private fun humanCount(count: Int): String = when {
-    count >= 1_000_000 -> scaledCount(count / 1_000_000.0, "M")
-    count >= 1_000 -> scaledCount(count / 1_000.0, "K")
-    else -> count.toString()
-}
-
-private fun scaledCount(value: Double, suffix: String): String =
-    "%.1f".format(value).removeSuffix(".0") + suffix
+private fun CatalogSyncState.Syncing.rowProgressText(sourceType: SourceType): String =
+    syncProgressRowText(
+        overallPercent,
+        syncProgressCountsForSource(
+            sourceType = sourceType,
+            liveProcessed = liveProcessed,
+            moviesProcessed = moviesProcessed,
+            seriesProcessed = seriesProcessed,
+            liveActive = liveActive,
+            moviesActive = moviesActive,
+            seriesActive = seriesActive,
+        ),
+    )
 
 @Composable
 private fun CenterStatus(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {

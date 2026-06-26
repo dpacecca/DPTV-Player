@@ -37,6 +37,7 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.SourceEntity
+import tv.own.owntv.core.sync.importProgressDisplay
 import tv.own.owntv.features.profiles.ProfileEditorDialog
 import tv.own.owntv.ui.components.BrandLockup
 import tv.own.owntv.ui.components.BrowseMode
@@ -47,7 +48,6 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.features.settings.EpgSyncDialog
 import tv.own.owntv.ui.components.StorageBrowser
-import tv.own.owntv.ui.components.formatCount
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 private enum class Step { WELCOME, DISCLAIMER, SETUP_CHOICE, CREATE_PROFILE, ADD_CONTENT, ADD_SOURCE, IMPORTING, EXISTING, IMPORT_BACKUP }
@@ -315,25 +315,22 @@ private fun ImportProgressScreen(
     Centered {
         when (state) {
             SetupViewModel.ImportState.Running, SetupViewModel.ImportState.Idle -> {
+                val display = progress?.importProgressDisplay()
                 OwnTVSpinner(sizeDp = 56)
                 Spacer(Modifier.height(20.dp))
-                Text("Importing ${progress?.label?.lowercase() ?: "content"}…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(display?.title ?: "Importing catalog…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    if (progress != null) "${progress.overallPercent}%" else "Connecting…",
+                    display?.percent ?: "Connecting…",
                     style = MaterialTheme.typography.headlineLarge,
                     color = colors.primary,
                 )
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    if (progress == null) "Connecting…" else formatCount(progress.processed),
+                    display?.detail ?: "Preparing catalog",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
-                if (!progress?.breakdown.isNullOrBlank()) {
-                    Spacer(Modifier.height(12.dp))
-                    Text(progress.breakdown, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 560.dp))
-                }
                 Spacer(Modifier.height(24.dp))
                 OwnTVButton("Cancel", onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
             }
