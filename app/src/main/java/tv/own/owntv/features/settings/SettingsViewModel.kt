@@ -337,7 +337,7 @@ class SettingsViewModel(
                 Log.d(TAG, "runImport profile=$pid refreshOnStart=$refreshOnStart")
                 val source = addSource(pid)
                 settings.setSourceRefresh(source.id, refreshOnStart)
-                when (val r = sourceRepository.sync(source) { _progress.value = it }) {
+                when (val r = sourceRepository.sync(source, onProgress = { _progress.value = it })) {
                     SyncResult.Success -> {
                         // Settings playlist add: content breakdown only (EPG syncs silently and is
                         // shown on the EPG Sources screen, per the separated-EPG design).
@@ -368,7 +368,7 @@ class SettingsViewModel(
             _importState.value = ImportState.Running
             _progress.value = null
             Log.d(TAG, "resync sourceId=${source.id}")
-            when (val r = sourceRepository.sync(source) { _progress.value = it }) {
+            when (val r = sourceRepository.sync(source, onProgress = { _progress.value = it })) {
                 SyncResult.Success -> {
                     val counts = importFinalizer.finalize(source)
                     Log.d(TAG, "resync sync success sourceId=${source.id}")

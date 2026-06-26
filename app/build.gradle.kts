@@ -98,6 +98,9 @@ dependencies {
     // Preferences
     implementation(libs.androidx.datastore.preferences)
 
+    // WorkManager (durable background sync)
+    implementation(libs.androidx.work.runtime)
+
     // Database (Room, via KSP) + Paging
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

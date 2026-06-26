@@ -19,7 +19,13 @@ import tv.own.owntv.di.databaseModule
 import tv.own.owntv.di.dataModule
 import tv.own.owntv.di.playerModule
 
-class OwnTVApp : Application(), SingletonImageLoader.Factory {
+class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Configuration.Provider {
+
+    override val workManagerConfiguration: androidx.work.Configuration
+        get() = androidx.work.Configuration.Builder()
+            .setWorkerFactory(tv.own.owntv.core.sync.work.KoinWorkerFactory())
+            .build()
+
     override fun onCreate() {
         super.onCreate()
         startKoin {

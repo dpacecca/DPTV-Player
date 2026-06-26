@@ -121,7 +121,7 @@ class SetupViewModel(
                 val profileId = createdProfileId.takeIf { it > 0 } ?: ensureFallbackProfile()
                 val source = addSource(profileId)
                 settings.setSourceRefresh(source.id, refreshOnStart)
-                when (val result = sourceRepository.sync(source) { _progress.value = it }) {
+                when (val result = sourceRepository.sync(source, onProgress = { _progress.value = it })) {
                     SyncResult.Success -> {
                         // Just the playlist content — EPG is added separately (Settings → EPG sources).
                         val counts = importFinalizer.finalize(source)
@@ -170,7 +170,7 @@ class SetupViewModel(
                 var total = tv.own.owntv.core.sync.SyncCounts(0, 0, 0, 0)
                 var failure: String? = null
                 for (source in sources) {
-                    when (val result = sourceRepository.sync(source) { _progress.value = it }) {
+                    when (val result = sourceRepository.sync(source, onProgress = { _progress.value = it })) {
                         SyncResult.Success -> {
                             val c = importFinalizer.finalize(source)
                             total = tv.own.owntv.core.sync.SyncCounts(total.channels + c.channels, total.movies + c.movies, total.series + c.series, total.epg + c.epg)
