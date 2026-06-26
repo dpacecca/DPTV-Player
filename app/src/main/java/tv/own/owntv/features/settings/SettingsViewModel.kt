@@ -383,7 +383,6 @@ class SettingsViewModel(
                         // shown on the EPG Sources screen, per the separated-EPG design).
                         val counts = importFinalizer.finalize(source)
                         Log.d(TAG, "runImport sync success sourceId=${source.id} profile=$pid")
-                        runCatching { refreshActiveTvHome(allowBrowsableRequest = true) }
                         if (enqueueRemainder) enqueueRemainderSync(source, contentTypes)
                         _importState.value = ImportState.Success(counts.summary(includeEpg = false).withWarnings(r))
                         // Offer a one-tap EPG sync if this playlist actually has a guide feed.
@@ -391,6 +390,7 @@ class SettingsViewModel(
                             pendingEpgSource = source
                             _epgSync.value = EpgSyncUi.Ask(source.name)
                         }
+                        viewModelScope.launch { runCatching { refreshActiveTvHome(allowBrowsableRequest = true) } }
                     }
                     is SyncResult.Failed -> {
                         cleanupFailedAdd(source)
