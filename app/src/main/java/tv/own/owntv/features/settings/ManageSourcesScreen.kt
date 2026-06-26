@@ -238,19 +238,19 @@ private fun SourceRow(
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(source.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                activeSync?.let {
+                if (isDefault) {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Syncing ${it.overallPercent.coerceIn(0, 100)}%",
+                        "DEFAULT",
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onPrimaryContainer,
                         modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
                     )
                 }
-                if (isDefault) {
+                activeSync?.let {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "DEFAULT",
+                        "Syncing ${it.overallPercent.coerceIn(0, 100)}%",
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onPrimaryContainer,
                         modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
