@@ -109,8 +109,25 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             SettingsViewModel.ImportState.Running -> CenterStatus {
                 OwnTVSpinner(sizeDp = 56)
                 Spacer(Modifier.height(16.dp))
-                Text("Importing…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                progress?.let { Text("${it.processed} items", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant) }
+                Text(
+                    "Importing ${progress?.label?.lowercase() ?: "content"}…",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.onSurface,
+                )
+                progress?.let {
+                    Spacer(Modifier.height(6.dp))
+                    Text("${it.overallPercent}%", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
+                    Spacer(Modifier.height(4.dp))
+                    Text("${it.processed} items", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    if (it.overallPercent == 0) {
+                        Spacer(Modifier.height(2.dp))
+                        Text("Working…", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    }
+                    if (it.breakdown.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it.breakdown, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    }
+                }
                 Spacer(Modifier.height(20.dp))
                 OwnTVButton("Cancel", onClick = { showAdd = false; vm.cancelImport() }, style = OwnTVButtonStyle.SECONDARY)
             }
@@ -241,8 +258,12 @@ private fun SourceRow(
                     if (refreshOnStart) append("  •  ⟳ on startup")
                     if (!countsLabel.isNullOrBlank()) append("  •  $countsLabel")
                     if (syncState is CatalogSyncState.Syncing) {
-                        append("  •  Syncing")
-                        if (syncState.processed > 0) append(" ${syncState.processed} items")
+                        append("  •  ")
+                        append("Syncing")
+                        syncState.label?.let { append(" ${it}") }
+                        append(" ${syncState.overallPercent}%")
+                        if (syncState.breakdown.isNotBlank()) append(" • ${syncState.breakdown}")
+                        if (syncState.processed > 0) append(" • ${syncState.processed} items")
                     }
                 },
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1,

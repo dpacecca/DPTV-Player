@@ -106,8 +106,7 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
             )
             Step.IMPORTING -> ImportProgressScreen(
                 state = importState,
-                stageLabel = progress?.label ?: "content",
-                processed = progress?.processed ?: 0,
+                progress = progress,
                 onContinue = { vm.finish(onDone) }, // playlist + its EPG synced (auto)
                 onRetry = { vm.reset(); step = importOrigin },
                 onCancel = { vm.cancelImport(); step = importOrigin },
@@ -302,8 +301,7 @@ private fun ChoiceCard(icon: OwnTVIcon, title: String, desc: String, modifier: M
 @Composable
 private fun ImportProgressScreen(
     state: SetupViewModel.ImportState,
-    stageLabel: String,
-    processed: Int,
+    progress: tv.own.owntv.core.sync.ImportStage?,
     onContinue: () -> Unit,
     onRetry: () -> Unit,
     onCancel: () -> Unit,
@@ -319,9 +317,23 @@ private fun ImportProgressScreen(
             SetupViewModel.ImportState.Running, SetupViewModel.ImportState.Idle -> {
                 OwnTVSpinner(sizeDp = 56)
                 Spacer(Modifier.height(20.dp))
-                Text("Importing ${stageLabel.lowercase()}…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text("Importing ${progress?.label?.lowercase() ?: "content"}…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(8.dp))
-                Text(if (processed > 0) formatCount(processed) else "Connecting…", style = MaterialTheme.typography.headlineLarge, color = colors.primary)
+                Text(
+                    if (progress != null) "${progress.overallPercent}%" else "Connecting…",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = colors.primary,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    if (progress == null) "Connecting…" else formatCount(progress.processed),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+                if (!progress?.breakdown.isNullOrBlank()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(progress.breakdown, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 560.dp))
+                }
                 Spacer(Modifier.height(24.dp))
                 OwnTVButton("Cancel", onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
             }
