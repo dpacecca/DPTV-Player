@@ -12,6 +12,23 @@ entries below) folded together with a large batch of new features, performance w
 
 ### 🐛 Fixes
 
+- **Live TV no longer freezes silently mid-stream** — a live channel could play smoothly and then
+  freeze/hang with no spinner, no reconnect and no error (replaying the channel fixed it). This happened
+  when a feed stalled in a way the player didn't *signal* — the stream stops advancing while the socket
+  stays open, so there was no buffering event, no error and no end-of-file to react to. Both playback
+  backends now detect this:
+  - **ExoPlayer (the primary live engine):** the silent-freeze watchdog now keys off *intent to play*
+    instead of the stricter "is-playing" flag (which briefly flickered off during a stall and kept
+    resetting the freeze timer), and adds an absolute "no forward progress for ~8s" backstop that can't be
+    missed even if per-frame detection isn't available. On a stall it shows the spinner and auto-reconnects
+    to the live edge (bounded retries with back-off), surfacing "Lost connection to this channel." only
+    after repeated failures.
+  - **mpv (compatibility-mode / fallback channels):** added an equivalent live progress watchdog that
+    detects a frozen stream, shows the spinner and reconnects with a bounded retry budget.
+  - The loading spinner is now shown consistently while a live stream is buffering, reconnecting or
+    retrying in either backend, and clears once playback resumes or a final error is shown. Detailed
+    Logcat is emitted around buffering / freeze detection / reconnect attempts for diagnosis.
+
 - **EPG match no longer removes a channel from the Guide** — matching a channel's EPG (auto or manual)
   could silently delete its stored programmes and leave the channel blank and then invisible in the
   Guide. This happened when multiple EPG sources were configured and a cache re-fill across a large
