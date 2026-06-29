@@ -1,12 +1,25 @@
 # Changelog
 
-## v4.0.0 — 2026-06-28
+## v4.0.0 — unreleased
 
 Big release — the community‑feedback **UI upgrade** (3 phases; Phase 1's quick wins are the first two
 entries below) folded together with a large batch of new features, performance work and fixes.
 
 ### ✨ New features
 
+- **Manually reorder channels, movies and series** — long-press any item in a **category folder** or **Favorites**
+  and choose **Move**. A full-screen reorder overlay appears with the full list; **D-pad Up/Down** moves the item
+  up or down, **OK** saves, **Back** cancels. The order persists across playlist re-syncs and is included in
+  profile backups / restores.
+- **Remove a single item from History** — long-press any item in the **History** folder and choose
+  **Remove from History** to delete just that entry. The existing bulk "Clear watch history" in Settings is
+  unchanged.
+- **Download from long-press menu** — Movies and Series now show a **Download** / **Download all episodes**
+  button directly in the long-press context menu, alongside the existing detail-pane download button.
+  Movies queues the file immediately; Series queues every locally-cached episode (open the series once first
+  if no episodes appear).
+- **Settings → Customize Category** — the "Customize" settings row has been renamed **Customize Category** to
+  clarify it affects categories (hide, rename, reorder), not individual items.
 - **Home screen with Continue Watching** — a new **Home** tab opens to a hero carousel of your partially‑watched
   movies, episodes and recent live channels (newest first); the selected card is shown large with its poster and
   starts a muted video preview when focused, and pressing **OK** resumes right where you left off. Below it is a
@@ -107,8 +120,19 @@ entries below) folded together with a large batch of new features, performance w
   the main thread, and re‑sorting/filtering reuses the cache. Mostly an efficiency/memory win — lighter on
   large channel lists and multi‑day catch‑up windows.
 
+### 🔧 Internal
+
+- Room database version **6 → 7**: new `content_order` table stores per-profile manual item ordering; included in backup/restore.
+- Long-press context menus on Movies and Series replaced the previous instant-favourite-toggle with a full menu (Favourite, Move, Remove from History, Download, Close).
+
 ### 🐛 Bug fixes
 
+- **No more false "Playback error" over a movie that's actually playing** — on some TVs (e.g. Realtek-based
+  panels) the hardware decoder takes a few seconds to negotiate and deliver its first frame, which made the
+  VOD watchdog wrongly conclude the file wasn't streamable and show *"This video isn't formatted for
+  streaming…"* on top of perfectly-playing video. The watchdog now waits a little longer before that verdict
+  and, more importantly, automatically dismisses the popup the moment a real video frame decodes. Genuinely
+  non-streamable files still surface the error as before.
 - **Startup focus rests on the nav** — on a cold start (or switching to the Home tab) focus now stays on the
   **Home item in the sidebar** instead of being pulled into the content; it only jumps into the hero when you
   return from the player. (Builds on [@codeVerine](https://github.com/codeVerine)'s empty‑Home focus fix,

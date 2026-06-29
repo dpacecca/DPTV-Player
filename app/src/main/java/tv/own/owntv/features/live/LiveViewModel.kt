@@ -43,12 +43,14 @@ import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.customize.applyCustomizations
 import tv.own.owntv.core.database.dao.CategoryDao
 import tv.own.owntv.core.database.dao.ChannelDao
+import tv.own.owntv.core.database.dao.ContentOrderDao
 import tv.own.owntv.core.database.dao.FavoriteDao
 import tv.own.owntv.core.database.dao.HistoryDao
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.ChannelEntity
+import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
@@ -90,7 +92,12 @@ class LiveViewModel(
     val player: OwnTVPlayer,
     val previewEngine: tv.own.owntv.player.LivePreviewEngine,
     private val forceMpvStore: tv.own.owntv.core.player.ForceMpvStore,
+    private val contentOrderDao: ContentOrderDao,
 ) : ViewModel() {
+
+    data class ChannelMoveState(val items: List<ChannelEntity>, val activeIndex: Int, val contextKey: String)
+    private val _moveState = MutableStateFlow<ChannelMoveState?>(null)
+    val moveState: StateFlow<ChannelMoveState?> = _moveState.asStateFlow()
 
     val livePreviewEnabled: StateFlow<Boolean> = settings.livePreviewEnabled
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
@@ -127,6 +134,15 @@ class LiveViewModel(
         }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
+
+    private val folderContextKeys: StateFlow<Map<Long, String>> = ctx
+        .flatMapLatest { c ->
+            if (c.profileId < 0) flowOf(emptyMap())
+            else categoryDao.observe(c.sourceIds, MediaType.LIVE).map { cats ->
+                cats.associateBy({ it.id }, { CustomizeKeys.category(it) })
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     private val _selected = MutableStateFlow<LiveKey>(LiveKey.All)
     val selectedKey: StateFlow<LiveKey> = _selected.asStateFlow()
@@ -719,9 +735,9 @@ class LiveViewModel(
         return if (query.isBlank()) {
             when (key) {
                 LiveKey.All -> if (playlist) channelDao.pagingAllOriginal(ids) else channelDao.pagingAll(ids)
-                LiveKey.Favorites -> channelDao.pagingFavorites(c.profileId)
+                LiveKey.Favorites -> channelDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT)
                 LiveKey.History -> channelDao.pagingHistory(c.profileId)
-                is LiveKey.Folder -> if (playlist) channelDao.pagingByCategory(key.id) else channelDao.pagingByCategoryAlpha(key.id)
+                is LiveKey.Folder -> channelDao.pagingByCategoryManual(key.id, c.profileId, folderContextKeys.value[key.id] ?: "")
             }
         } else {
             when (key) {
@@ -730,6 +746,69 @@ class LiveViewModel(
                 LiveKey.History -> channelDao.searchHistory(query, c.profileId)
                 is LiveKey.Folder -> channelDao.searchInCategory(query, key.id)
             }
+        }
+    }
+
+    fun enterMoveMode(channel: ChannelEntity, key: LiveKey) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            val contextKey = when (key) {
+                is LiveKey.Folder -> folderContextKeys.value[key.id] ?: return@launch
+                LiveKey.Favorites -> ContentOrderEntity.FAV_CONTEXT
+                else -> return@launch
+            }
+            val items = when (key) {
+                is LiveKey.Folder -> channelDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
+                LiveKey.Favorites -> channelDao.snapshotFavoritesManual(pid, contextKey, 5000)
+                else -> return@launch
+            }
+            val idx = items.indexOfFirst { it.id == channel.id }
+            if (idx < 0) return@launch
+            _moveState.value = ChannelMoveState(items, idx, contextKey)
+            settings.setSortLive(SettingsRepository.SortMode.PLAYLIST)
+        }
+    }
+
+    fun moveUp() {
+        val s = _moveState.value ?: return
+        if (s.activeIndex == 0) return
+        val list = s.items.toMutableList()
+        val i = s.activeIndex
+        list[i - 1] = s.items[i]; list[i] = s.items[i - 1]
+        _moveState.value = s.copy(items = list, activeIndex = i - 1)
+    }
+
+    fun moveDown() {
+        val s = _moveState.value ?: return
+        if (s.activeIndex == s.items.size - 1) return
+        val list = s.items.toMutableList()
+        val i = s.activeIndex
+        list[i + 1] = s.items[i]; list[i] = s.items[i + 1]
+        _moveState.value = s.copy(items = list, activeIndex = i + 1)
+    }
+
+    fun commitMove() {
+        val s = _moveState.value ?: return
+        _moveState.value = null
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            contentOrderDao.replaceContext(
+                profileId = pid,
+                type = MediaType.LIVE,
+                contextKey = s.contextKey,
+                rows = s.items.mapIndexed { i, ch ->
+                    ContentOrderEntity(profileId = pid, mediaType = MediaType.LIVE, contextKey = s.contextKey, itemId = ch.id, position = i)
+                },
+            )
+        }
+    }
+
+    fun cancelMove() { _moveState.value = null }
+
+    fun removeFromHistory(channelId: Long) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            historyDao.remove(pid, MediaType.LIVE, channelId)
         }
     }
 

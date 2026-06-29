@@ -215,7 +215,7 @@ fun SettingsScreen(
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.SORT,
-            title = "Customize", desc = "Hide, rename & reorder categories and channels",
+            title = "Customize Category", desc = "Hide, rename & reorder categories",
             onClick = { open(SettingsTab.CUSTOMIZE) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.CUSTOMIZE)),
         )
