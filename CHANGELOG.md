@@ -12,6 +12,13 @@ entries below) folded together with a large batch of new features, performance w
 
 ### 🐛 Fixes
 
+- **EPG match no longer removes a channel from the Guide** — matching a channel's EPG (auto or manual)
+  could silently delete its stored programmes and leave the channel blank and then invisible in the
+  Guide. This happened when multiple EPG sources were configured and a cache re-fill across a large
+  source file was interrupted before it could restore the deleted rows. The cache re-fill is now
+  parse-then-apply: programmes are only deleted for ids where fresh replacement data was successfully
+  parsed first. Channels that had no in-window data in any fresh cache keep whatever they already had.
+
 - **Show/Hide password toggle on all password fields** — a **Show / Hide** button now appears on the
   right of every password field (Xtream password when adding/editing a playlist; PIN fields in profile
   setup and profile settings). The toggle is D-pad focusable independently of the text field, so the

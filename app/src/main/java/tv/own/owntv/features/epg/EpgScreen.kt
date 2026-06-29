@@ -360,6 +360,7 @@ fun EpgScreen(
         ProgrammeDetailDialog(
             channelName = channel.name,
             programme = p,
+            loadDescription = { vm.programmeDescription(it) },
             canCatchup = vm.canCatchup(channel, p, state.now),
             onWatch = { detail = null; vm.noteChannelTuned(channel); if (onPlayChannel != null) onPlayChannel(channel, state.channels) else { vm.play(channel); onFullscreen() } },
             onPlayCatchup = { detail = null; vm.playCatchup(channel, p); onFullscreen() },
@@ -477,8 +478,11 @@ private fun EpgMatchReviewDialog(
             }
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton("Accept all", onClick = onAcceptAll, icon = OwnTVIcon.PLAY)
-                OwnTVButton("Skip all", onClick = onSkipAll, style = OwnTVButtonStyle.SECONDARY)
+                // Bulk actions only make sense for a multi-channel run; a single auto-match shows just accept/skip.
+                if (suggestions.size > 1) {
+                    OwnTVButton("Accept all", onClick = onAcceptAll, icon = OwnTVIcon.PLAY)
+                    OwnTVButton("Skip all", onClick = onSkipAll, style = OwnTVButtonStyle.SECONDARY)
+                }
                 Spacer(Modifier.weight(1f))
                 OwnTVButton("Done", onClick = onDone, style = OwnTVButtonStyle.SECONDARY)
             }
@@ -716,12 +720,18 @@ private fun ProgrammeStripCanvas(
 private fun ProgrammeDetailDialog(
     channelName: String,
     programme: EpgProgrammeEntity,
+    loadDescription: suspend (Long) -> String?,
     canCatchup: Boolean,
     onWatch: () -> Unit,
     onPlayCatchup: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
+    // The grid load drops `description` to stay under the CursorWindow limit, so fetch it on demand
+    // here (fall back to the row's own value when it was loaded by the lazy per-row path).
+    val description by produceState(programme.description, programme.id) {
+        value = programme.description ?: loadDescription(programme.id)
+    }
     val fr = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
     BackHandler { onDismiss() }
@@ -732,9 +742,9 @@ private fun ProgrammeDetailDialog(
             Text(programme.title, style = MaterialTheme.typography.headlineSmall, color = colors.onSurface)
             Spacer(Modifier.height(8.dp))
             Text("${clock(programme.startMs)} – ${clock(programme.stopMs)}", style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
-            if (!programme.description.isNullOrBlank()) {
+            if (!description.isNullOrBlank()) {
                 Spacer(Modifier.height(14.dp))
-                Text(programme.description.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Text(description.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             }
             Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

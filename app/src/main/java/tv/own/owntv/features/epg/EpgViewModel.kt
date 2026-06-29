@@ -133,6 +133,29 @@ class EpgViewModel(
         return list
     }
 
+    /** Synopsis for one programme, fetched on demand for the detail dialog (the grid load drops it). */
+    suspend fun programmeDescription(programmeId: Long): String? =
+        runCatching { epgDao.programmeDescription(programmeId) }.getOrNull()
+
+    /**
+     * Load the whole guide window in id-keyset pages (each bounded so it fits a single CursorWindow),
+     * grouped by EPG channel id with every row list ordered by start time for the grid. A big lineup
+     * returns far more rows than one ~2 MB window holds, so it MUST be paged. Runs off the main thread.
+     */
+    private suspend fun loadWindowGrouped(ids: List<Long>, from: Long, to: Long): Map<String, List<EpgProgrammeEntity>> =
+        withContext(Dispatchers.Default) {
+            val all = ArrayList<EpgProgrammeEntity>()
+            var afterId = 0L
+            while (true) {
+                val page = epgDao.programmesInWindowPage(ids, from, to, afterId, EPG_WINDOW_PAGE)
+                if (page.isEmpty()) break
+                all += page
+                afterId = page.last().id
+                if (page.size < EPG_WINDOW_PAGE) break
+            }
+            all.groupBy { it.epgChannelId }.mapValues { (_, v) -> v.sortedBy { it.startMs } }
+        }
+
     init {
         // Re-filter the grid as the user types (DB-level, so it searches ALL guide channels, not
         // just the visible rows). drop(1): the screen triggers the initial load itself.
@@ -277,6 +300,7 @@ class EpgViewModel(
         }
     }
 
+
     private suspend fun refreshAllEpgFromNetwork() {
         val pid = settings.activeProfileId.first()
         if (pid >= 0) sourceRepository.observeSources(pid).first().forEach { runCatching { epgRepository.refresh(it) } }
@@ -363,8 +387,9 @@ class EpgViewModel(
     }
 
     /**
-     * Auto-match a SINGLE channel by name (Guide long-press → "Auto-match"). Applies the best candidate
-     * found (the user asked for this one specifically, so we apply even a middling match) or reports none.
+     * Auto-match a SINGLE channel by name (Guide long-press → "Auto-match"). Surfaces the best candidate
+     * in the same review dialog (one entry, so no accept/skip-all) for the user to accept or skip, rather
+     * than applying silently — or reports none found.
      */
     fun autoMatchOne(channel: ChannelEntity) {
         if (_matching.value) return
@@ -385,9 +410,9 @@ class EpgViewModel(
                 if (best == null) {
                     _matchSummary.value = "No EPG match found for “${channel.name}” — try picking manually."
                 } else {
-                    customize.setEpgMatch(pid, MediaType.LIVE, CustomizeKeys.channel(channel), best.epgChannelId)
-                    _matchSummary.value = "Matched “${channel.name}” → ${best.displayName ?: best.epgChannelId} (${(best.score * 100).toInt()}%)."
-                    fillMatchedInBackground(listOf(best.epgChannelId)) // off the spinner
+                    // Show it in the review dialog (accept/skip) instead of applying silently. acceptSuggestion
+                    // persists the match + fills the guide; dismissSuggestion just drops it.
+                    _review.value = listOf(EpgMatchSuggestion(channel, best.epgChannelId, best.displayName, best.score))
                 }
             } finally {
                 _matching.value = false
@@ -518,6 +543,7 @@ class EpgViewModel(
             }
             val stored = epgDao.countForSources(ids)
 
+
             // Per-row programmes are loaded in ONE batched query and grouped into rowCache here, instead of
             // each row firing its own programmesForChannel (an N+1 query storm on cold open). Only re-batch
             // when the window or sources actually change — a sort / filter / category change keeps the same
@@ -531,9 +557,7 @@ class EpgViewModel(
                 cachedWindow = windowStart to windowEnd
                 rowCache.clear()
                 // Pass 1 (blocking): the forward window only, so the Guide opens instantly and fully from cache.
-                val forward = withContext(Dispatchers.Default) {
-                    epgDao.programmesInWindow(ids, nowAligned, windowEnd).groupBy { it.epgChannelId }
-                }
+                val forward = loadWindowGrouped(ids, nowAligned, windowEnd)
                 forward.forEach { (k, list) -> rowCache[k] = list }
                 // Signal GuideChannelRow's produceState to re-read rowCache now that the batch load
                 // is complete — without this, the initial composition renders channels with empty
@@ -572,9 +596,7 @@ class EpgViewModel(
             // both window queries. The revision bump makes already-visible rows re-read the completed cache.
             if (windowChanged && windowStart < nowAligned) {
                 viewModelScope.launch {
-                    val back = withContext(Dispatchers.Default) {
-                        epgDao.programmesInWindow(ids, windowStart, nowAligned).groupBy { it.epgChannelId }
-                    }
+                    val back = loadWindowGrouped(ids, windowStart, nowAligned)
                     if (back.isNotEmpty()) {
                         back.forEach { (k, extra) ->
                             rowCache[k] = (extra + (rowCache[k] ?: emptyList())).distinctBy { it.id }.sortedBy { it.startMs }
@@ -642,5 +664,7 @@ class EpgViewModel(
         private const val MAX_CHANNELS = 20_000
         // Cap the candidate set the bulk matcher scans against (keeps the O(channels×candidates) scan bounded).
         private const val MAX_EPG_CANDIDATES = 20_000
+        // Rows per guide-window page — bounded so a page always fits a single ~2 MB CursorWindow.
+        private const val EPG_WINDOW_PAGE = 1_000
     }
 }
