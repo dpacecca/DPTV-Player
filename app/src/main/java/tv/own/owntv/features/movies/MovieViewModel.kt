@@ -199,6 +199,7 @@ class MovieViewModel(
     fun play(movie: MovieEntity, startPositionMs: Long = 0) {
         viewModelScope.launch {
             val pid = currentProfileId()
+            val sourceUa = sourceDao.getById(movie.sourceId)?.userAgent
             Log.d(TAG, "play movieId=${movie.id} profile=$pid startPositionMs=$startPositionMs")
             player.play(
                 movie.streamUrl,
@@ -206,6 +207,7 @@ class MovieViewModel(
                 year = movie.year?.toString(),
                 isLive = false,
                 startPositionMs = startPositionMs,
+                userAgent = sourceUa,
             )
             playingMovie = movie
             if (pid != null) {

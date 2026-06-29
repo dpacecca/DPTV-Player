@@ -127,6 +127,12 @@ entries below) folded together with a large batch of new features, performance w
 
 ### 🐛 Bug fixes
 
+- **Per-source User-Agent for playback** — each source now supports a **custom User-Agent** (entered in source
+  settings), and it is consistently applied to Live TV, Movies, Series, and EPG playback on both mpv and
+  ExoPlayer. If playback fails with a format/demuxer error and no custom UA was set, the app retries once
+  with the short `vlc` User-Agent — some providers block the full `VLC/3.0.20 LibVLC/3.0.20` string but
+  accept the short form. If that also fails, the error message hints: *"This provider may require a custom
+  User-Agent in source settings."*
 - **No more false "Playback error" over a movie that's actually playing** — on some TVs (e.g. Realtek-based
   panels) the hardware decoder takes a few seconds to negotiate and deliver its first frame, which made the
   VOD watchdog wrongly conclude the file wasn't streamable and show *"This video isn't formatted for

@@ -3,6 +3,10 @@
 A quick tour of everything OwnTV can do. Most of these are **TV‑remote (D‑pad) shortcuts** that aren't
 obvious at first glance — once you know them, the app is a lot faster to live in.
 
+> **v4.0.0+ UI Update**: The app now features a completely redesigned shell with a **fixed sidebar** nav,
+> a **top bar** with live clock, weather, search, and playlist name, and **rounded panels** for crisp content.
+> Navigation is faster and more stable — panels don't jump around anymore.
+
 > Navigation basics: **D‑pad** to move, **OK/Center** to select, **Back** to go up a level. The left
 > column is the **navigation panel** (Search · Home · Live TV · Movies · Series · Downloads · Guide ·
 > Settings). Press **Left** from a content list to jump back to it.
@@ -28,6 +32,9 @@ obvious at first glance — once you know them, the app is a lot faster to live 
   **Settings → Live preview**; sound for the preview is **Settings → Preview audio**.
 - ⭐ **Add to Favourites (and more)**: **long‑press OK** on a channel to open the quick menu — **Favourite,
   Rename, Hide, Match EPG, Catch‑up**. (Closing it returns you to the same channel.)
+- 🔄 **Move channels** (reorder within folders/Favorites): **long‑press OK** on a channel and choose **Move** —
+  a full‑screen reorder overlay opens with the full list. Use **D‑pad Up/Down** to move the item, **OK** to save,
+  **Back** to cancel. Your reorder is saved across playlist re‑syncs and included in backups.
 - **Open a channel full‑screen**: press **OK**.
 
 ### Inside the full‑screen live player
@@ -69,6 +76,20 @@ obvious at first glance — once you know them, the app is a lot faster to live 
 - ⏭️ **Auto‑play next episode**: when an episode ends, the next one starts automatically — and it rolls into
   the **next season** when the current one finishes. Toggle in **Settings → Auto‑play next episode**.
 - Series **open on your last‑watched episode**.
+- 🔄 **Move movies/series** (reorder within categories/Favorites): **long‑press OK** on any title and choose **Move** —
+  a full‑screen reorder overlay opens. Use **D‑pad Up/Down** to move, **OK** to save, **Back** to cancel.
+- 📥 **Download via long‑press**: **long‑press OK** on a movie or episode and choose **Download** to queue it
+  immediately (Movies) or queue all cached episodes (Series). No need to open the detail pane.
+
+---
+
+## 🕐 History
+
+- Browse **recently watched movies, series and channels**.
+- ✂️ **Remove single item**: **long‑press OK** on any history item and choose **Remove from History** to
+  delete just that entry (keeps the rest).
+- 🧹 **Clear entire history** (by type): Settings → Content → **Clear watch history** — wipe all recently‑watched
+  items, or just **Live TV, Movies or Series**. Playlists, Favorites and Downloads are untouched.
 
 ---
 

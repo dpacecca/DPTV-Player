@@ -127,10 +127,16 @@ class LiveViewModel(
 
     // Observe the active profile's sources REACTIVELY so adding/removing a playlist refreshes Live TV
     // immediately (it used to be read once at startup, so a new playlist showed nothing until restart).
+    // sourceUaMap is a lightweight side-product: sourceId → userAgent, used for synchronous play() calls
+    // (playPreview, ensurePlaying) that can't do a DB lookup on the call site.
+    private var sourceUaMap: Map<Long, String?> = emptyMap()
     private val ctx: StateFlow<Ctx> = settings.activeProfileId
         .flatMapLatest { pid ->
             if (pid < 0) flowOf(Ctx(pid, emptyList()))
-            else sourceDao.observeForProfile(pid).map { srcs -> Ctx(pid, srcs.map { it.id }) }
+            else sourceDao.observeForProfile(pid).map { srcs ->
+                sourceUaMap = srcs.associate { it.id to it.userAgent }
+                Ctx(pid, srcs.map { it.id })
+            }
         }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
@@ -376,6 +382,7 @@ class LiveViewModel(
         previewEngine.play(
             channel.streamUrl, muted = !livePreviewAudio.value,
             meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
+            userAgent = sourceUaMap[channel.sourceId],
         )
     }
 
@@ -462,6 +469,7 @@ class LiveViewModel(
             previewEngine.play(
                 channel.streamUrl, muted = false,
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
+                userAgent = sourceUaMap[channel.sourceId],
             )
         }
         watchExoOutcome(channel)
@@ -531,7 +539,8 @@ class LiveViewModel(
         previewEngine.stop()
         delay(500)                          // let ExoPlayer's decoder release before mpv inits
         if (_previewChannel.value?.streamUrl == channel.streamUrl) {
-            player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, muted = false)
+            val sourceUa = sourceDao.getById(channel.sourceId)?.userAgent
+            player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, muted = false, userAgent = sourceUa)
         }
     }
 
@@ -576,11 +585,12 @@ class LiveViewModel(
                 val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
                 CatchupUrl.forSource(ch, programme, source, settings.resolveCatchupTimeZone(), xtreamClient)
             } ?: return@launch
+            val sourceUa = withContext(Dispatchers.IO) { sourceDao.getById(ch.sourceId)?.userAgent }
             _previewChannel.value = ch
             _timeshiftOffsetSec.value = null // guide archive isn't the live-rewind timeshift
             clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
             // isLive=false → seekable archive; preferSoftware → tolerate mid-GOP archive segments.
-            player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.logoUrl, isLive = false, preferSoftware = true)
+            player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.logoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
         }
     }
 
@@ -632,9 +642,9 @@ class LiveViewModel(
             val nowMs = System.currentTimeMillis()
             val startMs = nowMs - offsetSec * 1000L
             val tz = withContext(Dispatchers.IO) { settings.resolveCatchupTimeZone() }
-            val url = withContext(Dispatchers.IO) {
+            val (url, sourceUa) = withContext(Dispatchers.IO) {
                 val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
-                buildLiveTimeshiftUrl(ch, source, startMs, offsetSec, tz)
+                buildLiveTimeshiftUrl(ch, source, startMs, offsetSec, tz)?.let { it to source.userAgent }
             } ?: return@launch
             if (_timeshiftOffsetSec.value == null) return@launch // user jumped back to live meanwhile
             // Show the clock time being watched (handy for the user; no credentials in logs).
@@ -642,7 +652,7 @@ class LiveViewModel(
                 .apply { timeZone = java.util.TimeZone.getDefault() }.format(java.util.Date(startMs))
             _previewChannel.value = ch
             clearLiveOnExo() // archive plays as a VOD-style mpv stream, not the live ExoPlayer channel
-            player.play(url, title = ch.name, subtitle = "Rewind · $localLabel", logoUrl = ch.logoUrl, isLive = false, preferSoftware = true)
+            player.play(url, title = ch.name, subtitle = "Rewind · $localLabel", logoUrl = ch.logoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
             timeshiftStartWall = startMs
             startOffsetTick()
         }

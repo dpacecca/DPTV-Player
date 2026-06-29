@@ -317,6 +317,7 @@ class SeriesViewModel(
             val pid = currentProfileId()
             val startIndex = queue.indexOfFirst { it.id == episode.id }.coerceAtLeast(0)
             Log.d(TAG, "playEpisodeQueue seriesId=${show.id} episodeId=${episode.id} profile=$pid queue=${queue.size} startIndex=$startIndex startPositionMs=$startPositionMs")
+            val sourceUa = sourceDao.getById(show.sourceId)?.userAgent
             player.playEpisodes(
                 items = queue.map { ep ->
                     PlaylistItem(
@@ -329,6 +330,7 @@ class SeriesViewModel(
                 },
                 startIndex = startIndex,
                 startPositionMs = startPositionMs,
+                userAgent = sourceUa,
             )
             if (pid != null) {
                 runCatching {

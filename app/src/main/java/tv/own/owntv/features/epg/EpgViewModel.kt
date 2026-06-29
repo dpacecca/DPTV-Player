@@ -194,8 +194,9 @@ class EpgViewModel(
     fun play(channel: ChannelEntity) {
         lastTunedChannelId = channel.id
         _canZap.value = _state.value.channels.size > 1
-        player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true)
         viewModelScope.launch {
+            val sourceUa = sourceDao.getById(channel.sourceId)?.userAgent
+            player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, userAgent = sourceUa)
             val pid = currentProfileId() ?: return@launch
             runCatching {
                 historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.LIVE, itemId = channel.id))
@@ -216,11 +217,12 @@ class EpgViewModel(
                 _matchSummary.value = "Catch-up isn't available for this channel."
                 return@launch
             }
+            val sourceUa = sourceDao.getById(channel.sourceId)?.userAgent
             lastTunedChannelId = channel.id
             _canZap.value = false // archive playback isn't part of the live zap list
             // isLive = false → the archive plays back seekable, with a normal progress bar.
             // preferSoftware → tolerate mid-GOP archive segments the hardware decoder can't (blank/crash).
-            player.play(url, title = channel.name, subtitle = programme.title, logoUrl = channel.logoUrl, isLive = false, preferSoftware = true)
+            player.play(url, title = channel.name, subtitle = programme.title, logoUrl = channel.logoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
         }
     }
 
