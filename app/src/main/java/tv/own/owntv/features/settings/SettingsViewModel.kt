@@ -280,7 +280,7 @@ class SettingsViewModel(
     fun setPreferredSubLang(lang: String) { viewModelScope.launch { settings.setPreferredSubLang(lang) } }
 
     // --- Personalization (theme / accent / UI zoom) ---
-    val themeMode: StateFlow<ThemeMode> = settings.themeMode.stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.AMOLED_DARK)
+    val themeMode: StateFlow<ThemeMode> = settings.themeMode.stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.DARK)
     fun setThemeMode(mode: ThemeMode) { viewModelScope.launch { settings.setThemeMode(mode) } }
 
     val accent: StateFlow<AccentColor> = settings.accent.stateIn(viewModelScope, SharingStarted.Eagerly, AccentColor.TEAL)
@@ -325,6 +325,11 @@ class SettingsViewModel(
 
     private val _importState = MutableStateFlow<ImportState>(ImportState.Idle)
     val importState: StateFlow<ImportState> = _importState.asStateFlow()
+
+    /** The last source whose sync failed — persisted so AddSourceScreen can pre-fill the form
+     *  instead of making the user re-type everything on the remote after a typo. */
+    private var _lastFailedSource: SourceEntity? = null
+    val lastFailedSource: SourceEntity? get() = _lastFailedSource
 
     private val _progress = MutableStateFlow<ImportStage?>(null)
     val progress: StateFlow<ImportStage?> = _progress.asStateFlow()
@@ -392,6 +397,7 @@ class SettingsViewModel(
                         val counts = importFinalizer.finalize(source)
                         Log.d(TAG, "runImport sync success sourceId=${source.id} profile=$pid")
                         if (enqueueRemainder) enqueueRemainderSync(source, contentTypes)
+                        _lastFailedSource = null
                         _importState.value = ImportState.Success(counts.summary(includeEpg = false).withWarnings(r))
                         // Offer a one-tap EPG sync if this playlist actually has a guide feed.
                         if (epgRepository.guideUrl(source) != null) {

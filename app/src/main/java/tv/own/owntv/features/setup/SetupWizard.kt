@@ -103,6 +103,7 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
                 },
                 onStartM3u = { name, url, ua, epg, refresh -> vm.startM3u(name, url, ua, epg, refresh); importOrigin = Step.ADD_SOURCE; step = Step.IMPORTING },
                 onBack = { step = Step.ADD_CONTENT },
+                initial = vm.lastFailedSource, // pre-fill on retry after failed import
             )
             Step.IMPORTING -> ImportProgressScreen(
                 state = importState,
@@ -346,7 +347,10 @@ private fun ImportProgressScreen(
                 Spacer(Modifier.height(10.dp))
                 Text(state.message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 520.dp))
                 Spacer(Modifier.height(28.dp))
-                OwnTVButton("Try Again", onClick = onRetry, modifier = Modifier.focusRequester(fr))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OwnTVButton("Back", onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton("Try Again", onClick = onRetry, modifier = Modifier.focusRequester(fr))
+                }
             }
         }
     }

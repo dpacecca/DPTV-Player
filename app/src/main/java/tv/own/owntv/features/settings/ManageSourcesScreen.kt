@@ -44,6 +44,7 @@ import tv.own.owntv.features.setup.AddSourceScreen
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVSpinner
+import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /** Phase 13 — list / add / re-sync / delete the active profile's IPTV sources. */
@@ -108,6 +109,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 onStartM3u = { n, url, ua, epg, refresh -> vm.addM3u(n, url, ua, epg, refresh) },
                 onBack = { showAdd = false },
                 modifier = modifier,
+                initial = vm.lastFailedSource, // pre-fill on retry — no re-typing after a typo
             )
             SettingsViewModel.ImportState.Running -> CenterStatus {
                 val display = progress?.importProgressDisplay()
@@ -158,7 +160,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(colors.surface)
+            .roundedPanel()
             // Spatial D-pad entry from the sidebar would land mid-list — route it to "Add Source".
             // onEnter fires only for directional entry from outside; internal focus moves and
             // programmatic restores never re-trigger it (an onFocusChanged redirect did, freezing focus).
@@ -303,7 +305,7 @@ private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType): String
 
 @Composable
 private fun CenterStatus(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    Box(Modifier.fillMaxSize().background(OwnTVTheme.colors.surface), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().roundedPanel(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, content = content)
     }
 }
