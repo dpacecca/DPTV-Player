@@ -156,12 +156,15 @@ class SetupViewModel(
                 }
                 val profileId = createdProfileId.takeIf { it > 0 } ?: ensureFallbackProfile()
                 source = addSource(profileId)
+                val freshSync = source.lastSyncAt == null
+                val remainder = if (enqueueRemainder) SyncContentTypes().remainderAfter(contentTypes) else SyncContentTypes(live = false, movies = false, series = false)
                 settings.setSourceRefresh(source.id, refreshOnStart)
                 when (val result = sourceRepository.sync(source, onProgress = { _progress.value = it }, contentTypes = contentTypes)) {
                     is SyncResult.Success -> {
                         // Just the playlist content — EPG is added separately (Settings → EPG sources).
-                        val counts = importFinalizer.finalize(source)
+                        val counts = importFinalizer.finalize(source, deferIndexes = freshSync)
                         if (enqueueRemainder) enqueueRemainderSync(source, contentTypes)
+                        if (freshSync && !remainder.hasAny) catalogSyncScheduler.enqueueContentIndexBuild(reason = "fresh_add")
                         lastFailedSource = null
                         _state.value = ImportState.Success(counts.summary(includeEpg = false).withWarnings(result))
                         if (epgRepository.guideUrl(source) != null) {

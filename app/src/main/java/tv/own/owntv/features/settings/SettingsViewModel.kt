@@ -389,14 +389,17 @@ class SettingsViewModel(
                 val pid = profileDao.resolveExistingProfileId(settings.activeProfileId.first()) ?: return@launch
                 Log.d(TAG, "runImport profile=$pid refreshOnStart=$refreshOnStart")
                 source = addSource(pid)
+                val freshSync = source.lastSyncAt == null
+                val remainder = if (enqueueRemainder) SyncContentTypes().remainderAfter(contentTypes) else SyncContentTypes(live = false, movies = false, series = false)
                 settings.setSourceRefresh(source.id, refreshOnStart)
                 when (val r = sourceRepository.sync(source, onProgress = { _progress.value = it }, contentTypes = contentTypes)) {
                     is SyncResult.Success -> {
                         // Settings playlist add: content breakdown only (EPG syncs silently and is
                         // shown on the EPG Sources screen, per the separated-EPG design).
-                        val counts = importFinalizer.finalize(source)
+                        val counts = importFinalizer.finalize(source, deferIndexes = freshSync)
                         Log.d(TAG, "runImport sync success sourceId=${source.id} profile=$pid")
                         if (enqueueRemainder) enqueueRemainderSync(source, contentTypes)
+                        if (freshSync && !remainder.hasAny) catalogSyncScheduler.enqueueContentIndexBuild(reason = "fresh_add")
                         _lastFailedSource = null
                         _importState.value = ImportState.Success(counts.summary(includeEpg = false).withWarnings(r))
                         // Offer a one-tap EPG sync if this playlist actually has a guide feed.
