@@ -43,6 +43,7 @@ import tv.own.owntv.ui.components.BrowseMode
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
+import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.features.settings.EpgSyncDialog
@@ -117,6 +118,7 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
             Step.IMPORT_BACKUP -> ImportBackupScreen(
                 state = importState,
                 onPick = { file -> vm.importBackup(file) { onDone() } }, // restore activates a profile itself
+                onPassword = { file, pass -> vm.restoreWithPassword(file, pass) { onDone() } },
                 onBack = { vm.reset(); step = backupOrigin },
             )
         }
@@ -249,11 +251,47 @@ private fun ExistingSourcesScreen(sources: List<SourceEntity>, onAdd: (Set<Long>
 }
 
 @Composable
-private fun ImportBackupScreen(state: SetupViewModel.ImportState, onPick: (java.io.File) -> Unit, onBack: () -> Unit) {
+private fun ImportBackupScreen(
+    state: SetupViewModel.ImportState,
+    onPick: (java.io.File) -> Unit,
+    onPassword: (java.io.File, String?) -> Unit,
+    onBack: () -> Unit,
+) {
     when (state) {
         SetupViewModel.ImportState.Running -> Centered {
             OwnTVSpinner(sizeDp = 56); Spacer(Modifier.height(16.dp))
             Text("Restoring…", style = MaterialTheme.typography.titleMedium, color = OwnTVTheme.colors.onSurface)
+        }
+        is SetupViewModel.ImportState.NeedPassword -> Centered {
+            var password by remember { mutableStateOf("") }
+            val firstFocus = remember { FocusRequester() }
+            LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+            Text(
+                if (state.retry) "Wrong backup password" else "Enter backup password",
+                style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                if (state.retry) "That password didn't match. Try again, or skip to restore everything except saved passwords."
+                else "This backup's passwords are encrypted. Enter the backup password to restore them, or skip to restore everything else and re-enter passwords later.",
+                style = MaterialTheme.typography.bodyMedium, color = OwnTVTheme.colors.onSurfaceVariant,
+                textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 520.dp),
+            )
+            Spacer(Modifier.height(20.dp))
+            OwnTVTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = "Backup password",
+                isPassword = true,
+                focusRequester = firstFocus,
+                modifier = Modifier.widthIn(max = 420.dp),
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton("Back", onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton("Skip (no passwords)", onClick = { onPassword(state.file, null) }, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton("Restore", onClick = { onPassword(state.file, password) }, enabled = password.isNotBlank())
+            }
         }
         is SetupViewModel.ImportState.Failed -> Centered {
             Text("Restore failed", style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface)
@@ -312,7 +350,8 @@ private fun ImportProgressScreen(
     }
     Centered {
         when (state) {
-            SetupViewModel.ImportState.Running, SetupViewModel.ImportState.Idle -> {
+            SetupViewModel.ImportState.Running, SetupViewModel.ImportState.Idle,
+            is SetupViewModel.ImportState.NeedPassword -> {
                 OwnTVSpinner(sizeDp = 56)
                 Spacer(Modifier.height(20.dp))
                 Text("Importing ${stageLabel.lowercase()}…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)

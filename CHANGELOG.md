@@ -45,6 +45,15 @@ entries below) folded together with a large batch of new features, performance w
 
 ### ✨ New features
 
+- **Backup now covers more settings and encrypts saved passwords** — the backup file now also includes
+  surround sound, auto-play-next, Guide sort, animation level, Movies/Series view mode, catch-up timezone
+  & offset, the global proxy (host/port/user/enabled), and each profile's startup landing screen. Saved
+  passwords (source/playlist and proxy) are no longer written in plaintext: on export you can set a
+  **backup password** to encrypt them (AES-GCM, field-level only — the rest of the file stays readable),
+  or export without passwords. On restore you're prompted for that password; a wrong password never wipes
+  anything and lets you retry, and you can skip it to restore everything except saved passwords. Old
+  backups still import as before. Both restore entry points (Settings and the first-run setup wizard)
+  prompt for the backup password.
 - **Manually reorder channels, movies and series** — long-press any item in a **category folder** or **Favorites**
   and choose **Move**. A full-screen reorder overlay appears with the full list; **D-pad Up/Down** moves the item
   up or down, **OK** saves, **Back** cancels. The order persists across playlist re-syncs and is included in
@@ -58,6 +67,12 @@ entries below) folded together with a large batch of new features, performance w
   if no episodes appear).
 - **Settings → Customize Category** — the "Customize" settings row has been renamed **Customize Category** to
   clarify it affects categories (hide, rename, reorder), not individual items.
+- **Global HTTP proxy support** — **Settings → Network → Proxy** lets you route all OwnTV traffic
+  (playlist sync, Xtream API, EPG, images, downloads, updates) and fullscreen playback through an HTTP proxy.
+  Enter a proxy host and port (optionally with username / password); a **Test Proxy** button verifies connectivity
+  before saving. Disabling the proxy restores direct connections. The proxy is applied globally across all
+  playlists — per-playlist proxy overrides and SOCKS5 support are planned for future versions. See
+  `extras/PROXY_SUPPORT_PLAN.md` for full details and limitations.
 - **Home screen with Continue Watching** — a new **Home** tab opens to a hero carousel of your partially‑watched
   movies, episodes and recent live channels (newest first); the selected card is shown large with its poster and
   starts a muted video preview when focused, and pressing **OK** resumes right where you left off. Below it is a
