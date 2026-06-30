@@ -34,7 +34,7 @@ val appModule = module {
     viewModel { SeriesViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { SearchViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { ProfilesViewModel(get(), get(), get(), get()) }
-    viewModel { SettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { SettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { DownloadsViewModel(get(), get(), get(), get()) }
     viewModel { EpgViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     // settings, sourceDao, categoryDao, customizationStore

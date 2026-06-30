@@ -68,7 +68,7 @@ import tv.own.owntv.ui.theme.UiZoom
 
 private enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
-private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE }
+private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, NETWORK }
 
 /**
  * The MD3 Settings screen (shown when [MainSection.SETTINGS] is active): grouped sections, each row
@@ -150,6 +150,7 @@ fun SettingsScreen(
         SettingsTab.BACKUP to FocusRequester(),
         SettingsTab.VIDEO to FocusRequester(),
         SettingsTab.CUSTOMIZE to FocusRequester(),
+        SettingsTab.NETWORK to FocusRequester(),
     ) }
     val open: (SettingsTab) -> Unit = { lastTab = it; tab = it }
     LaunchedEffect(tab) {
@@ -169,6 +170,7 @@ fun SettingsScreen(
         SettingsTab.BACKUP -> { BackupScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.VIDEO -> { VideoPlayerSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+        SettingsTab.NETWORK -> { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.ROOT -> Unit
     }
 
@@ -369,6 +371,15 @@ fun SettingsScreen(
             title = "Video Player Settings", desc = "Decoder, subtitles, sync",
             onClick = { open(SettingsTab.VIDEO) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.VIDEO)),
+        )
+
+        SectionDivider()
+        GroupLabel("Network")
+        SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.SHARE,
+            title = "Proxy", desc = "Route all traffic & playback through an HTTP proxy",
+            onClick = { open(SettingsTab.NETWORK) }, showChevron = true,
+            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.NETWORK)),
         )
 
         SectionDivider()

@@ -46,6 +46,7 @@ class SettingsViewModel(
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
     private val epgSourceStore: tv.own.owntv.core.epg.EpgSourceStore,
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
+    private val okHttpClient: okhttp3.OkHttpClient,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OwnTVHome"
@@ -405,5 +406,92 @@ class SettingsViewModel(
         val pid = profileDao.resolveExistingProfileId(settings.activeProfileId.first()) ?: return
         Log.d(TAG, "refreshActiveTvHome profile=$pid allowBrowsable=$allowBrowsableRequest")
         launcherIntegrationRepository.refreshProfile(pid, allowBrowsableRequest)
+    }
+
+    // --- Global proxy (Approach 1 — one app-wide HTTP proxy) ---
+
+    val proxyConfig: StateFlow<tv.own.owntv.core.network.ProxyConfig> = settings.proxyConfig
+        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.network.ProxyConfig())
+
+    fun saveProxy(enabled: Boolean, host: String, port: Int, username: String, password: String) {
+        viewModelScope.launch { settings.saveProxy(enabled, host, port, username, password) }
+    }
+
+    /** Result of the "Test proxy" button. Messages never contain the password. */
+    sealed interface ProxyTestState {
+        data object Idle : ProxyTestState
+        data object Testing : ProxyTestState
+        data class Ok(val millis: Long) : ProxyTestState
+        data class Fail(val message: String) : ProxyTestState
+    }
+
+    private val _proxyTest = MutableStateFlow<ProxyTestState>(ProxyTestState.Idle)
+    val proxyTest: StateFlow<ProxyTestState> = _proxyTest.asStateFlow()
+
+    fun resetProxyTest() { _proxyTest.value = ProxyTestState.Idle }
+
+    /**
+     * Send one lightweight HTTPS request through the entered proxy and report success/failure. Uses a
+     * 204 "no content" endpoint so the body is empty and the result is unambiguous. Builds a throwaway
+     * client off the shared one (same timeouts) with this proxy pinned, so the test reflects exactly
+     * what playback/sync will use. Credentials are never logged or echoed back in the result.
+     */
+    fun testProxy(host: String, port: Int, username: String, password: String) {
+        if (_proxyTest.value == ProxyTestState.Testing) return
+        val h = host.trim()
+        if (h.isBlank() || port !in 1..65535) {
+            _proxyTest.value = ProxyTestState.Fail("Enter a valid host and port (1–65535).")
+            return
+        }
+        _proxyTest.value = ProxyTestState.Testing
+        viewModelScope.launch {
+            val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val proxy = java.net.Proxy(
+                        java.net.Proxy.Type.HTTP,
+                        java.net.InetSocketAddress.createUnresolved(h, port),
+                    )
+                    // Pinning .proxy() overrides the shared client's live ProxySelector for this test call.
+                    val builder = okHttpClient.newBuilder()
+                        .proxy(proxy)
+                        .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                        .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                    if (username.trim().isNotBlank()) {
+                        builder.proxyAuthenticator { _, response ->
+                            if (response.request.header("Proxy-Authorization") != null) return@proxyAuthenticator null
+                            response.request.newBuilder()
+                                .header("Proxy-Authorization", okhttp3.Credentials.basic(username.trim(), password))
+                                .build()
+                        }
+                    } else {
+                        builder.proxyAuthenticator(okhttp3.Authenticator.NONE)
+                    }
+                    val client = builder.build()
+                    val request = okhttp3.Request.Builder()
+                        .url("https://www.gstatic.com/generate_204")
+                        .head()
+                        .build()
+                    val start = System.currentTimeMillis()
+                    client.newCall(request).execute().use { resp ->
+                        if (!resp.isSuccessful && resp.code != 204) {
+                            throw java.io.IOException("Proxy returned HTTP ${resp.code}")
+                        }
+                    }
+                    System.currentTimeMillis() - start
+                }
+            }
+            _proxyTest.value = result.fold(
+                onSuccess = { ProxyTestState.Ok(it) },
+                onFailure = { ProxyTestState.Fail(friendlyProxyError(it)) },
+            )
+        }
+    }
+
+    /** A short, credential-free reason for a failed proxy test. */
+    private fun friendlyProxyError(t: Throwable): String = when (t) {
+        is java.net.UnknownHostException -> "Can't reach the proxy host."
+        is java.net.SocketTimeoutException -> "Connection to the proxy timed out."
+        is java.net.ConnectException -> "Couldn't connect to the proxy (check host/port)."
+        else -> t.message?.takeIf { it.isNotBlank() } ?: "Proxy test failed."
     }
 }
