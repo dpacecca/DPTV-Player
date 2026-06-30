@@ -128,7 +128,7 @@ class EpgViewModel(
         val key = channel.epgChannelId?.trim()?.lowercase() ?: return emptyList()
         rowCache[key]?.let { return it }
         val s = _state.value
-        val list = epgDao.programmesForChannel(loadedSourceIds, key, s.windowStart, s.windowEnd)
+        val list = epgDao.programmeSummariesForChannel(loadedSourceIds, key, s.windowStart, s.windowEnd)
         rowCache[key] = list
         return list
     }
@@ -523,7 +523,7 @@ class EpgViewModel(
                 rowCache.clear()
                 // Pass 1 (blocking): the forward window only, so the Guide opens instantly and fully from cache.
                 val forward = withContext(Dispatchers.Default) {
-                    epgDao.programmesInWindow(ids, nowAligned, windowEnd).groupBy { it.epgChannelId }
+                    epgDao.programmeSummariesInWindow(ids, nowAligned, windowEnd).groupBy { it.epgChannelId }
                 }
                 forward.forEach { (k, list) -> rowCache[k] = list }
                 // Signal GuideChannelRow's produceState to re-read rowCache now that the batch load
@@ -564,7 +564,7 @@ class EpgViewModel(
             if (windowChanged && windowStart < nowAligned) {
                 viewModelScope.launch {
                     val back = withContext(Dispatchers.Default) {
-                        epgDao.programmesInWindow(ids, windowStart, nowAligned).groupBy { it.epgChannelId }
+                        epgDao.programmeSummariesInWindow(ids, windowStart, nowAligned).groupBy { it.epgChannelId }
                     }
                     if (back.isNotEmpty()) {
                         back.forEach { (k, extra) ->

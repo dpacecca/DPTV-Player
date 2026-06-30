@@ -41,6 +41,6 @@ val appModule = module {
     viewModel { CustomizeViewModel(get(), get(), get(), get()) }
     // backupManager
     viewModel { BackupViewModel(get()) }
-    // store, epgRepository, sourceRepository, settings, connectivity, epgDao
+    // store, epgRepository, sourceRepository, settings, epgDao, channelDao, scheduler
     viewModel { tv.own.owntv.features.settings.EpgSourcesViewModel(get(), get(), get(), get(), get(), get(), get()) }
 }
