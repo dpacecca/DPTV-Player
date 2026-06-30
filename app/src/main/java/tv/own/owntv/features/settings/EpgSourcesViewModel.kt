@@ -41,14 +41,18 @@ class EpgSourcesViewModel(
     }
 
     fun resync(source: EpgSource) {
-        epgSyncScheduler.enqueueSync(source.id, "manual_resync")
+        viewModelScope.launch {
+            val base = epgDao.countForSources(listOf(source.id))
+            epgSyncScheduler.enqueueSync(source.id, "manual_resync", base)
+        }
     }
 
     fun update(source: EpgSource, name: String, url: String, userAgent: String?) {
         viewModelScope.launch {
             val updated = source.copy(name = name.trim().ifBlank { source.name }, url = url.trim(), userAgent = userAgent?.trim()?.takeIf { it.isNotBlank() })
             store.update(updated)
-            epgSyncScheduler.enqueueSync(updated.id, "update")
+            val base = epgDao.countForSources(listOf(updated.id))
+            epgSyncScheduler.enqueueSync(updated.id, "update", base)
         }
     }
 
