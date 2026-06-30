@@ -28,6 +28,13 @@ entries below) folded together with a large batch of new features, performance w
   - The loading spinner is now shown consistently while a live stream is buffering, reconnecting or
     retrying in either backend, and clears once playback resumes or a final error is shown. Detailed
     Logcat is emitted around buffering / freeze detection / reconnect attempts for diagnosis.
+  - **Follow-up:** closed a second silent dead-end in the ExoPlayer (primary live) engine — if a feed
+    dropped into `STATE_ENDED` or unexpectedly into `STATE_IDLE` mid-playback, it was previously ignored
+    entirely (no spinner, no reconnect, no error). Both are now treated as a recoverable stall and
+    auto-reconnect, while a normal stop/back/release still exits cleanly with no reconnect attempt. Added
+    a debug-only diagnostic log (state transitions, watchdog/reconnect events) plus a small bounded
+    on-device diagnostic file, so a future recurrence can be captured even if it happens unobserved —
+    see `extras/LIVE_TV_HANG_DIAGNOSTICS.md`.
 
 - **EPG match no longer removes a channel from the Guide** — matching a channel's EPG (auto or manual)
   could silently delete its stored programmes and leave the channel blank and then invisible in the
