@@ -23,6 +23,8 @@ import tv.own.owntv.core.weather.WeatherRepository
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
+import tv.own.owntv.core.sync.ImportFinalizer
+import tv.own.owntv.core.sync.work.CatalogSyncScheduler
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.ui.theme.AccentColor
 import tv.own.owntv.ui.theme.ThemeMode
@@ -51,7 +53,9 @@ class ShellViewModel(
     connectivity: ConnectivityObserver,
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val epgMigration: tv.own.owntv.core.epg.EpgMigration,
-    private val weatherRepository: WeatherRepository, // Phase 7
+    private val catalogSyncScheduler: CatalogSyncScheduler,
+    private val importFinalizer: ImportFinalizer,
+    private val weatherRepository: WeatherRepository,
 ) : ViewModel() {
 
     companion object {
@@ -87,18 +91,18 @@ class ShellViewModel(
             val ids = settings.refreshSourceIds.first()
             if (ids.isEmpty()) return@launch
             val pid = currentProfileId() ?: return@launch
-            Log.d(TAG, "refreshOnStartIfEnabled profile=$pid sourceIds=$ids androidTvHomeEnabled=${settings.androidTvHomeEnabled.first()}")
+            Log.d(TAG, "refreshOnStartIfEnabled profile=$pid sourceIds=$ids — enqueuing via WorkManager")
             sourceRepository.observeSources(pid).first()
                 .filter { it.id in ids }
                 .forEach { source ->
-                    Log.d(TAG, "refreshOnStartIfEnabled syncing sourceId=${source.id} profile=$pid")
-                    runCatching { sourceRepository.sync(source) {} }
-                        .onSuccess { Log.d(TAG, "refreshOnStartIfEnabled synced sourceId=${source.id} profile=$pid") }
-                        .onFailure { t -> Log.w(TAG, "refreshOnStartIfEnabled sync failed sourceId=${source.id} profile=$pid", t) }
+                    val counts = importFinalizer.contentCounts(source.id)
+                    Log.d(TAG, "refreshOnStartIfEnabled enqueuing sourceId=${source.id} profile=$pid")
+                    catalogSyncScheduler.enqueueSync(
+                        source.id,
+                        reason = "startup_refresh",
+                        baseItemCount = counts.channels + counts.movies + counts.series,
+                    )
                 }
-            if (settings.androidTvHomeEnabled.first()) {
-                runCatching { launcherIntegrationRepository.refreshProfile(pid, allowBrowsableRequest = true) }
-            }
         }
     }
 

@@ -37,6 +37,7 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.SourceEntity
+import tv.own.owntv.core.sync.importProgressDisplay
 import tv.own.owntv.features.profiles.ProfileEditorDialog
 import tv.own.owntv.ui.components.BrandLockup
 import tv.own.owntv.ui.components.BrowseMode
@@ -48,7 +49,6 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.features.settings.EpgSyncDialog
 import tv.own.owntv.ui.components.StorageBrowser
-import tv.own.owntv.ui.components.formatCount
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 private enum class Step { WELCOME, DISCLAIMER, SETUP_CHOICE, CREATE_PROFILE, ADD_CONTENT, ADD_SOURCE, IMPORTING, EXISTING, IMPORT_BACKUP }
@@ -97,18 +97,21 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
                 onSkip = { vm.finish(onDone) },
             )
             Step.ADD_SOURCE -> AddSourceScreen(
-                onStartXtream = { name, server, user, pass, ua, epg, refresh -> vm.startXtream(name, server, user, pass, ua, epg, refresh); importOrigin = Step.ADD_SOURCE; step = Step.IMPORTING },
+                onStartXtream = { name, server, user, pass, ua, epg, refresh, live, movies, series ->
+                    vm.startXtream(name, server, user, pass, ua, epg, refresh, live, movies, series)
+                    importOrigin = Step.ADD_SOURCE
+                    step = Step.IMPORTING
+                },
                 onStartM3u = { name, url, ua, epg, refresh -> vm.startM3u(name, url, ua, epg, refresh); importOrigin = Step.ADD_SOURCE; step = Step.IMPORTING },
                 onBack = { step = Step.ADD_CONTENT },
                 initial = vm.lastFailedSource, // pre-fill on retry after failed import
             )
             Step.IMPORTING -> ImportProgressScreen(
                 state = importState,
-                stageLabel = progress?.label ?: "content",
-                processed = progress?.processed ?: 0,
+                progress = progress,
                 onContinue = { vm.finish(onDone) }, // playlist + its EPG synced (auto)
                 onRetry = { vm.reset(); step = importOrigin },
-                onBack = { step = importOrigin }, // edit credentials instead of retyping
+                onCancel = { vm.cancelImport(); step = importOrigin },
             )
             Step.EXISTING -> ExistingSourcesScreen(
                 sources = existing,
@@ -337,26 +340,39 @@ private fun ChoiceCard(icon: OwnTVIcon, title: String, desc: String, modifier: M
 @Composable
 private fun ImportProgressScreen(
     state: SetupViewModel.ImportState,
-    stageLabel: String,
-    processed: Int,
+    progress: tv.own.owntv.core.sync.ImportStage?,
     onContinue: () -> Unit,
     onRetry: () -> Unit,
-    onBack: () -> Unit = {},
+    onCancel: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
     val fr = remember { FocusRequester() }
     LaunchedEffect(state) {
         if (state is SetupViewModel.ImportState.Success || state is SetupViewModel.ImportState.Failed) runCatching { fr.requestFocus() }
     }
+    BackHandler(enabled = state is SetupViewModel.ImportState.Running || state is SetupViewModel.ImportState.Idle) { onCancel() }
     Centered {
         when (state) {
             SetupViewModel.ImportState.Running, SetupViewModel.ImportState.Idle,
             is SetupViewModel.ImportState.NeedPassword -> {
+                val display = progress?.importProgressDisplay()
                 OwnTVSpinner(sizeDp = 56)
                 Spacer(Modifier.height(20.dp))
-                Text("Importing ${stageLabel.lowercase()}…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(display?.title ?: "Importing catalog…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(8.dp))
-                Text(if (processed > 0) formatCount(processed) else "Connecting…", style = MaterialTheme.typography.headlineLarge, color = colors.primary)
+                Text(
+                    display?.primaryText ?: "Preparing catalog",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = colors.primary,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    display?.detail ?: "Preparing catalog",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(24.dp))
+                OwnTVButton("Cancel", onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
             }
             is SetupViewModel.ImportState.Success -> {
                 Text("All set!", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
@@ -371,7 +387,7 @@ private fun ImportProgressScreen(
                 Text(state.message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 520.dp))
                 Spacer(Modifier.height(28.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OwnTVButton("Back", onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton("Back", onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
                     OwnTVButton("Try Again", onClick = onRetry, modifier = Modifier.focusRequester(fr))
                 }
             }

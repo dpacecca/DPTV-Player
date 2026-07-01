@@ -3,11 +3,14 @@ package tv.own.owntv.features.setup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import tv.own.owntv.core.backup.BackupManager
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
@@ -17,7 +20,9 @@ import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.network.ConnectivityObserver
 import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.sync.ImportStage
+import tv.own.owntv.core.sync.SyncContentTypes
 import tv.own.owntv.core.sync.SyncResult
+import tv.own.owntv.core.sync.work.CatalogSyncScheduler
 import tv.own.owntv.core.util.Pin
 import tv.own.owntv.core.util.friendlySyncError
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
@@ -40,6 +45,7 @@ class SetupViewModel(
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
     private val epgSourceStore: tv.own.owntv.core.epg.EpgSourceStore,
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
+    private val catalogSyncScheduler: CatalogSyncScheduler,
 ) : ViewModel() {
 
     // Semi-auto EPG: after the first playlist imports, offer a one-tap guide sync (with a live count) if it
@@ -78,6 +84,7 @@ class SetupViewModel(
     val progress: StateFlow<ImportStage?> = _progress.asStateFlow()
 
     private var createdProfileId = -1L
+    private var importJob: Job? = null
 
     /** Creates the profile (not active yet); the rest of onboarding attaches content to it. */
     fun createProfile(name: String, avatarId: Int, isKids: Boolean, pin: String?, onCreated: (Long) -> Unit = {}) {
@@ -95,8 +102,20 @@ class SetupViewModel(
         }
     }
 
-    fun startXtream(name: String, server: String, username: String, password: String, userAgent: String = "", epgUrl: String = "", refreshOnStart: Boolean = false) =
-        runImport(refreshOnStart) { profileId ->
+    fun startXtream(
+        name: String,
+        server: String,
+        username: String,
+        password: String,
+        userAgent: String = "",
+        epgUrl: String = "",
+        refreshOnStart: Boolean = false,
+        syncLive: Boolean = true,
+        syncMovies: Boolean = true,
+        syncSeries: Boolean = true,
+    ) {
+        val priority = SyncContentTypes(syncLive, syncMovies, syncSeries)
+        runImport(refreshOnStart, priority, enqueueRemainder = true, requiresNetwork = true) { profileId ->
             sourceRepository.addXtreamSource(
                 profileId = profileId,
                 name = name.ifBlank { "My IPTV" },
@@ -107,9 +126,10 @@ class SetupViewModel(
                 epgUrl = epgUrl.trim().takeIf { it.isNotBlank() },
             )
         }
+    }
 
     fun startM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", refreshOnStart: Boolean = false) =
-        runImport(refreshOnStart) { profileId ->
+        runImport(refreshOnStart, requiresNetwork = !url.isLocalPlaylistPath()) { profileId ->
             sourceRepository.addM3uSource(
                 profileId = profileId,
                 name = name.ifBlank { "My Playlist" },
@@ -119,34 +139,75 @@ class SetupViewModel(
             )
         }
 
-    private fun runImport(refreshOnStart: Boolean = false, addSource: suspend (Long) -> SourceEntity) {
-        viewModelScope.launch {
+    private fun runImport(
+        refreshOnStart: Boolean = false,
+        contentTypes: SyncContentTypes = SyncContentTypes(),
+        enqueueRemainder: Boolean = false,
+        requiresNetwork: Boolean = true,
+        addSource: suspend (Long) -> SourceEntity,
+    ) {
+        importJob?.cancel()
+        val job = viewModelScope.launch {
             _state.value = ImportState.Running
             _progress.value = null
+            var source: SourceEntity? = null
             try {
+                if (requiresNetwork && !connectivity.isOnlineNow()) {
+                    _state.value = ImportState.Failed(friendlySyncError(null, online = false))
+                    return@launch
+                }
                 val profileId = createdProfileId.takeIf { it > 0 } ?: ensureFallbackProfile()
-                val source = addSource(profileId)
+                source = addSource(profileId)
+                val freshSync = source.lastSyncAt == null
+                val remainder = if (enqueueRemainder) SyncContentTypes().remainderAfter(contentTypes) else SyncContentTypes(live = false, movies = false, series = false)
                 settings.setSourceRefresh(source.id, refreshOnStart)
-                when (val result = sourceRepository.sync(source) { _progress.value = it }) {
-                    SyncResult.Success -> {
+                when (val result = sourceRepository.sync(source, onProgress = { _progress.value = it }, contentTypes = contentTypes)) {
+                    is SyncResult.Success -> {
                         // Just the playlist content — EPG is added separately (Settings → EPG sources).
-                        val counts = importFinalizer.finalize(source)
-                        runCatching { launcherIntegrationRepository.refreshProfile(profileId) }
+                        val counts = importFinalizer.finalize(source, deferIndexes = freshSync)
+                        val syncedSource = sourceDao.getById(source.id) ?: source
+                        if (enqueueRemainder) enqueueRemainderSync(source, contentTypes)
+                        if (freshSync && !remainder.hasAny) catalogSyncScheduler.enqueueContentIndexBuild(reason = "fresh_add")
                         lastFailedSource = null
-                        _state.value = ImportState.Success(counts.summary(includeEpg = false))
-                        if (epgRepository.guideUrl(source) != null) {
-                            pendingEpgSource = source
-                            _epgSync.value = tv.own.owntv.features.settings.EpgSyncUi.Ask(source.name)
+                        _state.value = ImportState.Success(counts.summary(includeEpg = false).withWarnings(result))
+                        if (epgRepository.guideUrl(syncedSource) != null) {
+                            pendingEpgSource = syncedSource
+                            _epgSync.value = tv.own.owntv.features.settings.EpgSyncUi.Ask(syncedSource.name)
                         }
+                        viewModelScope.launch { runCatching { launcherIntegrationRepository.refreshProfile(profileId) } }
                     }
-                    is SyncResult.Failed -> { lastFailedSource = source; _state.value = ImportState.Failed(friendlySyncError(result.message, connectivity.isOnlineNow())) }
-                    SyncResult.Cancelled -> _state.value = ImportState.Idle
+                    is SyncResult.Failed -> {
+                        cleanupFailedAdd(source)
+                        _state.value = ImportState.Failed(friendlySyncError(result.message, connectivity.isOnlineNow()))
+                    }
+                    SyncResult.Cancelled -> {
+                        cleanupFailedAdd(source)
+                        _state.value = ImportState.Idle
+                    }
                 }
             } catch (c: CancellationException) {
+                cleanupFailedAdd(source)
+                _state.value = ImportState.Idle
+                _progress.value = null
                 throw c
             } catch (e: Exception) {
+                cleanupFailedAdd(source)
                 _state.value = ImportState.Failed(friendlySyncError(e.message, connectivity.isOnlineNow()))
             }
+        }
+        importJob = job
+        job.invokeOnCompletion { if (importJob == job) importJob = null }
+    }
+
+    private fun String.isLocalPlaylistPath(): Boolean =
+        startsWith("/") || startsWith("file://") || startsWith("content://")
+
+    private fun enqueueRemainderSync(source: SourceEntity, priority: SyncContentTypes) {
+        val remainder = SyncContentTypes().remainderAfter(priority)
+        if (remainder.hasAny) {
+            // The priority pass + this remainder cover all content types, so a successful remainder
+            // run must mark the source synced (SyncManager only does that for single full syncs).
+            catalogSyncScheduler.enqueueSync(source.id, reason = "add_remainder", contentTypes = remainder, completesInitialSync = true)
         }
     }
 
@@ -167,7 +228,8 @@ class SetupViewModel(
      * same [state]/[progress] as [runImport], so the wizard can show the import screen.
      */
     fun linkExisting(sourceIds: Set<Long>) {
-        viewModelScope.launch {
+        importJob?.cancel()
+        val job = viewModelScope.launch {
             _state.value = ImportState.Running
             _progress.value = null
             try {
@@ -176,24 +238,31 @@ class SetupViewModel(
                 val sources = sourceDao.getAllOnce().filter { it.id in sourceIds }
                 var total = tv.own.owntv.core.sync.SyncCounts(0, 0, 0, 0)
                 var failure: String? = null
+                val warnings = mutableListOf<String>()
                 for (source in sources) {
-                    when (val result = sourceRepository.sync(source) { _progress.value = it }) {
-                        SyncResult.Success -> {
+                    when (val result = sourceRepository.sync(source, onProgress = { _progress.value = it })) {
+                        is SyncResult.Success -> {
                             val c = importFinalizer.finalize(source)
                             total = tv.own.owntv.core.sync.SyncCounts(total.channels + c.channels, total.movies + c.movies, total.series + c.series, total.epg + c.epg)
+                            result.warningSummary()?.let { warnings.add(it) }
                         }
                         is SyncResult.Failed -> failure = result.message
                         SyncResult.Cancelled -> {}
                     }
                 }
                 runCatching { launcherIntegrationRepository.refreshProfile(pid) }
-                _state.value = failure?.let { ImportState.Failed(friendlySyncError(it, connectivity.isOnlineNow())) } ?: ImportState.Success(total.summary(includeEpg = true))
+                val summary = listOf(total.summary(includeEpg = true), *warnings.toTypedArray()).joinToString("\n")
+                _state.value = failure?.let { ImportState.Failed(friendlySyncError(it, connectivity.isOnlineNow())) } ?: ImportState.Success(summary)
             } catch (c: CancellationException) {
+                _state.value = ImportState.Idle
+                _progress.value = null
                 throw c
             } catch (e: Exception) {
                 _state.value = ImportState.Failed(friendlySyncError(e.message, connectivity.isOnlineNow()))
             }
         }
+        importJob = job
+        job.invokeOnCompletion { if (importJob == job) importJob = null }
     }
 
     /** Restore everything from a backup file (replaces profiles & sources, then activates one). Encrypted
@@ -242,6 +311,13 @@ class SetupViewModel(
         _progress.value = null
     }
 
+    fun cancelImport() {
+        importJob?.cancel()
+        importJob = null
+        _state.value = ImportState.Idle
+        _progress.value = null
+    }
+
     /** Completes onboarding → makes the new profile active, routing the app into the shell. */
     fun finish(onDone: () -> Unit = {}) {
         viewModelScope.launch {
@@ -249,4 +325,16 @@ class SetupViewModel(
             onDone()
         }
     }
+
+    private suspend fun cleanupFailedAdd(source: SourceEntity?) {
+        if (source == null) return
+        withContext(NonCancellable) {
+            catalogSyncScheduler.cancelSync(source.id)
+            runCatching { sourceRepository.deleteSource(source) }
+            runCatching { settings.setSourceRefresh(source.id, false) }
+        }
+    }
+
+    private fun String.withWarnings(result: SyncResult.Success): String =
+        result.warningSummary()?.let { "$this\n$it" } ?: this
 }
