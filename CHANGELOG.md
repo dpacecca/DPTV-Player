@@ -2,6 +2,14 @@
 
 ## v4.0.0 — unreleased
 
+### 📄 License
+
+- OwnTV has moved from the **MIT License** to the **GNU General Public License v3.0 (GPLv3)**. OwnTV
+  remains fully open-source — anyone can use, study, modify, and redistribute it, including commercially —
+  but any redistributed version (forks, modified builds, or commercial products built on it) must also
+  be licensed under GPLv3 with its source made available. Versions released before this change remain
+  available under MIT. See [LICENSE](LICENSE).
+
 Big release — the community‑feedback **UI upgrade** (3 phases; Phase 1's quick wins are the first two
 entries below) folded together with a large batch of new features, performance work and fixes.
 
@@ -11,6 +19,13 @@ entries below) folded together with a large batch of new features, performance w
 > This is a one-time fix after upgrading.
 
 ### 🐛 Fixes
+
+- **Live TV could give up reconnecting too early during a real outage** — a single failed reconnect
+  attempt was being counted twice against the retry budget (ExoPlayer fires both an error and an idle
+  event for the same failure), so a provider hiccup that needed ~30–60s to recover could exhaust all
+  retries and show "Lost connection to this channel" well before the stream was actually back. Reconnect
+  attempts are now deduplicated so each real failure only counts once, and the retry budget was raised
+  slightly to cover longer outages.
 
 - **Audio-plays-but-no-video no longer leaves you stuck on a black screen** — some streams/files could
   play sound with no picture (both Surround Sound on and off), because the existing freeze watchdogs only

@@ -647,7 +647,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(14.dp))
-            Text("© 2026 Ashiq Hasan · MIT License", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
+            Text("© 2026 Ashiq Hasan · GPLv3 License", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
             Spacer(Modifier.height(4.dp))
             Text(GITHUB_REPO, style = MaterialTheme.typography.bodyMedium, color = colors.primary)
             Spacer(Modifier.height(16.dp))

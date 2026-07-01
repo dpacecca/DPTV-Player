@@ -12,7 +12,7 @@
   <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.10-7F52FF?logo=kotlin&logoColor=white">
   <img alt="Compose for TV" src="https://img.shields.io/badge/Jetpack%20Compose-for%20TV-4285F4?logo=jetpackcompose&logoColor=white">
   <img alt="Player" src="https://img.shields.io/badge/engines-libmpv%20%2B%20ExoPlayer-FB8C00">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-blue">
+  <img alt="License" src="https://img.shields.io/badge/license-GPLv3-blue">
   <img alt="Built with the help of AI" src="https://img.shields.io/badge/built%20with-the%20help%20of%20AI-8A2BE2">
 </p>
 
@@ -295,7 +295,11 @@ sources they add and for complying with the laws and rights that apply to them.
 
 ## 📄 License
 
-Released under the **MIT License** — see [LICENSE](LICENSE).
+Released under the **GNU General Public License v3.0 (GPLv3)** — see [LICENSE](LICENSE).
+
+In short: you're free to use, study, modify, and redistribute OwnTV, including commercially — but any
+redistributed version (including forks and commercial products built on it) must also be licensed under
+GPLv3 and its source made available.
 
 ---
 
