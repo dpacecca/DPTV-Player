@@ -163,13 +163,14 @@ class SetupViewModel(
                     is SyncResult.Success -> {
                         // Just the playlist content — EPG is added separately (Settings → EPG sources).
                         val counts = importFinalizer.finalize(source, deferIndexes = freshSync)
+                        val syncedSource = sourceDao.getById(source.id) ?: source
                         if (enqueueRemainder) enqueueRemainderSync(source, contentTypes)
                         if (freshSync && !remainder.hasAny) catalogSyncScheduler.enqueueContentIndexBuild(reason = "fresh_add")
                         lastFailedSource = null
                         _state.value = ImportState.Success(counts.summary(includeEpg = false).withWarnings(result))
-                        if (epgRepository.guideUrl(source) != null) {
-                            pendingEpgSource = source
-                            _epgSync.value = tv.own.owntv.features.settings.EpgSyncUi.Ask(source.name)
+                        if (epgRepository.guideUrl(syncedSource) != null) {
+                            pendingEpgSource = syncedSource
+                            _epgSync.value = tv.own.owntv.features.settings.EpgSyncUi.Ask(syncedSource.name)
                         }
                         viewModelScope.launch { runCatching { launcherIntegrationRepository.refreshProfile(profileId) } }
                     }

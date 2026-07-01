@@ -397,15 +397,16 @@ class SettingsViewModel(
                         // Settings playlist add: content breakdown only (EPG syncs silently and is
                         // shown on the EPG Sources screen, per the separated-EPG design).
                         val counts = importFinalizer.finalize(source, deferIndexes = freshSync)
+                        val syncedSource = sourceDao.getById(source.id) ?: source
                         Log.d(TAG, "runImport sync success sourceId=${source.id} profile=$pid")
                         if (enqueueRemainder) enqueueRemainderSync(source, contentTypes)
                         if (freshSync && !remainder.hasAny) catalogSyncScheduler.enqueueContentIndexBuild(reason = "fresh_add")
                         _lastFailedSource = null
                         _importState.value = ImportState.Success(counts.summary(includeEpg = false).withWarnings(r))
                         // Offer a one-tap EPG sync if this playlist actually has a guide feed.
-                        if (epgRepository.guideUrl(source) != null) {
-                            pendingEpgSource = source
-                            _epgSync.value = EpgSyncUi.Ask(source.name)
+                        if (epgRepository.guideUrl(syncedSource) != null) {
+                            pendingEpgSource = syncedSource
+                            _epgSync.value = EpgSyncUi.Ask(syncedSource.name)
                         }
                         viewModelScope.launch { runCatching { refreshActiveTvHome(allowBrowsableRequest = true) } }
                     }
@@ -438,7 +439,14 @@ class SettingsViewModel(
     /** Re-sync an existing source through WorkManager so it can continue after leaving this screen. */
     fun resync(source: SourceEntity) {
         Log.d(TAG, "resync enqueue sourceId=${source.id}")
-        catalogSyncScheduler.enqueueSync(source.id, reason = "manual_resync")
+        viewModelScope.launch {
+            val counts = importFinalizer.contentCounts(source.id)
+            catalogSyncScheduler.enqueueSync(
+                source.id,
+                reason = "manual_resync",
+                baseItemCount = counts.channels + counts.movies + counts.series,
+            )
+        }
     }
 
     fun cancelResync(source: SourceEntity) {

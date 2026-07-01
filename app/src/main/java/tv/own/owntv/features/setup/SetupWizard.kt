@@ -322,7 +322,7 @@ private fun ImportProgressScreen(
                 Text(display?.title ?: "Importing catalog…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    display?.percent ?: "Connecting…",
+                    display?.primaryText ?: "Preparing catalog",
                     style = MaterialTheme.typography.headlineLarge,
                     color = colors.primary,
                 )

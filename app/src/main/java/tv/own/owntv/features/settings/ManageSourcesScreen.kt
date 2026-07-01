@@ -36,9 +36,11 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.SourceType
+import tv.own.owntv.core.sync.SyncCounts
+import tv.own.owntv.core.sync.SyncProgressCounts
 import tv.own.owntv.core.sync.importProgressDisplay
+import tv.own.owntv.core.sync.resyncBadgeText
 import tv.own.owntv.core.sync.syncProgressCountsLabel
-import tv.own.owntv.core.sync.syncProgressCountsForSource
 import tv.own.owntv.core.sync.work.CatalogSyncState
 import tv.own.owntv.features.setup.AddSourceScreen
 import tv.own.owntv.ui.components.OwnTVButton
@@ -121,7 +123,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     color = colors.onSurface,
                 )
                 Spacer(Modifier.height(6.dp))
-                Text(display?.percent ?: "Connecting…", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
+                Text(display?.primaryText ?: "Preparing catalog", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
                 Spacer(Modifier.height(4.dp))
                 Text(display?.detail ?: "Preparing catalog", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Spacer(Modifier.height(20.dp))
@@ -192,7 +194,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         source = source,
                         refreshOnStart = source.id in refreshIds,
                         isDefault = isDefault,
-                        countsLabel = counts?.breakdown,
+                        counts = counts,
                         syncState = syncState,
                         showMakeDefault = sources.size > 1,
                         onMakeDefault = { vm.setDefaultSource(source.id) },
@@ -221,7 +223,7 @@ private fun SourceRow(
     source: SourceEntity,
     refreshOnStart: Boolean,
     isDefault: Boolean,
-    countsLabel: String?,
+    counts: SyncCounts?,
     syncState: CatalogSyncState,
     showMakeDefault: Boolean,
     onMakeDefault: () -> Unit,
@@ -232,7 +234,7 @@ private fun SourceRow(
 ) {
     val colors = OwnTVTheme.colors
     val activeSync = syncState as? CatalogSyncState.Syncing
-    val activeCountsLabel = activeSync?.countsLabel(source.type)
+    val activeCountsLabel = activeSync?.countsLabel(source.type, counts)
     Row(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -252,7 +254,7 @@ private fun SourceRow(
                 activeSync?.let {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Syncing ${it.overallPercent.coerceIn(0, 100)}%",
+                        resyncBadgeText(it.baseItemCount, it.totalProcessed),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onPrimaryContainer,
                         modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
@@ -263,7 +265,7 @@ private fun SourceRow(
                 buildString {
                     append(when (source.type) { SourceType.XTREAM -> "Xtream • ${source.url}"; SourceType.M3U -> "M3U • ${source.url}"; SourceType.LOCAL_BACKUP -> "Backup" })
                     if (refreshOnStart) append("  •  ⟳ on startup")
-                    val visibleCounts = if (activeSync == null) countsLabel else activeCountsLabel
+                    val visibleCounts = if (activeSync == null) counts?.breakdown else activeCountsLabel
                     if (!visibleCounts.isNullOrBlank()) {
                         append("  •  $visibleCounts")
                     } else if (activeSync != null) {
@@ -290,18 +292,38 @@ private fun SourceRow(
     }
 }
 
-private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType): String? =
-    syncProgressCountsLabel(
-        syncProgressCountsForSource(
-            sourceType = sourceType,
-            liveProcessed = liveProcessed,
-            moviesProcessed = moviesProcessed,
-            seriesProcessed = seriesProcessed,
-            liveActive = liveActive,
-            moviesActive = moviesActive,
-            seriesActive = seriesActive,
-        ),
-    )
+private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType, stored: SyncCounts?): String? {
+    val live = maxOf(liveProcessed, stored?.channels ?: 0)
+    val movies = maxOf(moviesProcessed, stored?.movies ?: 0)
+    val series = maxOf(seriesProcessed, stored?.series ?: 0)
+    val counts = when (sourceType) {
+        SourceType.M3U -> SyncProgressCounts(
+            live = live,
+            movies = 0,
+            series = 0,
+            liveActive = true,
+            moviesActive = false,
+            seriesActive = false,
+        )
+        SourceType.XTREAM -> SyncProgressCounts(
+            live = live,
+            movies = movies,
+            series = series,
+            liveActive = liveActive || live > 0,
+            moviesActive = moviesActive || movies > 0,
+            seriesActive = seriesActive || series > 0,
+        )
+        SourceType.LOCAL_BACKUP -> SyncProgressCounts(
+            live = 0,
+            movies = 0,
+            series = 0,
+            liveActive = false,
+            moviesActive = false,
+            seriesActive = false,
+        )
+    }
+    return syncProgressCountsLabel(counts)
+}
 
 @Composable
 private fun CenterStatus(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {

@@ -53,7 +53,12 @@ fun EpgSyncDialog(state: EpgSyncUi, onSync: () -> Unit, onDismiss: () -> Unit) {
     if (state is EpgSyncUi.Hidden) return
     val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
-    LaunchedEffect(state::class) { runCatching { focus.requestFocus() } }
+    LaunchedEffect(state::class) {
+        if (state !is EpgSyncUi.Syncing) {
+            delay(50)
+            runCatching { focus.requestFocus() }
+        }
+    }
     BackHandler(enabled = state !is EpgSyncUi.Syncing) { onDismiss() }
     if (state is EpgSyncUi.Done) LaunchedEffect(Unit) { delay(1_800); onDismiss() } // auto-close
 

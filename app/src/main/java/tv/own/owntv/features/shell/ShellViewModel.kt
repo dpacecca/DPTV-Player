@@ -23,6 +23,7 @@ import tv.own.owntv.core.weather.WeatherRepository
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
+import tv.own.owntv.core.sync.ImportFinalizer
 import tv.own.owntv.core.sync.work.CatalogSyncScheduler
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.ui.theme.AccentColor
@@ -53,6 +54,7 @@ class ShellViewModel(
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val epgMigration: tv.own.owntv.core.epg.EpgMigration,
     private val catalogSyncScheduler: CatalogSyncScheduler,
+    private val importFinalizer: ImportFinalizer,
     private val weatherRepository: WeatherRepository,
 ) : ViewModel() {
 
@@ -93,8 +95,13 @@ class ShellViewModel(
             sourceRepository.observeSources(pid).first()
                 .filter { it.id in ids }
                 .forEach { source ->
+                    val counts = importFinalizer.contentCounts(source.id)
                     Log.d(TAG, "refreshOnStartIfEnabled enqueuing sourceId=${source.id} profile=$pid")
-                    catalogSyncScheduler.enqueueSync(source.id, reason = "startup_refresh")
+                    catalogSyncScheduler.enqueueSync(
+                        source.id,
+                        reason = "startup_refresh",
+                        baseItemCount = counts.channels + counts.movies + counts.series,
+                    )
                 }
         }
     }
