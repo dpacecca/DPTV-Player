@@ -45,6 +45,9 @@ obvious at first glance — once you know them, the app is a lot faster to live 
   default. If a channel shows **UHD artifacts**, won't open, or stutters, bring up the controls and press the
   **gear (⚙) button** — this **pins that channel to the mpv engine**. It lights up when active and is
   **remembered per channel**, so that one channel always uses mpv while everything else stays fast.
+- 🔇 **Audio with no picture**: if a channel ever plays sound but shows a black screen, OwnTV now detects this
+  automatically and switches engines for you (briefly shows a loading spinner). If neither engine can render
+  video for that stream, you'll see a clear on‑screen message instead of a silent black screen.
 - ⏪ **Catch‑up / rewind live**: on a channel that supports catch‑up (look for the marker, or use the
   long‑press **Catch‑up** menu), you can **rewind into the provider's archive** and play back from the past,
   then return to live.
@@ -119,7 +122,11 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 
 ## 🎨 Personalize (make it yours)
 
-- **Settings → Customize**: **hide, rename and reorder** categories and channels, per profile (TiviMate‑style).
+- **Settings → Customize Category**: **hide, rename and reorder** categories .
+  - **Hide a range of categories fast**: focus a category's **Hide** button and **long‑press (select‑hold)** it to
+    enter **span/range mode**. Then scroll **up or down** — every category between your starting point and the
+    category you land on gets hidden together as a range. Handy for quickly hiding a big block of categories (or
+    even scrolling all the way to hide most of the list) instead of hiding them one by one.
 - **Settings → Theme / Accent colour / UI Zoom**: dark/AMOLED/light, a tint colour, and scale the whole UI.
 - **Settings → Animations**: turn interface motion **off** for a snappier feel on lower‑end TV boxes.
 - **Profiles** (Settings → Profiles): multiple viewers, a **Kids mode**, and **PIN locks**.

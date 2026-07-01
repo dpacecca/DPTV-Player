@@ -12,6 +12,31 @@ entries below) folded together with a large batch of new features, performance w
 
 ### 🐛 Fixes
 
+- **Audio-plays-but-no-video no longer leaves you stuck on a black screen** — some streams/files could
+  play sound with no picture (both Surround Sound on and off), because the existing freeze watchdogs only
+  caught a *total* stall or a freeze *after* a frame had already been seen — never "audio/position is
+  advancing fine, but a video track exists and has never produced a single frame." All three playback
+  paths now detect this specifically:
+  - **Live TV, ExoPlayer (primary engine):** if no video frame renders within ~8s while audio/position
+    keeps advancing, it automatically tries the mpv compatibility fallback once (shows the spinner during
+    the switch, no loop). If mpv plays it fine, playback continues normally; if mpv also fails, a clear
+    on-screen message is shown.
+  - **Live TV, mpv (compatibility-mode / fallback channels):** the same condition now triggers the existing
+    bounded reconnect/reload path; if video still doesn't appear after the retry budget, shows "Audio is
+    playing, but video could not be rendered on this device."
+  - **VOD, image-subtitle handoff (PGS/VOBSUB/DVB subtitles):** the brief ExoPlayer handoff used only for
+    these subtitle types now has the same first-frame timeout, falling back to mpv with a clear message if
+    it can't render video either. The main VOD (mpv) path already had a working no-video watchdog.
+
+- **Favorites could disappear after a source re-sync failed partway through** — a source's clear-then-insert
+  import is deferred per chunk (old content is only wiped once new data starts arriving), so a sync that
+  failed midway (e.g. flaky Wi-Fi right as a Fire TV woke from sleep) could leave content partially cleared.
+  Favorites/history/resume are re-attached to the new content ids only after a *successful* sync, so a
+  failed one left them silently orphaned (rows still existed but resolved to nothing) until a later sync
+  healed them — in the meantime they simply looked gone. Re-attaching now runs after every sync attempt,
+  successful or not; only a fully successful sync is still allowed to permanently drop favorites for
+  content the provider actually removed.
+
 - **Live TV no longer freezes silently mid-stream** — a live channel could play smoothly and then
   freeze/hang with no spinner, no reconnect and no error (replaying the channel fixed it). This happened
   when a feed stalled in a way the player didn't *signal* — the stream stops advancing while the socket

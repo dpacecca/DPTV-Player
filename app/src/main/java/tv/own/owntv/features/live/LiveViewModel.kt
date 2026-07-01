@@ -518,6 +518,14 @@ class LiveViewModel(
     private fun watchExoOutcome(channel: ChannelEntity) {
         exoOutcomeJob?.cancel()
         exoOutcomeJob = viewModelScope.launch {
+            // Runs alongside the terminal-state wait below: audio/position can be progressing fine (so
+            // ExoPlayer never reaches ERROR) while a video track never renders a single frame — the "audio
+            // plays, no picture" case. One-shot per tune; mpv's own outcome (success or its own error state)
+            // takes it from there, same as the ERROR branch below.
+            launch {
+                previewEngine.noVideoDetected.first { it }
+                if (isStill(channel)) fallbackToMpv(channel)
+            }
             val terminal = previewEngine.state.first {
                 it == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
                     it == tv.own.owntv.player.LivePreviewEngine.State.ERROR
