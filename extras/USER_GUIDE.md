@@ -3,6 +3,10 @@
 A quick tour of everything OwnTV can do. Most of these are **TV‑remote (D‑pad) shortcuts** that aren't
 obvious at first glance — once you know them, the app is a lot faster to live in.
 
+> **v4.0.0+ UI Update**: The app now features a completely redesigned shell with a **fixed sidebar** nav,
+> a **top bar** with live clock, weather, search, and playlist name, and **rounded panels** for crisp content.
+> Navigation is faster and more stable — panels don't jump around anymore.
+
 > Navigation basics: **D‑pad** to move, **OK/Center** to select, **Back** to go up a level. The left
 > column is the **navigation panel** (Search · Home · Live TV · Movies · Series · Downloads · Guide ·
 > Settings). Press **Left** from a content list to jump back to it.
@@ -28,6 +32,9 @@ obvious at first glance — once you know them, the app is a lot faster to live 
   **Settings → Live preview**; sound for the preview is **Settings → Preview audio**.
 - ⭐ **Add to Favourites (and more)**: **long‑press OK** on a channel to open the quick menu — **Favourite,
   Rename, Hide, Match EPG, Catch‑up**. (Closing it returns you to the same channel.)
+- 🔄 **Move channels** (reorder within folders/Favorites): **long‑press OK** on a channel and choose **Move** —
+  a full‑screen reorder overlay opens with the full list. Use **D‑pad Up/Down** to move the item, **OK** to save,
+  **Back** to cancel. Your reorder is saved across playlist re‑syncs and included in backups.
 - **Open a channel full‑screen**: press **OK**.
 
 ### Inside the full‑screen live player
@@ -38,6 +45,9 @@ obvious at first glance — once you know them, the app is a lot faster to live 
   default. If a channel shows **UHD artifacts**, won't open, or stutters, bring up the controls and press the
   **gear (⚙) button** — this **pins that channel to the mpv engine**. It lights up when active and is
   **remembered per channel**, so that one channel always uses mpv while everything else stays fast.
+- 🔇 **Audio with no picture**: if a channel ever plays sound but shows a black screen, OwnTV now detects this
+  automatically and switches engines for you (briefly shows a loading spinner). If neither engine can render
+  video for that stream, you'll see a clear on‑screen message instead of a silent black screen.
 - ⏪ **Catch‑up / rewind live**: on a channel that supports catch‑up (look for the marker, or use the
   long‑press **Catch‑up** menu), you can **rewind into the provider's archive** and play back from the past,
   then return to live.
@@ -69,6 +79,20 @@ obvious at first glance — once you know them, the app is a lot faster to live 
 - ⏭️ **Auto‑play next episode**: when an episode ends, the next one starts automatically — and it rolls into
   the **next season** when the current one finishes. Toggle in **Settings → Auto‑play next episode**.
 - Series **open on your last‑watched episode**.
+- 🔄 **Move movies/series** (reorder within categories/Favorites): **long‑press OK** on any title and choose **Move** —
+  a full‑screen reorder overlay opens. Use **D‑pad Up/Down** to move, **OK** to save, **Back** to cancel.
+- 📥 **Download via long‑press**: **long‑press OK** on a movie or episode and choose **Download** to queue it
+  immediately (Movies) or queue all cached episodes (Series). No need to open the detail pane.
+
+---
+
+## 🕐 History
+
+- Browse **recently watched movies, series and channels**.
+- ✂️ **Remove single item**: **long‑press OK** on any history item and choose **Remove from History** to
+  delete just that entry (keeps the rest).
+- 🧹 **Clear entire history** (by type): Settings → Content → **Clear watch history** — wipe all recently‑watched
+  items, or just **Live TV, Movies or Series**. Playlists, Favorites and Downloads are untouched.
 
 ---
 
@@ -98,7 +122,11 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 
 ## 🎨 Personalize (make it yours)
 
-- **Settings → Customize**: **hide, rename and reorder** categories and channels, per profile (TiviMate‑style).
+- **Settings → Customize Category**: **hide, rename and reorder** categories .
+  - **Hide a range of categories fast**: focus a category's **Hide** button and **long‑press (select‑hold)** it to
+    enter **span/range mode**. Then scroll **up or down** — every category between your starting point and the
+    category you land on gets hidden together as a range. Handy for quickly hiding a big block of categories (or
+    even scrolling all the way to hide most of the list) instead of hiding them one by one.
 - **Settings → Theme / Accent colour / UI Zoom**: dark/AMOLED/light, a tint colour, and scale the whole UI.
 - **Settings → Animations**: turn interface motion **off** for a snappier feel on lower‑end TV boxes.
 - **Profiles** (Settings → Profiles): multiple viewers, a **Kids mode**, and **PIN locks**.
@@ -117,7 +145,11 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
   if you enable it and see drift, fix it live with the player's **Audio → A/V sync** nudge. Most people
   should leave this off.
 - 🔄 **Check updates on startup** — get notified when a newer version is on GitHub Releases.
-- 💾 **Backup & Restore** — export/restore your profiles & sources.
+- 💾 **Backup & Restore** — export/restore your profiles, sources, customizations, favorites, history,
+  resume positions and app settings. On export you can set a **backup password** to encrypt saved
+  passwords (source & proxy); without one, passwords are left out of the file. Restoring an encrypted
+  backup asks for that password — enter it to bring passwords back, or **Skip** to restore everything
+  else and re‑enter passwords later.
 - 🧹 **Clear watch history** — wipe a profile's recently‑watched / continue rows.
 - 📥 **Downloads** — download movies/episodes for offline play; pick the **Download folder** (app storage or
   external).
@@ -129,7 +161,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 - **Long‑press OK** is your friend — favourites, rename, hide, match EPG and catch‑up all live there.
 - A channel buffering or showing artifacts on 4K? **Gear button → compatibility mode** usually fixes it.
 - Audio out of sync on a VOD? **Audio → A/V sync** and nudge ± until lips match.
-- Guide feels empty? Add an **EPG Source** (Settings) and sync — it's separate from your playlist.
+- **Guide looks blank when you first open it?** (especially with catch‑up channels) Try: **Settings → EPG** → tap Edit → delete your EPG source(s), then **add them again** and sync fresh. The v4.0.0 update changed how EPG loads, and old cached data needs to be cleared and reimported. Once done, the guide displays immediately.
 
 ---
 

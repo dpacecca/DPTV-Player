@@ -30,8 +30,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tv.own.owntv.core.customize.CustomizationStore
+import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.customize.applyCustomizations
 import tv.own.owntv.core.database.dao.CategoryDao
+import tv.own.owntv.core.database.dao.ContentOrderDao
 import tv.own.owntv.core.database.dao.FavoriteDao
 import tv.own.owntv.core.database.dao.HistoryDao
 import tv.own.owntv.core.database.dao.MovieDao
@@ -39,6 +41,7 @@ import tv.own.owntv.core.database.dao.ProgressDao
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
+import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.core.database.entity.DownloadEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.MovieEntity
@@ -67,7 +70,12 @@ class MovieViewModel(
     private val player: OwnTVPlayer,
     private val downloadManager: DownloadManager,
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
+    private val contentOrderDao: ContentOrderDao,
 ) : ViewModel() {
+
+    data class MovieMoveState(val items: List<MovieEntity>, val activeIndex: Int, val contextKey: String)
+    private val _moveState = MutableStateFlow<MovieMoveState?>(null)
+    val moveState: StateFlow<MovieMoveState?> = _moveState.asStateFlow()
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
     // Observe the active profile's sources reactively so adding/removing a playlist refreshes Movies
@@ -79,6 +87,15 @@ class MovieViewModel(
         }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
+
+    private val folderContextKeys: StateFlow<Map<Long, String>> = ctx
+        .flatMapLatest { c ->
+            if (c.profileId < 0) flowOf(emptyMap())
+            else categoryDao.observe(c.sourceIds, MediaType.MOVIE).map { cats ->
+                cats.associateBy({ it.id }, { CustomizeKeys.category(it) })
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     /** List ordering for this section (Provider order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortMovies
@@ -182,6 +199,7 @@ class MovieViewModel(
     fun play(movie: MovieEntity, startPositionMs: Long = 0) {
         viewModelScope.launch {
             val pid = currentProfileId()
+            val sourceUa = sourceDao.getById(movie.sourceId)?.userAgent
             Log.d(TAG, "play movieId=${movie.id} profile=$pid startPositionMs=$startPositionMs")
             player.play(
                 movie.streamUrl,
@@ -189,6 +207,7 @@ class MovieViewModel(
                 year = movie.year?.toString(),
                 isLive = false,
                 startPositionMs = startPositionMs,
+                userAgent = sourceUa,
             )
             playingMovie = movie
             if (pid != null) {
@@ -271,14 +290,78 @@ class MovieViewModel(
         return if (preferred >= 0) profileDao.resolveExistingProfileId(preferred) else null
     }
 
+    fun enterMoveMode(movie: MovieEntity, key: LiveKey) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            val contextKey = when (key) {
+                is LiveKey.Folder -> folderContextKeys.value[key.id] ?: return@launch
+                LiveKey.Favorites -> ContentOrderEntity.FAV_CONTEXT
+                else -> return@launch
+            }
+            val items = when (key) {
+                is LiveKey.Folder -> movieDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
+                LiveKey.Favorites -> movieDao.snapshotFavoritesManual(pid, contextKey, 5000)
+                else -> return@launch
+            }
+            val idx = items.indexOfFirst { it.id == movie.id }
+            if (idx < 0) return@launch
+            _moveState.value = MovieMoveState(items, idx, contextKey)
+            settings.setSortMovies(SettingsRepository.SortMode.PLAYLIST)
+        }
+    }
+
+    fun moveUp() {
+        val s = _moveState.value ?: return
+        if (s.activeIndex == 0) return
+        val list = s.items.toMutableList()
+        val i = s.activeIndex
+        list[i - 1] = s.items[i]; list[i] = s.items[i - 1]
+        _moveState.value = s.copy(items = list, activeIndex = i - 1)
+    }
+
+    fun moveDown() {
+        val s = _moveState.value ?: return
+        if (s.activeIndex == s.items.size - 1) return
+        val list = s.items.toMutableList()
+        val i = s.activeIndex
+        list[i + 1] = s.items[i]; list[i] = s.items[i + 1]
+        _moveState.value = s.copy(items = list, activeIndex = i + 1)
+    }
+
+    fun commitMove() {
+        val s = _moveState.value ?: return
+        _moveState.value = null
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            contentOrderDao.replaceContext(
+                profileId = pid,
+                type = MediaType.MOVIE,
+                contextKey = s.contextKey,
+                rows = s.items.mapIndexed { i, m ->
+                    ContentOrderEntity(profileId = pid, mediaType = MediaType.MOVIE, contextKey = s.contextKey, itemId = m.id, position = i)
+                },
+            )
+        }
+    }
+
+    fun cancelMove() { _moveState.value = null }
+
+    fun removeFromHistory(movieId: Long) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            historyDao.remove(pid, MediaType.MOVIE, movieId)
+            progressDao.clear(pid, MediaType.MOVIE, movieId)
+        }
+    }
+
     private fun pagingSource(key: LiveKey, c: Ctx, query: String, sort: SettingsRepository.SortMode): PagingSource<Int, MovieEntity> {
         val ids = c.sourceIds.ifEmpty { listOf(-1L) }
         val playlist = sort == SettingsRepository.SortMode.PLAYLIST
         return if (query.isBlank()) when (key) {
             LiveKey.All -> if (playlist) movieDao.pagingAllOriginal(ids) else movieDao.pagingAll(ids)
-            LiveKey.Favorites -> movieDao.pagingFavorites(c.profileId)
+            LiveKey.Favorites -> movieDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT)
             LiveKey.History -> movieDao.pagingHistory(c.profileId)
-            is LiveKey.Folder -> if (playlist) movieDao.pagingByCategory(key.id) else movieDao.pagingByCategoryAlpha(key.id)
+            is LiveKey.Folder -> movieDao.pagingByCategoryManual(key.id, c.profileId, folderContextKeys.value[key.id] ?: "")
         } else when (key) {
             LiveKey.All -> movieDao.searchAll(query, ids)
             LiveKey.Favorites -> movieDao.searchFavorites(query, c.profileId)

@@ -31,7 +31,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tv.own.owntv.core.customize.CustomizationStore
 import tv.own.owntv.core.customize.applyCustomizations
+import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.database.dao.CategoryDao
+import tv.own.owntv.core.database.dao.ContentOrderDao
 import tv.own.owntv.core.database.dao.FavoriteDao
 import tv.own.owntv.core.database.dao.HistoryDao
 import tv.own.owntv.core.database.dao.ProgressDao
@@ -43,6 +45,7 @@ import tv.own.owntv.core.database.entity.DownloadEntity
 import tv.own.owntv.core.database.entity.EpisodeEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.PlaybackProgressEntity
+import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.core.database.entity.SeriesEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
@@ -72,7 +75,12 @@ class SeriesViewModel(
     private val player: OwnTVPlayer,
     private val downloadManager: DownloadManager,
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
+    private val contentOrderDao: ContentOrderDao,
 ) : ViewModel() {
+
+    data class SeriesMoveState(val items: List<SeriesEntity>, val activeIndex: Int, val contextKey: String)
+    private val _moveState = MutableStateFlow<SeriesMoveState?>(null)
+    val moveState: StateFlow<SeriesMoveState?> = _moveState.asStateFlow()
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
     // Observe the active profile's sources reactively so adding/removing a playlist refreshes Series
@@ -84,6 +92,15 @@ class SeriesViewModel(
         }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
+
+    private val folderContextKeys: StateFlow<Map<Long, String>> = ctx
+        .flatMapLatest { c ->
+            if (c.profileId < 0) flowOf(emptyMap())
+            else categoryDao.observe(c.sourceIds, MediaType.SERIES).map { cats ->
+                cats.associateBy({ it.id }, { CustomizeKeys.category(it) })
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     /** List ordering for this section (Provider order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortSeries
@@ -300,6 +317,7 @@ class SeriesViewModel(
             val pid = currentProfileId()
             val startIndex = queue.indexOfFirst { it.id == episode.id }.coerceAtLeast(0)
             Log.d(TAG, "playEpisodeQueue seriesId=${show.id} episodeId=${episode.id} profile=$pid queue=${queue.size} startIndex=$startIndex startPositionMs=$startPositionMs")
+            val sourceUa = sourceDao.getById(show.sourceId)?.userAgent
             player.playEpisodes(
                 items = queue.map { ep ->
                     PlaylistItem(
@@ -312,6 +330,7 @@ class SeriesViewModel(
                 },
                 startIndex = startIndex,
                 startPositionMs = startPositionMs,
+                userAgent = sourceUa,
             )
             if (pid != null) {
                 runCatching {
@@ -358,6 +377,26 @@ class SeriesViewModel(
         }
     }
 
+    fun downloadSeries(series: SeriesEntity) {
+        val showDir = StorageAccess.sanitize(series.name)
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            seriesDao.episodesBySeries(series.id).first().forEach { ep ->
+                val ext = ep.containerExt ?: StorageAccess.extOf(ep.streamUrl)
+                downloadManager.enqueue(
+                    profileId = pid,
+                    mediaType = MediaType.EPISODE,
+                    itemId = ep.id,
+                    title = ep.name,
+                    posterUrl = series.posterUrl,
+                    streamUrl = ep.streamUrl,
+                    relativeDir = "Series/$showDir/Season ${ep.seasonNumber}",
+                    fileName = "${StorageAccess.sanitize(ep.name)}.$ext",
+                )
+            }
+        }
+    }
+
     fun toggleFavorite(s: SeriesEntity) {
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
@@ -366,14 +405,77 @@ class SeriesViewModel(
         }
     }
 
+    fun enterMoveMode(series: SeriesEntity, key: LiveKey) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            val contextKey = when (key) {
+                is LiveKey.Folder -> folderContextKeys.value[key.id] ?: return@launch
+                LiveKey.Favorites -> ContentOrderEntity.FAV_CONTEXT
+                else -> return@launch
+            }
+            val items = when (key) {
+                is LiveKey.Folder -> seriesDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
+                LiveKey.Favorites -> seriesDao.snapshotFavoritesManual(pid, contextKey, 5000)
+                else -> return@launch
+            }
+            val idx = items.indexOfFirst { it.id == series.id }
+            if (idx < 0) return@launch
+            _moveState.value = SeriesMoveState(items, idx, contextKey)
+            settings.setSortSeries(SettingsRepository.SortMode.PLAYLIST)
+        }
+    }
+
+    fun moveUp() {
+        val s = _moveState.value ?: return
+        if (s.activeIndex == 0) return
+        val list = s.items.toMutableList()
+        val i = s.activeIndex
+        list[i - 1] = s.items[i]; list[i] = s.items[i - 1]
+        _moveState.value = s.copy(items = list, activeIndex = i - 1)
+    }
+
+    fun moveDown() {
+        val s = _moveState.value ?: return
+        if (s.activeIndex == s.items.size - 1) return
+        val list = s.items.toMutableList()
+        val i = s.activeIndex
+        list[i + 1] = s.items[i]; list[i] = s.items[i + 1]
+        _moveState.value = s.copy(items = list, activeIndex = i + 1)
+    }
+
+    fun commitMove() {
+        val s = _moveState.value ?: return
+        _moveState.value = null
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            contentOrderDao.replaceContext(
+                profileId = pid,
+                type = MediaType.SERIES,
+                contextKey = s.contextKey,
+                rows = s.items.mapIndexed { i, ser ->
+                    ContentOrderEntity(profileId = pid, mediaType = MediaType.SERIES, contextKey = s.contextKey, itemId = ser.id, position = i)
+                },
+            )
+        }
+    }
+
+    fun cancelMove() { _moveState.value = null }
+
+    fun removeFromHistory(seriesId: Long) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            historyDao.remove(pid, MediaType.SERIES, seriesId)
+        }
+    }
+
     private fun pagingSource(key: LiveKey, c: Ctx, query: String, sort: SettingsRepository.SortMode): PagingSource<Int, SeriesEntity> {
         val ids = c.sourceIds.ifEmpty { listOf(-1L) }
         val playlist = sort == SettingsRepository.SortMode.PLAYLIST
         return if (query.isBlank()) when (key) {
             LiveKey.All -> if (playlist) seriesDao.pagingAllOriginal(ids) else seriesDao.pagingAll(ids)
-            LiveKey.Favorites -> seriesDao.pagingFavorites(c.profileId)
+            LiveKey.Favorites -> seriesDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT)
             LiveKey.History -> seriesDao.pagingHistory(c.profileId)
-            is LiveKey.Folder -> if (playlist) seriesDao.pagingByCategory(key.id) else seriesDao.pagingByCategoryAlpha(key.id)
+            is LiveKey.Folder -> seriesDao.pagingByCategoryManual(key.id, c.profileId, folderContextKeys.value[key.id] ?: "")
         } else when (key) {
             LiveKey.All -> seriesDao.searchAll(query, ids)
             LiveKey.Favorites -> seriesDao.searchFavorites(query, c.profileId)

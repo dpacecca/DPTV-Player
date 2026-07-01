@@ -124,12 +124,18 @@ class SearchViewModel(
     }
 
     fun playChannel(channel: ChannelEntity) {
-        player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true)
+        viewModelScope.launch {
+            val sourceUa = sourceDao.getById(channel.sourceId)?.userAgent
+            player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, userAgent = sourceUa)
+        }
         record(MediaType.LIVE, channel.id)
     }
 
     fun playMovie(movie: MovieEntity) {
-        player.play(movie.streamUrl, title = movie.name, year = movie.year?.toString(), isLive = false)
+        viewModelScope.launch {
+            val sourceUa = sourceDao.getById(movie.sourceId)?.userAgent
+            player.play(movie.streamUrl, title = movie.name, year = movie.year?.toString(), isLive = false, userAgent = sourceUa)
+        }
         record(MediaType.MOVIE, movie.id)
     }
 

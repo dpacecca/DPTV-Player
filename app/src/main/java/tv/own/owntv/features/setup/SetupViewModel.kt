@@ -69,6 +69,8 @@ class SetupViewModel(
         /** Per-type breakdown (incl. EPG) shown on the onboarding "All set" screen. */
         data class Success(val summary: String) : ImportState
         data class Failed(val message: String) : ImportState
+        /** Encrypted backup needs the backup password before restoring; [retry] after a wrong attempt. */
+        data class NeedPassword(val file: File, val retry: Boolean = false) : ImportState
     }
 
     private val _state = MutableStateFlow<ImportState>(ImportState.Idle)
@@ -261,15 +263,39 @@ class SetupViewModel(
         job.invokeOnCompletion { if (importJob == job) importJob = null }
     }
 
-    /** Restore everything from a backup file (replaces profiles & sources, then activates one). */
+    /** Restore everything from a backup file (replaces profiles & sources, then activates one). Encrypted
+     *  backups first ask for the backup password via [ImportState.NeedPassword]. */
     fun importBackup(file: File, onDone: () -> Unit) {
         viewModelScope.launch {
             _state.value = ImportState.Running
-            backup.import(file).fold(
-                onSuccess = { _state.value = ImportState.Success("Restored $it items. Re-sync your sources to load content."); onDone() },
-                onFailure = { _state.value = ImportState.Failed(it.message ?: "Restore failed") },
-            )
+            val inspection = backup.sectionsIn(file).getOrElse {
+                _state.value = ImportState.Failed(it.message ?: "Couldn't read the backup file")
+                return@launch
+            }
+            if (inspection.encrypted) _state.value = ImportState.NeedPassword(file)
+            else doRestore(file, null, onDone)
         }
+    }
+
+    /** Continue an encrypted restore once the user provides (or skips, password = null) the passphrase. */
+    fun restoreWithPassword(file: File, password: String?, onDone: () -> Unit) {
+        viewModelScope.launch {
+            _state.value = ImportState.Running
+            doRestore(file, password, onDone)
+        }
+    }
+
+    private suspend fun doRestore(file: File, password: String?, onDone: () -> Unit) {
+        backup.import(file, backupPassword = password).fold(
+            onSuccess = {
+                val note = if (password.isNullOrBlank()) " Re-enter any saved passwords afterwards." else ""
+                _state.value = ImportState.Success("Restored $it items. Re-sync your sources to load content.$note"); onDone()
+            },
+            onFailure = {
+                if (it is BackupManager.WrongPasswordException) _state.value = ImportState.NeedPassword(file, retry = true)
+                else _state.value = ImportState.Failed(it.message ?: "Restore failed")
+            },
+        )
     }
 
     private suspend fun ensureFallbackProfile(): Long {

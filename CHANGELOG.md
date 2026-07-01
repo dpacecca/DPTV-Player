@@ -1,12 +1,110 @@
 # Changelog
 
-## v4.0.0 — 2026-06-28
+## v4.0.0 — unreleased
 
 Big release — the community‑feedback **UI upgrade** (3 phases; Phase 1's quick wins are the first two
 entries below) folded together with a large batch of new features, performance work and fixes.
 
+> ⚠️ **Upgrade note for EPG users:** v4.0.0 redesigned EPG loading. If the Guide shows blank on first open 
+> or after re-entry, **delete your EPG sources and re-add them** (Settings → EPG → Edit → delete, then add 
+> again) and resync. Old cached EPG data is incompatible with the new loader — a fresh import fixes it. 
+> This is a one-time fix after upgrading.
+
+### 🐛 Fixes
+
+- **Audio-plays-but-no-video no longer leaves you stuck on a black screen** — some streams/files could
+  play sound with no picture (both Surround Sound on and off), because the existing freeze watchdogs only
+  caught a *total* stall or a freeze *after* a frame had already been seen — never "audio/position is
+  advancing fine, but a video track exists and has never produced a single frame." All three playback
+  paths now detect this specifically:
+  - **Live TV, ExoPlayer (primary engine):** if no video frame renders within ~8s while audio/position
+    keeps advancing, it automatically tries the mpv compatibility fallback once (shows the spinner during
+    the switch, no loop). If mpv plays it fine, playback continues normally; if mpv also fails, a clear
+    on-screen message is shown.
+  - **Live TV, mpv (compatibility-mode / fallback channels):** the same condition now triggers the existing
+    bounded reconnect/reload path; if video still doesn't appear after the retry budget, shows "Audio is
+    playing, but video could not be rendered on this device."
+  - **VOD, image-subtitle handoff (PGS/VOBSUB/DVB subtitles):** the brief ExoPlayer handoff used only for
+    these subtitle types now has the same first-frame timeout, falling back to mpv with a clear message if
+    it can't render video either. The main VOD (mpv) path already had a working no-video watchdog.
+
+- **Favorites could disappear after a source re-sync failed partway through** — a source's clear-then-insert
+  import is deferred per chunk (old content is only wiped once new data starts arriving), so a sync that
+  failed midway (e.g. flaky Wi-Fi right as a Fire TV woke from sleep) could leave content partially cleared.
+  Favorites/history/resume are re-attached to the new content ids only after a *successful* sync, so a
+  failed one left them silently orphaned (rows still existed but resolved to nothing) until a later sync
+  healed them — in the meantime they simply looked gone. Re-attaching now runs after every sync attempt,
+  successful or not; only a fully successful sync is still allowed to permanently drop favorites for
+  content the provider actually removed.
+
+- **Live TV no longer freezes silently mid-stream** — a live channel could play smoothly and then
+  freeze/hang with no spinner, no reconnect and no error (replaying the channel fixed it). This happened
+  when a feed stalled in a way the player didn't *signal* — the stream stops advancing while the socket
+  stays open, so there was no buffering event, no error and no end-of-file to react to. Both playback
+  backends now detect this:
+  - **ExoPlayer (the primary live engine):** the silent-freeze watchdog now keys off *intent to play*
+    instead of the stricter "is-playing" flag (which briefly flickered off during a stall and kept
+    resetting the freeze timer), and adds an absolute "no forward progress for ~8s" backstop that can't be
+    missed even if per-frame detection isn't available. On a stall it shows the spinner and auto-reconnects
+    to the live edge (bounded retries with back-off), surfacing "Lost connection to this channel." only
+    after repeated failures.
+  - **mpv (compatibility-mode / fallback channels):** added an equivalent live progress watchdog that
+    detects a frozen stream, shows the spinner and reconnects with a bounded retry budget.
+  - The loading spinner is now shown consistently while a live stream is buffering, reconnecting or
+    retrying in either backend, and clears once playback resumes or a final error is shown. Detailed
+    Logcat is emitted around buffering / freeze detection / reconnect attempts for diagnosis.
+  - **Follow-up:** closed a second silent dead-end in the ExoPlayer (primary live) engine — if a feed
+    dropped into `STATE_ENDED` or unexpectedly into `STATE_IDLE` mid-playback, it was previously ignored
+    entirely (no spinner, no reconnect, no error). Both are now treated as a recoverable stall and
+    auto-reconnect, while a normal stop/back/release still exits cleanly with no reconnect attempt. Added
+    a debug-only diagnostic log (state transitions, watchdog/reconnect events) plus a small bounded
+    on-device diagnostic file, so a future recurrence can be captured even if it happens unobserved —
+    see `extras/LIVE_TV_HANG_DIAGNOSTICS.md`.
+
+- **EPG match no longer removes a channel from the Guide** — matching a channel's EPG (auto or manual)
+  could silently delete its stored programmes and leave the channel blank and then invisible in the
+  Guide. This happened when multiple EPG sources were configured and a cache re-fill across a large
+  source file was interrupted before it could restore the deleted rows. The cache re-fill is now
+  parse-then-apply: programmes are only deleted for ids where fresh replacement data was successfully
+  parsed first. Channels that had no in-window data in any fresh cache keep whatever they already had.
+
+- **Show/Hide password toggle on all password fields** — a **Show / Hide** button now appears on the
+  right of every password field (Xtream password when adding/editing a playlist; PIN fields in profile
+  setup and profile settings). The toggle is D-pad focusable independently of the text field, so the
+  password can be revealed and re-hidden without opening the keyboard. Previously there was no way to
+  see the password you had typed on either the first-run setup screen or the Settings → Playlists edit
+  screen.
+
 ### ✨ New features
 
+- **Backup now covers more settings and encrypts saved passwords** — the backup file now also includes
+  surround sound, auto-play-next, Guide sort, animation level, Movies/Series view mode, catch-up timezone
+  & offset, the global proxy (host/port/user/enabled), and each profile's startup landing screen. Saved
+  passwords (source/playlist and proxy) are no longer written in plaintext: on export you can set a
+  **backup password** to encrypt them (AES-GCM, field-level only — the rest of the file stays readable),
+  or export without passwords. On restore you're prompted for that password; a wrong password never wipes
+  anything and lets you retry, and you can skip it to restore everything except saved passwords. Old
+  backups still import as before. Both restore entry points (Settings and the first-run setup wizard)
+  prompt for the backup password.
+- **Manually reorder channels, movies and series** — long-press any item in a **category folder** or **Favorites**
+  and choose **Move**. A full-screen reorder overlay appears with the full list; **D-pad Up/Down** moves the item
+  up or down, **OK** saves, **Back** cancels. The order persists across playlist re-syncs and is included in
+  profile backups / restores.
+- **Remove a single item from History** — long-press any item in the **History** folder and choose
+  **Remove from History** to delete just that entry. The existing bulk "Clear watch history" in Settings is
+  unchanged.
+- **Download from long-press menu** — Movies and Series now show a **Download** / **Download all episodes**
+  button directly in the long-press context menu, alongside the existing detail-pane download button.
+  Movies queues the file immediately; Series queues every locally-cached episode (open the series once first
+  if no episodes appear).
+- **Settings → Customize Category** — the "Customize" settings row has been renamed **Customize Category** to
+  clarify it affects categories (hide, rename, reorder), not individual items.
+- **Global HTTP proxy support** — **Settings → Network → Proxy** lets you route all OwnTV traffic
+  (playlist sync, Xtream API, EPG, images, downloads, updates) and fullscreen playback through an HTTP proxy.
+  Enter a proxy host and port (optionally with username / password); a **Test Proxy** button verifies connectivity
+  before saving. Disabling the proxy restores direct connections. The proxy is applied globally across all
+  playlists — per-playlist proxy overrides and SOCKS5 support are planned for future versions. See
+  `extras/PROXY_SUPPORT_PLAN.md` for full details and limitations.
 - **Home screen with Continue Watching** — a new **Home** tab opens to a hero carousel of your partially‑watched
   movies, episodes and recent live channels (newest first); the selected card is shown large with its poster and
   starts a muted video preview when focused, and pressing **OK** resumes right where you left off. Below it is a
@@ -107,8 +205,25 @@ entries below) folded together with a large batch of new features, performance w
   the main thread, and re‑sorting/filtering reuses the cache. Mostly an efficiency/memory win — lighter on
   large channel lists and multi‑day catch‑up windows.
 
+### 🔧 Internal
+
+- Room database version **6 → 7**: new `content_order` table stores per-profile manual item ordering; included in backup/restore.
+- Long-press context menus on Movies and Series replaced the previous instant-favourite-toggle with a full menu (Favourite, Move, Remove from History, Download, Close).
+
 ### 🐛 Bug fixes
 
+- **Per-source User-Agent for playback** — each source now supports a **custom User-Agent** (entered in source
+  settings), and it is consistently applied to Live TV, Movies, Series, and EPG playback on both mpv and
+  ExoPlayer. If playback fails with a format/demuxer error and no custom UA was set, the app retries once
+  with the short `vlc` User-Agent — some providers block the full `VLC/3.0.20 LibVLC/3.0.20` string but
+  accept the short form. If that also fails, the error message hints: *"This provider may require a custom
+  User-Agent in source settings."*
+- **No more false "Playback error" over a movie that's actually playing** — on some TVs (e.g. Realtek-based
+  panels) the hardware decoder takes a few seconds to negotiate and deliver its first frame, which made the
+  VOD watchdog wrongly conclude the file wasn't streamable and show *"This video isn't formatted for
+  streaming…"* on top of perfectly-playing video. The watchdog now waits a little longer before that verdict
+  and, more importantly, automatically dismisses the popup the moment a real video frame decodes. Genuinely
+  non-streamable files still surface the error as before.
 - **Startup focus rests on the nav** — on a cold start (or switching to the Home tab) focus now stays on the
   **Home item in the sidebar** instead of being pulled into the content; it only jumps into the hero when you
   return from the player. (Builds on [@codeVerine](https://github.com/codeVerine)'s empty‑Home focus fix,
@@ -180,6 +295,12 @@ entries below) folded together with a large batch of new features, performance w
   guard** (3 consecutive hard-resets) prevents infinite tear-down/recreate loops on bad playlists.
   Added `seekable=1` to VOD demuxer options so FFmpeg attempts HTTP Range requests even on servers
   that don't advertise byte-serving.
+- **Guide shows programmes on first open** — the EPG guide was blank until you navigated into a row (on large 
+  catch-up windows with a lookback), because the auto-scroll-to-now fired before the timeline layout was ready. 
+  The scroll now waits for layout, so programmes appear immediately. **Note:** if upgrading to v4.0.0 and the 
+  guide remains blank after this fix, **delete the EPG sources and re-add them** (Settings → EPG → Edit → delete, 
+  then add the feed again); v4.0.0's new batched EPG loader is incompatible with old cached data, and a fresh 
+  re-import ensures compatibility. Resync only after re-adding.
 
 ## v3.2.0 — 2026-06-22
 

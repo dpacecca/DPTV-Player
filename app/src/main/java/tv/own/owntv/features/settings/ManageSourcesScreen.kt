@@ -293,9 +293,12 @@ private fun SourceRow(
 }
 
 private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType, stored: SyncCounts?): String? {
-    val live = maxOf(liveProcessed, stored?.channels ?: 0)
-    val movies = maxOf(moviesProcessed, stored?.movies ?: 0)
-    val series = maxOf(seriesProcessed, stored?.series ?: 0)
+    fun visibleCount(active: Boolean, processed: Int, storedCount: Int): Int =
+        if (active) processed else storedCount
+
+    val live = visibleCount(liveActive, liveProcessed, stored?.channels ?: 0)
+    val movies = visibleCount(moviesActive, moviesProcessed, stored?.movies ?: 0)
+    val series = visibleCount(seriesActive, seriesProcessed, stored?.series ?: 0)
     val counts = when (sourceType) {
         SourceType.M3U -> SyncProgressCounts(
             live = live,

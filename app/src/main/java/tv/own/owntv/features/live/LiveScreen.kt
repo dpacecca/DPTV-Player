@@ -48,6 +48,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.features.shell.components.CategoryRail
+import tv.own.owntv.ui.components.MoveOrderOverlay
 import tv.own.owntv.features.shell.components.PreviewPane
 import tv.own.owntv.features.shell.components.RailCategory
 import tv.own.owntv.ui.components.longPressMenuGuard
@@ -88,6 +89,7 @@ fun LiveScreen(
     val sortMode by vm.sortMode.collectAsStateWithLifecycle()
     val livePreviewSetting by vm.livePreviewEnabled.collectAsStateWithLifecycle()
     val channels = vm.channels.collectAsLazyPagingItems()
+    val moveState by vm.moveState.collectAsStateWithLifecycle()
     // Preview runs only when the player isn't busy (previewEnabled) AND the user hasn't turned it off.
     val effectivePreview = previewEnabled && livePreviewSetting
 
@@ -116,11 +118,13 @@ fun LiveScreen(
     // When the long-press menu closes (Cancel, Favourite, Hide) WITHOUT opening another dialog, return focus
     // to the channel it was opened from — otherwise focus falls back to the nav panel.
     var contextMenuOpen by remember { mutableStateOf(false) }
+    var enteringMoveMode by remember { mutableStateOf(false) }
+    LaunchedEffect(moveState) { if (moveState != null) enteringMoveMode = false }
     LaunchedEffect(contextChannel) {
         if (contextChannel != null) { contextMenuOpen = true; return@LaunchedEffect }
         if (contextMenuOpen) {
             contextMenuOpen = false
-            if (renaming == null && matchingEpg == null && catchupChannel == null) {
+            if (renaming == null && matchingEpg == null && catchupChannel == null && !enteringMoveMode) {
                 delay(60)
                 runCatching { selFocus.requestFocus() }
             }
@@ -291,18 +295,35 @@ fun LiveScreen(
         )
     }
 
-    // Long-press a channel → quick actions (favourite, rename, hide, match EPG, catch-up).
+    // Long-press a channel → quick actions.
     contextChannel?.let { ch ->
         ChannelContextMenu(
             channelName = ch.name,
             isFavorite = favoriteIds.contains(ch.id),
             hasCatchup = ch.catchup,
+            canMove = selectedKey is LiveKey.Folder || selectedKey == LiveKey.Favorites,
+            isHistory = selectedKey == LiveKey.History,
             onToggleFavorite = { vm.toggleFavorite(ch); contextChannel = null },
             onRename = { renaming = ch; contextChannel = null },
             onHide = { vm.hideChannel(ch); contextChannel = null },
             onMatchEpg = { matchingEpg = ch; contextChannel = null },
             onCatchup = { catchupChannel = ch; contextChannel = null },
+            onMove = { contextChannel = null; enteringMoveMode = true; vm.enterMoveMode(ch, selectedKey) },
+            onRemoveFromHistory = { vm.removeFromHistory(ch.id); contextChannel = null },
             onDismiss = { contextChannel = null },
+        )
+    }
+
+    // Move mode overlay — intercepts D-pad Up/Down/OK/Back while reordering.
+    moveState?.let { ms ->
+        MoveOrderOverlay(
+            title = "Reorder channel",
+            itemNames = ms.items.map { it.name },
+            activeIndex = ms.activeIndex,
+            onMoveUp = vm::moveUp,
+            onMoveDown = vm::moveDown,
+            onCommit = vm::commitMove,
+            onCancel = vm::cancelMove,
         )
     }
 }
@@ -354,17 +375,21 @@ private fun ChannelRow(
     }
 }
 
-/** Long-press quick actions for a Live channel (favourite / rename / hide / match EPG / catch-up). */
+/** Long-press quick actions for a Live channel (favourite / rename / hide / match EPG / catch-up / move / remove history). */
 @Composable
 private fun ChannelContextMenu(
     channelName: String,
     isFavorite: Boolean,
     hasCatchup: Boolean,
+    canMove: Boolean,
+    isHistory: Boolean,
     onToggleFavorite: () -> Unit,
     onRename: () -> Unit,
     onHide: () -> Unit,
     onMatchEpg: () -> Unit,
     onCatchup: () -> Unit,
+    onMove: () -> Unit,
+    onRemoveFromHistory: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
@@ -391,6 +416,8 @@ private fun ChannelContextMenu(
             OwnTVButton("Hide channel", onClick = onHide, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             OwnTVButton("Match EPG", onClick = onMatchEpg, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
             if (hasCatchup) OwnTVButton("Catch-up", onClick = onCatchup, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            if (canMove) OwnTVButton("Move", onClick = onMove, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            if (isHistory) OwnTVButton("Remove from History", onClick = onRemoveFromHistory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(4.dp))
             OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
         }

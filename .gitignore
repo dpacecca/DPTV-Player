@@ -13,6 +13,7 @@ local.properties
 # Local tooling / agent state
 .claude/
 .planning/
+.serena/
 
 # Signing keys & secrets — NEVER commit these
 *.keystore
@@ -24,3 +25,7 @@ extras/cloud-backup-plan.md
 extras/icons_mono.htm
 extras/home_new_added_vod.htm
 extras/favourites_reorder_plan.md
+CLAUDE.md
+AGENT_HANDOVER.md
+extras/PROXY_SUPPORT_PLAN.md
+extras/LIVE_TV_HANG_DIAGNOSTICS.md

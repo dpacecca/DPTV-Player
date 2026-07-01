@@ -37,7 +37,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -50,16 +52,19 @@ import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.DownloadEntity
 import tv.own.owntv.core.database.entity.MovieEntity
 import tv.own.owntv.core.model.DownloadStatus
+import tv.own.owntv.features.live.LiveKey
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.shell.components.CategoryRail
 import tv.own.owntv.features.shell.components.PreviewPane
 import tv.own.owntv.features.shell.components.RailCategory
+import tv.own.owntv.ui.components.MoveOrderOverlay
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.PosterCard
 import tv.own.owntv.ui.components.ResumeDialog
+import tv.own.owntv.ui.components.longPressMenuGuard
 import androidx.compose.foundation.layout.width
 import tv.own.owntv.ui.components.SearchBar
 import tv.own.owntv.ui.components.SortChip
@@ -87,6 +92,8 @@ fun MoviesScreen(
     val sortMode by vm.sortMode.collectAsStateWithLifecycle()
     val viewMode by vm.viewMode.collectAsStateWithLifecycle()
     val selectedMovie by vm.selectedMovie.collectAsStateWithLifecycle()
+    val moveState by vm.moveState.collectAsStateWithLifecycle()
+    var contextMovie by remember { mutableStateOf<MovieEntity?>(null) }
     val selectedProgress by vm.selectedProgress.collectAsStateWithLifecycle()
     val downloadStates by vm.downloadStates.collectAsStateWithLifecycle()
     val movies = vm.movies.collectAsLazyPagingItems()
@@ -205,7 +212,7 @@ fun MoviesScreen(
                                 },
                                 onFocus = { vm.onMovieFocused(movie) },
                                 onClick = { startMovie(movie) },
-                                onLongClick = { vm.toggleFavorite(movie) },
+                                onLongClick = { contextMovie = movie },
                             )
                         }
                     }
@@ -232,7 +239,7 @@ fun MoviesScreen(
                                 },
                                 onFocus = { vm.onMovieFocused(movie) },
                                 onClick = { startMovie(movie) },
-                                onLongClick = { vm.toggleFavorite(movie) },
+                                onLongClick = { contextMovie = movie },
                             )
                         }
                     }
@@ -261,6 +268,75 @@ fun MoviesScreen(
             onStartOver = { resumePrompt = null; vm.play(m, 0); onFullscreen() },
             onDismiss = { resumePrompt = null },
         )
+    }
+
+    // Long-press a movie → context menu.
+    contextMovie?.let { m ->
+        MovieContextMenu(
+            title = m.name,
+            isFavorite = favoriteIds.contains(m.id),
+            canMove = selectedKey is LiveKey.Folder || selectedKey == LiveKey.Favorites,
+            isHistory = selectedKey == LiveKey.History,
+            onToggleFavorite = { vm.toggleFavorite(m); contextMovie = null },
+            onMove = { contextMovie = null; vm.enterMoveMode(m, selectedKey) },
+            onRemoveFromHistory = { vm.removeFromHistory(m.id); contextMovie = null },
+            onDownload = { vm.download(m); contextMovie = null },
+            onDismiss = { contextMovie = null },
+        )
+    }
+
+    // Move mode overlay.
+    moveState?.let { ms ->
+        MoveOrderOverlay(
+            title = "Reorder movie",
+            itemNames = ms.items.map { it.name },
+            activeIndex = ms.activeIndex,
+            onMoveUp = vm::moveUp,
+            onMoveDown = vm::moveDown,
+            onCommit = vm::commitMove,
+            onCancel = vm::cancelMove,
+        )
+    }
+}
+
+@Composable
+private fun MovieContextMenu(
+    title: String,
+    isFavorite: Boolean,
+    canMove: Boolean,
+    isHistory: Boolean,
+    onToggleFavorite: () -> Unit,
+    onMove: () -> Unit,
+    onRemoveFromHistory: () -> Unit,
+    onDownload: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    androidx.activity.compose.BackHandler { onDismiss() }
+    Box(
+        modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f))
+            .longPressMenuGuard(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier.width(440.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Spacer(Modifier.height(4.dp))
+            OwnTVButton(
+                if (isFavorite) "Remove from Favourites" else "Add to Favourites",
+                onClick = onToggleFavorite, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.STAR,
+                modifier = Modifier.fillMaxWidth().focusRequester(focus),
+            )
+            if (canMove) OwnTVButton("Move", onClick = onMove, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            if (isHistory) OwnTVButton("Remove from History", onClick = onRemoveFromHistory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            OwnTVButton("Download", onClick = onDownload, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.DOWNLOADS, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(4.dp))
+            OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+        }
     }
 }
 

@@ -41,9 +41,11 @@ import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVSpinner
+import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
+import java.io.File
 
 /**
  * Phase 12 — Backup & Restore (Settings → Backup), with selective sections: the user picks what to
@@ -72,6 +74,8 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         }
     }
     var exportSections by remember { mutableStateOf(BackupManager.Section.entries.toSet()) }
+    // After the folder is picked, hold it here to ask about password protection before exporting.
+    var exportFolder by remember { mutableStateOf<File?>(null) }
     val firstFocus = remember { FocusRequester() }
     val restoreBtnFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(50); runCatching { firstFocus.requestFocus() } }
@@ -82,7 +86,8 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // that opened it. The restore crosses INTO this group from the dialog, so onEnter intercepts
     // it — it consults dialogReturn first (and clears it) instead of hijacking.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    val anyDialogOpen = showBrowser || showExportPicker || pendingFolderBrowser || state is BackupViewModel.State.ChooseRestore
+    val anyDialogOpen = showBrowser || showExportPicker || pendingFolderBrowser || exportFolder != null ||
+        state is BackupViewModel.State.ChooseRestore || state is BackupViewModel.State.NeedPassword
     LaunchedEffect(anyDialogOpen) {
         if (!anyDialogOpen) {
             dialogReturn?.let { btn ->
@@ -159,7 +164,7 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             sections = BackupManager.Section.entries.filter { it in choose.available },
             initial = choose.available,
             confirmLabel = "Restore",
-            onConfirm = { chosen -> vm.import(choose.file, chosen) },
+            onConfirm = { chosen -> vm.beginImport(choose.file, chosen, choose.encrypted) },
             onDismiss = { vm.reset() },
         )
     }
@@ -169,9 +174,82 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             title = if (browser == BrowseMode.FOLDER) "Choose a folder to save the backup" else "Pick a backup file to restore",
             mode = browser,
             fileExtensions = setOf("json"),
-            onPick = { file -> showBrowser = false; if (browser == BrowseMode.FOLDER) vm.export(file, exportSections) else vm.inspect(file) },
+            onPick = { file -> showBrowser = false; if (browser == BrowseMode.FOLDER) exportFolder = file else vm.inspect(file) },
             onDismiss = { showBrowser = false },
         )
+    }
+
+    // Export step 3: ask whether to protect passwords with a backup passphrase (or export without them).
+    exportFolder?.let { folder ->
+        BackupPasswordDialog(
+            title = "Protect passwords?",
+            message = "Source and proxy passwords can be encrypted with a backup password you choose. " +
+                "You'll need the same password to restore them on another device. Without one, passwords " +
+                "are left out of the file and must be re-entered after restoring.",
+            confirmLabel = "Encrypt & export",
+            skipLabel = "Export without passwords",
+            onConfirm = { pass -> exportFolder = null; vm.export(folder, exportSections, pass) },
+            onSkip = { exportFolder = null; vm.export(folder, exportSections, null) },
+            onDismiss = { exportFolder = null },
+        )
+    }
+
+    // Restore step 3 (encrypted only): prompt for the backup password, allow skipping or retrying.
+    (state as? BackupViewModel.State.NeedPassword)?.let { need ->
+        BackupPasswordDialog(
+            title = if (need.retry) "Wrong backup password" else "Enter backup password",
+            message = if (need.retry)
+                "That password didn't match. Try again, or skip to restore everything except saved passwords."
+            else
+                "This backup's passwords are encrypted. Enter the backup password to restore them, or skip " +
+                    "to restore everything else and re-enter passwords later.",
+            confirmLabel = "Restore",
+            skipLabel = "Skip (no passwords)",
+            onConfirm = { pass -> vm.import(need.file, need.sections, pass) },
+            onSkip = { vm.import(need.file, need.sections, null) },
+            onDismiss = { vm.reset() },
+        )
+    }
+}
+
+/** A single-secret prompt with a confirm (encrypt/restore), a skip (no passwords) and cancel. */
+@Composable
+private fun BackupPasswordDialog(
+    title: String,
+    message: String,
+    confirmLabel: String,
+    skipLabel: String,
+    onConfirm: (String) -> Unit,
+    onSkip: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    var password by remember { mutableStateOf("") }
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(), contentAlignment = Alignment.Center) {
+        Column(Modifier.width(560.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(28.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(12.dp))
+            Text(message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            Spacer(Modifier.height(20.dp))
+            OwnTVTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = "Backup password",
+                isPassword = true,
+                focusRequester = firstFocus,
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                Spacer(Modifier.weight(1f))
+                OwnTVButton(skipLabel, onClick = onSkip, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(confirmLabel, onClick = { onConfirm(password) }, enabled = password.isNotBlank())
+            }
+        }
     }
 }
 

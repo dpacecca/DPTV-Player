@@ -43,12 +43,14 @@ import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.customize.applyCustomizations
 import tv.own.owntv.core.database.dao.CategoryDao
 import tv.own.owntv.core.database.dao.ChannelDao
+import tv.own.owntv.core.database.dao.ContentOrderDao
 import tv.own.owntv.core.database.dao.FavoriteDao
 import tv.own.owntv.core.database.dao.HistoryDao
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.ChannelEntity
+import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
@@ -90,7 +92,12 @@ class LiveViewModel(
     val player: OwnTVPlayer,
     val previewEngine: tv.own.owntv.player.LivePreviewEngine,
     private val forceMpvStore: tv.own.owntv.core.player.ForceMpvStore,
+    private val contentOrderDao: ContentOrderDao,
 ) : ViewModel() {
+
+    data class ChannelMoveState(val items: List<ChannelEntity>, val activeIndex: Int, val contextKey: String)
+    private val _moveState = MutableStateFlow<ChannelMoveState?>(null)
+    val moveState: StateFlow<ChannelMoveState?> = _moveState.asStateFlow()
 
     val livePreviewEnabled: StateFlow<Boolean> = settings.livePreviewEnabled
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
@@ -120,13 +127,28 @@ class LiveViewModel(
 
     // Observe the active profile's sources REACTIVELY so adding/removing a playlist refreshes Live TV
     // immediately (it used to be read once at startup, so a new playlist showed nothing until restart).
+    // sourceUaMap is a lightweight side-product: sourceId → userAgent, used for synchronous play() calls
+    // (playPreview, ensurePlaying) that can't do a DB lookup on the call site.
+    private var sourceUaMap: Map<Long, String?> = emptyMap()
     private val ctx: StateFlow<Ctx> = settings.activeProfileId
         .flatMapLatest { pid ->
             if (pid < 0) flowOf(Ctx(pid, emptyList()))
-            else sourceDao.observeForProfile(pid).map { srcs -> Ctx(pid, srcs.map { it.id }) }
+            else sourceDao.observeForProfile(pid).map { srcs ->
+                sourceUaMap = srcs.associate { it.id to it.userAgent }
+                Ctx(pid, srcs.map { it.id })
+            }
         }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
+
+    private val folderContextKeys: StateFlow<Map<Long, String>> = ctx
+        .flatMapLatest { c ->
+            if (c.profileId < 0) flowOf(emptyMap())
+            else categoryDao.observe(c.sourceIds, MediaType.LIVE).map { cats ->
+                cats.associateBy({ it.id }, { CustomizeKeys.category(it) })
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     private val _selected = MutableStateFlow<LiveKey>(LiveKey.All)
     val selectedKey: StateFlow<LiveKey> = _selected.asStateFlow()
@@ -360,6 +382,7 @@ class LiveViewModel(
         previewEngine.play(
             channel.streamUrl, muted = !livePreviewAudio.value,
             meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
+            userAgent = sourceUaMap[channel.sourceId],
         )
     }
 
@@ -446,6 +469,7 @@ class LiveViewModel(
             previewEngine.play(
                 channel.streamUrl, muted = false,
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
+                userAgent = sourceUaMap[channel.sourceId],
             )
         }
         watchExoOutcome(channel)
@@ -494,6 +518,14 @@ class LiveViewModel(
     private fun watchExoOutcome(channel: ChannelEntity) {
         exoOutcomeJob?.cancel()
         exoOutcomeJob = viewModelScope.launch {
+            // Runs alongside the terminal-state wait below: audio/position can be progressing fine (so
+            // ExoPlayer never reaches ERROR) while a video track never renders a single frame — the "audio
+            // plays, no picture" case. One-shot per tune; mpv's own outcome (success or its own error state)
+            // takes it from there, same as the ERROR branch below.
+            launch {
+                previewEngine.noVideoDetected.first { it }
+                if (isStill(channel)) fallbackToMpv(channel)
+            }
             val terminal = previewEngine.state.first {
                 it == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
                     it == tv.own.owntv.player.LivePreviewEngine.State.ERROR
@@ -515,7 +547,8 @@ class LiveViewModel(
         previewEngine.stop()
         delay(500)                          // let ExoPlayer's decoder release before mpv inits
         if (_previewChannel.value?.streamUrl == channel.streamUrl) {
-            player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, muted = false)
+            val sourceUa = sourceDao.getById(channel.sourceId)?.userAgent
+            player.play(channel.streamUrl, title = channel.name, logoUrl = channel.logoUrl, isLive = true, muted = false, userAgent = sourceUa)
         }
     }
 
@@ -560,11 +593,12 @@ class LiveViewModel(
                 val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
                 CatchupUrl.forSource(ch, programme, source, settings.resolveCatchupTimeZone(), xtreamClient)
             } ?: return@launch
+            val sourceUa = withContext(Dispatchers.IO) { sourceDao.getById(ch.sourceId)?.userAgent }
             _previewChannel.value = ch
             _timeshiftOffsetSec.value = null // guide archive isn't the live-rewind timeshift
             clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
             // isLive=false → seekable archive; preferSoftware → tolerate mid-GOP archive segments.
-            player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.logoUrl, isLive = false, preferSoftware = true)
+            player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.logoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
         }
     }
 
@@ -616,9 +650,9 @@ class LiveViewModel(
             val nowMs = System.currentTimeMillis()
             val startMs = nowMs - offsetSec * 1000L
             val tz = withContext(Dispatchers.IO) { settings.resolveCatchupTimeZone() }
-            val url = withContext(Dispatchers.IO) {
+            val (url, sourceUa) = withContext(Dispatchers.IO) {
                 val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
-                buildLiveTimeshiftUrl(ch, source, startMs, offsetSec, tz)
+                buildLiveTimeshiftUrl(ch, source, startMs, offsetSec, tz)?.let { it to source.userAgent }
             } ?: return@launch
             if (_timeshiftOffsetSec.value == null) return@launch // user jumped back to live meanwhile
             // Show the clock time being watched (handy for the user; no credentials in logs).
@@ -626,7 +660,7 @@ class LiveViewModel(
                 .apply { timeZone = java.util.TimeZone.getDefault() }.format(java.util.Date(startMs))
             _previewChannel.value = ch
             clearLiveOnExo() // archive plays as a VOD-style mpv stream, not the live ExoPlayer channel
-            player.play(url, title = ch.name, subtitle = "Rewind · $localLabel", logoUrl = ch.logoUrl, isLive = false, preferSoftware = true)
+            player.play(url, title = ch.name, subtitle = "Rewind · $localLabel", logoUrl = ch.logoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
             timeshiftStartWall = startMs
             startOffsetTick()
         }
@@ -719,9 +753,9 @@ class LiveViewModel(
         return if (query.isBlank()) {
             when (key) {
                 LiveKey.All -> if (playlist) channelDao.pagingAllOriginal(ids) else channelDao.pagingAll(ids)
-                LiveKey.Favorites -> channelDao.pagingFavorites(c.profileId)
+                LiveKey.Favorites -> channelDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT)
                 LiveKey.History -> channelDao.pagingHistory(c.profileId)
-                is LiveKey.Folder -> if (playlist) channelDao.pagingByCategory(key.id) else channelDao.pagingByCategoryAlpha(key.id)
+                is LiveKey.Folder -> channelDao.pagingByCategoryManual(key.id, c.profileId, folderContextKeys.value[key.id] ?: "")
             }
         } else {
             when (key) {
@@ -730,6 +764,69 @@ class LiveViewModel(
                 LiveKey.History -> channelDao.searchHistory(query, c.profileId)
                 is LiveKey.Folder -> channelDao.searchInCategory(query, key.id)
             }
+        }
+    }
+
+    fun enterMoveMode(channel: ChannelEntity, key: LiveKey) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            val contextKey = when (key) {
+                is LiveKey.Folder -> folderContextKeys.value[key.id] ?: return@launch
+                LiveKey.Favorites -> ContentOrderEntity.FAV_CONTEXT
+                else -> return@launch
+            }
+            val items = when (key) {
+                is LiveKey.Folder -> channelDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
+                LiveKey.Favorites -> channelDao.snapshotFavoritesManual(pid, contextKey, 5000)
+                else -> return@launch
+            }
+            val idx = items.indexOfFirst { it.id == channel.id }
+            if (idx < 0) return@launch
+            _moveState.value = ChannelMoveState(items, idx, contextKey)
+            settings.setSortLive(SettingsRepository.SortMode.PLAYLIST)
+        }
+    }
+
+    fun moveUp() {
+        val s = _moveState.value ?: return
+        if (s.activeIndex == 0) return
+        val list = s.items.toMutableList()
+        val i = s.activeIndex
+        list[i - 1] = s.items[i]; list[i] = s.items[i - 1]
+        _moveState.value = s.copy(items = list, activeIndex = i - 1)
+    }
+
+    fun moveDown() {
+        val s = _moveState.value ?: return
+        if (s.activeIndex == s.items.size - 1) return
+        val list = s.items.toMutableList()
+        val i = s.activeIndex
+        list[i + 1] = s.items[i]; list[i] = s.items[i + 1]
+        _moveState.value = s.copy(items = list, activeIndex = i + 1)
+    }
+
+    fun commitMove() {
+        val s = _moveState.value ?: return
+        _moveState.value = null
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            contentOrderDao.replaceContext(
+                profileId = pid,
+                type = MediaType.LIVE,
+                contextKey = s.contextKey,
+                rows = s.items.mapIndexed { i, ch ->
+                    ContentOrderEntity(profileId = pid, mediaType = MediaType.LIVE, contextKey = s.contextKey, itemId = ch.id, position = i)
+                },
+            )
+        }
+    }
+
+    fun cancelMove() { _moveState.value = null }
+
+    fun removeFromHistory(channelId: Long) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            historyDao.remove(pid, MediaType.LIVE, channelId)
         }
     }
 
