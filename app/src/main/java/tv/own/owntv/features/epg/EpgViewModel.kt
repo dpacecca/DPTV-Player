@@ -128,7 +128,7 @@ class EpgViewModel(
         val key = channel.epgChannelId?.trim()?.lowercase() ?: return emptyList()
         rowCache[key]?.let { return it }
         val s = _state.value
-        val list = epgDao.programmesForChannel(loadedSourceIds, key, s.windowStart, s.windowEnd)
+        val list = epgDao.programmeSummariesForChannel(loadedSourceIds, key, s.windowStart, s.windowEnd)
         rowCache[key] = list
         return list
     }

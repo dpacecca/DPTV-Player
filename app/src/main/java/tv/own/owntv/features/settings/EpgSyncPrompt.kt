@@ -40,6 +40,7 @@ sealed interface EpgSyncUi {
     data class Ask(val sourceName: String) : EpgSyncUi
     data class Syncing(val count: Int) : EpgSyncUi
     data object Done : EpgSyncUi
+    data class Failed(val message: String) : EpgSyncUi
 }
 
 /**
@@ -52,7 +53,12 @@ fun EpgSyncDialog(state: EpgSyncUi, onSync: () -> Unit, onDismiss: () -> Unit) {
     if (state is EpgSyncUi.Hidden) return
     val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
-    LaunchedEffect(state::class) { runCatching { focus.requestFocus() } }
+    LaunchedEffect(state::class) {
+        if (state !is EpgSyncUi.Syncing) {
+            delay(50)
+            runCatching { focus.requestFocus() }
+        }
+    }
     BackHandler(enabled = state !is EpgSyncUi.Syncing) { onDismiss() }
     if (state is EpgSyncUi.Done) LaunchedEffect(Unit) { delay(1_800); onDismiss() } // auto-close
 
@@ -94,6 +100,13 @@ fun EpgSyncDialog(state: EpgSyncUi, onSync: () -> Unit, onDismiss: () -> Unit) {
                     Text("TV guide synced", style = MaterialTheme.typography.titleLarge, color = colors.onSurface, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(20.dp))
                     OwnTVButton("Done", onClick = onDismiss, modifier = Modifier.focusRequester(focus))
+                }
+                is EpgSyncUi.Failed -> {
+                    Text("TV guide sync failed", style = MaterialTheme.typography.titleLarge, color = colors.onSurface, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(10.dp))
+                    Text(state.message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(20.dp))
+                    OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.focusRequester(focus))
                 }
                 EpgSyncUi.Hidden -> Unit
             }

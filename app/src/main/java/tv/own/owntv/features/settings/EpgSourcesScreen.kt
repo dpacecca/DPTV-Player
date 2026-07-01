@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +31,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
@@ -47,6 +45,7 @@ import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.core.sync.work.EpgSyncState
 
 /**
  * Settings → EPG Sources: standalone XMLTV feeds that fill the guide, independent of playlists.
@@ -57,7 +56,6 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnAdd: Boolean = false) {
     val vm: EpgSourcesViewModel = koinViewModel()
     val sources by vm.sources.collectAsStateWithLifecycle()
-    val sync by vm.sync.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
 
     var editing by remember { mutableStateOf<EpgSource?>(null) }
@@ -67,12 +65,12 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
 
     BackHandler { onBack() }
 
-    // Grab focus when the list view is showing (entry, and after returning from the form / a dialog /
-    // a sync). The Column's onEnter only fires on directional entry, not on this internal tab-swap.
-    LaunchedEffect(adding, editing, confirmDelete, sync) {
-        val listView = !adding && editing == null && confirmDelete == null &&
-            sync !is EpgSourcesViewModel.SyncState.Working && sync !is EpgSourcesViewModel.SyncState.Failed
-        if (listView) { kotlinx.coroutines.delay(80); runCatching { addFocus.requestFocus() } }
+    // Grab focus when the list view is showing (entry, and after returning from the form or a dialog).
+    // The Column's onEnter only fires on directional entry, not on this internal tab-swap.
+    LaunchedEffect(adding, editing, confirmDelete) {
+        if (!adding && editing == null && confirmDelete == null) {
+            kotlinx.coroutines.delay(80); runCatching { addFocus.requestFocus() }
+        }
     }
 
     // Add / edit form.
@@ -90,30 +88,6 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
         )
         return
     }
-
-    // Sync progress overlay (add / re-sync).
-    (sync as? EpgSourcesViewModel.SyncState.Working)?.let {
-        CenterStatus(modifier) {
-            OwnTVSpinner(sizeDp = 40); Spacer(Modifier.height(16.dp))
-            Text("Downloading ${it.name}…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-            if (it.count > 0) {
-                Spacer(Modifier.height(8.dp))
-                Text(tv.own.owntv.ui.components.formatCount(it.count) + " programmes", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
-            }
-        }
-        return
-    }
-    (sync as? EpgSourcesViewModel.SyncState.Failed)?.let {
-        CenterStatus(modifier) {
-            Text("EPG sync failed", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(8.dp))
-            Text(it.message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(20.dp))
-            OwnTVButton("Back", onClick = { vm.resetSync() })
-        }
-        return
-    }
-    LaunchedEffect(sync) { if (sync is EpgSourcesViewModel.SyncState.Done) { kotlinx.coroutines.delay(900); vm.resetSync() } }
 
     Column(
         modifier = modifier
@@ -143,10 +117,14 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(sources, key = { it.id }) { source ->
+                    val syncState by remember(source.id) { vm.observeSync(source.id) }
+                        .collectAsStateWithLifecycle(EpgSyncState.Idle)
                     EpgRow(
                         source = source,
                         counts = { vm.counts(source.id) },
+                        syncState = syncState,
                         onResync = { vm.resync(source) },
+                        onCancelSync = { vm.cancelSync(source) },
                         onEdit = { editing = source },
                         onDelete = { confirmDelete = source },
                     )
@@ -169,32 +147,65 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
 private fun EpgRow(
     source: EpgSource,
     counts: suspend () -> Triple<Int, Int, Int>,
+    syncState: EpgSyncState,
     onResync: () -> Unit,
+    onCancelSync: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
-    val count by produceState<Triple<Int, Int, Int>?>(initialValue = null, source.id, source.lastSyncAt) { value = runCatching { counts() }.getOrNull() }
+    val count by produceState<Triple<Int, Int, Int>?>(initialValue = null, source.id, source.lastSyncAt, source.lastError) {
+        value = runCatching { counts() }.getOrNull()
+    }
+    val activeSync = syncState as? EpgSyncState.Syncing
+    val syncPercent = activeSync?.let {
+        if (it.baseProgrammes > 0 && it.programmes > 0) {
+            ((it.programmes.toLong() * 100) / it.baseProgrammes).toInt().coerceAtMost(99)
+        } else {
+            null
+        }
+    }
     Row(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(source.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(source.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                if (activeSync != null) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        syncPercent?.let { "Syncing $it%" } ?: "Syncing",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.onPrimaryContainer,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
+                        maxLines = 1,
+                    )
+                }
+            }
             Text(source.url, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
             Spacer(Modifier.height(4.dp))
             val catchupNote = count?.third?.takeIf { it > 0 }?.let { " · $it with catch-up" } ?: ""
             val status = when {
+                activeSync != null -> when {
+                    activeSync.programmes > 0 -> "${activeSync.channels} channels · ${activeSync.programmes} programmes"
+                    activeSync.channels > 0 -> "${activeSync.channels} channels"
+                    else -> "Connecting…"
+                }
                 source.lastError != null -> "⚠ ${source.lastError}"
                 count != null && count!!.second > 0 -> "✓ ${count!!.first} channels · ${count!!.second} programmes$catchupNote"
                 source.lastSyncAt != null -> "Synced, no programmes in window$catchupNote"
                 else -> "Not synced yet"
             }
-            Text(status, style = MaterialTheme.typography.labelMedium, color = if (source.lastError != null) Color(0xFFEF4444) else colors.primary)
+            Text(status, style = MaterialTheme.typography.labelMedium, color = if (source.lastError != null && activeSync == null) Color(0xFFEF4444) else colors.primary)
         }
         Spacer(Modifier.width(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OwnTVButton("Re-sync", onClick = onResync, style = OwnTVButtonStyle.SECONDARY)
+            if (syncState.isActive) {
+                OwnTVButton("Cancel", onClick = onCancelSync, style = OwnTVButtonStyle.SECONDARY)
+            } else {
+                OwnTVButton("Re-sync", onClick = onResync, style = OwnTVButtonStyle.SECONDARY)
+            }
             OwnTVButton("Edit", onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
             OwnTVButton("Delete", onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
         }
@@ -289,12 +300,5 @@ private fun PlaylistEpgPicker(
                 OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
             }
         }
-    }
-}
-
-@Composable
-private fun CenterStatus(modifier: Modifier, content: @Composable () -> Unit) {
-    Box(modifier.fillMaxSize().roundedPanel(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) { content() }
     }
 }

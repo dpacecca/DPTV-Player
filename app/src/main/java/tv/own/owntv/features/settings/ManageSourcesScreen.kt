@@ -21,10 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.focus.onFocusChanged
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +36,12 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.SourceType
+import tv.own.owntv.core.sync.SyncCounts
+import tv.own.owntv.core.sync.SyncProgressCounts
+import tv.own.owntv.core.sync.importProgressDisplay
+import tv.own.owntv.core.sync.resyncBadgeText
+import tv.own.owntv.core.sync.syncProgressCountsLabel
+import tv.own.owntv.core.sync.work.CatalogSyncState
 import tv.own.owntv.features.setup.AddSourceScreen
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -59,14 +62,13 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val colors = OwnTVTheme.colors
 
     var showAdd by remember { mutableStateOf(false) }
-    var resyncing by remember { mutableStateOf(false) }
     var editingSource by remember { mutableStateOf<SourceEntity?>(null) }
     var confirmDelete by remember { mutableStateOf<SourceEntity?>(null) }
     val addFocus = remember { FocusRequester() }
     val errorFocus = remember { FocusRequester() }
     // Whenever we land back on the source list (add/edit/re-sync/delete closed), refocus "Add Source".
-    LaunchedEffect(showAdd, editingSource, confirmDelete, resyncing) {
-        if (!showAdd && editingSource == null && confirmDelete == null && !resyncing) {
+    LaunchedEffect(showAdd, editingSource, confirmDelete) {
+        if (!showAdd && editingSource == null && confirmDelete == null) {
             kotlinx.coroutines.delay(120); runCatching { addFocus.requestFocus() }
         }
     }
@@ -79,47 +81,20 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     BackHandler {
         when {
-            showAdd -> { showAdd = false; vm.resetImport() }
-            resyncing -> { resyncing = false; vm.resetImport() }
+            showAdd -> { showAdd = false; vm.cancelImport() }
             editingSource != null -> editingSource = null
             else -> onBack()
         }
-    }
-
-    // Re-sync overlay — shows the same import progress as adding a source, then auto-closes ~1s after
-    // it reports the total.
-    if (resyncing) {
-        when (val s = importState) {
-            SettingsViewModel.ImportState.Idle, SettingsViewModel.ImportState.Running -> CenterStatus {
-                OwnTVSpinner(sizeDp = 56)
-                Spacer(Modifier.height(16.dp))
-                Text("Re-syncing…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                progress?.let { Text("${it.processed} items", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant) }
-            }
-            is SettingsViewModel.ImportState.Success -> {
-                CenterStatus {
-                    Text("Re-sync complete", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                    Spacer(Modifier.height(8.dp))
-                    Text(s.summary, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                }
-                LaunchedEffect(Unit) { kotlinx.coroutines.delay(1600); resyncing = false; vm.resetImport() }
-            }
-            is SettingsViewModel.ImportState.Failed -> CenterStatus {
-                Text("Re-sync failed", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                Spacer(Modifier.height(8.dp))
-                Text(s.message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                Spacer(Modifier.height(20.dp))
-                OwnTVButton("Close", onClick = { resyncing = false; vm.resetImport() }, modifier = Modifier.focusRequester(errorFocus))
-            }
-        }
-        return
     }
 
     editingSource?.let { src ->
         AddSourceScreen(
             initial = src,
             initialRefresh = src.id in refreshIds,
-            onStartXtream = { n, server, u, p, ua, epg, refresh -> vm.updateSource(src.id, n, server, u, p, ua, epg, refresh); editingSource = null },
+            onStartXtream = { n, server, u, p, ua, epg, refresh, _, _, _ ->
+                vm.updateSource(src.id, n, server, u, p, ua, epg, refresh)
+                editingSource = null
+            },
             onStartM3u = { n, url, ua, epg, refresh -> vm.updateSource(src.id, n, url, "", "", ua, epg, refresh); editingSource = null },
             onBack = { editingSource = null },
             modifier = modifier,
@@ -130,22 +105,42 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     if (showAdd) {
         when (val s = importState) {
             SettingsViewModel.ImportState.Idle -> AddSourceScreen(
-                onStartXtream = { n, server, u, p, ua, epg, refresh -> vm.addXtream(n, server, u, p, ua, epg, refresh) },
+                onStartXtream = { n, server, u, p, ua, epg, refresh, live, movies, series ->
+                    vm.addXtream(n, server, u, p, ua, epg, refresh, live, movies, series)
+                },
                 onStartM3u = { n, url, ua, epg, refresh -> vm.addM3u(n, url, ua, epg, refresh) },
                 onBack = { showAdd = false },
                 modifier = modifier,
                 initial = vm.lastFailedSource, // pre-fill on retry — no re-typing after a typo
             )
             SettingsViewModel.ImportState.Running -> CenterStatus {
+                val display = progress?.importProgressDisplay()
                 OwnTVSpinner(sizeDp = 56)
                 Spacer(Modifier.height(16.dp))
-                Text("Importing…", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                progress?.let { Text("${it.processed} items", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant) }
+                Text(
+                    display?.title ?: "Importing catalog…",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.onSurface,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(display?.primaryText ?: "Preparing catalog", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
+                Spacer(Modifier.height(4.dp))
+                Text(display?.detail ?: "Preparing catalog", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Spacer(Modifier.height(20.dp))
+                OwnTVButton("Cancel", onClick = { showAdd = false; vm.cancelImport() }, style = OwnTVButtonStyle.SECONDARY)
             }
             is SettingsViewModel.ImportState.Success -> {
                 // Semi-auto EPG: ask → sync (with a live count, like the import) → done, before returning.
                 if (epgSync !is EpgSyncUi.Hidden) {
                     EpgSyncDialog(state = epgSync, onSync = vm::syncPendingEpg, onDismiss = vm::dismissPendingEpg)
+                } else if (s.summary.contains("Imported with warnings:")) {
+                    CenterStatus {
+                        Text("Import complete", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                        Spacer(Modifier.height(8.dp))
+                        Text(s.summary, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        Spacer(Modifier.height(20.dp))
+                        OwnTVButton("Done", onClick = { showAdd = false; vm.resetImport() })
+                    }
                 } else {
                     LaunchedEffect(Unit) { showAdd = false; vm.resetImport() }
                 }
@@ -194,15 +189,18 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     // The default is the explicitly-chosen source, or the first one when none is set.
                     val isDefault = source.id == defaultId || (defaultId < 0 && source.id == sources.first().id)
                     val counts by remember(source.id) { vm.contentCounts(source.id) }.collectAsStateWithLifecycle(null)
+                    val syncState by remember(source.id) { vm.syncState(source.id) }.collectAsStateWithLifecycle(CatalogSyncState.Idle)
                     SourceRow(
                         source = source,
                         refreshOnStart = source.id in refreshIds,
                         isDefault = isDefault,
-                        countsLabel = counts?.breakdown,
+                        counts = counts,
+                        syncState = syncState,
                         showMakeDefault = sources.size > 1,
                         onMakeDefault = { vm.setDefaultSource(source.id) },
                         onEdit = { editingSource = source },
-                        onResync = { resyncing = true; vm.resync(source) },
+                        onResync = { vm.resync(source) },
+                        onCancelSync = { vm.cancelResync(source) },
                         onDelete = { confirmDelete = source },
                     )
                 }
@@ -225,14 +223,18 @@ private fun SourceRow(
     source: SourceEntity,
     refreshOnStart: Boolean,
     isDefault: Boolean,
-    countsLabel: String?,
+    counts: SyncCounts?,
+    syncState: CatalogSyncState,
     showMakeDefault: Boolean,
     onMakeDefault: () -> Unit,
     onEdit: () -> Unit,
     onResync: () -> Unit,
+    onCancelSync: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
+    val activeSync = syncState as? CatalogSyncState.Syncing
+    val activeCountsLabel = activeSync?.countsLabel(source.type, counts)
     Row(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -249,12 +251,26 @@ private fun SourceRow(
                         modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
                     )
                 }
+                activeSync?.let {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        resyncBadgeText(it.baseItemCount, it.totalProcessed),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.onPrimaryContainer,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
             }
             Text(
                 buildString {
                     append(when (source.type) { SourceType.XTREAM -> "Xtream • ${source.url}"; SourceType.M3U -> "M3U • ${source.url}"; SourceType.LOCAL_BACKUP -> "Backup" })
                     if (refreshOnStart) append("  •  ⟳ on startup")
-                    if (!countsLabel.isNullOrBlank()) append("  •  $countsLabel")
+                    val visibleCounts = if (activeSync == null) counts?.breakdown else activeCountsLabel
+                    if (!visibleCounts.isNullOrBlank()) {
+                        append("  •  $visibleCounts")
+                    } else if (activeSync != null) {
+                        append("  •  Preparing catalog")
+                    }
                 },
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1,
             )
@@ -266,10 +282,50 @@ private fun SourceRow(
         }
         OwnTVButton("Edit", onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
         Spacer(Modifier.width(10.dp))
-        OwnTVButton("Re-sync", onClick = onResync, style = OwnTVButtonStyle.SECONDARY)
+        if (syncState.isActive) {
+            OwnTVButton("Cancel", onClick = onCancelSync, style = OwnTVButtonStyle.SECONDARY)
+        } else {
+            OwnTVButton("Re-sync", onClick = onResync, style = OwnTVButtonStyle.SECONDARY)
+        }
         Spacer(Modifier.width(10.dp))
         OwnTVButton("Delete", onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
     }
+}
+
+private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType, stored: SyncCounts?): String? {
+    fun visibleCount(active: Boolean, processed: Int, storedCount: Int): Int =
+        if (active) processed else storedCount
+
+    val live = visibleCount(liveActive, liveProcessed, stored?.channels ?: 0)
+    val movies = visibleCount(moviesActive, moviesProcessed, stored?.movies ?: 0)
+    val series = visibleCount(seriesActive, seriesProcessed, stored?.series ?: 0)
+    val counts = when (sourceType) {
+        SourceType.M3U -> SyncProgressCounts(
+            live = live,
+            movies = 0,
+            series = 0,
+            liveActive = true,
+            moviesActive = false,
+            seriesActive = false,
+        )
+        SourceType.XTREAM -> SyncProgressCounts(
+            live = live,
+            movies = movies,
+            series = series,
+            liveActive = liveActive || live > 0,
+            moviesActive = moviesActive || movies > 0,
+            seriesActive = seriesActive || series > 0,
+        )
+        SourceType.LOCAL_BACKUP -> SyncProgressCounts(
+            live = 0,
+            movies = 0,
+            series = 0,
+            liveActive = false,
+            moviesActive = false,
+            seriesActive = false,
+        )
+    }
+    return syncProgressCountsLabel(counts)
 }
 
 @Composable

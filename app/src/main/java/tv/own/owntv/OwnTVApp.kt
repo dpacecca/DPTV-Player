@@ -18,7 +18,13 @@ import tv.own.owntv.di.databaseModule
 import tv.own.owntv.di.dataModule
 import tv.own.owntv.di.playerModule
 
-class OwnTVApp : Application(), SingletonImageLoader.Factory {
+class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Configuration.Provider {
+
+    override val workManagerConfiguration: androidx.work.Configuration
+        get() = androidx.work.Configuration.Builder()
+            .setWorkerFactory(tv.own.owntv.core.sync.work.KoinWorkerFactory())
+            .build()
+
     override fun onCreate() {
         Perf.begin() // zero-point for the OwnTVPerf startup timeline (adb logcat -s OwnTVPerf)
         super.onCreate()
@@ -29,8 +35,9 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory {
         }
         Perf.stamp("koin-started")
         // NOTE: cold start does ZERO heavy DB work. Index + ANALYZE maintenance is piggy-backed onto the
-        // operation that actually changes the data — ImportFinalizer.finalize() after every content sync, the
-        // EpgRepository refresh after every EPG sync, and the v5 migration on upgrade — never onto app launch.
+        // operation that actually changes the data — ImportFinalizer.finalize() for normal re-syncs, the
+        // deferred content-index worker after a fresh import, the EpgRepository refresh after every EPG
+        // sync, and the v5 migration on upgrade — never onto app launch.
         // A previous build ran `ANALYZE movies`/`ANALYZE series` (a full scan of 170k+50k rows) here at EVERY
         // cold start. On a low-end TV box's eMMC + CPU that saturated storage and the single DB connection at
         // the precise moment the Movies/Series grids need their first read — which is exactly why the grids
