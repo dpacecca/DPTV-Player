@@ -13,6 +13,25 @@
 Big release — the community‑feedback **UI upgrade** (3 phases; Phase 1's quick wins are the first two
 entries below) folded together with a large batch of new features, performance work and fixes.
 
+### ⚡ Much faster syncing & background updates (community PR #40, integrated & hardened)
+
+- **Priority sync during setup** — when adding an Xtream playlist you can choose what to import first
+  (e.g. Live TV only). You land in the app as soon as the priority content is ready, and the rest
+  (movies/series) finishes automatically in the background — even if you leave the screen or the
+  device sleeps (WorkManager-backed, survives sleep/reboot).
+- **Incremental re-syncs** — re-syncing a source now compares content hashes and only writes what
+  actually changed, instead of re-importing everything. Re-syncs of large playlists are dramatically
+  faster and no longer churn the database.
+- **Incremental EPG sync** — guide refreshes also skip unchanged programmes and prune removed ones.
+  Memory use is strictly bounded, so even multi-million-programme guides stay safe on low-RAM boxes.
+- **More resilient downloads** — playlist/EPG downloads retry automatically on transient network
+  errors, and sync progress reporting is smoother and more accurate.
+- Integration hardening on top of the PR: database migrations were renumbered so both v3.2.0 users
+  and dev builds upgrade cleanly (final schema v9); staged priority syncs now correctly mark the
+  source as synced once the background remainder finishes; favorites/history/resume are re-attached
+  after *every* sync attempt (permanent cleanup only after a fully successful full sync); and EPG
+  hash tracking loads per-channel with a hard memory cap.
+
 > ⚠️ **Upgrade note for EPG users:** v4.0.0 redesigned EPG loading. If the Guide shows blank on first open 
 > or after re-entry, **delete your EPG sources and re-add them** (Settings → EPG → Edit → delete, then add 
 > again) and resync. Old cached EPG data is incompatible with the new loader — a fresh import fixes it. 

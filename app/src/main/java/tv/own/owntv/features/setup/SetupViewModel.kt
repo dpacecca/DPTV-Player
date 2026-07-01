@@ -205,7 +205,9 @@ class SetupViewModel(
     private fun enqueueRemainderSync(source: SourceEntity, priority: SyncContentTypes) {
         val remainder = SyncContentTypes().remainderAfter(priority)
         if (remainder.hasAny) {
-            catalogSyncScheduler.enqueueSync(source.id, reason = "add_remainder", contentTypes = remainder)
+            // The priority pass + this remainder cover all content types, so a successful remainder
+            // run must mark the source synced (SyncManager only does that for single full syncs).
+            catalogSyncScheduler.enqueueSync(source.id, reason = "add_remainder", contentTypes = remainder, completesInitialSync = true)
         }
     }
 

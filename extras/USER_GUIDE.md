@@ -13,6 +13,16 @@ obvious at first glance — once you know them, the app is a lot faster to live 
 
 ---
 
+## ⚡ Adding a playlist — priority sync
+
+- When adding an **Xtream** playlist you can pick what imports **first** (e.g. **Live TV only**).
+  You get into the app as soon as that part is ready — **movies and series keep importing in the
+  background**, even if you leave the screen or the device goes to sleep.
+- **Re-syncs are incremental**: refreshing a playlist only writes what actually changed on the
+  provider, so re-syncing big playlists is much faster.
+
+---
+
 ## 🏠 Home — Continue Watching
 
 - The **Home** tab opens to a row of what you were watching — partly‑watched **movies, episodes and recent
