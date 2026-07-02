@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.0.0 — unreleased
+## v4.0.0 — 2026-07-02
 
 ### 📄 License
 
@@ -13,7 +13,7 @@
 Big release — the community‑feedback **UI upgrade** (3 phases; Phase 1's quick wins are the first two
 entries below) folded together with a large batch of new features, performance work and fixes.
 
-### ⚡ Much faster syncing & background updates (community PR #40, integrated & hardened)
+### ⚡ Much faster syncing & background updates (community PR #40 by [@codeVerine](https://github.com/codeVerine) — Sagar Mukundan UV, integrated & hardened)
 
 - **Priority sync during setup** — when adding an Xtream playlist you can choose what to import first
   (e.g. Live TV only). You land in the app as soon as the priority content is ready, and the rest
@@ -31,6 +31,29 @@ entries below) folded together with a large batch of new features, performance w
   source as synced once the background remainder finishes; favorites/history/resume are re-attached
   after *every* sync attempt (permanent cleanup only after a fully successful full sync); and EPG
   hash tracking loads per-channel with a hard memory cap.
+- Post-integration fixes from on-device testing:
+  - **Favorites/history could vanish when several playlists refreshed at once** — cleanup of stale
+    user data is now strictly scoped to the playlist that actually synced (an empty sync snapshot
+    never triggers a global cleanup anymore), and parallel startup refreshes can no longer purge
+    against each other's in-flight state.
+  - **M3U playlists: movies tagged as VOD landed in Live TV again** — the sync rewrite had dropped
+    the VOD detection; entries tagged `type="vod"` / `type="movie"` / `tvg-type="movie"` go back to
+    the Movies grid with their own categories.
+  - **NEW: M3U series playlists import as real series** — entries tagged `type="series"` /
+    `tvg-type="series"` (per-episode lines like *"Stranger Things S01E05"*, also `1x05` style) are
+    now grouped into shows with seasons and episodes under the **Series** tab, instead of piling up
+    as live channels or loose movies. Entries without an episode pattern become a show with
+    sequentially numbered episodes.
+  - **TV Guide header showed a date up to a week in the past** — with catch-up channels the header
+    displayed the archive's start date. It now shows today when the Guide opens, and follows the day
+    you're browsing when you scroll back into the archive.
+  - **Subtitle/audio selection could open with nothing focusable on HDR/HDR10/DTS content** — the
+    player's pickers (subtitles, audio, speed, zoom, volume) were overlays competing with the HUD
+    for D-pad focus, and heavy streams could win that race and lock the picker out. They are now
+    real dialog windows that own the remote's focus outright — on both engines, live and VOD — so
+    selection always works.
+  - **Episode list had no panel background** — opening a series showed its episodes on a bare
+    background; the list now sits in the same rounded content panel as every other screen.
 
 > ⚠️ **Upgrade note for EPG users:** v4.0.0 redesigned EPG loading. If the Guide shows blank on first open 
 > or after re-entry, **delete your EPG sources and re-add them** (Settings → EPG → Edit → delete, then add 

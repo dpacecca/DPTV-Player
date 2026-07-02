@@ -127,7 +127,10 @@ fun PlayerHud(
     LaunchedEffect(controlsVisible, wakeTick, forceShow) {
         if (controlsVisible && !forceShow) { delay(4500); controlsVisible = false }
     }
-    LaunchedEffect(controlsVisible, error) {
+    LaunchedEffect(controlsVisible, error, dialog) {
+        // Never steal focus while a dialog is open (its rows own it); when the dialog closes this
+        // re-runs and hands focus back to the HUD.
+        if (dialog != HudDialog.NONE) return@LaunchedEffect
         if (controlsVisible) {
             if (error != null) runCatching { retryFocus.requestFocus() } else runCatching { playFocus.requestFocus() }
         } else runCatching { catchFocus.requestFocus() }
@@ -227,15 +230,27 @@ fun PlayerHud(
     }
 
     when (dialog) {
-        HudDialog.AUDIO -> TrackDialog(
-            "Audio Track", player.audioTracks(),
-            onSelect = { player.selectAudio(it.mpvId); dialog = HudDialog.NONE }, onOff = null,
-            onDismiss = { dialog = HudDialog.NONE },
-            // A/V-sync nudge only for VOD (mpv) — live A/V is the provider's; ExoPlayer has no audio-delay.
-            audioDelayMs = if (!isLive) audioDelayMs else null,
-            onAdjustAudioDelay = if (!isLive) ({ d -> player.adjustAudioDelay(d) }) else null,
-        )
-        HudDialog.SUBS -> TrackDialog("Subtitles", player.textTracks(), onSelect = { player.selectSubtitle(it.mpvId); dialog = HudDialog.NONE }, onOff = { player.disableSubtitles(); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
+        // Track lists are SNAPSHOT once when the dialog opens (re-polled only while still empty —
+        // heavy HDR/DTS streams report their tracks late). Reading player.xxxTracks() directly in
+        // composition handed the dialog a fresh list on every HUD recomposition, endlessly rebuilding
+        // the rows and losing/yanking D-pad focus.
+        HudDialog.AUDIO -> {
+            var audioTracks by remember { mutableStateOf(player.audioTracks()) }
+            LaunchedEffect(Unit) { while (audioTracks.isEmpty()) { delay(300); audioTracks = player.audioTracks() } }
+            TrackDialog(
+                "Audio Track", audioTracks,
+                onSelect = { player.selectAudio(it.mpvId); dialog = HudDialog.NONE }, onOff = null,
+                onDismiss = { dialog = HudDialog.NONE },
+                // A/V-sync nudge only for VOD (mpv) — live A/V is the provider's; ExoPlayer has no audio-delay.
+                audioDelayMs = if (!isLive) audioDelayMs else null,
+                onAdjustAudioDelay = if (!isLive) ({ d -> player.adjustAudioDelay(d) }) else null,
+            )
+        }
+        HudDialog.SUBS -> {
+            var subTracks by remember { mutableStateOf(player.textTracks()) }
+            LaunchedEffect(Unit) { while (subTracks.isEmpty()) { delay(300); subTracks = player.textTracks() } }
+            TrackDialog("Subtitles", subTracks, onSelect = { player.selectSubtitle(it.mpvId); dialog = HudDialog.NONE }, onOff = { player.disableSubtitles(); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
+        }
         HudDialog.SPEED -> SpeedDialog(current = speed, onSelect = { player.setSpeed(it); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
         HudDialog.ZOOM -> ZoomDialog(current = zoomMode, onSelect = { player.setZoomMode(it); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
         HudDialog.VOLUME -> VolumeDialog(player, onDismiss = { dialog = HudDialog.NONE })
@@ -582,6 +597,11 @@ private fun TrackDialog(
     // that row, so requestFocus would throw "not initialized" and focus would fall back to the first item.
     val selectedIndex = tracks.indexOfFirst { it.selected }
     val focusOff = onOff != null && selectedIndex < 0
+    // Safety net: the per-row one-shot requestFocus below can fire while the dialog window is still
+    // mid-transition (seen on HDR/HDR10/DTS streams, whose surface re-layout delays window focus) or
+    // before the engine has reported the tracks at all — leaving the dialog with NO focused row and
+    // the D-pad locked out. Retry over a few frames, and re-run whenever the track list (re)arrives.
+    LaunchedEffect(tracks.size, focusOff) { requestFocusRetrying(focus) }
     DialogScaffold(title = title, onDismiss = onDismiss) {
         if (tracks.isEmpty() && onOff == null) {
             item { Text("No tracks available.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
@@ -628,6 +648,18 @@ private fun TrackDialog(
     }
 }
 
+/**
+ * Requests [focus] with retries: dialog-window content composes a frame or two after the calling
+ * effect starts, so a one-shot requestFocus can fire before the target row exists and silently fail.
+ */
+private suspend fun requestFocusRetrying(focus: FocusRequester) {
+    repeat(10) {
+        androidx.compose.runtime.withFrameNanos {}
+        if (runCatching { focus.requestFocus() }.isSuccess) return
+        delay(50)
+    }
+}
+
 private fun formatDelay(ms: Int): String = when {
     ms == 0 -> "0 ms"
     ms > 0 -> "+$ms ms"
@@ -637,7 +669,7 @@ private fun formatDelay(ms: Int): String = when {
 @Composable
 private fun SpeedDialog(current: Double, onSelect: (Double) -> Unit, onDismiss: () -> Unit) {
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    LaunchedEffect(Unit) { requestFocusRetrying(focus) }
     BackHandler { onDismiss() }
     val selectedIndex = SPEEDS.indexOfFirst { kotlin.math.abs(it - current) < 0.01 }.coerceAtLeast(0)
     DialogScaffold(title = "Playback Speed", onDismiss = onDismiss) {
@@ -656,7 +688,7 @@ private fun SpeedDialog(current: Double, onSelect: (Double) -> Unit, onDismiss: 
 @Composable
 private fun ZoomDialog(current: ZoomMode, onSelect: (ZoomMode) -> Unit, onDismiss: () -> Unit) {
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    LaunchedEffect(Unit) { requestFocusRetrying(focus) }
     BackHandler { onDismiss() }
     // Land focus on the current mode (not always the first row) so re-opening starts on your selection.
     val selectedIndex = ZoomMode.entries.indexOf(current).coerceAtLeast(0)
@@ -673,22 +705,27 @@ private fun VolumeDialog(player: PlaybackEngine, onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
     val volume by player.volume.collectAsStateWithLifecycle()
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    BackHandler { onDismiss() }
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(), contentAlignment = Alignment.Center) {
-        Column(Modifier.width(440.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Volume", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(20.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                StepButton("–", enabled = volume > 0, modifier = Modifier.focusRequester(focus)) { player.adjustVolume(-5) }
-                Text("$volume%", style = MaterialTheme.typography.headlineLarge, color = TEAL, modifier = Modifier.width(120.dp), textAlign = TextAlign.Center)
-                StepButton("+", enabled = volume < 150) { player.adjustVolume(5) }
-            }
-            Spacer(Modifier.height(22.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(if (volume == 0) "Unmute" else "Mute", onClick = { player.toggleMute() }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton("Done", onClick = onDismiss)
+    LaunchedEffect(Unit) { requestFocusRetrying(focus) }
+    // Real dialog window for the same focus isolation as DialogScaffold (see there).
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
+            Column(Modifier.width(440.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Volume", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Spacer(Modifier.height(20.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    StepButton("–", enabled = volume > 0, modifier = Modifier.focusRequester(focus)) { player.adjustVolume(-5) }
+                    Text("$volume%", style = MaterialTheme.typography.headlineLarge, color = TEAL, modifier = Modifier.width(120.dp), textAlign = TextAlign.Center)
+                    StepButton("+", enabled = volume < 150) { player.adjustVolume(5) }
+                }
+                Spacer(Modifier.height(22.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OwnTVButton(if (volume == 0) "Unmute" else "Mute", onClick = { player.toggleMute() }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
+                    Spacer(Modifier.weight(1f))
+                    OwnTVButton("Done", onClick = onDismiss)
+                }
             }
         }
     }
@@ -704,12 +741,20 @@ private fun StepButton(label: String, enabled: Boolean, modifier: Modifier = Mod
 @Composable
 private fun DialogScaffold(title: String, onDismiss: () -> Unit, content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit) {
     val colors = OwnTVTheme.colors
-    BackHandler { onDismiss() }
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(), contentAlignment = Alignment.Center) {
-        Column(modifier = Modifier.width(440.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(12.dp))
-            LazyColumn(modifier = Modifier.heightIn(max = 360.dp), verticalArrangement = Arrangement.spacedBy(6.dp), content = content)
+    // A REAL dialog window, not an in-place overlay: it owns the D-pad focus scope, so nothing in the
+    // HUD behind it (play button, catch-all focusable, stream-info chips) can compete for or steal
+    // focus — which is what intermittently locked the subtitle/audio pickers out of focus on
+    // codec-heavy (HDR/DTS) streams. Back is handled by the window itself via onDismissRequest.
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
+            Column(modifier = Modifier.width(440.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
+                Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Spacer(Modifier.height(12.dp))
+                LazyColumn(modifier = Modifier.heightIn(max = 360.dp), verticalArrangement = Arrangement.spacedBy(6.dp), content = content)
+            }
         }
     }
 }

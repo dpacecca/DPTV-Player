@@ -237,9 +237,12 @@ fun EpgScreen(
                 OwnTVIcon(OwnTVIcon.BACK, tint = colors.onSurface, modifier = Modifier.size(20.dp))
             }
             Text("TV Guide", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
-            if (state.windowStart > 0) {
+            if (state.now > 0) {
+                // The day being browsed: "now" on open; follows the cursor when D-padding left into
+                // the catch-up archive (windowStart would show the archive start — days in the past).
+                val headerDate = if (inCellMode && cursorTime > 0) cursorTime else state.now
                 Text(
-                    SimpleDateFormat("EEE d MMM", Locale.getDefault()).format(Date(state.windowStart)),
+                    SimpleDateFormat("EEE d MMM", Locale.getDefault()).format(Date(headerDate)),
                     style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant,
                 )
             }

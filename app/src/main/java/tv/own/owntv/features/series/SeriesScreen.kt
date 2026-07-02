@@ -451,7 +451,11 @@ private fun EpisodeView(
     }
 
     Column(
-        modifier = modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }.padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
+        // Same rounded content panel as the series grid — the episode list was the one view drawn
+        // without a panel background.
+        modifier = modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }
+            .roundedPanel(fillColor = ContentPanelFill)
+            .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             OwnTVButton(label = "Back", onClick = { vm.closeSeries() }, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.CHEVRON)

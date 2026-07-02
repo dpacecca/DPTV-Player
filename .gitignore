@@ -10,22 +10,19 @@ local.properties
 /captures
 .externalNativeBuild
 .cxx
+
 # Local tooling / agent state
 .claude/
 .planning/
 .serena/
+CLAUDE.md
+AGENT_HANDOVER.md
 
 # Signing keys & secrets — NEVER commit these
 *.keystore
 *.jks
 keystore.properties
 signing.properties
-extras/stalker-portal-plan.md
-extras/cloud-backup-plan.md
-extras/icons_mono.htm
-extras/home_new_added_vod.htm
-extras/favourites_reorder_plan.md
-CLAUDE.md
-AGENT_HANDOVER.md
-extras/PROXY_SUPPORT_PLAN.md
-extras/LIVE_TV_HANG_DIAGNOSTICS.md
+
+# Internal planning documents — kept local, never committed
+future-plan/

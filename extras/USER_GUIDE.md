@@ -20,6 +20,12 @@ obvious at first glance — once you know them, the app is a lot faster to live 
   background**, even if you leave the screen or the device goes to sleep.
 - **Re-syncs are incremental**: refreshing a playlist only writes what actually changed on the
   provider, so re-syncing big playlists is much faster.
+- **M3U playlists can carry movies and series too** — tag entries in the playlist and OwnTV sorts
+  them into the right tab:
+  - `type="vod"`, `type="movie"` or `tvg-type="movie"` → the **Movies** grid.
+  - `type="series"` or `tvg-type="series"` → the **Series** tab. Per-episode lines like
+    `Show Name S01E05` (or `1x05`) are grouped into shows with seasons and episodes automatically.
+  - Untagged entries stay in **Live TV**.
 
 ---
 

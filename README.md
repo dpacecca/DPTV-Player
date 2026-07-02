@@ -81,6 +81,8 @@ Scan to join from your phone:
 - **Sort & view** — playlist order or A–Z; Movies & Series Grid/List toggle
 - **Per-profile startup** — Home, last channel, or Live TV on Favorites
 - **Built for scale** — ~50k channels / ~168k movies via Paging 3
+- **Fast syncing** — priority import (pick e.g. Live TV first, the rest finishes in the background — survives sleep/reboot); incremental re-syncs only write what changed; auto-retrying downloads
+- **Typed M3U playlists** — `type=` / `tvg-type=` tags route entries to **Movies** or **Series** (per-episode `S01E05` lines are grouped into shows, seasons and episodes automatically)
 
 ### 🗓️ EPG / TV Guide
 - **Guide grid** — time × channel (XMLTV); now/next/later in preview; two-stage nav (Right selects row, OK browses)
