@@ -128,6 +128,7 @@ fun OwnTVShell(
     // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
     val liveOnExo by liveVm.liveOnExo.collectAsStateWithLifecycle()
     val forceMpvUrls by liveVm.forceMpvUrls.collectAsStateWithLifecycle()
+    val vodExoActive by player.exoActiveState.collectAsStateWithLifecycle()
     // Live rewind / timeshift: whether the live channel supports catch-up, and how far behind live we are.
     val canRewindLive by liveVm.canRewindLive.collectAsStateWithLifecycle()
     val timeshiftOffset by liveVm.timeshiftOffsetSec.collectAsStateWithLifecycle()
@@ -487,6 +488,10 @@ fun OwnTVShell(
                     timeshiftOffsetSec = if (isLiveChannel) timeshiftOffset else null,
                     compatMode = if (isLiveChannel) previewChannel?.streamUrl in forceMpvUrls else null,
                     onToggleCompatMode = if (isLiveChannel) liveVm::toggleForceMpv else null,
+                    // VOD engine toggle (movies/series only — live and catch-up channels keep their own
+                    // engine handling above): flip the current item between mpv and ExoPlayer.
+                    vodOnExo = if (!isLiveStream && !isLiveChannel) vodExoActive else null,
+                    onToggleVodEngine = if (!isLiveStream && !isLiveChannel) player::toggleVodEngine else null,
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (showChannelList && isLiveChannel && zapChannels.size > 1) {

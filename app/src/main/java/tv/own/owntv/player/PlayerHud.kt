@@ -89,6 +89,11 @@ fun PlayerHud(
     // streams ExoPlayer can't handle). null = not a live channel; true = currently pinned to mpv.
     compatMode: Boolean? = null,
     onToggleCompatMode: (() -> Unit)? = null,
+    // VOD engine toggle: switch THIS movie/episode between mpv and ExoPlayer (e.g. to reach tracks only
+    // one engine exposes, or to try the other engine on a problem file). null = not a VOD;
+    // true = currently playing on ExoPlayer.
+    vodOnExo: Boolean? = null,
+    onToggleVodEngine: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isPlaying by player.isPlaying.collectAsStateWithLifecycle()
@@ -101,6 +106,7 @@ fun PlayerHud(
     val volume by player.volume.collectAsStateWithLifecycle()
     val videoRes by player.videoRes.collectAsStateWithLifecycle()
     val streamChips by player.streamChips.collectAsStateWithLifecycle()
+    val engineChip by player.engineChip.collectAsStateWithLifecycle()
     val audioCount by player.audioCount.collectAsStateWithLifecycle()
     val audioDelayMs by player.audioDelayMs.collectAsStateWithLifecycle()
     val subCount by player.subCount.collectAsStateWithLifecycle()
@@ -185,7 +191,8 @@ fun PlayerHud(
             Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(240.dp)
                 .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)))))
 
-            TopBar(player, isLive, streamChips.ifEmpty { listOfNotNull(videoRes) }, duration, onBack, modifier = Modifier.align(Alignment.TopStart))
+            // The active engine (MPV/EXO) leads the mini chips so users can always tell which player is on.
+            TopBar(player, isLive, listOfNotNull(engineChip) + streamChips.ifEmpty { listOfNotNull(videoRes) }, duration, onBack, modifier = Modifier.align(Alignment.TopStart))
             if (isLive) ChannelCard(player, modifier = Modifier.align(Alignment.TopStart).padding(start = 28.dp, top = 92.dp))
 
             // Hide the transport (play/seek/prev/next) and bottom bar while an error is up — the error
@@ -199,6 +206,7 @@ fun PlayerHud(
                     speedLabel = formatSpeed(speed),
                     onScrubLive = onScrubLive, timeshiftOffsetSec = timeshiftOffsetSec,
                     compatMode = compatMode, onToggleCompatMode = onToggleCompatMode,
+                    vodOnExo = vodOnExo, onToggleVodEngine = onToggleVodEngine,
                     onInfo = { showInfo = !showInfo }, infoOn = showInfo,
                     onOpenDialog = { dialog = it }, onPip = onPip, onBack = onBack,
                     modifier = Modifier.align(Alignment.BottomStart),
@@ -385,6 +393,7 @@ private fun BottomBar(
     volume: Int, audioCount: Int, subCount: Int, zoomMode: ZoomMode, speedLabel: String,
     onScrubLive: ((Int) -> Unit)?, timeshiftOffsetSec: Int?,
     compatMode: Boolean?, onToggleCompatMode: (() -> Unit)?,
+    vodOnExo: Boolean?, onToggleVodEngine: (() -> Unit)?,
     onInfo: (() -> Unit)? = null, infoOn: Boolean = false,
     onOpenDialog: (HudDialog) -> Unit, onPip: (() -> Unit)?, onBack: () -> Unit, modifier: Modifier = Modifier,
 ) {
@@ -420,6 +429,11 @@ private fun BottomBar(
                 // can't decode). Highlighted when active; persists per channel.
                 if (onToggleCompatMode != null) {
                     CtrlButton(OwnTVIcon.SETTINGS, active = compatMode == true) { onToggleCompatMode() }
+                }
+                // VOD engine toggle (gear, like Live's compatibility mode): flips the current item between
+                // mpv and ExoPlayer at the same position. Highlighted while ExoPlayer owns playback.
+                if (onToggleVodEngine != null) {
+                    CtrlButton(OwnTVIcon.SETTINGS, active = vodOnExo == true) { onToggleVodEngine() }
                 }
                 // Aspect/zoom works in every mode now — direct mode resizes the surface view itself
                 // (see MpvVideoSurface), GL mode scales internally.

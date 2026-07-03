@@ -85,6 +85,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val colors = OwnTVTheme.colors
     val vm: SettingsViewModel = koinViewModel()
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
+    val vodExo by vm.vodPreferExo.collectAsStateWithLifecycle()
     val zoom by vm.defaultZoom.collectAsStateWithLifecycle()
     val subScale by vm.subtitleScale.collectAsStateWithLifecycle()
     val audioDelay by vm.audioDelayMs.collectAsStateWithLifecycle()
@@ -143,6 +144,15 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             chip = if (hw) "On" else "Off", primaryChip = hw,
             modifier = Modifier.focusRequester(firstFocus),
             onClick = { vm.setHwDecoding(!hw) },
+        )
+        Row2(
+            icon = OwnTVIcon.PLAY, title = "Movies & Series player",
+            desc = "mpv (recommended) has the widest format support — DTS/TrueHD audio, unusual files — " +
+                "plus the A/V sync fix. Switch to ExoPlayer only if movies or episodes fail to start: " +
+                "it plays some streams mpv can't on certain TVs, but can't decode DTS/TrueHD audio and " +
+                "has no A/V sync fix. Whichever you pick, the other is tried automatically if it fails.",
+            chip = if (vodExo) "ExoPlayer" else "mpv", primaryChip = !vodExo,
+            onClick = { vm.setVodPreferExo(!vodExo) },
         )
         Row2(
             icon = OwnTVIcon.ASPECT, title = "Default zoom",

@@ -1,5 +1,39 @@
 # Changelog
 
+## v4.0.2 — 2026-07-03
+
+### ✨ VOD engine fallback (movies & series play on more devices)
+
+- **Automatic second-engine retry for Movies & Series** — if a movie or episode terminally fails on
+  the mpv engine (file rejected, decoder stall, all retries exhausted), the same item is now retried
+  automatically on ExoPlayer at the same position before any error is shown. Some devices/providers
+  play streams on ExoPlayer's decoder path that mpv can't open — previously those items just errored
+  even though the hardware could play them (as Live TV, which starts on ExoPlayer, proved). Each item
+  gets one fallback attempt; if **both** engines fail, the error says so explicitly ("Playback failed
+  on both video engines") instead of a misleading single-engine message.
+- **New setting: Settings → Video Player → "Movies & Series player"** — choose which engine plays VOD
+  first: **mpv** (default; widest format support — DTS/TrueHD audio, unusual containers — plus the
+  A/V sync nudge) or **ExoPlayer** (for TVs/providers where mpv can't start movies at all; no
+  DTS/TrueHD decoding and no A/V sync fix). Whichever is picked, the other is still tried
+  automatically on failure, in reverse order. Live TV and catch-up are unaffected. The setting is
+  included in Backup & Restore like the other player preferences.
+- **Player top bar shows the active engine** — the mini chips in the player's top-left (aspect ·
+  resolution · fps · audio) now lead with **MPV** or **EXO** on every stream — Live TV, Movies and
+  Series — so you can always tell at a glance which engine is playing.
+- **Stream Info shows the active engine** — the player's info overlay now leads with an "Engine" row
+  (mpv / ExoPlayer, including *why* ExoPlayer is active: preferred, fallback, or image-subtitle
+  handoff), and shows real ExoPlayer codec/resolution/audio/buffer data while it owns playback.
+- **In-player engine toggle for movies & episodes** — the player's **gear (⚙) button** (same spot as
+  Live TV's compatibility mode) switches the **current** item between mpv and ExoPlayer at the same
+  position, without changing the global setting. Useful to check whether the other engine exposes a
+  subtitle or audio track the current one doesn't — flip, check the tracks, and stay on whichever
+  works. The button lights up while ExoPlayer is active — and, like Live's compatibility mode, the
+  choice is **remembered per movie/episode**: a toggled item opens on that engine every time, while
+  everything else keeps following the setting.
+- While ExoPlayer owns VOD playback: subtitles (text **and** image) and audio tracks are selectable
+  directly on it, autoplay-next keeps working across episodes and seasons, and progress/resume is
+  tracked as usual.
+
 ## v4.0.1 — 2026-07-03
 
 ### 🐛 Fixes

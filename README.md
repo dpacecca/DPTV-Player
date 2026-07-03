@@ -63,6 +63,9 @@ Scan to join from your phone:
   - **libmpv (FFmpeg)** — movies, series, and any stream ExoPlayer can't open; maximum codec/container compatibility, every audio/subtitle track
   - **Media3 (ExoPlayer)** — Live TV default; near-instant HLS start, instant preview → fullscreen
   - **Per-channel mpv toggle** — the gear pins a problem channel to mpv (remembered per channel)
+  - **VOD engine fallback** — a movie/episode that terminally fails on one engine is retried on the
+    other automatically; a setting picks which plays first (mpv default, or ExoPlayer for devices
+    where mpv can't start VODs)
 - **Direct-to-display rendering** — zero-copy 4K HDR path, app-drawn subtitles, auto software-decode fallback
 - **Channel zapping** — D-pad/CH±/media keys, wraps around; **in-player channel list** (Left with controls hidden)
 - **Audio** — surround sound (opt-in, Dolby/DTS → multichannel LPCM, auto-stereo safety net); volume boost to 150%; A/V sync nudge

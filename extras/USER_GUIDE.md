@@ -99,6 +99,16 @@ obvious at first glance — once you know them, the app is a lot faster to live 
   a full‑screen reorder overlay opens. Use **D‑pad Up/Down** to move, **OK** to save, **Back** to cancel.
 - 📥 **Download via long‑press**: **long‑press OK** on a movie or episode and choose **Download** to queue it
   immediately (Movies) or queue all cached episodes (Series). No need to open the detail pane.
+- 🔧 **Two playback engines with automatic fallback**: movies/episodes play on **mpv** by default (or
+  **ExoPlayer** if you switched the **Movies & Series player** setting). If the chosen engine can't play an
+  item, the **other engine is tried automatically** before any error. You can also switch the **current**
+  movie/episode manually: bring up the controls and press the **gear (⚙) button** — it flips between mpv and
+  ExoPlayer at the same position (lights up while on ExoPlayer). Handy when one engine doesn't show a
+  subtitle or audio track you know exists — flip and check. Like Live TV's compatibility mode, the choice is
+  **remembered for that movie/episode** — it opens on that engine from then on, while other items keep
+  following the setting.
+- 🏷️ **Which engine is playing?** The player top‑left mini chips now start with **MPV** or **EXO** (on Live
+  TV too), so you always know the active engine at a glance.
 
 ---
 
@@ -129,7 +139,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 | **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±50 ms** steps) — use this if surround makes lips drift. |
 | **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · buffer. |
 | **Speed** | Playback speed (VOD). |
-| **Gear (⚙)** | **Compatibility mode** — pin a live channel to mpv (see Live TV above). |
+| **Gear (⚙)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (lights up on ExoPlayer). |
 | **Aspect/Zoom** | Change aspect ratio / zoom (works in every render mode). |
 | **PiP** | Picture‑in‑picture for live. |
 | **Volume** | mpv VODs/channels can be **boosted to 150%** for quiet streams. |
@@ -156,6 +166,12 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 - 🌈 **HDR** — use HDR output when the video and TV support it. Turn on for HDR/Dolby Vision content.
 - 🧩 **Hardware decoder** (Video Player Settings) — hardware decoding is on for smooth 4K; switch to software
   only if a specific codec misbehaves.
+- 🎬 **Movies & Series player** (Video Player Settings) — which engine plays movies/episodes first:
+  **mpv** (default — widest format support incl. DTS/TrueHD audio, plus the A/V sync fix) or
+  **ExoPlayer** (try it **only if movies/episodes won't start** on your device — it can't decode
+  DTS/TrueHD audio and has no A/V sync fix). Either way, if the chosen player fails, the other is
+  tried automatically before an error is shown. The player's **info overlay** shows which engine is
+  active.
 - 🔊 **Surround sound** — ⚠️ **off by default, opt‑in.** Turn it on **only if you have a real 5.1/7.1
   receiver**. On TV speakers or a stereo soundbar it can make **audio lag behind video (lip‑sync drift)** —
   if you enable it and see drift, fix it live with the player's **Audio → A/V sync** nudge. Most people
