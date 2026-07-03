@@ -304,6 +304,9 @@ fun OwnTVShell(
                     onSearchClick = { onSelectSection(MainSection.SEARCH) },
                     playlistName = sourceSummary,
                     weatherInfo = weatherInfo,
+                    // The Search pill only exists while focus sits on the nav panel — inside a
+                    // section it fades out and turns unfocusable, so focus can never jump to it.
+                    searchVisible = focusedLayer == ShellLayer.SIDEBAR,
                 )
                 Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 6.dp, end = 6.dp, bottom = 6.dp)) {
                     when {

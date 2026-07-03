@@ -4,6 +4,17 @@
 
 ### 🐛 Fixes
 
+- **D-pad focus no longer jumps to the top bar while scrolling long lists** — holding Up in a big
+  category rail or channel/movie/series list (e.g. 500 categories) could make focus outrun the list
+  and teleport to the top bar's Search button. Focus now stays inside the panel you're in; you leave
+  it only deliberately with Left/Right or Back.
+- **Top-bar Search button now appears only while the highlight is on the left nav panel** — inside
+  Live TV, Movies, Series, Guide, Downloads or Settings it fades out (keeping its space, so the
+  clock/weather chips never shift) and can't take focus. It fades back in when you return to the
+  nav panel, where it still opens Search as before.
+
+### 🐛 Fixes
+
 - **Autoplay next episode no longer fails with a "malformed or corrupted" error** — when an episode
   ended and autoplay advanced, some providers still held the finished episode's connection slot, so
   opening the next episode hung and the player gave up with a misleading corruption error (the same
