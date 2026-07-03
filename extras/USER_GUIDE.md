@@ -59,8 +59,9 @@ obvious at first glance — once you know them, the app is a lot faster to live 
 - **CH+ / CH−** (or Up/Down on the channel‑list overlay) zap through the current category.
 - 🔧 **Compatibility mode (two playback engines)**: live channels play on the fast **ExoPlayer** engine by
   default. If a channel shows **UHD artifacts**, won't open, or stutters, bring up the controls and press the
-  **gear (⚙) button** — this **pins that channel to the mpv engine**. It lights up when active and is
-  **remembered per channel**, so that one channel always uses mpv while everything else stays fast.
+  **engine toggle (the ⇄ MPV/EXO pill)** — this **pins that channel to the mpv engine**. The pill shows the
+  active engine and turns teal when pinned to mpv, and a small "Switched to MPV/ExoPlayer" note confirms the
+  change. It's **remembered per channel**, so that one channel always uses mpv while everything else stays fast.
 - 🔇 **Audio with no picture**: if a channel ever plays sound but shows a black screen, OwnTV now detects this
   automatically and switches engines for you (briefly shows a loading spinner). If neither engine can render
   video for that stream, you'll see a clear on‑screen message instead of a silent black screen.
@@ -102,8 +103,9 @@ obvious at first glance — once you know them, the app is a lot faster to live 
 - 🔧 **Two playback engines with automatic fallback**: movies/episodes play on **mpv** by default (or
   **ExoPlayer** if you switched the **Movies & Series player** setting). If the chosen engine can't play an
   item, the **other engine is tried automatically** before any error. You can also switch the **current**
-  movie/episode manually: bring up the controls and press the **gear (⚙) button** — it flips between mpv and
-  ExoPlayer at the same position (lights up while on ExoPlayer). Handy when one engine doesn't show a
+  movie/episode manually: bring up the controls and press the **engine toggle (the ⇄ MPV/EXO pill)** — it
+  flips between mpv and ExoPlayer at the same position (the pill shows the active engine; teal while on
+  ExoPlayer, and a small "Switched to MPV/ExoPlayer" note confirms it). Handy when one engine doesn't show a
   subtitle or audio track you know exists — flip and check. Like Live TV's compatibility mode, the choice is
   **remembered for that movie/episode** — it opens on that engine from then on, while other items keep
   following the setting.
@@ -139,7 +141,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 | **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±50 ms** steps) — use this if surround makes lips drift. |
 | **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · buffer. |
 | **Speed** | Playback speed (VOD). |
-| **Gear (⚙)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (lights up on ExoPlayer). |
+| **MPV/EXO (⇄)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (shows the active engine; teal on the non‑default one). Flipping it briefly confirms "Switched to MPV/ExoPlayer" at the bottom. |
 | **Aspect/Zoom** | Change aspect ratio / zoom (works in every render mode). |
 | **PiP** | Picture‑in‑picture for live. |
 | **Volume** | mpv VODs/channels can be **boosted to 150%** for quiet streams. |
@@ -191,7 +193,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 ## 💡 Tips
 
 - **Long‑press OK** is your friend — favourites, rename, hide, match EPG and catch‑up all live there.
-- A channel buffering or showing artifacts on 4K? **Gear button → compatibility mode** usually fixes it.
+- A channel buffering or showing artifacts on 4K? **MPV/EXO toggle → compatibility mode** usually fixes it.
 - Audio out of sync on a VOD? **Audio → A/V sync** and nudge ± until lips match.
 - **Guide looks blank when you first open it?** (especially with catch‑up channels) Try: **Settings → EPG** → tap Edit → delete your EPG source(s), then **add them again** and sync fresh. The v4.0.0 update changed how EPG loads, and old cached data needs to be cleared and reimported. Once done, the guide displays immediately.
 

@@ -39,7 +39,7 @@ This is an **open-source** project — the code is original (not derived from an
 targets **Android TV only** (leanback launcher, D-pad-first UI).
 
 > ### 📖 New here? Read the [**User Guide & Hidden Features →**](extras/USER_GUIDE.md)
-> Long‑press to favourite, **Left** for the channel list, the gear button's **compatibility mode**,
+> Long‑press to favourite, **Left** for the channel list, the MPV/EXO toggle's **compatibility mode**,
 > catch‑up from the Guide, startup landing, A/V‑sync — all the remote shortcuts in one place.
 
 ---
@@ -62,7 +62,7 @@ Scan to join from your phone:
 - **Dual-engine design**
   - **libmpv (FFmpeg)** — movies, series, and any stream ExoPlayer can't open; maximum codec/container compatibility, every audio/subtitle track
   - **Media3 (ExoPlayer)** — Live TV default; near-instant HLS start, instant preview → fullscreen
-  - **Per-channel mpv toggle** — the gear pins a problem channel to mpv (remembered per channel)
+  - **Per-channel mpv toggle** — the MPV/EXO pill pins a problem channel to mpv (remembered per channel)
   - **VOD engine fallback** — a movie/episode that terminally fails on one engine is retried on the
     other automatically; a setting picks which plays first (mpv default, or ExoPlayer for devices
     where mpv can't start VODs)

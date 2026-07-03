@@ -23,13 +23,19 @@
 - **Stream Info shows the active engine** — the player's info overlay now leads with an "Engine" row
   (mpv / ExoPlayer, including *why* ExoPlayer is active: preferred, fallback, or image-subtitle
   handoff), and shows real ExoPlayer codec/resolution/audio/buffer data while it owns playback.
-- **In-player engine toggle for movies & episodes** — the player's **gear (⚙) button** (same spot as
-  Live TV's compatibility mode) switches the **current** item between mpv and ExoPlayer at the same
-  position, without changing the global setting. Useful to check whether the other engine exposes a
-  subtitle or audio track the current one doesn't — flip, check the tracks, and stay on whichever
-  works. The button lights up while ExoPlayer is active — and, like Live's compatibility mode, the
-  choice is **remembered per movie/episode**: a toggled item opens on that engine every time, while
-  everything else keeps following the setting.
+- **In-player engine toggle for movies & episodes** — the player's **engine toggle (the ⇄ MPV/EXO
+  pill, same spot as Live TV's compatibility mode)** switches the **current** item between mpv and
+  ExoPlayer at the same position, without changing the global setting. Useful to check whether the
+  other engine exposes a subtitle or audio track the current one doesn't — flip, check the tracks,
+  and stay on whichever works. The pill shows the active engine (teal while on ExoPlayer) — and,
+  like Live's compatibility mode, the choice is **remembered per movie/episode**: a toggled item
+  opens on that engine every time, while everything else keeps following the setting.
+- **Engine toggle restyle + confirmation toast** — the Live "compatibility mode" and the in-player
+  mpv/ExoPlayer switch are no longer a gear icon: they're one labeled pill that shows the active
+  engine (MPV or EXO) and turns teal on the non-default one. Flipping it briefly pops up a small
+  "Switched to MPV" / "Switched to ExoPlayer" note at the bottom of the player, so the change is
+  always confirmed. Applies everywhere the toggle appears: Live TV, Movies, Series, and channels
+  opened from the Guide.
 - While ExoPlayer owns VOD playback: subtitles (text **and** image) and audio tracks are selectable
   directly on it, autoplay-next keeps working across episodes and seasons, and progress/resume is
   tracked as usual.
