@@ -1,5 +1,18 @@
 # Changelog
 
+## v4.0.1 — 2026-07-03
+
+### 🐛 Fixes
+
+- **Autoplay next episode no longer fails with a "malformed or corrupted" error** — when an episode
+  ended and autoplay advanced, some providers still held the finished episode's connection slot, so
+  opening the next episode hung and the player gave up with a misleading corruption error (the same
+  episode then played fine manually). A hung open now gets one automatic silent reset-and-retry —
+  the transition shows a few extra seconds of spinner instead of an error. Only a second consecutive
+  hang still surfaces the error.
+- **Player HUD no longer steals D-pad focus from overlays drawn above it** (community PR #41 by
+  [@attembot](https://github.com/attembot) — Michael Botta).
+
 ## v4.0.0 — 2026-07-02
 
 ### 📄 License
