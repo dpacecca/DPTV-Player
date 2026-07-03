@@ -12,9 +12,6 @@
   Live TV, Movies, Series, Guide, Downloads or Settings it fades out (keeping its space, so the
   clock/weather chips never shift) and can't take focus. It fades back in when you return to the
   nav panel, where it still opens Search as before.
-
-### 🐛 Fixes
-
 - **Autoplay next episode no longer fails with a "malformed or corrupted" error** — when an episode
   ended and autoplay advanced, some providers still held the finished episode's connection slot, so
   opening the next episode hung and the player gave up with a misleading corruption error (the same
