@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.0.2 — 2026-07-03
+## v4.0.2 — Unreleased
 
 ### ✨ VOD engine fallback (movies & series play on more devices)
 
@@ -33,6 +33,18 @@
 - While ExoPlayer owns VOD playback: subtitles (text **and** image) and audio tracks are selectable
   directly on it, autoplay-next keeps working across episodes and seasons, and progress/resume is
   tracked as usual.
+
+### 🐛 Fixes
+
+- **Live TV zoom / aspect modes now work** — choosing Fit, Fill / Crop, Stretch, Original, Force 16:9
+  or Force 4:3 on a Live TV channel did nothing at all (the picture never changed). Live channels play
+  full-screen on ExoPlayer (the live engine), and that path had no zoom implementation — the mode was
+  stored but never applied to the surface. Zoom/aspect now works on Live TV just like on Movies and
+  Series, whether the channel plays on ExoPlayer or on mpv (a compatibility-mode pin).
+- **Fill / Crop now actually zooms in and crops** — on Movies, Series and Live, "Fill / Crop" could
+  look identical to Fit (especially on 16:9 content), or read as a stretch rather than a crop. It now
+  takes the fitted picture and scales it up ~20% so it always visibly zooms and fills edge-to-edge,
+  regardless of the source's aspect ratio. (Stretch remains a true distort-to-fill.)
 
 ## v4.0.1 — 2026-07-03
 
