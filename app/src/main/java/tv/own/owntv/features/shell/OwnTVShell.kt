@@ -471,6 +471,9 @@ fun OwnTVShell(
                     player = if (liveOnExo) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
                     onBack = exitPlayer,
                     onPip = dockPlayer, // PiP/dock works for live on either engine now
+                    // The channel-list overlay draws ABOVE the HUD; while it's open the HUD goes inert so
+                    // its hide/error focus grabs can't yank D-pad focus off the overlay.
+                    inert = showChannelList,
                     onChannelUp = zap?.let { z -> { z(-1) } },
                     onChannelDown = zap?.let { z -> { z(1) } },
                     onOpenChannelList = if (isLiveChannel && liveCanZap) { { showChannelList = true } } else null,

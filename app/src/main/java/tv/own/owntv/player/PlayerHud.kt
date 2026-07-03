@@ -69,6 +69,11 @@ fun PlayerHud(
     player: PlaybackEngine,
     onBack: () -> Unit,
     onPip: (() -> Unit)? = null,
+    // True while the shell draws an overlay ABOVE the HUD (e.g. the channel-list overlay). The HUD goes
+    // inert: its auto-hide timer pauses and — crucially — it makes no focus requests, so it can't yank
+    // D-pad focus off the overlay. The existing dialog guard below covers only the HUD's OWN dialogs;
+    // shell-level overlays need this flag. Default false = no behavior change for other callers.
+    inert: Boolean = false,
     onChannelUp: (() -> Unit)? = null,
     onChannelDown: (() -> Unit)? = null,
     // Live: open the channel-list overlay (Left while the controls are hidden). Null = not a live channel.
@@ -124,13 +129,14 @@ fun PlayerHud(
     val zap: (Int) -> Unit = { d -> (if (d < 0) onChannelUp else onChannelDown)?.invoke(); channelFlash++ }
 
     LaunchedEffect(forceShow) { if (forceShow) controlsVisible = true }
-    LaunchedEffect(controlsVisible, wakeTick, forceShow) {
-        if (controlsVisible && !forceShow) { delay(4500); controlsVisible = false }
+    LaunchedEffect(controlsVisible, wakeTick, forceShow, inert) {
+        // Don't auto-hide under an overlay — hiding is what triggers the catch-all focus grab below.
+        if (controlsVisible && !forceShow && !inert) { delay(4500); controlsVisible = false }
     }
-    LaunchedEffect(controlsVisible, error, dialog) {
-        // Never steal focus while a dialog is open (its rows own it); when the dialog closes this
-        // re-runs and hands focus back to the HUD.
-        if (dialog != HudDialog.NONE) return@LaunchedEffect
+    LaunchedEffect(controlsVisible, error, dialog, inert) {
+        // Never steal focus while a dialog is open (its rows own it) or while a shell overlay is up
+        // (inert — the overlay owns the D-pad); when either closes this re-runs and hands focus back.
+        if (dialog != HudDialog.NONE || inert) return@LaunchedEffect
         if (controlsVisible) {
             if (error != null) runCatching { retryFocus.requestFocus() } else runCatching { playFocus.requestFocus() }
         } else runCatching { catchFocus.requestFocus() }
