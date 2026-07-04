@@ -40,6 +40,41 @@
   directly on it, autoplay-next keeps working across episodes and seasons, and progress/resume is
   tracked as usual.
 
+### 🔄 Per-source Auto Refresh (playlists & EPG)
+
+- **Each playlist and EPG source can now refresh itself automatically** — open Settings → Manage
+  sources (playlists) or Settings → EPG sources and pick an **Auto refresh** mode per source: **Off**,
+  **Refresh at startup** (once per cold app start), or a staleness interval (playlists: 6h / 12h / 24h
+  / 48h; EPG: 1h / 3h / 6h / 12h / 24h / 48h). Interval modes are checked on cold start **and** when
+  the app returns to the foreground; a source refreshes only once it's actually stale (now − last
+  successful sync ≥ the chosen threshold), so resuming the app doesn't re-sync everything every time.
+- **Off by default** — new playlist and EPG sources start with Auto refresh **Off**; nothing syncs in
+  the background unless you turn it on. Existing users who had the old "Refresh on startup" toggle
+  enabled are migrated to **Refresh at startup** so their behaviour is unchanged.
+- **Failure-safe freshness** — a failed EPG sync no longer marks the source as freshly synced, so a
+  source that errors stays "stale" and is retried on the next check instead of being skipped for the
+  full interval. Never-synced sources are always treated as stale. Auto refreshes preserve existing
+  data (they never clear-then-reimport); a manual sync still does the full replace.
+
+### 💾 Backup & Restore now covers every persistent setting
+
+- **Auto Refresh selections are backed up** — the per-source playlist and EPG Auto refresh modes ride
+  with the **Profiles & sources** section. On restore, a saved mode is re-applied only if that source
+  still exists; ids that no longer exist are skipped, and an unknown/corrupt mode falls back safely to
+  **Off**. Sync timestamps are **not** backed up — after a restore the app re-derives freshness from
+  the restored mode and the real sync state.
+- **Per-item compatibility mode is backed up** — the Live TV "compatibility mode" pins and the
+  Movies/Series per-item engine pins (mpv / ExoPlayer, set from the player's engine toggle) are now
+  saved and restored with the **App settings** section. They're keyed by stream URL, so they survive a
+  re-sync, and restore **merges** them into any pins you've already set rather than replacing them.
+- **Audit gaps closed** — the **Default source** selection and the legacy **"resume last channel"**
+  preference were being stored but not backed up; both are now included. Every user-facing preference
+  in the settings store is now covered by Backup & Restore.
+- **Backward compatible** — older backup files that lack any of these new fields still restore
+  cleanly: missing Auto refresh defaults to the normal app behaviour (EPG stays Off), and missing
+  compatibility-mode/default-source fields simply leave your current values untouched. Unknown or
+  invalid entries are ignored — a restore never crashes on them.
+
 ### 🐛 Fixes
 
 - **Live TV zoom / aspect modes now work** — choosing Fit, Fill / Crop, Stretch, Original, Force 16:9

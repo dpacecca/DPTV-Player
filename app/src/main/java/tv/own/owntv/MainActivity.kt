@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.Density
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import tv.own.owntv.core.launcher.LauncherDeepLink
 import tv.own.owntv.features.profiles.ProfileGate
 import tv.own.owntv.features.profiles.ProfilesViewModel
@@ -40,6 +41,8 @@ class MainActivity : ComponentActivity() {
     private val player: tv.own.owntv.player.OwnTVPlayer by inject()
     private val previewEngine: tv.own.owntv.player.LivePreviewEngine by inject()
     private val heroPreviewEngine: tv.own.owntv.player.HeroPreviewEngine by inject()
+    // Activity-scoped: the same instance Compose retrieves via koinViewModel() inside setContent.
+    private val shellViewModel: ShellViewModel by viewModel()
     private var pendingDeepLink by mutableStateOf<LauncherDeepLink?>(null)
 
     override fun onNewIntent(intent: Intent) {
@@ -69,6 +72,9 @@ class MainActivity : ComponentActivity() {
         // to the live edge — so Play resumes instead of sitting on a dead/empty stream. No-op on fresh launch.
         player.onAppForegrounded()
         previewEngine.onAppForegrounded()
+        // Staleness-based auto refresh on resume (interval modes only — STARTUP is cold-start only). The
+        // ViewModel throttles this internally so a quick toggle doesn't re-run the check.
+        shellViewModel.checkAutoRefresh(includeStartup = false)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,7 +125,7 @@ class MainActivity : ComponentActivity() {
 
             // "Refresh on startup" — re-sync sources once the active profile is known.
             LaunchedEffect(activeProfileId) {
-                if ((activeProfileId ?: -1L) >= 0L) viewModel.refreshOnStartIfEnabled()
+                if ((activeProfileId ?: -1L) >= 0L) viewModel.checkAutoRefresh(includeStartup = true)
             }
 
             OwnTVTheme(themeMode = themeMode, accent = accent, systemInDarkTheme = isSystemInDarkTheme(), customAccent = customAccent, animationLevel = animationLevel) {

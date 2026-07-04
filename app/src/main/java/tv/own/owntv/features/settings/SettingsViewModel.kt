@@ -36,6 +36,8 @@ import tv.own.owntv.core.sync.work.CatalogSyncScheduler
 import tv.own.owntv.core.util.friendlySyncError
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
+import tv.own.owntv.features.settings.data.EpgAutoRefresh
+import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.ui.theme.AccentColor
 import tv.own.owntv.ui.theme.ThemeMode
@@ -309,16 +311,24 @@ class SettingsViewModel(
         settings.weatherLocation.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     fun setWeatherLocation(location: String) { viewModelScope.launch { settings.setWeatherLocation(location) } }
 
-    /** Source ids flagged "refresh on startup". */
-    val refreshSourceIds: StateFlow<Set<Long>> = settings.refreshSourceIds
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+    /** Per-source playlist auto-refresh selection (Off / Startup / staleness threshold). */
+    val playlistAutoRefresh: StateFlow<Map<Long, PlaylistAutoRefresh>> = settings.playlistAutoRefresh
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
-    fun setSourceRefresh(sourceId: Long, enabled: Boolean) {
-        viewModelScope.launch { settings.setSourceRefresh(sourceId, enabled) }
+    /** Per-source EPG auto-refresh selection (Off / Startup / staleness threshold). */
+    val epgAutoRefresh: StateFlow<Map<Long, EpgAutoRefresh>> = settings.epgAutoRefresh
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    fun setPlaylistAutoRefresh(sourceId: Long, mode: PlaylistAutoRefresh) {
+        viewModelScope.launch { settings.setPlaylistAutoRefresh(sourceId, mode) }
+    }
+
+    fun setEpgAutoRefresh(sourceId: Long, mode: EpgAutoRefresh) {
+        viewModelScope.launch { settings.setEpgAutoRefresh(sourceId, mode) }
     }
 
     /** Edit an existing source's settings (no re-import unless the user re-syncs). */
-    fun updateSource(id: Long, name: String, urlOrServer: String, user: String, pass: String, userAgent: String, epgUrl: String, refreshOnStart: Boolean) {
+    fun updateSource(id: Long, name: String, urlOrServer: String, user: String, pass: String, userAgent: String, epgUrl: String, autoRefresh: PlaylistAutoRefresh) {
         viewModelScope.launch {
             val existing = sourceDao.getById(id) ?: return@launch
             sourceRepository.updateSource(
@@ -331,7 +341,7 @@ class SettingsViewModel(
                     epgUrl = epgUrl.trim().takeIf { it.isNotBlank() },
                 ),
             )
-            settings.setSourceRefresh(id, refreshOnStart)
+            settings.setPlaylistAutoRefresh(id, autoRefresh)
         }
     }
 
@@ -355,13 +365,13 @@ class SettingsViewModel(
         pass: String,
         userAgent: String = "",
         epgUrl: String = "",
-        refreshOnStart: Boolean = false,
+        autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
         syncLive: Boolean = true,
         syncMovies: Boolean = true,
         syncSeries: Boolean = true,
     ) {
         val priority = SyncContentTypes(syncLive, syncMovies, syncSeries)
-        runImport(refreshOnStart, priority, enqueueRemainder = true, requiresNetwork = true) { pid ->
+        runImport(autoRefresh, priority, enqueueRemainder = true, requiresNetwork = true) { pid ->
             sourceRepository.addXtreamSource(
                 pid, name.ifBlank { "My IPTV" }, server.trim(), user.trim(), pass,
                 userAgent.trim().takeIf { it.isNotBlank() },
@@ -370,8 +380,8 @@ class SettingsViewModel(
         }
     }
 
-    fun addM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", refreshOnStart: Boolean = false) = runImport(
-        refreshOnStart,
+    fun addM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF) = runImport(
+        autoRefresh,
         requiresNetwork = !url.isLocalPlaylistPath(),
     ) { pid ->
         sourceRepository.addM3uSource(
@@ -382,7 +392,7 @@ class SettingsViewModel(
     }
 
     private fun runImport(
-        refreshOnStart: Boolean = false,
+        autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
         contentTypes: SyncContentTypes = SyncContentTypes(),
         enqueueRemainder: Boolean = false,
         requiresNetwork: Boolean = true,
@@ -399,11 +409,11 @@ class SettingsViewModel(
                     return@launch
                 }
                 val pid = profileDao.resolveExistingProfileId(settings.activeProfileId.first()) ?: return@launch
-                Log.d(TAG, "runImport profile=$pid refreshOnStart=$refreshOnStart")
+                Log.d(TAG, "runImport profile=$pid autoRefresh=$autoRefresh")
                 source = addSource(pid)
                 val freshSync = source.lastSyncAt == null
                 val remainder = if (enqueueRemainder) SyncContentTypes().remainderAfter(contentTypes) else SyncContentTypes(live = false, movies = false, series = false)
-                settings.setSourceRefresh(source.id, refreshOnStart)
+                settings.setPlaylistAutoRefresh(source.id, autoRefresh)
                 when (val r = sourceRepository.sync(source, onProgress = { _progress.value = it }, contentTypes = contentTypes)) {
                     is SyncResult.Success -> {
                         // Settings playlist add: content breakdown only (EPG syncs silently and is
@@ -508,7 +518,7 @@ class SettingsViewModel(
         withContext(NonCancellable) {
             catalogSyncScheduler.cancelSync(source.id)
             runCatching { sourceRepository.deleteSource(source) }
-            runCatching { settings.setSourceRefresh(source.id, false) }
+            runCatching { settings.setPlaylistAutoRefresh(source.id, PlaylistAutoRefresh.OFF) }
         }
     }
 

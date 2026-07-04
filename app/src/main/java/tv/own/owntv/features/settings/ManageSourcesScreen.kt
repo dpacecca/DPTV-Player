@@ -42,6 +42,7 @@ import tv.own.owntv.core.sync.importProgressDisplay
 import tv.own.owntv.core.sync.resyncBadgeText
 import tv.own.owntv.core.sync.syncProgressCountsLabel
 import tv.own.owntv.core.sync.work.CatalogSyncState
+import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.features.setup.AddSourceScreen
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -56,7 +57,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val sources by vm.sources.collectAsStateWithLifecycle()
     val importState by vm.importState.collectAsStateWithLifecycle()
     val progress by vm.progress.collectAsStateWithLifecycle()
-    val refreshIds by vm.refreshSourceIds.collectAsStateWithLifecycle()
+    val playlistAutoRefresh by vm.playlistAutoRefresh.collectAsStateWithLifecycle()
     val defaultId by vm.defaultSourceId.collectAsStateWithLifecycle()
     val epgSync by vm.epgSync.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
@@ -90,12 +91,12 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     editingSource?.let { src ->
         AddSourceScreen(
             initial = src,
-            initialRefresh = src.id in refreshIds,
-            onStartXtream = { n, server, u, p, ua, epg, refresh, _, _, _ ->
-                vm.updateSource(src.id, n, server, u, p, ua, epg, refresh)
+            initialAutoRefresh = playlistAutoRefresh[src.id] ?: PlaylistAutoRefresh.OFF,
+            onStartXtream = { n, server, u, p, ua, epg, autoRefresh, _, _, _ ->
+                vm.updateSource(src.id, n, server, u, p, ua, epg, autoRefresh)
                 editingSource = null
             },
-            onStartM3u = { n, url, ua, epg, refresh -> vm.updateSource(src.id, n, url, "", "", ua, epg, refresh); editingSource = null },
+            onStartM3u = { n, url, ua, epg, autoRefresh -> vm.updateSource(src.id, n, url, "", "", ua, epg, autoRefresh); editingSource = null },
             onBack = { editingSource = null },
             modifier = modifier,
         )
@@ -105,10 +106,10 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     if (showAdd) {
         when (val s = importState) {
             SettingsViewModel.ImportState.Idle -> AddSourceScreen(
-                onStartXtream = { n, server, u, p, ua, epg, refresh, live, movies, series ->
-                    vm.addXtream(n, server, u, p, ua, epg, refresh, live, movies, series)
+                onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series ->
+                    vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series)
                 },
-                onStartM3u = { n, url, ua, epg, refresh -> vm.addM3u(n, url, ua, epg, refresh) },
+                onStartM3u = { n, url, ua, epg, autoRefresh -> vm.addM3u(n, url, ua, epg, autoRefresh) },
                 onBack = { showAdd = false },
                 modifier = modifier,
                 initial = vm.lastFailedSource, // pre-fill on retry — no re-typing after a typo
@@ -192,7 +193,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     val syncState by remember(source.id) { vm.syncState(source.id) }.collectAsStateWithLifecycle(CatalogSyncState.Idle)
                     SourceRow(
                         source = source,
-                        refreshOnStart = source.id in refreshIds,
+                        autoRefresh = playlistAutoRefresh[source.id] ?: PlaylistAutoRefresh.OFF,
                         isDefault = isDefault,
                         counts = counts,
                         syncState = syncState,
@@ -221,7 +222,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 private fun SourceRow(
     source: SourceEntity,
-    refreshOnStart: Boolean,
+    autoRefresh: PlaylistAutoRefresh,
     isDefault: Boolean,
     counts: SyncCounts?,
     syncState: CatalogSyncState,
@@ -264,7 +265,7 @@ private fun SourceRow(
             Text(
                 buildString {
                     append(when (source.type) { SourceType.XTREAM -> "Xtream • ${source.url}"; SourceType.M3U -> "M3U • ${source.url}"; SourceType.LOCAL_BACKUP -> "Backup" })
-                    if (refreshOnStart) append("  •  ⟳ on startup")
+                    if (autoRefresh != PlaylistAutoRefresh.OFF) append("  •  ⟳ ${autoRefresh.label}")
                     val visibleCounts = if (activeSync == null) counts?.breakdown else activeCountsLabel
                     if (!visibleCounts.isNullOrBlank()) {
                         append("  •  $visibleCounts")

@@ -82,6 +82,10 @@ obvious at first glance — once you know them, the app is a lot faster to live 
   offered a one‑tap **sync now** (with a live programme count), or you can sync later from Settings.
 - **Auto‑match EPG**: the guide can smart‑match your channels to guide data; you can also fix one channel
   manually via the long‑press **Match EPG** menu.
+- 🔄 **Auto refresh (per source)**: each **playlist** (Settings → Manage sources) and each **EPG feed**
+  (Settings → EPG sources) has an **Auto refresh** dropdown — **Off** (default), **Refresh at startup**,
+  or an interval (playlists 6–48h, EPG 1–48h). Intervals refresh only when the source is actually stale,
+  checked on app start and when you return to the app. Everything stays **Off** until you turn it on.
 
 ---
 
@@ -183,7 +187,10 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
   resume positions and app settings. On export you can set a **backup password** to encrypt saved
   passwords (source & proxy); without one, passwords are left out of the file. Restoring an encrypted
   backup asks for that password — enter it to bring passwords back, or **Skip** to restore everything
-  else and re‑enter passwords later.
+  else and re‑enter passwords later. Backups also preserve your **per‑source Auto refresh** choices,
+  your **default source**, and any **compatibility‑mode / per‑item engine pins** (Live and Movies/Series),
+  so a restored setup behaves exactly like the original. Older backup files still restore fine — anything
+  they don't contain just keeps its default.
 - 🧹 **Clear watch history** — wipe a profile's recently‑watched / continue rows.
 - 📥 **Downloads** — download movies/episodes for offline play; pick the **Download folder** (app storage or
   external).
