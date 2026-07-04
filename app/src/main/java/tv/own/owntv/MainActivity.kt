@@ -99,6 +99,8 @@ class MainActivity : ComponentActivity() {
             val avatarId by viewModel.avatarId.collectAsStateWithLifecycle()
             val profileName by viewModel.profileName.collectAsStateWithLifecycle()
             val sourceSummary by viewModel.sourceSummary.collectAsStateWithLifecycle()
+            val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+            val activePlaylistId by viewModel.activePlaylistId.collectAsStateWithLifecycle()
             val weather by viewModel.weather.collectAsStateWithLifecycle()
             val selectedSection by viewModel.selectedSection.collectAsStateWithLifecycle()
             val activeProfileId by viewModel.activeProfileId.collectAsStateWithLifecycle()
@@ -171,6 +173,9 @@ class MainActivity : ComponentActivity() {
                                 onSetAvatar = viewModel::setAvatar,
                                 profileName = profileName,
                                 sourceSummary = sourceSummary,
+                                playlists = playlists,
+                                activePlaylistId = activePlaylistId,
+                                onSelectPlaylist = viewModel::setActivePlaylist,
                                 weatherInfo = weather,
                                 activeProfileId = activeProfileId,
                                 pendingDeepLink = pendingDeepLink,

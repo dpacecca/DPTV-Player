@@ -231,6 +231,20 @@ class ShellViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, "No source")
 
+    /** The active profile's playlists, for the top-bar quick switcher (empty when the profile has none). */
+    val playlists: StateFlow<List<tv.own.owntv.core.database.entity.SourceEntity>> = settings.activeProfileId
+        .flatMapLatest { pid -> if (pid < 0) flowOf(emptyList()) else sourceRepository.observeSources(pid) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** The chosen active-playlist filter: -1 = All playlists (merged view), else a single playlist id. */
+    val activePlaylistId: StateFlow<Long> = settings.defaultSourceId
+        .stateIn(viewModelScope, SharingStarted.Eagerly, -1L)
+
+    /** Switch the active-playlist filter from the top-bar picker. Persists (survives restart). */
+    fun setActivePlaylist(id: Long) {
+        viewModelScope.launch { settings.setDefaultSource(id) }
+    }
+
     /**
      * Phase 7 — weather chip. Refreshes when connectivity returns, cached 30 min by repository.
      * Gated by the "Show weather" setting (OFF hides the chip) and honouring a manual location

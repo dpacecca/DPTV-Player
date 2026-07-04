@@ -2,6 +2,24 @@
 
 ## v4.0.2 — Unreleased
 
+### 🗂️ Multiple playlists — switch the whole app to one playlist (or all)
+
+- **Selecting a playlist as "Default" now actually filters the app.** Previously the Default toggle only
+  changed a label; the Browse screens always merged every playlist. Now choosing a default narrows
+  **Live TV, Movies, Series, TV Guide, Search, and the Home rails (Continue Watching / Favourites)** to
+  that one playlist. Choosing **All playlists** (no default) restores the merged view — exactly the old
+  behaviour. It's a view filter only: nothing is deleted or re‑imported, and switching back to All brings
+  everything straight back.
+- **New top‑bar playlist switcher.** With 2+ playlists, the playlist chip in the top‑right becomes a
+  button (with a ▾) that opens an **All playlists / A / B / C** picker. It applies everywhere instantly and
+  **persists across restarts**, so you can switch without opening Settings.
+- **Default is now chosen in the playlist's Add/Edit form** via a **"Default playlist"** toggle (instead of
+  a per‑row button). The Sources list shows a **DEFAULT** badge as a status marker. Turning the toggle off
+  on the current default clears it back to **All playlists**.
+- **Favourites & History inside each section respect the selected playlist** — with a single playlist
+  active you no longer see another playlist's favourites/history mixed in; the rail counts match too.
+- The selected default is included in **Backup & Restore** (Sources section).
+
 ### ✨ VOD engine fallback (movies & series play on more devices)
 
 - **Automatic second-engine retry for Movies & Series** — if a movie or episode terminally fails on

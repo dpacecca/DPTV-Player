@@ -55,6 +55,7 @@ import tv.own.owntv.core.repository.SeriesRepository
 import tv.own.owntv.core.storage.StorageAccess
 import tv.own.owntv.features.live.LiveKey
 import tv.own.owntv.features.live.LiveRailItem
+import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.MediaMeta
 import tv.own.owntv.player.OwnTVPlayer
@@ -85,11 +86,8 @@ class SeriesViewModel(
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
     // Observe the active profile's sources reactively so adding/removing a playlist refreshes Series
     // immediately (was read once at startup, so a new playlist showed nothing until app restart).
-    private val ctx: StateFlow<Ctx> = settings.activeProfileId
-        .flatMapLatest { pid ->
-            if (pid < 0) flowOf(Ctx(pid, emptyList()))
-            else sourceDao.observeForProfile(pid).map { srcs -> Ctx(pid, srcs.map { it.id }) }
-        }
+    private val ctx: StateFlow<Ctx> = activeProfileSources(settings, sourceDao)
+        .map { aps -> Ctx(aps.profileId, aps.sourceIds) }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
 
@@ -422,7 +420,7 @@ class SeriesViewModel(
             }
             val items = when (key) {
                 is LiveKey.Folder -> seriesDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
-                LiveKey.Favorites -> seriesDao.snapshotFavoritesManual(pid, contextKey, 5000)
+                LiveKey.Favorites -> seriesDao.snapshotFavoritesManual(pid, contextKey, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
                 else -> return@launch
             }
             val idx = items.indexOfFirst { it.id == series.id }
@@ -481,13 +479,13 @@ class SeriesViewModel(
         val playlist = sort == SettingsRepository.SortMode.PLAYLIST
         return if (query.isBlank()) when (key) {
             LiveKey.All -> if (playlist) seriesDao.pagingAllOriginal(ids) else seriesDao.pagingAll(ids)
-            LiveKey.Favorites -> seriesDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT)
-            LiveKey.History -> seriesDao.pagingHistory(c.profileId)
+            LiveKey.Favorites -> seriesDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT, ids)
+            LiveKey.History -> seriesDao.pagingHistory(c.profileId, ids)
             is LiveKey.Folder -> seriesDao.pagingByCategoryManual(key.id, c.profileId, folderContextKeys.value[key.id] ?: "")
         } else when (key) {
             LiveKey.All -> seriesDao.searchAll(query, ids)
-            LiveKey.Favorites -> seriesDao.searchFavorites(query, c.profileId)
-            LiveKey.History -> seriesDao.searchHistory(query, c.profileId)
+            LiveKey.Favorites -> seriesDao.searchFavorites(query, c.profileId, ids)
+            LiveKey.History -> seriesDao.searchHistory(query, c.profileId, ids)
             is LiveKey.Folder -> seriesDao.searchInCategory(query, key.id)
         }
     }
@@ -496,8 +494,8 @@ class SeriesViewModel(
         val ids = c.sourceIds.ifEmpty { listOf(-1L) }
         return when (key) {
             LiveKey.All -> seriesDao.countAll(ids)
-            LiveKey.Favorites -> seriesDao.countFavorites(c.profileId)
-            LiveKey.History -> historyDao.count(c.profileId, MediaType.SERIES)
+            LiveKey.Favorites -> seriesDao.countFavorites(c.profileId, ids)
+            LiveKey.History -> seriesDao.countHistory(c.profileId, ids)
             is LiveKey.Folder -> seriesDao.countByCategory(key.id)
         }
     }

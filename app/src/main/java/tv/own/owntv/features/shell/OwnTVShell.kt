@@ -56,6 +56,7 @@ import tv.own.owntv.features.shell.components.AvatarPickerDialog
 import tv.own.owntv.features.shell.components.CategoryRail
 import tv.own.owntv.features.shell.components.ContentPane
 import tv.own.owntv.features.shell.components.ExitDialog
+import tv.own.owntv.features.shell.components.PlaylistPickerDialog
 import tv.own.owntv.features.shell.components.PreviewPane
 import tv.own.owntv.features.shell.components.RailCategory
 import tv.own.owntv.features.shell.components.SettingsScreen
@@ -89,6 +90,9 @@ fun OwnTVShell(
     onSetAvatar: (Int) -> Unit,
     profileName: String,
     sourceSummary: String,
+    playlists: List<tv.own.owntv.core.database.entity.SourceEntity> = emptyList(),
+    activePlaylistId: Long = -1L,
+    onSelectPlaylist: (Long) -> Unit = {},
     weatherInfo: tv.own.owntv.core.weather.WeatherInfo? = null, // Phase 7
     activeProfileId: Long?,
     pendingDeepLink: LauncherDeepLink?,
@@ -108,6 +112,7 @@ fun OwnTVShell(
     var focusedLayer by remember { mutableStateOf(ShellLayer.SIDEBAR) }
     var showExit by remember { mutableStateOf(false) }
     var showAvatarPicker by remember { mutableStateOf(false) }
+    var showPlaylistPicker by remember { mutableStateOf(false) }
     var playerMode by remember { mutableStateOf(PlayerMode.NONE) }
     // Deep-link: the Guide's "Add EPG" button switches to Settings and opens EPG Sources → add.
     var openEpgAdd by remember { mutableStateOf(false) }
@@ -266,6 +271,7 @@ fun OwnTVShell(
         when {
             playerMode == PlayerMode.FULLSCREEN -> exitPlayer()
             showAvatarPicker -> showAvatarPicker = false
+            showPlaylistPicker -> showPlaylistPicker = false
             showExit -> showExit = false
             focusedLayer == ShellLayer.SIDEBAR -> showExit = true
             else -> runCatching { sidebarFocus.requestFocus() }
@@ -303,11 +309,21 @@ fun OwnTVShell(
                 TopBar(
                     sectionLabel = selectedSection.label,
                     onSearchClick = { onSelectSection(MainSection.SEARCH) },
-                    playlistName = sourceSummary,
+                    // The chip reflects the active filter: "All playlists" when none is chosen (id <= 0),
+                    // the chosen playlist's name otherwise. With a single playlist there's nothing to switch,
+                    // so just show its name.
+                    playlistName = when {
+                        playlists.size <= 1 -> sourceSummary
+                        activePlaylistId <= 0L -> "All playlists"
+                        else -> playlists.firstOrNull { it.id == activePlaylistId }?.name ?: sourceSummary
+                    },
                     weatherInfo = weatherInfo,
                     // The Search pill only exists while focus sits on the nav panel — inside a
                     // section it fades out and turns unfocusable, so focus can never jump to it.
                     searchVisible = focusedLayer == ShellLayer.SIDEBAR,
+                    // The playlist chip becomes a quick-switcher only when there's more than one to pick.
+                    playlistInteractive = playlists.size > 1,
+                    onPlaylistClick = { showPlaylistPicker = true },
                 )
                 Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 6.dp, end = 6.dp, bottom = 6.dp)) {
                     when {
@@ -517,6 +533,14 @@ fun OwnTVShell(
                 selectedId = avatarId,
                 onSelect = onSetAvatar,
                 onDismiss = { showAvatarPicker = false },
+            )
+        }
+        if (showPlaylistPicker) {
+            PlaylistPickerDialog(
+                playlists = playlists,
+                activeId = activePlaylistId,
+                onSelect = onSelectPlaylist,
+                onDismiss = { showPlaylistPicker = false },
             )
         }
 

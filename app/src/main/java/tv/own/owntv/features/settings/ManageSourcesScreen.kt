@@ -92,11 +92,12 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         AddSourceScreen(
             initial = src,
             initialAutoRefresh = playlistAutoRefresh[src.id] ?: PlaylistAutoRefresh.OFF,
-            onStartXtream = { n, server, u, p, ua, epg, autoRefresh, _, _, _ ->
-                vm.updateSource(src.id, n, server, u, p, ua, epg, autoRefresh)
+            initialIsDefault = src.id == defaultId,
+            onStartXtream = { n, server, u, p, ua, epg, autoRefresh, _, _, _, isDefault ->
+                vm.updateSource(src.id, n, server, u, p, ua, epg, autoRefresh, isDefault)
                 editingSource = null
             },
-            onStartM3u = { n, url, ua, epg, autoRefresh -> vm.updateSource(src.id, n, url, "", "", ua, epg, autoRefresh); editingSource = null },
+            onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.updateSource(src.id, n, url, "", "", ua, epg, autoRefresh, isDefault); editingSource = null },
             onBack = { editingSource = null },
             modifier = modifier,
         )
@@ -106,10 +107,12 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     if (showAdd) {
         when (val s = importState) {
             SettingsViewModel.ImportState.Idle -> AddSourceScreen(
-                onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series ->
-                    vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series)
+                onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault ->
+                    vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault)
                 },
-                onStartM3u = { n, url, ua, epg, autoRefresh -> vm.addM3u(n, url, ua, epg, autoRefresh) },
+                onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.addM3u(n, url, ua, epg, autoRefresh, isDefault) },
+                // A newly-added playlist can be made default only when others already exist.
+                showDefaultToggle = sources.isNotEmpty(),
                 onBack = { showAdd = false },
                 modifier = modifier,
                 initial = vm.lastFailedSource, // pre-fill on retry — no re-typing after a typo
@@ -187,8 +190,9 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(sources, key = { it.id }) { source ->
-                    // The default is the explicitly-chosen source, or the first one when none is set.
-                    val isDefault = source.id == defaultId || (defaultId < 0 && source.id == sources.first().id)
+                    // Default is only the explicitly-chosen source; when none is set every playlist shows
+                    // (no badge). Chosen via the add/edit form's "Default playlist" toggle, not a row action.
+                    val isDefault = source.id == defaultId
                     val counts by remember(source.id) { vm.contentCounts(source.id) }.collectAsStateWithLifecycle(null)
                     val syncState by remember(source.id) { vm.syncState(source.id) }.collectAsStateWithLifecycle(CatalogSyncState.Idle)
                     SourceRow(
@@ -197,8 +201,6 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         isDefault = isDefault,
                         counts = counts,
                         syncState = syncState,
-                        showMakeDefault = sources.size > 1,
-                        onMakeDefault = { vm.setDefaultSource(source.id) },
                         onEdit = { editingSource = source },
                         onResync = { vm.resync(source) },
                         onCancelSync = { vm.cancelResync(source) },
@@ -226,8 +228,6 @@ private fun SourceRow(
     isDefault: Boolean,
     counts: SyncCounts?,
     syncState: CatalogSyncState,
-    showMakeDefault: Boolean,
-    onMakeDefault: () -> Unit,
     onEdit: () -> Unit,
     onResync: () -> Unit,
     onCancelSync: () -> Unit,
@@ -277,10 +277,6 @@ private fun SourceRow(
             )
         }
         Spacer(Modifier.width(12.dp))
-        if (showMakeDefault && !isDefault) {
-            OwnTVButton("Default", onClick = onMakeDefault, style = OwnTVButtonStyle.SECONDARY)
-            Spacer(Modifier.width(10.dp))
-        }
         OwnTVButton("Edit", onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
         Spacer(Modifier.width(10.dp))
         if (syncState.isActive) {

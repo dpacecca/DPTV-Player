@@ -58,6 +58,7 @@ import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.parser.XtEpgEntry
 import tv.own.owntv.core.parser.XtreamClient
+import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -130,13 +131,10 @@ class LiveViewModel(
     // sourceUaMap is a lightweight side-product: sourceId → userAgent, used for synchronous play() calls
     // (playPreview, ensurePlaying) that can't do a DB lookup on the call site.
     private var sourceUaMap: Map<Long, String?> = emptyMap()
-    private val ctx: StateFlow<Ctx> = settings.activeProfileId
-        .flatMapLatest { pid ->
-            if (pid < 0) flowOf(Ctx(pid, emptyList()))
-            else sourceDao.observeForProfile(pid).map { srcs ->
-                sourceUaMap = srcs.associate { it.id to it.userAgent }
-                Ctx(pid, srcs.map { it.id })
-            }
+    private val ctx: StateFlow<Ctx> = activeProfileSources(settings, sourceDao)
+        .map { aps ->
+            sourceUaMap = aps.sources.associate { it.id to it.userAgent }
+            Ctx(aps.profileId, aps.sourceIds)
         }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
@@ -753,15 +751,15 @@ class LiveViewModel(
         return if (query.isBlank()) {
             when (key) {
                 LiveKey.All -> if (playlist) channelDao.pagingAllOriginal(ids) else channelDao.pagingAll(ids)
-                LiveKey.Favorites -> channelDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT)
-                LiveKey.History -> channelDao.pagingHistory(c.profileId)
+                LiveKey.Favorites -> channelDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT, ids)
+                LiveKey.History -> channelDao.pagingHistory(c.profileId, ids)
                 is LiveKey.Folder -> channelDao.pagingByCategoryManual(key.id, c.profileId, folderContextKeys.value[key.id] ?: "")
             }
         } else {
             when (key) {
                 LiveKey.All -> channelDao.searchAll(query, ids)
-                LiveKey.Favorites -> channelDao.searchFavorites(query, c.profileId)
-                LiveKey.History -> channelDao.searchHistory(query, c.profileId)
+                LiveKey.Favorites -> channelDao.searchFavorites(query, c.profileId, ids)
+                LiveKey.History -> channelDao.searchHistory(query, c.profileId, ids)
                 is LiveKey.Folder -> channelDao.searchInCategory(query, key.id)
             }
         }
@@ -777,7 +775,7 @@ class LiveViewModel(
             }
             val items = when (key) {
                 is LiveKey.Folder -> channelDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
-                LiveKey.Favorites -> channelDao.snapshotFavoritesManual(pid, contextKey, 5000)
+                LiveKey.Favorites -> channelDao.snapshotFavoritesManual(pid, contextKey, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
                 else -> return@launch
             }
             val idx = items.indexOfFirst { it.id == channel.id }
@@ -834,8 +832,8 @@ class LiveViewModel(
         val ids = c.sourceIds.ifEmpty { listOf(-1L) }
         return when (key) {
             LiveKey.All -> if (hiddenCats.isEmpty()) channelDao.countAll(ids) else channelDao.countAllExcluding(ids, hiddenCats.toList())
-            LiveKey.Favorites -> channelDao.countFavorites(c.profileId)
-            LiveKey.History -> historyDao.count(c.profileId, MediaType.LIVE)
+            LiveKey.Favorites -> channelDao.countFavorites(c.profileId, ids)
+            LiveKey.History -> channelDao.countHistory(c.profileId, ids)
             is LiveKey.Folder -> channelDao.countByCategory(key.id)
         }
     }

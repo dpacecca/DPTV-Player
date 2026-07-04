@@ -60,12 +60,15 @@ fun AddSourceScreen(
         syncLive: Boolean,
         syncMovies: Boolean,
         syncSeries: Boolean,
+        isDefault: Boolean,
     ) -> Unit,
-    onStartM3u: (name: String, url: String, userAgent: String, epgUrl: String, autoRefresh: PlaylistAutoRefresh) -> Unit,
+    onStartM3u: (name: String, url: String, userAgent: String, epgUrl: String, autoRefresh: PlaylistAutoRefresh, isDefault: Boolean) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     initial: SourceEntity? = null,
     initialAutoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
+    initialIsDefault: Boolean = false,
+    showDefaultToggle: Boolean = true,
 ) {
     val colors = OwnTVTheme.colors
     val editing = initial != null
@@ -78,6 +81,7 @@ fun AddSourceScreen(
     var epgUrl by remember(initial) { mutableStateOf(initial?.epgUrl ?: "") }
     var userAgent by remember(initial) { mutableStateOf(initial?.userAgent ?: "") }
     var autoRefresh by remember(initialAutoRefresh) { mutableStateOf(initialAutoRefresh) }
+    var isDefault by remember(initialIsDefault) { mutableStateOf(initialIsDefault) }
     var syncLive by remember { mutableStateOf(true) }
     var syncMovies by remember { mutableStateOf(true) }
     var syncSeries by remember { mutableStateOf(true) }
@@ -154,6 +158,15 @@ fun AddSourceScreen(
             // staleness threshold — the source is refreshed when its data is at least this old.
             AutoRefreshRow(selected = autoRefresh) { showAutoRefreshPicker = true }
 
+            if (showDefaultToggle) {
+                Spacer(Modifier.height(16.dp))
+                ToggleRow(
+                    label = "Default playlist",
+                    desc = "Show only this playlist across the app. Turn off for all playlists; change anytime from the top bar.",
+                    checked = isDefault,
+                ) { isDefault = it }
+            }
+
             if (showContentToggles) {
                 Spacer(Modifier.height(20.dp))
                 Text("Sync first", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
@@ -175,8 +188,8 @@ fun AddSourceScreen(
                     label = if (editing) "Save" else "Start Import",
                     onClick = {
                         when (kind) {
-                            SourceKind.XTREAM -> onStartXtream(name, server, username, password, userAgent, epgUrl, autoRefresh, syncLive, syncMovies, syncSeries)
-                            SourceKind.M3U -> onStartM3u(name, m3uUrl, userAgent, epgUrl, autoRefresh)
+                            SourceKind.XTREAM -> onStartXtream(name, server, username, password, userAgent, epgUrl, autoRefresh, syncLive, syncMovies, syncSeries, isDefault)
+                            SourceKind.M3U -> onStartM3u(name, m3uUrl, userAgent, epgUrl, autoRefresh, isDefault)
                         }
                     },
                     enabled = canStart,

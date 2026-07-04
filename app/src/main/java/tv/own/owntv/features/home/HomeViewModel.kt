@@ -17,6 +17,7 @@ import tv.own.owntv.core.database.dao.ChannelWithWatchedAt
 import tv.own.owntv.core.database.dao.MovieDao
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SeriesDao
+import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpisodeEntity
@@ -26,6 +27,7 @@ import tv.own.owntv.core.launcher.LauncherContinuationItem
 import tv.own.owntv.core.launcher.LauncherContinuationKind
 import tv.own.owntv.core.launcher.LauncherRecommendationPlanner
 import tv.own.owntv.core.launcher.LauncherWatchNextType
+import tv.own.owntv.core.repository.activeSourceIds
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.HeroPreviewEngine
 
@@ -103,6 +105,7 @@ class HomeViewModel(
     private val movieDao: MovieDao,
     private val seriesDao: SeriesDao,
     private val channelDao: ChannelDao,
+    private val sourceDao: SourceDao,
     private val settings: SettingsRepository,
     private val profileDao: ProfileDao,
     private val heroPreviewEngine: HeroPreviewEngine,
@@ -152,12 +155,21 @@ class HomeViewModel(
 
     private suspend fun loadHomeData(profileId: Long) {
         val state = withContext(Dispatchers.IO) {
-            val items = planner.buildContinuationItems(profileId)
+            // Active-playlist filter: when a "Default" playlist is chosen, the home rails narrow to it too
+            // (Continue Watching / Recent / Favorites). No default → activeIds == all profile ids → no-op.
+            val activeIds = activeSourceIds(settings, sourceDao, profileId).toSet()
+            val allIds = sourceDao.sourceIdsForProfile(profileId).toSet()
+            val filtering = activeIds != allIds
+
+            val allItems = planner.buildContinuationItems(profileId)
+            val items = if (!filtering) allItems else allItems.filter { continuationSourceId(it) in activeIds }
             val movies = items.filter { it.kind == LauncherContinuationKind.MOVIE }
             val series = items.filter { it.kind == LauncherContinuationKind.EPISODE }
             val liveWithTs = channelDao.recentlyWatchedWithTimestamp(profileId, 10).first()
+                .let { if (!filtering) it else it.filter { w -> w.channel.sourceId in activeIds } }
             val live = liveWithTs.map { it.channel }
             val favLive = channelDao.favoritesListAlpha(profileId, 50).first()
+                .let { if (!filtering) it else it.filter { c -> c.sourceId in activeIds } }
             val heroItems = buildHeroItems(items, liveWithTs)
 
             HomeUiState(
@@ -173,6 +185,14 @@ class HomeViewModel(
         }
         _uiState.value = state
         tv.own.owntv.Perf.stamp("home-data")
+    }
+
+    /** The playlist a continuation item belongs to, for the active-playlist filter (null if it's gone). */
+    private suspend fun continuationSourceId(item: LauncherContinuationItem): Long? = when (item.kind) {
+        LauncherContinuationKind.MOVIE -> movieDao.getById(item.sourceItemId)?.sourceId
+        LauncherContinuationKind.EPISODE ->
+            seriesDao.getEpisodeById(item.targetItemId)?.let { seriesDao.getSeriesById(it.seriesId)?.sourceId }
+        LauncherContinuationKind.LIVE -> channelDao.getById(item.sourceItemId)?.sourceId
     }
 
     private suspend fun buildHeroItems(

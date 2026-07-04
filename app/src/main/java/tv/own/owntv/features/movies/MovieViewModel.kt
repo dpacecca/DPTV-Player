@@ -53,6 +53,7 @@ import tv.own.owntv.features.live.LiveRailItem
 import tv.own.owntv.features.live.LiveKey
 import tv.own.owntv.core.download.DownloadManager
 import tv.own.owntv.core.storage.StorageAccess
+import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -80,11 +81,8 @@ class MovieViewModel(
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
     // Observe the active profile's sources reactively so adding/removing a playlist refreshes Movies
     // immediately (was read once at startup, so a new playlist showed nothing until app restart).
-    private val ctx: StateFlow<Ctx> = settings.activeProfileId
-        .flatMapLatest { pid ->
-            if (pid < 0) flowOf(Ctx(pid, emptyList()))
-            else sourceDao.observeForProfile(pid).map { srcs -> Ctx(pid, srcs.map { it.id }) }
-        }
+    private val ctx: StateFlow<Ctx> = activeProfileSources(settings, sourceDao)
+        .map { aps -> Ctx(aps.profileId, aps.sourceIds) }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
 
@@ -308,7 +306,7 @@ class MovieViewModel(
             }
             val items = when (key) {
                 is LiveKey.Folder -> movieDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
-                LiveKey.Favorites -> movieDao.snapshotFavoritesManual(pid, contextKey, 5000)
+                LiveKey.Favorites -> movieDao.snapshotFavoritesManual(pid, contextKey, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
                 else -> return@launch
             }
             val idx = items.indexOfFirst { it.id == movie.id }
@@ -368,13 +366,13 @@ class MovieViewModel(
         val playlist = sort == SettingsRepository.SortMode.PLAYLIST
         return if (query.isBlank()) when (key) {
             LiveKey.All -> if (playlist) movieDao.pagingAllOriginal(ids) else movieDao.pagingAll(ids)
-            LiveKey.Favorites -> movieDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT)
-            LiveKey.History -> movieDao.pagingHistory(c.profileId)
+            LiveKey.Favorites -> movieDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT, ids)
+            LiveKey.History -> movieDao.pagingHistory(c.profileId, ids)
             is LiveKey.Folder -> movieDao.pagingByCategoryManual(key.id, c.profileId, folderContextKeys.value[key.id] ?: "")
         } else when (key) {
             LiveKey.All -> movieDao.searchAll(query, ids)
-            LiveKey.Favorites -> movieDao.searchFavorites(query, c.profileId)
-            LiveKey.History -> movieDao.searchHistory(query, c.profileId)
+            LiveKey.Favorites -> movieDao.searchFavorites(query, c.profileId, ids)
+            LiveKey.History -> movieDao.searchHistory(query, c.profileId, ids)
             is LiveKey.Folder -> movieDao.searchInCategory(query, key.id)
         }
     }
@@ -383,8 +381,8 @@ class MovieViewModel(
         val ids = c.sourceIds.ifEmpty { listOf(-1L) }
         return when (key) {
             LiveKey.All -> movieDao.countAll(ids)
-            LiveKey.Favorites -> movieDao.countFavorites(c.profileId)
-            LiveKey.History -> historyDao.count(c.profileId, MediaType.MOVIE)
+            LiveKey.Favorites -> movieDao.countFavorites(c.profileId, ids)
+            LiveKey.History -> movieDao.countHistory(c.profileId, ids)
             is LiveKey.Folder -> movieDao.countByCategory(key.id)
         }
     }

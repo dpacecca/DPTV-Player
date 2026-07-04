@@ -15,6 +15,7 @@ local.properties
 .claude/
 .planning/
 .serena/
+.codegraph/
 CLAUDE.md
 AGENT_HANDOVER.md
 

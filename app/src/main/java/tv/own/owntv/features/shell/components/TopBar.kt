@@ -49,6 +49,8 @@ fun TopBar(
     playlistName: String,
     weatherInfo: WeatherInfo? = null,
     searchVisible: Boolean = true,
+    playlistInteractive: Boolean = false,
+    onPlaylistClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -64,7 +66,9 @@ fun TopBar(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (weatherInfo != null) WeatherChip(info = weatherInfo)
             ClockChip()
-            if (playlistName.isNotBlank()) PlaylistChip(label = playlistName)
+            if (playlistName.isNotBlank()) {
+                PlaylistChip(label = playlistName, interactive = playlistInteractive, onClick = onPlaylistClick)
+            }
         }
     }
 }
@@ -113,10 +117,31 @@ private fun ClockChip() {
 }
 
 @Composable
-private fun PlaylistChip(label: String) {
+private fun PlaylistChip(label: String, interactive: Boolean = false, onClick: () -> Unit = {}) {
     val colors = OwnTVTheme.colors
-    Box(Modifier.clip(RoundedCornerShape(999.dp)).background(colors.primaryContainer.copy(alpha = 0.5f)).padding(horizontal = 14.dp, vertical = 7.dp)) {
-        Text(label, style = MaterialTheme.typography.labelLarge, color = colors.onPrimaryContainer, fontWeight = FontWeight.SemiBold, maxLines = 1)
+    // Static badge when there's only one playlist (nothing to switch); a focusable button with a chevron
+    // when there are 2+, opening the playlist quick-switcher.
+    if (!interactive) {
+        Box(Modifier.clip(RoundedCornerShape(999.dp)).background(colors.primaryContainer.copy(alpha = 0.5f)).padding(horizontal = 14.dp, vertical = 7.dp)) {
+            Text(label, style = MaterialTheme.typography.labelLarge, color = colors.onPrimaryContainer, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        }
+        return
+    }
+    FocusableSurface(
+        onClick = onClick,
+        shape = RoundedCornerShape(999.dp),
+        focusedContainerColor = colors.primaryContainer,
+        unfocusedContainerColor = colors.primaryContainer.copy(alpha = 0.5f),
+        contentAlignment = Alignment.Center,
+    ) { _ ->
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(label, style = MaterialTheme.typography.labelLarge, color = colors.onPrimaryContainer, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            OwnTVIcon(icon = OwnTVIcon.CHEVRON, tint = colors.onPrimaryContainer, modifier = Modifier.size(16.dp))
+        }
     }
 }
 

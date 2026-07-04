@@ -29,6 +29,27 @@ obvious at first glance — once you know them, the app is a lot faster to live 
 
 ---
 
+## 🗂️ Multiple playlists — switch & set a default
+
+Have more than one playlist (e.g. a main one and a backup)? OwnTV can show them **all merged together**,
+or **narrow the whole app to just one**.
+
+- **Quick switcher (top bar):** when you have 2+ playlists, the **playlist chip in the top‑right** becomes a
+  button with a **▾**. Open it to pick **All playlists** or a single playlist. Your choice applies **everywhere
+  at once** — Live TV, Movies, Series, TV Guide, Search, and the Home rails (Continue Watching / Favourites) —
+  and **sticks after a restart**. No need to go into Settings to switch.
+- **Set a default playlist (Settings → Sources):** open **Add / Edit** on a playlist and turn on
+  **“Default playlist.”** That playlist becomes the one shown across the app. The Sources list shows a
+  **DEFAULT** badge on it — it's a status marker, not a button.
+- **Show everything again:** pick **All playlists** from the top‑bar switcher, or edit the default playlist and
+  turn **“Default playlist” off**. With no default set, **every playlist is shown** (the merged view).
+- **What the filter affects:** categories, channels, movies, series, the guide, search results, and the
+  **Favourites** and **History** rails inside each section all respect the selected playlist. Nothing is deleted
+  or re‑imported — it's only a view filter, so switching back to **All** brings everything right back.
+- Your selected default is included in **Backup & Restore** (Sources section).
+
+---
+
 ## 🏠 Home — Continue Watching
 
 - The **Home** tab opens to a row of what you were watching — partly‑watched **movies, episodes and recent
