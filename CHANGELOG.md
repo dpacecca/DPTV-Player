@@ -51,6 +51,25 @@
   look identical to Fit (especially on 16:9 content), or read as a stretch rather than a crop. It now
   takes the fitted picture and scales it up ~20% so it always visibly zooms and fills edge-to-edge,
   regardless of the source's aspect ratio. (Stretch remains a true distort-to-fill.)
+- **Weather chip: VPN-friendly location override + hide toggle (#45)** — the top-bar weather guesses
+  your city from your public IP, so on a VPN it showed the VPN server's city instead of yours. You can
+  now set a manual **Weather location** (Settings → Appearance) — a city name (e.g. *London*) or a
+  raw `lat,lon` pair (e.g. `51.5,-0.12`) — which is geocoded via Open-Meteo and overrides IP lookup.
+  Leave it blank for the previous auto-detect behaviour. There's also a **Show weather** switch to hide
+  the chip entirely. Both settings are included in Backup & Restore. Default ON + blank location means
+  existing users see no change.
+- **Modal D-pad focus can no longer escape into the UI behind it (#48)** — in the Exit, Avatar picker,
+  Rename/Text-input, Resume, App-update and EPG-sync-prompt dialogs, pressing Left/Right/Up/Down from
+  a button could move focus into the browse UI behind the dialog, leaving Cancel/Exit unreachable
+  (only Back could dismiss it). A new all-directions focus trap keeps D-pad focus inside every modal
+  scrim; Back still closes each dialog as before.
+- **Focus returns to the right item after a long-press context menu (#46)** — on Live TV, Movies and
+  Series, long-pressing OK on an item and closing the menu (Cancel / Favourite / Hide / Remove from
+  history / Download) used to jump focus to the left Category rail. Focus now lands back inside the
+  list/grid: on the exact item if it's still there, or on the **nearest surviving neighbour** if it
+  was removed (e.g. unfavouriting on Favorites, or Remove from History) — only leaving the pane when
+  the category becomes empty. The restore is now deterministic (id + position based), fixing an
+  intermittent race where the paged list still held a stale copy of the removed item.
 
 ## v4.0.1 — 2026-07-03
 

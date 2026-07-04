@@ -301,6 +301,14 @@ class SettingsViewModel(
         settings.animationLevel.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.ui.theme.AnimationLevel.FULL)
     fun setAnimationLevel(level: tv.own.owntv.ui.theme.AnimationLevel) { viewModelScope.launch { settings.setAnimationLevel(level) } }
 
+    // Weather chip: visibility toggle + manual location override (for VPN users).
+    val weatherEnabled: StateFlow<Boolean> =
+        settings.weatherEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    fun setWeatherEnabled(enabled: Boolean) { viewModelScope.launch { settings.setWeatherEnabled(enabled) } }
+    val weatherLocation: StateFlow<String> =
+        settings.weatherLocation.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+    fun setWeatherLocation(location: String) { viewModelScope.launch { settings.setWeatherLocation(location) } }
+
     /** Source ids flagged "refresh on startup". */
     val refreshSourceIds: StateFlow<Set<Long>> = settings.refreshSourceIds
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())

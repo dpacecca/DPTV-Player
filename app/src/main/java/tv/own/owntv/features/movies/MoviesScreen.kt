@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -95,6 +96,13 @@ fun MoviesScreen(
     val selectedMovie by vm.selectedMovie.collectAsStateWithLifecycle()
     val moveState by vm.moveState.collectAsStateWithLifecycle()
     var contextMovie by remember { mutableStateOf<MovieEntity?>(null) }
+    // Id + list position of the movie the context menu was opened on. The id re-focuses the same item
+    // when it survives (Favourite/Download/Cancel); when the item is REMOVED (Remove from history, or
+    // un-Favourite while on the Favorites category), it's gone from the paged list, so we re-focus the
+    // nearest surviving neighbour by position instead of escaping to the CategoryRail.
+    var contextMovieId by remember { mutableStateOf<Long?>(null) }
+    var contextMovieIndex by remember { mutableStateOf(-1) }
+    val contextFocus = remember { FocusRequester() }
     val selectedProgress by vm.selectedProgress.collectAsStateWithLifecycle()
     val downloadStates by vm.downloadStates.collectAsStateWithLifecycle()
     val movies = vm.movies.collectAsLazyPagingItems()
@@ -132,6 +140,49 @@ fun MoviesScreen(
             runCatching { selFocus.requestFocus() }
         }
         onRestored()
+    }
+    // Closing the long-press context menu must return focus inside this pane, never the CategoryRail.
+    //   - Item still present (Favourite toggle / Download / Cancel): re-focus the same item by id.
+    //   - Item removed (Remove from history, or un-Favourite on the Favorites category): the paged
+    //     list no longer contains it, so focus the NEAREST surviving neighbour by position (the item
+    //     that slid into the removed slot, else the new last item, else first item). Only if the whole
+    //     category is now empty do we let focus leave (there's nothing here to land on).
+    LaunchedEffect(contextMovie) {
+        if (contextMovie != null) return@LaunchedEffect
+        val targetId = contextMovieId
+        if (targetId == null) { contextMovieIndex = -1; return@LaunchedEffect }
+        val items = movies.itemSnapshotList.items
+        val idx = items.indexOfFirst { it?.id == targetId }
+        if (idx >= 0) {
+            // Item survived — re-focus it directly.
+            runCatching {
+                if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(idx)
+                else gridState.scrollToItem(idx)
+            }
+            withFrameNanos { }
+            runCatching { contextFocus.requestFocus() }
+        } else {
+            // Item was removed. Wait for the paged list to settle, then land on the nearest survivor.
+            withFrameNanos { }
+            val settled = movies.itemSnapshotList.items.filterNotNull()
+            if (settled.isEmpty()) {
+                runCatching { firstItemFocus.requestFocus() } // nothing left; firstItemFocus attaches to the next item that loads
+            } else {
+                val neighbor = settled.getOrNull(contextMovieIndex.coerceAtLeast(0)) ?: settled.last()
+                val neighborIdx = items.indexOfFirst { it?.id == neighbor.id }.coerceAtLeast(0)
+                runCatching {
+                    if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(neighborIdx)
+                    else gridState.scrollToItem(neighborIdx)
+                }
+                // selFocus is bound to selectedMovie; reuse the generic firstItemFocus path only if that
+                // fails. Here we re-purpose contextFocus by re-binding it: re-request after a frame so the
+                // neighbour row (now at contextMovieIndex) receives focus.
+                contextMovieId = neighbor.id
+                withFrameNanos { }
+                runCatching { contextFocus.requestFocus() }
+            }
+        }
+        contextMovieIndex = -1
     }
 
     Row(modifier = modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -210,13 +261,14 @@ fun MoviesScreen(
                                 movie = movie,
                                 isFavorite = favoriteIds.contains(movie.id),
                                 modifier = when {
+                                    movie.id == contextMovieId -> Modifier.focusRequester(contextFocus)
                                     movie.id == selectedMovie?.id -> Modifier.focusRequester(selFocus)
                                     index == 0 -> Modifier.focusRequester(firstItemFocus)
                                     else -> Modifier
                                 },
                                 onFocus = { vm.onMovieFocused(movie) },
                                 onClick = { startMovie(movie) },
-                                onLongClick = { contextMovie = movie },
+                                onLongClick = { contextMovie = movie; contextMovieId = movie.id; contextMovieIndex = index },
                             )
                         }
                     }
@@ -237,13 +289,14 @@ fun MoviesScreen(
                                 rating = movie.rating,
                                 isFavorite = favoriteIds.contains(movie.id),
                                 modifier = when {
+                                    movie.id == contextMovieId -> Modifier.focusRequester(contextFocus)
                                     movie.id == selectedMovie?.id -> Modifier.focusRequester(selFocus)
                                     index == 0 -> Modifier.focusRequester(firstItemFocus)
                                     else -> Modifier
                                 },
                                 onFocus = { vm.onMovieFocused(movie) },
                                 onClick = { startMovie(movie) },
-                                onLongClick = { contextMovie = movie },
+                                onLongClick = { contextMovie = movie; contextMovieId = movie.id; contextMovieIndex = index },
                             )
                         }
                     }

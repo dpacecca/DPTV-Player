@@ -27,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
@@ -119,16 +120,36 @@ fun LiveScreen(
     // When the long-press menu closes (Cancel, Favourite, Hide) WITHOUT opening another dialog, return focus
     // to the channel it was opened from — otherwise focus falls back to the nav panel.
     var contextMenuOpen by remember { mutableStateOf(false) }
+    // Id of the channel the context menu was opened on, plus a dedicated requester bound to that row.
+    // The previous restore was racy (delay(60) + selFocus bound to the *previewed* channel): when the
+    // menu scrim disposed the focused menu button, Compose auto-restored focus and the CategoryRail's
+    // entry-redirect pinned it to the rail before selFocus.requestFocus() ran. Tracking the long-press
+    // target by id and binding a dedicated requester makes the restore deterministic.
+    var contextChannelId by remember { mutableStateOf<Long?>(null) }
+    val contextFocus = remember { FocusRequester() }
     var enteringMoveMode by remember { mutableStateOf(false) }
     LaunchedEffect(moveState) { if (moveState != null) enteringMoveMode = false }
     LaunchedEffect(contextChannel) {
-        if (contextChannel != null) { contextMenuOpen = true; return@LaunchedEffect }
-        if (contextMenuOpen) {
-            contextMenuOpen = false
-            if (renaming == null && matchingEpg == null && catchupChannel == null && !enteringMoveMode) {
-                delay(60)
-                runCatching { selFocus.requestFocus() }
-            }
+        val opened = contextChannel != null
+        if (opened) { contextMenuOpen = true; return@LaunchedEffect }
+        if (!contextMenuOpen) return@LaunchedEffect
+        contextMenuOpen = false
+        // A follow-up dialog (rename / match EPG / catch-up / move) grabs focus itself — only restore
+        // for plain closes (Cancel, Favourite, Hide, Close).
+        if (renaming != null || matchingEpg != null || catchupChannel != null || enteringMoveMode) return@LaunchedEffect
+
+        val targetId = contextChannelId
+        if (targetId == null) { runCatching { selFocus.requestFocus() }; return@LaunchedEffect }
+
+        val idx = channels.itemSnapshotList.items.indexOfFirst { it?.id == targetId }
+        if (idx >= 0) {
+            runCatching { listState.scrollToItem(idx) }
+            withFrameNanos { } // wait one frame so the row is laid out and contextFocus is attached
+            runCatching { contextFocus.requestFocus() }
+        } else {
+            // Row is gone (e.g. "Hide channel" removed it) — clear the anchor and land on the first row.
+            contextChannelId = null
+            runCatching { firstItemFocus.requestFocus() }
         }
     }
     // Returning from fullscreen: scroll to and focus the channel you were watching (waits for the list to load).
@@ -235,6 +256,7 @@ fun LiveScreen(
                                 channel = channel,
                                 isFavorite = favoriteIds.contains(channel.id),
                                 modifier = when {
+                                    channel.id == contextChannelId -> Modifier.focusRequester(contextFocus)
                                     channel.id == previewChannel?.id -> Modifier.focusRequester(selFocus)
                                     index == 0 -> Modifier.focusRequester(firstItemFocus)
                                     else -> Modifier
@@ -244,7 +266,7 @@ fun LiveScreen(
                                     vm.watchFullscreen(channel, channels.itemSnapshotList.items.filterNotNull())
                                     onFullscreen()
                                 },
-                                onLongClick = { contextChannel = channel },
+                                onLongClick = { contextChannel = channel; contextChannelId = channel.id },
                             )
                         }
                     }

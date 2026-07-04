@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -178,6 +179,13 @@ private fun SeriesGrid(
     val series = vm.series.collectAsLazyPagingItems()
     val moveState by vm.moveState.collectAsStateWithLifecycle()
     var contextSeries by remember { mutableStateOf<tv.own.owntv.core.database.entity.SeriesEntity?>(null) }
+    // Id + list position of the series the context menu was opened on. The id re-focuses the same item
+    // when it survives (Favourite/Download/Cancel); when the item is REMOVED (Remove from history, or
+    // un-Favourite while on the Favorites category), it's gone from the paged list, so we re-focus the
+    // nearest surviving neighbour by position instead of escaping to the CategoryRail.
+    var contextSeriesId by remember { mutableStateOf<Long?>(null) }
+    var contextSeriesIndex by remember { mutableStateOf(-1) }
+    val contextFocus = remember { androidx.compose.ui.focus.FocusRequester() }
 
     val selectedIndex = railItems.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
     val selectedItem = railItems.getOrNull(selectedIndex)
@@ -202,6 +210,44 @@ private fun SeriesGrid(
             }
             onRestoredSelected()
         }
+    }
+    // Closing the long-press context menu must return focus inside this pane, never the CategoryRail.
+    //   - Item still present (Favourite toggle / Download / Cancel): re-focus the same item by id.
+    //   - Item removed (Remove from history, or un-Favourite on the Favorites category): the paged
+    //     list no longer contains it, so focus the NEAREST surviving neighbour by position (the item
+    //     that slid into the removed slot, else the new last item, else first item). Only if the whole
+    //     category is now empty do we let focus leave (there's nothing here to land on).
+    LaunchedEffect(contextSeries) {
+        if (contextSeries != null) return@LaunchedEffect
+        val targetId = contextSeriesId
+        if (targetId == null) { contextSeriesIndex = -1; return@LaunchedEffect }
+        val items = series.itemSnapshotList.items
+        val idx = items.indexOfFirst { it?.id == targetId }
+        if (idx >= 0) {
+            runCatching {
+                if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(idx)
+                else gridState.scrollToItem(idx)
+            }
+            withFrameNanos { }
+            runCatching { contextFocus.requestFocus() }
+        } else {
+            withFrameNanos { }
+            val settled = series.itemSnapshotList.items.filterNotNull()
+            if (settled.isEmpty()) {
+                runCatching { firstItemFocus.requestFocus() }
+            } else {
+                val neighbor = settled.getOrNull(contextSeriesIndex.coerceAtLeast(0)) ?: settled.last()
+                val neighborIdx = items.indexOfFirst { it?.id == neighbor.id }.coerceAtLeast(0)
+                runCatching {
+                    if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(neighborIdx)
+                    else gridState.scrollToItem(neighborIdx)
+                }
+                contextSeriesId = neighbor.id
+                withFrameNanos { }
+                runCatching { contextFocus.requestFocus() }
+            }
+        }
+        contextSeriesIndex = -1
     }
 
     Row(modifier = modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -269,13 +315,14 @@ private fun SeriesGrid(
                                 series = s,
                                 isFavorite = favoriteIds.contains(s.id),
                                 modifier = when {
+                                    s.id == contextSeriesId -> Modifier.focusRequester(contextFocus)
                                     s.id == selectedSeries?.id -> Modifier.focusRequester(gridSelFocus)
                                     index == 0 -> Modifier.focusRequester(firstItemFocus)
                                     else -> Modifier
                                 },
                                 onFocus = { vm.onSeriesFocused(s) },
                                 onClick = { vm.openSeries(s) },
-                                onLongClick = { contextSeries = s },
+                                onLongClick = { contextSeries = s; contextSeriesId = s.id; contextSeriesIndex = index },
                             )
                         }
                     }
@@ -296,13 +343,14 @@ private fun SeriesGrid(
                                 rating = s.rating,
                                 isFavorite = favoriteIds.contains(s.id),
                                 modifier = when {
+                                    s.id == contextSeriesId -> Modifier.focusRequester(contextFocus)
                                     s.id == selectedSeries?.id -> Modifier.focusRequester(gridSelFocus)
                                     index == 0 -> Modifier.focusRequester(firstItemFocus)
                                     else -> Modifier
                                 },
                                 onFocus = { vm.onSeriesFocused(s) },
                                 onClick = { vm.openSeries(s) },
-                                onLongClick = { contextSeries = s },
+                                onLongClick = { contextSeries = s; contextSeriesId = s.id; contextSeriesIndex = index },
                             )
                         }
                     }

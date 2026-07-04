@@ -61,6 +61,7 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.StorageBrowser
+import tv.own.owntv.ui.components.TextInputDialog
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.ThemeMode
@@ -98,6 +99,7 @@ fun SettingsScreen(
     var showClearHistory by remember { mutableStateOf(false) }
     var showAnimations by remember { mutableStateOf(false) }
     var showStartup by remember { mutableStateOf(false) }
+    var showWeatherLocation by remember { mutableStateOf(false) }
 
     // Dialog-close focus return: closing a dialog/picker refocuses the row that opened it (focus
     // would otherwise fall spatially back to the sidebar).
@@ -140,6 +142,8 @@ fun SettingsScreen(
     val accent by settingsVm.accent.collectAsStateWithLifecycle()
     val customAccent by settingsVm.customAccent.collectAsStateWithLifecycle()
     val animationLevel by settingsVm.animationLevel.collectAsStateWithLifecycle()
+    val weatherEnabled by settingsVm.weatherEnabled.collectAsStateWithLifecycle()
+    val weatherLocation by settingsVm.weatherLocation.collectAsStateWithLifecycle()
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by remember { mutableStateOf<SettingsTab?>(null) }
@@ -293,6 +297,22 @@ fun SettingsScreen(
             chip = animationLevel.label, chipTone = TileTone.SECONDARY,
             onClick = { dialogReturn = animationsRowFocus; showAnimations = true }, showChevron = true,
             modifier = Modifier.focusRequester(animationsRowFocus),
+        )
+        SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.EPG,
+            title = "Show weather",
+            desc = "Display the current weather in the top bar. Turn off if you don't use it or the city is wrong.",
+            chip = if (weatherEnabled) "On" else "Off",
+            chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
+            onClick = { settingsVm.setWeatherEnabled(!weatherEnabled) },
+        )
+        SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.EPG,
+            title = "Weather location",
+            desc = "Override the city used for weather. Leave blank to auto-detect, or enter a city (e.g. London) or \"lat,lon\" (e.g. 51.5,-0.12). Useful on a VPN, where auto-detect resolves to the server's city.",
+            chip = weatherLocation.ifBlank { "Auto" },
+            chipTone = TileTone.SECONDARY,
+            onClick = { showWeatherLocation = true }, showChevron = true,
         )
 
         SectionDivider()
@@ -453,6 +473,17 @@ fun SettingsScreen(
             selected = startupMode.name,
             onSelect = { settingsVm.setStartupMode(tv.own.owntv.features.settings.data.StartupMode.valueOf(it)); showStartup = false },
             onDismiss = { showStartup = false },
+        )
+    }
+    if (showWeatherLocation) {
+        TextInputDialog(
+            title = "Weather location",
+            initial = weatherLocation,
+            label = "Location",
+            confirmLabel = "Save",
+            hint = "Leave blank to auto-detect, or enter a city (e.g. London) or \"lat,lon\" (e.g. 51.5,-0.12).",
+            onConfirm = { settingsVm.setWeatherLocation(it) },
+            onDismiss = { showWeatherLocation = false },
         )
     }
     if (showAccent) {

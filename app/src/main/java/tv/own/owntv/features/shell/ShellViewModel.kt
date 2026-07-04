@@ -143,13 +143,18 @@ class ShellViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, "No source")
 
-    /** Phase 7 — weather chip. Refreshes when connectivity returns, cached 30 min by repository. */
-    val weather: StateFlow<WeatherInfo?> = connectivity.isOnline
-        .flatMapLatest { online ->
-            if (online) flow { emit(weatherRepository.get()) }
-            else flowOf(null as WeatherInfo?)
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null as WeatherInfo?)
+    /**
+     * Phase 7 — weather chip. Refreshes when connectivity returns, cached 30 min by repository.
+     * Gated by the "Show weather" setting (OFF hides the chip) and honouring a manual location
+     * override so users on a VPN get their real city instead of the VPN server's.
+     */
+    val weather: StateFlow<WeatherInfo?> =
+        combine(connectivity.isOnline, settings.weatherEnabled, settings.weatherLocation) { online, enabled, loc ->
+            Triple(online, enabled, loc)
+        }.flatMapLatest { (online, enabled, loc) ->
+            if (!online || !enabled) flowOf(null as WeatherInfo?)
+            else flow { emit(weatherRepository.get(loc)) }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null as WeatherInfo?)
 
     /** null = still loading; < 0 = first run (show setup wizard); >= 0 = active profile (show shell). */
     val activeProfileId: StateFlow<Long?> = settings.activeProfileId

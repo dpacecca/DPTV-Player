@@ -130,6 +130,12 @@ class SeriesViewModel(
     private val _selected = MutableStateFlow<LiveKey>(LiveKey.All)
     val selectedKey: StateFlow<LiveKey> = _selected.asStateFlow()
 
+    // Bumped after a favourite/history mutation so the pager rebuilds its (manual, non-reactive)
+    // PagingSource. Without this, unfavouriting on the Favorites category leaves the removed series in
+    // the paged snapshot, which breaks focus restore (the stale row disposes under focus).
+    private val _listRefresh = MutableStateFlow(0)
+    private fun refreshList() { _listRefresh.value++ }
+
     private val _search = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _search.asStateFlow()
 
@@ -215,8 +221,8 @@ class SeriesViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, defaultRail)
 
     val series: Flow<PagingData<SeriesEntity>> = combine(
-        _selected, ctx, _search.map { it.trim() }.debounce(300).distinctUntilChanged(), sortMode,
-    ) { key, c, query, sort -> Args(key, c, query, sort) }
+        _selected, ctx, _search.map { it.trim() }.debounce(300).distinctUntilChanged(), sortMode, _listRefresh,
+    ) { key, c, query, sort, _ -> Args(key, c, query, sort) }
         .flatMapLatest { (key, c, query, sort) ->
             Pager(PagingConfig(pageSize = 60, prefetchDistance = 30, initialLoadSize = 90, maxSize = 300)) {
                 pagingSource(key, c, query, sort)
@@ -402,6 +408,7 @@ class SeriesViewModel(
             val pid = currentProfileId() ?: return@launch
             if (favoriteIds.value.contains(s.id)) favoriteDao.remove(pid, MediaType.SERIES, s.id)
             else favoriteDao.add(FavoriteEntity(profileId = pid, mediaType = MediaType.SERIES, itemId = s.id))
+            refreshList() // the Favorites category uses a manual PagingSource — force a rebuild
         }
     }
 
@@ -465,6 +472,7 @@ class SeriesViewModel(
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             historyDao.remove(pid, MediaType.SERIES, seriesId)
+            refreshList() // the History category uses a manual PagingSource — force a rebuild
         }
     }
 
