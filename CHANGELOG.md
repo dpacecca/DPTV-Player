@@ -95,6 +95,19 @@
 
 ### 🐛 Fixes
 
+- **4K Live channels no longer break playback on some TVs** — on certain low-end panels (e.g. some
+  Hisense models), watching a 4K channel could wedge the TV's hardware video decoder: every channel
+  afterwards took ~20 seconds to start, and it stayed broken until the TV was rebooted (Google TV /
+  higher-end sets were unaffected). The Live engine (ExoPlayer) was *parking* and reusing its decoder
+  between channels instead of releasing it, so the stuck 4K decoder was never handed back. Now, whenever
+  you **leave a UHD (>1080p) channel** — Back, exit full-screen, background, or zap to another channel via
+  CH+/-, the D-pad, or the channel-list overlay — the decoder is **fully released** so the next channel
+  starts cleanly. It's scoped to 4K only, so normal SD/HD zapping keeps the same fast, instant switching.
+- **Live engine pill now shows the engine that's actually playing** — when a Live channel auto-fell-back
+  from ExoPlayer to mpv, the MPV/EXO pill still read **EXO** (it was showing the saved pin, not the live
+  engine), and tapping it appeared to do nothing. The pill now reflects the **running** engine, and one
+  tap always switches it — flipping to mpv (and remembering the channel) or back to ExoPlayer. (The
+  Movies/Series pill already tracked the live engine and is unchanged.)
 - **Live TV zoom / aspect modes now work** — choosing Fit, Fill / Crop, Stretch, Original, Force 16:9
   or Force 4:3 on a Live TV channel did nothing at all (the picture never changed). Live channels play
   full-screen on ExoPlayer (the live engine), and that path had no zoom implementation — the mode was

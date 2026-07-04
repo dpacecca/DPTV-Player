@@ -15,6 +15,8 @@
 
 ### 🐛 Fixes
 
+- **4K Live channels no longer break playback on some TVs**
+- **Live engine pill now shows the engine that's actually playing**
 - **Live TV zoom / aspect modes now work**
 - **Fill / Crop now actually zooms in and crops**
 - **Weather chip: VPN-friendly location override + hide toggle (#45)**

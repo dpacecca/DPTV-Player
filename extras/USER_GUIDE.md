@@ -80,9 +80,10 @@ or **narrow the whole app to just one**.
 - **CH+ / CH−** (or Up/Down on the channel‑list overlay) zap through the current category.
 - 🔧 **Compatibility mode (two playback engines)**: live channels play on the fast **ExoPlayer** engine by
   default. If a channel shows **UHD artifacts**, won't open, or stutters, bring up the controls and press the
-  **engine toggle (the ⇄ MPV/EXO pill)** — this **pins that channel to the mpv engine**. The pill shows the
-  active engine and turns teal when pinned to mpv, and a small "Switched to MPV/ExoPlayer" note confirms the
-  change. It's **remembered per channel**, so that one channel always uses mpv while everything else stays fast.
+  **engine toggle (the ⇄ MPV/EXO pill)** — this **pins that channel to the mpv engine**. The pill always shows
+  the engine that's **actually playing** (teal while on mpv, whether you pinned it or OwnTV auto‑switched), and
+  **one tap always flips** the engine — a small "Switched to MPV/ExoPlayer" note confirms it. It's **remembered
+  per channel**, so that one channel always uses mpv while everything else stays fast.
 - 🔇 **Audio with no picture**: if a channel ever plays sound but shows a black screen, OwnTV now detects this
   automatically and switches engines for you (briefly shows a loading spinner). If neither engine can render
   video for that stream, you'll see a clear on‑screen message instead of a silent black screen.

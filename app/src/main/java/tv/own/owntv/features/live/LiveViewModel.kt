@@ -464,6 +464,10 @@ class LiveViewModel(
         if (previewEngine.currentUrl == channel.streamUrl) {
             previewEngine.setMuted(false) // promote — instant if already PLAYING, otherwise keeps loading
         } else {
+            // In-player zap to a DIFFERENT channel (CH+/-, D-pad, channel-list overlay): if we're leaving a
+            // UHD channel, fully release its 4K decoder before the reuse/rebuild (no-op for SD/HD). Matches
+            // the Back/exit path — so the Hisense 4K-decoder leak is avoided however you leave the channel.
+            previewEngine.releaseDecoderForUhd()
             previewEngine.play(
                 channel.streamUrl, muted = false,
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
@@ -479,17 +483,19 @@ class LiveViewModel(
     /** HUD "compatibility mode" toggle: pin/unpin the current channel to mpv and swap engines live. */
     fun toggleForceMpv() {
         val channel = _previewChannel.value ?: return
-        val turnOn = channel.streamUrl !in forceMpvUrls.value
-        android.util.Log.i(ENGINE_TAG, "compat toggle '${channel.name}' -> ${if (turnOn) "mpv" else "exoplayer"} (currentlyOnExo=${_liveOnExo.value})")
+        // Base the swap on the ACTUAL running engine, not the pin: after an auto-fallback to mpv the channel
+        // runs on mpv while still unpinned, and the old pin-based logic then did nothing on click. Keying off
+        // _liveOnExo makes every click flip the live engine, with the pin following the choice.
+        val goToMpv = _liveOnExo.value // on Exo now → switch to mpv; on mpv now → switch to Exo
+        android.util.Log.i(ENGINE_TAG, "engine toggle '${channel.name}' -> ${if (goToMpv) "mpv" else "exoplayer"} (currentlyOnExo=${_liveOnExo.value})")
         viewModelScope.launch {
-            forceMpvStore.set(channel.streamUrl, turnOn)
-            when {
-                turnOn && _liveOnExo.value -> fallbackToMpv(channel) // ExoPlayer → mpv now
-                !turnOn && !_liveOnExo.value -> {                    // mpv → ExoPlayer now
-                    player.stop()
-                    delay(500) // let mpv's decoder/surface release before ExoPlayer takes over
-                    if (_previewChannel.value?.streamUrl == channel.streamUrl) startOnExo(channel)
-                }
+            forceMpvStore.set(channel.streamUrl, goToMpv) // pin to mpv when choosing mpv; unpin when choosing Exo
+            if (goToMpv) {
+                fallbackToMpv(channel) // ExoPlayer → mpv now
+            } else {                    // mpv → ExoPlayer now
+                player.stop()
+                delay(500) // let mpv's decoder/surface release before ExoPlayer takes over
+                if (_previewChannel.value?.streamUrl == channel.streamUrl) startOnExo(channel)
             }
         }
     }
