@@ -304,9 +304,9 @@ private fun NavItem(
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
-    // Box-style corners (14.dp) so every focus/selection box in the app reads as the same "box", close
+    // Box-style corners (17.dp) so every focus/selection box in the app reads as the same "box", close
     // to the live-TV channel list item, not an over-rounded pill.
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(17.dp)
     // The nav surface itself is transparent + borderless; the shared 4-state nav ladder (NavLadder.kt)
     // paints the fill, content tint, focus outline and the persistent left accent bar, so the sidebar
     // and the folder CategoryRail read identically (#47). FocusableSurface still provides the focus
