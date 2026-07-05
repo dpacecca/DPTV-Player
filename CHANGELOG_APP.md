@@ -15,6 +15,8 @@
 
 ### 🐛 Fixes
 
+- **Live channel-list overlay now matches the channel you launched from Home (#55)**
+- **Active nav section stays visible when focus moves away (#47)**
 - **4K Live channels no longer break playback on some TVs**
 - **Live engine pill now shows the engine that's actually playing**
 - **Live TV zoom / aspect modes now work**

@@ -510,6 +510,11 @@ class LiveViewModel(
     suspend fun ensurePlayingByIdAsync(channelId: Long, zapChannels: List<ChannelEntity> = emptyList()): Boolean {
         val channel = channelDao.getById(channelId) ?: return false
         zapList = zapChannels
+        // Also drive the left-arrow channel-list overlay, which reads _zapChannels. Without this, a
+        // channel launched from Home (Keep Watching / Favourites) left the overlay showing the stale
+        // list from the previous Live-TV session (#55). CH+/CH- already used zapList, so only the
+        // overlay was wrong — keep both in sync here as watchFullscreen() does.
+        _zapChannels.value = zapChannels
         _canZap.value = zapChannels.size > 1
         ensurePlaying(channel)
         return true

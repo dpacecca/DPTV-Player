@@ -95,6 +95,21 @@
 
 ### 🐛 Fixes
 
+- **Live channel-list overlay now matches the channel you launched from Home (#55)** — pressing Left
+  while a Live channel plays opens the quick channel-list overlay. When you started the channel from a
+  Live TV **category**, it correctly listed that category — but when you started it from the **Home**
+  screen (Keep Watching or a Favourites rail), the overlay still showed the *previous* category's list.
+  The Home launch path updated the CH+/CH- zap list but not the list the overlay reads, so the two
+  disagreed. The overlay now reflects the same list you're zapping through — the Keep Watching /
+  Favourites channels you actually opened.
+- **Active nav section stays visible when focus moves away (#47)** — in the left navigation and the
+  category rail, the *selected* item lost all highlight as soon as you moved focus to another item, so
+  at a glance you couldn't tell which section/category was actually active. Both now use a consistent
+  four-state treatment: **selected + focused** (full accent fill) → **focused** cursor (surface fill +
+  teal outline) → **selected but unfocused** (soft tonal fill, accent tint and a persistent left accent
+  bar) → idle. The accent bar gives a colour-independent marker of the active tab for low-contrast
+  panels. Selection/focus boxes are also slightly less rounded (box-style) and the nav bar sits a little
+  closer to the first panel, so the whole left navigation reads as one consistent system.
 - **4K Live channels no longer break playback on some TVs** — on certain low-end panels (e.g. some
   Hisense models), watching a 4K channel could wedge the TV's hardware video decoder: every channel
   afterwards took ~20 seconds to start, and it stayed broken until the TV was rebooted (Google TV /

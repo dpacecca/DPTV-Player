@@ -324,7 +324,7 @@ fun OwnTVShell(
                     playlistInteractive = playlists.size > 1,
                     onPlaylistClick = { showPlaylistPicker = true },
                 )
-                Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 6.dp, end = 6.dp, bottom = 6.dp)) {
+                Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 0.dp, end = 6.dp, bottom = 6.dp)) {
                     when {
                         selectedSection == MainSection.SETTINGS -> SettingsScreen(
                             themeMode = themeMode,
