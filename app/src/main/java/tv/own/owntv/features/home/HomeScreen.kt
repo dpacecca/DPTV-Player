@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -140,6 +141,11 @@ fun HomeScreen(
         if (!previewEnabled) {
             vm.stopPreview() // keep the hero expanded (poster); just stop the video
         }
+    }
+
+    // The engine is an app-scoped singleton; make sure the preview can't outlive the Home screen.
+    DisposableEffect(heroPreviewEngine) {
+        onDispose { heroPreviewEngine.stop() }
     }
 
     LaunchedEffect(state.heroItems, state.continueMovies, state.continueSeries, state.favoriteLive, restoreFocus) {
@@ -437,6 +443,9 @@ private fun HeroRowSection(
                             contentAlignment = Alignment.Center,
                         ) { focused ->
                             if (isExpanded) {
+                                // No blurred backdrop here: the preview overlay covers this card as soon
+                                // as previewRectInRowPx is known and renders the blur itself — doubling the
+                                // blur underneath just costs frames on TV hardware.
                                 Box(Modifier.fillMaxSize().background(Color.Black)) {
                                     if (!imageUrl.isNullOrBlank()) {
                                         AsyncImage(
@@ -567,12 +576,24 @@ private fun HeroRowSection(
                                 modifier = Modifier.fillMaxSize(),
                             )
                             if (engineState != HeroPreviewEngine.State.PLAYING) {
+                                // Opaque cover: the SurfaceView below holds the previous preview's last
+                                // frame after stop(), and the parent's black background is punched out by
+                                // the SurfaceView. Everything above (loading images, translucent blur,
+                                // transparent logos, bare fallback icon) relies on this layer to hide it.
+                                Box(Modifier.fillMaxSize().background(Color.Black))
                                 val artUrl = when (expandedItem) {
                                     is HeroItem.MovieHero -> expandedItem.movie.posterUrl
                                     is HeroItem.SeriesHero -> expandedItem.series.posterUrl
                                     is HeroItem.LiveHero -> expandedItem.channel.logoUrl
                                 }
                                 if (!artUrl.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = artUrl,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize().blur(20.dp),
+                                        contentScale = ContentScale.Crop,
+                                        alpha = 0.5f,
+                                    )
                                     AsyncImage(
                                         model = artUrl,
                                         contentDescription = null,
