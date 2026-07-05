@@ -219,6 +219,91 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 
 ---
 
+## 🛠️ Building your own custom M3U playlist
+
+Making your own `.m3u`/`.m3u8` by hand (or with a script)? OwnTV decides which tab each entry lands in
+**purely from the `#EXTINF` line** — the tag you put on it, not the file it points to. Get the line right
+and your content sorts itself into **Live TV**, **Movies** or **Series** automatically.
+
+**The rule OwnTV uses (in order):**
+
+1. If the entry is tagged **series** → it goes to the **Series** tab.
+2. Otherwise, if it's tagged as a **movie/VOD** → it goes to the **Movies** grid.
+3. Otherwise (no VOD tag at all) → it stays in **Live TV**.
+
+The tag can be written as either `type="…"` **or** `tvg-type="…"` — both are accepted:
+
+| You want it under… | Add this attribute to the `#EXTINF` line |
+|---|---|
+| **Live TV** | *(nothing — any untagged entry is treated as a live channel)* |
+| **Movies** | `type="movie"` **or** `type="vod"` **or** `tvg-type="movie"` **or** `tvg-type="vod"` |
+| **Series** | `type="series"` **or** `tvg-type="series"` |
+
+### Anatomy of a line
+
+Every item is **two lines**: an `#EXTINF` metadata line, then the stream URL on the next line.
+
+```
+#EXTINF:-1 tvg-id="..." tvg-logo="..." group-title="...",Display Name
+http://your-server/stream.ext
+```
+
+- **`group-title="…"`** — the **category name inside the tab** (e.g. a Live TV category, a Movies
+  category, or a Series category). Entries with the same `group-title` are grouped together.
+- **`tvg-logo="…"`** — poster/channel logo URL (optional).
+- **`tvg-id="…"`** — for **Live TV**, this is the EPG channel id used to match guide data (optional).
+- **Display Name** — the text after the final comma. This is the title shown in the app.
+
+### Live TV example
+
+```
+#EXTM3U url-tvg="http://your-server/epg.xml"
+#EXTINF:-1 tvg-id="bbc1.uk" tvg-logo="http://logo/bbc1.png" group-title="UK Channels",BBC One
+http://your-server/live/bbc1.ts
+```
+
+> `url-tvg="…"` on the `#EXTM3U` header line is picked up as the playlist's EPG source automatically if
+> you haven't set one. Catch-up attributes (`catchup="default"`, `catchup-source="…"`, `catchup-days="7"`)
+> are also read on live entries.
+
+### Movies example
+
+```
+#EXTINF:-1 type="movie" tvg-logo="http://logo/inception.jpg" group-title="Action",Inception (2010)
+http://your-server/movie/inception.mkv
+```
+
+### Series example — this is the important one
+
+Tag each **episode line** with `type="series"`, and put the **season/episode marker in the Display Name**.
+OwnTV reads the marker to group episodes into shows, seasons and episodes:
+
+```
+#EXTINF:-1 type="series" group-title="Drama",Stranger Things S01E01
+http://your-server/series/st-s01e01.mkv
+#EXTINF:-1 type="series" group-title="Drama",Stranger Things S01E02
+http://your-server/series/st-s01e02.mkv
+#EXTINF:-1 type="series" group-title="Drama",Stranger Things S02E01
+http://your-server/series/st-s02e01.mkv
+```
+
+- The text **before** the marker becomes the **show name** — so all three lines above merge into one show
+  *Stranger Things* with a Season 1 (2 episodes) and a Season 2 (1 episode).
+- The text **after** the marker becomes the **episode title** (optional), e.g.
+  `…,Stranger Things S01E01 - The Vanishing`.
+- **Supported markers** (case-insensitive):
+  - `S01E05` — also written `s1e5`, `S01 E05`, `S01.E05`, `S01-E05`.
+  - `1x05` — the "1x05" style.
+- **Keep the show name identical** across its episodes (spelling/case aside — matching is
+  case-insensitive) so they group into the same show.
+- If an episode line has **no marker**, it's still added, but as a plain sequential episode under that
+  name — so always include a marker when you can.
+
+> **Tip:** the `group-title` on a series entry becomes its **category** in the Series tab, not the show
+> name — the show name always comes from the Display Name before the marker.
+
+---
+
 ## 💡 Tips
 
 - **Long‑press OK** is your friend — favourites, rename, hide, match EPG and catch‑up all live there.
@@ -227,6 +312,5 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 - **Guide looks blank when you first open it?** (especially with catch‑up channels) Try: **Settings → EPG** → tap Edit → delete your EPG source(s), then **add them again** and sync fresh. The v4.0.0 update changed how EPG loads, and old cached data needs to be cleared and reimported. Once done, the guide displays immediately.
 
 ---
-
 *OwnTV is free, open‑source and ad‑free, forever. Found something confusing or missing from this guide?
 Open an issue on GitHub.*
