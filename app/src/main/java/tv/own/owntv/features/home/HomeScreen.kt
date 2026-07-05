@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -33,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +70,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.launcher.LauncherContinuationItem
@@ -112,16 +116,16 @@ fun HomeScreen(
     val heroFocus = remember { FocusRequester() }
     val fallbackFocus = remember { FocusRequester() }
     val firstRowFocus = remember { FocusRequester() }
-    // The SELECTED hero is always shown wide (with its poster) — default the first one, even before the row
-    // is focused. Video only plays once the row is focused (see the preview effect below). Expansion is
-    // decoupled from playback, so the wide card never collapses just because the video hasn't started.
-    var expandedHeroIndex by remember { mutableStateOf(0) }
+    // Nothing starts expanded: a hero card earns its wide (16:9) state only after 3s of continuous focus
+    // (see the dwell effect below). Moving focus — to another card or out of the row — collapses it again.
+    var expandedHeroIndex by remember { mutableStateOf(-1) }
     var focusedHeroIndex by remember { mutableStateOf(-1) }
 
     val onNonHeroFocused = remember(vm, heroPreviewEngine) {
         {
             vm.setHeroFocused(false)
-            heroPreviewEngine.stop() // stop the video, but keep the selected hero expanded (poster)
+            heroPreviewEngine.stop()
+            expandedHeroIndex = -1
             onChildFocused()
         }
     }
@@ -133,7 +137,17 @@ fun HomeScreen(
         kotlinx.coroutines.delay(40L)
         if (focusedHeroIndex != -1) return@LaunchedEffect
         vm.setHeroFocused(false)
-        heroPreviewEngine.stop() // keep the selected hero expanded (poster); just stop the video
+        heroPreviewEngine.stop()
+        expandedHeroIndex = -1
+    }
+
+    // Dwell-to-expand: a card widens only after 3s of uninterrupted focus. Navigating away cancels the
+    // timer (this effect restarts), so quick D-pad sweeps never expand anything.
+    LaunchedEffect(focusedHeroIndex) {
+        val index = focusedHeroIndex
+        if (index < 0) return@LaunchedEffect
+        kotlinx.coroutines.delay(3_000L)
+        if (focusedHeroIndex == index) expandedHeroIndex = index
     }
 
     LaunchedEffect(previewEnabled) {
@@ -216,8 +230,8 @@ fun HomeScreen(
                         if (hasFocus) {
                             if (expandedHeroIndex != index) {
                                 heroPreviewEngine.stop() // stop the previous hero's video before switching
+                                expandedHeroIndex = -1 // collapse immediately; the dwell timer re-expands after 3s
                             }
-                            expandedHeroIndex = index // expand the focused hero immediately (poster shows first)
                             focusedHeroIndex = index
                             vm.onHeroUserNavigate(index)
                             vm.setHeroFocused(true)
@@ -329,10 +343,24 @@ private fun HeroRowSection(
     var previewRectInRowPx by remember { mutableStateOf<Rect?>(null) }
     var localFocusedIndex by remember { mutableStateOf(-1) }
     var rowWidthDp by remember { mutableStateOf(0.dp) }
+    // Set when a focus move collapses the previously expanded card ("collapse handoff"): scroll-to-start
+    // would fight the collapse animation and shove the newly focused card around, so that one move uses
+    // minimal bring-into-view scrolling instead.
+    var skipScrollToStart by remember { mutableStateOf(false) }
     val heroRowState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(expandedIndex) {
+        // The rect is only ever written by the expanded card's onGloballyPositioned; drop it on collapse
+        // so the next expansion can't flash its overlay at the previous card's stale position.
+        if (expandedIndex < 0) previewRectInRowPx = null
+    }
 
     LaunchedEffect(localFocusedIndex) {
-        if (localFocusedIndex >= 0) {
+        if (localFocusedIndex < 0) return@LaunchedEffect
+        if (skipScrollToStart) {
+            skipScrollToStart = false
+        } else {
             heroRowState.animateScrollToItem(localFocusedIndex)
         }
     }
@@ -388,11 +416,21 @@ private fun HeroRowSection(
                         is HeroItem.LiveHero -> item.channel.logoUrl
                     }
 
+                    val bringIntoView = remember { BringIntoViewRequester() }
+                    LaunchedEffect(isExpanded) {
+                        if (isExpanded) {
+                            // Wait out the 500ms width tween so bringIntoView measures the final wide bounds.
+                            kotlinx.coroutines.delay(520L)
+                            bringIntoView.bringIntoView()
+                        }
+                    }
+
                     val heroGlowColor = colors.focusGlow
                     Box(
                         modifier = Modifier
                             .height(cardHeight)
                             .width(width)
+                            .bringIntoViewRequester(bringIntoView)
                             .then(if (isExpanded) Modifier.zIndex(1f) else Modifier)
                             .then(
                                 if (isExpanded) Modifier.onGloballyPositioned { coords ->
@@ -414,7 +452,15 @@ private fun HeroRowSection(
                                 .height(cardHeight)
                                 .then(if (index == 0) Modifier.focusRequester(heroFocusRequester) else Modifier)
                                 .onFocusChanged { fs ->
-                                    if (fs.hasFocus) localFocusedIndex = index
+                                    if (fs.hasFocus) {
+                                        // expandedIndex still holds the pre-collapse value here: a focus
+                                        // move off an expanded card is the collapse handoff.
+                                        if (expandedIndex >= 0 && expandedIndex != index) {
+                                            skipScrollToStart = true
+                                            scope.launch { bringIntoView.bringIntoView() }
+                                        }
+                                        localFocusedIndex = index
+                                    }
                                     onHeroFocusChanged(index, fs.hasFocus)
                                 }
                                 .then(
