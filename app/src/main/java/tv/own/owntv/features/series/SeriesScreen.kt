@@ -61,6 +61,8 @@ import tv.own.owntv.features.shell.components.PreviewPane
 import tv.own.owntv.features.shell.components.RailCategory
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.MoveOrderOverlay
+import tv.own.owntv.ui.components.InAppToast
+import tv.own.owntv.ui.components.rememberInAppToast
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -68,6 +70,8 @@ import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.PosterCard
 import tv.own.owntv.ui.components.ProgressRing
 import tv.own.owntv.ui.components.ResumeDialog
+import tv.own.owntv.ui.components.SetTmdbNameDialog
+import tv.own.owntv.ui.components.TrailerPlayerScreen
 import tv.own.owntv.ui.components.longPressMenuGuard
 import androidx.compose.foundation.layout.width
 import tv.own.owntv.ui.components.SearchBar
@@ -126,11 +130,16 @@ private fun SeriesContextMenu(
     canMove: Boolean,
     isHistory: Boolean,
     hasTmdbDetails: Boolean,
+    trailerKey: String?,
+    canRefetchTmdb: Boolean,
     onShowDetails: () -> Unit,
     onToggleFavorite: () -> Unit,
     onMove: () -> Unit,
     onRemoveFromHistory: () -> Unit,
     onDownload: () -> Unit,
+    onRefetch: () -> Unit,
+    onSetTmdbName: () -> Unit,
+    onPlayTrailer: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
@@ -159,6 +168,16 @@ private fun SeriesContextMenu(
             if (hasTmdbDetails) {
                 OwnTVButton("TMDB Details", onClick = onShowDetails, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.MENU, modifier = Modifier.fillMaxWidth())
             }
+            // Play Trailer (§7.3 U4) — only when TMDB actually has a trailer for this show (§11.1 gating).
+            trailerKey?.let { key ->
+                OwnTVButton("Play Trailer", onClick = { onPlayTrailer(key) }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            }
+            // Refetch TMDB details (§11.2 U5a) — clear a wrong/stale match (or a 7-day "no match" cache) and re-search.
+            if (canRefetchTmdb) {
+                OwnTVButton("Refetch TMDB details", onClick = onRefetch, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                // Set TMDB name (§11.2 U5b) — hand-type the exact TMDB title when the auto-match is wrong.
+                OwnTVButton("Set TMDB name", onClick = onSetTmdbName, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            }
             Spacer(Modifier.height(4.dp))
             OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
         }
@@ -183,9 +202,15 @@ private fun SeriesGrid(
     val selectedSeries by vm.selectedSeries.collectAsStateWithLifecycle()
     val selectedSeriesMeta by vm.selectedSeriesMeta.collectAsStateWithLifecycle()
     val metadataMode by vm.metadataMode.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val toast = rememberInAppToast()
     val series = vm.series.collectAsLazyPagingItems()
     val moveState by vm.moveState.collectAsStateWithLifecycle()
     var contextSeries by remember { mutableStateOf<tv.own.owntv.core.database.entity.SeriesEntity?>(null) }
+    // "Set TMDB name" dialog target (§11.2 U5b); null = closed.
+    var setTmdbNameSeries by remember { mutableStateOf<tv.own.owntv.core.database.entity.SeriesEntity?>(null) }
+    // In-app trailer playback (§7.3 U4); non-null = fullscreen player open with this YouTube key.
+    var trailerVideoKey by remember { mutableStateOf<String?>(null) }
     // Fullscreen TMDB details window (§11.1); null = closed.
     var detailsSeries by remember { mutableStateOf<tv.own.owntv.core.database.entity.SeriesEntity?>(null) }
     // Id + list position of the series the context menu was opened on. The id re-focuses the same item
@@ -231,6 +256,10 @@ private fun SeriesGrid(
         // Opening the TMDB Details window closes the menu; let the window keep focus (it traps focus and
         // refocuses the series on close), don't yank it back to the grid here.
         if (detailsSeries != null) return@LaunchedEffect
+        // Same for the "Set TMDB name" dialog — it refocuses the series itself when it closes.
+        if (setTmdbNameSeries != null) return@LaunchedEffect
+        // Same for the trailer player.
+        if (trailerVideoKey != null) return@LaunchedEffect
         val targetId = contextSeriesId
         if (targetId == null) { contextSeriesIndex = -1; return@LaunchedEffect }
         val items = series.itemSnapshotList.items
@@ -443,11 +472,20 @@ private fun SeriesGrid(
             canMove = selectedKey is LiveKey.Folder || selectedKey == LiveKey.Favorites,
             isHistory = selectedKey == LiveKey.History,
             hasTmdbDetails = metadataMode.enrich && cacheForS != null,
+            trailerKey = if (metadataMode.enrich) cacheForS?.trailerKey else null,
+            canRefetchTmdb = metadataMode.enrich,
             onShowDetails = { contextSeries = null; detailsSeries = s },
             onToggleFavorite = { vm.toggleFavorite(s); contextSeries = null },
             onMove = { contextSeries = null; vm.enterMoveMode(s, selectedKey) },
             onRemoveFromHistory = { vm.removeFromHistory(s.id); contextSeries = null },
             onDownload = { vm.downloadSeries(s); contextSeries = null },
+            onRefetch = {
+                contextSeries = null
+                toast.show("Refetching TMDB details…")
+                vm.refetchSeriesMeta(s)
+            },
+            onSetTmdbName = { contextSeries = null; setTmdbNameSeries = s },
+            onPlayTrailer = { key -> contextSeries = null; trailerVideoKey = key },
             onDismiss = { contextSeries = null },
         )
     }
@@ -467,6 +505,47 @@ private fun SeriesGrid(
         )
     }
 
+    // "Set TMDB name" override dialog (§11.2 U5b). Prefill once per target (saved override, else cleaned title).
+    LaunchedEffect(setTmdbNameSeries) {
+        if (setTmdbNameSeries == null && contextSeriesId != null) {
+            withFrameNanos { }
+            runCatching { contextFocus.requestFocus() }
+        }
+    }
+    setTmdbNameSeries?.let { s ->
+        var prefill by remember(s.id) { mutableStateOf<SeriesViewModel.TmdbNamePrefill?>(null) }
+        LaunchedEffect(s.id) { prefill = vm.seriesTmdbNamePrefill(s) }
+        prefill?.let { p ->
+            SetTmdbNameDialog(
+                initialTitle = p.title,
+                initialYear = p.year,
+                hasOverride = p.hasOverride,
+                onSave = { title, year ->
+                    setTmdbNameSeries = null
+                    vm.setSeriesTmdbName(s, title, year)
+                    toast.show("Re-searching TMDB…")
+                },
+                onClear = {
+                    setTmdbNameSeries = null
+                    vm.clearSeriesTmdbName(s)
+                    toast.show("Re-searching TMDB…")
+                },
+                onDismiss = { setTmdbNameSeries = null },
+            )
+        }
+    }
+
+    // In-app trailer player (§7.3 U4) — fullscreen over everything; Back/Exit closes and refocuses the series.
+    LaunchedEffect(trailerVideoKey) {
+        if (trailerVideoKey == null && contextSeriesId != null) {
+            withFrameNanos { }
+            runCatching { contextFocus.requestFocus() }
+        }
+    }
+    trailerVideoKey?.let { key ->
+        TrailerPlayerScreen(videoKey = key, onExit = { trailerVideoKey = null })
+    }
+
     // Move mode overlay.
     moveState?.let { ms ->
         MoveOrderOverlay(
@@ -479,6 +558,8 @@ private fun SeriesGrid(
             onCancel = vm::cancelMove,
         )
     }
+
+    InAppToast(toast)
 }
 
 /** Parse a stored JSON array of strings (genres/cast); empty on null/blank/bad JSON. */
@@ -567,8 +648,10 @@ private fun EpisodeDetailPane(
 private fun EpisodeContextMenu(
     title: String,
     hasTmdbDetails: Boolean,
+    canRefetchTmdb: Boolean,
     onShowDetails: () -> Unit,
     onDownload: () -> Unit,
+    onRefetch: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
@@ -588,6 +671,10 @@ private fun EpisodeContextMenu(
             OwnTVButton("Download", onClick = onDownload, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.DOWNLOADS, modifier = Modifier.fillMaxWidth().focusRequester(focus))
             if (hasTmdbDetails) {
                 OwnTVButton("TMDB Details", onClick = onShowDetails, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.MENU, modifier = Modifier.fillMaxWidth())
+            }
+            // Refetch TMDB details (§11.2 U5a) — clear this episode's cache AND its show's match, then re-search.
+            if (canRefetchTmdb) {
+                OwnTVButton("Refetch TMDB details", onClick = onRefetch, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             }
             Spacer(Modifier.height(4.dp))
             OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
@@ -640,7 +727,12 @@ private fun EpisodeView(
     var initialFocused by remember { mutableStateOf(false) }
     var contextEpisode by remember { mutableStateOf<EpisodeEntity?>(null) }
     var detailsEpisode by remember { mutableStateOf<EpisodeEntity?>(null) }
+    // Long-press target's id + its row's FocusRequester: refocus the episode row when the context menu
+    // (or a window it opened) closes — otherwise focus dies with the menu and falls to the sidebar.
+    var contextEpisodeId by remember { mutableStateOf<Long?>(null) }
+    val epContextFocus = remember { androidx.compose.ui.focus.FocusRequester() }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val toast = rememberInAppToast()
 
     BackHandler { vm.closeSeries() }
 
@@ -741,12 +833,13 @@ private fun EpisodeView(
                                 val epModifier = Modifier
                                     .then(if (ep.id == lastPlayedId) Modifier.focusRequester(selFocus) else Modifier)
                                     .then(if (index == 0) Modifier.focusRequester(firstEpFocus) else Modifier)
+                                    .then(if (ep.id == contextEpisodeId) Modifier.focusRequester(epContextFocus) else Modifier)
                                 EpisodeRow(
                                     episode = ep,
                                     lastWatched = ep.id == lastPlayedId,
                                     onClick = { startEpisode(ep) },
                                     onFocus = { vm.onEpisodeFocused(ep) },
-                                    onLongClick = { contextEpisode = ep },
+                                    onLongClick = { contextEpisode = ep; contextEpisodeId = ep.id },
                                     modifier = epModifier,
                                 )
                             }
@@ -762,6 +855,23 @@ private fun EpisodeView(
         }
     }
 
+    // When the episode context menu closes (action or dismiss), put focus back on the episode row it was
+    // opened from — unless a window the menu opened (TMDB Details) now owns focus; it refocuses on close.
+    LaunchedEffect(contextEpisode) {
+        if (contextEpisode != null) return@LaunchedEffect
+        if (detailsEpisode != null) return@LaunchedEffect
+        if (contextEpisodeId != null) {
+            withFrameNanos { }
+            runCatching { epContextFocus.requestFocus() }
+        }
+    }
+    LaunchedEffect(detailsEpisode) {
+        if (detailsEpisode == null && contextEpisodeId != null) {
+            withFrameNanos { }
+            runCatching { epContextFocus.requestFocus() }
+        }
+    }
+
     // Long-press an episode → context menu (Download idempotent + toast; TMDB Details when matched).
     contextEpisode?.let { ep ->
         val cacheForEp = selectedEpisodeMeta?.takeIf { it.episodeId == ep.id }?.cache
@@ -769,12 +879,18 @@ private fun EpisodeView(
         EpisodeContextMenu(
             title = "S${ep.seasonNumber} · E${ep.episodeNumber}  ${ep.name}",
             hasTmdbDetails = metadataMode.enrich && cacheForEp != null,
+            canRefetchTmdb = metadataMode.enrich,
             onShowDetails = { contextEpisode = null; detailsEpisode = ep },
             onDownload = {
                 contextEpisode = null
                 if (alreadyDownloaded) {
-                    android.widget.Toast.makeText(context, "Already downloaded — check the Downloads menu.", android.widget.Toast.LENGTH_SHORT).show()
+                    toast.show("Already downloaded — check the Downloads menu.")
                 } else vm.downloadEpisode(ep)
+            },
+            onRefetch = {
+                contextEpisode = null
+                toast.show("Refetching TMDB details…")
+                vm.refetchEpisodeMeta(series, ep)
             },
             onDismiss = { contextEpisode = null },
         )
@@ -797,6 +913,8 @@ private fun EpisodeView(
             onDismiss = { resumePrompt = null },
         )
     }
+
+    InAppToast(toast)
 }
 
 @Composable

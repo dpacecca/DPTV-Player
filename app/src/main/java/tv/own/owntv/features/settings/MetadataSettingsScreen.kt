@@ -176,7 +176,12 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         } // end if (mode.enrich)
 
         Spacer(Modifier.height(24.dp))
-        // TMDB attribution (plan §8) — required by TMDB's API terms.
+        // TMDB attribution (plan §8) — logo + line, required by TMDB's API terms.
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(tv.own.owntv.R.drawable.ic_tmdb_logo),
+            contentDescription = "TMDB",
+        )
+        Spacer(Modifier.height(8.dp))
         Text(
             "This product uses the TMDB API but is not endorsed or certified by TMDB.",
             style = MaterialTheme.typography.bodySmall,

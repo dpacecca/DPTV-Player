@@ -147,11 +147,14 @@ class MovieViewModel(
      * so scrolling fast doesn't fire a lookup per card; cached in Room so a second focus is instant. Null
      * when enrichment is off or no confident match — the UI then shows pure provider data (§7.1).
      */
+    /** Bumped by [refetchMovieMeta] to force the focused movie's TMDB resolve to re-run after clearing its cache. */
+    private val _metaRefreshTick = MutableStateFlow(0L)
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    val selectedMovieMeta: StateFlow<MovieMeta?> = _selectedMovie
-        .distinctUntilChanged { a, b -> a?.id == b?.id }
+    val selectedMovieMeta: StateFlow<MovieMeta?> = combine(_selectedMovie, _metaRefreshTick) { m, tick -> m to tick }
+        .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
         .debounce(350)
-        .mapLatest { m ->
+        .mapLatest { (m, _) ->
             if (m == null) null
             else MovieMeta(m.id, runCatching { metadata.resolveMovie(m) }.getOrNull())
         }
@@ -221,6 +224,45 @@ class MovieViewModel(
     fun select(key: LiveKey) { _selected.value = key }
     fun setSearchQuery(query: String) { _search.value = query }
     fun onMovieFocused(movie: MovieEntity) { _selectedMovie.value = movie }
+
+    /**
+     * Manual "Refetch TMDB details" (plan §11.2 U5a): clear this movie's cached match/details (incl. a 7-day
+     * negative cache) and re-trigger [resolveMovie] for the focused movie via the meta-refresh tick.
+     */
+    fun refetchMovieMeta(movie: MovieEntity) {
+        viewModelScope.launch {
+            runCatching { metadata.clearMovie(movie) }
+            _metaRefreshTick.value++
+        }
+    }
+
+    /**
+     * Prefill for the "Set TMDB name" dialog (plan §11.2 U5b): the saved override if any, else the cleaned
+     * provider title. [hasOverride] drives the dialog's Clear button.
+     */
+    data class TmdbNamePrefill(val title: String, val year: Int?, val hasOverride: Boolean)
+
+    suspend fun movieTmdbNamePrefill(movie: MovieEntity): TmdbNamePrefill {
+        metadata.movieOverride(movie)?.let { return TmdbNamePrefill(it.title, it.year, hasOverride = true) }
+        val norm = tv.own.owntv.core.metadata.TitleNormalizer.normalize(movie.name)
+        return TmdbNamePrefill(norm.query, movie.year ?: norm.year, hasOverride = false)
+    }
+
+    /** Save the hand-typed override and force a re-resolve under the new query (plan §11.2 U5b). */
+    fun setMovieTmdbName(movie: MovieEntity, title: String, year: Int?) {
+        viewModelScope.launch {
+            runCatching { metadata.setMovieOverride(movie, title, year) }
+            _metaRefreshTick.value++
+        }
+    }
+
+    /** Remove the override and re-resolve with the cleaned provider title (plan §11.2 U5b). */
+    fun clearMovieTmdbName(movie: MovieEntity) {
+        viewModelScope.launch {
+            runCatching { metadata.clearMovieOverride(movie) }
+            _metaRefreshTick.value++
+        }
+    }
 
     /** The user's resume preference (Always / Ask / Never) — the screen drives the prompt. */
     val resumeMode: StateFlow<SettingsRepository.ResumeMode> = settings.resumeMode

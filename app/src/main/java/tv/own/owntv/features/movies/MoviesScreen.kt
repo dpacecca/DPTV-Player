@@ -60,12 +60,16 @@ import tv.own.owntv.features.shell.components.MediaDetailsScreen
 import tv.own.owntv.features.shell.components.PreviewPane
 import tv.own.owntv.features.shell.components.RailCategory
 import tv.own.owntv.ui.components.MoveOrderOverlay
+import tv.own.owntv.ui.components.InAppToast
+import tv.own.owntv.ui.components.rememberInAppToast
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.PosterCard
 import tv.own.owntv.ui.components.ResumeDialog
+import tv.own.owntv.ui.components.SetTmdbNameDialog
+import tv.own.owntv.ui.components.TrailerPlayerScreen
 import tv.own.owntv.ui.components.longPressMenuGuard
 import androidx.compose.foundation.layout.width
 import tv.own.owntv.ui.components.SearchBar
@@ -101,7 +105,12 @@ fun MoviesScreen(
     var contextMovie by remember { mutableStateOf<MovieEntity?>(null) }
     // Fullscreen TMDB details window (§11.1); null = closed.
     var detailsMovie by remember { mutableStateOf<MovieEntity?>(null) }
+    // "Set TMDB name" dialog target (§11.2 U5b); null = closed.
+    var setTmdbNameMovie by remember { mutableStateOf<MovieEntity?>(null) }
+    // In-app trailer playback (§7.3 U4); non-null = fullscreen player open with this YouTube key.
+    var trailerVideoKey by remember { mutableStateOf<String?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val toast = rememberInAppToast()
     // Id + list position of the movie the context menu was opened on. The id re-focuses the same item
     // when it survives (Favourite/Download/Cancel); when the item is REMOVED (Remove from history, or
     // un-Favourite while on the Favorites category), it's gone from the paged list, so we re-focus the
@@ -155,9 +164,11 @@ fun MoviesScreen(
     //     category is now empty do we let focus leave (there's nothing here to land on).
     LaunchedEffect(contextMovie) {
         if (contextMovie != null) return@LaunchedEffect
-        // Opening the TMDB Details window closes the menu; don't yank focus back to the grid — the window
-        // needs it (and traps it). The grid is refocused when the window closes (see below).
+        // Opening the TMDB Details window or the Set TMDB name dialog closes the menu; don't yank focus
+        // back to the grid — they need it (and trap it). The grid is refocused when they close (see below).
         if (detailsMovie != null) return@LaunchedEffect
+        if (setTmdbNameMovie != null) return@LaunchedEffect
+        if (trailerVideoKey != null) return@LaunchedEffect
         val targetId = contextMovieId
         if (targetId == null) { contextMovieIndex = -1; return@LaunchedEffect }
         val items = movies.itemSnapshotList.items
@@ -342,6 +353,8 @@ fun MoviesScreen(
             canMove = selectedKey is LiveKey.Folder || selectedKey == LiveKey.Favorites,
             isHistory = selectedKey == LiveKey.History,
             hasTmdbDetails = metadataMode.enrich && cacheForM != null,
+            trailerKey = if (metadataMode.enrich) cacheForM?.trailerKey else null,
+            canRefetchTmdb = metadataMode.enrich,
             onShowDetails = { contextMovie = null; detailsMovie = m },
             onToggleFavorite = { vm.toggleFavorite(m); contextMovie = null },
             onMove = { contextMovie = null; vm.enterMoveMode(m, selectedKey) },
@@ -350,9 +363,16 @@ fun MoviesScreen(
                 contextMovie = null
                 // Idempotent (§11.1): don't re-queue an existing download — nudge to the Downloads menu.
                 if (alreadyDownloaded) {
-                    android.widget.Toast.makeText(context, "Already downloaded — check the Downloads menu.", android.widget.Toast.LENGTH_SHORT).show()
+                    toast.show("Already downloaded — check the Downloads menu.")
                 } else vm.download(m)
             },
+            onRefetch = {
+                contextMovie = null
+                toast.show("Refetching TMDB details…")
+                vm.refetchMovieMeta(m)
+            },
+            onSetTmdbName = { contextMovie = null; setTmdbNameMovie = m },
+            onPlayTrailer = { key -> contextMovie = null; trailerVideoKey = key },
             onDismiss = { contextMovie = null },
         )
     }
@@ -375,6 +395,47 @@ fun MoviesScreen(
         )
     }
 
+    // "Set TMDB name" override dialog (§11.2 U5b). Prefill once per target (saved override, else cleaned title).
+    LaunchedEffect(setTmdbNameMovie) {
+        if (setTmdbNameMovie == null && contextMovieId != null) {
+            withFrameNanos { }
+            runCatching { contextFocus.requestFocus() }
+        }
+    }
+    setTmdbNameMovie?.let { m ->
+        var prefill by remember(m.id) { mutableStateOf<MovieViewModel.TmdbNamePrefill?>(null) }
+        LaunchedEffect(m.id) { prefill = vm.movieTmdbNamePrefill(m) }
+        prefill?.let { p ->
+            SetTmdbNameDialog(
+                initialTitle = p.title,
+                initialYear = p.year,
+                hasOverride = p.hasOverride,
+                onSave = { title, year ->
+                    setTmdbNameMovie = null
+                    vm.setMovieTmdbName(m, title, year)
+                    toast.show("Re-searching TMDB…")
+                },
+                onClear = {
+                    setTmdbNameMovie = null
+                    vm.clearMovieTmdbName(m)
+                    toast.show("Re-searching TMDB…")
+                },
+                onDismiss = { setTmdbNameMovie = null },
+            )
+        }
+    }
+
+    // In-app trailer player (§7.3 U4) — fullscreen over everything; Back/Exit closes and refocuses the movie.
+    LaunchedEffect(trailerVideoKey) {
+        if (trailerVideoKey == null && contextMovieId != null) {
+            withFrameNanos { }
+            runCatching { contextFocus.requestFocus() }
+        }
+    }
+    trailerVideoKey?.let { key ->
+        TrailerPlayerScreen(videoKey = key, onExit = { trailerVideoKey = null })
+    }
+
     // Move mode overlay.
     moveState?.let { ms ->
         MoveOrderOverlay(
@@ -387,6 +448,8 @@ fun MoviesScreen(
             onCancel = vm::cancelMove,
         )
     }
+
+    InAppToast(toast)
 }
 
 @Composable
@@ -396,11 +459,16 @@ private fun MovieContextMenu(
     canMove: Boolean,
     isHistory: Boolean,
     hasTmdbDetails: Boolean,
+    trailerKey: String?,
+    canRefetchTmdb: Boolean,
     onShowDetails: () -> Unit,
     onToggleFavorite: () -> Unit,
     onMove: () -> Unit,
     onRemoveFromHistory: () -> Unit,
     onDownload: () -> Unit,
+    onRefetch: () -> Unit,
+    onSetTmdbName: () -> Unit,
+    onPlayTrailer: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
@@ -430,6 +498,17 @@ private fun MovieContextMenu(
             if (hasTmdbDetails) {
                 Spacer(Modifier.height(4.dp))
                 OwnTVButton("TMDB Details", onClick = onShowDetails, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.MENU, modifier = Modifier.fillMaxWidth())
+            }
+            // Play Trailer (§7.3 U4) — only when TMDB actually has a trailer for this title (§11.1 gating).
+            trailerKey?.let { key ->
+                OwnTVButton("Play Trailer", onClick = { onPlayTrailer(key) }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            }
+            // Refetch TMDB details (§11.2 U5a) — always available when enrichment is on, so a "no match"
+            // (7-day negative cache) or a stale match can be cleared and re-searched immediately.
+            if (canRefetchTmdb) {
+                OwnTVButton("Refetch TMDB details", onClick = onRefetch, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                // Set TMDB name (§11.2 U5b) — hand-type the exact title to override the auto-match.
+                OwnTVButton("Set TMDB name", onClick = onSetTmdbName, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             }
             Spacer(Modifier.height(4.dp))
             OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.fillMaxWidth())

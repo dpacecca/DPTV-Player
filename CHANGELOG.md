@@ -93,7 +93,51 @@
   compatibility-mode/default-source fields simply leave your current values untouched. Unknown or
   invalid entries are ignored — a restore never crashes on them.
 
+### 🎬 TMDB metadata enrichment (Movies, Series & Episodes)
+
+- **On-demand TMDB enrichment** — cached posters, plots, cast, genres, ratings and backdrops from TMDB,
+  filling the gaps your playlist leaves. Fully opt-in and cached in Room; no bulk calls. Works out of the
+  box via a shared caching server (no setup), or bring your own TMDB API key / self-hosted server.
+- **Metadata source mode (Settings → Metadata)** — choose **Provider only**, **Provider + TMDB** (provider
+  wins, TMDB fills gaps), or **TMDB only** (TMDB preferred). Advanced key/self-host fields appear only when
+  TMDB is on.
+- **TMDB Details window** — long-press a movie or series (or episode) → **TMDB Details** opens a scrollable
+  window with the backdrop/still, full overview, cast, genres and rating (Back to close).
+- **Series & episode enrichment** — series show pages and, inside a series, a new **episode detail pane**
+  showing each episode's TMDB still, plot, air year and rating (resolved lazily per season).
+- **Sort by rating** — the Movies & Series sort chip now cycles Provider → A–Z → **Rating** (highest first).
+- **Cleaner detail pane / interaction** — the side detail pane is now display-only (single-press plays,
+  long-press for Favorite / Download / TMDB Details), which also fixes D-pad navigation from the grid to the
+  pane. Episode rows lost their play/download icons (single-press plays, long-press for Download / Details).
+  Downloading an already-downloaded item shows a toast instead of re-queuing.
+- **Better title matching** — provider prefixes like `4K-OSN+ - ` are now stripped before searching TMDB, so
+  more messy playlist titles resolve correctly.
+- **Refetch TMDB details (long-press)** — clear a wrong/stale TMDB match (or a 7-day "no match" cache) and
+  re-search immediately, on Movies, Series, and Episodes — no need to wait for the cache to expire. Lets the
+  improved title matcher reach titles that failed before the fix.
+- **Set TMDB name (long-press)** — manual override for titles the matcher still gets wrong: type the exact
+  TMDB title (and optional year) and OwnTV re-searches under that name, on Movies and Series. The override
+  survives playlist re-syncs; Clear reverts to automatic matching. Episodes inherit their series' match.
+- **In-app toasts** — transient notices (refetch, already-downloaded, re-search) now use a themed in-app
+  toast instead of the system toast.
+- **🎞️ In-app trailers (Movies & Series)** — long-press → **Play Trailer** (shown only when TMDB has one)
+  plays the YouTube trailer in a floating window styled like the TMDB Details window, with Exit, a progress
+  bar and D-pad ◀/▶ ±10s seek. Falls back to opening the YouTube app if the built-in player can't run.
+- **Self-hostable metadata server** — the caching-proxy Worker source now ships in `worker/` with a README,
+  so anyone can deploy their own and point OwnTV at it.
+- **Attribution** — Settings → Metadata shows the TMDB logo and the required notice: this product uses the
+  TMDB API but is not endorsed or certified by TMDB.
+
 ### 🐛 Fixes
+
+- **Fixed D-pad navigation from the Movies/Series grid to the detail pane** — the display-only pane no
+  longer traps focus on the way right.
+- **Fixed episode long-press menu losing focus** — after an action in the episode context menu (e.g.
+  Refetch TMDB details), focus now returns to the episode row instead of jumping away.
+- **Failed TMDB lookups are no longer remembered as "no match"** — a network error, rate limit or proxy
+  outage during a lookup now simply retries on the next open, instead of being negative-cached for 7 days
+  like a genuine "title not on TMDB" answer. The Settings test lookup also distinguishes "server
+  unreachable" from "no match".
 
 - **Live channel-list overlay now matches the channel you launched from Home (#55)** — pressing Left
   while a Live channel plays opens the quick channel-list overlay. When you started the channel from a

@@ -653,8 +653,10 @@ class SettingsViewModel(
             val result = runCatching { metadataProvider.searchMovie(q) }
             _metadataTest.value = result.fold(
                 onSuccess = { hits ->
-                    val top = hits.firstOrNull()
-                    if (top == null) {
+                    val top = hits?.firstOrNull()
+                    if (hits == null) {
+                        MetadataTestState.Fail("Couldn't reach the metadata server — check network / key / URL.")
+                    } else if (top == null) {
                         MetadataTestState.Fail("No TMDB match for \"$q\".")
                     } else {
                         val yr = top.year?.let { " ($it)" } ?: ""

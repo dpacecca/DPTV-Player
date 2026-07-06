@@ -87,6 +87,7 @@ Scan to join from your phone:
 - **Built for scale** — ~50k channels / ~168k movies via Paging 3
 - **Fast syncing** — priority import (pick e.g. Live TV first, the rest finishes in the background — survives sleep/reboot); incremental re-syncs only write what changed; auto-retrying downloads
 - **Typed M3U playlists** — `type=` / `tvg-type=` tags route entries to **Movies** or **Series** (per-episode `S01E05` lines are grouped into shows, seasons and episodes automatically)
+- 🎬 **TMDB metadata enrichment** — optional, on-demand posters, plots, cast, genres & ratings for Movies, Series and Episodes; **in-app trailers**; manual Refetch / "Set TMDB name" overrides; works with zero setup, your own TMDB key, or a self-hosted [caching proxy](worker/)
 
 ### 🗓️ EPG / TV Guide
 - **Guide grid** — time × channel (XMLTV); now/next/later in preview; two-stage nav (Right selects row, OK browses)
@@ -292,6 +293,13 @@ Scan to donate from your phone:
 <a href="https://paypal.me/AshiqHasan"><img src="extras/paypal_qr.jpg" alt="Scan to donate via PayPal" width="170"></a>
 
 Thank you for using OwnTV! 🙏
+
+## 🎬 Credits — TMDB
+
+<img src="extras/tmdb_logo.svg" alt="TMDB" width="200">
+
+Movie & series metadata and trailers are provided by [TMDB](https://www.themoviedb.org/).
+**This product uses the TMDB API but is not endorsed or certified by TMDB.**
 
 ## ⚖️ Legal
 

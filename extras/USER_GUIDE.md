@@ -140,6 +140,45 @@ or **narrow the whole app to just one**.
 
 ---
 
+## 🎬 TMDB metadata (posters, plots, cast, trailers)
+
+- **Settings → Metadata (TMDB):** pick a **Metadata source** — *Provider only* (no TMDB), *Provider + TMDB*
+  (default; your playlist's info wins, TMDB fills the blanks and adds cast/genres/backdrops), or *TMDB only*
+  (prefer TMDB). Turn on **Advanced options** to use your own TMDB API key or a self-hosted server; otherwise
+  the built-in shared server is used with no setup. A "Test lookup" button verifies it works.
+- 💡 **Recommended: use your own TMDB API key** (free for personal / non-commercial use) or a self-hosted
+  server. TMDB keys are typically issued instantly — no waiting period or manual approval — and your own
+  key means you're never affected by shared-server rate limits. Create one at
+  [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api), paste it into **Settings →
+  Metadata → TMDB API key (v3)**, and hit **Test lookup**.
+- 🌐 **Self-host your own metadata server (free):** the exact Cloudflare Worker OwnTV's shared server runs
+  is in the repo at [`worker/`](../worker/) — [`worker/README.md`](../worker/README.md) has the full
+  step-by-step (deploy with `wrangler`, set your TMDB key as a secret via
+  [`worker/wrangler.toml`](../worker/wrangler.toml) + `wrangler secret put TMDB_KEY`, then paste your
+  `https://….workers.dev` URL into **Settings → Metadata → Custom metadata server URL**). Your key stays
+  on your Cloudflare account, and responses are edge-cached for 30 days.
+- **Movies/Series details:** focus a title to see enriched info in the side pane. **Long-press** a poster for
+  Favorite, Download and **TMDB Details** (a scrollable window with the backdrop, full plot, cast and genres;
+  press **Back** to close). **Single-press** plays.
+- **Series & episodes:** open a series to see the episode list with a detail pane on the right — focus an
+  episode to see its TMDB still, plot and rating. Episode rows: **single-press plays**, **long-press** for
+  Download / TMDB Details.
+- **Sorting:** the sort chip cycles **Provider → A–Z → Rating**. Rating shows the highest-rated titles first.
+- **Refetch TMDB details:** long-press a movie, series, or episode → **Refetch TMDB details** forces a fresh
+  TMDB search — it clears a wrong/stale match (or a 7-day "no match" cache) and re-searches at once, so you
+  don't have to wait for the cache to expire. Use it when the art/plot is missing or looks wrong.
+- **Set TMDB name:** long-press a movie or series → **Set TMDB name** opens a dialog
+  pre-filled with the cleaned title; type the exact TMDB title (and an optional year to disambiguate) and
+  Save forces a fresh TMDB search under that name. Clear removes the override and re-searches with the
+  cleaned provider title. The escape hatch when matching still gets a title wrong (or it's stuck in the
+  7-day "no match" cache).
+- 🎞️ **Trailers:** long-press a movie or series → **Play Trailer** (shown only when TMDB has one). The trailer
+  plays in a floating window: **Back or Exit** closes it, **◀/▶** seeks ±10 seconds. If the built-in player
+  can't run on your box, OwnTV opens the trailer in the YouTube app instead.
+- **Attribution:** OwnTV uses the TMDB API but is not endorsed or certified by TMDB.
+
+---
+
 ## 🕐 History
 
 - Browse **recently watched movies, series and channels**.

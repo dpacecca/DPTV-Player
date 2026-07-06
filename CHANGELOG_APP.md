@@ -12,6 +12,8 @@
 - ✨ **VOD engine fallback (movies & series play on more devices)**
 - 🔄 **Per-source Auto Refresh (playlists & EPG)**
 - 💾 **Backup & Restore now covers every persistent setting**
+- 🎬 **TMDB metadata enrichment (Movies, Series & Episodes)** — posters, plots, cast, genres, ratings; TMDB Details window; sort by rating; Refetch / Set TMDB name overrides
+- 🎞️ **In-app trailers for Movies & Series** — long-press → Play Trailer, D-pad seek, YouTube-app fallback
 
 ### 🐛 Fixes
 
@@ -24,6 +26,9 @@
 - **Weather chip: VPN-friendly location override + hide toggle (#45)**
 - **Modal D-pad focus can no longer escape into the UI behind it (#48)**
 - **Focus returns to the right item after a long-press context menu (#46)**
+- **Fixed D-pad navigation from the Movies/Series grid to the detail pane**
+- **Fixed episode long-press menu losing focus after Refetch TMDB details**
+- **Failed TMDB lookups are no longer remembered as "no match" for 7 days**
 
 ## v4.0.1 — 2026-07-03
 
