@@ -6,13 +6,14 @@ import org.koin.dsl.module
 import tv.own.owntv.features.customize.CustomizeViewModel
 import tv.own.owntv.features.downloads.DownloadsViewModel
 import tv.own.owntv.features.epg.EpgViewModel
-import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.home.HomeViewModel
+import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MovieViewModel
 import tv.own.owntv.features.profiles.ProfilesViewModel
 import tv.own.owntv.features.search.SearchViewModel
 import tv.own.owntv.features.series.SeriesViewModel
 import tv.own.owntv.features.settings.BackupViewModel
+import tv.own.owntv.features.settings.HomeSettingsViewModel
 import tv.own.owntv.features.settings.SettingsViewModel
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.setup.SetupViewModel
@@ -35,6 +36,7 @@ val appModule = module {
     viewModel { SearchViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { ProfilesViewModel(get(), get(), get(), get()) }
     viewModel { SettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { HomeSettingsViewModel(get()) }
     viewModel { DownloadsViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { EpgViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     // settings, sourceDao, categoryDao, customizationStore
