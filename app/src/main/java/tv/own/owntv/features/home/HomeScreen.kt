@@ -293,20 +293,22 @@ fun HomeScreen(
         }
     }
 
-    // Video preview: only the EXPANSION is immediate (on navigation, above) — the muted video starts a
-    // moment later, on top of the already-wide card's poster, and only while the row is focused.
-    LaunchedEffect(isPreviewActive, hero, lastInteractionMs) {
-        if (!isPreviewActive || hero == null) {
+    // Video preview starts after the expanded card has settled, so 4K decoder setup does not compete with
+    // the width animation. Until then the expanded card stays on the poster.
+    LaunchedEffect(isPreviewActive, hero, expandedHeroIndex, focusedHeroIndex, lastInteractionMs) {
+        if (!isPreviewActive || hero == null || expandedHeroIndex < 0 || focusedHeroIndex != expandedHeroIndex) {
             heroPreviewEngine.stop()
             return@LaunchedEffect
         }
 
+        val scheduledIndex = expandedHeroIndex
         val scheduledHero = hero
         val interactionStamp = lastInteractionMs
 
         heroPreviewEngine.stop()
-        kotlinx.coroutines.delay(3_000L)
+        kotlinx.coroutines.delay(520L)
         if (!isPreviewActive || interactionStamp != lastInteractionMs) return@LaunchedEffect
+        if (focusedHeroIndex != scheduledIndex || expandedHeroIndex != scheduledIndex) return@LaunchedEffect
         if (scheduledHero != state.heroItems.getOrNull(state.activeHeroIndex)) return@LaunchedEffect
 
         heroPreviewEngine.play(scheduledHero.streamUrl, scheduledHero.seekToMs)
