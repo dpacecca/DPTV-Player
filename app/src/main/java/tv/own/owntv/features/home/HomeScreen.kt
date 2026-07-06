@@ -101,6 +101,7 @@ fun HomeScreen(
     onPlayMovie: (movieId: Long, positionMs: Long) -> Unit,
     onPlayEpisode: (seriesId: Long, episodeId: Long, positionMs: Long) -> Unit,
     onPlayChannel: (channelId: Long, zapChannels: List<ChannelEntity>) -> Unit,
+    onOpenGuide: () -> Unit,
     onChildFocused: () -> Unit,
     restoreFocus: Boolean = false,
     onRestored: () -> Unit = {},
@@ -120,6 +121,14 @@ fun HomeScreen(
     // (see the dwell effect below). Moving focus — to another card or out of the row — collapses it again.
     var expandedHeroIndex by remember { mutableStateOf(-1) }
     var focusedHeroIndex by remember { mutableStateOf(-1) }
+    val orderedRows = state.config.visibleOrder
+    val heroVisible = HomeRow.HERO in orderedRows
+    val hasNonHeroContent = orderedRows.any { it != HomeRow.HERO && rowHasData(it, state) }
+    val showHeroFallback = heroVisible && state.heroItems.isEmpty() && !hasNonHeroContent
+    val renderRows = orderedRows.filter { rowCanRender(it, state, showHeroFallback) }
+    val firstDataRow = renderRows.firstOrNull { it != HomeRow.HERO && rowHasData(it, state) }
+    val showAllHiddenState = orderedRows.isEmpty()
+    val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty()
 
     val onNonHeroFocused = remember(vm, heroPreviewEngine) {
         {
@@ -162,21 +171,32 @@ fun HomeScreen(
         onDispose { heroPreviewEngine.stop() }
     }
 
-    LaunchedEffect(state.heroItems, state.continueMovies, state.continueSeries, state.favoriteLive, restoreFocus) {
-        if (state.isEmpty) {
+    LaunchedEffect(orderedRows, state.heroItems, state.recentLive, state.favoriteLive, state.continueMovies, state.continueSeries, state.guideSlice, restoreFocus) {
+        if (orderedRows.isEmpty()) {
             if (restoreFocus) onRestored()
             return@LaunchedEffect
         }
-        runCatching { listState.scrollToItem(0) }
+
+        val targetRow = when {
+            restoreFocus && heroVisible && state.heroItems.isNotEmpty() -> HomeRow.HERO
+            restoreFocus && showHeroFallback -> HomeRow.HERO
+            restoreFocus -> firstDataRow
+            else -> null
+        }
+        val targetIndex = targetRow?.let { renderRows.indexOf(it) } ?: 0
+        runCatching { listState.scrollToItem(targetIndex.coerceAtLeast(0)) }
+
         // Only pull focus INTO the Home content when returning from the player (restoreFocus). On a cold
         // start or a tab switch, leave focus on the sidebar's Home item so the nav is immediately navigable.
         if (restoreFocus) {
             kotlinx.coroutines.delay(60)
-            if (state.heroItems.isNotEmpty()) {
-                runCatching { heroFocus.requestFocus() }
-            } else {
-                runCatching { fallbackFocus.requestFocus() }
+            val focusTarget = when {
+                heroVisible && state.heroItems.isNotEmpty() -> heroFocus
+                showHeroFallback -> fallbackFocus
+                firstDataRow != null -> firstRowFocus
+                else -> null
             }
+            if (focusTarget != null) runCatching { focusTarget.requestFocus() }
             onRestored()
         }
     }
@@ -190,23 +210,16 @@ fun HomeScreen(
         HomeSkeleton(modifier = modifier.fillMaxSize())
         return
     }
-    if (state.isEmpty) {
-        EmptyHomeState(
-            modifier = modifier.fillMaxSize(),
-        )
+    if (showAllHiddenState) {
+        AllRowsHiddenState(modifier = modifier.fillMaxSize())
+        return
+    }
+    if (showEmptyState) {
+        EmptyHomeState(modifier = modifier.fillMaxSize())
         return
     }
 
     val hero = state.heroItems.getOrNull(state.activeHeroIndex)
-    val hasMovies = state.continueMovies.isNotEmpty()
-    val hasSeries = state.continueSeries.isNotEmpty()
-    val hasFavorites = state.favoriteLive.isNotEmpty()
-    val firstRowKind = when {
-        hasFavorites -> RowKind.FAVORITES
-        hasMovies -> RowKind.MOVIES
-        hasSeries -> RowKind.SERIES
-        else -> null
-    }
 
     LazyColumn(
         modifier = modifier
@@ -218,77 +231,99 @@ fun HomeScreen(
         contentPadding = PaddingValues(vertical = Dimens.ScreenPaddingV),
         verticalArrangement = Arrangement.spacedBy(Dimens.GapLarge),
     ) {
-        item {
-            if (state.heroItems.isNotEmpty()) {
-                HeroRowSection(
-                    items = state.heroItems,
-                    expandedIndex = expandedHeroIndex,
-                    heroPreviewEngine = heroPreviewEngine,
-                    engineState = engineState,
-                    heroFocusRequester = heroFocus,
-                    onHeroFocusChanged = { index, hasFocus ->
-                        if (hasFocus) {
-                            if (expandedHeroIndex != index) {
-                                heroPreviewEngine.stop() // stop the previous hero's video before switching
-                                expandedHeroIndex = -1 // collapse immediately; the dwell timer re-expands after 3s
-                            }
-                            focusedHeroIndex = index
-                            vm.onHeroUserNavigate(index)
-                            vm.setHeroFocused(true)
-                            onChildFocused()
-                        } else if (focusedHeroIndex == index) {
-                            focusedHeroIndex = -1
-                        }
-                    },
-                    onPlay = { item ->
-                        when (item) {
-                            is HeroItem.MovieHero -> onPlayMovie(item.movie.id, item.positionMs)
-                            is HeroItem.SeriesHero -> onPlayEpisode(item.series.id, item.episode.id, item.positionMs)
-                            is HeroItem.LiveHero -> onPlayChannel(item.channel.id, state.recentLive)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            } else {
-                HeroFallbackPane(
-                    modifier = Modifier.fillMaxWidth(),
-                    focusRequester = fallbackFocus,
-                    onChildFocused = onNonHeroFocused,
-                )
-            }
-        }
+        itemsIndexed(renderRows, key = { _, row -> row.name }) { _, row ->
+            when (row) {
+                HomeRow.HERO -> {
+                    if (state.heroItems.isNotEmpty()) {
+                        HeroRowSection(
+                            items = state.heroItems,
+                            expandedIndex = expandedHeroIndex,
+                            heroPreviewEngine = heroPreviewEngine,
+                            engineState = engineState,
+                            heroFocusRequester = heroFocus,
+                            onHeroFocusChanged = { index, hasFocus ->
+                                if (hasFocus) {
+                                    if (expandedHeroIndex != index) {
+                                        heroPreviewEngine.stop() // stop the previous hero's video before switching
+                                        expandedHeroIndex = -1 // collapse immediately; the dwell timer re-expands after 3s
+                                    }
+                                    focusedHeroIndex = index
+                                    vm.onHeroUserNavigate(index)
+                                    vm.setHeroFocused(true)
+                                    onChildFocused()
+                                } else if (focusedHeroIndex == index) {
+                                    focusedHeroIndex = -1
+                                }
+                            },
+                            onPlay = { item ->
+                                when (item) {
+                                    is HeroItem.MovieHero -> onPlayMovie(item.movie.id, item.positionMs)
+                                    is HeroItem.SeriesHero -> onPlayEpisode(item.series.id, item.episode.id, item.positionMs)
+                                    is HeroItem.LiveHero -> onPlayChannel(item.channel.id, state.recentLive)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else {
+                        HeroFallbackPane(
+                            modifier = Modifier.fillMaxWidth(),
+                            focusRequester = fallbackFocus,
+                            onChildFocused = onNonHeroFocused,
+                        )
+                    }
+                }
 
-        if (hasFavorites) {
-            item {
-                ChannelRailRow(
-                    title = "Favourite Channels",
-                    channels = state.favoriteLive,
-                    onChannelClick = { id -> onPlayChannel(id, state.favoriteLive) },
-                    onFocus = onNonHeroFocused,
-                    firstItemFocusRequester = if (firstRowKind == RowKind.FAVORITES) firstRowFocus else null,
-                )
-            }
-        }
-        if (hasMovies) {
-            item {
-                ContinueWatchingRow(
-                    title = "Continue Watching Movies",
-                    items = state.continueMovies,
-                    onItemClick = { onPlayMovie(it.sourceItemId, it.positionMs) },
-                    onFocus = onNonHeroFocused,
-                    firstItemFocusRequester = if (firstRowKind == RowKind.MOVIES) firstRowFocus else null,
-                )
-            }
-        }
-        if (hasSeries) {
-            item {
-                ContinueWatchingRow(
-                    title = "Continue Watching Series",
-                    items = state.continueSeries,
-                    onItemClick = { onPlayEpisode(0L, it.targetItemId, it.positionMs) },
-                    onFocus = onNonHeroFocused,
-                    firstItemFocusRequester = if (firstRowKind == RowKind.SERIES) firstRowFocus else null,
-                )
+                HomeRow.RECENT_CHANNELS -> if (state.recentLive.isNotEmpty()) {
+                    ChannelRailRow(
+                        title = row.title,
+                        channels = state.recentLive,
+                        onChannelClick = { id -> onPlayChannel(id, state.recentLive) },
+                        onFocus = onNonHeroFocused,
+                        firstItemFocusRequester = if (row == firstDataRow) firstRowFocus else null,
+                    )
+                }
+
+                HomeRow.FAVORITE_CHANNELS -> if (state.favoriteLive.isNotEmpty()) {
+                    ChannelRailRow(
+                        title = row.title,
+                        channels = state.favoriteLive,
+                        onChannelClick = { id -> onPlayChannel(id, state.favoriteLive) },
+                        onFocus = onNonHeroFocused,
+                        firstItemFocusRequester = if (row == firstDataRow) firstRowFocus else null,
+                    )
+                }
+
+                HomeRow.CONTINUE_MOVIES -> if (state.continueMovies.isNotEmpty()) {
+                    ContinueWatchingRow(
+                        title = row.title,
+                        items = state.continueMovies,
+                        onItemClick = { onPlayMovie(it.sourceItemId, it.positionMs) },
+                        onFocus = onNonHeroFocused,
+                        firstItemFocusRequester = if (row == firstDataRow) firstRowFocus else null,
+                    )
+                }
+
+                HomeRow.CONTINUE_SERIES -> if (state.continueSeries.isNotEmpty()) {
+                    ContinueWatchingRow(
+                        title = row.title,
+                        items = state.continueSeries,
+                        onItemClick = { onPlayEpisode(0L, it.targetItemId, it.positionMs) },
+                        onFocus = onNonHeroFocused,
+                        firstItemFocusRequester = if (row == firstDataRow) firstRowFocus else null,
+                    )
+                }
+
+                HomeRow.GUIDE_SLICE -> if (state.guideSlice.hasContent) {
+                    HomeGuideSlice(
+                        slice = state.guideSlice,
+                        onTuneChannel = { ch -> onPlayChannel(ch.id, state.guideSlice.channels) },
+                        onOpenFullGuide = onOpenGuide,
+                        onFocus = onNonHeroFocused,
+                        firstItemFocusRequester = if (row == firstDataRow) firstRowFocus else null,
+                        loadDescription = vm::programmeDescription,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }
@@ -315,7 +350,20 @@ fun HomeScreen(
     }
 }
 
-private enum class RowKind { FAVORITES, MOVIES, SERIES }
+private fun rowHasData(row: HomeRow, state: HomeUiState): Boolean = when (row) {
+    HomeRow.HERO -> state.heroItems.isNotEmpty()
+    HomeRow.RECENT_CHANNELS -> state.recentLive.isNotEmpty()
+    HomeRow.FAVORITE_CHANNELS -> state.favoriteLive.isNotEmpty()
+    HomeRow.CONTINUE_MOVIES -> state.continueMovies.isNotEmpty()
+    HomeRow.CONTINUE_SERIES -> state.continueSeries.isNotEmpty()
+    HomeRow.GUIDE_SLICE -> state.guideSlice.hasContent
+}
+
+private fun rowCanRender(row: HomeRow, state: HomeUiState, showHeroFallback: Boolean): Boolean =
+    when (row) {
+        HomeRow.HERO -> state.heroItems.isNotEmpty() || showHeroFallback
+        else -> rowHasData(row, state)
+    }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -1039,6 +1087,38 @@ private fun EmptyHomeState(
             Spacer(Modifier.height(8.dp))
             Text(
                 text = "Continue watching will show up on Home once you have playback history.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AllRowsHiddenState(
+    modifier: Modifier = Modifier,
+) {
+    val colors = OwnTVTheme.colors
+    Box(
+        modifier = modifier
+            .focusProperties { canFocus = false }
+            .background(colors.surface),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            BrandLockup(markSize = 84, textSize = 48)
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = "All Home rows are hidden.",
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.onSurface,
+                maxLines = 1,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Turn rows back on in Settings → Home screen.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = colors.onSurfaceVariant,
                 maxLines = 2,
