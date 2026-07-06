@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -77,6 +78,7 @@ class SeriesViewModel(
     private val downloadManager: DownloadManager,
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val contentOrderDao: ContentOrderDao,
+    private val metadata: tv.own.owntv.core.metadata.MetadataRepository,
 ) : ViewModel() {
 
     data class SeriesMoveState(val items: List<SeriesEntity>, val activeIndex: Int, val contextKey: String)
@@ -106,9 +108,13 @@ class SeriesViewModel(
 
     fun toggleSort() {
         viewModelScope.launch {
+            // Cycle Provider → A–Z → Rating → Provider.
             settings.setSortSeries(
-                if (sortMode.value == SettingsRepository.SortMode.PLAYLIST) SettingsRepository.SortMode.ALPHA
-                else SettingsRepository.SortMode.PLAYLIST,
+                when (sortMode.value) {
+                    SettingsRepository.SortMode.PLAYLIST -> SettingsRepository.SortMode.ALPHA
+                    SettingsRepository.SortMode.ALPHA -> SettingsRepository.SortMode.RATING
+                    SettingsRepository.SortMode.RATING -> SettingsRepository.SortMode.PLAYLIST
+                },
             )
         }
     }
@@ -139,6 +145,27 @@ class SeriesViewModel(
 
     private val _selectedSeries = MutableStateFlow<SeriesEntity?>(null)
     val selectedSeries: StateFlow<SeriesEntity?> = _selectedSeries.asStateFlow()
+
+    /** On-demand TMDB enrichment for the focused series (show-level), tagged with the series id to avoid
+     *  stale meta during the debounce. Null when off or no confident match. */
+    /** Bumped by [refetchSeriesMeta] to force the focused series' TMDB resolve to re-run after clearing its cache. */
+    private val _seriesMetaTick = MutableStateFlow(0L)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val selectedSeriesMeta: StateFlow<SeriesMeta?> = combine(_selectedSeries, _seriesMetaTick) { s, tick -> s to tick }
+        .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
+        .debounce(350)
+        .mapLatest { (s, _) ->
+            if (s == null) null
+            else SeriesMeta(s.id, runCatching { metadata.resolveSeries(s) }.getOrNull())
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    data class SeriesMeta(val seriesId: Long, val cache: tv.own.owntv.core.database.entity.MetadataCacheEntity?)
+
+    /** Source mode (plan §4.1) — the pane/details use it to flip provider/TMDB precedence. */
+    val metadataMode: StateFlow<tv.own.owntv.core.metadata.MetadataMode> = settings.metadataMode
+        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB)
 
     private val _openedSeries = MutableStateFlow<SeriesEntity?>(null)
     val openedSeries: StateFlow<SeriesEntity?> = _openedSeries.asStateFlow()
@@ -246,7 +273,83 @@ class SeriesViewModel(
     fun select(key: LiveKey) { _selected.value = key }
     fun setSearchQuery(query: String) { _search.value = query }
     fun onSeriesFocused(s: SeriesEntity) { _selectedSeries.value = s }
+
+    /**
+     * Manual "Refetch TMDB details" (plan §11.2 U5a): clear this series' cached match/details (incl. a 7-day
+     * negative cache) and re-trigger [metadata.resolveSeries] for the focused series via the series meta tick.
+     */
+    fun refetchSeriesMeta(series: SeriesEntity) {
+        viewModelScope.launch {
+            runCatching { metadata.clearSeries(series) }
+            _seriesMetaTick.value++
+        }
+    }
+
+    /**
+     * Prefill for the "Set TMDB name" dialog (plan §11.2 U5b): the saved override if any, else the cleaned
+     * provider title. [hasOverride] drives the dialog's Clear button. Episodes inherit the series match, so
+     * the override lives at the series level (no separate episode override).
+     */
+    data class TmdbNamePrefill(val title: String, val year: Int?, val hasOverride: Boolean)
+
+    suspend fun seriesTmdbNamePrefill(series: SeriesEntity): TmdbNamePrefill {
+        metadata.seriesOverride(series)?.let { return TmdbNamePrefill(it.title, it.year, hasOverride = true) }
+        val norm = tv.own.owntv.core.metadata.TitleNormalizer.normalize(series.name)
+        return TmdbNamePrefill(norm.query, series.year ?: norm.year, hasOverride = false)
+    }
+
+    /** Save the hand-typed override and force a re-resolve under the new query (plan §11.2 U5b). */
+    fun setSeriesTmdbName(series: SeriesEntity, title: String, year: Int?) {
+        viewModelScope.launch {
+            runCatching { metadata.setSeriesOverride(series, title, year) }
+            _seriesMetaTick.value++
+        }
+    }
+
+    /** Remove the override and re-resolve with the cleaned provider title (plan §11.2 U5b). */
+    fun clearSeriesTmdbName(series: SeriesEntity) {
+        viewModelScope.launch {
+            runCatching { metadata.clearSeriesOverride(series) }
+            _seriesMetaTick.value++
+        }
+    }
+
     fun selectSeason(season: Int) { _selectedSeason.value = season }
+
+    // --- Episode enrichment (U3): the focused episode's TMDB still/plot/rating for the right detail pane ---
+    private val _selectedEpisode = MutableStateFlow<EpisodeEntity?>(null)
+    val selectedEpisode: StateFlow<EpisodeEntity?> = _selectedEpisode.asStateFlow()
+    fun onEpisodeFocused(ep: EpisodeEntity) { _selectedEpisode.value = ep }
+
+    /**
+     * Manual "Refetch TMDB details" (plan §11.2 U5a): clear this episode's cache AND its show's match (so an
+     * episode whose show was negative-cached also recovers), then re-trigger [metadata.resolveEpisode] for the
+     * focused episode via the episode meta tick.
+     */
+    fun refetchEpisodeMeta(series: SeriesEntity, episode: EpisodeEntity) {
+        viewModelScope.launch {
+            runCatching { metadata.clearEpisode(series, episode) }
+            _episodeMetaTick.value++
+        }
+    }
+
+    /** TMDB metadata for the focused episode, tagged with its id to avoid stale meta during the debounce.
+     *  Resolved lazily against the currently opened show. */
+    /** Bumped by [refetchEpisodeMeta] to force the focused episode's TMDB resolve to re-run after clearing its cache. */
+    private val _episodeMetaTick = MutableStateFlow(0L)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val selectedEpisodeMeta: StateFlow<EpisodeMeta?> = combine(_selectedEpisode, _episodeMetaTick) { ep, tick -> ep to tick }
+        .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
+        .debounce(350)
+        .mapLatest { (ep, _) ->
+            val show = _openedSeries.value
+            if (ep == null || show == null) null
+            else EpisodeMeta(ep.id, runCatching { metadata.resolveEpisode(show, ep) }.getOrNull())
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    data class EpisodeMeta(val episodeId: Long, val cache: tv.own.owntv.core.database.entity.MetadataCacheEntity?)
 
     fun openSeries(s: SeriesEntity) {
         _openedSeries.value = s
@@ -477,11 +580,18 @@ class SeriesViewModel(
     private fun pagingSource(key: LiveKey, c: Ctx, query: String, sort: SettingsRepository.SortMode): PagingSource<Int, SeriesEntity> {
         val ids = c.sourceIds.ifEmpty { listOf(-1L) }
         val playlist = sort == SettingsRepository.SortMode.PLAYLIST
+        val rating = sort == SettingsRepository.SortMode.RATING
         return if (query.isBlank()) when (key) {
-            LiveKey.All -> if (playlist) seriesDao.pagingAllOriginal(ids) else seriesDao.pagingAll(ids)
+            LiveKey.All -> when {
+                rating -> seriesDao.pagingAllRating(ids)
+                playlist -> seriesDao.pagingAllOriginal(ids)
+                else -> seriesDao.pagingAll(ids)
+            }
             LiveKey.Favorites -> seriesDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT, ids)
             LiveKey.History -> seriesDao.pagingHistory(c.profileId, ids)
-            is LiveKey.Folder -> seriesDao.pagingByCategoryManual(key.id, c.profileId, folderContextKeys.value[key.id] ?: "")
+            is LiveKey.Folder ->
+                if (rating) seriesDao.pagingByCategoryRating(key.id)
+                else seriesDao.pagingByCategoryManual(key.id, c.profileId, folderContextKeys.value[key.id] ?: "")
         } else when (key) {
             LiveKey.All -> seriesDao.searchAll(query, ids)
             LiveKey.Favorites -> seriesDao.searchFavorites(query, c.profileId, ids)
