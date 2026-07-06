@@ -25,8 +25,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -399,10 +397,6 @@ private fun HeroRowSection(
     var localFocusedIndex by remember { mutableStateOf(-1) }
     var rowWidthDp by remember { mutableStateOf(0.dp) }
     var alignToActiveHeroKey by remember { mutableStateOf<String?>(null) }
-    // Set when a focus move collapses the previously expanded card ("collapse handoff"): scroll-to-start
-    // would fight the collapse animation and shove the newly focused card around, so that one move uses
-    // minimal bring-into-view scrolling instead.
-    var skipScrollToStart by remember { mutableStateOf(false) }
     val heroRowState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val itemsSignature = remember(items) { items.joinToString(separator = "|") { it.heroKey() } }
@@ -412,7 +406,6 @@ private fun HeroRowSection(
         if (activeHeroIndex !in items.indices) return@LaunchedEffect
 
         alignToActiveHeroKey = activeHeroKey
-        skipScrollToStart = false
         heroRowState.scrollToItem(activeHeroIndex)
 
         if (activeHeroIndex == 0 && localFocusedIndex >= 0 && localFocusedIndex != activeHeroIndex) {
@@ -433,11 +426,7 @@ private fun HeroRowSection(
 
     LaunchedEffect(localFocusedIndex) {
         if (localFocusedIndex < 0) return@LaunchedEffect
-        if (skipScrollToStart) {
-            skipScrollToStart = false
-        } else {
-            heroRowState.animateScrollToItem(localFocusedIndex)
-        }
+        heroRowState.animateScrollToItem(localFocusedIndex)
     }
 
     val endPadding = (rowWidthDp - Dimens.HeroBaseWidth - Dimens.HomeRowPaddingH).coerceAtLeast(Dimens.HomeRowPaddingH)
@@ -485,14 +474,11 @@ private fun HeroRowSection(
                         is HeroItem.LiveHero -> item.channel.logoUrl
                     }
 
-                    val bringIntoView = remember { BringIntoViewRequester() }
-
                     val heroGlowColor = colors.focusGlow
                     Box(
                         modifier = Modifier
                             .height(cardHeight)
                             .width(width)
-                            .bringIntoViewRequester(bringIntoView)
                             .then(if (isExpanded) Modifier.zIndex(1f) else Modifier)
                             .then(
                                 if (isExpanded) Modifier.onGloballyPositioned { coords ->
@@ -526,12 +512,6 @@ private fun HeroRowSection(
                                             }
                                         } else {
                                             alignToActiveHeroKey = null
-                                            // expandedIndex still holds the pre-collapse value here: a focus
-                                            // move off an expanded card is the collapse handoff.
-                                            if (expandedIndex >= 0 && expandedIndex != index) {
-                                                skipScrollToStart = true
-                                                scope.launch { bringIntoView.bringIntoView() }
-                                            }
                                             localFocusedIndex = index
                                         }
                                     }
