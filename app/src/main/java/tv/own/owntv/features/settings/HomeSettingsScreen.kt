@@ -96,10 +96,10 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                Text("Rows", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Text("Sections", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Hidden rows stay listed so you can turn them back on.",
+                    "Hidden sections stay listed so you can turn them back on.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
