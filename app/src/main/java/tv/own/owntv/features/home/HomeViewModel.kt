@@ -12,6 +12,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import tv.own.owntv.core.customize.CustomizationStore
+import tv.own.owntv.core.customize.CustomizeKeys
+import tv.own.owntv.core.customize.SectionCustomizations
+import tv.own.owntv.core.database.dao.CategoryDao
 import tv.own.owntv.core.database.dao.ChannelDao
 import tv.own.owntv.core.database.dao.ChannelWithWatchedAt
 import tv.own.owntv.core.database.dao.MovieDao
@@ -27,6 +31,7 @@ import tv.own.owntv.core.launcher.LauncherContinuationItem
 import tv.own.owntv.core.launcher.LauncherContinuationKind
 import tv.own.owntv.core.launcher.LauncherRecommendationPlanner
 import tv.own.owntv.core.launcher.LauncherWatchNextType
+import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.repository.activeSourceIds
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.HeroPreviewEngine
@@ -105,6 +110,8 @@ class HomeViewModel(
     private val movieDao: MovieDao,
     private val seriesDao: SeriesDao,
     private val channelDao: ChannelDao,
+    private val categoryDao: CategoryDao,
+    private val customize: CustomizationStore,
     private val sourceDao: SourceDao,
     private val settings: SettingsRepository,
     private val profileDao: ProfileDao,
@@ -161,15 +168,21 @@ class HomeViewModel(
             val allIds = sourceDao.sourceIdsForProfile(profileId).toSet()
             val filtering = activeIds != allIds
 
+            // Hidden items / hidden categories (per profile) never surface on Home either.
+            val hidden = hiddenState(profileId, allIds.toList())
+
             val allItems = planner.buildContinuationItems(profileId)
-            val items = if (!filtering) allItems else allItems.filter { continuationSourceId(it) in activeIds }
+            val items = (if (!filtering) allItems else allItems.filter { continuationSourceId(it) in activeIds })
+                .filterNot { isContinuationHidden(it, hidden) }
             val movies = items.filter { it.kind == LauncherContinuationKind.MOVIE }
             val series = items.filter { it.kind == LauncherContinuationKind.EPISODE }
             val liveWithTs = channelDao.recentlyWatchedWithTimestamp(profileId, 10).first()
                 .let { if (!filtering) it else it.filter { w -> w.channel.sourceId in activeIds } }
+                .filterNot { isChannelHidden(it.channel, hidden) }
             val live = liveWithTs.map { it.channel }
             val favLive = channelDao.favoritesListAlpha(profileId, 50).first()
                 .let { if (!filtering) it else it.filter { c -> c.sourceId in activeIds } }
+                .filterNot { isChannelHidden(it, hidden) }
             val heroItems = buildHeroItems(items, liveWithTs)
 
             HomeUiState(
@@ -185,6 +198,57 @@ class HomeViewModel(
         }
         _uiState.value = state
         tv.own.owntv.Perf.stamp("home-data")
+    }
+
+    /** This profile's hide customizations across all three sections, with category keys resolved to ids. */
+    private data class HiddenState(
+        val live: SectionCustomizations,
+        val movie: SectionCustomizations,
+        val series: SectionCustomizations,
+        val liveCats: Set<Long>,
+        val movieCats: Set<Long>,
+        val seriesCats: Set<Long>,
+    ) {
+        val isEmpty: Boolean
+            get() = live.hiddenItems.isEmpty() && movie.hiddenItems.isEmpty() && series.hiddenItems.isEmpty() &&
+                liveCats.isEmpty() && movieCats.isEmpty() && seriesCats.isEmpty()
+    }
+
+    private suspend fun hiddenState(profileId: Long, sourceIds: List<Long>): HiddenState {
+        val live = customize.observe(profileId, MediaType.LIVE).first()
+        val movie = customize.observe(profileId, MediaType.MOVIE).first()
+        val series = customize.observe(profileId, MediaType.SERIES).first()
+        suspend fun catIds(type: MediaType, hiddenKeys: Set<String>): Set<Long> {
+            if (hiddenKeys.isEmpty() || sourceIds.isEmpty()) return emptySet()
+            return categoryDao.observe(sourceIds, type).first()
+                .filter { CustomizeKeys.category(it) in hiddenKeys }
+                .map { it.id }
+                .toSet()
+        }
+        return HiddenState(
+            live = live, movie = movie, series = series,
+            liveCats = catIds(MediaType.LIVE, live.hiddenCategories),
+            movieCats = catIds(MediaType.MOVIE, movie.hiddenCategories),
+            seriesCats = catIds(MediaType.SERIES, series.hiddenCategories),
+        )
+    }
+
+    private fun isChannelHidden(ch: ChannelEntity, h: HiddenState): Boolean =
+        CustomizeKeys.channel(ch) in h.live.hiddenItems || (ch.categoryId != null && ch.categoryId in h.liveCats)
+
+    private suspend fun isContinuationHidden(item: LauncherContinuationItem, h: HiddenState): Boolean {
+        if (h.isEmpty) return false
+        return when (item.kind) {
+            LauncherContinuationKind.MOVIE -> movieDao.getById(item.sourceItemId)?.let {
+                CustomizeKeys.movie(it) in h.movie.hiddenItems || (it.categoryId != null && it.categoryId in h.movieCats)
+            } ?: false
+            LauncherContinuationKind.EPISODE -> seriesDao.getEpisodeById(item.targetItemId)?.let { ep ->
+                seriesDao.getSeriesById(ep.seriesId)?.let { s ->
+                    CustomizeKeys.series(s) in h.series.hiddenItems || (s.categoryId != null && s.categoryId in h.seriesCats)
+                }
+            } ?: false
+            LauncherContinuationKind.LIVE -> channelDao.getById(item.sourceItemId)?.let { isChannelHidden(it, h) } ?: false
+        }
     }
 
     /** The playlist a continuation item belongs to, for the active-playlist filter (null if it's gone). */

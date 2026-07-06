@@ -79,7 +79,7 @@ Scan to join from your phone:
 - **Home screen** — Continue Watching hero carousel (partially-watched movies, episodes, recent channels); feeds system Watch Next on stock Android TV
 - **Sections** — Live TV (preview + real stream resolution badge), Movies, Series, Downloads, EPG Guide
 - **Fixed layout** — stable icon nav · full-label category column · content · preview (never expands/collapses)
-- **Categories** — Favorites & History per section, full names, search box; customize (hide/rename/reorder, range-select); survives re-syncs
+- **Categories** — Favorites & History per section, full names, search box; customize (hide/rename/reorder, range-select); hide/unhide individual channels, movies & series; optional PIN lock; survives re-syncs
 - **Search** — inline per-folder + global; TV-style bars; detailed channel results (category · number); long-press to favorite
 - **Multiple playlists** — merge them all, or narrow the whole app to one via the **top-bar playlist switcher** (or a per-playlist **Default** toggle in Settings); applies to Live/Movies/Series/EPG/Search/Home incl. Favorites & History, and persists across restarts
 - **Sort & view** — playlist order or A–Z; Movies & Series Grid/List toggle

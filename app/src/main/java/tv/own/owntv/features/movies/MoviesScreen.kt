@@ -358,6 +358,7 @@ fun MoviesScreen(
             onShowDetails = { contextMovie = null; detailsMovie = m },
             onToggleFavorite = { vm.toggleFavorite(m); contextMovie = null },
             onMove = { contextMovie = null; vm.enterMoveMode(m, selectedKey) },
+            onHide = { vm.hideMovie(m); contextMovie = null },
             onRemoveFromHistory = { vm.removeFromHistory(m.id); contextMovie = null },
             onDownload = {
                 contextMovie = null
@@ -464,6 +465,7 @@ private fun MovieContextMenu(
     onShowDetails: () -> Unit,
     onToggleFavorite: () -> Unit,
     onMove: () -> Unit,
+    onHide: () -> Unit,
     onRemoveFromHistory: () -> Unit,
     onDownload: () -> Unit,
     onRefetch: () -> Unit,
@@ -493,6 +495,7 @@ private fun MovieContextMenu(
             )
             if (canMove) OwnTVButton("Move", onClick = onMove, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             if (isHistory) OwnTVButton("Remove from History", onClick = onRemoveFromHistory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            OwnTVButton("Hide", onClick = onHide, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             OwnTVButton("Download", onClick = onDownload, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.DOWNLOADS, modifier = Modifier.fillMaxWidth())
             // TMDB Details — only when a confident match resolved (§11.1).
             if (hasTmdbDetails) {

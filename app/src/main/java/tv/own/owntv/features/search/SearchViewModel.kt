@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tv.own.owntv.core.customize.CustomizationStore
 import tv.own.owntv.core.customize.CustomizeKeys
+import tv.own.owntv.core.database.dao.CategoryDao
 import tv.own.owntv.core.database.dao.ChannelDao
 import tv.own.owntv.core.database.dao.FavoriteDao
 import tv.own.owntv.core.database.dao.HistoryDao
@@ -52,6 +53,7 @@ data class SearchResults(
 /** Phase 11 — cross-section search over a profile's channels, movies and series. */
 class SearchViewModel(
     private val channelDao: ChannelDao,
+    private val categoryDao: CategoryDao,
     private val movieDao: MovieDao,
     private val seriesDao: SeriesDao,
     private val historyDao: HistoryDao,
@@ -91,15 +93,45 @@ class SearchViewModel(
     private suspend fun search(q: String): SearchResults {
         val pid = currentProfileId() ?: return SearchResults()
         val ids = ctx.value.sourceIds.ifEmpty { return SearchResults() }
-        // Respect this profile's customizations: hidden channels never surface, renames are shown.
-        val cust = customize.observe(pid, MediaType.LIVE).first()
+        // Respect this profile's customizations: hidden items and hidden categories never surface,
+        // renames are shown (channels only — movies/series have no per-item rename).
+        val custLive = customize.observe(pid, MediaType.LIVE).first()
+        val custMovie = customize.observe(pid, MediaType.MOVIE).first()
+        val custSeries = customize.observe(pid, MediaType.SERIES).first()
+        val hiddenLiveCats = hiddenCategoryIds(ids, MediaType.LIVE, custLive)
+        val hiddenMovieCats = hiddenCategoryIds(ids, MediaType.MOVIE, custMovie)
+        val hiddenSeriesCats = hiddenCategoryIds(ids, MediaType.SERIES, custSeries)
         return SearchResults(
             channels = channelDao.searchListDetailed(q, ids, LIMIT)
-                .filter { CustomizeKeys.channel(it.channel) !in cust.hiddenItems }
-                .map { row -> cust.itemNames[CustomizeKeys.channel(row.channel)]?.let { row.copy(channel = row.channel.copy(name = it)) } ?: row },
-            movies = movieDao.searchList(q, ids, LIMIT),
-            series = seriesDao.searchList(q, ids, LIMIT),
+                .filter {
+                    CustomizeKeys.channel(it.channel) !in custLive.hiddenItems &&
+                        (it.channel.categoryId == null || it.channel.categoryId !in hiddenLiveCats)
+                }
+                .map { row -> custLive.itemNames[CustomizeKeys.channel(row.channel)]?.let { row.copy(channel = row.channel.copy(name = it)) } ?: row },
+            movies = movieDao.searchList(q, ids, LIMIT)
+                .filter {
+                    CustomizeKeys.movie(it) !in custMovie.hiddenItems &&
+                        (it.categoryId == null || it.categoryId !in hiddenMovieCats)
+                },
+            series = seriesDao.searchList(q, ids, LIMIT)
+                .filter {
+                    CustomizeKeys.series(it) !in custSeries.hiddenItems &&
+                        (it.categoryId == null || it.categoryId !in hiddenSeriesCats)
+                },
         )
+    }
+
+    /** DB ids of this profile's hidden categories for [type] (so hidden groups drop out of search too). */
+    private suspend fun hiddenCategoryIds(
+        sourceIds: List<Long>,
+        type: MediaType,
+        cust: tv.own.owntv.core.customize.SectionCustomizations,
+    ): Set<Long> {
+        if (cust.hiddenCategories.isEmpty()) return emptySet()
+        return categoryDao.observe(sourceIds, type).first()
+            .filter { CustomizeKeys.category(it) in cust.hiddenCategories }
+            .map { it.id }
+            .toSet()
     }
 
     /** Live channels this profile has favourited — so a search result can show a star and toggle it. */

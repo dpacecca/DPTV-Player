@@ -10,6 +10,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.cachedIn
+import androidx.paging.filter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -31,6 +32,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tv.own.owntv.core.customize.CustomizationStore
+import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.customize.applyCustomizations
 import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.database.dao.CategoryDao
@@ -101,6 +103,36 @@ class SeriesViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** This profile's hide/rename/reorder customizations for Series. */
+    private val custom: StateFlow<SectionCustomizations> = ctx
+        .flatMapLatest { c ->
+            if (c.profileId < 0) flowOf(SectionCustomizations())
+            else customize.observe(c.profileId, MediaType.SERIES)
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SectionCustomizations())
+
+    /**
+     * Category DB ids of this profile's hidden Series categories — so hiding a category hides its
+     * series everywhere (All, search, Home rails), not just the rail folder (mirrors Live TV).
+     */
+    private val hiddenCategoryIds: StateFlow<Set<Long>> = ctx
+        .flatMapLatest { c ->
+            if (c.profileId < 0) {
+                flowOf(emptySet())
+            } else {
+                combine(categoryDao.observe(c.sourceIds, MediaType.SERIES), custom) { cats, cust ->
+                    if (cust.hiddenCategories.isEmpty()) emptySet()
+                    else cats.filter { CustomizeKeys.category(it) in cust.hiddenCategories }.map { it.id }.toSet()
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** Customizations + resolved hidden-category ids, bundled so the list pipeline takes one flow. */
+    private data class CustState(val cust: SectionCustomizations, val hiddenCats: Set<Long>)
+    private val custResolved: StateFlow<CustState> = combine(custom, hiddenCategoryIds) { c, h -> CustState(c, h) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, CustState(SectionCustomizations(), emptySet()))
 
     /** List ordering for this section (Provider order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortSeries
@@ -248,17 +280,26 @@ class SeriesViewModel(
     val series: Flow<PagingData<SeriesEntity>> = combine(
         _selected, ctx, _search.map { it.trim() }.debounce(300).distinctUntilChanged(), sortMode, _listRefresh,
     ) { key, c, query, sort, _ -> Args(key, c, query, sort) }
-        .flatMapLatest { (key, c, query, sort) ->
+        .combine(custResolved) { args, cs -> args to cs }
+        .flatMapLatest { (args, cs) ->
+            // Hidden items/categories are filtered on each fresh PagingData inside the pager chain —
+            // a customization change re-creates the pager (same pattern as Live TV).
             Pager(PagingConfig(pageSize = 60, prefetchDistance = 30, initialLoadSize = 90, maxSize = 300)) {
-                pagingSource(key, c, query, sort)
-            }.flow
+                pagingSource(args.key, args.ctx, args.query, args.sort)
+            }.flow.map { paging ->
+                if (cs.cust.hiddenItems.isEmpty() && cs.hiddenCats.isEmpty()) paging
+                else paging.filter { s ->
+                    CustomizeKeys.series(s) !in cs.cust.hiddenItems &&
+                        (s.categoryId == null || s.categoryId !in cs.hiddenCats)
+                }
+            }
         }
         .cachedIn(viewModelScope)
 
     private data class Args(val key: LiveKey, val ctx: Ctx, val query: String, val sort: SettingsRepository.SortMode)
 
-    val count: StateFlow<Int> = combine(_selected, ctx) { key, c -> key to c }
-        .flatMapLatest { (key, c) -> countFlow(key, c) }
+    val count: StateFlow<Int> = combine(_selected, ctx, hiddenCategoryIds) { key, c, hidden -> Triple(key, c, hidden) }
+        .flatMapLatest { (key, c, hidden) -> countFlow(key, c, hidden) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     val favoriteIds: StateFlow<Set<Long>> = ctx
@@ -569,6 +610,15 @@ class SeriesViewModel(
 
     fun cancelMove() { _moveState.value = null }
 
+    /** Hide the series from all lists (undo via Settings → Customize Category → Hidden items). */
+    fun hideSeries(series: SeriesEntity) {
+        if (_selectedSeries.value?.id == series.id) _selectedSeries.value = null
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            customize.setItemHidden(pid, MediaType.SERIES, CustomizeKeys.series(series), series.name, true)
+        }
+    }
+
     fun removeFromHistory(seriesId: Long) {
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
@@ -600,10 +650,12 @@ class SeriesViewModel(
         }
     }
 
-    private fun countFlow(key: LiveKey, c: Ctx): Flow<Int> {
+    private fun countFlow(key: LiveKey, c: Ctx, hiddenCats: Set<Long>): Flow<Int> {
         val ids = c.sourceIds.ifEmpty { listOf(-1L) }
         return when (key) {
-            LiveKey.All -> seriesDao.countAll(ids)
+            LiveKey.All ->
+                if (hiddenCats.isEmpty()) seriesDao.countAll(ids)
+                else seriesDao.countAllExcluding(ids, hiddenCats.toList())
             LiveKey.Favorites -> seriesDao.countFavorites(c.profileId, ids)
             LiveKey.History -> seriesDao.countHistory(c.profileId, ids)
             is LiveKey.Folder -> seriesDao.countByCategory(key.id)

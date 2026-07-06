@@ -135,6 +135,7 @@ private fun SeriesContextMenu(
     onShowDetails: () -> Unit,
     onToggleFavorite: () -> Unit,
     onMove: () -> Unit,
+    onHide: () -> Unit,
     onRemoveFromHistory: () -> Unit,
     onDownload: () -> Unit,
     onRefetch: () -> Unit,
@@ -164,6 +165,7 @@ private fun SeriesContextMenu(
             )
             if (canMove) OwnTVButton("Move", onClick = onMove, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             if (isHistory) OwnTVButton("Remove from History", onClick = onRemoveFromHistory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            OwnTVButton("Hide", onClick = onHide, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             OwnTVButton("Download all episodes", onClick = onDownload, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.DOWNLOADS, modifier = Modifier.fillMaxWidth())
             if (hasTmdbDetails) {
                 OwnTVButton("TMDB Details", onClick = onShowDetails, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.MENU, modifier = Modifier.fillMaxWidth())
@@ -477,6 +479,7 @@ private fun SeriesGrid(
             onShowDetails = { contextSeries = null; detailsSeries = s },
             onToggleFavorite = { vm.toggleFavorite(s); contextSeries = null },
             onMove = { contextSeries = null; vm.enterMoveMode(s, selectedKey) },
+            onHide = { vm.hideSeries(s); contextSeries = null },
             onRemoveFromHistory = { vm.removeFromHistory(s.id); contextSeries = null },
             onDownload = { vm.downloadSeries(s); contextSeries = null },
             onRefetch = {

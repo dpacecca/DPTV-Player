@@ -88,6 +88,10 @@
 - **Audit gaps closed** — the **Default source** selection and the legacy **"resume last channel"**
   preference were being stored but not backed up; both are now included. Every user-facing preference
   in the settings store is now covered by Backup & Restore.
+- **Download folder is backed up too** — the chosen **Download folder** (Settings → Storage) was the
+  one persistent setting still missing; it now rides with App settings and restores on import. On a
+  different device a path that no longer exists harmlessly falls back to app storage, so a stale
+  restore never breaks downloads.
 - **Backward compatible** — older backup files that lack any of these new fields still restore
   cleanly: missing Auto refresh defaults to the normal app behaviour (EPG stays Off), and missing
   compatibility-mode/default-source fields simply leave your current values untouched. Unknown or
@@ -127,6 +131,26 @@
   so anyone can deploy their own and point OwnTV at it.
 - **Attribution** — Settings → Metadata shows the TMDB logo and the required notice: this product uses the
   TMDB API but is not endorsed or certified by TMDB.
+
+### 🙈 Hide individual movies & series — and a Customize PIN lock
+
+- **Hide any single movie or series** (not just whole categories) — long-press an item → **Hide**
+  removes it from everywhere at once: global **Search**, in-section search, its **category**, the
+  **All** list and count, **Home** rails (Continue Watching / Favourites), the Android TV **Watch
+  Next** launcher, and **Downloads**. The downloaded file stays on disk and the item returns the
+  moment you unhide it — exactly like Live TV's per-channel hide.
+- **Hidden categories now hide their items everywhere too** — previously hiding a Movies or Series
+  category only dropped the folder from the rail, while its items still showed in **All** and
+  **Search**. Hiding a category now behaves like Live TV: the items vanish from Search, All and the
+  Home/launcher rails until you unhide the category.
+- **Unhide everything from one place** — Settings → **Customize & Hidden Items** (renamed from
+  "Customize Category", since it now manages hidden items too) lists every hidden channel, movie and
+  series per section, each with an **Unhide** button.
+- **Optional PIN lock on the Customize screen** — tap **🔒 Set PIN** at the top-right of Customize &
+  Hidden Items to lock it; afterwards every entry asks for the PIN, so nobody else can unhide items
+  or change your category setup. It is per-profile, asked each time you open the screen, and
+  **deliberately not included in backups** — a lock code shouldn't travel in a readable file, and a
+  restore must never lock you out.
 
 ### ⚠️ Low-zoom memory warning (#51)
 

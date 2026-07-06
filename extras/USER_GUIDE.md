@@ -160,6 +160,11 @@ or **narrow the whole app to just one**.
 - **Movies/Series details:** focus a title to see enriched info in the side pane. **Long-press** a poster for
   Favorite, Download and **TMDB Details** (a scrollable window with the backdrop, full plot, cast and genres;
   press **Back** to close). **Single-press** plays.
+- 🙈 **Hide a movie or series:** long-press a title → **Hide** removes it everywhere at once — global Search,
+  the section search, its category, the All list, Home rails (Continue Watching / Favourites), the Android TV
+  Watch Next row, and Downloads. The downloaded file is kept, and the title comes back the moment you unhide it
+  from **Settings → Customize & Hidden Items**. (Hiding a whole **category** now hides its items everywhere too,
+  matching Live TV.)
 - **Series & episodes:** open a series to see the episode list with a detail pane on the right — focus an
   episode to see its TMDB still, plot and rating. Episode rows: **single-press plays**, **long-press** for
   Download / TMDB Details.
@@ -215,11 +220,17 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 
 ## 🎨 Personalize (make it yours)
 
-- **Settings → Customize Category**: **hide, rename and reorder** categories .
+- **Settings → Customize & Hidden Items**: **hide, rename and reorder** categories, plus **unhide**
+  individual channels, movies and series from one place. Pick a section at the top (Live TV / Movies /
+  Series) — hidden items are listed first, each with an **Unhide** button, and your categories follow below.
   - **Hide a range of categories fast**: focus a category's **Hide** button and **long‑press (select‑hold)** it to
     enter **span/range mode**. Then scroll **up or down** — every category between your starting point and the
     category you land on gets hidden together as a range. Handy for quickly hiding a big block of categories (or
     even scrolling all the way to hide most of the list) instead of hiding them one by one.
+  - 🔒 **Optional PIN lock**: tap **Set PIN** at the top-right to lock this screen. Once set, opening
+    Customize & Hidden Items asks for the PIN each time, so nobody else can unhide items or change your category
+    setup. The PIN is per-profile and is **not** included in backups (so a restore can never lock you out).
+    Change or remove it from the **Change PIN** / **Remove lock** buttons at the top-right.
 - **Settings → Theme / Accent colour / UI Zoom**: dark/AMOLED/light, a tint colour, and scale the whole UI.
   - ⚠️ Going **below 85% zoom** shows a warning first — lower zoom draws many more items at once, which can
     crash devices with limited memory (e.g. 2 GB TV sticks) with big playlists/EPG. Press **OK** to accept
