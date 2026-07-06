@@ -776,6 +776,11 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
     val colors = OwnTVTheme.colors
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    // Zoom below LOW_RAM_WARN doubles the on-screen item count, which can OOM-crash 2 GB devices
+    // (#51) — the first step under it is gated behind an accept-the-risk warning. Accepting once
+    // arms the rest of this dialog session; if it was opened already below the line, don't nag.
+    var lowZoomAccepted by remember { mutableStateOf(current < UiZoom.LOW_RAM_WARN) }
+    var pendingLowZoom by remember { mutableStateOf<Int?>(null) }
     BackHandler { onDismiss() }
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(),
@@ -799,7 +804,8 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
                 // so focus always lands inside the dialog — a disabled "+" at MAX zoom was leaving focus
                 // stranded outside, trapping the user at high zoom.
                 StepButton("–", dimmed = current <= UiZoom.MIN, modifier = Modifier.focusRequester(firstFocus)) {
-                    onSet(UiZoom.clamp(current - UiZoom.STEP))
+                    val next = UiZoom.clamp(current - UiZoom.STEP)
+                    if (next < UiZoom.LOW_RAM_WARN && !lowZoomAccepted) pendingLowZoom = next else onSet(next)
                 }
                 Text(
                     UiZoom.label(current),
@@ -817,6 +823,55 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
                 OwnTVButton("Reset", onClick = { onSet(UiZoom.DEFAULT) }, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
                 OwnTVButton("Done", onClick = onDismiss)
+            }
+        }
+
+        // Accept-the-risk gate for zoom below LOW_RAM_WARN (#51). One button, focus locked (all
+        // D-pad directions cancelled) — OK accepts and applies the pending step, Back cancels.
+        pendingLowZoom?.let { target ->
+            val acceptFocus = remember { FocusRequester() }
+            LaunchedEffect(Unit) { runCatching { acceptFocus.requestFocus() } }
+            // Composed after the dialog's own BackHandler, so it wins while the warning is up.
+            BackHandler {
+                pendingLowZoom = null
+                runCatching { firstFocus.requestFocus() }
+            }
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.8f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    modifier = Modifier.width(460.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text("⚠️ Low zoom warning", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "Zoom below ${UiZoom.LOW_RAM_WARN}% shows many more items on screen at once. " +
+                            "On devices with limited memory (e.g. 2 GB TV sticks) this can make the app " +
+                            "unstable or crash, especially with large playlists and EPG data.\n\n" +
+                            "Press OK to continue, or Back to stay at ${UiZoom.LOW_RAM_WARN}%.",
+                        style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    OwnTVButton(
+                        "I understand and accept the risk",
+                        onClick = {
+                            lowZoomAccepted = true
+                            pendingLowZoom = null
+                            onSet(target)
+                            runCatching { firstFocus.requestFocus() }
+                        },
+                        modifier = Modifier
+                            .focusRequester(acceptFocus)
+                            .focusProperties {
+                                up = FocusRequester.Cancel
+                                down = FocusRequester.Cancel
+                                left = FocusRequester.Cancel
+                                right = FocusRequester.Cancel
+                            },
+                    )
+                }
             }
         }
     }
