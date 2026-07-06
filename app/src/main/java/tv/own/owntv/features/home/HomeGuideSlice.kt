@@ -1,7 +1,9 @@
 package tv.own.owntv.features.home
 
+import android.text.format.DateFormat
 import coil3.compose.AsyncImage
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
@@ -36,6 +39,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,10 +49,9 @@ import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.components.FocusableSurface
-import tv.own.owntv.ui.components.NavAccentBar
 import tv.own.owntv.ui.components.OwnTVIcon
-import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.theme.OwnTVTheme
+import java.util.Date
 
 @Composable
 fun HomeLiveRow(
@@ -59,6 +62,7 @@ fun HomeLiveRow(
     onChannelClick: (Long, List<ChannelEntity>) -> Unit,
     onFocus: () -> Unit,
     firstItemFocusRequester: FocusRequester?,
+    onContainerDown: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     when (mode) {
@@ -76,6 +80,7 @@ fun HomeLiveRow(
             onTuneChannel = { channel -> onChannelClick(channel.id, guide.channels) },
             onFocus = onFocus,
             firstItemFocusRequester = firstItemFocusRequester,
+            onContainerDown = onContainerDown,
             modifier = modifier,
         )
     }
@@ -156,10 +161,12 @@ private fun OnNowRow(
     onTuneChannel: (ChannelEntity) -> Unit,
     onFocus: () -> Unit,
     firstItemFocusRequester: FocusRequester?,
+    onContainerDown: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
     val rows = guide.channels
+    val sectionShape = RoundedCornerShape(10.dp)
     var activeRowIndex by remember { mutableIntStateOf(-1) }
     var visibleStartIndex by remember { mutableIntStateOf(0) }
 
@@ -172,26 +179,29 @@ private fun OnNowRow(
     }
 
     fun handleListKey(event: KeyEvent): Boolean {
-        if (event.type != KeyEventType.KeyDown || activeRowIndex < 0) {
+        if (event.type != KeyEventType.KeyDown) {
             return false
+        }
+        if (activeRowIndex < 0) {
+            return if (event.key == Key.DirectionDown && onContainerDown != null) {
+                onContainerDown()
+                true
+            } else {
+                false
+            }
         }
         return when (event.key) {
             Key.DirectionUp -> {
-                if (activeRowIndex == 0) {
-                    activeRowIndex = -1
-                    true
-                } else {
-                    selectRow(activeRowIndex - 1)
-                    true
-                }
+                selectRow((activeRowIndex - 1).coerceAtLeast(0))
+                true
             }
             Key.DirectionDown -> {
-                if (activeRowIndex == rows.lastIndex) {
-                    false
-                } else {
-                    selectRow(activeRowIndex + 1)
-                    true
-                }
+                selectRow((activeRowIndex + 1).coerceAtMost(rows.lastIndex))
+                true
+            }
+            Key.DirectionLeft, Key.DirectionRight, Key.Back -> {
+                activeRowIndex = -1
+                true
             }
             else -> false
         }
@@ -222,22 +232,31 @@ private fun OnNowRow(
                 }
                 if (it.hasFocus) onFocus()
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = sectionShape,
         focusedScale = 1f,
         glowElevation = 0,
-        focusedContainerColor = colors.surfaceContainerHigh,
-        unfocusedContainerColor = colors.surfaceContainerHigh,
-        selectedContainerColor = colors.surfaceContainerHigh,
+        showFocusBorder = false,
+        focusedContainerColor = Color.Transparent,
+        unfocusedContainerColor = Color.Transparent,
+        selectedContainerColor = Color.Transparent,
     ) { focused ->
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(1.dp)
+                .border(
+                    width = 1.dp,
+                    color = if (focused) {
+                        colors.primary.copy(alpha = 0.42f)
+                    } else {
+                        Color.Transparent
+                    },
+                    shape = sectionShape,
+                )
+                .padding(10.dp),
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -257,12 +276,10 @@ private fun OnNowRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(10.dp))
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 rows.drop(visibleStartIndex)
                     .take(HOME_ON_NOW_VISIBLE_ROWS)
@@ -288,64 +305,73 @@ private fun OnNowChannelItem(
     focused: Boolean,
 ) {
     val colors = OwnTVTheme.colors
-    val formatTime = rememberSystemTimeFormatter()
-    val info = remember(programmes, now, formatTime) {
+    val context = LocalContext.current
+    val rowShape = RoundedCornerShape(8.dp)
+    val info = remember(programmes, now, context) {
+        val formatTime: (Long) -> String = { ms ->
+            DateFormat.getTimeFormat(context).format(Date(ms))
+        }
         val programme = currentProgramme(programmes, now) ?: programmes.firstOrNull { it.stopMs > now } ?: programmes.firstOrNull()
         OnNowProgrammeInfo(
             title = programme?.title ?: "No programme details",
             timeLabel = programme?.let { programmeTimeLabel(it, now, formatTime) } ?: "Guide data unavailable",
             progress = programmeProgress(programme, now),
             upcoming = upcomingProgrammes(programmes, programme, HOME_ON_NOW_UPCOMING_COUNT)
-                .map { "${formatTime(it.startMs)} ${it.title}" },
+                .map { programmeUpcomingLabel(it, formatTime) },
         )
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(68.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(colors.surfaceContainerHigh),
+            .height(82.dp)
+            .clip(rowShape)
+            .background(
+                if (focused) {
+                    colors.surfaceContainerHighest
+                } else {
+                    colors.surfaceContainerHigh.copy(alpha = 0.58f)
+                },
+            ),
     ) {
-        NavAccentBar(visible = focused, height = 36.dp)
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 14.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
+                .padding(start = 14.dp, end = 12.dp, top = 9.dp, bottom = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             ChannelLogoBadge(channel = channel, focused = focused)
-
-            Column(
-                modifier = Modifier.width(155.dp),
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    text = channel.number?.let { "$it  ${channel.name}" } ?: channel.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = if (focused) colors.primary else colors.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
 
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = info.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = colors.onSurface,
+                    text = channel.number?.let { "$it  ${channel.name}" } ?: channel.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant.copy(alpha = if (focused) 0.88f else 0.70f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.height(3.dp))
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = info.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(2.dp))
                 Text(
                     text = info.timeLabel,
                     style = MaterialTheme.typography.labelSmall,
-                    color = colors.primary,
+                    color = if (focused) {
+                        colors.primary.copy(alpha = 0.82f)
+                    } else {
+                        colors.onSurfaceVariant.copy(alpha = 0.62f)
+                    },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -355,19 +381,19 @@ private fun OnNowChannelItem(
 
             if (info.upcoming.isNotEmpty()) {
                 Column(
-                    modifier = Modifier.width(330.dp),
+                    modifier = Modifier.width(300.dp),
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
                         text = "Next",
                         style = MaterialTheme.typography.labelSmall,
-                        color = colors.onSurfaceVariant,
+                        color = colors.onSurfaceVariant.copy(alpha = 0.52f),
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         text = info.upcoming.joinToString("  ·  "),
                         style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant,
+                        color = colors.onSurfaceVariant.copy(alpha = 0.44f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -384,7 +410,7 @@ private data class OnNowProgrammeInfo(
     val upcoming: List<String>,
 )
 
-private const val HOME_ON_NOW_VISIBLE_ROWS = 6
+private const val HOME_ON_NOW_VISIBLE_ROWS = 5
 private const val HOME_ON_NOW_UPCOMING_COUNT = 4
 
 private fun visibleStartFor(
@@ -488,14 +514,14 @@ private fun ProgrammeProgressBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(4.dp)
+            .height(2.dp)
             .clip(RoundedCornerShape(50))
             .background(colors.surfaceContainerLowest),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(progress.coerceIn(0f, 1f))
-                .height(4.dp)
+                .height(2.dp)
                 .clip(RoundedCornerShape(50))
                 .background(colors.primary),
         )
@@ -534,4 +560,11 @@ private fun programmeTimeLabel(
     } else {
         "UP NEXT · $time"
     }
+}
+
+private fun programmeUpcomingLabel(
+    programme: EpgProgrammeEntity,
+    formatTime: (Long) -> String,
+): String {
+    return "${formatTime(programme.startMs)} ${programme.title}"
 }

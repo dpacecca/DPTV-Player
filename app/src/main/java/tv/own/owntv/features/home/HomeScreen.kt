@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -110,9 +111,12 @@ fun HomeScreen(
     val isPreviewActive by vm.isPreviewActive.collectAsStateWithLifecycle()
     val lastInteractionMs by vm.lastHeroInteractionMs.collectAsStateWithLifecycle()
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val homeScope = rememberCoroutineScope()
     val heroFocus = remember { FocusRequester() }
     val fallbackFocus = remember { FocusRequester() }
-    val firstRowFocus = remember { FocusRequester() }
+    val rowFirstFocusRequesters = remember {
+        HomeRow.entries.associateWith { FocusRequester() }
+    }
     // Nothing starts expanded: a hero card earns its wide (16:9) state only after 3s of continuous focus
     // (see the dwell effect below). Moving focus — to another card or out of the row — collapses it again.
     var expandedHeroIndex by remember { mutableStateOf(-1) }
@@ -125,6 +129,16 @@ fun HomeScreen(
     val firstDataRow = renderRows.firstOrNull { it != HomeRow.HERO && rowHasData(it, state) }
     val showAllHiddenState = orderedRows.isEmpty()
     val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty()
+    val rowFocusRequester: (HomeRow) -> FocusRequester? = { row ->
+        when (row) {
+            HomeRow.HERO -> when {
+                state.heroItems.isNotEmpty() -> heroFocus
+                showHeroFallback -> fallbackFocus
+                else -> null
+            }
+            else -> rowFirstFocusRequesters[row]
+        }
+    }
 
     val onNonHeroFocused = remember(vm, heroPreviewEngine) {
         {
@@ -189,7 +203,7 @@ fun HomeScreen(
             val focusTarget = when {
                 heroVisible && state.heroItems.isNotEmpty() -> heroFocus
                 showHeroFallback -> fallbackFocus
-                firstDataRow != null -> firstRowFocus
+                firstDataRow != null -> rowFocusRequester(firstDataRow)
                 else -> null
             }
             if (focusTarget != null) runCatching { focusTarget.requestFocus() }
@@ -227,7 +241,26 @@ fun HomeScreen(
         contentPadding = PaddingValues(vertical = Dimens.ScreenPaddingV),
         verticalArrangement = Arrangement.spacedBy(Dimens.GapLarge),
     ) {
-        itemsIndexed(renderRows, key = { _, row -> row.name }) { _, row ->
+        itemsIndexed(renderRows, key = { _, row -> row.name }) { index, row ->
+            val firstItemFocusRequester = rowFocusRequester(row)
+            val nextRowIndex = renderRows
+                .drop(index + 1)
+                .indexOfFirst { rowFocusRequester(it) != null }
+                .takeIf { it >= 0 }
+                ?.let { index + 1 + it }
+            val onMoveToNextRow: (() -> Unit)? = nextRowIndex?.let { targetIndex ->
+                val targetFocusRequester = rowFocusRequester(renderRows[targetIndex]) ?: return@let null
+                {
+                    homeScope.launch {
+                        val targetIsVisible = listState.layoutInfo.visibleItemsInfo.any { it.index == targetIndex }
+                        if (!targetIsVisible) {
+                            listState.scrollToItem(targetIndex)
+                            kotlinx.coroutines.delay(50)
+                        }
+                        runCatching { targetFocusRequester.requestFocus() }
+                    }
+                }
+            }
             when (row) {
                 HomeRow.HERO -> {
                     if (state.heroItems.isNotEmpty()) {
@@ -278,7 +311,8 @@ fun HomeScreen(
                         guide = state.recentGuide,
                         onChannelClick = onPlayChannel,
                         onFocus = onNonHeroFocused,
-                        firstItemFocusRequester = if (row == firstDataRow) firstRowFocus else null,
+                        firstItemFocusRequester = firstItemFocusRequester,
+                        onContainerDown = onMoveToNextRow,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -291,7 +325,8 @@ fun HomeScreen(
                         guide = state.favoriteGuide,
                         onChannelClick = onPlayChannel,
                         onFocus = onNonHeroFocused,
-                        firstItemFocusRequester = if (row == firstDataRow) firstRowFocus else null,
+                        firstItemFocusRequester = firstItemFocusRequester,
+                        onContainerDown = onMoveToNextRow,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -302,7 +337,7 @@ fun HomeScreen(
                         items = state.continueMovies,
                         onItemClick = { onPlayMovie(it.sourceItemId, it.positionMs) },
                         onFocus = onNonHeroFocused,
-                        firstItemFocusRequester = if (row == firstDataRow) firstRowFocus else null,
+                        firstItemFocusRequester = firstItemFocusRequester,
                     )
                 }
 
@@ -312,7 +347,7 @@ fun HomeScreen(
                         items = state.continueSeries,
                         onItemClick = { onPlayEpisode(0L, it.targetItemId, it.positionMs) },
                         onFocus = onNonHeroFocused,
-                        firstItemFocusRequester = if (row == firstDataRow) firstRowFocus else null,
+                        firstItemFocusRequester = firstItemFocusRequester,
                     )
                 }
             }
@@ -454,7 +489,22 @@ private fun HeroRowSection(
                 state = heroRowState,
                 horizontalArrangement = Arrangement.spacedBy(Dimens.HeroGap),
                 contentPadding = PaddingValues(start = Dimens.HomeRowPaddingH, end = endPadding),
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .focusProperties {
+                        onEnter = {
+                            if (
+                                requestedFocusDirection == FocusDirection.Down ||
+                                requestedFocusDirection == FocusDirection.Up
+                            ) {
+                                scope.launch {
+                                    heroRowState.scrollToItem(0)
+                                    runCatching { heroFocusRequester.requestFocus() }
+                                }
+                                cancelFocusChange()
+                            }
+                        }
+                    },
             ) {
                 itemsIndexed(
                     items,
