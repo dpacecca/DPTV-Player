@@ -76,6 +76,7 @@ class MovieViewModel(
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val contentOrderDao: ContentOrderDao,
     private val metadata: tv.own.owntv.core.metadata.MetadataRepository,
+    private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
 ) : ViewModel() {
 
     data class MovieMoveState(val items: List<MovieEntity>, val activeIndex: Int, val contextKey: String)
@@ -313,9 +314,42 @@ class MovieViewModel(
     suspend fun savedPositionMs(movie: MovieEntity): Long =
         currentProfileId()?.let { progressDao.get(it, MediaType.MOVIE, movie.id)?.positionMs ?: 0 } ?: 0
 
+    /** Global "External player" toggle — screens must NOT open the fullscreen in-app player when on
+     *  (mounting it spins up an mpv instance even though play() branched to the external app). */
+    val externalPlayerOn: StateFlow<Boolean> = settings.externalPlayer
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** Phase B: long-press "Play with external player" — always external, regardless of the global toggle. */
+    fun playExternal(movie: MovieEntity) {
+        viewModelScope.launch {
+            val pid = currentProfileId()
+            Log.d(TAG, "playExternal movieId=${movie.id}")
+            externalPlayerLauncher.launch(movie.streamUrl, movie.name)
+            if (pid != null) {
+                runCatching {
+                    historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.MOVIE, itemId = movie.id))
+                }.onFailure { t -> Log.w(TAG, "external play history record failed movieId=${movie.id} profile=$pid", t) }
+            }
+        }
+    }
+
     fun play(movie: MovieEntity, startPositionMs: Long = 0) {
         viewModelScope.launch {
             val pid = currentProfileId()
+            // External player (global toggle): hand the stream URL to an external app and skip the
+            // in-app engine entirely. History is still recorded (recently-watched); resume position
+            // and the playing-movie HUD/progress tick are intentionally not — the external app owns
+            // playback and OwnTV can't observe it.
+            if (settings.externalPlayer.first()) {
+                Log.d(TAG, "play movieId=${movie.id} -> external player")
+                externalPlayerLauncher.launch(movie.streamUrl, movie.name)
+                if (pid != null) {
+                    runCatching {
+                        historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.MOVIE, itemId = movie.id))
+                    }.onFailure { t -> Log.w(TAG, "external play history record failed movieId=${movie.id} profile=$pid", t) }
+                }
+                return@launch
+            }
             val sourceUa = sourceDao.getById(movie.sourceId)?.userAgent
             Log.d(TAG, "play movieId=${movie.id} profile=$pid startPositionMs=$startPositionMs")
             player.play(

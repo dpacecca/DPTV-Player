@@ -245,6 +245,9 @@ class SettingsViewModel(
     val vodPreferExo: StateFlow<Boolean> = settings.vodPreferExo.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     fun setVodPreferExo(enabled: Boolean) { viewModelScope.launch { settings.setVodPreferExo(enabled) } }
 
+    val externalPlayer: StateFlow<Boolean> = settings.externalPlayer.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    fun setExternalPlayer(enabled: Boolean) { viewModelScope.launch { settings.setExternalPlayer(enabled) } }
+
     val updateCheckOnStart: StateFlow<Boolean> =
         settings.updateCheckOnStart.stateIn(viewModelScope, SharingStarted.Eagerly, true)
     fun setUpdateCheckOnStart(enabled: Boolean) { viewModelScope.launch { settings.setUpdateCheckOnStart(enabled) } }
@@ -311,6 +314,9 @@ class SettingsViewModel(
     val weatherLocation: StateFlow<String> =
         settings.weatherLocation.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     fun setWeatherLocation(location: String) { viewModelScope.launch { settings.setWeatherLocation(location) } }
+    val weatherFahrenheit: StateFlow<Boolean> =
+        settings.weatherFahrenheit.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    fun setWeatherFahrenheit(fahrenheit: Boolean) { viewModelScope.launch { settings.setWeatherFahrenheit(fahrenheit) } }
 
     /** Per-source playlist auto-refresh selection (Off / Startup / staleness threshold). */
     val playlistAutoRefresh: StateFlow<Map<Long, PlaylistAutoRefresh>> = settings.playlistAutoRefresh

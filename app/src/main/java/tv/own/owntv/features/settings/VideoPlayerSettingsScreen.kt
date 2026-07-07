@@ -86,6 +86,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val vm: SettingsViewModel = koinViewModel()
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
     val vodExo by vm.vodPreferExo.collectAsStateWithLifecycle()
+    val externalPlayer by vm.externalPlayer.collectAsStateWithLifecycle()
     val zoom by vm.defaultZoom.collectAsStateWithLifecycle()
     val subScale by vm.subtitleScale.collectAsStateWithLifecycle()
     val audioDelay by vm.audioDelayMs.collectAsStateWithLifecycle()
@@ -153,6 +154,15 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
                 "has no A/V sync fix. Whichever you pick, the other is tried automatically if it fails.",
             chip = if (vodExo) "ExoPlayer" else "mpv", primaryChip = !vodExo,
             onClick = { vm.setVodPreferExo(!vodExo) },
+        )
+        Row2(
+            icon = OwnTVIcon.PLAY, title = "External player",
+            desc = "Open movies, series, and downloads in an external app (VLC, MX Player) instead of the " +
+                "built-in player. Useful for streams this app can't decode, or if you prefer another " +
+                "player. Resume position and prev/next are unavailable while playing externally; streams " +
+                "needing a custom User-Agent or referer may not play. Live TV is unaffected.",
+            chip = if (externalPlayer) "On" else "Off", primaryChip = externalPlayer,
+            onClick = { vm.setExternalPlayer(!externalPlayer) },
         )
         Row2(
             icon = OwnTVIcon.ASPECT, title = "Default zoom",

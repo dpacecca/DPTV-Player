@@ -63,7 +63,12 @@ class SearchViewModel(
     private val customize: CustomizationStore,
     private val favoriteDao: FavoriteDao,
     val player: OwnTVPlayer,
+    private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
 ) : ViewModel() {
+
+    /** Global "External player" toggle — the screen must NOT open the fullscreen in-app player when on. */
+    val externalPlayerOn: kotlinx.coroutines.flow.StateFlow<Boolean> = settings.externalPlayer
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
     // Observe the active profile's sources reactively so adding/removing a playlist refreshes Search
@@ -163,6 +168,11 @@ class SearchViewModel(
 
     fun playMovie(movie: MovieEntity) {
         viewModelScope.launch {
+            // Global external-player toggle: same chokepoint behavior as MovieViewModel.play().
+            if (settings.externalPlayer.first()) {
+                externalPlayerLauncher.launch(movie.streamUrl, movie.name)
+                return@launch
+            }
             val sourceUa = sourceDao.getById(movie.sourceId)?.userAgent
             player.play(movie.streamUrl, title = movie.name, year = movie.year?.toString(), isLive = false, userAgent = sourceUa)
         }

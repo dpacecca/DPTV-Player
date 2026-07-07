@@ -48,6 +48,7 @@ fun TopBar(
     onSearchClick: () -> Unit,
     playlistName: String,
     weatherInfo: WeatherInfo? = null,
+    weatherFahrenheit: Boolean = false,
     searchVisible: Boolean = true,
     playlistInteractive: Boolean = false,
     onPlaylistClick: () -> Unit = {},
@@ -64,7 +65,7 @@ fun TopBar(
             SearchPill(onClick = onSearchClick, visible = searchVisible)
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (weatherInfo != null) WeatherChip(info = weatherInfo)
+            if (weatherInfo != null) WeatherChip(info = weatherInfo, fahrenheit = weatherFahrenheit)
             ClockChip()
             if (playlistName.isNotBlank()) {
                 PlaylistChip(label = playlistName, interactive = playlistInteractive, onClick = onPlaylistClick)
@@ -146,9 +147,9 @@ private fun PlaylistChip(label: String, interactive: Boolean = false, onClick: (
 }
 
 @Composable
-private fun WeatherChip(info: WeatherInfo) {
+private fun WeatherChip(info: WeatherInfo, fahrenheit: Boolean) {
     val colors = OwnTVTheme.colors
-    val temp = "${info.temperatureC.toInt()}°C"
+    val temp = if (fahrenheit) "${(info.temperatureC * 9 / 5 + 32).toInt()}°F" else "${info.temperatureC.toInt()}°C"
     val location = if (info.city.isNotBlank()) " · ${info.city}" else ""
     Box(Modifier.clip(RoundedCornerShape(999.dp)).background(colors.primaryContainer.copy(alpha = 0.4f)).padding(horizontal = 14.dp, vertical = 7.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -258,6 +258,10 @@ class ShellViewModel(
             else flow { emit(weatherRepository.get(loc)) }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null as WeatherInfo?)
 
+    /** °F display for the weather chip (default °C). */
+    val weatherFahrenheit: StateFlow<Boolean> = settings.weatherFahrenheit
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     /** null = still loading; < 0 = first run (show setup wizard); >= 0 = active profile (show shell). */
     val activeProfileId: StateFlow<Long?> = settings.activeProfileId
         .map<Long, Long?> { it }

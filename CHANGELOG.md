@@ -96,6 +96,9 @@
   cleanly: missing Auto refresh defaults to the normal app behaviour (EPG stays Off), and missing
   compatibility-mode/default-source fields simply leave your current values untouched. Unknown or
   invalid entries are ignored — a restore never crashes on them.
+- **Customize PIN lock is backed up** — each profile's Customize PIN rides with the **Profiles &
+  sources** section and is restored per profile (PINs for profiles that no longer exist are dropped
+  safely; older backups without the field restore as before).
 
 ### 🎬 TMDB metadata enrichment (Movies, Series & Episodes)
 
@@ -151,6 +154,46 @@
   or change your category setup. It is per-profile, asked each time you open the screen, and
   **deliberately not included in backups** — a lock code shouldn't travel in a readable file, and a
   restore must never lock you out.
+
+### ✨ External player — play movies, series & downloads in VLC / MX Player
+
+- **New setting: Settings → Video Player → "External player"** — when on, pressing Play on a **Movie**,
+  **Series episode**, or **Download** opens the stream in an external video player (VLC, MX Player, …)
+  instead of the built-in one. Useful for streams this app can't decode, or if you simply prefer another
+  player. Turning it off restores normal in-app playback. The setting is included in **Backup & Restore**
+  like the other player preferences.
+- **Long-press "Play with external player"** — every movie and series episode's long-press menu has a
+  new action that plays just that item externally, **regardless of the global setting**. Completed
+  downloads get an **"External"** button next to Play.
+- **Live TV is unaffected** — channels always play in the built-in player (external routing would lose
+  rewind/catch-up). Movies, Series and Downloads are the only sections that route externally.
+- **Smart hand-off** — if more than one player is installed you get a chooser; if exactly one is set up it
+  opens directly; if none is installed you get a clear "install VLC or MX Player" message instead of a
+  silent failure. Downloaded files are shared safely via a content URI (not a raw file path).
+- **Trade-offs when playing externally** (the same ones every IPTV app has): resume position and
+  prev/next aren't available, and streams that require a custom User-Agent or referer header may not
+  play in the external player. Watch history is still recorded.
+
+### 📺 Live TV closed captions now work (#57)
+
+- **ExoPlayer engine: embedded CEA-608 captions on raw MPEG-TS channels are now detected.** IPTV
+  panels almost never declare captions in the stream tables, so the player never exposed them; the app
+  now surfaces the standard **CC1** track on every `.ts` live channel (HLS channels already worked).
+  Because detection is unconditional, the CC entry also appears on `.ts` channels that carry no
+  captions — selecting it there simply shows nothing.
+- **mpv engine: selecting the CC track now actually renders captions.** CC text can only be extracted
+  by the software video decoder, so while a CC track is selected the channel temporarily switches to
+  software decoding (≤1080p only — the same GL path used by the decoder-rescue fallback) and switches
+  straight back to hardware decoding when CC is turned off or you change channels. Expect a ~1s
+  blip when toggling. On >1080p channels captions stay unavailable on mpv rather than risking
+  stutter; use the ExoPlayer engine there.
+
+### 🌦️ Weather settings submenu — Celsius / Fahrenheit
+
+- The two weather rows on the Settings root are now a proper **Settings → Weather** submenu with three
+  options: **Show weather** (top-bar chip on/off), **Custom location** (city or "lat,lon"; blank =
+  auto-detect — useful on a VPN), and a new **Temperature unit** toggle (**°C / °F**) for the top-bar
+  chip. All three are included in Backup & Restore.
 
 ### ⚠️ Low-zoom memory warning (#51)
 

@@ -81,6 +81,7 @@ class SeriesViewModel(
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val contentOrderDao: ContentOrderDao,
     private val metadata: tv.own.owntv.core.metadata.MetadataRepository,
+    private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
 ) : ViewModel() {
 
     data class SeriesMoveState(val items: List<SeriesEntity>, val activeIndex: Int, val contextKey: String)
@@ -450,6 +451,29 @@ class SeriesViewModel(
     suspend fun savedPositionMs(episode: EpisodeEntity): Long =
         currentProfileId()?.let { progressDao.get(it, MediaType.EPISODE, episode.id)?.positionMs ?: 0 } ?: 0
 
+    /** Global "External player" toggle — screens must NOT open the fullscreen in-app player when on
+     *  (mounting it spins up an mpv instance even though playback branched to the external app). */
+    val externalPlayerOn: StateFlow<Boolean> = settings.externalPlayer
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** Phase B: long-press "Play with external player" — always external, regardless of the global toggle. */
+    fun playEpisodeExternal(episode: EpisodeEntity) {
+        _lastPlayedEpisodeId.value = episode.id
+        viewModelScope.launch {
+            val pid = currentProfileId()
+            Log.d(TAG, "playEpisodeExternal episodeId=${episode.id}")
+            externalPlayerLauncher.launch(episode.streamUrl, episode.name)
+            if (pid != null) {
+                runCatching {
+                    historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.EPISODE, itemId = episode.id))
+                }.onFailure { t -> Log.w(TAG, "external play episode history record failed episodeId=${episode.id} profile=$pid", t) }
+                runCatching {
+                    historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.SERIES, itemId = episode.seriesId))
+                }.onFailure { t -> Log.w(TAG, "external play series history record failed seriesId=${episode.seriesId} profile=$pid", t) }
+            }
+        }
+    }
+
     fun playEpisode(episode: EpisodeEntity, startPositionMs: Long = 0) {
         val show = _openedSeries.value ?: return
         val seasonEpisodes = episodes.value
@@ -463,6 +487,22 @@ class SeriesViewModel(
         _lastPlayedEpisodeId.value = episode.id
         viewModelScope.launch {
             val pid = currentProfileId()
+            // External player (global toggle): launch only the selected episode (external players are
+            // single-item — no prev/next queue). History is still recorded; resume position and the
+            // in-app HUD/progress tick are not, since OwnTV can't observe the external app.
+            if (settings.externalPlayer.first()) {
+                Log.d(TAG, "playEpisodeQueue seriesId=${show.id} episodeId=${episode.id} -> external player")
+                externalPlayerLauncher.launch(episode.streamUrl, episode.name)
+                if (pid != null) {
+                    runCatching {
+                        historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.EPISODE, itemId = episode.id))
+                    }.onFailure { t -> Log.w(TAG, "external play episode history record failed episodeId=${episode.id} profile=$pid", t) }
+                    runCatching {
+                        historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.SERIES, itemId = episode.seriesId))
+                    }.onFailure { t -> Log.w(TAG, "external play series history record failed seriesId=${episode.seriesId} profile=$pid", t) }
+                }
+                return@launch
+            }
             val startIndex = queue.indexOfFirst { it.id == episode.id }.coerceAtLeast(0)
             Log.d(TAG, "playEpisodeQueue seriesId=${show.id} episodeId=${episode.id} profile=$pid queue=${queue.size} startIndex=$startIndex startPositionMs=$startPositionMs")
             val sourceUa = sourceDao.getById(show.sourceId)?.userAgent

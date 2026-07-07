@@ -94,6 +94,7 @@ fun OwnTVShell(
     activePlaylistId: Long = -1L,
     onSelectPlaylist: (Long) -> Unit = {},
     weatherInfo: tv.own.owntv.core.weather.WeatherInfo? = null, // Phase 7
+    weatherFahrenheit: Boolean = false,
     activeProfileId: Long?,
     pendingDeepLink: LauncherDeepLink?,
     onDeepLinkConsumed: () -> Unit,
@@ -317,6 +318,7 @@ fun OwnTVShell(
                         else -> playlists.firstOrNull { it.id == activePlaylistId }?.name ?: sourceSummary
                     },
                     weatherInfo = weatherInfo,
+                    weatherFahrenheit = weatherFahrenheit,
                     // The Search pill only exists while focus sits on the nav panel — inside a
                     // section it fades out and turns unfocusable, so focus can never jump to it.
                     searchVisible = focusedLayer == ShellLayer.SIDEBAR,
@@ -341,8 +343,10 @@ fun OwnTVShell(
 
                         selectedSection == MainSection.HOME -> HomeScreen(
                             vm = homeVm,
-                            onPlayMovie = { id, pos -> scope.launch { if (movieVm.playByIdAsync(id, pos)) openFullscreen(MainSection.MOVIES) } },
-                            onPlayEpisode = { seriesId, epId, pos -> scope.launch { if (seriesVm.playFromHomeAsync(seriesId, epId, pos)) openFullscreen(MainSection.SERIES) } },
+                            // Skip the fullscreen player when the global external-player toggle is on
+                            // (mounting it spins up mpv even though playback went to the external app).
+                            onPlayMovie = { id, pos -> scope.launch { if (movieVm.playByIdAsync(id, pos) && !movieVm.externalPlayerOn.value) openFullscreen(MainSection.MOVIES) } },
+                            onPlayEpisode = { seriesId, epId, pos -> scope.launch { if (seriesVm.playFromHomeAsync(seriesId, epId, pos) && !seriesVm.externalPlayerOn.value) openFullscreen(MainSection.SERIES) } },
                             onPlayChannel = { id, zap -> scope.launch { if (liveVm.ensurePlayingByIdAsync(id, zap)) openFullscreen(MainSection.LIVE_TV) } },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                             restoreFocus = restoreFocus,

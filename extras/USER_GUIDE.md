@@ -126,6 +126,8 @@ or **narrow the whole app to just one**.
   a full‑screen reorder overlay opens. Use **D‑pad Up/Down** to move, **OK** to save, **Back** to cancel.
 - 📥 **Download via long‑press**: **long‑press OK** on a movie or episode and choose **Download** to queue it
   immediately (Movies) or queue all cached episodes (Series). No need to open the detail pane.
+- 📤 **Play with external player via long‑press**: the same long‑press menu can open the movie/episode in an
+  external app (VLC, MX Player, …) — one‑off, regardless of the global **External player** setting.
 - 🔧 **Two playback engines with automatic fallback**: movies/episodes play on **mpv** by default (or
   **ExoPlayer** if you switched the **Movies & Series player** setting). If the chosen engine can't play an
   item, the **other engine is tried automatically** before any error. You can also switch the **current**
@@ -207,7 +209,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 
 | Button | What it does |
 |---|---|
-| **Subtitles** | Pick a subtitle track (incl. **image subtitles**) and set **subtitle delay**. |
+| **Subtitles** | Pick a subtitle track (incl. **image subtitles**) and set **subtitle delay**. Live channels with **embedded closed captions (CC)** — common on US channels — show a CC track on both engines; on mpv, selecting it briefly switches the channel to software decoding (≤1080p) and hardware decoding returns when CC is turned off. On raw `.ts` channels the CC entry always appears, even when the channel carries no captions. |
 | **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±50 ms** steps) — use this if surround makes lips drift. |
 | **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · buffer. |
 | **Speed** | Playback speed (VOD). |
@@ -253,6 +255,14 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
   DTS/TrueHD audio and has no A/V sync fix). Either way, if the chosen player fails, the other is
   tried automatically before an error is shown. The player's **info overlay** shows which engine is
   active.
+- 📤 **External player** (Video Player Settings) — play **Movies, Series episodes and Downloads** in an
+  external app (VLC, MX Player, …) instead of the built‑in player. Live TV always stays in‑app. You can
+  also play a **single item** externally without the setting: **long‑press OK** on a movie/episode and
+  choose **Play with external player** (Downloads have an **External** button). Note: resume position and
+  next/previous aren't available while an external app plays.
+- 🌦️ **Weather** — its own submenu: **Show weather** (top‑bar chip on/off), **Custom location** (city or
+  "lat,lon"; blank = auto‑detect — set this if a VPN shows the wrong city), and **Temperature unit**
+  (**°C / °F**).
 - 🔊 **Surround sound** — ⚠️ **off by default, opt‑in.** Turn it on **only if you have a real 5.1/7.1
   receiver**. On TV speakers or a stereo soundbar it can make **audio lag behind video (lip‑sync drift)** —
   if you enable it and see drift, fix it live with the player's **Audio → A/V sync** nudge. Most people

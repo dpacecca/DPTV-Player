@@ -69,7 +69,7 @@ import tv.own.owntv.ui.theme.UiZoom
 
 private enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
-private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, NETWORK, METADATA }
+private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, NETWORK, METADATA, WEATHER }
 
 /**
  * The MD3 Settings screen (shown when [MainSection.SETTINGS] is active): grouped sections, each row
@@ -99,7 +99,6 @@ fun SettingsScreen(
     var showClearHistory by remember { mutableStateOf(false) }
     var showAnimations by remember { mutableStateOf(false) }
     var showStartup by remember { mutableStateOf(false) }
-    var showWeatherLocation by remember { mutableStateOf(false) }
 
     // Dialog-close focus return: closing a dialog/picker refocuses the row that opened it (focus
     // would otherwise fall spatially back to the sidebar).
@@ -143,7 +142,6 @@ fun SettingsScreen(
     val customAccent by settingsVm.customAccent.collectAsStateWithLifecycle()
     val animationLevel by settingsVm.animationLevel.collectAsStateWithLifecycle()
     val weatherEnabled by settingsVm.weatherEnabled.collectAsStateWithLifecycle()
-    val weatherLocation by settingsVm.weatherLocation.collectAsStateWithLifecycle()
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by remember { mutableStateOf<SettingsTab?>(null) }
@@ -156,6 +154,7 @@ fun SettingsScreen(
         SettingsTab.CUSTOMIZE to FocusRequester(),
         SettingsTab.NETWORK to FocusRequester(),
         SettingsTab.METADATA to FocusRequester(),
+        SettingsTab.WEATHER to FocusRequester(),
     ) }
     val open: (SettingsTab) -> Unit = { lastTab = it; tab = it }
     LaunchedEffect(tab) {
@@ -177,6 +176,7 @@ fun SettingsScreen(
         SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.NETWORK -> { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.METADATA -> { tv.own.owntv.features.settings.MetadataSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+        SettingsTab.WEATHER -> { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.ROOT -> Unit
     }
 
@@ -308,19 +308,12 @@ fun SettingsScreen(
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.EPG,
-            title = "Show weather",
-            desc = "Display the current weather in the top bar. Turn off if you don't use it or the city is wrong.",
+            title = "Weather",
+            desc = "Top-bar weather chip: show or hide, custom location, and Celsius / Fahrenheit.",
             chip = if (weatherEnabled) "On" else "Off",
             chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setWeatherEnabled(!weatherEnabled) },
-        )
-        SettingsRow(
-            tone = TileTone.SECONDARY, icon = OwnTVIcon.EPG,
-            title = "Weather location",
-            desc = "Override the city used for weather. Leave blank to auto-detect, or enter a city (e.g. London) or \"lat,lon\" (e.g. 51.5,-0.12). Useful on a VPN, where auto-detect resolves to the server's city.",
-            chip = weatherLocation.ifBlank { "Auto" },
-            chipTone = TileTone.SECONDARY,
-            onClick = { showWeatherLocation = true }, showChevron = true,
+            onClick = { open(SettingsTab.WEATHER) }, showChevron = true,
+            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.WEATHER)),
         )
 
         SectionDivider()
@@ -481,17 +474,6 @@ fun SettingsScreen(
             selected = startupMode.name,
             onSelect = { settingsVm.setStartupMode(tv.own.owntv.features.settings.data.StartupMode.valueOf(it)); showStartup = false },
             onDismiss = { showStartup = false },
-        )
-    }
-    if (showWeatherLocation) {
-        TextInputDialog(
-            title = "Weather location",
-            initial = weatherLocation,
-            label = "Location",
-            confirmLabel = "Save",
-            hint = "Leave blank to auto-detect, or enter a city (e.g. London) or \"lat,lon\" (e.g. 51.5,-0.12).",
-            onConfirm = { settingsVm.setWeatherLocation(it) },
-            onDismiss = { showWeatherLocation = false },
         )
     }
     if (showAccent) {

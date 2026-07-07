@@ -102,6 +102,7 @@ class MainActivity : ComponentActivity() {
             val playlists by viewModel.playlists.collectAsStateWithLifecycle()
             val activePlaylistId by viewModel.activePlaylistId.collectAsStateWithLifecycle()
             val weather by viewModel.weather.collectAsStateWithLifecycle()
+            val weatherFahrenheit by viewModel.weatherFahrenheit.collectAsStateWithLifecycle()
             val selectedSection by viewModel.selectedSection.collectAsStateWithLifecycle()
             val activeProfileId by viewModel.activeProfileId.collectAsStateWithLifecycle()
             val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
@@ -177,6 +178,7 @@ class MainActivity : ComponentActivity() {
                                 activePlaylistId = activePlaylistId,
                                 onSelectPlaylist = viewModel::setActivePlaylist,
                                 weatherInfo = weather,
+                                weatherFahrenheit = weatherFahrenheit,
                                 activeProfileId = activeProfileId,
                                 pendingDeepLink = pendingDeepLink,
                                 onDeepLinkConsumed = { pendingDeepLink = null },

@@ -122,6 +122,10 @@ fun MoviesScreen(
     val downloadStates by vm.downloadStates.collectAsStateWithLifecycle()
     val movies = vm.movies.collectAsLazyPagingItems()
     val resumeMode by vm.resumeMode.collectAsStateWithLifecycle()
+    // Global external-player toggle: never mount the fullscreen in-app player (it spins up mpv)
+    // when playback is handed to an external app.
+    val externalPlayerOn by vm.externalPlayerOn.collectAsStateWithLifecycle()
+    val goFullscreen: () -> Unit = { if (!externalPlayerOn) onFullscreen() }
 
     val selectedIndex = railItems.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
     val selectedItem = railItems.getOrNull(selectedIndex)
@@ -134,8 +138,8 @@ fun MoviesScreen(
             val pos = vm.savedPositionMs(m)
             when {
                 resumeMode == SettingsRepository.ResumeMode.ASK && pos >= 10_000 -> resumePrompt = m to pos
-                resumeMode == SettingsRepository.ResumeMode.AUTO && pos > 0 -> { vm.play(m, pos); onFullscreen() }
-                else -> { vm.play(m, 0); onFullscreen() }
+                resumeMode == SettingsRepository.ResumeMode.AUTO && pos > 0 -> { vm.play(m, pos); goFullscreen() }
+                else -> { vm.play(m, 0); goFullscreen() }
             }
         }
     }
@@ -336,8 +340,8 @@ fun MoviesScreen(
     resumePrompt?.let { (m, pos) ->
         ResumeDialog(
             positionMs = pos,
-            onResume = { resumePrompt = null; vm.play(m, pos); onFullscreen() },
-            onStartOver = { resumePrompt = null; vm.play(m, 0); onFullscreen() },
+            onResume = { resumePrompt = null; vm.play(m, pos); goFullscreen() },
+            onStartOver = { resumePrompt = null; vm.play(m, 0); goFullscreen() },
             onDismiss = { resumePrompt = null },
         )
     }
@@ -367,6 +371,7 @@ fun MoviesScreen(
                     toast.show("Already downloaded — check the Downloads menu.")
                 } else vm.download(m)
             },
+            onPlayExternal = { contextMovie = null; vm.playExternal(m) },
             onRefetch = {
                 contextMovie = null
                 toast.show("Refetching TMDB details…")
@@ -468,6 +473,7 @@ private fun MovieContextMenu(
     onHide: () -> Unit,
     onRemoveFromHistory: () -> Unit,
     onDownload: () -> Unit,
+    onPlayExternal: () -> Unit,
     onRefetch: () -> Unit,
     onSetTmdbName: () -> Unit,
     onPlayTrailer: (String) -> Unit,
@@ -497,6 +503,8 @@ private fun MovieContextMenu(
             if (isHistory) OwnTVButton("Remove from History", onClick = onRemoveFromHistory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             OwnTVButton("Hide", onClick = onHide, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             OwnTVButton("Download", onClick = onDownload, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.DOWNLOADS, modifier = Modifier.fillMaxWidth())
+            // Phase B: one-off external playback, independent of the global "External player" toggle.
+            OwnTVButton("Play with external player", onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.PLAY, modifier = Modifier.fillMaxWidth())
             // TMDB Details — only when a confident match resolved (§11.1).
             if (hasTmdbDetails) {
                 Spacer(Modifier.height(4.dp))

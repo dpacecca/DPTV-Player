@@ -5,12 +5,14 @@ package tv.own.owntv.features.downloads
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import tv.own.owntv.core.customize.CustomizationStore
@@ -34,6 +36,7 @@ class DownloadsViewModel(
     private val settings: SettingsRepository,
     private val downloadManager: DownloadManager,
     val player: OwnTVPlayer,
+    private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
 ) : ViewModel() {
 
     /**
@@ -75,11 +78,31 @@ class DownloadsViewModel(
     private val _lastPlayedId = MutableStateFlow<Long?>(null)
     val lastPlayedId: StateFlow<Long?> = _lastPlayedId.asStateFlow()
 
+    /** Global "External player" toggle — the screen must NOT open the fullscreen in-app player when on
+     *  (mounting it spins up an mpv instance even though play() branched to the external app). */
+    val externalPlayerOn: StateFlow<Boolean> = settings.externalPlayer
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** Phase B: always play this download in an external player, regardless of the global toggle. */
+    fun playExternal(download: DownloadEntity) {
+        val path = download.filePath ?: return
+        _lastPlayedId.value = download.id
+        externalPlayerLauncher.launch(path, download.title)
+    }
+
     /** Play a completed download from its local file. */
     fun play(download: DownloadEntity) {
         val path = download.filePath ?: return
         _lastPlayedId.value = download.id
-        player.play(path, title = download.title, isLive = false)
+        viewModelScope.launch {
+            // External player (global toggle): share the downloaded file with an external app via its
+            // FileProvider URI. Otherwise play it in the built-in player.
+            if (settings.externalPlayer.first()) {
+                externalPlayerLauncher.launch(path, download.title)
+                return@launch
+            }
+            player.play(path, title = download.title, isLive = false)
+        }
     }
 
     fun retry(download: DownloadEntity) = downloadManager.retry(download)

@@ -654,6 +654,7 @@ private fun EpisodeContextMenu(
     canRefetchTmdb: Boolean,
     onShowDetails: () -> Unit,
     onDownload: () -> Unit,
+    onPlayExternal: () -> Unit,
     onRefetch: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -672,6 +673,8 @@ private fun EpisodeContextMenu(
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
             OwnTVButton("Download", onClick = onDownload, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.DOWNLOADS, modifier = Modifier.fillMaxWidth().focusRequester(focus))
+            // Phase B: one-off external playback, independent of the global "External player" toggle.
+            OwnTVButton("Play with external player", onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.PLAY, modifier = Modifier.fillMaxWidth())
             if (hasTmdbDetails) {
                 OwnTVButton("TMDB Details", onClick = onShowDetails, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.MENU, modifier = Modifier.fillMaxWidth())
             }
@@ -766,6 +769,10 @@ private fun EpisodeView(
 
     // Resume flow: AUTO continues silently, ASK prompts (≥10s saved), NEVER starts from zero.
     val resumeMode by vm.resumeMode.collectAsStateWithLifecycle()
+    // Global external-player toggle: never mount the fullscreen in-app player (it spins up mpv)
+    // when playback is handed to an external app.
+    val externalPlayerOn by vm.externalPlayerOn.collectAsStateWithLifecycle()
+    val goFullscreen: () -> Unit = { if (!externalPlayerOn) onFullscreen() }
     val scope = rememberCoroutineScope()
     var resumePrompt by remember { mutableStateOf<Pair<EpisodeEntity, Long>?>(null) }
     val startEpisode: (EpisodeEntity) -> Unit = { ep ->
@@ -773,8 +780,8 @@ private fun EpisodeView(
             val pos = vm.savedPositionMs(ep)
             when {
                 resumeMode == SettingsRepository.ResumeMode.ASK && pos >= 10_000 -> resumePrompt = ep to pos
-                resumeMode == SettingsRepository.ResumeMode.AUTO && pos > 0 -> { vm.playEpisode(ep, pos); onFullscreen() }
-                else -> { vm.playEpisode(ep, 0); onFullscreen() }
+                resumeMode == SettingsRepository.ResumeMode.AUTO && pos > 0 -> { vm.playEpisode(ep, pos); goFullscreen() }
+                else -> { vm.playEpisode(ep, 0); goFullscreen() }
             }
         }
     }
@@ -890,6 +897,7 @@ private fun EpisodeView(
                     toast.show("Already downloaded — check the Downloads menu.")
                 } else vm.downloadEpisode(ep)
             },
+            onPlayExternal = { contextEpisode = null; vm.playEpisodeExternal(ep) },
             onRefetch = {
                 contextEpisode = null
                 toast.show("Refetching TMDB details…")
@@ -911,8 +919,8 @@ private fun EpisodeView(
     resumePrompt?.let { (ep, pos) ->
         ResumeDialog(
             positionMs = pos,
-            onResume = { resumePrompt = null; vm.playEpisode(ep, pos); onFullscreen() },
-            onStartOver = { resumePrompt = null; vm.playEpisode(ep, 0); onFullscreen() },
+            onResume = { resumePrompt = null; vm.playEpisode(ep, pos); goFullscreen() },
+            onStartOver = { resumePrompt = null; vm.playEpisode(ep, 0); goFullscreen() },
             onDismiss = { resumePrompt = null },
         )
     }

@@ -15,6 +15,9 @@
 - 🎬 **TMDB metadata enrichment (Movies, Series & Episodes)**
 - 🎞️ **In-app trailers for Movies & Series**
 - 🙈 **Hide individual movies & series — and a Customize PIN lock**
+- ✨ **External player — play movies, series & downloads in VLC / MX Player** (global setting + per-item long-press; Live TV stays in-app)
+- 📺 **Live TV closed captions now work (#57)** (CEA-608 CC on both ExoPlayer & mpv engines)
+- 🌦️ **Weather settings submenu — Celsius / Fahrenheit**
 - ⚠️ **Low-zoom memory warning (#51)**
 
 ### 🐛 Fixes
