@@ -54,10 +54,16 @@ or **narrow the whole app to just one**.
 
 - The **Home** tab opens to a row of what you were watching — partly‑watched **movies, episodes and recent
   live channels**, newest first.
-- The selected card is shown **large with its poster**; focus it and it starts a **muted video preview**.
-  Press **OK** to **resume right where you left off**.
-- Press **Right** to move along the row — the next card expands and previews.
-- Below is a **Favourite Channels** rail for one‑click live access.
+- **Dwell to expand:** hold focus on a hero card for **3 seconds** and it widens to a big 16:9 preview and
+  starts a **muted video preview**. Quick D‑pad sweeps never expand, so browsing stays snappy. Press **OK**
+  to **resume right where you left off**.
+- Below are more rows — **Favourite Channels**, **Continue Watching Movies/Series**, and an optional
+  **Recent Channels** row (off by default).
+- 🧩 **Make Home yours (Settings → Home screen, per profile):** **reorder or hide every row**, **filter the
+  Keep Watching hero** (include/exclude live channels, movies, series), and switch the live‑channel rows
+  between **Cards** and **On Now** — an inline mini‑guide showing what's airing now with a progress bar and
+  the next hours (Up/Down picks a channel, Left/Right scrolls the timeline, OK tunes). The **Android TV
+  home** toggle also lives on this page. Your layout is saved per profile and included in backups.
 
 ---
 
@@ -244,7 +250,9 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 
 ## ⚙️ Settings worth knowing
 
-- 🚀 **Startup** — where each profile opens: **Home**, **Last channel** (auto‑plays the channel you last
+- 🧭 **Menu layout** — **Profiles** is the first row; **Live preview / Preview audio** are under
+  **Playback**; **App startup** is under **App**; the **Home screen** page is under Content.
+- 🚀 **App startup** — where each profile opens: **Home**, **Last channel** (auto‑plays the channel you last
   watched), or **Live · Favorites** (lands you right inside your favourites list).
 - 🌈 **HDR** — use HDR output when the video and TV support it. Turn on for HDR/Dolby Vision content.
 - 🧩 **Hardware decoder** (Video Player Settings) — hardware decoding is on for smooth 4K; switch to software

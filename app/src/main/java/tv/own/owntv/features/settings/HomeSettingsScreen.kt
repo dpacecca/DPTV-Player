@@ -16,11 +16,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,7 +32,6 @@ import androidx.tv.material3.Text
 import tv.own.owntv.features.home.HeroKind
 import tv.own.owntv.features.home.HomeLiveRowMode
 import tv.own.owntv.features.home.HomeRow
-import tv.own.owntv.features.settings.data.StartupMode
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -47,24 +43,11 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: HomeSettingsViewModel = koinViewModel()
     val settingsVm: SettingsViewModel = koinViewModel()
     val config by vm.config.collectAsStateWithLifecycle()
-    val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
     val androidTvHomeEnabled by settingsVm.androidTvHomeEnabled.collectAsStateWithLifecycle()
     val tvHomeRefresh by settingsVm.tvHomeRefresh.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
 
-    var showStartup by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
-    val startupFocus = remember { FocusRequester() }
-    var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-
-    LaunchedEffect(showStartup) {
-        if (!showStartup) {
-            dialogReturn?.let { row ->
-                kotlinx.coroutines.delay(80)
-                runCatching { row.requestFocus() }
-            }
-        }
-    }
 
     BackHandler { onBack() }
 
@@ -73,11 +56,7 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .fillMaxSize()
             .roundedPanel()
             .focusProperties {
-                onEnter = {
-                    val target = dialogReturn ?: firstFocus
-                    dialogReturn = null
-                    runCatching { target.requestFocus() }
-                }
+                onEnter = { runCatching { firstFocus.requestFocus() } }
             }
             .focusGroup()
             .padding(horizontal = 40.dp, vertical = 28.dp),
@@ -165,25 +144,6 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
             item {
                 Spacer(Modifier.height(6.dp))
-                GroupLabel("Startup")
-            }
-            item {
-                Row2(
-                    icon = OwnTVIcon.HOME,
-                    title = "Startup",
-                    desc = "Where this profile opens: Home, the last live channel you watched, or Live TV on Favorites.",
-                    chip = startupMode.label,
-                    chevron = true,
-                    modifier = Modifier.focusRequester(startupFocus),
-                    onClick = {
-                        dialogReturn = startupFocus
-                        showStartup = true
-                    },
-                )
-            }
-
-            item {
-                Spacer(Modifier.height(6.dp))
                 GroupLabel("Android TV home")
             }
             item {
@@ -216,19 +176,6 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 }
             }
         }
-    }
-
-    if (showStartup) {
-        PickerDialog(
-            title = "Startup",
-            options = StartupMode.entries.map { it.name to it.label },
-            selected = startupMode.name,
-            onSelect = {
-                settingsVm.setStartupMode(StartupMode.valueOf(it))
-                showStartup = false
-            },
-            onDismiss = { showStartup = false },
-        )
     }
 }
 

@@ -1,6 +1,35 @@
 # Changelog
 
-## v4.0.2 — Unreleased
+## v4.0.2 — 2026-07-07
+
+### 🏠 Customizable Home screen — reorder/hide rows, dwell-to-expand hero, On Now mini-guide (community PR #58 by [@codeVerine](https://github.com/codeVerine) — Sagar Mukundan UV)
+
+- **Reorder and show/hide every Home row** via the new **Settings → Home screen** page (per profile):
+  Keep Watching hero, Recent Channels, Favourite Channels, Continue Watching Movies, Continue Watching
+  Series can each be toggled and moved up/down/top/bottom. When every row is hidden, Home says so
+  instead of showing a blank screen. Configs ride with **Backup & Restore** (backup format v8; older
+  backups restore cleanly with defaults).
+- **Filter the Keep Watching hero row** — independent toggles include/exclude live channels, movies and
+  series from the hero strip (e.g. keep it VOD-only). Addresses **#43**.
+- **Redesigned hero cards — dwell-to-expand** — a card stays compact until it holds focus for **3
+  seconds**, then widens to a 16:9 preview with a **blurred-artwork backdrop** (no more stretched
+  channel logos — **#49**). Quick D-pad sweeps never expand; the video preview starts only after the
+  expansion settles, and the row stays anchored on the active item across data refreshes.
+- **"On Now" mini-guide rows** — Recent Channels and Favourite Channels can each display as **Cards**
+  or **On Now**: an inline programme guide with the currently-airing show, live progress bar, and the
+  next ~6 hours, sharing the real EPG renderer. Up/Down picks a channel, Left/Right scrolls the
+  timeline, OK tunes. Favourite Channels defaults to On Now.
+- **New Recent Channels row** (hidden by default) — recently tuned live channels, respecting the active
+  playlist filter.
+- **Times follow the device's 12h/24h clock setting** across Home, Live TV preview, TV Guide and the
+  catch-up dialog (previously always 24h).
+
+### ⚙️ Settings menu reorganized
+
+- **Profiles** moved to the **top** of Settings (own "Profile" group, first focused row).
+- **Live preview** and **Preview audio** moved from Content into the **Playback** group.
+- **App startup** (Home / Last channel / Live TV Favorites) now lives in the **App** group.
+- **Home screen** (new page above) sits in Content; the **Android TV home** toggle + refresh moved into it.
 
 ### 🗂️ Multiple playlists — switch the whole app to one playlist (or all)
 

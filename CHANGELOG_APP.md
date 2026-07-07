@@ -4,10 +4,12 @@
 > (by name) and Fixes. The full, detailed changelog is [CHANGELOG.md](CHANGELOG.md). Hand-maintained —
 > edit this file directly alongside CHANGELOG.md, condensing per version (do not copy bullets verbatim).
 
-## v4.0.2 — Unreleased
+## v4.0.2 — 2026-07-07
 
 ### ✨ New features
 
+- 🏠 **Customizable Home screen — reorder/hide rows, dwell-to-expand hero, On Now mini-guide** (community PR #58 by @codeVerine)
+- ⚙️ **Settings menu reorganized** (Profiles on top; Live preview under Playback; App startup under App)
 - 🗂️ **Multiple playlists — switch the whole app to one playlist (or all)**
 - ✨ **VOD engine fallback (movies & series play on more devices)**
 - 🔄 **Per-source Auto Refresh (playlists & EPG)**

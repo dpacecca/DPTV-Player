@@ -98,6 +98,7 @@ fun SettingsScreen(
     var showCatchupTime by remember { mutableStateOf(false) }
     var showClearHistory by remember { mutableStateOf(false) }
     var showAnimations by remember { mutableStateOf(false) }
+    var showStartup by remember { mutableStateOf(false) }
 
     // Dialog-close focus return: closing a dialog/picker refocuses the row that opened it (focus
     // would otherwise fall spatially back to the sidebar).
@@ -110,12 +111,13 @@ fun SettingsScreen(
     val catchupRowFocus = remember { FocusRequester() }
     val clearHistoryRowFocus = remember { FocusRequester() }
     val animationsRowFocus = remember { FocusRequester() }
+    val startupRowFocus = remember { FocusRequester() }
     // NOTE: this restore request crosses INTO the root focus group from outside (the dialog), so
     // the group's onEnter intercepts it — onEnter must consult dialogReturn first (it does, below)
     // or it would hijack the restore to its own default target. dialogReturn is cleared by onEnter.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showClearHistory, showAnimations) {
-        if (!showZoom && !showTheme && !showAccent && !showFolderPicker && !showUpdate && !showAbout && !showCatchupTime && !showClearHistory && !showAnimations) {
+    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showClearHistory, showAnimations, showStartup) {
+        if (!showZoom && !showTheme && !showAccent && !showFolderPicker && !showUpdate && !showAbout && !showCatchupTime && !showClearHistory && !showAnimations && !showStartup) {
             dialogReturn?.let { row ->
                 kotlinx.coroutines.delay(80)
                 runCatching { row.requestFocus() }
@@ -137,6 +139,7 @@ fun SettingsScreen(
     val customAccent by settingsVm.customAccent.collectAsStateWithLifecycle()
     val animationLevel by settingsVm.animationLevel.collectAsStateWithLifecycle()
     val weatherEnabled by settingsVm.weatherEnabled.collectAsStateWithLifecycle()
+    val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by remember { mutableStateOf<SettingsTab?>(null) }
@@ -188,7 +191,7 @@ fun SettingsScreen(
             // the last-opened sub-menu's row, then the first row.
             .focusProperties {
                 onEnter = {
-                    val target = dialogReturn ?: rowFocus[lastTab] ?: rowFocus.getValue(SettingsTab.SOURCES)
+                    val target = dialogReturn ?: rowFocus[lastTab] ?: rowFocus.getValue(SettingsTab.PROFILES)
                     dialogReturn = null
                     runCatching { target.requestFocus() }
                 }
@@ -205,6 +208,14 @@ fun SettingsScreen(
         )
         Spacer(Modifier.height(12.dp))
 
+        GroupLabel("Profile")
+        SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.PERSON,
+            title = "Profiles", desc = "Manage viewers, kids mode & PIN locks",
+            onClick = { open(SettingsTab.PROFILES) }, showChevron = true,
+            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.PROFILES)),
+        )
+        SectionDivider()
         GroupLabel("Content")
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.PLAYLIST,
@@ -236,28 +247,6 @@ fun SettingsScreen(
             onClick = { open(SettingsTab.METADATA) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.METADATA)),
         )
-        SettingsRow(
-            tone = TileTone.SECONDARY, icon = OwnTVIcon.PERSON,
-            title = "Profiles", desc = "Manage viewers, kids mode & PIN locks",
-            onClick = { open(SettingsTab.PROFILES) }, showChevron = true,
-            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.PROFILES)),
-        )
-        SettingsRow(
-            tone = TileTone.TERTIARY, icon = OwnTVIcon.LIVE_TV,
-            title = "Live preview", desc = "Auto-play a channel when you focus it",
-            chip = if (livePreview) "On" else "Off",
-            chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setLivePreviewEnabled(!livePreview) },
-        )
-        if (livePreview) {
-            SettingsRow(
-                tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
-                title = "Preview audio", desc = "Play sound in the Live preview",
-                chip = if (previewAudio) "On" else "Off",
-                chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY,
-                onClick = { settingsVm.setLivePreviewAudio(!previewAudio) },
-            )
-        }
         SettingsRow(
             tone = TileTone.TERTIARY, icon = OwnTVIcon.DOWNLOADS,
             title = "Download folder",
@@ -322,6 +311,22 @@ fun SettingsScreen(
         SectionDivider()
         GroupLabel("Playback")
         SettingsRow(
+            tone = TileTone.TERTIARY, icon = OwnTVIcon.LIVE_TV,
+            title = "Live preview", desc = "Auto-play a channel when you focus it",
+            chip = if (livePreview) "On" else "Off",
+            chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY,
+            onClick = { settingsVm.setLivePreviewEnabled(!livePreview) },
+        )
+        if (livePreview) {
+            SettingsRow(
+                tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
+                title = "Preview audio", desc = "Play sound in the Live preview",
+                chip = if (previewAudio) "On" else "Off",
+                chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY,
+                onClick = { settingsVm.setLivePreviewAudio(!previewAudio) },
+            )
+        }
+        SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.VIDEO,
             title = "HDR", desc = "Use HDR output when the video & TV support it",
             chip = if (hdr) "On" else "Off",
@@ -376,6 +381,13 @@ fun SettingsScreen(
         SectionDivider()
         GroupLabel("App")
         SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.HOME,
+            title = "App startup", desc = "What OwnTV opens when it starts",
+            chip = startupMode.label, chipTone = TileTone.PRIMARY,
+            onClick = { dialogReturn = startupRowFocus; showStartup = true }, showChevron = true,
+            modifier = Modifier.focusRequester(startupRowFocus),
+        )
+        SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.DOWNLOADS,
             title = "Check for updates", desc = "Get the latest version from GitHub Releases",
             chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}",
@@ -426,6 +438,15 @@ fun SettingsScreen(
             selected = themeMode.name,
             onSelect = { settingsVm.setThemeMode(ThemeMode.valueOf(it)); showTheme = false },
             onDismiss = { showTheme = false },
+        )
+    }
+    if (showStartup) {
+        tv.own.owntv.features.settings.PickerDialog(
+            title = "App startup",
+            options = tv.own.owntv.features.settings.data.StartupMode.entries.map { it.name to it.label },
+            selected = startupMode.name,
+            onSelect = { settingsVm.setStartupMode(tv.own.owntv.features.settings.data.StartupMode.valueOf(it)); showStartup = false },
+            onDismiss = { showStartup = false },
         )
     }
     if (showAnimations) {

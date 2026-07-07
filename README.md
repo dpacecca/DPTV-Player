@@ -76,7 +76,7 @@ Scan to join from your phone:
 - 📺 **[Complete player design & feature reference →](extras/player.html)**
 
 ### 🧭 Browse
-- **Home screen** — Continue Watching hero carousel (partially-watched movies, episodes, recent channels); feeds system Watch Next on stock Android TV
+- **Home screen** — Continue Watching hero carousel (partially-watched movies, episodes, recent channels) with dwell-to-expand previews; fully customizable per profile (reorder/hide rows, hero filters, "On Now" inline mini-guide rows); feeds system Watch Next on stock Android TV
 - **Sections** — Live TV (preview + real stream resolution badge), Movies, Series, Downloads, EPG Guide
 - **Fixed layout** — stable icon nav · full-label category column · content · preview (never expands/collapses)
 - **Categories** — Favorites & History per section, full names, search box; customize (hide/rename/reorder, range-select); hide/unhide individual channels, movies & series; optional PIN lock; survives re-syncs
