@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -114,10 +115,23 @@ fun PlayerHud(
     val speed by player.speed.collectAsStateWithLifecycle()
     val isLive = player.isLiveContent
 
+    val nextUpTitle by player.nextUpTitle.collectAsStateWithLifecycle()
+
     var dialog by remember { mutableStateOf(HudDialog.NONE) }
     val playFocus = remember { FocusRequester() }
     val retryFocus = remember { FocusRequester() }
     val catchFocus = remember { FocusRequester() }
+    val nextFocus = remember { FocusRequester() }
+
+    // Next-episode countdown card (VOD queues only): appears in the last ~30s before the automatic
+    // advance (which fires at duration − 8s), counts down to it, and offers Play now / Cancel.
+    var autoNextDismissed by remember { mutableStateOf(false) }
+    // Re-arm when the queued next episode changes (i.e. after an advance to a new item).
+    LaunchedEffect(nextUpTitle, nav.hasNext) { autoNextDismissed = false }
+    val msToAdvance = if (!isLive && duration > 0L) (duration - 8_000L) - position else Long.MAX_VALUE
+    val showNextCard = !isLive && error == null && nav.hasNext && nextUpTitle != null &&
+        msToAdvance in 0L..30_000L && !autoNextDismissed
+    val nextCountdown = ((msToAdvance + 999L) / 1000L).toInt().coerceIn(0, 30)
 
     var controlsVisible by remember { mutableStateOf(true) }
     var showInfo by remember { mutableStateOf(false) } // stream technical-info overlay
@@ -152,10 +166,12 @@ fun PlayerHud(
         // Don't auto-hide under an overlay — hiding is what triggers the catch-all focus grab below.
         if (controlsVisible && !forceShow && !inert) { delay(4500); controlsVisible = false }
     }
-    LaunchedEffect(controlsVisible, error, dialog, inert) {
+    LaunchedEffect(controlsVisible, error, dialog, inert, showNextCard) {
         // Never steal focus while a dialog is open (its rows own it) or while a shell overlay is up
         // (inert — the overlay owns the D-pad); when either closes this re-runs and hands focus back.
         if (dialog != HudDialog.NONE || inert) return@LaunchedEffect
+        // The next-episode countdown card owns focus while it's up so Play now / Cancel are reachable.
+        if (showNextCard) { runCatching { nextFocus.requestFocus() }; return@LaunchedEffect }
         if (controlsVisible) {
             if (error != null) runCatching { retryFocus.requestFocus() } else runCatching { playFocus.requestFocus() }
         } else runCatching { catchFocus.requestFocus() }
@@ -179,7 +195,7 @@ fun PlayerHud(
             }
         },
     ) {
-        if (!controlsVisible) {
+        if (!controlsVisible && !showNextCard) {
             Box(
                 Modifier.fillMaxSize().focusRequester(catchFocus).focusable()
                     .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && e.key != Key.Back) { controlsVisible = true; true } else false },
@@ -225,6 +241,19 @@ fun PlayerHud(
                     modifier = Modifier.align(Alignment.BottomStart),
                 )
             }
+        }
+
+        // Next-episode countdown card (VOD queue only) — surfaces the automatic advance with Play now /
+        // Cancel. Shown independently of the main controls so it appears even after they auto-hide.
+        if (showNextCard) {
+            NextEpisodeCard(
+                seconds = nextCountdown,
+                title = nextUpTitle ?: "",
+                playFocus = nextFocus,
+                onPlayNow = { autoNextDismissed = true; player.next() },
+                onCancel = { autoNextDismissed = true; player.cancelAutoNext() },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 28.dp, bottom = 120.dp),
+            )
         }
 
         // Engine-switch confirmation toast (bottom-center, semi-transparent) — shown briefly after the
@@ -522,6 +551,57 @@ private fun SpeedButton(label: String, active: Boolean, onClick: () -> Unit) {
 
 private fun formatSpeed(speed: Double): String = if (speed == 1.0) "1.0x" else "${speed}x"
 
+/** Next-episode countdown card: "Next episode in Ns" + title, with Play now / Cancel. Play now advances
+ *  immediately; Cancel suppresses the automatic advance for the current item. */
+@Composable
+private fun NextEpisodeCard(
+    seconds: Int,
+    title: String,
+    playFocus: FocusRequester,
+    onPlayNow: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OwnTVTheme.colors
+    Column(
+        modifier = modifier
+            .widthIn(max = 360.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.Black.copy(alpha = 0.82f))
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+    ) {
+        Text(
+            "Next episode in ${seconds}s",
+            style = MaterialTheme.typography.labelLarge,
+            color = colors.primary,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            title,
+            style = MaterialTheme.typography.titleSmall,
+            color = Color.White,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OwnTVButton(
+                "Play now",
+                onClick = onPlayNow,
+                icon = OwnTVIcon.PLAY,
+                modifier = Modifier.focusRequester(playFocus),
+            )
+            OwnTVButton(
+                "Cancel",
+                onClick = onCancel,
+                icon = OwnTVIcon.CLOSE,
+                style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY,
+            )
+        }
+    }
+}
+
 /** The MPV/EXO engine toggle: a one-line pill showing the active engine, flipped on click. Teal while on
  *  the non-default engine (ExoPlayer for VOD; mpv "compatibility" pin for Live). Mirrors [SpeedButton]. */
 @Composable
@@ -597,12 +677,14 @@ private fun SeekBar(positionMs: Long, durationMs: Long, onSeek: (Long) -> Unit) 
             Box(Modifier.fillMaxWidth(frac), contentAlignment = Alignment.CenterEnd) {
                 Box(Modifier.size(14.dp).clip(CircleShape).background(TEAL))
             }
-            // Scrub-time bubble above the thumb.
+            // Time-remaining bubble above the thumb (elapsed is shown at the bar's left, total at the right,
+            // so the bubble shows what's LEFT: "-12:34"). Uses a negative offset (not bottom padding) so it
+            // floats clear above the 24dp-tall bar — padding can't lift it out of the height-constrained parent.
             Box(Modifier.fillMaxWidth(frac), contentAlignment = Alignment.CenterEnd) {
                 Box(
-                    Modifier.padding(bottom = 30.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp),
+                    Modifier.offset(y = (-32).dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp),
                 ) {
-                    Text(formatTime(positionMs), style = MaterialTheme.typography.labelMedium, color = Color.White)
+                    Text("-${formatTime((durationMs - positionMs).coerceAtLeast(0))}", style = MaterialTheme.typography.labelMedium, color = Color.White)
                 }
             }
         }

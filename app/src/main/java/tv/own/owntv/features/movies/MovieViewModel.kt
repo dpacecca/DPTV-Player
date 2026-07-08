@@ -257,6 +257,13 @@ class MovieViewModel(
         .map { it.toSet() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
+    /** Resume/watched progress for the visible movies, keyed by movie id — drives the ✓ tick and the
+     *  in-progress bar on posters/list rows. Only started/finished movies have a row, so this is small. */
+    val movieProgress: StateFlow<Map<Long, PlaybackProgressEntity>> = ctx
+        .flatMapLatest { c -> if (c.profileId < 0) flowOf(emptyList()) else progressDao.observeMovieProgress(c.profileId) }
+        .map { list -> list.associateBy { it.itemId } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
     val selectedProgress: StateFlow<PlaybackProgressEntity?> = combine(_selectedMovie, ctx) { m, c -> m to c }
         .flatMapLatest { (m, c) ->
             if (m == null) flowOf(null) else progressDao.observe(c.profileId, MediaType.MOVIE, m.id)
@@ -412,6 +419,29 @@ class MovieViewModel(
             if (favoriteIds.value.contains(movie.id)) favoriteDao.remove(pid, MediaType.MOVIE, movie.id)
             else favoriteDao.add(FavoriteEntity(profileId = pid, mediaType = MediaType.MOVIE, itemId = movie.id))
             refreshList() // the Favorites category uses a manual PagingSource — force a rebuild
+        }
+    }
+
+    /** ≥95% of duration watched = completed (mirrors SeriesViewModel.isEpisodeCompleted). */
+    fun isMovieCompleted(p: PlaybackProgressEntity): Boolean =
+        p.durationMs > 0 && p.positionMs >= (p.durationMs * 0.95f).toLong()
+
+    /** Mark a movie as watched (shows ✓) without playing it — same synthetic 1ms/1ms sentinel trick used
+     *  for episodes (satisfies the ≥95% completed rule while keeping Play restarting from ~0). */
+    fun markMovieWatched(movie: MovieEntity) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            progressDao.save(
+                PlaybackProgressEntity(profileId = pid, mediaType = MediaType.MOVIE, itemId = movie.id, positionMs = 1L, durationMs = 1L),
+            )
+        }
+    }
+
+    /** Mark a movie as unwatched — clears its resume position (removes the ✓ and any progress bar). */
+    fun markMovieUnwatched(movie: MovieEntity) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            progressDao.clear(pid, MediaType.MOVIE, movie.id)
         }
     }
 

@@ -135,9 +135,14 @@ or **narrow the whole app to just one**.
   **Settings → Resume** — **Ask**, **Auto** (silently continues), or **Never**.
 - ⏭️ **Auto‑play next episode**: when an episode ends, the next one starts automatically — and it rolls into
   the **next season** when the current one finishes. Toggle in **Settings → Auto‑play next episode**.
+- ⏳ **Next‑episode countdown**: in the last ~30 seconds of an episode a card counts down to the auto‑advance,
+  with **Play now** (jump immediately) and **Cancel** (stop the auto‑advance for this episode).
 - Series **open on your last‑watched episode**.
-- ✅ **Watched state at a glance** (Series): episodes show a ✓ (dimmed) once watched to ≥95%, and a thin
-  progress bar when part‑watched. Season chips show a `watched/total` count (e.g. `Season 2 · 8/18`).
+- ✅ **Watched state at a glance**: episodes (Series) and movie posters/list rows show a ✓ (dimmed) once
+  watched to ≥95%, and a thin progress bar when part‑watched. Series season chips show a `watched/total`
+  count (e.g. `Season 2 · 8/18`).
+- ✏️ **Mark a movie watched / unwatched**: long‑press a movie → **Mark as watched** (or **unwatched**). A
+  **Resume <time>** label appears under the poster in the detail pane while a movie is part‑watched.
 - ▶️ **"Next up" card** (Series): the episode detail pane shows a **Next up** card with a one‑press
   **Play** for the episode to continue with — the one you're mid‑way through, or the next after the last
   finished one (resume time shown when in progress).

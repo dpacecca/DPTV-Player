@@ -70,7 +70,7 @@ Scan to join from your phone:
 - **Channel zapping** — D-pad/CH±/media keys, wraps around; **in-player channel list** (Left with controls hidden)
 - **Audio** — surround sound (opt-in, Dolby/DTS → multichannel LPCM, auto-stereo safety net); volume boost to 150%; A/V sync nudge
 - **Subtitles** — text (SRT/ASS) + image (PGS/VOBSUB/DVB on its own layer) + closed captions (CEA-608/708)
-- **Resume & auto-play** — per-title resume prompt, auto-play next episode (across seasons), opens on last-watched episode
+- **Resume & auto-play** — per-title resume prompt, auto-play next episode (across seasons) with a next-episode countdown card, opens on last-watched episode, watched ✓ / progress indicators on movies and episodes
 - **Mini-player / PiP** — dock any stream and keep browsing
 - **Stream info overlay** — live codec · resolution · fps · HDR · bitrate · decoder readout
 - 📺 **[Complete player design & feature reference →](extras/player.html)**

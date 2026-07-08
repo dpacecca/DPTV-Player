@@ -35,6 +35,7 @@ fun PosterCard(
     modifier: Modifier = Modifier,
     rating: Double? = null,
     progressFraction: Float? = null,
+    completed: Boolean = false,
     isFavorite: Boolean = false,
     selected: Boolean = false,
     onFocus: () -> Unit = {},
@@ -86,6 +87,23 @@ fun PosterCard(
                         OwnTVIcon(OwnTVIcon.STAR, tint = colors.accent, filled = true, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.size(4.dp))
                         Text(formatRating(rating), style = MaterialTheme.typography.labelMedium, color = Color.White)
+                    }
+                }
+
+                // Watched: dim the art and stamp a teal ✓ badge (bottom-end). No progress bar is drawn
+                // for a completed item (the caller passes progressFraction = null in that case).
+                if (completed) {
+                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)))
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(6.dp)
+                            .size(22.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(colors.primary),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("✓", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = colors.onPrimary)
                     }
                 }
 

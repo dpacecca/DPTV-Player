@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.0.3 — 2026-07-08
+## v4.0.3 — Unreleased
 
 ### ✨ New features
 
@@ -24,6 +24,14 @@
   (sport / news / movies / kids / music / docs); and a non-modal strip at the bottom previews the
   programme under the cursor (title, channel, time, runtime, catch-up, synopsis) without opening the
   dialog — OK still opens the full detail.
+- **Movies: watched state on posters and a resume label.** Movie posters (and the compact list rows)
+  now show a ✓ badge (with dimmed art) once watched to ≥95%, and a thin progress bar when part-watched,
+  matching the Series episode view. The movie detail pane shows a `Resume <time>` label under the poster
+  when there's an unfinished position, and long-press gains a **"Mark as watched / unwatched"** option
+  (mirrors Series; marking watched still restarts from the beginning on Play).
+- **Player: a next-episode countdown card.** When a series episode nears its end, a card appears with a
+  countdown to the automatic next-episode advance plus **Play now** and **Cancel** — so you can jump
+  early or stop the auto-advance. Works on both the mpv and ExoPlayer engines.
 
 ### 🐛 Fixes
 
@@ -37,6 +45,9 @@
   falls back to software decoding (which can't sustain >1080p), the error now explains the stream's
   format is the issue rather than implying the TV can't play any 4K content — the TV may still play
   other 4K videos fine.
+- **Player seek bubble now shows time remaining.** The scrub bubble above the seek thumb was not
+  displaying (padding couldn't lift it out of the bar) and, once fixed, now reads the time left to the
+  end (e.g. `-12:34`) — the elapsed and total times are already shown at the bar's two ends.
 
 ## v4.0.2 — 2026-07-07
 
