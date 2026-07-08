@@ -122,8 +122,7 @@ data class GuideSliceState(
 }
 
 private const val SLICE_WINDOW_MS = 360 * 60_000L
-private const val LIVE_ROW_CHANNEL_LIMIT = 20
-private const val LIVE_ROW_EPG_LIMIT = 10
+private const val RECENT_LIVE_ROW_LIMIT = 20
 
 class HomeViewModel(
     private val planner: LauncherRecommendationPlanner,
@@ -199,13 +198,12 @@ class HomeViewModel(
                 .filterNot { isContinuationHidden(it, hidden) }
             val movies = items.filter { it.kind == LauncherContinuationKind.MOVIE }
             val series = items.filter { it.kind == LauncherContinuationKind.EPISODE }
-            val liveWithTs = recentlyWatchedLive(profileId, activeIds, filtering, LIVE_ROW_CHANNEL_LIMIT)
+            val liveWithTs = recentlyWatchedLive(profileId, activeIds, filtering, RECENT_LIVE_ROW_LIMIT)
                 .filterNot { isChannelHidden(it.channel, hidden) }
             val live = liveWithTs.map { it.channel }
-            val favLive = channelDao.favoritesListAlpha(profileId, 50).first()
+            val favLive = channelDao.favoritesListAlpha(profileId).first()
                 .let { if (!filtering) it else it.filter { c -> c.sourceId in activeIds } }
                 .filterNot { isChannelHidden(it, hidden) }
-                .take(LIVE_ROW_CHANNEL_LIMIT)
             val heroItems = buildHeroItems(items, liveWithTs, config)
             val recentGuide = if (HomeRow.RECENT_CHANNELS in config.visibleOrder && config.recentLiveMode == HomeLiveRowMode.ON_NOW) {
                 buildLiveGuide(profileId, activeIds, live)
@@ -358,24 +356,28 @@ class HomeViewModel(
         val now = System.currentTimeMillis()
         val windowStart = floorToHalfHour(now)
         val windowEnd = windowStart + SLICE_WINDOW_MS
-        val channels = candidates.take(LIVE_ROW_CHANNEL_LIMIT)
+        val channels = candidates
         if (channels.isEmpty()) return@withContext GuideSliceState(now = now, windowStart = windowStart, windowEnd = windowEnd)
 
         val epgIds = epgSourceStore.getAll().map { it.id }
         val sourceIds = (activeIds.toList() + epgIds).distinct()
         val customizations = customize.observe(profileId, tv.own.owntv.core.model.MediaType.LIVE).first()
         val programmes = linkedMapOf<Long, List<EpgProgrammeEntity>>()
+        val channelKeys = channels.mapNotNull { channel ->
+            val key = customizations.epgMatches[CustomizeKeys.channel(channel)] ?: channel.epgChannelId
+            key?.trim()?.lowercase()
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { channel.id to it }
+        }
+        val rowsByKey = channelKeys
+            .map { it.second }
+            .distinct()
+            .chunked(400)
+            .flatMap { epgKeys -> epgDao.programmeSummariesForChannels(sourceIds, epgKeys, windowStart, windowEnd) }
+            .groupBy { it.epgChannelId }
 
-        for (channel in channels.take(LIVE_ROW_EPG_LIMIT)) {
-            val key = customizations.epgMatches[CustomizeKeys.channel(channel)]
-                ?: channel.epgChannelId
-            val epgKey = key?.trim()?.lowercase().orEmpty()
-            if (epgKey.isBlank()) continue
-
-            val rows = epgDao.programmeSummariesForChannel(sourceIds, epgKey, windowStart, windowEnd)
-            if (rows.isNotEmpty()) {
-                programmes[channel.id] = rows
-            }
+        for ((channelId, epgKey) in channelKeys) {
+            rowsByKey[epgKey]?.takeIf { it.isNotEmpty() }?.let { programmes[channelId] = it }
         }
 
         GuideSliceState(
