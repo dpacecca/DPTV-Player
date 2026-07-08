@@ -62,6 +62,7 @@ internal fun ProgrammeStripCanvas(
     windowEnd: Long,
     now: Long,
     highlightTime: Long?,
+    catchupIds: Set<Long>,
     hScroll: androidx.compose.foundation.ScrollState,
 ) {
     val colors = OwnTVTheme.colors
@@ -86,6 +87,11 @@ internal fun ProgrammeStripCanvas(
             if (now in p.startMs until p.stopMs) "NOW · $t" else t
         }
     }
+    // Vertical "now" marker + catch-up glyph — measured once, reused each frame.
+    val nowColor = Color(0xFFFF5C5C)
+    val nowLinePx = with(density) { 2.dp.toPx() }
+    val catchupStyle = MaterialTheme.typography.labelSmall.copy(color = colors.primary)
+    val catchupGlyph = remember(catchupStyle) { measurer.measure("↻", catchupStyle) }
 
     val scrollPx = hScroll.value.toFloat() // read in composable scope so Canvas redraws on scroll
     Canvas(Modifier.fillMaxSize()) {
@@ -112,6 +118,17 @@ internal fun ProgrammeStripCanvas(
                 val top = (h - (title.size.height + time.size.height + 2)) / 2f
                 drawText(title, topLeft = Offset(x + padPx, top))
                 drawText(time, topLeft = Offset(x + padPx, top + title.size.height + 2))
+            }
+            // Catch-up badge (↻) at the cell's top-right — only on programmes this channel can rewind from.
+            if (p.id in catchupIds && w > 50f) {
+                drawText(catchupGlyph, topLeft = Offset(x + w - catchupGlyph.size.width - 4f, 3f))
+            }
+        }
+        // Vertical "now" marker — drawn on every row so it reads as one continuous line down the grid.
+        if (now in windowStart..windowEnd) {
+            val nowX = ((now - windowStart) / 60_000f) * pxPerMin - scrollPx
+            if (nowX in 0f..viewW) {
+                drawLine(color = nowColor, start = Offset(nowX, 0f), end = Offset(nowX, h), strokeWidth = nowLinePx)
             }
         }
     }

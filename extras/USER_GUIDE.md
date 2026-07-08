@@ -72,7 +72,7 @@ or **narrow the whole app to just one**.
 - **Categories** are in the second column. Long category names **wrap to two lines** so they're never cut off.
 - **Live preview**: focus a channel and its video plays in the preview pane (with the **real stream
   resolution**, e.g. `1080p`/`4K`, so a mislabelled "4K" channel can't fool you). Toggle this in
-  **Settings → Live preview**; sound for the preview is **Settings → Preview audio**.
+  **Settings → Playback → Live preview**; sound for the preview is **Settings → Playback → Preview audio**.
 - ⭐ **Add to Favourites (and more)**: **long‑press OK** on a channel to open the quick menu — **Favourite,
   Rename, Hide, Match EPG, Catch‑up**. (Closing it returns you to the same channel.)
 - 🔄 **Move channels** (reorder within folders/Favorites): **long‑press OK** on a channel and choose **Move** —
@@ -106,6 +106,14 @@ or **narrow the whole app to just one**.
 - ▶️ **Play catch‑up from the guide**: move **Right** into the timeline to a **past programme**, press
   **OK** to open its details, then choose **"Watch from start"** to replay it from the archive. Scroll
   **Left/Right** along the timeline to pick the programme you want.
+- 📍 **"Now" line & Jump to Now**: a red vertical line marks the current time across the grid; the
+  **Jump to Now** button (top‑right) scrolls the timeline back to now — handy after browsing the
+  catch‑up archive.
+- ↻ **Catch‑up & genre hints**: programmes you can rewind from show a ↻ badge, and each channel label
+  carries a small colour dot by genre (sport / news / movies / kids / music / docs).
+- 📋 **Cursor preview strip**: while browsing a row (move **Right** into the timeline), a strip at the
+  bottom shows the programme under the cursor — title, channel, time, runtime, catch‑up, synopsis —
+  without opening it. Press **OK** to open the full details.
 - **EPG is opt‑in**: add guide feeds in **Settings → EPG Sources**. After importing a playlist you'll be
   offered a one‑tap **sync now** (with a live programme count), or you can sync later from Settings.
 - **Auto‑match EPG**: the guide can smart‑match your channels to guide data; you can also fix one channel
@@ -128,6 +136,15 @@ or **narrow the whole app to just one**.
 - ⏭️ **Auto‑play next episode**: when an episode ends, the next one starts automatically — and it rolls into
   the **next season** when the current one finishes. Toggle in **Settings → Auto‑play next episode**.
 - Series **open on your last‑watched episode**.
+- ✅ **Watched state at a glance** (Series): episodes show a ✓ (dimmed) once watched to ≥95%, and a thin
+  progress bar when part‑watched. Season chips show a `watched/total` count (e.g. `Season 2 · 8/18`).
+- ▶️ **"Next up" card** (Series): the episode detail pane shows a **Next up** card with a one‑press
+  **Play** for the episode to continue with — the one you're mid‑way through, or the next after the last
+  finished one (resume time shown when in progress).
+- 🙈 **Hide watched** (Series, header button): filters the episode list to what's left to watch.
+- ✏️ **Mark as watched / unwatched** (Series): long‑press an episode → **Mark as watched** (or **Mark as
+  unwatched** if already watched) to correct the auto‑detected state without playing it. Marking watched
+  restarts the episode from the beginning next time you press Play.
 - 🔄 **Move movies/series** (reorder within categories/Favorites): **long‑press OK** on any title and choose **Move** —
   a full‑screen reorder overlay opens. Use **D‑pad Up/Down** to move, **OK** to save, **Back** to cancel.
 - 📥 **Download via long‑press**: **long‑press OK** on a movie or episode and choose **Download** to queue it

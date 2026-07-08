@@ -312,6 +312,74 @@ class SeriesViewModel(
         .flatMapLatest { s -> if (s == null) flowOf(emptyList()) else seriesDao.episodesBySeries(s.id) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    /** Per-episode resume progress for the open series (keyed by episode id). Reactive so the UI's watched
+     *  indicators, season counts, "Hide watched" filter, and "Next up" card update the instant a position
+     *  is saved — no manual refresh needed. Re-seeds when the profile or open series changes. */
+    val episodeProgress: StateFlow<Map<Long, PlaybackProgressEntity>> =
+        combine(ctx, _openedSeries) { c, s -> c to s }
+            .flatMapLatest { (c, s) ->
+                if (c.profileId < 0 || s == null) flowOf(emptyList())
+                else progressDao.observeSeriesEpisodeProgress(c.profileId, s.id)
+            }
+            .map { list -> list.associateBy { it.itemId } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** Episode ids in the open series that have been watched to ≥95% — drives ✓ marks, season "x/y" counts,
+     *  and the "Hide watched" filter. */
+    val completedEpisodeIds: StateFlow<Set<Long>> = episodeProgress
+        .map { prog -> prog.values.filter { isEpisodeCompleted(it) }.map { it.itemId }.toSet() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** The episode to surface as the "Next up" Play card: the last-watched one if still in progress (resume),
+     *  the first episode after a completed one, the first episode when nothing's been watched yet, or null
+     *  once the whole series is finished (card hides). Mirrors LauncherRecommendationPlanner's CONTINUE/NEXT
+     *  logic (threshold 0.95). */
+    val nextUpEpisodeId: StateFlow<Long?> = combine(episodes, episodeProgress) { eps, prog ->
+        if (eps.isEmpty()) null
+        else {
+            val ordered = eps.sortedWith(compareBy({ it.seasonNumber }, { it.episodeNumber }))
+            val lastWatched = prog.values.maxByOrNull { it.updatedAt }
+            when {
+                lastWatched == null -> ordered.first().id
+                isEpisodeCompleted(lastWatched) -> {
+                    val idx = ordered.indexOfFirst { it.id == lastWatched.itemId }
+                    if (idx in 0 until ordered.size - 1) ordered[idx + 1].id else null
+                }
+                else -> ordered.firstOrNull { it.id == lastWatched.itemId }?.id
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** "Hide watched" toggle for the episode list (off by default). */
+    private val _hideWatched = MutableStateFlow(false)
+    val hideWatched: StateFlow<Boolean> = _hideWatched.asStateFlow()
+    fun setHideWatched(value: Boolean) { _hideWatched.value = value }
+
+    /** ≥95% of duration watched = completed (mirrors LauncherRecommendationPlanner.isCompleted). */
+    private fun isEpisodeCompleted(p: PlaybackProgressEntity): Boolean =
+        p.durationMs > 0 && p.positionMs >= (p.durationMs * 0.95f).toLong()
+
+    /** Mark an episode as watched (shows ✓) without playing it. A 1ms/1ms sentinel satisfies the ≥95%
+     *  completed rule while keeping Play restarting from ~0 (NOT the end) — a real positionMs=durationMs
+     *  would make AUTO/ASK resume jump to the credits. Replaces any existing resume position; the fresh
+     *  updatedAt also re-orders "next up" past it. Reactive, so the ✓ appears immediately. */
+    fun markEpisodeWatched(episode: EpisodeEntity) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            progressDao.save(
+                PlaybackProgressEntity(profileId = pid, mediaType = MediaType.EPISODE, itemId = episode.id, positionMs = 1L, durationMs = 1L),
+            )
+        }
+    }
+
+    /** Mark an episode as unwatched — clears its resume position (removes the ✓ and any progress bar). */
+    fun markEpisodeUnwatched(episode: EpisodeEntity) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            progressDao.clear(pid, MediaType.EPISODE, episode.id)
+        }
+    }
+
     fun select(key: LiveKey) { _selected.value = key }
     fun setSearchQuery(query: String) { _search.value = query }
     fun onSeriesFocused(s: SeriesEntity) { _selectedSeries.value = s }

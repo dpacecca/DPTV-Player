@@ -1,5 +1,43 @@
 # Changelog
 
+## v4.0.3 — 2026-07-08
+
+### ✨ New features
+
+- **Series episode view: watched state, "Next up" and a "Hide watched" filter.** Episodes now show a ✓
+  (and a dimmed title) once watched to ≥95%, and a thin progress bar when part-watched, so you can see
+  exactly where you are in a season at a glance. Season chips show a `watched/total` count
+  (e.g. `Season 2 · 8/18`). A **"Next up" card** at the top of the episode detail pane surfaces the
+  episode to continue with — the one you're mid-way through, or the next one after the last finished —
+  with a one-press **Play** (and a `Resume <time>` line when in progress). A **"Hide watched"** toggle
+  in the header filters the list down to what's left to watch. Opening a show still focuses your
+  last-watched episode (#22); when that episode is hidden by the filter, focus falls to the first
+  visible one instead of losing focus.
+- **Mark an episode watched / unwatched manually.** Long-press an episode for a new **"Mark as
+  watched"** option (or **"Mark as unwatched"** if it's already watched) — corrects the auto-detected
+  ≥95% state without playing the episode. Marking watched restarts the episode from the beginning the
+  next time you press Play (it won't jump to the credits).
+- **TV Guide: a "now" line, Jump-to-Now, catch-up badges, genre dots and a preview strip.** The guide
+  grid now draws a red vertical line at the current time; a **"Jump to Now"** button in the header
+  scrolls the timeline back to now (handy after browsing the catch-up archive); programmes you can
+  rewind from show a ↻ badge; channel labels get a small colour dot by genre
+  (sport / news / movies / kids / music / docs); and a non-modal strip at the bottom previews the
+  programme under the cursor (title, channel, time, runtime, catch-up, synopsis) without opening the
+  dialog — OK still opens the full detail.
+
+### 🐛 Fixes
+
+- **All seasons now reachable on long-running series.** The season selector on the Series detail screen
+  was a single non-scrolling row, so shows with more seasons than fit on one line (e.g. a 12-season
+  series) had the seasons past the visible ones clipped off the right edge — invisible and unreachable
+  with the D-pad. The selector is now a scrollable rail: Right/Left moves season-by-season and
+  auto-scrolls the focused season into view, and opening a show scrolls straight to the active
+  (last-watched) season.
+- **Clearer 4K decode-guard message.** When a stream's format can't be hardware-decoded on the TV and
+  falls back to software decoding (which can't sustain >1080p), the error now explains the stream's
+  format is the issue rather than implying the TV can't play any 4K content — the TV may still play
+  other 4K videos fine.
+
 ## v4.0.2 — 2026-07-07
 
 ### 🏠 Customizable Home screen — reorder/hide rows, dwell-to-expand hero, On Now mini-guide (community PR #58 by [@codeVerine](https://github.com/codeVerine) — Sagar Mukundan UV)

@@ -4,6 +4,18 @@
 > (by name) and Fixes. The full, detailed changelog is [CHANGELOG.md](CHANGELOG.md). Hand-maintained —
 > edit this file directly alongside CHANGELOG.md, condensing per version (do not copy bullets verbatim).
 
+## v4.0.3 — 2026-07-08
+
+### ✨ New features
+
+- **Series: watched indicators, "Next up" card, "Hide watched" filter & manual mark-as-watched/unwatched**
+- **TV Guide: "now" line, Jump-to-Now, catch-up ↻ badges, genre dots & a bottom preview strip**
+
+### 🐛 Fixes
+
+- **All seasons now reachable on long-running series** 
+- **Clearer 4K decode-guard message** 
+
 ## v4.0.2 — 2026-07-07
 
 ### ✨ New features
