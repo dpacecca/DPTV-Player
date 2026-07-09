@@ -3,6 +3,7 @@ package tv.own.owntv.features.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +39,8 @@ import tv.own.owntv.core.launcher.LauncherRecommendationPlanner
 import tv.own.owntv.core.launcher.LauncherWatchNextType
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.epg.EpgSourceStore
+import tv.own.owntv.core.metadata.MetadataImages
+import tv.own.owntv.core.metadata.MetadataRepository
 import tv.own.owntv.core.repository.activeSourceIds
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.HeroPreviewEngine
@@ -92,11 +95,19 @@ sealed interface HeroItem {
     }
 }
 
+data class HomeHeroMetadata(
+    val backdropUrl: String? = null,
+    val logoUrl: String? = null,
+    val plot: String? = null,
+)
+
 data class HomeUiState(
     val heroItems: List<HeroItem> = emptyList(),
     val activeHeroIndex: Int = 0,
     val continueMovies: List<LauncherContinuationItem> = emptyList(),
     val continueSeries: List<LauncherContinuationItem> = emptyList(),
+    val heroMetadata: Map<String, HomeHeroMetadata> = emptyMap(),
+    val continuationArtwork: Map<String, String> = emptyMap(),
     val recentLive: List<ChannelEntity> = emptyList(),
     val favoriteLive: List<ChannelEntity> = emptyList(),
     val config: HomeConfig = HomeConfig(),
@@ -142,8 +153,7 @@ data class ContinueTarget(
 )
 
 private const val SLICE_WINDOW_MS = 360 * 60_000L
-private const val LIVE_ROW_CHANNEL_LIMIT = 20
-private const val LIVE_ROW_EPG_LIMIT = 10
+private const val RECENT_LIVE_ROW_LIMIT = 20
 
 class HomeViewModel(
     private val planner: LauncherRecommendationPlanner,
@@ -160,6 +170,7 @@ class HomeViewModel(
     private val epgDao: EpgDao,
     private val historyDao: tv.own.owntv.core.database.dao.HistoryDao,
     private val progressDao: tv.own.owntv.core.database.dao.ProgressDao,
+    private val metadata: MetadataRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -196,6 +207,8 @@ class HomeViewModel(
     private val _heroFocused = MutableStateFlow(false)
     private val _previewEnabled = MutableStateFlow(true)
     private val _lastHeroInteractionMs = MutableStateFlow(0L)
+    private val resolvingHeroKeys = mutableSetOf<String>()
+    private val resolvingContinuationArtworkKeys = mutableSetOf<String>()
 
     val lastHeroInteractionMs: StateFlow<Long> = _lastHeroInteractionMs.asStateFlow()
 
@@ -220,6 +233,25 @@ class HomeViewModel(
     fun onHeroUserNavigate(index: Int) {
         _lastHeroInteractionMs.value = System.currentTimeMillis()
         navigateHero(index)
+        resolveHeroMetadata(index)
+    }
+
+    fun resolveSeriesContinuationArtwork(item: LauncherContinuationItem) {
+        if (item.kind != LauncherContinuationKind.EPISODE) return
+        if (_uiState.value.continuationArtwork.containsKey(item.stableKey)) return
+        if (!resolvingContinuationArtworkKeys.add(item.stableKey)) return
+
+        viewModelScope.launch {
+            try {
+                delay(250)
+                val art = withContext(Dispatchers.IO) { seriesContinuationArtwork(item) } ?: return@launch
+                _uiState.value = _uiState.value.copy(
+                    continuationArtwork = _uiState.value.continuationArtwork + (item.stableKey to art),
+                )
+            } finally {
+                resolvingContinuationArtworkKeys.remove(item.stableKey)
+            }
+        }
     }
 
     fun stopPreview() {
@@ -234,6 +266,7 @@ class HomeViewModel(
     }
 
     private suspend fun loadHomeData(profileId: Long) {
+        val previous = _uiState.value
         val state = withContext(Dispatchers.IO) {
             val config = settings.homeConfig(profileId).first()
             // Active-playlist filter: when a "Default" playlist is chosen, the home rails narrow to it too
@@ -250,13 +283,12 @@ class HomeViewModel(
                 .filterNot { isContinuationHidden(it, hidden) }
             val movies = items.filter { it.kind == LauncherContinuationKind.MOVIE }
             val series = items.filter { it.kind == LauncherContinuationKind.EPISODE }
-            val liveWithTs = recentlyWatchedLive(profileId, activeIds, filtering, LIVE_ROW_CHANNEL_LIMIT)
+            val liveWithTs = recentlyWatchedLive(profileId, activeIds, filtering, RECENT_LIVE_ROW_LIMIT)
                 .filterNot { isChannelHidden(it.channel, hidden) }
             val live = liveWithTs.map { it.channel }
-            val favLive = channelDao.favoritesListAlpha(profileId, 50).first()
+            val favLive = channelDao.favoritesListAlpha(profileId).first()
                 .let { if (!filtering) it else it.filter { c -> c.sourceId in activeIds } }
                 .filterNot { isChannelHidden(it, hidden) }
-                .take(LIVE_ROW_CHANNEL_LIMIT)
             val heroItems = buildHeroItems(items, liveWithTs, config)
             val recentGuide = if (HomeRow.RECENT_CHANNELS in config.visibleOrder && config.recentLiveMode == HomeLiveRowMode.ON_NOW) {
                 buildLiveGuide(profileId, activeIds, live)
@@ -274,6 +306,8 @@ class HomeViewModel(
                 activeHeroIndex = 0,
                 continueMovies = movies,
                 continueSeries = series,
+                heroMetadata = previous.heroMetadata.filterKeys { key -> heroItems.any { homeHeroKey(it) == key } },
+                continuationArtwork = previous.continuationArtwork.filterKeys { key -> series.any { it.stableKey == key } },
                 recentLive = live,
                 favoriteLive = favLive,
                 config = config,
@@ -284,6 +318,65 @@ class HomeViewModel(
         }
         _uiState.value = state
         tv.own.owntv.Perf.stamp("home-data")
+    }
+
+    private fun resolveHeroMetadata(index: Int) {
+        val item = _uiState.value.heroItems.getOrNull(index) ?: return
+        if (item is HeroItem.LiveHero) return
+
+        val key = homeHeroKey(item)
+        if (_uiState.value.heroMetadata.containsKey(key)) return
+        if (!resolvingHeroKeys.add(key)) return
+
+        viewModelScope.launch {
+            try {
+                delay(250)
+                val current = _uiState.value.heroItems.getOrNull(_uiState.value.activeHeroIndex)
+                if (current == null || homeHeroKey(current) != key) return@launch
+
+                val resolved = withContext(Dispatchers.IO) { heroMetadata(item) } ?: return@launch
+                _uiState.value = _uiState.value.copy(
+                    heroMetadata = _uiState.value.heroMetadata + (key to resolved),
+                )
+            } finally {
+                resolvingHeroKeys.remove(key)
+            }
+        }
+    }
+
+    private suspend fun heroMetadata(item: HeroItem): HomeHeroMetadata? = when (item) {
+        is HeroItem.MovieHero -> metadata.resolveMovie(item.movie)?.let { cache ->
+            HomeHeroMetadata(
+                backdropUrl = MetadataImages.backdrop(cache.backdropPath, size = "w1280"),
+                logoUrl = MetadataImages.logo(cache.logoPath),
+                plot = cache.overview?.takeIf { it.isNotBlank() },
+            )
+        }
+        is HeroItem.SeriesHero -> {
+            val show = metadata.resolveSeries(item.series)
+            val episode = if (show?.overview.isNullOrBlank()) metadata.resolveEpisode(item.series, item.episode) else null
+            when {
+                show != null || episode != null -> HomeHeroMetadata(
+                    backdropUrl = MetadataImages.backdrop(show?.backdropPath, size = "w1280")
+                        ?: MetadataImages.backdrop(episode?.backdropPath ?: episode?.posterPath, size = "w1280"),
+                    logoUrl = MetadataImages.logo(show?.logoPath),
+                    plot = show?.overview?.takeIf { it.isNotBlank() } ?: episode?.overview?.takeIf { it.isNotBlank() },
+                )
+                else -> null
+            }
+        }
+        is HeroItem.LiveHero -> null
+    }
+
+    private suspend fun seriesContinuationArtwork(item: LauncherContinuationItem): String? {
+        val episode = seriesDao.getEpisodeById(item.targetItemId) ?: return null
+        val series = seriesDao.getSeriesById(episode.seriesId) ?: return null
+        val episodeMeta = metadata.resolveEpisode(series, episode)
+        val showMeta = if (episodeMeta == null) metadata.resolveSeries(series) else null
+        return MetadataImages.backdrop(episodeMeta?.backdropPath ?: episodeMeta?.posterPath, size = "w780")
+            ?: MetadataImages.backdrop(showMeta?.backdropPath, size = "w780")
+            ?: series.backdropUrl?.takeIf { it.isNotBlank() }
+            ?: series.posterUrl?.takeIf { it.isNotBlank() }
     }
 
     /** This profile's hide customizations across all three sections, with category keys resolved to ids. */
@@ -389,6 +482,12 @@ class HomeViewModel(
         return result
     }
 
+    private fun homeHeroKey(item: HeroItem): String = when (item) {
+        is HeroItem.MovieHero -> "movie:${item.movie.id}"
+        is HeroItem.SeriesHero -> "episode:${item.episode.id}"
+        is HeroItem.LiveHero -> "live:${item.channel.id}"
+    }
+
     private suspend fun recentlyWatchedLive(
         profileId: Long,
         activeIds: Set<Long>,
@@ -409,24 +508,28 @@ class HomeViewModel(
         val now = System.currentTimeMillis()
         val windowStart = floorToHalfHour(now)
         val windowEnd = windowStart + SLICE_WINDOW_MS
-        val channels = candidates.take(LIVE_ROW_CHANNEL_LIMIT)
+        val channels = candidates
         if (channels.isEmpty()) return@withContext GuideSliceState(now = now, windowStart = windowStart, windowEnd = windowEnd)
 
         val epgIds = epgSourceStore.getAll().map { it.id }
         val sourceIds = (activeIds.toList() + epgIds).distinct()
         val customizations = customize.observe(profileId, tv.own.owntv.core.model.MediaType.LIVE).first()
         val programmes = linkedMapOf<Long, List<EpgProgrammeEntity>>()
+        val channelKeys = channels.mapNotNull { channel ->
+            val key = customizations.epgMatches[CustomizeKeys.channel(channel)] ?: channel.epgChannelId
+            key?.trim()?.lowercase()
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { channel.id to it }
+        }
+        val rowsByKey = channelKeys
+            .map { it.second }
+            .distinct()
+            .chunked(400)
+            .flatMap { epgKeys -> epgDao.programmeSummariesForChannels(sourceIds, epgKeys, windowStart, windowEnd) }
+            .groupBy { it.epgChannelId }
 
-        for (channel in channels.take(LIVE_ROW_EPG_LIMIT)) {
-            val key = customizations.epgMatches[CustomizeKeys.channel(channel)]
-                ?: channel.epgChannelId
-            val epgKey = key?.trim()?.lowercase().orEmpty()
-            if (epgKey.isBlank()) continue
-
-            val rows = epgDao.programmeSummariesForChannel(sourceIds, epgKey, windowStart, windowEnd)
-            if (rows.isNotEmpty()) {
-                programmes[channel.id] = rows
-            }
+        for ((channelId, epgKey) in channelKeys) {
+            rowsByKey[epgKey]?.takeIf { it.isNotEmpty() }?.let { programmes[channelId] = it }
         }
 
         GuideSliceState(
