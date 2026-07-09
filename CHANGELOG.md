@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.1.0 — Unreleased
+
+### 🔧 Under the hood
+
+- **Media3 (ExoPlayer) bumped 1.10.0 → 1.10.1.** ExoPlayer drives the image-subtitle (PGS/VOBSUB/DVB)
+  handoff and the VOD mpv→Exo fallback, so this patch release lands fixes directly on those paths:
+  a crash when recovering from decoder errors with renderer prewarming (the fallback triggers this),
+  an `ArrayIndexOutOfBoundsException` during HLS stream fallback when the active track set is a subset
+  of the manifest (#3161), and HLS init segments not carrying over across playlist updates when
+  `#EXT-X-MAP` isn't repeated (#3105). It also stops needless MediaCodec resets at frame-rate changes on
+  API < 30. `libmpv` is unchanged at `1.0.0` (still the latest).
+
 ## v4.0.3 — 2026-07-09
 
 ### ✨ New features
