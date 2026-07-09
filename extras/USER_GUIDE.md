@@ -37,7 +37,8 @@ or **narrow the whole app to just one**.
 - **Quick switcher (top bar):** when you have 2+ playlists, the **playlist chip in the top‑right** becomes a
   button with a **▾**. Open it to pick **All playlists** or a single playlist. Your choice applies **everywhere
   at once** — Live TV, Movies, Series, TV Guide, Search, and the Home rails (Continue Watching / Favourites) —
-  and **sticks after a restart**. No need to go into Settings to switch.
+  and **sticks after a restart**. Home refreshes in place after you pick, so you don't have to leave and
+  return to see the new source. No need to go into Settings to switch.
 - **Set a default playlist (Settings → Sources):** open **Add / Edit** on a playlist and turn on
   **“Default playlist.”** That playlist becomes the one shown across the app. The Sources list shows a
   **DEFAULT** badge on it — it's a status marker, not a button.
@@ -56,9 +57,12 @@ or **narrow the whole app to just one**.
   live channels**, newest first.
 - **Dwell to expand:** hold focus on a hero card for **3 seconds** and it widens to a big 16:9 preview and
   starts a **muted video preview**. Quick D‑pad sweeps never expand, so browsing stays snappy. Press **OK**
-  to **resume right where you left off**.
+  to **resume right where you left off**. When **TMDB metadata** is available, the expanded hero shows a
+  **landscape backdrop**, the show's **title logo**, a short **plot** and a **Play** action.
 - Below are more rows — **Favourite Channels**, **Continue Watching Movies/Series**, and an optional
-  **Recent Channels** row (off by default).
+  **Recent Channels** row (off by default). **Continue Watching series** tiles resolve **episode/show
+  artwork from TMDB** when available and show as **landscape cards** (with a `S## E##` chip and a
+  progress bar), falling back to the provider poster otherwise.
 - ▶️ **"Continue" chip (top bar, every screen):** a compact chip resumes your **most‑recent** item in one
   press — **Resume** a movie, **Next up** an episode, or your **Last channel** — labelled with the title.
   Reach it from the navigation panel (like the search pill); it hides when there's nothing to resume.

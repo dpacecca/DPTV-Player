@@ -28,6 +28,9 @@
 - **All seasons now reachable on long-running series**
 - **Clearer 4K decode-guard message**
 - **Player seek bubble now shows the time remaining**
+- **Favourite "On Now" mini-guide now covers every favourite channel** (community PR #62 by @codeVerine)
+- **Home hero & Continue Watching tiles now use TMDB backdrops, logos & plot** (community PR #62 by @codeVerine)
+- **Home now refreshes in place after switching the top-bar playlist** (community PR #62 by @codeVerine)
 
 ## v4.0.2 — 2026-07-07
 

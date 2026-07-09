@@ -74,6 +74,22 @@
 - **Player seek bubble now shows time remaining.** The scrub bubble above the seek thumb was not
   displaying (padding couldn't lift it out of the bar) and, once fixed, now reads the time left to the
   end (e.g. `-12:34`) — the elapsed and total times are already shown at the bar's two ends.
+- **Favourite "On Now" now covers every favourite channel.** When the Favourite Channels row was set to
+  **On Now**, the inline mini-guide only looked up programme data for the first ~10 favourites and left
+  the rest without guide info. The builder now reads programme summaries for the whole candidate list in
+  a single batched query, so every visible favourite shows its airing show (community PR #62 by
+  [@codeVerine](https://github.com/codeVerine) — Sagar Mukundan UV).
+- **Home artwork and metadata from TMDB.** The Home hero card and Continue Watching series tiles now
+  prefer **TMDB backdrops, title logos and plot text** when metadata is available, while preserving the
+  provider artwork/text fallbacks. Continue Watching series tiles resolve episode/show artwork on focus
+  and render as **landscape cards** instead of stretched portrait art. The hero's expanded view now uses
+  a landscape backdrop with a title logo, plot and a Play action (community PR #62 by
+  [@codeVerine](https://github.com/codeVerine) — Sagar Mukundan UV). Requires metadata cache v13 (Room
+  migration `12 → 13`, additive `logoPath` column on `metadata_cache`).
+- **Home refreshes after a playlist switch.** Switching the active playlist from the top-bar quick
+  switcher while sitting on Home now updates the hero, Continue Watching, Recent and Favourites rows in
+  place — previously you had to leave and reopen Home to see the new source's content (community PR #62
+  by [@codeVerine](https://github.com/codeVerine) — Sagar Mukundan UV).
 
 ## v4.0.2 — 2026-07-07
 
