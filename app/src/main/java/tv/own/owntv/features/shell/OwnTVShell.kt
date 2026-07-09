@@ -261,7 +261,7 @@ fun OwnTVShell(
         if (selectedSection != MainSection.HOME || playerMode != PlayerMode.NONE) homeVm.stopPreview()
     }
 
-    LaunchedEffect(selectedSection, playerMode, activeProfileId) {
+    LaunchedEffect(selectedSection, playerMode, activeProfileId, activePlaylistId) {
         if (selectedSection == MainSection.HOME && playerMode == PlayerMode.NONE && (activeProfileId?.let { it >= 0 } == true)) {
             homeVm.refresh()
         }
