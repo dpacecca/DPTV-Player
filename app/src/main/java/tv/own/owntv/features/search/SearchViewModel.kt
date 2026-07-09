@@ -146,7 +146,7 @@ class SearchViewModel(
             series = seriesDao.unwatchedFavorites(pid, ids, LIMIT),
         )
         SearchIntent.CHANNELS -> SearchResults(
-            channels = channelDao.favoritesListAlpha(pid, LIMIT).first().map { ChannelSearchResult(it, null) },
+            channels = channelDao.favoritesListAlpha(pid).first().take(LIMIT).map { ChannelSearchResult(it, null) },
         )
     }
 
