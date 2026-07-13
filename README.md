@@ -110,6 +110,7 @@ Scan to join from your phone:
 - **Settings search & quick toggles** — filter Settings with a search box (results show their group, e.g. `Playback › HDR`); one-press quick toggles for the most-used options
 - **Appearance** — Material 3 (dark/light/system); any accent color (palette or hex); UI zoom; avatars; animations toggle
 - **Content** — clear watch history (all or per-type); per-source **Auto refresh** for playlists & EPG (Off by default, startup or 6–48h staleness intervals)
+- **Sidebar Menu Customization** — **Static** (manually hide any side icon) or **Dynamic** (icons auto-adapt to what the active playlist contains — a VOD-only playlist hides Live TV/Guide, a Live-only playlist hides Movies/Series/Downloads); included in backups
 - **Video Player** — hardware decoding, zoom, subtitle size/language, audio sync, surround sound, HDR, **external player** (VLC / MX Player for movies, series & downloads — global setting or per-item long-press)
 - **Weather** — top-bar weather chip: on/off, custom location (VPN-friendly), **°C / °F**
 - **Backup & Restore** — profiles, sources, customizations, favorites, history, resume, manual Move positions, settings, auto-refresh choices, default source, per-item engine/compatibility pins and custom TMDB names; choose what to include

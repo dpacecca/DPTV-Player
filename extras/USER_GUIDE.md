@@ -106,6 +106,11 @@ or **narrow the whole app to just one**.
   between **Cards** and **On Now** — an inline mini‑guide showing what's airing now with a progress bar and
   the next hours (Up/Down picks a channel, Left/Right scrolls the timeline, OK tunes). The **Android TV
   home** toggle also lives on this page. Your layout is saved per profile and included in backups.
+- 🧭 **Trim the side menu to your playlist (Settings → Sidebar Menu Customization):** a VOD‑only playlist
+  no longer shows Live TV / Guide, and a Live‑only playlist hides Movies / Series / Downloads. Switch
+  **Behavior** to **Dynamic** and the six side‑menu icons auto‑adapt to what the active playlist actually
+  contains (Home & Settings always show; counts refresh after every sync), or keep **Static** (the default)
+  and manually toggle any icon on or off. Your choice is included in backups.
 
 ---
 

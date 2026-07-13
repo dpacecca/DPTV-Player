@@ -14,6 +14,7 @@
 ### ✨ New features
 
 - **📡 Stalker / Ministra portal support** — Live TV, Movies & Series from a Portal URL + MAC address
+- **🧭 Sidebar Menu Customization** — auto-adapt side icons to your playlist, or hide specific ones
 - **Add channels to Favourites from the TV Guide**
 - **Subscription expiry shown in Manage sources (Xtream & Stalker)**
 - **Deleting a playlist now shows its progress**

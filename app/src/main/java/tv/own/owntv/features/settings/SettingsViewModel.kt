@@ -11,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
@@ -54,6 +55,8 @@ class SettingsViewModel(
     private val epgDao: tv.own.owntv.core.database.dao.EpgDao,
     private val importFinalizer: tv.own.owntv.core.sync.ImportFinalizer,
     private val channelDao: tv.own.owntv.core.database.dao.ChannelDao,
+    private val movieDao: tv.own.owntv.core.database.dao.MovieDao,
+    private val seriesDao: tv.own.owntv.core.database.dao.SeriesDao,
     private val historyDao: tv.own.owntv.core.database.dao.HistoryDao,
     private val progressDao: tv.own.owntv.core.database.dao.ProgressDao,
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
@@ -350,6 +353,54 @@ class SettingsViewModel(
     /** Custom accent hex ("#52DBC8"); blank = the preset is in effect. */
     val customAccent: StateFlow<String> = settings.customAccent.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     fun setCustomAccent(hex: String) { viewModelScope.launch { settings.setCustomAccent(hex) } }
+
+    // --- Nav menu customization (v4.3.0) ---
+    /** STATIC (default): user picks which icons to hide. DYNAMIC: icons adapt to the active playlist. */
+    val navMenuMode: StateFlow<tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode> =
+        settings.navMenuMode.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.STATIC)
+    fun setNavMenuMode(mode: tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode) {
+        viewModelScope.launch { settings.setNavMenuMode(mode) }
+    }
+
+    /** Browse sections the user has hidden (STATIC mode only). */
+    val navMenuHidden: StateFlow<Set<tv.own.owntv.features.shell.MainSection>> = settings.navMenuHidden
+        .map { raw -> raw.mapNotNull { name -> runCatching { tv.own.owntv.features.shell.MainSection.valueOf(name) }.getOrNull() }.toSet() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+    fun setNavSectionHidden(section: tv.own.owntv.features.shell.MainSection, hidden: Boolean) {
+        viewModelScope.launch {
+            val current = navMenuHidden.first()
+            val next = if (hidden) current + section else current - section
+            settings.setNavMenuHidden(next.map { it.name }.toSet())
+        }
+    }
+
+    /**
+     * The DYNAMIC-mode icon set the active playlist *would* show (v4.3.0). Mirrors [ShellViewModel]'s rail
+     * computation so the Nav menu settings screen's read-only DYNAMIC rows report the same state the rail
+     * reflects. Re-emits automatically as content arrives (Room invalidates the count flows on every write).
+     */
+    val dynamicCaps: StateFlow<Set<tv.own.owntv.features.shell.MainSection>> = settings.activeProfileId
+        .flatMapLatest { pid ->
+            if (pid < 0) flowOf(tv.own.owntv.features.shell.MainSection.allBrowse)
+            else sourceRepository.observeSources(pid)
+                .flatMapLatest { sources -> settings.defaultSourceId.flatMapLatest { defaultId -> capsFlow(sources, defaultId) } }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.shell.MainSection.allBrowse)
+
+    private fun capsFlow(
+        sources: List<SourceEntity>,
+        defaultId: Long,
+    ): kotlinx.coroutines.flow.Flow<Set<tv.own.owntv.features.shell.MainSection>> {
+        val ids = if (defaultId > 0) sources.filter { it.id == defaultId }.map { it.id } else sources.map { it.id }
+        if (ids.isEmpty()) return flowOf(setOf(tv.own.owntv.features.shell.MainSection.HOME))
+        return combine(
+            channelDao.countAll(ids),
+            movieDao.countAll(ids),
+            seriesDao.countAll(ids),
+        ) { channels, movies, series ->
+            tv.own.owntv.features.shell.MainSection.dynamicVisible(hasLive = channels > 0, hasMovies = movies > 0, hasSeries = series > 0)
+        }
+    }
 
     val uiZoomPercent: StateFlow<Int> = settings.uiZoomPercent.stateIn(viewModelScope, SharingStarted.Eagerly, UiZoom.DEFAULT)
     fun setUiZoom(percent: Int) { viewModelScope.launch { settings.setUiZoomPercent(UiZoom.clamp(percent)) } }

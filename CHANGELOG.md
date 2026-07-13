@@ -34,6 +34,26 @@
   never drops a category. Re-syncs and auto refreshes are non-destructive (favorites, history and
   progress survive).
 
+### 🧭 Sidebar Menu Customization
+
+- **Show only the icons that match your playlist.** A playlist that only has VOD no longer clutters
+  the side menu with Live TV / Guide; a Live-only playlist hides Movies / Series / Downloads. Open
+  **Settings → Sidebar Menu Customization** and switch **Behavior** between **Static** (manually
+  hide any of the six icons — Home, Live TV, Movies, Series, Downloads, Guide) and **Dynamic** (the
+  icons auto-adapt to what the active playlist actually contains).
+- **Dynamic** reuses the existing per-source content counts (Home & Settings always show; Live/Guide
+  show when there are channels; Movies/Series when their tables have rows; Downloads when Movies or
+  Series exist — Live has no download). Counts re-evaluate on their own after every sync, so the
+  rail updates the moment content arrives. With the top-bar picker on "All playlists", counts are
+  unioned across the profile's sources.
+- **Static** is the default (all icons visible) — existing users see no change until they opt in.
+  Settings is always pinned at the bottom and can never be hidden; hiding every browse icon lands
+  the app on Settings.
+- **Focus & fallback:** if the section you're viewing becomes hidden, the app jumps to the first
+  still-visible browse item (or Settings if all are hidden); opening the screen lands focus on its
+  first row.
+- The mode and hidden-icon set are part of **Backup & Restore**.
+
 ### ✨ Improvements
 
 - **Favourites from the TV Guide.** Add or remove a channel from Favourites without leaving the
