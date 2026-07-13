@@ -4,7 +4,7 @@
 
 <p align="center">
   <b>Your own IPTV player for Android TV</b><br>
-  <sub>Fast · modern · remote-first — bring your own M3U or Xtream sources</sub>
+  <sub>Fast · modern · remote-first — bring your own M3U, Xtream or Stalker (MAC) sources</sub>
 </p>
 
 <p align="center">
@@ -26,10 +26,9 @@
 
 OwnTV is a native **Android TV** IPTV **player** built with Kotlin, Jetpack Compose for TV, and a
 **dual playback engine** — **libmpv (FFmpeg)** for movies/series and maximum compatibility, **ExoPlayer
-(Media3)** for near-instant Live TV. It's a *player only* — you bring your own Xtream login or M3U playlist
-(by **URL or a local `.m3u`/`.m3u8` file** on the device), and OwnTV gives you a fast, modern, remote-first
-way to browse
-and watch them.
+(Media3)** for near-instant Live TV. It's a *player only* — you bring your own Xtream login, M3U playlist
+(by **URL or a local `.m3u`/`.m3u8` file** on the device), or **Stalker/Ministra portal (Portal URL + MAC
+address)**, and OwnTV gives you a fast, modern, remote-first way to browse and watch them.
 
 > ⚠️ OwnTV does **not** provide any channels, playlists, subscriptions, streams, or media content.
 > You are responsible for adding your own legally accessible sources.
@@ -88,6 +87,7 @@ Scan to join from your phone:
 - **Built for scale** — ~50k channels / ~168k movies via Paging 3
 - **Fast syncing** — priority import (pick e.g. Live TV first, the rest finishes in the background — survives sleep/reboot); incremental re-syncs only write what changed; auto-retrying downloads
 - **Typed M3U playlists** — `type=` / `tvg-type=` tags route entries to **Movies** or **Series** (per-episode `S01E05` lines are grouped into shows, seasons and episodes automatically)
+- 📡 **Stalker / Ministra portals** — add a source with just a **Portal URL + MAC address**; Live TV, Movies & Series (lazy episode loading), downloads, EPG/catch-up and TMDB enrichment all work; play links are minted per-play and **auto-renewed when they expire** (long live sessions and long downloads survive token resets); MAG User-Agent presets for picky portals
 - 🎬 **TMDB metadata enrichment** — optional, on-demand posters, plots, cast, genres & ratings for Movies, Series and Episodes; **in-app trailers**; manual Refetch / "Set TMDB name" overrides; works with zero setup, your own TMDB key, or a self-hosted [caching proxy](worker/)
 
 ### 🗓️ EPG / TV Guide
@@ -195,7 +195,7 @@ profiles & sources settings.
 
 ```
 tv.own.owntv/
-├── core/        database (Room), network, parser (M3U/Xtream/XMLTV), repository, sync, util
+├── core/        database (Room), network, parser (M3U/Xtream/XMLTV), stalker (MAC portal), repository, sync, util
 ├── player/      libmpv + ExoPlayer engines (PlaybackEngine) + Compose surfaces + HUD + mini-player
 ├── ui/          theme + reusable components (focus surface, cards, state views, avatars)
 ├── features/    setup, shell, live, movies, series, search, downloads, epg, profiles, settings
@@ -244,7 +244,7 @@ https://github.com/ahXN00/OwnTV/releases/latest/download/OwnTV.apk
 ```
 
 On first launch you'll go through onboarding: accept the disclaimer, create a profile, then **add a
-source** (M3U or Xtream) — or import a backup. After it imports, browse from the sidebar and open the
+source** (M3U, Xtream, or Stalker/MAC portal) — or import a backup. After it imports, browse from the sidebar and open the
 **Guide** for the EPG. Everything is managed under **Settings**.
 
 **Tested on:** a real **TCL Google TV**, and the **Android Studio emulator** (both the Android TV and

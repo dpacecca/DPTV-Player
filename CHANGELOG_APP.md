@@ -9,11 +9,19 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
-## v4.1.1 — unreleased
+## v4.2.0 — unreleased
 
 ### ✨ New features
 
+- **📡 Stalker / Ministra portal support** — Live TV, Movies & Series from a Portal URL + MAC address
+- **Add channels to Favourites from the TV Guide**
+- **Subscription expiry shown in Manage sources (Xtream & Stalker)**
 - **Deleting a playlist now shows its progress**
+
+### 🐛 Fixes
+
+- **Hidden categories are now respected in the TV Guide**
+- **Download retry & failure polish**
 
 ## v4.1.0 — 2026-07-11
 
