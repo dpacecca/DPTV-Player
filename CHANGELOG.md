@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.2.0 — unreleased
+## v4.1.1 — 2026-07-14
 
 ### 📡 Stalker / Ministra portal support
 
@@ -75,6 +75,17 @@
 
 ### 🐛 Fixes
 
+- **Updating from 4.0.x/4.1.0 could crash the app at launch (database self-heal).** If a large
+  playlist or EPG import was ever interrupted mid-sync (TV standby, low memory, force-stop), the
+  import speed-up that temporarily drops SQLite indexes could leave some of them missing. That was
+  invisible in daily use, but the next app update re-validates the whole database schema — so the
+  update crashed the app on every launch until the previous version was reinstalled. The database
+  now **self-heals**: the final migration and every database open recreate any missing index or
+  search (FTS) table (idempotent and effectively instant on healthy installs), every index-restore
+  pass shares one canonical index list so a gap can never persist again, and the post-import index
+  rebuild now covers the rating-sort indexes it previously missed. Verified against every public
+  upgrade path (v1.0.0 → current) — updating preserves all playlists, favorites, history and
+  progress; no reinstall needed.
 - **Hidden categories are now respected in the TV Guide.** Categories hidden via Customize no
   longer appear in the Guide's "Category" dropdown, and their channels stay out of the guide grid
   (matching Live TV). The dropdown also now shows your category **renames** and keeps manually
@@ -91,6 +102,9 @@
   into a thin dispatcher plus `XtreamSyncer`, `M3uSyncer` and a shared `SyncSupport` toolbox
   (chunked inserts, stable upserts, category refresh, pruning) — groundwork for the upcoming
   Stalker portal source type. No behavior change; import/sync logic and logging are identical.
+- **Migration tests modernized.** The database migration test suite now runs every chain to the
+  current schema version (it had stopped at v9), and gains a regression test that deliberately
+  drops indexes from a v12 database and asserts the new self-heal repairs it during the upgrade.
 
 ## v4.1.0 — 2026-07-11
 

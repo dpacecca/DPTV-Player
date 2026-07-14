@@ -9,7 +9,7 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
-## v4.2.0 — unreleased
+## v4.1.1 — 2026-07-14
 
 ### ✨ New features
 
@@ -21,6 +21,7 @@
 
 ### 🐛 Fixes
 
+- **Updating from an older version could crash the app at launch**
 - **Hidden categories are now respected in the TV Guide**
 - **Download retry & failure polish**
 

@@ -131,7 +131,7 @@ Scan to join from your phone:
 <table>
   <tr>
     <td align="center"><img src="extras/screenshots/Home.png" alt="Home screen"><br><sub>Home — Continue Watching</sub></td>
-    <td align="center"><img src="extras/screenshots/Main_View.png" alt="Main view"><br><sub>Main view</sub></td>
+    <td align="center"><img src="extras/screenshots/Series_Episodes.png" alt="Series episodes"><br><sub>Series — episodes</sub></td>
   </tr>
   <tr>
     <td align="center"><img src="extras/screenshots/LiveTV_with_PreviewON.png" alt="Live TV with preview"><br><sub>Live TV — preview playing</sub></td>
@@ -145,14 +145,9 @@ Scan to join from your phone:
     <td align="center"><img src="extras/screenshots/Settings_Main.png" alt="Settings"><br><sub>Settings</sub></td>
     <td align="center"><img src="extras/screenshots/EPG_loaded.png" alt="TV Guide"><br><sub>TV Guide (EPG)</sub></td>
   </tr>
-  <tr>
-    <td align="center"><img src="extras/screenshots/Settings_Personalization.png" alt="Personalization"><br><sub>Personalization</sub></td>
-    <td align="center"></td>
-  </tr>
 </table>
 
-More in **[extras/screenshots/](extras/screenshots/)** — Live TV (preview off), playlist management,
-profiles & sources settings.
+More in **[extras/screenshots/](extras/screenshots/)** — playlist management, EPG & profile settings.
 
 ---
 
