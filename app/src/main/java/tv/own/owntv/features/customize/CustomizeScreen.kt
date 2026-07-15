@@ -41,6 +41,7 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.model.MediaType
+import tv.own.owntv.core.util.Pin
 import tv.own.owntv.features.profiles.PinDialog
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
@@ -98,7 +99,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         PinDialog(
             title = if (pinError) "Wrong PIN — try again" else "Enter PIN",
             onSubmit = { entered ->
-                if (entered == pinLock.pin) {
+                if (entered == pinLock.pin || Pin.verify(entered, pinLock.pin)) {
                     unlocked = true
                     pinError = false
                 } else {
