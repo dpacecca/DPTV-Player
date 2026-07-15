@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.delay
@@ -97,6 +98,25 @@ fun LiveScreen(
     val livePreviewSetting by vm.livePreviewEnabled.collectAsStateWithLifecycle()
     val channels = vm.channels.collectAsLazyPagingItems()
     val moveState by vm.moveState.collectAsStateWithLifecycle()
+
+    // Current programme title for each loaded channel (id → title), batched in ONE query against the
+    // stored guide. Drives the small "now playing" subtitle on each channel row. Recomputed when the page
+    // contents change and every 60s (the programme airing "now" turns over). Channels with no guide are
+    // simply absent from the map → their row shows no second line.
+    val channelIdsKey = remember(channels.itemSnapshotList) {
+        channels.itemSnapshotList.items.filterNotNull().map { it.id }
+    }
+    val nowPlaying by produceState<Map<Long, String>>(initialValue = emptyMap(), channelIdsKey) {
+        if (channelIdsKey.isEmpty()) { value = emptyMap(); return@produceState }
+        val loaded = channels.itemSnapshotList.items.filterNotNull()
+        value = runCatching { vm.nowPlayingFor(loaded) }.getOrDefault(emptyMap())
+        // Refresh periodically so a programme ending/starting is reflected while the list stays open.
+        // This producer is auto-cancelled (and restarted) when channelIdsKey changes.
+        while (true) {
+            kotlinx.coroutines.delay(60_000)
+            value = runCatching { vm.nowPlayingFor(loaded) }.getOrDefault(emptyMap())
+        }
+    }
     // Preview runs only when the player isn't busy (previewEnabled) AND the user hasn't turned it off.
     val effectivePreview = previewEnabled && livePreviewSetting
 
@@ -264,6 +284,7 @@ fun LiveScreen(
                             ChannelRow(
                                 channel = channel,
                                 isFavorite = favoriteIds.contains(channel.id),
+                                nowTitle = nowPlaying[channel.id],
                                 modifier = Modifier.gridFocusTarget(
                                     itemId = channel.id, index = index,
                                     contextId = contextChannelId, contextFocus = contextFocus,
@@ -370,6 +391,7 @@ private fun ChannelRow(
     onFocus: () -> Unit,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
+    nowTitle: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -397,12 +419,26 @@ private fun ChannelRow(
                     OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(24.dp))
                 }
             }
-            Text(
-                channel.name,
-                style = MaterialTheme.typography.titleSmall,
-                color = if (focused) colors.primary else colors.onSurface,
-                modifier = Modifier.weight(1f),
-            )
+            // Name + (optional) current programme. The subtitle is rendered only when guide data exists,
+            // so channels without EPG look exactly as before — single line.
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    channel.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (focused) colors.primary else colors.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (nowTitle != null) {
+                    Text(
+                        nowTitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
             if (isFavorite) {
                 OwnTVIcon(OwnTVIcon.STAR, tint = colors.favorite, filled = true, modifier = Modifier.size(20.dp))
             }

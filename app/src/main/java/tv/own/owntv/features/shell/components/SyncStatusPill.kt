@@ -17,30 +17,54 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.core.sync.EpgActivityTracker
 import tv.own.owntv.core.sync.SyncActivityTracker
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
- * Unobtrusive "catalog sync running" pill (shell overlay, bottom middle). Shows for EVERY catalog
- * sync — a backgrounded first import, the movies/series remainder worker, auto refresh — because
- * they all funnel through SyncManager, which drives [SyncActivityTracker]. Semi-transparent, never
- * focusable, renders nothing when no sync is active. The shell hides it during fullscreen playback.
+ * Unobtrusive "sync running" pill (shell overlay, bottom middle). Reflects BOTH catalog syncs (a
+ * backgrounded first import, the movies/series remainder worker, auto refresh — all funnel through
+ * SyncManager → [SyncActivityTracker]) AND EPG/guide syncs (manual resync from Settings, auto startup
+ * refresh — [EpgSyncWorker] → [EpgActivityTracker]). Semi-transparent, never focusable, renders nothing
+ * when no sync is active. The shell hides it during fullscreen playback.
  */
 @Composable
 fun SyncStatusPill(modifier: Modifier = Modifier) {
-    val tracker: SyncActivityTracker = koinInject()
-    val active by tracker.active.collectAsStateWithLifecycle()
-    val sync = active.values.firstOrNull() ?: return
+    val catalogTracker: SyncActivityTracker = koinInject()
+    val epgTracker: EpgActivityTracker = koinInject()
+    val activeCatalog by catalogTracker.active.collectAsStateWithLifecycle()
+    val activeEpg by epgTracker.active.collectAsStateWithLifecycle()
+
     val colors = OwnTVTheme.colors
 
-    val count = sync.stage?.totalProcessed ?: 0
-    val others = active.size - 1
-    val label = buildString {
-        append("Syncing ")
-        append(sync.sourceName)
-        if (count > 0) append(" · ").append(String.format(java.util.Locale.getDefault(), "%,d", count)).append(" items")
-        if (others > 0) append(" (+$others more)")
+    // Catalog syncs take the primary slot; EPG shows when no catalog sync is running.
+    val catalogSync = activeCatalog.values.firstOrNull()
+    val epgSync = activeEpg.values.firstOrNull()
+    val label = when {
+        catalogSync != null -> {
+            val count = catalogSync.stage?.totalProcessed ?: 0
+            val others = activeCatalog.size - 1
+            buildString {
+                append("Syncing ")
+                append(catalogSync.sourceName)
+                if (count > 0) append(" · ").append(String.format(java.util.Locale.getDefault(), "%,d", count)).append(" items")
+                if (others > 0) append(" (+$others more)")
+                if (epgSync != null) append(" · EPG too")
+            }
+        }
+        epgSync != null -> {
+            val others = activeEpg.size - 1
+            buildString {
+                append("Updating guide · ")
+                append(epgSync.sourceName)
+                if (epgSync.programmes > 0) {
+                    append(" · ").append(String.format(java.util.Locale.getDefault(), "%,d", epgSync.programmes)).append(" programmes")
+                }
+                if (others > 0) append(" (+$others more)")
+            }
+        }
+        else -> return // nothing running → render nothing
     }
 
     Row(

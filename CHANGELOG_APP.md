@@ -9,6 +9,21 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v4.1.3 — unreleased
+
+### ✨ New features
+
+- **📺 Current programme under each channel in the Live TV list & in-player channel overlay**
+- **🔄 EPG / Guide syncs now show the background status pill**
+- **📦 Smaller downloads — split arm + x86_64 APK builds**
+- **🔒 Customize PIN stored as a salted hash** (community PR #65 by @aravindtri)
+
+### 🐛 Fixes
+
+- **Customize screen now respects the selected playlist**
+- **Customize screen renamed to "Customize Categories & Items"**
+- **Hero preview URLs redacted in error logs**
+
 ## v4.1.2 — 2026-07-14
 
 ### ✨ New features

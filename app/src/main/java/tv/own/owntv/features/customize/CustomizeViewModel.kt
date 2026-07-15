@@ -21,6 +21,7 @@ import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.database.dao.CategoryDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.model.MediaType
+import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
 
 /** One category row in the Customize screen (hidden rows stay visible here, marked, for unhiding). */
@@ -47,12 +48,11 @@ class CustomizeViewModel(
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
 
     // Observe the active profile's sources reactively so adding/removing a playlist refreshes the
-    // customize lists immediately (was read once at startup, so changes needed an app restart).
-    private val ctx: StateFlow<Ctx> = settings.activeProfileId
-        .flatMapLatest { pid ->
-            if (pid < 0) flowOf(Ctx(pid, emptyList()))
-            else sourceDao.observeForProfile(pid).map { srcs -> Ctx(pid, srcs.map { it.id }) }
-        }
+    // customize lists immediately. Goes through activeProfileSources (like the Browse screens) so the
+    // chosen "active playlist" filter also applies HERE: with playlist A selected you only see A's
+    // categories, not B's. "All playlists" (default -1) still shows the merged set.
+    private val ctx: StateFlow<Ctx> = activeProfileSources(settings, sourceDao)
+        .map { aps -> Ctx(aps.profileId, aps.sourceIds) }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
 

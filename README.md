@@ -111,6 +111,8 @@ Scan to join from your phone:
 - **Appearance** — Material 3 (dark/light/system); any accent color (palette or hex); UI zoom; avatars; animations toggle
 - **Content** — clear watch history (all or per-type); per-source **Auto refresh** for playlists & EPG (Off by default, startup or 6–48h staleness intervals)
 - **Sidebar Menu Customization** — **Static** (manually hide any side icon) or **Dynamic** (icons auto-adapt to what the active playlist contains — a VOD-only playlist hides Live TV/Guide, a Live-only playlist hides Movies/Series/Downloads); included in backups
+- **Customize Categories & Items** — hide/unhide items, rename, and reorder categories per section (Live / Movies / Series); respects the selected playlist; optional PIN lock (stored as a salted hash); included in backups
+- **Background sync status** — a small semi-transparent pill at the bottom reports both catalog syncs (background import, auto refresh) and EPG/Guide downloads
 - **Video Player** — hardware decoding, zoom, subtitle size/language, audio sync, surround sound, HDR, **external player** (VLC / MX Player for movies, series & downloads — global setting or per-item long-press)
 - **Weather** — top-bar weather chip: on/off, custom location (VPN-friendly), **°C / °F**
 - **Backup & Restore** — profiles, sources, customizations, favorites, history, resume, manual Move positions, settings, auto-refresh choices, default source, per-item engine/compatibility pins and custom TMDB names; choose what to include
@@ -225,6 +227,10 @@ https://github.com/ahXN00/OwnTV/releases/latest/download/OwnTV.apk
 
 > Only install the APK from this repository's official Releases (or the `…/releases/latest/download/OwnTV.apk`
 > link above). It's the build signed by this project's CI — third-party re-hosts aren't endorsed.
+>
+> Releases ship **two APKs**: `OwnTV-vX.X.X.apk` / `OwnTV.apk` (arm: `arm64-v8a` + `armeabi-v7a` — for
+> all real Fire TV / Android TV devices, and what the Downloader code fetches), and
+> `OwnTV-x86_64-vX.X.X.apk` (for emulators / rare Intel boxes). Real devices always want the arm build.
 
 ## 🛠️ Building & running
 
@@ -233,6 +239,11 @@ https://github.com/ahXN00/OwnTV/releases/latest/download/OwnTV.apk
    `LEANBACK_LAUNCHER` **and** a regular `LAUNCHER` entry and marks the leanback feature **optional**, so
    it shows in the **TV launcher** on Android TV and as a normal app icon on phones/tablets and non-TV
    boxes too (minimum **Android 8.0 / API 26**).
+   > **Picking the build variant:** the app ships two ABI flavors — **`standard`** (arm: `arm64-v8a` +
+   > `armeabi-v7a`, for real devices and arm emulators) and **`x86_64`** (for x86_64 emulators). Before
+   > pressing Run, open **Build Variants** (left sidebar) and select the flavor that matches your target —
+   > `standard` for a real TV/phone or arm system image, `x86_64` for an x86_64 system image. The native
+   > libmpv engine only loads on a matching ABI.
 3. Or from the command line:
 
 ```bash
@@ -251,12 +262,14 @@ Google TV system images).
 GitHub Actions ([`.github/workflows/android.yml`](.github/workflows/android.yml)) builds the app in the
 cloud — no local build needed:
 
-- **Every push / PR** → builds a debug APK and uploads it as a workflow **artifact** named
-  `OwnTV-v<version>-<sha>.apk` (download it from the run's *Summary → Artifacts*).
-- **Push a `v*` tag** (e.g. `git tag v1.1.0 && git push origin v1.1.0`) → builds a **signed** APK and
-  publishes a **GitHub Release** with `OwnTV-v1.1.0.apk` attached. The release notes are taken from
-  the newest section of [`CHANGELOG.md`](CHANGELOG.md) (which the in-app updater shows as
-  "What's new"), plus GitHub's auto-generated commit list.
+- **Every push / PR** → builds debug APKs (one per ABI flavor) and uploads them as workflow **artifacts** named
+  `OwnTV-v<version>-<sha>.apk` (download from the run's *Summary → Artifacts*).
+- **Push a `v*` tag** (e.g. `git tag v1.1.0 && git push origin v1.1.0`) → builds **signed** APKs and
+  publishes a **GitHub Release** with **`OwnTV-v1.1.0.apk`** (arm, for real devices) plus
+  **`OwnTV-x86_64-v1.1.0.apk`** (emulators) attached. A fixed-name **`OwnTV.apk`** (arm) always points
+  at the latest release — that's what the Fire TV Downloader code fetches. Release notes come from the
+  newest section of [`CHANGELOG.md`](CHANGELOG.md) (which the in-app updater shows as "What's new"),
+  plus GitHub's auto-generated commit list.
 
 **Versioning is automatic**: `versionName`/`versionCode` are derived from the tag (e.g. `v1.1.0` →
 `1.1.0` / `10100`) — no need to touch `build.gradle.kts`.

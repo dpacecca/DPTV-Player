@@ -904,6 +904,40 @@ class LiveViewModel(
         result
     }
 
+    /**
+     * The programme currently airing on each of [channels] (channel id → title), looked up in ONE batch
+     * against the stored bulk guide — same query the Home "On Now" rail uses. This powers the small
+     * "current programme" subtitle under each channel row in the Live list and the in-player channel
+     * overlay. Only the stored guide is consulted (no per-channel short-EPG API calls): a channel with no
+     * guide simply has no entry here, and the row shows no second line. Returns only channels that
+     * actually have something airing right now.
+     */
+    suspend fun nowPlayingFor(channels: List<ChannelEntity>): Map<Long, String> = withContext(Dispatchers.IO) {
+        if (channels.isEmpty()) return@withContext emptyMap()
+        val now = System.currentTimeMillis()
+        val epgIds = epgSourceStore.getAll().map { it.id }
+        val sourceIds = (channels.map { it.sourceId } + epgIds).distinct()
+        // Manual EPG-match overrides take precedence over the channel's own epgChannelId, mirroring loadEpg.
+        val channelKeys = channels.mapNotNull { ch ->
+            val key = (custom.value.epgMatches[CustomizeKeys.channel(ch)] ?: ch.epgChannelId)
+                ?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+            if (key != null) ch.id to key else null
+        }
+        if (channelKeys.isEmpty()) return@withContext emptyMap()
+        val rowsByKey = channelKeys
+            .map { it.second }.distinct()
+            .chunked(400)
+            .flatMap { keys -> epgDao.programmeSummariesForChannels(sourceIds, keys, now, now + 1) }
+            .groupBy { it.epgChannelId }
+        val result = HashMap<Long, String>()
+        for ((channelId, epgKey) in channelKeys) {
+            rowsByKey[epgKey]
+                ?.firstOrNull { now in it.startMs until it.stopMs }
+                ?.let { result[channelId] = it.title }
+        }
+        result
+    }
+
     private suspend fun currentProfileId(): Long? {
         val preferred = settings.activeProfileId.first()
         return if (preferred >= 0) profileDao.resolveExistingProfileId(preferred) else null

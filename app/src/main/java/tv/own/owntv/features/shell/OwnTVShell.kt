@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -144,6 +145,12 @@ fun OwnTVShell(
     var showChannelList by remember { mutableStateOf(false) }
     val zapChannels by liveVm.zapChannels.collectAsStateWithLifecycle()
     val previewChannel by liveVm.previewChannel.collectAsStateWithLifecycle()
+    // Current programme per channel for the in-player channel list overlay (small subtitle under each row).
+    // Only resolved while the overlay is actually open. Keyed on the channel set so a zap-list change re-resolves.
+    val overlayNowPlaying by produceState<Map<Long, String>>(emptyMap(), showChannelList, zapChannels) {
+        if (!showChannelList || zapChannels.size <= 1) { value = emptyMap(); return@produceState }
+        value = runCatching { liveVm.nowPlayingFor(zapChannels) }.getOrDefault(emptyMap())
+    }
     // Batch 7 — the single most-recent resumable item, surfaced as a shared top-bar "Continue" chip.
     val continueTarget by homeVm.continueTarget.collectAsStateWithLifecycle()
 
@@ -559,6 +566,7 @@ fun OwnTVShell(
                     tv.own.owntv.features.shell.components.ChannelListOverlay(
                         channels = zapChannels,
                         currentId = previewChannel?.id,
+                        nowPlaying = overlayNowPlaying,
                         onSelect = { liveVm.ensurePlaying(it); showChannelList = false },
                         onDismiss = { showChannelList = false },
                         modifier = Modifier.fillMaxSize(),

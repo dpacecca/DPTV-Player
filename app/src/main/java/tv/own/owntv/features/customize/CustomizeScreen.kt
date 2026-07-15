@@ -51,7 +51,7 @@ import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
- * Settings → Customize & Hidden Items: hide / rename / reorder categories per section, and unhide
+ * Settings → Customize Categories & Items: hide / rename / reorder categories per section, and unhide
  * hidden channels, movies and series. Everything is per-profile and survives source re-syncs.
  * Optionally locked behind a PIN (set from this screen's top-right) so hidden items can't be
  * unhidden by someone else — the PIN is asked on every entry.
@@ -87,7 +87,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Column(
             modifier = modifier.fillMaxSize().roundedPanel().padding(horizontal = 40.dp, vertical = 28.dp),
         ) {
-            Text("Customize & Hidden Items", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+            Text("Customize Categories & Items", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
             Spacer(Modifier.height(4.dp))
             Text(
                 "This screen is PIN-locked.",
@@ -127,7 +127,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "Customize & Hidden Items",
+                "Customize Categories & Items",
                 style = MaterialTheme.typography.headlineLarge,
                 color = colors.onSurface,
                 modifier = Modifier.weight(1f),

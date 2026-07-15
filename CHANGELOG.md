@@ -1,5 +1,53 @@
 # Changelog
 
+## v4.1.3 — unreleased
+
+### 📺 Live TV — current programme in the channel list
+
+- **Now-playing subtitle on every channel row.** The Live TV channel list now shows the programme
+  currently airing under each channel name (a small second line), sourced from your guide data. The
+  channel-list column is also **a little wider** so the longer rows breathe, and the preview pane a
+  little narrower to match. Channels without guide data look exactly as before — single line.
+- **Same in the in-player channel overlay.** Pressing **Left** (while the player controls are hidden)
+  to open the side channel list now shows the same current-programme subtitle under each channel, so
+  you can see what's on without leaving fullscreen.
+- *Detail:* the list uses the stored bulk guide only (one batched query, refreshed every 60 s); the
+  focused-channel preview pane keeps its full provider short-EPG fallback. No per-row network calls.
+
+### 🔄 EPG / Guide sync status pill
+
+- **Updating the guide now shows the status pill too.** The small semi-transparent pill that already
+  reports background playlist syncs now also reflects **EPG/Guide downloads** — manual resyncs from
+  Settings → EPG Sources and the automatic startup/staleness refreshes. It reads "Updating guide ·
+  *source* · N programmes" and disappears when the sync finishes. Catalog syncs keep priority; if both
+  run at once the pill notes "· EPG too".
+
+### 🐛 Fixes
+
+- **Customize screen showed categories from every playlist.** When you'd picked one playlist (e.g.
+  playlist A) via the top-bar switcher, **Settings → Customize Categories & Items** still listed
+  categories from *all* playlists. It now respects the selected playlist — same as the Live TV / Movies
+  / Series rails. ("All playlists" still shows the merged set.) Existing reorders/hides are preserved.
+- **Customize screen renamed** to **"Customize Categories & Items"** (was "Customize & Hidden Items")
+  for clarity — it's where you hide/unhide items, rename, and reorder categories.
+
+### 🔒 Security (community PR #65)
+
+- **Customize PIN no longer stored in plaintext** (community PR #65 by @aravindtri). The screen lock
+  PIN is now stored as a salted SHA-256 hash, matching how profile PINs are already handled. Existing
+  installs and imported backups with old plaintext PINs still verify correctly and migrate on use.
+- **Hero preview URLs are redacted in error logs.** A failed Home hero-preview playback no longer logs
+  the raw stream URL (which can carry credentials); it's scrubbed via the existing `redactUrl` helper.
+
+### 📦 Packaging
+
+- **Smaller downloads — split ABI builds.** Releases now ship a single **arm APK** (`OwnTV.apk` /
+  `OwnTV-vX.X.X.apk`, `arm64-v8a` + `armeabi-v7a` — for all real Fire TV / Android TV devices, and what
+  the Downloader code fetches) plus a separate **`OwnTV-x86_64-vX.X.X.apk`** (for emulators / rare Intel
+  boxes). The main download roughly **halves in size** (~104 MB → ~49 MB), which fixes the "parse error
+  on install" reports caused by truncated large downloads on Fire TV's Downloader app. `x86` (32-bit
+  Intel) is dropped — even emulators use x86_64.
+
 ## v4.1.2 — 2026-07-14
 
 ### ⚡ Background catalog sync

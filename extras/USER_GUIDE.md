@@ -126,6 +126,9 @@ or **narrow the whole app to just one**.
 - **Live preview**: focus a channel and its video plays in the preview pane (with the **real stream
   resolution**, e.g. `1080p`/`4K`, so a mislabelled "4K" channel can't fool you). Toggle this in
   **Settings → Playback → Live preview**; sound for the preview is **Settings → Playback → Preview audio**.
+- 📺 **Now playing on every row**: each channel in the list shows the **programme currently airing**
+  (a small line under the name) when guide data is available — so you can see what's on at a glance.
+  Channels with no guide show a single line as before.
 - ⭐ **Add to Favourites (and more)**: **long‑press OK** on a channel to open the quick menu — **Favourite,
   Rename, Hide, Match EPG, Catch‑up**. (Closing it returns you to the same channel.)
 - 🔄 **Move channels** (reorder within folders/Favorites): **long‑press OK** on a channel and choose **Move** —
@@ -138,7 +141,8 @@ or **narrow the whole app to just one**.
   channel's **Before / Now playing / Next** programmes with times (from your EPG, or the provider's
   short guide). It's informational only — it never takes D‑pad focus.
 - **Left key → channel list**: with the on‑screen controls hidden, press **Left** to pop up a **channel
-  list overlay** — scroll and **OK** to switch channels without leaving full‑screen.
+  list overlay** — scroll and **OK** to switch channels without leaving full‑screen. Each row also shows
+  the **current programme** (small line) so you can pick by what's on.
 - **CH+ / CH−** (or Up/Down on the channel‑list overlay) zap through the current category.
 - 🔧 **Compatibility mode (two playback engines)**: live channels play on the fast **ExoPlayer** engine by
   default. If a channel shows **UHD artifacts**, won't open, or stutters, bring up the controls and press the
@@ -172,6 +176,9 @@ or **narrow the whole app to just one**.
   without opening it. Press **OK** to open the full details.
 - **EPG is opt‑in**: add guide feeds in **Settings → EPG Sources**. After importing a playlist you'll be
   offered a one‑tap **sync now** (with a live programme count), or you can sync later from Settings.
+- 🔄 **EPG sync status**: when a guide feed is downloading (a manual resync or the automatic startup/
+  staleness refresh), the same **status pill** that reports playlist syncs shows "Updating guide ·
+  *source* · N programmes" at the bottom of the screen.
 - ⭐ **Favourites from the Guide**: **long‑press a channel label** to add/remove it from Favourites
   (the same menu also holds the EPG match options), or use the **Favourite** button inside a
   programme's details. Stars apply everywhere — Live TV, Search, and the Home Favourites rail.
@@ -255,7 +262,7 @@ or **narrow the whole app to just one**.
 - 🙈 **Hide a movie or series:** long-press a title → **Hide** removes it everywhere at once — global Search,
   the section search, its category, the All list, Home rails (Continue Watching / Favourites), the Android TV
   Watch Next row, and Downloads. The downloaded file is kept, and the title comes back the moment you unhide it
-  from **Settings → Customize & Hidden Items**. (Hiding a whole **category** now hides its items everywhere too,
+  from **Settings → Customize Categories & Items**. (Hiding a whole **category** now hides its items everywhere too,
   matching Live TV.)
 - **Series & episodes:** open a series to see the episode list with a detail pane on the right — focus an
   episode to see its TMDB still, plot and rating. Episode rows: **single-press plays**, **long-press** for
@@ -334,7 +341,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 
 ## 🎨 Personalize (make it yours)
 
-- **Settings → Customize & Hidden Items**: **hide, rename and reorder** categories, plus **unhide**
+- **Settings → Customize Categories & Items**: **hide, rename and reorder** categories, plus **unhide**
   individual channels, movies and series from one place. Pick a section at the top (Live TV / Movies /
   Series) — hidden items are listed first, each with an **Unhide** button, and your categories follow below.
   - **Hide a range of categories fast**: focus a category's **Hide** button and **long‑press (select‑hold)** it to
@@ -342,7 +349,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
     category you land on gets hidden together as a range. Handy for quickly hiding a big block of categories (or
     even scrolling all the way to hide most of the list) instead of hiding them one by one.
   - 🔒 **Optional PIN lock**: tap **Set PIN** at the top-right to lock this screen. Once set, opening
-    Customize & Hidden Items asks for the PIN each time, so nobody else can unhide items or change your category
+    Customize Categories & Items asks for the PIN each time, so nobody else can unhide items or change your category
     setup. The PIN is per-profile and is **not** included in backups (so a restore can never lock you out).
     Change or remove it from the **Change PIN** / **Remove lock** buttons at the top-right.
 - **Settings → Theme / Accent colour / UI Zoom**: dark/AMOLED/light, a tint colour, and scale the whole UI.

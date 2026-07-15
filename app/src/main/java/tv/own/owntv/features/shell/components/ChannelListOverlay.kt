@@ -50,6 +50,7 @@ fun ChannelListOverlay(
     currentId: Long?,
     onSelect: (ChannelEntity) -> Unit,
     onDismiss: () -> Unit,
+    nowPlaying: Map<Long, String> = emptyMap(),
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -93,6 +94,7 @@ fun ChannelListOverlay(
                     ChannelRow(
                         channel = ch,
                         isCurrent = isCurrent,
+                        nowTitle = nowPlaying[ch.id],
                         onClick = { onSelect(ch) },
                         modifier = if (ch.id == channels.getOrNull(currentIndex)?.id) Modifier.focusRequester(focusCurrent) else Modifier,
                     )
@@ -107,6 +109,7 @@ private fun ChannelRow(
     channel: ChannelEntity,
     isCurrent: Boolean,
     onClick: () -> Unit,
+    nowTitle: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -130,17 +133,29 @@ private fun ChannelRow(
                     OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
                 }
             }
-            Text(
-                channel.name,
-                style = MaterialTheme.typography.bodyMedium,
-                color = when {
-                    isCurrent -> colors.primary
-                    focused -> colors.onSurface
-                    else -> colors.onSurfaceVariant
-                },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            // Name + (optional) current programme subtitle, shown only when guide data exists.
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    channel.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = when {
+                        isCurrent -> colors.primary
+                        focused -> colors.onSurface
+                        else -> colors.onSurfaceVariant
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (nowTitle != null) {
+                    Text(
+                        nowTitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }
