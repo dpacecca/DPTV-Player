@@ -79,6 +79,9 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
      */
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
+        // TRIM_MEMORY_RUNNING_LOW is deprecated on API 34+ but still the only signal on TV devices
+        // running older Android, so keep honouring it.
+        @Suppress("DEPRECATION")
         if (level >= TRIM_MEMORY_RUNNING_LOW) {
             runCatching { SingletonImageLoader.get(this).memoryCache?.clear() }
             runCatching { GlobalContext.getOrNull()?.getOrNull<tv.own.owntv.player.OwnTVPlayer>()?.onTrimMemory() }

@@ -166,7 +166,7 @@ fun LiveScreen(
         val targetId = contextChannelId
         if (targetId == null) { runCatching { selFocus.requestFocus() }; return@LaunchedEffect }
 
-        val idx = channels.itemSnapshotList.items.indexOfFirst { it?.id == targetId }
+        val idx = channels.itemSnapshotList.items.indexOfFirst { it.id == targetId }
         if (idx >= 0) {
             runCatching { listState.scrollToItem(idx) }
             withFrameNanos { } // wait one frame so the row is laid out and contextFocus is attached
@@ -640,7 +640,7 @@ private fun EpgSection(nowNext: EpgNowNext?) {
             )
         }
         // Upcoming programmes after "next" — see what's on later without opening the Guide (#11).
-        val later = nowNext?.upcoming ?: emptyList()
+        val later = nowNext.upcoming
         if (later.isNotEmpty()) {
             Spacer(Modifier.height(6.dp))
             Text("LATER", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold)

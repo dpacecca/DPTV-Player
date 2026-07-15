@@ -272,7 +272,7 @@ private fun SeriesGrid(
         val targetId = contextSeriesId
         if (targetId == null) { contextSeriesIndex = -1; return@LaunchedEffect }
         val items = series.itemSnapshotList.items
-        val idx = items.indexOfFirst { it?.id == targetId }
+        val idx = items.indexOfFirst { it.id == targetId }
         if (idx >= 0) {
             runCatching {
                 if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(idx)
@@ -287,7 +287,7 @@ private fun SeriesGrid(
                 runCatching { firstItemFocus.requestFocus() }
             } else {
                 val neighbor = settled.getOrNull(contextSeriesIndex.coerceAtLeast(0)) ?: settled.last()
-                val neighborIdx = items.indexOfFirst { it?.id == neighbor.id }.coerceAtLeast(0)
+                val neighborIdx = items.indexOfFirst { it.id == neighbor.id }.coerceAtLeast(0)
                 runCatching {
                     if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(neighborIdx)
                     else gridState.scrollToItem(neighborIdx)

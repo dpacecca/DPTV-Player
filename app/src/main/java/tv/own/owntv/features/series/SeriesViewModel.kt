@@ -732,7 +732,7 @@ class SeriesViewModel(
             val items = when (key) {
                 is LiveKey.Folder -> seriesDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
                 LiveKey.Favorites -> seriesDao.snapshotFavoritesManual(pid, contextKey, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
-                else -> return@launch
+                LiveKey.History, LiveKey.All -> return@launch
             }
             val idx = items.indexOfFirst { it.id == series.id }
             if (idx < 0) return@launch

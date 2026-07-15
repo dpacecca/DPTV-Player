@@ -181,7 +181,7 @@ fun MoviesScreen(
         val targetId = contextMovieId
         if (targetId == null) { contextMovieIndex = -1; return@LaunchedEffect }
         val items = movies.itemSnapshotList.items
-        val idx = items.indexOfFirst { it?.id == targetId }
+        val idx = items.indexOfFirst { it.id == targetId }
         if (idx >= 0) {
             // Item survived — re-focus it directly.
             runCatching {
@@ -198,7 +198,7 @@ fun MoviesScreen(
                 runCatching { firstItemFocus.requestFocus() } // nothing left; firstItemFocus attaches to the next item that loads
             } else {
                 val neighbor = settled.getOrNull(contextMovieIndex.coerceAtLeast(0)) ?: settled.last()
-                val neighborIdx = items.indexOfFirst { it?.id == neighbor.id }.coerceAtLeast(0)
+                val neighborIdx = items.indexOfFirst { it.id == neighbor.id }.coerceAtLeast(0)
                 runCatching {
                     if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(neighborIdx)
                     else gridState.scrollToItem(neighborIdx)

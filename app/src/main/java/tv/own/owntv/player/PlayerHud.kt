@@ -427,7 +427,7 @@ private fun CenterControls(
         if (timeshifting) {
             // Counts down as the archive catches up to the live edge; grows if you pause.
             Text(
-                if (timeshiftOffsetSec!! <= 1) "● At the live edge" else "● ${mmss(timeshiftOffsetSec)} behind live",
+                if (timeshiftOffsetSec <= 1) "● At the live edge" else "● ${mmss(timeshiftOffsetSec)} behind live",
                 style = MaterialTheme.typography.labelLarge,
                 color = OwnTVTheme.colors.accent,
             )
@@ -436,7 +436,7 @@ private fun CenterControls(
         Row(Modifier.focusGroup(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             if (nav.hasPrev) CircleButton(OwnTVIcon.SKIP_PREVIOUS, size = 52) { player.previous() }
             when {
-                rewindMode -> CircleButton(OwnTVIcon.REWIND, size = 52) { onRewindLive!!() } // step back into the archive
+                rewindMode -> CircleButton(OwnTVIcon.REWIND, size = 52) { onRewindLive() } // step back into the archive
                 !isLive -> CircleButton(OwnTVIcon.REWIND, size = 52) { player.seekBy(-10_000) }
             }
             CircleButton(if (isPlaying) OwnTVIcon.PAUSE else OwnTVIcon.PLAY, size = 72, primary = true, modifier = Modifier.focusRequester(playFocus)) { player.togglePlayPause() }

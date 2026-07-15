@@ -528,7 +528,7 @@ class MovieViewModel(
             val items = when (key) {
                 is LiveKey.Folder -> movieDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
                 LiveKey.Favorites -> movieDao.snapshotFavoritesManual(pid, contextKey, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
-                else -> return@launch
+                LiveKey.History, LiveKey.All -> return@launch
             }
             val idx = items.indexOfFirst { it.id == movie.id }
             if (idx < 0) return@launch

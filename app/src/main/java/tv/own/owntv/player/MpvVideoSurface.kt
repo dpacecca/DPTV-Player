@@ -66,7 +66,7 @@ private class MpvSurfaceView(context: Context, private val player: OwnTVPlayer) 
  * itself** — see [Modifier.videoZoom] for the shared sizing math (also used by the ExoPlayer live path,
  * so Live TV and VOD zoom behave identically).
  */
-@OptIn(androidx.media3.common.util.UnstableApi::class)
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun MpvVideoSurface(player: OwnTVPlayer, modifier: Modifier = Modifier) {
     val aspect by player.videoAspect.collectAsStateWithLifecycle()
