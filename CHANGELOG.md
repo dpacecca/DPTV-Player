@@ -47,6 +47,10 @@
   boxes). The main download roughly **halves in size** (~104 MB → ~49 MB), which fixes the "parse error
   on install" reports caused by truncated large downloads on Fire TV's Downloader app. `x86` (32-bit
   Intel) is dropped — even emulators use x86_64.
+- **In-app updater picks the APK matching your device.** With releases now carrying one APK per ABI,
+  the updater selects the asset matching the device's ABI (arm on real TVs, x86_64 on emulators)
+  instead of blindly taking the first APK — so an arm TV can never download the emulator build, and
+  in-app updates now also work on an x86_64 emulator. Older single-APK releases still update fine.
 
 ## v4.1.2 — 2026-07-14
 

@@ -16,6 +16,7 @@
 - **📺 Current programme under each channel in the Live TV list & in-player channel overlay**
 - **🔄 EPG / Guide syncs now show the background status pill**
 - **📦 Smaller downloads — split arm + x86_64 APK builds**
+- **⬇️ In-app updater picks the APK matching your device**
 - **🔒 Customize PIN stored as a salted hash** (community PR #65 by @aravindtri)
 
 ### 🐛 Fixes
