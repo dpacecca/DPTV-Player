@@ -14,6 +14,8 @@
 ### ✨ New features
 
 - **📺 Current programme under each channel in the Live TV list & in-player channel overlay**
+- **🎯 Smarter EPG matching — picker suggests related channels first, more robust auto-match**
+- **🎬 Better TMDB title cleaning for movie & series matching**
 - **🔄 EPG / Guide syncs now show the background status pill**
 - **📦 Smaller downloads — split arm + x86_64 APK builds**
 - **⬇️ In-app updater picks the APK matching your device**
@@ -21,6 +23,9 @@
 
 ### 🐛 Fixes
 
+- **Match EPG from Live TV now updates the preview pane immediately**
+- **Focus returns to the channel after the Match EPG dialog closes**
+- **Match EPG / review popups: buttons on the right, focus stays inside the popup**
 - **Customize screen now respects the selected playlist**
 - **Customize screen renamed to "Customize Categories & Items"**
 - **Hero preview URLs redacted in error logs**

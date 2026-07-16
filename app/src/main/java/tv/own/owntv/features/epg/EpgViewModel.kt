@@ -707,13 +707,19 @@ class EpgViewModel(
         return overridden
     }
 
-    /** Distinct EPG channels for the manual "Match EPG" picker (across the profile's feeds). */
-    suspend fun availableEpgChannels(query: String): List<tv.own.owntv.core.database.entity.EpgChannelEntity> {
+    /** Distinct EPG channels for the manual "Match EPG" picker (across the profile's feeds),
+     *  ranked so guide channels resembling [channelName] come first instead of a plain A-Z list. */
+    suspend fun availableEpgChannels(channelName: String, query: String): List<tv.own.owntv.core.database.entity.EpgChannelEntity> {
         val pid = currentProfileId() ?: return emptyList()
         val playlistIds = sourceRepository.observeSources(pid).first().map { it.id }
         val ids = playlistIds + epgSourceStore.getAll().map { it.id }
         if (ids.isEmpty()) return emptyList()
-        return epgDao.listEpgChannels(ids, query.trim().lowercase(), 300)
+        // Fetch the whole (filtered) candidate set, not just the first 300 alphabetically — the best
+        // name match may sit far down the alphabet. Rank off-main, then cap for the dialog list.
+        val all = epgDao.listEpgChannels(ids, query.trim().lowercase(), MAX_EPG_CANDIDATES)
+        return withContext(kotlinx.coroutines.Dispatchers.Default) {
+            tv.own.owntv.core.epg.EpgMatcher.rankForPicker(channelName, all, { it.displayName }, { it.epgChannelId }).take(EPG_PICKER_RESULT_LIMIT)
+        }
     }
 
     private suspend fun currentProfileId(): Long? {
@@ -731,6 +737,7 @@ class EpgViewModel(
         private const val MAX_CHANNELS = 20_000
         // Cap the candidate set the bulk matcher scans against (keeps the O(channels×candidates) scan bounded).
         private const val MAX_EPG_CANDIDATES = 20_000
+        private const val EPG_PICKER_RESULT_LIMIT = 300
         // Rows per guide-window page — bounded so a page always fits a single ~2 MB CursorWindow.
         private const val EPG_WINDOW_PAGE = 1_000
     }

@@ -154,17 +154,10 @@ fun LiveScreen(
     val contextFocus = remember { FocusRequester() }
     var enteringMoveMode by remember { mutableStateOf(false) }
     LaunchedEffect(moveState) { if (moveState != null) enteringMoveMode = false }
-    LaunchedEffect(contextChannel) {
-        val opened = contextChannel != null
-        if (opened) { contextMenuOpen = true; return@LaunchedEffect }
-        if (!contextMenuOpen) return@LaunchedEffect
-        contextMenuOpen = false
-        // A follow-up dialog (rename / match EPG / catch-up / move) grabs focus itself — only restore
-        // for plain closes (Cancel, Favourite, Hide, Close).
-        if (renaming != null || matchingEpg != null || catchupChannel != null || enteringMoveMode) return@LaunchedEffect
-
+    // Land focus back on the long-pressed channel's row (or a sensible fallback if it's gone).
+    suspend fun restoreToContextRow() {
         val targetId = contextChannelId
-        if (targetId == null) { runCatching { selFocus.requestFocus() }; return@LaunchedEffect }
+        if (targetId == null) { runCatching { selFocus.requestFocus() }; return }
 
         val idx = channels.itemSnapshotList.items.indexOfFirst { it.id == targetId }
         if (idx >= 0) {
@@ -175,6 +168,33 @@ fun LiveScreen(
             // Row is gone (e.g. "Hide channel" removed it) — clear the anchor and land on the first row.
             contextChannelId = null
             runCatching { firstItemFocus.requestFocus() }
+        }
+    }
+    LaunchedEffect(contextChannel) {
+        val opened = contextChannel != null
+        if (opened) { contextMenuOpen = true; return@LaunchedEffect }
+        if (!contextMenuOpen) return@LaunchedEffect
+        contextMenuOpen = false
+        // A follow-up dialog (rename / match EPG / catch-up / move) grabs focus itself — only restore
+        // for plain closes (Cancel, Favourite, Hide, Close). Those dialogs restore on their own close.
+        if (renaming != null || matchingEpg != null || catchupChannel != null || enteringMoveMode) return@LaunchedEffect
+        restoreToContextRow()
+    }
+    // The Match EPG dialog grabbed focus while open — when it closes (pick/clear/dismiss), put focus
+    // back on the channel it was opened for instead of letting it fall to the nav panel.
+    var matchEpgWasOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(matchingEpg) {
+        if (matchingEpg != null) { matchEpgWasOpen = true; return@LaunchedEffect }
+        if (!matchEpgWasOpen) return@LaunchedEffect
+        matchEpgWasOpen = false
+        restoreToContextRow()
+        // Picking a match rewrites customizations, which recreates the pager on its own schedule —
+        // the rebuilt rows land a moment later and yank focus off the row we just restored, and the
+        // exact timing varies with list size. Re-assert the target row briefly instead of racing a
+        // single load-state transition.
+        repeat(5) {
+            delay(200)
+            restoreToContextRow()
         }
     }
     // Returning from fullscreen: scroll to and focus the channel you were watching (waits for the list to load).
@@ -344,7 +364,7 @@ fun LiveScreen(
         EpgMatchDialog(
             channelName = ch.name,
             currentMatch = vm.currentEpgMatch(ch),
-            loadChannels = { q -> vm.availableEpgChannels(q) },
+            loadChannels = { q -> vm.availableEpgChannels(ch.name, q) },
             onPick = { epgId -> vm.setEpgMatch(ch, epgId); matchingEpg = null },
             onClear = { vm.setEpgMatch(ch, null); matchingEpg = null },
             onDismiss = { matchingEpg = null },
@@ -757,13 +777,19 @@ internal fun EpgMatchDialog(
         else runCatching { searchFocus.requestFocus() }
     }
 
+    // Popup(focusable=true) is a hard focus boundary: a stray D-pad right/left with no target inside
+    // can no longer drop focus onto the screen behind the scrim (same fix as EpgMatchReviewDialog).
+    androidx.compose.ui.window.Popup(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.PopupProperties(focusable = true),
+    ) {
     androidx.compose.foundation.layout.Box(
         Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)).focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         // Same small-screen cap as CatchupDialog: search bar + buttons must stay reachable.
         val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 260.dp).coerceIn(140.dp, 300.dp)
-        Column(Modifier.width(580.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
+        Column(Modifier.width(640.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
             Text("Match EPG", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
             Text(
@@ -771,36 +797,43 @@ internal fun EpgMatchDialog(
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(12.dp))
-            SearchBar(query = query, onQueryChange = { query = it }, placeholder = "Search guide channels…", modifier = Modifier.fillMaxWidth().focusRequester(searchFocus))
-            Spacer(Modifier.height(12.dp))
-            val list = results
-            when {
-                list == null -> androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 28) }
-                list.isEmpty() -> Text(
-                    if (query.isBlank()) "No EPG data yet — add an EPG source in Settings." else "No guide channels match “$query”.",
-                    style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
-                )
-                else -> LazyColumn(Modifier.fillMaxWidth().height(listHeight), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(list, key = { it.id }) { epg ->
-                        FocusableSurface(
-                            onClick = { onPick(epg.epgChannelId) },
-                            modifier = if (epg == list.first()) Modifier.fillMaxWidth().focusRequester(firstItemFocus) else Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            contentAlignment = Alignment.CenterStart,
-                        ) { _ ->
-                            Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
-                                Text(epg.displayName ?: epg.epgChannelId, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(epg.epgChannelId, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+            // Actions live in a right-hand column so a D-pad right from the search bar or ANY list row
+            // reaches Close/Clear directly — no scrolling to the bottom of a long list.
+            Row(Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f)) {
+                    SearchBar(query = query, onQueryChange = { query = it }, placeholder = "Search guide channels…", modifier = Modifier.fillMaxWidth().focusRequester(searchFocus))
+                    Spacer(Modifier.height(12.dp))
+                    val list = results
+                    when {
+                        list == null -> androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 28) }
+                        list.isEmpty() -> Text(
+                            if (query.isBlank()) "No EPG data yet — add an EPG source in Settings." else "No guide channels match “$query”.",
+                            style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                        )
+                        else -> LazyColumn(Modifier.fillMaxWidth().height(listHeight), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(list, key = { it.id }) { epg ->
+                                FocusableSurface(
+                                    onClick = { onPick(epg.epgChannelId) },
+                                    modifier = if (epg == list.first()) Modifier.fillMaxWidth().focusRequester(firstItemFocus) else Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    contentAlignment = Alignment.CenterStart,
+                                ) { _ ->
+                                    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
+                                        Text(epg.displayName ?: epg.epgChannelId, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(epg.epgChannelId, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                if (currentMatch != null) OwnTVButton("Clear match", onClick = onClear, style = OwnTVButtonStyle.SECONDARY)
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.width(150.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                    if (currentMatch != null) OwnTVButton("Clear match", onClick = onClear, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                }
             }
         }
     }
+    } // Popup
 }

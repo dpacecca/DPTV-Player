@@ -131,6 +131,10 @@ or **narrow the whole app to just one**.
   Channels with no guide show a single line as before.
 - ⭐ **Add to Favourites (and more)**: **long‑press OK** on a channel to open the quick menu — **Favourite,
   Rename, Hide, Match EPG, Catch‑up**. (Closing it returns you to the same channel.)
+- 🎯 **Match EPG is smarter**: the picker lists **guide channels similar to the channel's name first**
+  (best match on top; searching re‑ranks too), and the **Close / Clear match** buttons sit in a column on
+  the **right** — press **Right** from any row to reach them. The same right‑side layout applies to the
+  Guide's **Auto‑match review** popup (**Accept all / Skip all / Done**).
 - 🔄 **Move channels** (reorder within folders/Favorites): **long‑press OK** on a channel and choose **Move** —
   a full‑screen reorder overlay opens with the full list. Use **D‑pad Up/Down** to move the item, **OK** to save,
   **Back** to cancel. Your reorder is saved across playlist re‑syncs and included in backups.
@@ -170,7 +174,12 @@ or **narrow the whole app to just one**.
   **Jump to Now** button (top‑right) scrolls the timeline back to now — handy after browsing the
   catch‑up archive.
 - ↻ **Catch‑up & genre hints**: programmes you can rewind from show a ↻ badge, and each channel label
-  carries a small colour dot by genre (sport / news / movies / kids / music / docs).
+  carries a small colour dot hinting at its **genre**, based on the channel's **category name**:
+  🟢 green = sport · 🔴 red = news · 🟣 violet = movies/film/cinema · 🟡 amber = kids/animation ·
+  🔵 blue = music · 🩵 teal = documentary. Channels whose category doesn't match any of these show
+  **no dot** (a missing dot is intentional — better than a misleading colour). The dot reflects the
+  channel's category/group, not its individual name, so it depends on how your provider names its
+  categories.
 - 📋 **Cursor preview strip**: while browsing a row (move **Right** into the timeline), a strip at the
   bottom shows the programme under the cursor — title, channel, time, runtime, catch‑up, synopsis —
   without opening it. Press **OK** to open the full details.

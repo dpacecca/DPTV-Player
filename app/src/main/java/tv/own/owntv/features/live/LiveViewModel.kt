@@ -102,6 +102,7 @@ class LiveViewModel(
     private val forceMpvStore: tv.own.owntv.core.player.ForceMpvStore,
     private val contentOrderDao: ContentOrderDao,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
+    private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
 ) : ViewModel() {
 
     data class ChannelMoveState(val items: List<ChannelEntity>, val activeIndex: Int, val contextKey: String)
@@ -181,11 +182,14 @@ class LiveViewModel(
     private data class CachedEpg(val at: Long, val data: EpgNowNext)
     private val epgCache = HashMap<Long, CachedEpg>()
 
+    /** Bumped when a channel's EPG mapping changes so [nowNext] reloads for the same focused channel. */
+    private val epgRefresh = MutableStateFlow(0)
+
     /** Now/next for the focused channel — fetched (debounced) from the Xtream `get_short_epg` API. */
-    val nowNext: StateFlow<EpgNowNext?> = _previewChannel
+    val nowNext: StateFlow<EpgNowNext?> = combine(_previewChannel, epgRefresh) { ch, tick -> ch to tick }
         .debounce(350)
-        .distinctUntilChanged { a, b -> a?.id == b?.id }
-        .mapLatest { ch -> ch?.let { loadEpg(it) } }
+        .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
+        .mapLatest { (ch, _) -> ch?.let { loadEpg(it) } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     /** This profile's hide/rename/reorder customizations for Live TV. */
     private val custom: StateFlow<SectionCustomizations> = ctx
@@ -286,18 +290,31 @@ class LiveViewModel(
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             customize.setEpgMatch(pid, MediaType.LIVE, CustomizeKeys.channel(channel), epgChannelId)
+            // The matched id may have no stored programmes yet (bulk sync only keeps ids in use) —
+            // top it up from the cached XMLTV, then drop the channel's stale now/next and re-fetch,
+            // so the details pane reflects the new match immediately instead of after a restart.
+            val id = epgChannelId?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+            if (id != null) runCatching { epgRepository.storeProgrammesForIdsFromCache(setOf(id)) }
+            epgCache.remove(channel.id)
+            epgRefresh.value++
         }
     }
 
     /** The current manual EPG id for a channel, or null if auto-matched. */
     fun currentEpgMatch(channel: ChannelEntity): String? = custom.value.epgMatches[CustomizeKeys.channel(channel)]
 
-    /** Distinct EPG channels for the "Match EPG" picker (across the profile's playlists + EPG feeds). */
-    suspend fun availableEpgChannels(query: String): List<tv.own.owntv.core.database.entity.EpgChannelEntity> {
+    /** Distinct EPG channels for the "Match EPG" picker (across the profile's playlists + EPG feeds),
+     *  ranked so guide channels resembling [channelName] come first instead of a plain A-Z list. */
+    suspend fun availableEpgChannels(channelName: String, query: String): List<tv.own.owntv.core.database.entity.EpgChannelEntity> {
         if (currentProfileId() == null) return emptyList()
         val ids = ctx.value.sourceIds + epgSourceStore.getAll().map { it.id }
         if (ids.isEmpty()) return emptyList()
-        return epgDao.listEpgChannels(ids, query.trim().lowercase(), 300)
+        // Fetch the whole (filtered) candidate set, not just the first 300 alphabetically — the best
+        // name match may sit far down the alphabet. Rank off-main, then cap for the dialog list.
+        val all = epgDao.listEpgChannels(ids, query.trim().lowercase(), EPG_PICKER_SCAN_LIMIT)
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            tv.own.owntv.core.epg.EpgMatcher.rankForPicker(channelName, all, { it.displayName }, { it.epgChannelId }).take(EPG_PICKER_RESULT_LIMIT)
+        }
     }
 
     val count: StateFlow<Int> = combine(_selected, ctx, hiddenCategoryIds) { key, c, hidden -> Triple(key, c, hidden) }
@@ -1048,6 +1065,9 @@ class LiveViewModel(
     private companion object {
         const val ENGINE_TAG = "LiveEngine"
         const val TAG = "OwnTVHome"
+        // Match EPG picker: how many guide channels to scan for name-ranking vs. show in the dialog.
+        const val EPG_PICKER_SCAN_LIMIT = 20_000
+        const val EPG_PICKER_RESULT_LIMIT = 300
         val defaultRail = listOf(
             LiveRailItem(LiveKey.Favorites, "FAV", "Favorites", OwnTVIcon.STAR),
             LiveRailItem(LiveKey.History, "HIS", "History", OwnTVIcon.HISTORY),

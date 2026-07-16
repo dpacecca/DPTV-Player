@@ -425,7 +425,7 @@ fun EpgScreen(
         tv.own.owntv.features.live.EpgMatchDialog(
             channelName = channel.name,
             currentMatch = vm.currentEpgMatch(channel),
-            loadChannels = { vm.availableEpgChannels(it) },
+            loadChannels = { vm.availableEpgChannels(channel.name, it) },
             onPick = { vm.setEpgMatch(channel, it); matchingChannel = null },
             onClear = { vm.setEpgMatch(channel, null); matchingChannel = null },
             onDismiss = { matchingChannel = null },
@@ -481,7 +481,7 @@ private fun EpgMatchReviewDialog(
         Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)),
         contentAlignment = Alignment.Center,
     ) {
-        Column(Modifier.width(640.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
+        Column(Modifier.width(720.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
             Text("Review EPG matches", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
             Text(
@@ -489,8 +489,11 @@ private fun EpgMatchReviewDialog(
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(12.dp))
-            // Cap to the screen (minus dialog chrome) so the footer buttons stay reachable on small screens.
+            // Actions live in a right-hand column so a D-pad right from ANY suggestion row reaches
+            // Accept all/Skip all/Done directly — no scrolling to the bottom of a long list.
             val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 200.dp).coerceIn(160.dp, 360.dp)
+            Row(Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f)) {
             LazyColumn(Modifier.fillMaxWidth().height(listHeight), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 itemsIndexed(suggestions, key = { _, s -> s.channel.id }) { index, s ->
                     Row(
@@ -521,15 +524,16 @@ private fun EpgMatchReviewDialog(
                     }
                 }
             }
-            Spacer(Modifier.height(16.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.width(160.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 // Bulk actions only make sense for a multi-channel run; a single auto-match shows just accept/skip.
                 if (suggestions.size > 1) {
-                    OwnTVButton("Accept all", onClick = onAcceptAll, icon = OwnTVIcon.PLAY)
-                    OwnTVButton("Skip all", onClick = onSkipAll, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton("Accept all", onClick = onAcceptAll, icon = OwnTVIcon.PLAY, modifier = Modifier.fillMaxWidth())
+                    OwnTVButton("Skip all", onClick = onSkipAll, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
                 }
-                Spacer(Modifier.weight(1f))
-                OwnTVButton("Done", onClick = onDone, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton("Done", onClick = onDone, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            }
             }
         }
     }

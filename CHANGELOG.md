@@ -22,8 +22,44 @@
   *source* · N programmes" and disappears when the sync finishes. Catalog syncs keep priority; if both
   run at once the pill notes "· EPG too".
 
+### 🎯 Smarter EPG matching
+
+- **Match EPG picker suggests related channels first.** Long-press a channel → **Match EPG** (Live TV
+  or Guide) no longer opens on a plain A-Z list: guide channels **similar to the channel's name float
+  to the top**, best match first (e.g. opening it on "MTV FR" shows the MTV entries immediately). The
+  ranking also applies while you type a search. The picker now scans the *whole* guide-channel set
+  instead of only the first 300 alphabetical entries.
+- **The name matcher itself is more robust** (used by the picker ranking, the Guide's **Auto-match
+  all**, and single-channel auto-match):
+  - Spelled-out **country names** match their codes — "MTV France" ↔ "FR| MTV" is now an exact match
+    (guarded so channels like **France 24 / France 2** keep their name).
+  - **Number words** — "BBC One" ↔ "BBC 1" now match.
+  - **Word-order tolerance** — "France MTV" ↔ "MTV France" score highly via token overlap.
+  - **Channel-number guard** — "Sky Sports 2" can no longer match "Sky Sports 3" (never even offered),
+    and "MTV" vs "MTV 2" is capped below auto-apply so it goes to review instead of silently applying.
+- **Dialog ergonomics on TV remotes.** In the Match EPG picker and the Auto-match **review** popup,
+  the action buttons (**Close / Clear match**, **Accept all / Skip all / Done**) moved to a **right-hand
+  column** — press **Right** from any list row to reach them, no more scrolling to the bottom of a long
+  list. Focus is also **contained inside the popup** now (a stray D-pad press can no longer drop focus
+  onto the screen behind it).
+
+### 🎬 Better TMDB title cleaning
+
+- The movie/series **title normalizer** (what builds the TMDB search query) strips more provider noise
+  while keeping real titles intact: audio/language tags (**VOSTFR, VF, SUBBED/DUBBED, DUBLADO/LEGENDADO,
+  TRUEFRENCH, LAT**), release markers (**HDCAM, CAMRIP, HDTC, HDLight, 10bit, 60fps, AAC/AC3/DTS, 5.1/7.1**),
+  trailing **season/episode tails** on series names ("Show S05", "Loki Season 2", "Dark Staffel 1",
+  "Temporada 3", "S02E04"), and trailing uppercase language codes ("Movie FR"). Guarded so titles like
+  *Ocean's 8*, *Se7en*, *Area 51* and *Sub Rosa* are never touched.
+
 ### 🐛 Fixes
 
+- **Match EPG from Live TV now takes effect immediately.** Matching a channel's EPG from the Live TV
+  list used to leave the details/preview pane without guide data until an app restart (the row's
+  now-playing line updated, the pane didn't). The match now also tops up the matched guide channel's
+  programmes from the cached EPG and refreshes the pane right away.
+- **Focus returns to the channel after Match EPG.** Closing the Match EPG dialog (pick, clear or
+  back) lands D-pad focus back on the channel row it was opened for, instead of falling to the nav panel.
 - **Customize screen showed categories from every playlist.** When you'd picked one playlist (e.g.
   playlist A) via the top-bar switcher, **Settings → Customize Categories & Items** still listed
   categories from *all* playlists. It now respects the selected playlist — same as the Live TV / Movies
