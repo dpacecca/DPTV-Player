@@ -107,6 +107,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 }
             },
             onDismiss = onBack,
+            compact = true,
         )
         return
     }
@@ -311,6 +312,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 }
                             },
                             onDismiss = { editingPin = null },
+                            compact = true,
                         )
                     }
                 } else {
@@ -323,6 +325,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 pinMismatch = false
                             },
                             onDismiss = { editingPin = null },
+                            compact = true,
                         )
                     }
                 }
@@ -480,22 +483,24 @@ private fun PinConfirmDialog(
     val confirmFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { confirmFocus.requestFocus() } }
     BackHandler { onDismiss() }
+    tv.own.owntv.ui.theme.PopupFontTheme {
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
+            Modifier.dialogPanel(width = 290.dp, corner = 16.dp, padding = 16.dp),
         ) {
-            Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
-            Text(message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(22.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(message, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
                 OwnTVButton(confirmLabel, onClick = onConfirm, modifier = Modifier.focusRequester(confirmFocus))
             }
         }
+    }
     }
 }

@@ -916,13 +916,15 @@ private fun DialogScaffold(title: String, onDismiss: () -> Unit, content: androi
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
-            Column(modifier = Modifier.width(440.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
-                Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                Spacer(Modifier.height(12.dp))
-                // Cap to the screen (minus dialog chrome) so all rows stay reachable on small screens.
-                val listMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 160.dp).coerceIn(160.dp, 360.dp)
-                LazyColumn(modifier = Modifier.heightIn(max = listMax), verticalArrangement = Arrangement.spacedBy(6.dp), content = content)
+        tv.own.owntv.ui.theme.PopupFontTheme {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
+                Column(modifier = Modifier.width(264.dp).clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHigh).padding(14.dp)) {
+                    Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                    Spacer(Modifier.height(8.dp))
+                    // Cap to the screen (minus dialog chrome) so all rows stay reachable on small screens.
+                    val listMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 160.dp).coerceIn(140.dp, 240.dp)
+                    LazyColumn(modifier = Modifier.heightIn(max = listMax), verticalArrangement = Arrangement.spacedBy(4.dp), content = content)
+                }
             }
         }
     }
@@ -935,11 +937,11 @@ private fun OptionRow(label: String, selected: Boolean, modifier: Modifier = Mod
         onClick = onClick, modifier = modifier.fillMaxWidth(), selected = selected, shape = RoundedCornerShape(12.dp),
         selectedContainerColor = colors.primaryContainer, contentAlignment = Alignment.CenterStart,
     ) { focused ->
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, style = MaterialTheme.typography.titleMedium, color = if (selected) colors.onPrimaryContainer else if (focused) colors.primary else colors.onSurface)
+        Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = if (selected) colors.onPrimaryContainer else if (focused) colors.primary else colors.onSurface)
             if (selected) {
                 Spacer(Modifier.weight(1f))
-                OwnTVIcon(OwnTVIcon.STAR, tint = colors.onPrimaryContainer, filled = true, modifier = Modifier.size(16.dp))
+                OwnTVIcon(OwnTVIcon.STAR, tint = colors.onPrimaryContainer, filled = true, modifier = Modifier.size(14.dp))
             }
         }
     }

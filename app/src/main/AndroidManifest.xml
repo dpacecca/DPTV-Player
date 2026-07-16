@@ -11,7 +11,12 @@
     <!-- Android TV provider writes for Watch Next cards. -->
     <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" />
 
-    <!-- Downloads & backup to user-chosen folders (SAF's document picker is absent on most TVs). -->
+    <!-- Downloads & backup to user-chosen folders (SAF's document picker is absent on most TVs).
+         READ stays declared through API 32: dropping it left some OEM builds (TCL Android 12,
+         "Permission Shield") with NO grantable storage entry at all — MANAGE_EXTERNAL_STORAGE alone
+         is a special app access their settings never surface. With READ declared, requesting it on
+         API 30–32 opens the system "Files and media" screen, which also lists
+         "Allow management of all files" because MANAGE is declared. -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"

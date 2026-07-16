@@ -477,12 +477,13 @@ private fun EpgMatchReviewDialog(
     // Popup(focusable=true) creates a hard focus boundary — clicking Accept/Skip removes an item
     // from the LazyColumn, but focus stays inside instead of escaping to the main nav bar.
     Popup(onDismissRequest = onDone, properties = PopupProperties(focusable = true)) {
+    tv.own.owntv.ui.theme.PopupFontTheme {
     Box(
         Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)),
         contentAlignment = Alignment.Center,
     ) {
-        Column(Modifier.width(720.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
-            Text("Review EPG matches", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Column(Modifier.width(576.dp).clip(RoundedCornerShape(18.dp)).background(colors.surfaceContainerHigh).padding(18.dp)) {
+            Text("Review EPG matches", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
             Text(
                 "These channels were matched by name but weren't a confident fit. Accept the right ones; skip the rest.",
@@ -491,7 +492,7 @@ private fun EpgMatchReviewDialog(
             Spacer(Modifier.height(12.dp))
             // Actions live in a right-hand column so a D-pad right from ANY suggestion row reaches
             // Accept all/Skip all/Done directly — no scrolling to the bottom of a long list.
-            val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 200.dp).coerceIn(160.dp, 360.dp)
+            val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 200.dp).coerceIn(160.dp, 300.dp)
             Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
             LazyColumn(Modifier.fillMaxWidth().height(listHeight), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -502,7 +503,7 @@ private fun EpgMatchReviewDialog(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         Column(Modifier.weight(1f)) {
-                            Text(s.channel.name, style = MaterialTheme.typography.titleSmall, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(s.channel.name, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
                                 "→ ${s.epgName ?: s.epgChannelId}  ·  ${(s.score * 100).toInt()}%",
                                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -525,8 +526,8 @@ private fun EpgMatchReviewDialog(
                 }
             }
             }
-            Spacer(Modifier.width(16.dp))
-            Column(Modifier.width(160.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.width(140.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Bulk actions only make sense for a multi-channel run; a single auto-match shows just accept/skip.
                 if (suggestions.size > 1) {
                     OwnTVButton("Accept all", onClick = onAcceptAll, icon = OwnTVIcon.PLAY, modifier = Modifier.fillMaxWidth())
@@ -537,6 +538,7 @@ private fun EpgMatchReviewDialog(
             }
         }
     }
+    } // PopupFontTheme
     } // Popup
 }
 

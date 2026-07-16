@@ -783,14 +783,15 @@ internal fun EpgMatchDialog(
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.PopupProperties(focusable = true),
     ) {
+    tv.own.owntv.ui.theme.PopupFontTheme {
     androidx.compose.foundation.layout.Box(
         Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)).focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         // Same small-screen cap as CatchupDialog: search bar + buttons must stay reachable.
-        val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 260.dp).coerceIn(140.dp, 300.dp)
-        Column(Modifier.width(640.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
-            Text("Match EPG", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 260.dp).coerceIn(140.dp, 240.dp)
+        Column(Modifier.width(384.dp).clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHigh).padding(14.dp)) {
+            Text("Match EPG", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
             Text(
                 "Pick the guide channel for “$channelName”." + (currentMatch?.let { "  Current: $it" } ?: ""),
@@ -818,8 +819,8 @@ internal fun EpgMatchDialog(
                                     shape = RoundedCornerShape(12.dp),
                                     contentAlignment = Alignment.CenterStart,
                                 ) { _ ->
-                                    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
-                                        Text(epg.displayName ?: epg.epgChannelId, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp)) {
+                                        Text(epg.displayName ?: epg.epgChannelId, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         Text(epg.epgChannelId, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
                                     }
                                 }
@@ -827,13 +828,14 @@ internal fun EpgMatchDialog(
                         }
                     }
                 }
-                Spacer(Modifier.width(16.dp))
-                Column(Modifier.width(150.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.width(110.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
                     if (currentMatch != null) OwnTVButton("Clear match", onClick = onClear, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
                 }
             }
         }
     }
+    } // PopupFontTheme
     } // Popup
 }

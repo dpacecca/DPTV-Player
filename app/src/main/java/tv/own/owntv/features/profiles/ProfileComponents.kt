@@ -50,7 +50,12 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 /** Modal scrim wrapper for the profile dialogs. Phase 7 — Popup(focusable=true) creates
  *  a hard focus boundary on Android TV so D-pad stays inside the dialog. */
 @Composable
-internal fun ProfileScrim(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+internal fun ProfileScrim(
+    onDismiss: () -> Unit,
+    width: androidx.compose.ui.unit.Dp = 480.dp,
+    padding: androidx.compose.ui.unit.Dp = 28.dp,
+    content: @Composable () -> Unit,
+) {
     BackHandler { onDismiss() }
     Popup(
         onDismissRequest = onDismiss,
@@ -65,22 +70,29 @@ internal fun ProfileScrim(onDismiss: () -> Unit, content: @Composable () -> Unit
             // Scrollable so small/low-res screens can still reach the lower controls (Kids
             // toggle / PIN / Create were clipped and unreachable on a cut-off screen).
             Column(
-                modifier = Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
+                modifier = Modifier.dialogPanel(width = width, padding = padding),
             ) { content() }
         }
     }
 }
 
-/** Numeric PIN entry. Calls [onSubmit] with the entered digits. */
+/** Numeric PIN entry. Calls [onSubmit] with the entered digits. [compact] renders the small
+ *  popup-menu treatment (narrow panel, Caladea font) used by the Customize screen. */
 @Composable
-internal fun PinDialog(title: String, onSubmit: (String) -> Unit, onDismiss: () -> Unit) {
+internal fun PinDialog(title: String, onSubmit: (String) -> Unit, onDismiss: () -> Unit, compact: Boolean = false) {
+    val dialog: @Composable () -> Unit = { PinDialogBody(title, onSubmit, onDismiss, compact) }
+    if (compact) tv.own.owntv.ui.theme.PopupFontTheme(dialog) else dialog()
+}
+
+@Composable
+private fun PinDialogBody(title: String, onSubmit: (String) -> Unit, onDismiss: () -> Unit, compact: Boolean) {
     val colors = OwnTVTheme.colors
     var pin by remember { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    ProfileScrim(onDismiss) {
-        Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-        Spacer(Modifier.height(16.dp))
+    ProfileScrim(onDismiss, width = if (compact) 290.dp else 480.dp, padding = if (compact) 16.dp else 28.dp) {
+        Text(title, style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Spacer(Modifier.height(if (compact) 10.dp else 16.dp))
         OwnTVTextField(
             value = pin,
             onValueChange = { if (it.length <= 6 && it.all(Char::isDigit)) pin = it },

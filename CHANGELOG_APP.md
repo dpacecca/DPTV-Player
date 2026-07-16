@@ -20,9 +20,13 @@
 - **📦 Smaller downloads — split arm + x86_64 APK builds**
 - **⬇️ In-app updater picks the APK matching your device**
 - **🔒 Customize PIN stored as a salted hash** (community PR #65 by @aravindtri)
+- **🗂️ One-click full storage access that works on more TVs**
+- **🎨 Compact popup menus in a new serif font**
 
 ### 🐛 Fixes
 
+- **Storage access grant no longer dead-ends on some Android 11/12 TVs**
+- **Storage picker focus can no longer escape the popup**
 - **Match EPG from Live TV now updates the preview pane immediately**
 - **Focus returns to the channel after the Match EPG dialog closes**
 - **Match EPG / review popups: buttons on the right, focus stays inside the popup**

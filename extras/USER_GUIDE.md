@@ -418,7 +418,9 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
   they don't contain just keeps its default.
 - 🧹 **Clear watch history** — wipe a profile's recently‑watched / continue rows.
 - 📥 **Downloads** — download movies/episodes for offline play; pick the **Download folder** (app storage or
-  external).
+  external). To browse outside app storage, choose **Grant full storage access** in the folder picker — it
+  opens OwnTV's app-settings page where you enable **Allow management of all files** (on Android 10 and
+  below a normal permission dialog appears instead), then press Back to return to the picker.
 
 ---
 

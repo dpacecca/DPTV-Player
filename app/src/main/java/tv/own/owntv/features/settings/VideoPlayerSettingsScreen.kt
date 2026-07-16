@@ -370,12 +370,13 @@ internal fun PickerDialog(
     val selIndex = shown.indexOfFirst { it.first == selected }.coerceAtLeast(0)
     LaunchedEffect(Unit) { runCatching { (if (searchable) searchFr else fr).requestFocus() } }
     BackHandler { onDismiss() }
+    tv.own.owntv.ui.theme.PopupFontTheme {
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
         Column(
-            modifier = Modifier.width(460.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp),
+            modifier = Modifier.width(280.dp).clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHigh).padding(14.dp),
         ) {
-            Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(16.dp))
+            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Spacer(Modifier.height(10.dp))
             if (searchable) {
                 tv.own.owntv.ui.components.SearchBar(
                     query = query,
@@ -386,8 +387,8 @@ internal fun PickerDialog(
                 Spacer(Modifier.height(12.dp))
             }
             // Cap the list to the screen (minus dialog chrome) so Close stays reachable on small screens.
-            val listMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 220.dp).coerceIn(140.dp, 360.dp)
-            LazyColumn(Modifier.fillMaxWidth().heightIn(max = listMax), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val listMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 220.dp).coerceIn(140.dp, 240.dp)
+            LazyColumn(Modifier.fillMaxWidth().heightIn(max = listMax), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 itemsIndexed(shown, key = { _, o -> o.first }) { index, (value, label) ->
                     val isSel = value == selected
                     FocusableSurface(
@@ -398,18 +399,19 @@ internal fun PickerDialog(
                         selectedContainerColor = colors.primaryContainer,
                         contentAlignment = Alignment.CenterStart,
                     ) { _ ->
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(label, style = MaterialTheme.typography.titleMedium, color = if (isSel) colors.onPrimaryContainer else colors.onSurface, modifier = Modifier.weight(1f))
-                            if (isSel) OwnTVIcon(OwnTVIcon.STAR, tint = colors.onPrimaryContainer, filled = true, modifier = Modifier.size(16.dp))
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(label, style = MaterialTheme.typography.bodyMedium, color = if (isSel) colors.onPrimaryContainer else colors.onSurface, modifier = Modifier.weight(1f))
+                            if (isSel) OwnTVIcon(OwnTVIcon.STAR, tint = colors.onPrimaryContainer, filled = true, modifier = Modifier.size(14.dp))
                         }
                     }
                 }
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
             }
         }
+    }
     }
 }
 
@@ -430,25 +432,27 @@ internal fun StepperDialog(
     val fr = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
     BackHandler { onDismiss() }
+    tv.own.owntv.ui.theme.PopupFontTheme {
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
         Column(
-            modifier = Modifier.dialogPanel(width = 460.dp, padding = 28.dp),
+            modifier = Modifier.dialogPanel(width = 280.dp, corner = 16.dp, padding = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(20.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 StepBtn("–", enabled = value > min) { onSet((value - step).coerceAtLeast(min)) }
-                Text(format(value), style = MaterialTheme.typography.headlineMedium, color = colors.primary, modifier = Modifier.width(140.dp), textAlign = TextAlign.Center)
+                Text(format(value), style = MaterialTheme.typography.titleMedium, color = colors.primary, modifier = Modifier.width(90.dp), textAlign = TextAlign.Center)
                 StepBtn("+", enabled = value < max, modifier = Modifier.focusRequester(fr)) { onSet((value + step).coerceAtMost(max)) }
             }
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OwnTVButton("Reset", onClick = onReset, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
                 OwnTVButton("Done", onClick = onDismiss)
             }
         }
+    }
     }
 }
 
@@ -458,8 +462,8 @@ private fun StepBtn(label: String, enabled: Boolean, modifier: Modifier = Modifi
     FocusableSurface(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.size(64.dp),
-        shape = RoundedCornerShape(18.dp),
+        modifier = modifier.size(40.dp),
+        shape = RoundedCornerShape(12.dp),
         contentAlignment = Alignment.Center,
-    ) { _ -> Text(label, style = MaterialTheme.typography.headlineMedium, color = if (enabled) colors.onSurface else colors.outline) }
+    ) { _ -> Text(label, style = MaterialTheme.typography.titleMedium, color = if (enabled) colors.onSurface else colors.outline) }
 }

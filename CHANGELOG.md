@@ -52,8 +52,38 @@
   "Temporada 3", "S02E04"), and trailing uppercase language codes ("Movie FR"). Guarded so titles like
   *Ocean's 8*, *Se7en*, *Area 51* and *Sub Rosa* are never touched.
 
+### 🗂️ Storage access that works on more TVs
+
+- **One-click "Grant full storage access."** The file/folder picker (download folder, local M3U
+  import, backup) now has a single grant action that opens **OwnTV's own app-settings page**, where
+  you enable **Allow management of all files** yourself. This fixes OEM TVs (e.g. TCL Android 12)
+  whose system "All files access" screen is hijacked or missing, which previously left no working
+  way to grant storage from inside the app. On Android 10 and below the standard permission dialog
+  appears instead (it grants full access there). A media-only grant is no longer treated as storage
+  access — it hid `.m3u`/backup files behind scoped storage.
+- **The picker is a real dialog window now.** D-pad focus physically can't escape onto the screen
+  behind it anymore, and access is re-checked when you come back from system settings, so the grant
+  row disappears immediately after granting.
+
+### 🎨 Compact popup menus in a new serif font
+
+- **Popup menus are ~40% smaller and render in Caladea** (a free, metric-compatible equivalent of
+  Cambria; only popups — the rest of the app keeps its sans-serif): the player's **subtitle/audio/
+  track menus**, Settings **option pickers** and **+/− steppers**, the **playlist switcher**, and
+  the **storage/file picker** (now 300 dp with restacked footer buttons).
+- **Match EPG picker** (Live TV & Guide long-press) shrank 40%, the Guide's **Review EPG matches**
+  popup 20%, and the **Customize screen's PIN dialogs** got a compact variant — all in the same
+  font. The profile "Who's watching?" PIN dialog is unchanged.
+
 ### 🐛 Fixes
 
+- **"Grant full storage access" no longer dead-ends on OEM TVs.** On TCL Android 12 the old grant
+  button opened the OEM "Permission Shield" screen, which has no storage entry at all; the picker
+  also showed a "grant" option that could only ever yield a useless media-only permission. Both
+  replaced by the app-settings route above.
+- **Storage picker focus could escape the popup.** Moving focus (especially after returning from
+  the permission screen) could land on the screen behind the picker; it's now hosted in its own
+  window so that can't happen.
 - **Match EPG from Live TV now takes effect immediately.** Matching a channel's EPG from the Live TV
   list used to leave the details/preview pane without guide data until an app restart (the row's
   now-playing line updated, the pane didn't). The match now also tops up the matched guide channel's
