@@ -477,7 +477,7 @@ private fun EpgMatchReviewDialog(
     // Popup(focusable=true) creates a hard focus boundary — clicking Accept/Skip removes an item
     // from the LazyColumn, but focus stays inside instead of escaping to the main nav bar.
     Popup(onDismissRequest = onDone, properties = PopupProperties(focusable = true)) {
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
     Box(
         Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)),
         contentAlignment = Alignment.Center,

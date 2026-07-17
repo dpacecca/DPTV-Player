@@ -783,7 +783,7 @@ internal fun EpgMatchDialog(
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.PopupProperties(focusable = true),
     ) {
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
     androidx.compose.foundation.layout.Box(
         Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)).focusGroup(),
         contentAlignment = Alignment.Center,

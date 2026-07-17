@@ -1,52 +1,71 @@
 package tv.own.owntv.ui.theme
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Typography
 import tv.own.owntv.R
 
 /**
- * Caladea — Google's metric-compatible equivalent of Cambria (which is Microsoft-licensed and
- * cannot be bundled). Popup menus render in this serif per owner preference; the rest of the
- * app keeps the sans-serif [OwnTVTypography]. Caladea ships Regular/Bold only, so Medium and
- * SemiBold map to the nearest available weight.
+ * Lora — a free, open-licensed serif (SIL OFL) chosen for OwnTV's popup menus; the rest of the
+ * app keeps the sans-serif [OwnTVTypography]. Lora ships as a variable font (weight axis 400–700),
+ * so each weight is a variation setting off the single upright/italic files (minSdk 26 supports
+ * variable fonts).
  */
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+private fun loraUpright(weight: FontWeight) =
+    Font(R.font.lora_variable, weight, variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)))
+
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+private fun loraItalic(weight: FontWeight) =
+    Font(R.font.lora_italic_variable, weight, FontStyle.Italic, variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)))
+
 val PopupFontFamily = FontFamily(
-    Font(R.font.caladea_regular, FontWeight.Normal),
-    Font(R.font.caladea_regular, FontWeight.Medium),
-    Font(R.font.caladea_bold, FontWeight.SemiBold),
-    Font(R.font.caladea_bold, FontWeight.Bold),
-    Font(R.font.caladea_italic, FontWeight.Normal, FontStyle.Italic),
-    Font(R.font.caladea_bolditalic, FontWeight.Bold, FontStyle.Italic),
+    loraUpright(FontWeight.Normal),
+    loraUpright(FontWeight.Medium),
+    loraUpright(FontWeight.SemiBold),
+    loraUpright(FontWeight.Bold),
+    loraItalic(FontWeight.Normal),
+    loraItalic(FontWeight.Bold),
 )
 
-/** Wraps popup-menu content so every text style inside uses [PopupFontFamily]. */
+/**
+ * Wraps popup-menu content so every text style inside uses [PopupFontFamily]. [fontScale] shrinks
+ * (or grows) all font sizes and line heights — 1f keeps the design sizes; the EPG match/review
+ * popups pass 0.75f for a denser look.
+ */
 @Composable
-fun PopupFontTheme(content: @Composable () -> Unit) {
+fun PopupFontTheme(fontScale: Float = 1f, content: @Composable () -> Unit) {
     val t = MaterialTheme.typography
+    fun androidx.compose.ui.text.TextStyle.popup() = copy(
+        fontFamily = PopupFontFamily,
+        fontSize = if (fontScale == 1f) fontSize else fontSize * fontScale,
+        lineHeight = if (fontScale == 1f || lineHeight.isUnspecified) lineHeight else lineHeight * fontScale,
+    )
     MaterialTheme(
         colorScheme = MaterialTheme.colorScheme,
         shapes = MaterialTheme.shapes,
         typography = Typography(
-            displayLarge = t.displayLarge.copy(fontFamily = PopupFontFamily),
-            displayMedium = t.displayMedium.copy(fontFamily = PopupFontFamily),
-            displaySmall = t.displaySmall.copy(fontFamily = PopupFontFamily),
-            headlineLarge = t.headlineLarge.copy(fontFamily = PopupFontFamily),
-            headlineMedium = t.headlineMedium.copy(fontFamily = PopupFontFamily),
-            headlineSmall = t.headlineSmall.copy(fontFamily = PopupFontFamily),
-            titleLarge = t.titleLarge.copy(fontFamily = PopupFontFamily),
-            titleMedium = t.titleMedium.copy(fontFamily = PopupFontFamily),
-            titleSmall = t.titleSmall.copy(fontFamily = PopupFontFamily),
-            bodyLarge = t.bodyLarge.copy(fontFamily = PopupFontFamily),
-            bodyMedium = t.bodyMedium.copy(fontFamily = PopupFontFamily),
-            bodySmall = t.bodySmall.copy(fontFamily = PopupFontFamily),
-            labelLarge = t.labelLarge.copy(fontFamily = PopupFontFamily),
-            labelMedium = t.labelMedium.copy(fontFamily = PopupFontFamily),
-            labelSmall = t.labelSmall.copy(fontFamily = PopupFontFamily),
+            displayLarge = t.displayLarge.popup(),
+            displayMedium = t.displayMedium.popup(),
+            displaySmall = t.displaySmall.popup(),
+            headlineLarge = t.headlineLarge.popup(),
+            headlineMedium = t.headlineMedium.popup(),
+            headlineSmall = t.headlineSmall.popup(),
+            titleLarge = t.titleLarge.popup(),
+            titleMedium = t.titleMedium.popup(),
+            titleSmall = t.titleSmall.popup(),
+            bodyLarge = t.bodyLarge.popup(),
+            bodyMedium = t.bodyMedium.popup(),
+            bodySmall = t.bodySmall.popup(),
+            labelLarge = t.labelLarge.popup(),
+            labelMedium = t.labelMedium.popup(),
+            labelSmall = t.labelSmall.popup(),
         ),
         content = content,
     )

@@ -2,12 +2,16 @@ package tv.own.owntv.features.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import tv.own.owntv.core.epg.EpgSource
 import tv.own.owntv.core.epg.EpgSourceStore
 import tv.own.owntv.core.repository.EpgRepository
@@ -66,11 +70,28 @@ class EpgSourcesViewModel(
         }
     }
 
+    /** Sources whose guide data is being deleted right now — the row shows a "Deleting…" status and
+     *  hides its actions until the (potentially large) DELETE finishes. */
+    private val _deletingIds = MutableStateFlow<Set<Long>>(emptySet())
+    val deletingIds: StateFlow<Set<Long>> = _deletingIds.asStateFlow()
+
     fun delete(source: EpgSource) {
+        if (source.id in _deletingIds.value) return
         viewModelScope.launch {
             epgSyncScheduler.cancelSync(source.id)
-            store.remove(source.id)
-            epgRepository.clear(source.id)
+            _deletingIds.value = _deletingIds.value + source.id
+            try {
+                // NonCancellable + DB-clear-BEFORE-store-remove: a big EPG (100k+ programmes) can take a
+                // while to delete. If the user leaves the screen mid-delete, finish anyway — otherwise the
+                // source would already be gone from the list while its programmes were left orphaned with
+                // nothing left to clean them up.
+                withContext(NonCancellable) {
+                    epgRepository.clear(source.id)
+                    store.remove(source.id)
+                }
+            } finally {
+                _deletingIds.value = _deletingIds.value - source.id
+            }
         }
     }
 

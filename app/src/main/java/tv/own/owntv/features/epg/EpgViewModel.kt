@@ -352,10 +352,21 @@ class EpgViewModel(
         viewModelScope.launch {
             val ids = epgIds.map { it.trim().lowercase() }.filterTo(HashSet()) { it.isNotBlank() }
             if (ids.isEmpty()) return@launch
-            // One cache pass for the whole set; only re-sync over the network if the cache is gone/stale.
+            // One cache pass for the whole set; only re-sync over the network if the cache is gone/stale
+            // (returns false when it held none of the matched channels' programmes).
             val handled = runCatching { epgRepository.storeProgrammesForIdsFromCache(ids) }.getOrDefault(false)
             if (!handled) runCatching { refreshAllEpgFromNetwork() }
             load()
+            // Single-channel match (manual pick / review Accept / single auto-match): if the feed has no
+            // current-or-upcoming programmes for it, its guide row will be empty even though the match
+            // succeeded — say so, instead of leaving the user staring at a blank row (the provider simply
+            // hasn't published a current schedule for that channel).
+            if (ids.size == 1) {
+                val upcoming = runCatching { epgDao.countUpcomingForChannel(ids.first(), System.currentTimeMillis()) }.getOrDefault(1)
+                if (upcoming == 0) {
+                    _matchSummary.value = "Matched — but this guide channel has no current programmes in the EPG feed yet."
+                }
+            }
         }
     }
 

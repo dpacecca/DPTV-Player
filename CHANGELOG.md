@@ -67,13 +67,13 @@
 
 ### 🎨 Compact popup menus in a new serif font
 
-- **Popup menus are ~40% smaller and render in Caladea** (a free, metric-compatible equivalent of
-  Cambria; only popups — the rest of the app keeps its sans-serif): the player's **subtitle/audio/
-  track menus**, Settings **option pickers** and **+/− steppers**, the **playlist switcher**, and
-  the **storage/file picker** (now 300 dp with restacked footer buttons).
+- **Popup menus are ~40% smaller and render in Lora** (a free, open-licensed serif; only popups —
+  the rest of the app keeps its sans-serif): the player's **subtitle/audio/track menus**, Settings
+  **option pickers** and **+/− steppers**, the **playlist switcher**, and the **storage/file
+  picker** (now 300 dp with restacked footer buttons).
 - **Match EPG picker** (Live TV & Guide long-press) shrank 40%, the Guide's **Review EPG matches**
-  popup 20%, and the **Customize screen's PIN dialogs** got a compact variant — all in the same
-  font. The profile "Who's watching?" PIN dialog is unchanged.
+  popup 20%, and the **Customize screen's PIN dialogs** got a compact variant — all in the Lora
+  serif. The profile "Who's watching?" PIN dialog is unchanged.
 
 ### 🐛 Fixes
 
@@ -84,6 +84,20 @@
 - **Storage picker focus could escape the popup.** Moving focus (especially after returning from
   the permission screen) could land on the screen behind the picker; it's now hosted in its own
   window so that can't happen.
+- **Deleting an EPG source now shows a "Deleting…" status and can't leave orphaned guide data.**
+  Removing an EPG source with a large guide (100k+ programmes) took a while to clear from the
+  database, but the row vanished instantly with no indication, and leaving the screen mid-delete
+  could orphan those programmes with no source left to clean them up. The row now stays with a
+  **Deleting…** badge (its actions hidden) until the delete finishes, the guide rows are removed
+  **before** the source leaves the list, and the delete completes even if you navigate away.
+- **EPG match now falls back to a network re-sync when the cache has no data for it.** After
+  matching a channel, OwnTV fills its programmes from the cached XMLTV without a network call — but
+  that step reported success even when the cache held none of the matched channel's programmes, so
+  the network fallback never ran. It now re-syncs (with the just-saved match included in the sync
+  filter) whenever the cache yields nothing for the matched channel. And when a matched channel
+  genuinely has no current/upcoming programmes in the feed, the Guide now says so ("Matched — but
+  this guide channel has no current programmes in the EPG feed yet") instead of leaving a silently
+  empty row.
 - **Match EPG from Live TV now takes effect immediately.** Matching a channel's EPG from the Live TV
   list used to leave the details/preview pane without guide data until an app restart (the row's
   now-playing line updated, the pane didn't). The match now also tops up the matched guide channel's

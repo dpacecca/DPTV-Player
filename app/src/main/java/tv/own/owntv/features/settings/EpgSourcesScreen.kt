@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,6 +60,7 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
     val vm: EpgSourcesViewModel = koinViewModel()
     val sources by vm.sources.collectAsStateWithLifecycle()
     val autoRefreshMap by vm.autoRefresh.collectAsStateWithLifecycle()
+    val deletingIds by vm.deletingIds.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
 
     var editing by remember { mutableStateOf<EpgSource?>(null) }
@@ -128,6 +131,7 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
                         autoRefresh = autoRefreshMap[source.id] ?: EpgAutoRefresh.OFF,
                         counts = { vm.counts(source.id) },
                         syncState = syncState,
+                        deleting = source.id in deletingIds,
                         onResync = { vm.resync(source) },
                         onCancelSync = { vm.cancelSync(source) },
                         onEdit = { editing = source },
@@ -154,6 +158,7 @@ private fun EpgRow(
     autoRefresh: EpgAutoRefresh,
     counts: suspend () -> Triple<Int, Int, Int>,
     syncState: EpgSyncState,
+    deleting: Boolean,
     onResync: () -> Unit,
     onCancelSync: () -> Unit,
     onEdit: () -> Unit,
@@ -178,6 +183,16 @@ private fun EpgRow(
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(source.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                if (deleting) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Deleting…",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.onPrimaryContainer,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
+                        maxLines = 1,
+                    )
+                }
                 if (activeSync != null) {
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -216,14 +231,18 @@ private fun EpgRow(
             Text(status, style = MaterialTheme.typography.labelMedium, color = if (source.lastError != null && activeSync == null) Color(0xFFEF4444) else colors.primary)
         }
         Spacer(Modifier.width(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (syncState.isActive) {
-                OwnTVButton("Cancel", onClick = onCancelSync, style = OwnTVButtonStyle.SECONDARY)
-            } else {
-                OwnTVButton("Re-sync", onClick = onResync, style = OwnTVButtonStyle.SECONDARY)
+        // While the guide data is being deleted, hide the actions — the row is on its way out and a
+        // large delete can take a moment.
+        if (!deleting) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (syncState.isActive) {
+                    OwnTVButton("Cancel", onClick = onCancelSync, style = OwnTVButtonStyle.SECONDARY)
+                } else {
+                    OwnTVButton("Re-sync", onClick = onResync, style = OwnTVButtonStyle.SECONDARY)
+                }
+                OwnTVButton("Edit", onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton("Delete", onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
             }
-            OwnTVButton("Edit", onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
-            OwnTVButton("Delete", onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
         }
     }
 }
@@ -249,7 +268,9 @@ internal fun EpgSourceForm(
     BackHandler { onCancel() }
 
     Column(
-        modifier = modifier.fillMaxSize().roundedPanel().padding(horizontal = 40.dp, vertical = 28.dp),
+        modifier = modifier.fillMaxSize().roundedPanel()
+            .verticalScroll(rememberScrollState()) // scroll so lower fields/buttons stay reachable on small screens / large zoom
+            .padding(horizontal = 40.dp, vertical = 28.dp),
     ) {
         Text(if (initial == null) "Add EPG source" else "Edit EPG source", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
         Spacer(Modifier.height(20.dp))

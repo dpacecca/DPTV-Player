@@ -81,7 +81,7 @@ internal fun ProfileScrim(
 @Composable
 internal fun PinDialog(title: String, onSubmit: (String) -> Unit, onDismiss: () -> Unit, compact: Boolean = false) {
     val dialog: @Composable () -> Unit = { PinDialogBody(title, onSubmit, onDismiss, compact) }
-    if (compact) tv.own.owntv.ui.theme.PopupFontTheme(dialog) else dialog()
+    if (compact) tv.own.owntv.ui.theme.PopupFontTheme(content = dialog) else dialog()
 }
 
 @Composable

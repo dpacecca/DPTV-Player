@@ -27,6 +27,8 @@
 
 - **Storage access grant no longer dead-ends on some Android 11/12 TVs**
 - **Storage picker focus can no longer escape the popup**
+- **Deleting an EPG source shows a "Deleting…" status and can't orphan guide data**
+- **EPG match re-syncs from the network when the cache has no data for the matched channel**
 - **Match EPG from Live TV now updates the preview pane immediately**
 - **Focus returns to the channel after the Match EPG dialog closes**
 - **Match EPG / review popups: buttons on the right, focus stays inside the popup**
