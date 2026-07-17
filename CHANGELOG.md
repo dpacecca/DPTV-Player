@@ -2,6 +2,35 @@
 
 ## v4.1.3 — unreleased
 
+### 📱 Add a playlist from your phone (Remote setup)
+
+- **"Add source" now starts with a Remote / Manual choice.** Pick **Manual** to type Xtream / M3U /
+  Stalker details with the remote as before, or **Remote** to fill everything on your phone. Both the
+  first-run setup wizard and Settings → Manage sources offer the choice.
+- **Remote setup shows a QR code, a URL, and a one-time PIN.** Open the server on the TV, then on a
+  phone or laptop on the same Wi-Fi scan the QR (or type the URL). The page first asks for the 6-digit
+  PIN shown on the TV, then shows an **OwnTV-styled form** with Xtream / M3U / Stalker tabs. Fill it,
+  tap **Send to TV**, and the details appear in the Add Source screen on the TV — you press **Start
+  Import** with the remote (the phone never starts the import itself).
+- **Secure by design.** The QR carries only the URL, never the PIN; every submission must carry the
+  PIN or it's rejected (401). A fresh PIN is generated each time the server opens, passwords/MAC are
+  never logged, and the listener stops automatically when you leave the screen.
+- *Core idea from **@zarga03** (PR #66)* — reimplemented and hardened for OwnTV: added M3U support and
+  the phone-side type picker, the one-time PIN gate, the QR onboarding, an app-matching web form, and
+  "fill the form, you press Start Import" semantics.
+
+### ⏱️ EPG sync: Run in background (onboarding)
+
+- **The "Sync the TV guide now?" step during first-run setup can now Run in background.** Once the
+  guide starts downloading you no longer have to wait on the sync screen — press **Run in background**
+  to enter the app while the guide keeps downloading (matching the playlist import's own background
+  option).
+
+### 🎨 Smaller tweaks
+
+- **Default UI zoom is now 90%** (was 100%) so more of each screen fits on smaller TVs out of the box;
+  adjustable any time in Settings.
+
 ### 📺 Live TV — current programme in the channel list
 
 - **Now-playing subtitle on every channel row.** The Live TV channel list now shows the programme

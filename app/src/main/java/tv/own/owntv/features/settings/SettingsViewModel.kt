@@ -69,6 +69,7 @@ class SettingsViewModel(
     private val stalkerAuth: tv.own.owntv.core.stalker.StalkerAuthManager,
     private val stalkerClient: tv.own.owntv.core.stalker.StalkerClient,
     private val xtreamClient: tv.own.owntv.core.parser.XtreamClient,
+    private val companion: tv.own.owntv.core.companion.CompanionController,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OwnTVHome"
@@ -76,6 +77,20 @@ class SettingsViewModel(
         /** Sentinel session key for pre-save "Test connection" handshakes (no real source id yet). */
         private const val STALKER_TEST_SOURCE_ID = -1L
     }
+
+    // ---- Remote (companion) add-source: a LAN web form fills the Add Source screen from a phone. ----
+    /** Server lifecycle (Idle / Starting / Listening with PIN+QR / Failed) for the Remote screen. */
+    val remoteState get() = companion.state
+
+    /** Live submission stream — the Remote screen collects it to hand off to the Manual form. */
+    val remotePayloads get() = companion.payloads
+
+    /** Retained last submission, so the Manual form pre-fills even after the Remote screen left. */
+    val remotePayload get() = companion.lastPayload
+
+    fun startRemoteListener(port: Int) = companion.start(port)
+    fun stopRemoteListener() = companion.stop()
+    fun consumeRemotePayload() = companion.consumePayload()
 
     // Semi-auto EPG: after a playlist import, if the playlist has a guide URL we offer to sync the EPG now
     // (instead of the old slow auto-sync). "Sync now" shows a live programme count, just like the import.

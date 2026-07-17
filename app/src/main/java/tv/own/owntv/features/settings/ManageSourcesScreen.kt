@@ -43,7 +43,9 @@ import tv.own.owntv.core.sync.resyncBadgeText
 import tv.own.owntv.core.sync.syncProgressCountsLabel
 import tv.own.owntv.core.sync.work.CatalogSyncState
 import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
+import tv.own.owntv.features.setup.AddSourceChooserScreen
 import tv.own.owntv.features.setup.AddSourceScreen
+import tv.own.owntv.features.setup.RemoteSetupScreen
 import tv.own.owntv.features.setup.StalkerTestUi
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.dialogPanel
@@ -67,6 +69,8 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val colors = OwnTVTheme.colors
 
     var showAdd by remember { mutableStateOf(false) }
+    // Within "Add source": null = the Remote|Manual chooser, else the chosen path.
+    var addMode by remember { mutableStateOf<AddMode?>(null) }
     var editingSource by remember { mutableStateOf<SourceEntity?>(null) }
     var confirmDelete by remember { mutableStateOf<SourceEntity?>(null) }
     val addFocus = remember { FocusRequester() }
@@ -77,6 +81,9 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             kotlinx.coroutines.delay(120); runCatching { addFocus.requestFocus() }
         }
     }
+    // Leaving "Add source" always returns to the Remote|Manual chooser next time (and drops any
+    // running Remote listener), so a prior choice never skips the chooser.
+    LaunchedEffect(showAdd) { if (!showAdd) { addMode = null; vm.stopRemoteListener() } }
     // A failed import/re-sync swaps the form for an error screen — move focus onto its action button.
     LaunchedEffect(importState) {
         if (importState is SettingsViewModel.ImportState.Failed) {
@@ -86,7 +93,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     BackHandler {
         when {
-            showAdd -> { showAdd = false; vm.cancelImport() }
+            showAdd -> { showAdd = false; addMode = null; vm.stopRemoteListener(); vm.cancelImport() }
             editingSource != null -> editingSource = null
             else -> onBack()
         }
@@ -125,7 +132,24 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     if (showAdd) {
         when (val s = importState) {
-            SettingsViewModel.ImportState.Idle -> AddSourceScreen(
+            SettingsViewModel.ImportState.Idle -> when (addMode) {
+                null -> AddSourceChooserScreen(
+                    onRemote = { addMode = AddMode.REMOTE },
+                    onManual = { addMode = AddMode.MANUAL },
+                    onBack = { showAdd = false },
+                    modifier = modifier,
+                )
+                AddMode.REMOTE -> RemoteSetupScreen(
+                    state = vm.remoteState.collectAsStateWithLifecycle().value,
+                    payloads = vm.remotePayloads,
+                    onStartListener = { port -> vm.startRemoteListener(port) },
+                    onStopListener = { vm.stopRemoteListener() },
+                    // A phone submission hands off to the pre-filled Manual form.
+                    onPayloadReceived = { addMode = AddMode.MANUAL },
+                    onBack = { vm.stopRemoteListener(); addMode = null },
+                    modifier = modifier,
+                )
+                AddMode.MANUAL -> AddSourceScreen(
                 onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault ->
                     vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault)
                 },
@@ -136,12 +160,16 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 },
                 onTestStalker = { url, mac, ua -> vm.testStalker(url, mac, ua) },
                 stalkerTest = stalkerTestUi,
+                // Submissions from the Remote screen land here pre-filled (type + fields).
+                remotePayload = vm.remotePayload,
+                onRemotePayloadConsumed = { vm.consumeRemotePayload() },
                 // A newly-added playlist can be made default only when others already exist.
                 showDefaultToggle = sources.isNotEmpty(),
-                onBack = { vm.resetStalkerTest(); showAdd = false },
+                onBack = { vm.resetStalkerTest(); addMode = null },
                 modifier = modifier,
                 initial = vm.lastFailedSource, // pre-fill on retry — no re-typing after a typo
-            )
+                )
+            }
             SettingsViewModel.ImportState.Running -> CenterStatus {
                 val display = progress?.importProgressDisplay()
                 OwnTVSpinner(sizeDp = 56)
@@ -410,3 +438,6 @@ internal fun ConfirmDialog(title: String, message: String, onConfirm: () -> Unit
         }
     }
 }
+
+/** How the user chose to add a source: fill it from a phone (Remote) or type it here (Manual). */
+private enum class AddMode { REMOTE, MANUAL }

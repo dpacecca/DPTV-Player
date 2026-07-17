@@ -49,7 +49,22 @@ class SetupViewModel(
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val catalogSyncScheduler: CatalogSyncScheduler,
     private val stalkerAuth: tv.own.owntv.core.stalker.StalkerAuthManager,
+    private val companion: tv.own.owntv.core.companion.CompanionController,
 ) : ViewModel() {
+
+    // ---- Remote (companion) add-source: a LAN web form fills the Add Source screen from a phone. ----
+    /** Server lifecycle (Idle / Starting / Listening with PIN+QR / Failed) for the Remote screen. */
+    val remoteState get() = companion.state
+
+    /** Live submission stream — the Remote screen collects it to hand off to the Manual form. */
+    val remotePayloads get() = companion.payloads
+
+    /** Retained last submission, so the Manual form pre-fills even after the Remote screen left. */
+    val remotePayload get() = companion.lastPayload
+
+    fun startRemoteListener(port: Int) = companion.start(port)
+    fun stopRemoteListener() = companion.stop()
+    fun consumeRemotePayload() = companion.consumePayload()
 
     // Semi-auto EPG: after the first playlist imports, offer a one-tap guide sync (with a live count) if it
     // has a guide feed.
@@ -69,6 +84,17 @@ class SetupViewModel(
     }
 
     fun dismissPendingEpg() { pendingEpgSource = null; _epgSync.value = tv.own.owntv.features.settings.EpgSyncUi.Hidden }
+
+    /**
+     * "Run in background" for the semi-auto EPG sync: enter the app now while the guide keeps
+     * downloading. The sync launched by [syncPendingEpg] runs in this activity-scoped [viewModelScope],
+     * so it survives leaving the wizard — exactly like the playlist [continueInBackground]. We only
+     * finish onboarding; the in-flight job is deliberately not cancelled.
+     */
+    fun syncEpgInBackground(onDone: () -> Unit = {}) {
+        pendingEpgSource = null
+        finish(onDone)
+    }
 
     sealed interface ImportState {
         data object Idle : ImportState

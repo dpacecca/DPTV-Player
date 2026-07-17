@@ -145,6 +145,7 @@ dependencies {
 
     // Networking
     implementation(libs.okhttp)
+    implementation(libs.zxing.core) // QR generation for the Remote (companion) add-source flow
 
     // Media playback — libmpv (FFmpeg) engine
     implementation(libs.libmpv)

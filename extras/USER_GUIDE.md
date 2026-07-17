@@ -13,6 +13,26 @@ obvious at first glance — once you know them, the app is a lot faster to live 
 
 ---
 
+## 📱 Add a playlist from your phone (Remote setup)
+
+Typing an Xtream server or a long M3U URL with a TV remote is painful. **Remote setup** lets you fill
+the form on your phone instead.
+
+1. **Add source → Remote.** In the first‑run wizard or **Settings → Manage sources → Add source**, pick
+   **Remote** (the other option, **Manual**, is the type‑it‑here form).
+2. **Open server.** The TV shows a **QR code**, a **URL**, and a **6‑digit PIN**.
+3. **On a phone or laptop on the same Wi‑Fi**, scan the QR (or open the URL). The page asks for the
+   **PIN** shown on the TV, then shows a form with **Xtream / M3U / Stalker** tabs.
+4. **Fill the form and tap “Send to TV.”** The details appear in the Add Source screen on the TV, with
+   the matching type selected and the fields filled.
+5. **Press Start Import on the TV** with the remote — the phone only fills the form; it never starts the
+   import. Leave the Remote screen (Back) and the server stops automatically.
+
+*Security:* the QR contains only the URL, never the PIN; a fresh PIN is generated each time and every
+submission must include it. *Core idea from a community suggestion (PR #66 by @zarga03).*
+
+---
+
 ## ⚡ Adding a playlist — priority sync
 
 - **Run in background**: while a playlist is importing (setup wizard or Settings), press
@@ -185,6 +205,8 @@ or **narrow the whole app to just one**.
   without opening it. Press **OK** to open the full details.
 - **EPG is opt‑in**: add guide feeds in **Settings → EPG Sources**. After importing a playlist you'll be
   offered a one‑tap **sync now** (with a live programme count), or you can sync later from Settings.
+  During first‑run setup that sync also has a **Run in background** button — enter the app while the
+  guide keeps downloading.
 - 🔄 **EPG sync status**: when a guide feed is downloading (a manual resync or the automatic startup/
   staleness refresh), the same **status pill** that reports playlist syncs shows "Updating guide ·
   *source* · N programmes" at the bottom of the screen.

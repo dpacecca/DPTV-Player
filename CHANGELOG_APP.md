@@ -13,6 +13,9 @@
 
 ### ✨ New features
 
+- **📱 Add a playlist from your phone (Remote setup)** (core idea from @zarga03, PR #66)
+- **⏱️ EPG guide sync can Run in background during setup**
+- **🔍 Default UI zoom is now 90% for a better out-of-the-box fit**
 - **📺 Current programme under each channel in the Live TV list & in-player channel overlay**
 - **🎯 Smarter EPG matching — picker suggests related channels first, more robust auto-match**
 - **🎬 Better TMDB title cleaning for movie & series matching**

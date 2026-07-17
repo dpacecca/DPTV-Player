@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.core.companion.CompanionPayload
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.features.settings.PickerDialog
@@ -80,6 +81,12 @@ fun AddSourceScreen(
         isDefault: Boolean,
     ) -> Unit,
     onStartM3u: (name: String, url: String, userAgent: String, epgUrl: String, autoRefresh: PlaylistAutoRefresh, isDefault: Boolean) -> Unit,
+    // The last submission from the Remote companion screen, retained as a StateFlow so it survives the
+    // Remote → Manual hand-off (this screen mounts after the phone posted). When present, the matching
+    // type is selected and the fields pre-filled; the user then presses Start Import. Consumed once via
+    // [onRemotePayloadConsumed] so it can't re-fill a later, unrelated Manual add.
+    remotePayload: kotlinx.coroutines.flow.StateFlow<CompanionPayload?>? = null,
+    onRemotePayloadConsumed: () -> Unit = {},
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     initial: SourceEntity? = null,
@@ -120,7 +127,36 @@ fun AddSourceScreen(
     var showFileBrowser by remember { mutableStateOf(false) }
     var showAutoRefreshPicker by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
+    val startImportFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+
+    // Pre-fill from a Remote (companion) submission handed off by the host. StateFlow replays its
+    // current value to this new collector, so the payload posted before this screen mounted still lands.
+    LaunchedEffect(remotePayload) {
+        remotePayload?.collect { payload ->
+            if (payload == null || editing) return@collect
+            name = payload.name
+            userAgent = payload.userAgent
+            epgUrl = payload.epgUrl
+            isDefault = payload.isDefault
+            autoRefresh = runCatching { PlaylistAutoRefresh.valueOf(payload.autoRefresh) }.getOrDefault(PlaylistAutoRefresh.OFF)
+            when (payload.type) {
+                SourceType.M3U -> { m3uUrl = payload.server; kind = SourceKind.M3U }
+                SourceType.STALKER -> { portalUrl = payload.portalUrl; mac = payload.mac; kind = SourceKind.STALKER }
+                else -> {
+                    server = payload.server
+                    username = payload.user
+                    password = payload.pass
+                    syncLive = payload.syncLive
+                    syncMovies = payload.syncMovies
+                    syncSeries = payload.syncSeries
+                    kind = SourceKind.XTREAM
+                }
+            }
+            onRemotePayloadConsumed() // one-shot: don't re-fill a later, unrelated Manual add
+            runCatching { kotlinx.coroutines.delay(150); startImportFocus.requestFocus() }
+        }
+    }
 
     val showContentToggles = kind == SourceKind.XTREAM && !editing
     val macValid = tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(mac) != null
@@ -142,7 +178,7 @@ fun AddSourceScreen(
             Text(if (editing) "Edit source" else "Add your source", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
-                if (editing) "Update this source's details, or change its auto-refresh setting." else "OwnTV is a player — bring your own M3U or Xtream source.",
+                if (editing) "Update this source's details, or change its auto-refresh setting." else "OwnTV is a player — bring your own Xtream, M3U, or Stalker source.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
             )
@@ -268,6 +304,7 @@ fun AddSourceScreen(
                         }
                     },
                     enabled = canStart,
+                    modifier = Modifier.focusRequester(startImportFocus),
                 )
             }
         }

@@ -53,7 +53,7 @@ import tv.own.owntv.features.settings.EpgSyncDialog
 import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.theme.OwnTVTheme
 
-private enum class Step { WELCOME, DISCLAIMER, SETUP_CHOICE, CREATE_PROFILE, ADD_CONTENT, ADD_SOURCE, IMPORTING, EXISTING, IMPORT_BACKUP }
+private enum class Step { WELCOME, DISCLAIMER, SETUP_CHOICE, CREATE_PROFILE, ADD_CONTENT, ADD_SOURCE_CHOOSER, ADD_SOURCE_REMOTE, ADD_SOURCE, IMPORTING, EXISTING, IMPORT_BACKUP }
 
 /**
  * Onboarding for one profile. [firstRun] shows the welcome/disclaimer; otherwise it starts at profile
@@ -93,10 +93,24 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
             )
             Step.ADD_CONTENT -> AddContentScreen(
                 hasExisting = existing.isNotEmpty(),
-                onNew = { step = Step.ADD_SOURCE },
+                onNew = { step = Step.ADD_SOURCE_CHOOSER },
                 onExisting = { step = Step.EXISTING },
                 onImport = { backupOrigin = Step.ADD_CONTENT; step = Step.IMPORT_BACKUP },
                 onSkip = { vm.finish(onDone) },
+            )
+            Step.ADD_SOURCE_CHOOSER -> AddSourceChooserScreen(
+                onRemote = { step = Step.ADD_SOURCE_REMOTE },
+                onManual = { step = Step.ADD_SOURCE },
+                onBack = { step = Step.ADD_CONTENT },
+            )
+            Step.ADD_SOURCE_REMOTE -> RemoteSetupScreen(
+                state = vm.remoteState.collectAsStateWithLifecycle().value,
+                payloads = vm.remotePayloads,
+                onStartListener = { port -> vm.startRemoteListener(port) },
+                onStopListener = { vm.stopRemoteListener() },
+                // A phone submission hands off to the pre-filled Manual form (the user presses Start Import).
+                onPayloadReceived = { step = Step.ADD_SOURCE },
+                onBack = { vm.stopRemoteListener(); step = Step.ADD_SOURCE_CHOOSER },
             )
             Step.ADD_SOURCE -> AddSourceScreen(
                 onStartXtream = { name, server, user, pass, ua, epg, refresh, live, movies, series, _ ->
@@ -110,7 +124,10 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
                     importOrigin = Step.ADD_SOURCE
                     step = Step.IMPORTING
                 },
-                onBack = { step = Step.ADD_CONTENT },
+                // Submissions from the Remote screen land here pre-filled (type + fields).
+                remotePayload = vm.remotePayload,
+                onRemotePayloadConsumed = { vm.consumeRemotePayload() },
+                onBack = { step = Step.ADD_SOURCE_CHOOSER },
                 initial = vm.lastFailedSource, // pre-fill on retry after failed import
                 showDefaultToggle = false, // first playlist in setup: nothing to be "default" over yet
             )
@@ -135,7 +152,12 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
             )
         }
         // Semi-auto EPG: after the first playlist imports, ask → sync (live count) → done (overlays "All set!").
-        EpgSyncDialog(state = epgSync, onSync = vm::syncPendingEpg, onDismiss = vm::dismissPendingEpg)
+        EpgSyncDialog(
+            state = epgSync,
+            onSync = vm::syncPendingEpg,
+            onDismiss = vm::dismissPendingEpg,
+            onBackground = { vm.syncEpgInBackground(onDone) }, // enter the app; guide keeps downloading
+        )
     }
 }
 
@@ -162,7 +184,7 @@ private fun DisclaimerScreen(onAgree: () -> Unit, onBack: () -> Unit) {
         Spacer(Modifier.height(16.dp))
         Text(
             "OwnTV is a media player only. It includes no channels, playlists, or content. You are " +
-                "responsible for adding your own legally accessible M3U or Xtream sources.",
+                "responsible for adding your own legally accessible Xtream, M3U, or Stalker sources.",
             style = MaterialTheme.typography.bodyLarge,
             color = colors.onSurfaceVariant,
             textAlign = TextAlign.Center,
