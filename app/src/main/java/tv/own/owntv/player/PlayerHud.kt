@@ -64,7 +64,7 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 private val SPEEDS = listOf(0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0)
 private val TEAL = Color(0xFF52DBC8)
 
-private enum class HudDialog { NONE, AUDIO, SUBS, SPEED, ZOOM, VOLUME }
+private enum class HudDialog { NONE, AUDIO, SUBS, SPEED, ZOOM, VOLUME, SUB_TIMING }
 
 @Composable
 fun PlayerHud(
@@ -96,6 +96,11 @@ fun PlayerHud(
     // true = currently playing on ExoPlayer.
     vodOnExo: Boolean? = null,
     onToggleVodEngine: (() -> Unit)? = null,
+    // Movie/episode only: open the OpenSubtitles search from the Subtitles dialog (subtitle plan §4).
+    // Null for Live TV and when there's no current-item context, which hides the ADD SUBTITLES row.
+    onSearchSubtitles: (() -> Unit)? = null,
+    // Movie/episode only: pick a local subtitle file (plan §7) — no account needed, same gating.
+    onSelectLocalSubtitle: (() -> Unit)? = null,
     // Live guide card (Before / Now playing / Next for the playing channel) — supplied by the shell
     // (the EPG data lives in LiveViewModel, not the player). Rendered on the right edge whenever the
     // controls are visible, like the top-bar channel card; informational only, never focusable.
@@ -333,8 +338,19 @@ fun PlayerHud(
         HudDialog.SUBS -> {
             var subTracks by remember { mutableStateOf(player.textTracks()) }
             LaunchedEffect(Unit) { while (subTracks.isEmpty()) { delay(300); subTracks = player.textTracks() } }
-            TrackDialog("Subtitles", subTracks, onSelect = { player.selectSubtitle(it.mpvId); dialog = HudDialog.NONE }, onOff = { player.disableSubtitles(); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
+            TrackDialog(
+                "Subtitles", subTracks,
+                onSelect = { player.selectSubtitle(it.mpvId); dialog = HudDialog.NONE },
+                onOff = { player.disableSubtitles(); dialog = HudDialog.NONE },
+                onDismiss = { dialog = HudDialog.NONE },
+                onSearchSubtitles = onSearchSubtitles?.let { open -> { dialog = HudDialog.NONE; open() } },
+                onSelectLocalSubtitle = onSelectLocalSubtitle?.let { open -> { dialog = HudDialog.NONE; open() } },
+                // Subtitle timing (plan §8): only when adjustment applies to the ACTIVE subtitle on the
+                // current engine (any mpv text sub; external side-loads on ExoPlayer).
+                onSubtitleTiming = if (player.subtitleTimingAvailable()) ({ dialog = HudDialog.SUB_TIMING }) else null,
+            )
         }
+        HudDialog.SUB_TIMING -> SubtitleTimingDialog(player, onDismiss = { dialog = HudDialog.NONE })
         HudDialog.SPEED -> SpeedDialog(current = speed, onSelect = { player.setSpeed(it); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
         HudDialog.ZOOM -> ZoomDialog(current = zoomMode, onSelect = { player.setZoomMode(it); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
         HudDialog.VOLUME -> VolumeDialog(player, onDismiss = { dialog = HudDialog.NONE })
@@ -754,6 +770,14 @@ private fun TrackDialog(
     onDismiss: () -> Unit,
     audioDelayMs: Int? = null,                 // non-null on the Audio dialog (VOD) → show the A/V-sync nudge
     onAdjustAudioDelay: ((Int) -> Unit)? = null,
+    // Non-null on the Subtitles dialog for a movie/episode → an "ADD SUBTITLES" row that opens the
+    // OpenSubtitles search (subtitle plan §4). Absent for Live TV and when no item context exists.
+    onSearchSubtitles: (() -> Unit)? = null,
+    // Non-null on the Subtitles dialog for a movie/episode → "Select local subtitle file" (plan §7).
+    onSelectLocalSubtitle: (() -> Unit)? = null,
+    // Non-null on the Subtitles dialog when timing adjustment applies to the active track (plan §8) →
+    // an "ADJUST" section with a "Subtitle timing" row.
+    onSubtitleTiming: (() -> Unit)? = null,
 ) {
     val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
@@ -768,8 +792,20 @@ private fun TrackDialog(
     // mid-transition (seen on HDR/HDR10/DTS streams, whose surface re-layout delays window focus) or
     // before the engine has reported the tracks at all — leaving the dialog with NO focused row and
     // the D-pad locked out. Retry over a few frames, and re-run whenever the track list (re)arrives.
-    LaunchedEffect(tracks.size, focusOff) { requestFocusRetrying(focus) }
-    DialogScaffold(title = title, onDismiss = onDismiss) {
+    // The selected row can sit beyond the LazyColumn viewport (e.g. subtitle 11 of 20): it never
+    // composes, its focusRequester never attaches, and focus falls back to the first row ("Off").
+    // Scroll it into view before requesting focus.
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    LaunchedEffect(tracks.size, focusOff) {
+        val target = if (selectedIndex >= 0) selectedIndex + (if (onOff != null) 1 else 0) else 0
+        repeat(10) {
+            androidx.compose.runtime.withFrameNanos { }
+            if (selectedIndex >= 0) runCatching { listState.scrollToItem(target) }
+            if (runCatching { focus.requestFocus() }.isSuccess) return@LaunchedEffect
+            delay(50)
+        }
+    }
+    DialogScaffold(title = title, onDismiss = onDismiss, state = listState) {
         if (tracks.isEmpty() && onOff == null) {
             item { Text("No tracks available.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
         }
@@ -791,6 +827,35 @@ private fun TrackDialog(
                 modifier = if (focusThis) Modifier.focusRequester(focus) else Modifier,
                 onClick = { onSelect(track) },
             )
+        }
+        // ADD SUBTITLES (subtitles dialog, movie/episode only) — OpenSubtitles search + local file (§4/§7).
+        if (onSearchSubtitles != null || onSelectLocalSubtitle != null) {
+            item {
+                Text(
+                    "ADD SUBTITLES",
+                    style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 16.dp, top = 10.dp, bottom = 2.dp),
+                )
+            }
+            if (onSearchSubtitles != null) {
+                item { OptionRow(label = "Search OpenSubtitles", selected = false, onClick = onSearchSubtitles) }
+            }
+            if (onSelectLocalSubtitle != null) {
+                item { OptionRow(label = "Select local subtitle file", selected = false, onClick = onSelectLocalSubtitle) }
+            }
+        }
+        // ADJUST (subtitles dialog): timing panel for the active subtitle (plan §8).
+        if (onSubtitleTiming != null) {
+            item {
+                Text(
+                    "ADJUST",
+                    style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 16.dp, top = 10.dp, bottom = 2.dp),
+                )
+            }
+            item { OptionRow(label = "Subtitle timing", selected = false, onClick = onSubtitleTiming) }
         }
         // A/V-sync nudge (audio dialog, VOD only) — fixes a badly-muxed file where audio leads/lags the video.
         if (onAdjustAudioDelay != null) {
@@ -898,6 +963,56 @@ private fun VolumeDialog(player: PlaybackEngine, onDismiss: () -> Unit) {
     }
 }
 
+/**
+ * Subtitle-timing panel (subtitle plan §8.2/§8.3): 100 ms and 500 ms steps + Reset, applied live while
+ * the video keeps playing behind (the backdrop is NOT dimmed so speech and text can be compared).
+ * Positive = subtitles shown later; the direction is always spelled out. Back keeps the value.
+ */
+@Composable
+private fun SubtitleTimingDialog(player: PlaybackEngine, onDismiss: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    val delay by player.subDelayMs.collectAsStateWithLifecycle()
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { requestFocusRetrying(focus) }
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        tv.own.owntv.ui.theme.PopupFontTheme {
+            Box(Modifier.fillMaxSize().padding(bottom = 56.dp), contentAlignment = Alignment.BottomCenter) {
+                Column(Modifier.dialogPanel(width = 560.dp, padding = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Subtitle timing", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Spacer(Modifier.height(10.dp))
+                    Text(formatSubDelay(delay), style = MaterialTheme.typography.headlineLarge, color = TEAL)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        when {
+                            delay > 0 -> "Subtitles shown later"
+                            delay < 0 -> "Subtitles shown earlier"
+                            else -> "No offset"
+                        },
+                        style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(18.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OwnTVButton("−0.5 s", onClick = { player.adjustSubtitleDelay(-500) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton("−0.1 s", onClick = { player.adjustSubtitleDelay(-100) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton("Reset", onClick = { player.resetSubtitleDelay() }, modifier = Modifier.focusRequester(focus))
+                        OwnTVButton("+0.1 s", onClick = { player.adjustSubtitleDelay(100) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton("+0.5 s", onClick = { player.adjustSubtitleDelay(500) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatSubDelay(ms: Int): String = when {
+    ms == 0 -> "0.0 s"
+    ms > 0 -> "+%.1f s".format(ms / 1000.0)
+    else -> "−%.1f s".format(-ms / 1000.0)
+}
+
 @Composable
 private fun StepButton(label: String, enabled: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     FocusableSurface(onClick = onClick, enabled = enabled, modifier = modifier.size(64.dp), shape = RoundedCornerShape(18.dp), contentAlignment = Alignment.Center) { _ ->
@@ -906,7 +1021,12 @@ private fun StepButton(label: String, enabled: Boolean, modifier: Modifier = Mod
 }
 
 @Composable
-private fun DialogScaffold(title: String, onDismiss: () -> Unit, content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit) {
+private fun DialogScaffold(
+    title: String,
+    onDismiss: () -> Unit,
+    state: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState(),
+    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
+) {
     val colors = OwnTVTheme.colors
     // A REAL dialog window, not an in-place overlay: it owns the D-pad focus scope, so nothing in the
     // HUD behind it (play button, catch-all focusable, stream-info chips) can compete for or steal
@@ -923,7 +1043,7 @@ private fun DialogScaffold(title: String, onDismiss: () -> Unit, content: androi
                     Spacer(Modifier.height(8.dp))
                     // Cap to the screen (minus dialog chrome) so all rows stay reachable on small screens.
                     val listMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 160.dp).coerceIn(140.dp, 240.dp)
-                    LazyColumn(modifier = Modifier.heightIn(max = listMax), verticalArrangement = Arrangement.spacedBy(4.dp), content = content)
+                    LazyColumn(state = state, modifier = Modifier.heightIn(max = listMax), verticalArrangement = Arrangement.spacedBy(4.dp), content = content)
                 }
             }
         }

@@ -13,6 +13,8 @@
 
 ### ✨ New features
 
+- **💬 External subtitles — OpenSubtitles search & local subtitle files**
+- **👥 Profile-based backups — pick profiles to export (PIN-protected), restore now merges without wiping**
 - **📱 Add a playlist from your phone (Remote setup)** (core idea from @zarga03, PR #66)
 - **⏱️ EPG guide sync can Run in background during setup**
 - **🔍 Default UI zoom is now 90% for a better out-of-the-box fit**

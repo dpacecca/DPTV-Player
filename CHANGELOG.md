@@ -2,6 +2,63 @@
 
 ## v4.1.3 — unreleased
 
+### 💬 External subtitles — OpenSubtitles search & local subtitle files
+
+- **Search OpenSubtitles from the player.** For any movie or series episode, open **Subtitles →
+  ADD SUBTITLES → Search OpenSubtitles**. The search is pre-filled from the item's identity (TMDB id
+  when available, else title/year and season/episode), shows language, release name, Trusted/SDH/AI
+  tags and download counts, and supports **Edit search** and **All languages**. Picking a result
+  downloads the subtitle, attaches it live without interrupting playback, and remembers it for that
+  profile and title. Never automatic: OwnTV only searches or downloads when you ask.
+- **OpenSubtitles account, per profile.** Sign in from **Settings → Video Player → Subtitles →
+  OpenSubtitles account** (free account at opensubtitles.com), with an optional **Stay signed in**.
+  Each OwnTV profile connects its own account; the allowance display shows the provider's own
+  remaining-downloads and reset values. Credentials sit in Android-Keystore-sealed storage, are wiped
+  on sign-out/profile deletion, and never enter backups or logs. If you pick Search OpenSubtitles
+  while signed out, a friendly dialog lets you **add the account right there** (or jump to a local
+  file instead).
+- **Local subtitle files — no account, no internet.** **ADD SUBTITLES → Select local subtitle file**
+  opens OwnTV's TV-safe file browser for `.srt` / `.ass` / `.ssa` / `.vtt` / `.webvtt` files (USB or
+  internal storage). Non-UTF-8 files (Windows-1256 Arabic, Windows-1252, ISO-8859…) are detected and
+  converted automatically so they render correctly, and OwnTV keeps a managed copy so the subtitle
+  keeps working after the USB stick is gone.
+- **Subtitle timing.** **Subtitles → ADJUST → Subtitle timing** nudges the active subtitle in
+  ±0.1 s / ±0.5 s steps while the video keeps playing, with plain-language direction (earlier/later).
+  The offset is remembered per profile, per title, **per exact subtitle release** — a WEB-DL sub and
+  a Blu-ray sub keep separate offsets, and switching subs never inherits another's offset.
+- **Smart caching, quota-friendly.** Downloads are cached on the device and deduped: re-picking a
+  subtitle any profile already downloaded re-uses the file and **spends no download quota**. On
+  replay, a title's previously downloaded subtitles are re-listed in the Subtitles menu ready to pick.
+  Everything works across both playback engines, including the in-player MPV/EXO toggle, and for
+  **OwnTV Downloads** — offline, with the OpenSubtitles moviehash silently sharpening online matches
+  for downloaded files.
+- **Manage & delete.** **Settings → OpenSubtitles account → Delete subtitles** lists every downloaded
+  subtitle by Movies/Series with per-item and bulk delete; long-press a movie or episode for
+  **Delete OpenSub subtitles**. Deletion is per profile — a subtitle another profile also downloaded
+  stays available for them.
+- *Privacy:* the OpenSubtitles API key lives only in an OwnTV-run Cloudflare Worker (like the TMDB
+  proxy) — never in the app; only subtitle-search data is ever sent (no stream URLs or IPTV
+  credentials). This product uses the OpenSubtitles API but is not endorsed or certified by
+  OpenSubtitles.
+
+### 👥 Profile-based backups (merge restore, PIN-protected)
+
+- **Backup export now starts with a profile picker.** Every backup is per-profile: choose which
+  profiles ride in the file (none pre-ticked — you decide), then pick the data sections as before
+  (the old "Profiles & sources" section is now just "Sources"). Only the selected profiles' data —
+  favorites, history, resume positions, customizations, startup modes, Customize PINs — and only the
+  sources they actually use are written.
+- **Locked profiles need their PIN.** Ticking a PIN-locked profile that isn't the one you're signed
+  into prompts for that profile's PIN; a wrong PIN shows "PIN incorrect" and the profile stays out of
+  the backup. Your current profile never re-asks (you already passed its gate). Profile PINs
+  themselves are stored in the file only as salted hashes, never as the actual PIN.
+- **Restore now MERGES — it never deletes existing profiles or sources.** Profiles are matched by
+  name: a profile already on the device is updated from the backup, and profiles only in the backup
+  are added — your other profiles are left completely untouched. Sources match by address, so a
+  shared playlist isn't duplicated. (Previously a restore replaced everything.)
+- **Profile names are now unique.** Creating or renaming a profile to a name that already exists is
+  blocked with "This name is already taken" — names are how restore recognises the same profile.
+
 ### 📱 Add a playlist from your phone (Remote setup)
 
 - **"Add source" now starts with a Remote / Manual choice.** Pick **Manual** to type Xtream / M3U /

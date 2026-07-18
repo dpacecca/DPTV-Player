@@ -84,6 +84,7 @@ class SeriesViewModel(
     private val metadata: tv.own.owntv.core.metadata.MetadataRepository,
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
+    private val subtitleController: tv.own.owntv.core.subtitles.SubtitleController,
 ) : ViewModel() {
 
     data class SeriesMoveState(val items: List<SeriesEntity>, val activeIndex: Int, val contextKey: String)
@@ -255,7 +256,28 @@ class SeriesViewModel(
         viewModelScope.launch {
             player.queueEnded.collect { continueToNextSeason() }
         }
+        // In-season advance (auto-next / HUD prev-next) happens inside the player — re-point the
+        // subtitle context at the NEW episode (subtitle plan Phase 5), else a subtitle search or §9
+        // restore mid-episode-2 would still target episode 1. Index into the queue this VM submitted.
+        viewModelScope.launch {
+            player.queueItemChanged.collect { index ->
+                val q = playingQueue ?: return@collect
+                val ep = q.episodes.getOrNull(index) ?: return@collect
+                subtitleController.setEpisode(q.profileId, q.show, ep, q.parentTmdbId)
+            }
+        }
     }
+
+    /** The episode queue currently loaded into the player, for mapping its index signals back to
+     *  episodes (subtitle context on auto-advance). Replaced on every [playEpisodeQueue]. */
+    private data class PlayingQueue(
+        val show: SeriesEntity,
+        val episodes: List<EpisodeEntity>,
+        val profileId: Long,
+        val parentTmdbId: Long?,
+    )
+
+    private var playingQueue: PlayingQueue? = null
 
     /** A season's last episode finished with auto-play on — start the next season's first episode, if any.
      *  Matches the just-finished episode by its stream URL (robust to in-season auto-advance). */
@@ -647,6 +669,14 @@ class SeriesViewModel(
                 startPositionMs = startPositionMs,
                 userAgent = sourceUa,
             )
+            // Enable the player's OpenSubtitles search for this episode (subtitle plan §4). The parent
+            // series' TMDB id gives the strongest episode match (review R7) when metadata is available.
+            if (pid != null) {
+                val parentTmdbId = runCatching { metadata.resolveSeries(show)?.tmdbId?.toLong() }.getOrNull()
+                subtitleController.setEpisode(pid, show, episode, parentTmdbId)
+                // Remember the queue so player-driven advances re-point the context (Phase 5, init).
+                playingQueue = PlayingQueue(show, queue, pid, parentTmdbId)
+            }
             if (pid != null) {
                 runCatching {
                     historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.EPISODE, itemId = episode.id))
@@ -660,6 +690,17 @@ class SeriesViewModel(
                 }
             }
         }
+    }
+
+    /** Downloaded OpenSubtitles subtitles for an episode (long-press "Delete subtitles" popup, §11).
+     *  Uses the currently open series as the parent show for the content key. */
+    suspend fun downloadedSubtitles(episode: EpisodeEntity): List<tv.own.owntv.core.database.dao.LinkedSubtitle> {
+        val show = _openedSeries.value ?: return emptyList()
+        return subtitleController.downloadsForEpisode(show, episode)
+    }
+
+    fun deleteSubtitle(cacheId: Long) {
+        viewModelScope.launch { subtitleController.deleteCached(cacheId) }
     }
 
     private suspend fun currentProfileId(): Long? {

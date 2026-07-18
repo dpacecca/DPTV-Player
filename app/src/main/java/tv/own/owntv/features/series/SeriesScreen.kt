@@ -706,6 +706,8 @@ private fun EpisodeContextMenu(
     onPlayExternal: () -> Unit,
     onToggleWatched: () -> Unit,
     onRefetch: () -> Unit,
+    // Non-null only when this episode has downloaded OpenSubtitles subtitles (subtitle plan §11).
+    onDeleteSubtitles: (() -> Unit)? = null,
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
@@ -741,6 +743,10 @@ private fun EpisodeContextMenu(
             // Refetch TMDB details (§11.2 U5a) — clear this episode's cache AND its show's match, then re-search.
             if (canRefetchTmdb) {
                 OwnTVButton("Refetch TMDB details", onClick = onRefetch, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            }
+            // Delete subtitles — only when this episode has downloaded OpenSubtitles subs (§11).
+            onDeleteSubtitles?.let {
+                OwnTVButton("Delete OpenSub subtitles", onClick = it, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.SUBTITLE, modifier = Modifier.fillMaxWidth())
             }
             Spacer(Modifier.height(4.dp))
             OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
@@ -802,6 +808,9 @@ private fun EpisodeView(
     var initialFocused by remember { mutableStateOf(false) }
     var contextEpisode by remember { mutableStateOf<EpisodeEntity?>(null) }
     var detailsEpisode by remember { mutableStateOf<EpisodeEntity?>(null) }
+    // Downloaded subtitles for the episode whose context menu is open (subtitle plan §11).
+    var contextEpisodeSubs by remember { mutableStateOf<List<tv.own.owntv.core.database.dao.LinkedSubtitle>>(emptyList()) }
+    var showEpisodeDeleteSubs by remember { mutableStateOf(false) }
     // Long-press target's id + its row's FocusRequester: refocus the episode row when the context menu
     // (or a window it opened) closes — otherwise focus dies with the menu and falls to the sidebar.
     var contextEpisodeId by remember { mutableStateOf<Long?>(null) }
@@ -1002,6 +1011,11 @@ private fun EpisodeView(
         }
     }
 
+    // Load the opened episode's downloaded subtitles so the menu can show "Delete subtitles" (§11).
+    LaunchedEffect(contextEpisode?.id) {
+        contextEpisodeSubs = contextEpisode?.let { runCatching { vm.downloadedSubtitles(it) }.getOrDefault(emptyList()) } ?: emptyList()
+    }
+
     // Long-press an episode → context menu (Download idempotent + toast; TMDB Details when matched).
     contextEpisode?.let { ep ->
         val cacheForEp = selectedEpisodeMeta?.takeIf { it.episodeId == ep.id }?.cache
@@ -1028,8 +1042,30 @@ private fun EpisodeView(
                 toast.show("Refetching TMDB details…")
                 vm.refetchEpisodeMeta(series, ep)
             },
+            onDeleteSubtitles = if (contextEpisodeSubs.isNotEmpty()) ({ showEpisodeDeleteSubs = true }) else null,
             onDismiss = { contextEpisode = null },
         )
+    }
+
+    // Per-episode "Delete subtitles" popup (§11) — individual deletion; closes when none remain.
+    if (showEpisodeDeleteSubs) {
+        val ep = contextEpisode
+        if (ep == null || contextEpisodeSubs.isEmpty()) {
+            showEpisodeDeleteSubs = false
+        } else {
+            tv.own.owntv.features.subtitles.SubtitleDeletePopup(
+                contentTitle = "S${ep.seasonNumber} · E${ep.episodeNumber}  ${ep.name}",
+                items = contextEpisodeSubs,
+                onDelete = { sub ->
+                    vm.deleteSubtitle(sub.cacheId)
+                    contextEpisodeSubs = contextEpisodeSubs.filterNot { it.cacheId == sub.cacheId }
+                    // Last one deleted → close the popup AND the context menu so focus returns to the
+                    // episode row (the menu's Delete action is gone anyway).
+                    if (contextEpisodeSubs.isEmpty()) { showEpisodeDeleteSubs = false; contextEpisode = null }
+                },
+                onDismiss = { showEpisodeDeleteSubs = false },
+            )
+        }
     }
 
     // Fullscreen TMDB details window for the episode (§11.1) — read-only, Back exits.
