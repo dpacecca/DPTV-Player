@@ -24,13 +24,15 @@ import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
 
-/** One category row in the Customize screen (hidden rows stay visible here, marked, for unhiding). */
+/** One category row in the Customize screen (hidden rows stay visible here, marked, for unhiding).
+ *  [providerName] is null when only one source is in scope. */
 data class CustomizeCatRow(
     val key: String,
     val originalName: String,
     val displayName: String,
     val hidden: Boolean,
     val renamed: Boolean,
+    val providerName: String? = null,
 )
 
 /**
@@ -95,7 +97,9 @@ class CustomizeViewModel(
             else combine(
                 categoryDao.observe(c.sourceIds, type),
                 customize.observe(c.profileId, type),
-            ) { cats, cust ->
+                sourceDao.observeForProfile(c.profileId),
+            ) { cats, cust, sources ->
+                val providerNames = sources.associate { it.id to it.name }.takeIf { c.sourceIds.size > 1 }
                 val orderIndex = cust.categoryOrder.withIndex().associate { (i, k) -> k to i }
                 val keyed = cats.map { it to CustomizeKeys.category(it) }
                 val (pinned, rest) = keyed.partition { (_, k) -> k in orderIndex }
@@ -106,6 +110,7 @@ class CustomizeViewModel(
                         displayName = cust.categoryNames[key] ?: cat.name,
                         hidden = key in cust.hiddenCategories,
                         renamed = key in cust.categoryNames,
+                        providerName = providerNames?.get(cat.sourceId),
                     )
                 }
             }

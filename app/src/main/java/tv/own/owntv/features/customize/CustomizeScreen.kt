@@ -426,13 +426,17 @@ private fun CategoryRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (row.hidden || row.renamed) {
+            if (row.hidden || row.renamed || row.providerName != null) {
                 Text(
                     buildString {
                         if (row.hidden) append("Hidden")
                         if (row.renamed) {
-                            if (row.hidden) append("  ·  ")
+                            if (isNotEmpty()) append("  ·  ")
                             append("was “${row.originalName}”")
+                        }
+                        row.providerName?.let {
+                            if (isNotEmpty()) append("  ·  ")
+                            append(it)
                         }
                     },
                     style = MaterialTheme.typography.labelSmall,
