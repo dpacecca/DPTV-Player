@@ -161,6 +161,24 @@
   popup 20%, and the **Customize screen's PIN dialogs** got a compact variant — all in the Lora
   serif. The profile "Who's watching?" PIN dialog is unchanged.
 
+### 🔀 CH+- key paging for browse panels
+
+- **Page the category & item lists with the remote's CH+ / CH− keys.** In Live TV, Movies and Series,
+  the CH+ / CH− keys now page whichever panel currently has focus — the category rail or the item
+  list/grid. Short press jumps a configurable number of items (clamped at the ends, so a short list
+  reaches the end in one press for free); long-press CH+ jumps straight to the **first** item and
+  long-press CH− to the **last**. A lifesaver for big libraries (e.g. 50k live channels, 500+
+  categories) where scrolling top-to-bottom was impractical.
+- **Per-direction skip counts, typed or stepped.** New **Settings → Content → CH+- Key Paging**: a
+  master on/off, plus a separate skip count for CH+ and CH− that you can type directly or nudge with
+  − / +. The dialog warns (advisory, never blocking) when a count exceeds 50, since large skips
+  overshoot short lists and may feel jumpy on low-end TVs; a hard cap of 1000 guards against typos.
+- **Apply to the focused panel only.** The keys never fire when focus is elsewhere (e.g. the top bar),
+  and a master toggle lets users whose remotes map CH keys to something else opt out entirely. The
+  category rail moves focus only — selection still happens on OK, so a stray CH press never reloads
+  a category's channels. All jumps use instant `scrollToItem` (no animation) to avoid jank on slow
+  TVs over big distances. Defaults: enabled, skip 10 each direction.
+
 ### 🐛 Fixes
 
 - **"Grant full storage access" no longer dead-ends on OEM TVs.** On TCL Android 12 the old grant

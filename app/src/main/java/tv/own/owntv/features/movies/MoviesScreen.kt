@@ -72,6 +72,7 @@ import tv.own.owntv.ui.components.PosterCard
 import tv.own.owntv.ui.components.ResumeDialog
 import tv.own.owntv.ui.components.SetTmdbNameDialog
 import tv.own.owntv.ui.components.TrailerPlayerScreen
+import tv.own.owntv.ui.components.chNavPaging
 import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.gridFocusTarget
@@ -157,6 +158,16 @@ fun MoviesScreen(
     val listState = rememberLazyListState()
     val selFocus = remember { FocusRequester() }
     val firstItemFocus = remember { FocusRequester() }
+
+    // CH+- key paging: shared settings + hoisted rail state. gridPaneFocused/railPaneFocused let
+    // chNavPaging consume the keys only for whichever pane is focused.
+    val settingsVm: tv.own.owntv.features.settings.SettingsViewModel = koinViewModel()
+    val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
+    val chNavUpSkip by settingsVm.chNavUpSkip.collectAsStateWithLifecycle()
+    val chNavDownSkip by settingsVm.chNavDownSkip.collectAsStateWithLifecycle()
+    val catListState = rememberLazyListState()
+    var gridPaneFocused by remember { mutableStateOf(false) }
+    var railPaneFocused by remember { mutableStateOf(false) }
     // Returning from the player: scroll to and focus the movie you just played (waits for the grid to load).
     LaunchedEffect(restoreFocus, movies.itemCount) {
         if (!restoreFocus || movies.itemCount == 0) return@LaunchedEffect
@@ -223,6 +234,18 @@ fun MoviesScreen(
             categories = railItems.map { RailCategory(it.abbr, it.title, it.icon) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
+            listState = catListState,
+            modifier = Modifier
+                .onFocusChanged { railPaneFocused = it.hasFocus }
+                .chNavPaging(
+                    enabled = chNavEnabled,
+                    upSkip = chNavUpSkip,
+                    downSkip = chNavDownSkip,
+                    isFocused = { railPaneFocused },
+                    lastIndex = { railItems.size - 1 },
+                    currentTargetIndex = { selectedIndex },
+                    onJumpToIndex = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
+                ),
         )
 
         Column(
@@ -230,6 +253,48 @@ fun MoviesScreen(
                 .weight(1.8f)
                 .fillMaxSize()
                 .roundedPanel(fillColor = ContentPanelFill)
+                .onFocusChanged { gridPaneFocused = it.hasFocus }
+                // CH+- key paging for this movies list/grid. currentTargetIndex falls back to the
+                // visible top when the selected movie isn't in the loaded window (paged data).
+                .chNavPaging(
+                    enabled = chNavEnabled,
+                    upSkip = chNavUpSkip,
+                    downSkip = chNavDownSkip,
+                    isFocused = { gridPaneFocused },
+                    lastIndex = { movies.itemCount - 1 },
+                    currentTargetIndex = {
+                        val sel = selectedMovie
+                        if (sel != null) {
+                            val idx = movies.itemSnapshotList.items.indexOfFirst { it.id == sel.id }
+                            if (idx >= 0) idx
+                            else if (viewMode == SettingsRepository.VodViewMode.GRID) gridState.firstVisibleItemIndex
+                            else listState.firstVisibleItemIndex
+                        } else {
+                            if (viewMode == SettingsRepository.VodViewMode.GRID) gridState.firstVisibleItemIndex
+                            else listState.firstVisibleItemIndex
+                        }
+                    },
+                    onJumpToIndex = { idx ->
+                        // Scroll the target into view (grid or list), then set it as the selected
+                        // movie so selFocus binds to it (gridFocusTarget keys on selectedMovie.id),
+                        // and request focus after one frame.
+                        scope.launch {
+                            val item = movies.itemSnapshotList.items.getOrNull(idx)
+                            if (viewMode == SettingsRepository.VodViewMode.GRID) {
+                                runCatching { gridState.scrollToItem(idx) }
+                            } else {
+                                runCatching { listState.scrollToItem(idx) }
+                            }
+                            withFrameNanos { }
+                            if (item != null) {
+                                vm.onMovieFocused(item)
+                                runCatching { selFocus.requestFocus() }
+                            } else {
+                                runCatching { firstItemFocus.requestFocus() }
+                            }
+                        }
+                    },
+                )
                 // Entering this pane must land on a poster, never the search bar: prefer the
                 // last-focused movie, else the first one. onEnter fires only for directional entry
                 // from outside (internal moves don't re-trigger it).

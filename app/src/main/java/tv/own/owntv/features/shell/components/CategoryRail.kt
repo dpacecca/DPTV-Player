@@ -80,6 +80,9 @@ fun CategoryRail(
     onSelect: (Int) -> Unit,
     onFocused: () -> Unit = {},
     modifier: Modifier = Modifier,
+    // Caller-supplied list state. Defaulted so existing callers are unchanged, but Live/Movies/Series
+    // pass their own so CH+- key paging can drive the rail's scroll position from the screen.
+    listState: androidx.compose.foundation.lazy.LazyListState = rememberLazyListState(),
 ) {
     val colors = OwnTVTheme.colors
     var hasFocus by remember { mutableStateOf(false) }
@@ -96,15 +99,17 @@ fun CategoryRail(
     // reflows the layout on the D-pad. Always "expanded" = full category names.
     val expanded = true
 
-    val listState = rememberLazyListState()
     val selectedFocus = remember { FocusRequester() }
     val searchFocus = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
-    // Keep the selected category in view when the selection changes while the rail isn't focused
-    // (initial load, restored state). While the user D-pads inside, focus handles scrolling.
+    // Keep the selected category in view when the selection changes — both for the initial load /
+    // restored state (rail not yet focused) AND when CH+- paging selects a far-away category while the
+    // rail IS focused. While the user D-pads inside, focus handles scrolling for adjacent moves; this
+    // covers the case where a CH key changes selectedIndex by a large jump.
     LaunchedEffect(selectedIndex, categories.size) {
-        if (!hasFocus && selectedIndex in categories.indices) {
+        if (selectedIndex in categories.indices) {
             runCatching { listState.scrollToItem(selectedIndex) }
+            if (hasFocus) runCatching { selectedFocus.requestFocus() }
         }
     }
 

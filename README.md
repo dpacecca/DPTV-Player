@@ -84,6 +84,7 @@ Scan to join from your phone:
 - **Continue chip** — shared top-bar chip resumes your most-recent movie / episode / channel in one press, on every screen
 - **Multiple playlists** — merge them all, or narrow the whole app to one via the **top-bar playlist switcher** (or a per-playlist **Default** toggle in Settings); applies to Live/Movies/Series/EPG/Search/Home incl. Favorites & History, and persists across restarts
 - **Sort & view** — playlist order or A–Z; Movies & Series Grid/List toggle
+- **CH+- key paging** — page the category column or the item list/grid with the remote's **CH+ / CH−** keys (skip N, long-press for first/last); per-direction skip counts in Settings, applies to whichever panel has focus
 - **Per-profile startup** — Home, last channel, or Live TV on Favorites
 - **Built for scale** — ~50k channels / ~168k movies via Paging 3
 - **Fast syncing** — priority import (pick e.g. Live TV first, the rest finishes in the background — survives sleep/reboot); **Run in background** button during the first import with an unobtrusive status pill; incremental re-syncs only write what changed; auto-retrying downloads

@@ -76,6 +76,7 @@ import tv.own.owntv.ui.components.ResumeDialog
 import tv.own.owntv.ui.components.formatTimestamp
 import tv.own.owntv.ui.components.SetTmdbNameDialog
 import tv.own.owntv.ui.components.TrailerPlayerScreen
+import tv.own.owntv.ui.components.chNavPaging
 import tv.own.owntv.ui.components.longPressMenuGuard
 import androidx.compose.foundation.layout.width
 import tv.own.owntv.ui.components.SearchBar
@@ -237,6 +238,16 @@ private fun SeriesGrid(
     val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
+    // CH+- key paging (grid + category rail). gridPaneFocused/railPaneFocused gate which pane acts.
+    val scope = rememberCoroutineScope()
+    val settingsVm: tv.own.owntv.features.settings.SettingsViewModel = koinViewModel()
+    val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
+    val chNavUpSkip by settingsVm.chNavUpSkip.collectAsStateWithLifecycle()
+    val chNavDownSkip by settingsVm.chNavDownSkip.collectAsStateWithLifecycle()
+    val catListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    var gridPaneFocused by remember { mutableStateOf(false) }
+    var railPaneFocused by remember { mutableStateOf(false) }
+
     // Back from a show's episodes: scroll the grid to the poster you opened, then focus it. It may be
     // far down and not composed, so without scrolling the focus request fails and focus falls to the
     // sidebar (the same scroll-then-focus fix Movies uses).
@@ -305,6 +316,18 @@ private fun SeriesGrid(
             categories = railItems.map { RailCategory(it.abbr, it.title, it.icon) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
+            listState = catListState,
+            modifier = Modifier
+                .onFocusChanged { railPaneFocused = it.hasFocus }
+                .chNavPaging(
+                    enabled = chNavEnabled,
+                    upSkip = chNavUpSkip,
+                    downSkip = chNavDownSkip,
+                    isFocused = { railPaneFocused },
+                    lastIndex = { railItems.size - 1 },
+                    currentTargetIndex = { selectedIndex },
+                    onJumpToIndex = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
+                ),
         )
 
         Column(
@@ -312,6 +335,43 @@ private fun SeriesGrid(
                 .weight(1.8f)
                 .fillMaxSize()
                 .roundedPanel(fillColor = ContentPanelFill)
+                .onFocusChanged { gridPaneFocused = it.hasFocus }
+                .chNavPaging(
+                    enabled = chNavEnabled,
+                    upSkip = chNavUpSkip,
+                    downSkip = chNavDownSkip,
+                    isFocused = { gridPaneFocused },
+                    lastIndex = { series.itemCount - 1 },
+                    currentTargetIndex = {
+                        val sel = selectedSeries
+                        if (sel != null) {
+                            val idx = series.itemSnapshotList.items.indexOfFirst { it.id == sel.id }
+                            if (idx >= 0) idx
+                            else if (viewMode == SettingsRepository.VodViewMode.GRID) gridState.firstVisibleItemIndex
+                            else listState.firstVisibleItemIndex
+                        } else {
+                            if (viewMode == SettingsRepository.VodViewMode.GRID) gridState.firstVisibleItemIndex
+                            else listState.firstVisibleItemIndex
+                        }
+                    },
+                    onJumpToIndex = { idx ->
+                        scope.launch {
+                            val item = series.itemSnapshotList.items.getOrNull(idx)
+                            if (viewMode == SettingsRepository.VodViewMode.GRID) {
+                                runCatching { gridState.scrollToItem(idx) }
+                            } else {
+                                runCatching { listState.scrollToItem(idx) }
+                            }
+                            withFrameNanos { }
+                            if (item != null) {
+                                vm.onSeriesFocused(item)
+                                runCatching { gridSelFocus.requestFocus() }
+                            } else {
+                                runCatching { firstItemFocus.requestFocus() }
+                            }
+                        }
+                    },
+                )
                 // Entering this pane must land on a poster, never the search bar: prefer the
                 // last-focused series, else the first one. onEnter fires only for directional entry
                 // from outside (internal moves don't re-trigger it).
@@ -857,6 +917,12 @@ private fun EpisodeView(
     val externalPlayerOn by vm.externalPlayerOn.collectAsStateWithLifecycle()
     val goFullscreen: () -> Unit = { if (!externalPlayerOn) onFullscreen() }
     val scope = rememberCoroutineScope()
+    // CH+- key paging for the episode list.
+    val settingsVm: tv.own.owntv.features.settings.SettingsViewModel = koinViewModel()
+    val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
+    val chNavUpSkip by settingsVm.chNavUpSkip.collectAsStateWithLifecycle()
+    val chNavDownSkip by settingsVm.chNavDownSkip.collectAsStateWithLifecycle()
+    var epPaneFocused by remember { mutableStateOf(false) }
     var resumePrompt by remember { mutableStateOf<Pair<EpisodeEntity, Long>?>(null) }
     val startEpisode: (EpisodeEntity) -> Unit = { ep ->
         scope.launch {
@@ -929,7 +995,34 @@ private fun EpisodeView(
             else -> {
                 // Option B (§11.1): episode list on the left, focused-episode detail pane on the right.
                 Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Column(modifier = Modifier.weight(1.4f).fillMaxHeight()) {
+                    Column(modifier = Modifier
+                        .weight(1.4f)
+                        .fillMaxHeight()
+                        .onFocusChanged { epPaneFocused = it.hasFocus }
+                        .chNavPaging(
+                            enabled = chNavEnabled,
+                            upSkip = chNavUpSkip,
+                            downSkip = chNavDownSkip,
+                            isFocused = { epPaneFocused },
+                            lastIndex = { visibleEpisodes.lastIndex },
+                            currentTargetIndex = {
+                                val sel = selectedEpisode
+                                if (sel != null) visibleEpisodes.indexOfFirst { it.id == sel.id }
+                                else epListState.firstVisibleItemIndex
+                            },
+                            onJumpToIndex = { idx ->
+                                // Set the target as the context anchor so epContextFocus binds to its
+                                // row, then scroll + focus it. Mirrors the context-menu restore pattern.
+                                val target = visibleEpisodes.getOrNull(idx) ?: return@chNavPaging
+                                contextEpisodeId = target.id
+                                vm.onEpisodeFocused(target)
+                                scope.launch {
+                                    runCatching { epListState.scrollToItem(idx) }
+                                    withFrameNanos { }
+                                    runCatching { epContextFocus.requestFocus() }
+                                }
+                            },
+                        )) {
                         if (seasons.size > 1) {
                             LazyRow(
                                 state = seasonRowState,

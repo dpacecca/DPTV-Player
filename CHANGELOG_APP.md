@@ -27,6 +27,7 @@
 - **🔒 Customize PIN stored as a salted hash** (community PR #65 by @aravindtri)
 - **📊 Measured fps, bitrate & dropped-frame stats for ExoPlayer** (community PR #67 by @pt5pnzghm6-sys)
 - **📊 Bitrate in the player top-bar chips for all playback**
+- **🔀 CH+ / CH− keys now page the category & item lists (skip N, long-press for first/last)**
 - **🗂️ One-click full storage access that works on more TVs**
 - **🎨 Compact popup menus in a new serif font**
 

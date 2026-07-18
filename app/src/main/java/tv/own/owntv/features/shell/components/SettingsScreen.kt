@@ -72,7 +72,7 @@ import tv.own.owntv.ui.theme.UiZoom
 
 private enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
-private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, HOME, NETWORK, METADATA, WEATHER, NAV_MENU }
+private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, HOME, NETWORK, METADATA, WEATHER, NAV_MENU, CH_NAV }
 
 /**
  * The MD3 Settings screen (shown when [MainSection.SETTINGS] is active): grouped sections, each row
@@ -156,6 +156,7 @@ fun SettingsScreen(
     val weatherEnabled by settingsVm.weatherEnabled.collectAsStateWithLifecycle()
     val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
     val navMenuMode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
+    val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by remember { mutableStateOf<SettingsTab?>(null) }
@@ -171,6 +172,7 @@ fun SettingsScreen(
         SettingsTab.METADATA to FocusRequester(),
         SettingsTab.WEATHER to FocusRequester(),
         SettingsTab.NAV_MENU to FocusRequester(),
+        SettingsTab.CH_NAV to FocusRequester(),
     ) }
     val open: (SettingsTab) -> Unit = { lastTab = it; tab = it }
     LaunchedEffect(tab) {
@@ -195,6 +197,7 @@ fun SettingsScreen(
         SettingsTab.METADATA -> { tv.own.owntv.features.settings.MetadataSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.WEATHER -> { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.NAV_MENU -> { tv.own.owntv.features.settings.NavMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+        SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.ROOT -> Unit
     }
 
@@ -293,6 +296,14 @@ fun SettingsScreen(
             chipTone = if (navMenuMode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { open(SettingsTab.NAV_MENU) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.NAV_MENU)),
+        )
+        SettingsRow(
+            tone = TileTone.PRIMARY, icon = OwnTVIcon.PLAYLIST,
+            title = "CH+- Key Paging", desc = "Skip up/down in the category & item lists with the CH+ / CH− keys",
+            chip = if (chNavEnabled) "On" else "Off",
+            chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
+            onClick = { open(SettingsTab.CH_NAV) }, showChevron = true,
+            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.CH_NAV)),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HOME,
@@ -484,6 +495,8 @@ fun SettingsScreen(
                 SettingsSearchEntry("Content", "Customize Categories & Items", "hide unhide rename reorder categories", OwnTVIcon.SORT, TileTone.PRIMARY) { open(SettingsTab.CUSTOMIZE) },
                 SettingsSearchEntry("Content", "Sidebar Menu Customization", "side rail icons dynamic static hide show adapt playlist", OwnTVIcon.MENU, TileTone.PRIMARY,
                     chip = navMenuMode.label, chipTone = if (navMenuMode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },
+                SettingsSearchEntry("Content", "CH+- Key Paging", "channel up down skip page list category channel", OwnTVIcon.PLAYLIST, TileTone.PRIMARY,
+                    chip = if (chNavEnabled) "On" else "Off", chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
                 SettingsSearchEntry("Content", "Home screen", "rows hero reorder filter", OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
                 SettingsSearchEntry("Content", "Metadata (TMDB)", "posters plots cast ratings", OwnTVIcon.VIDEO, TileTone.PRIMARY) { open(SettingsTab.METADATA) },
                 SettingsSearchEntry("Content", "Download folder", "storage path directory", OwnTVIcon.DOWNLOADS, TileTone.TERTIARY,

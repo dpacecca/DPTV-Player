@@ -39,6 +39,7 @@ import tv.own.owntv.core.util.friendlySyncError
 import tv.own.owntv.core.util.throttleLatest
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
+import tv.own.owntv.features.settings.data.ChNavLimits
 import tv.own.owntv.features.settings.data.EpgAutoRefresh
 import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.features.settings.data.SettingsRepository
@@ -352,6 +353,14 @@ class SettingsViewModel(
 
     val audioDelayMs: StateFlow<Int> = settings.audioDelayMs.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     fun setAudioDelayMs(ms: Int) { viewModelScope.launch { settings.setAudioDelayMs(ms) } }
+
+    // --- CH+- key paging (browse panels): master toggle + per-direction skip counts ---
+    val chNavEnabled: StateFlow<Boolean> = settings.chNavEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    fun setChNavEnabled(enabled: Boolean) { viewModelScope.launch { settings.setChNavEnabled(enabled) } }
+    val chNavUpSkip: StateFlow<Int> = settings.chNavUpSkip.stateIn(viewModelScope, SharingStarted.Eagerly, ChNavLimits.DEFAULT_SKIP)
+    fun setChNavUpSkip(n: Int) { viewModelScope.launch { settings.setChNavUpSkip(n) } }
+    val chNavDownSkip: StateFlow<Int> = settings.chNavDownSkip.stateIn(viewModelScope, SharingStarted.Eagerly, ChNavLimits.DEFAULT_SKIP)
+    fun setChNavDownSkip(n: Int) { viewModelScope.launch { settings.setChNavDownSkip(n) } }
 
     val preferredAudioLang: StateFlow<String> = settings.preferredAudioLang.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     fun setPreferredAudioLang(lang: String) { viewModelScope.launch { settings.setPreferredAudioLang(lang) } }

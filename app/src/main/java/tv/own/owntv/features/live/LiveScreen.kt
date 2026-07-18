@@ -51,10 +51,13 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.ChannelEntity
+import tv.own.owntv.features.settings.SettingsViewModel
 import tv.own.owntv.features.shell.components.CategoryRail
 import tv.own.owntv.ui.components.MoveOrderOverlay
 import tv.own.owntv.features.shell.components.PreviewPane
 import tv.own.owntv.features.shell.components.RailCategory
+import tv.own.owntv.ui.components.chNavPaging
+import tv.own.owntv.ui.components.jumpLazyListTo
 import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.components.trapVerticalFocusExit
 import tv.own.owntv.ui.components.FocusableSurface
@@ -138,6 +141,18 @@ fun LiveScreen(
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val selFocus = remember { FocusRequester() }
     val firstItemFocus = remember { FocusRequester() }
+
+    // CH+- key paging: shared settings + a hoisted rail state so the same modifier can page both the
+    // category rail and this channel list. Channel-list pane focus is tracked separately from rail
+    // focus so chNavPaging only consumes the keys for whichever pane is active.
+    val settingsVm: SettingsViewModel = koinViewModel()
+    val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
+    val chNavUpSkip by settingsVm.chNavUpSkip.collectAsStateWithLifecycle()
+    val chNavDownSkip by settingsVm.chNavDownSkip.collectAsStateWithLifecycle()
+    val catListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var channelPaneFocused by remember { mutableStateOf(false) }
+    var railPaneFocused by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf<ChannelEntity?>(null) }
     var matchingEpg by remember { mutableStateOf<ChannelEntity?>(null) }
     var catchupChannel by remember { mutableStateOf<ChannelEntity?>(null) }
@@ -232,6 +247,20 @@ fun LiveScreen(
             // When the player is docked (live PiP) or fullscreen, previewEnabled is false and stopPreview
             // would kill that stream (e.g. while navigating left to leave Live), so we skip it.
             onFocused = { if (previewEnabled) vm.stopPreview() },
+            listState = catListState,
+            modifier = Modifier
+                .onFocusChanged { railPaneFocused = it.hasFocus }
+                .chNavPaging(
+                    enabled = chNavEnabled,
+                    upSkip = chNavUpSkip,
+                    downSkip = chNavDownSkip,
+                    isFocused = { railPaneFocused },
+                    lastIndex = { railItems.size - 1 },
+                    currentTargetIndex = { selectedIndex },
+                    // Selecting a category loads only its first paged page (~50 items), not all channels
+                    // at once, so this is fast. The rail's LaunchedEffect scrolls + focuses the pill.
+                    onJumpToIndex = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
+                ),
         )
 
         // Layer 3 — header + channel list (fixed-width column; the preview pane fills the rest)
@@ -240,6 +269,47 @@ fun LiveScreen(
                 .width(Dimens.ChannelListWidth)
                 .fillMaxHeight()
                 .roundedPanel(fillColor = ContentPanelFill)
+                // Track whether this pane holds focus so chNavPaging only consumes CH keys when it does.
+                .onFocusChanged { channelPaneFocused = it.hasFocus }
+                // CH+- key paging for this channel list. Long-press jumps to first/last channel;
+                // short press skips N. currentTargetIndex falls back to the visible top when the
+                // previewed channel isn't in the loaded window (paged data).
+                .chNavPaging(
+                    enabled = chNavEnabled,
+                    upSkip = chNavUpSkip,
+                    downSkip = chNavDownSkip,
+                    isFocused = { channelPaneFocused },
+                    lastIndex = { channels.itemCount - 1 },
+                    currentTargetIndex = {
+                        val pc = previewChannel
+                        if (pc != null) {
+                            val idx = channels.itemSnapshotList.items.indexOfFirst { it.id == pc.id }
+                            if (idx >= 0) idx else listState.firstVisibleItemIndex
+                        } else {
+                            listState.firstVisibleItemIndex
+                        }
+                    },
+                    onJumpToIndex = { idx ->
+                        // Scroll the target into view, then focus it. selFocus is bound to the
+                        // previewed channel by gridFocusTarget, so we make the target the previewed
+                        // one (which also fires the debounced 700ms preview — desired).
+                        val target = channels.itemSnapshotList.items.getOrNull(idx)?.id
+                        scope.launch {
+                            runCatching { listState.scrollToItem(idx) }
+                            withFrameNanos { }
+                            if (target != null) {
+                                // Set the previewed channel so selFocus binds to the new row, then focus.
+                                val item = channels.itemSnapshotList.items.firstOrNull { it.id == target }
+                                if (item != null) {
+                                    vm.onChannelFocused(item)
+                                    runCatching { selFocus.requestFocus() }
+                                }
+                            } else {
+                                runCatching { firstItemFocus.requestFocus() }
+                            }
+                        }
+                    },
+                )
                 // Entering this pane (from the rail or the preview) must land on a channel row, never
                 // the search bar: prefer the last-focused channel, else the first row. onEnter fires
                 // only for directional entry from outside (internal moves don't re-trigger it).

@@ -159,6 +159,13 @@ or **narrow the whole app to just one**.
   a full‑screen reorder overlay opens with the full list. Use **D‑pad Up/Down** to move the item, **OK** to save,
   **Back** to cancel. Your reorder is saved across playlist re‑syncs and included in backups.
 - **Open a channel full‑screen**: press **OK**.
+- 🔀 **Page long lists with CH+ / CH−**: with hundreds of categories or thousands of channels, hold‑scrolling
+  top‑to‑bottom is painful. **CH−** skips N items **down** (toward the last), **CH+** skips N items **up**
+  (toward the first) — in whichever panel has focus (the category column **or** the channel list). **Long‑press
+  CH−** jumps straight to the **last** item, **long‑press CH+** to the **first**. Skips are clamped at the ends,
+  so a short list reaches the end in one press for free. Set the skip counts or turn it off in
+  **Settings → Content → CH+- Key Paging** (default: on, 10 items per press). Same shortcut works in
+  **Movies**, **Series** (grid + episode list).
 
 ### Inside the full‑screen live player
 - 🗓️ **Guide card**: bring up the controls (press OK) and a card on the **right edge** shows the
@@ -229,6 +236,8 @@ or **narrow the whole app to just one**.
 
 - **Grid / List toggle**: switch the poster wall to a compact **List** view (top‑right button) to scan many
   titles at once.
+- 🔀 **Page the grid/list with CH+ / CH‑** — see **Live TV** above. Works on the category column and the
+  poster grid/list (and the episode list inside a series); long‑press jumps to first/last.
 - **Detail pane**: focus a title to see its **poster, rating, plot** and **Play/Resume · Favourite ·
   Download** buttons.
 - **Resume**: partly‑watched titles offer **Resume** (vs. Play). Choose how this behaves in
@@ -428,6 +437,9 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   Auto‑play · Check for update) flip the most‑used options without opening a sub‑menu.
 - 🧭 **Menu layout** — **Profiles** is the first row; **Live preview / Preview audio** are under
   **Playback**; **App startup** is under **App**; the **Home screen** page is under Content.
+- 🔀 **CH+- Key Paging** (Content) — page the category & item lists in Live/Movies/Series with the remote's
+  **CH+ / CH−** keys. Separate skip counts per direction (typed or ±‑stepped), long‑press jumps to
+  first/last, with an advisory warning above 50. Turn it off here if your remote maps CH keys elsewhere.
 - 🚀 **App startup** — where each profile opens: **Home**, **Last channel** (auto‑plays the channel you last
   watched), or **Live · Favorites** (lands you right inside your favourites list).
 - 🌈 **HDR** — use HDR output when the video and TV support it. Turn on for HDR/Dolby Vision content.
