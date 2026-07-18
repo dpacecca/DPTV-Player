@@ -24,6 +24,7 @@ class ProfilesViewModel(
     private val sourceDao: SourceDao,
     private val settings: SettingsRepository,
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
+    private val openSubtitlesAccounts: tv.own.owntv.core.subtitles.OpenSubtitlesAccountManager,
 ) : ViewModel() {
 
     val profiles: StateFlow<List<ProfileEntity>> = profileDao.observeAll()
@@ -91,6 +92,8 @@ class ProfilesViewModel(
             val activeProfileId = settings.activeProfileId.first()
             val remainingProfileId = profileDao.getAllOnce().firstOrNull { it.id != profile.id }?.id
             runCatching { launcherIntegrationRepository.clearProfile(profile.id) }
+            // Deleting a profile permanently erases its stored OpenSubtitles login (subtitle plan §5.5).
+            openSubtitlesAccounts.eraseFor(profile.id)
             profileDao.delete(profile)
             if (activeProfileId == profile.id) {
                 settings.setActiveProfile(remainingProfileId ?: -1L)

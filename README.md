@@ -69,6 +69,7 @@ Scan to join from your phone:
 - **Channel zapping** — D-pad/CH±/media keys, wraps around; **in-player channel list** (Left with controls hidden)
 - **Audio** — surround sound (opt-in, Dolby/DTS → multichannel LPCM, auto-stereo safety net); volume boost to 150%; A/V sync nudge
 - **Subtitles** — text (SRT/ASS) + image (PGS/VOBSUB/DVB on its own layer) + closed captions (CEA-608/708)
+- **External subtitles** — in-player **OpenSubtitles** search & download (per-profile account, quota-aware caching) and **local subtitle files** (srt/ass/ssa/vtt, auto charset conversion), with per-subtitle **timing adjustment** — for movies, episodes & downloads on both engines
 - **Resume & auto-play** — per-title resume prompt, auto-play next episode (across seasons) with a next-episode countdown card, opens on last-watched episode, watched ✓ / progress indicators on movies and episodes
 - **Mini-player / PiP** — dock any stream and keep browsing
 - **Stream info overlay** — live codec · resolution · fps · HDR · bitrate · decoder readout
@@ -116,7 +117,7 @@ Scan to join from your phone:
 - **Background sync status** — a small semi-transparent pill at the bottom reports both catalog syncs (background import, auto refresh) and EPG/Guide downloads
 - **Video Player** — hardware decoding, zoom, subtitle size/language, audio sync, surround sound, HDR, **external player** (VLC / MX Player for movies, series & downloads — global setting or per-item long-press)
 - **Weather** — top-bar weather chip: on/off, custom location (VPN-friendly), **°C / °F**
-- **Backup & Restore** — profiles, sources, customizations, favorites, history, resume, manual Move positions, settings, auto-refresh choices, default source, per-item engine/compatibility pins and custom TMDB names; choose what to include
+- **Backup & Restore** — profiles, sources, customizations, favorites, history, resume, manual Move positions, settings, auto-refresh choices, default source, per-item engine/compatibility pins and custom TMDB names; **per-profile** (pick which profiles to export, PIN-protected for locked ones) and **merge on restore** (matches profiles by name — never wipes your existing ones)
 - **Updates** — in-app from GitHub Releases; auto-check (toggleable) + manual; installs APK on TV
 - **Android TV home** — feeds system Watch Next row; refresh button
 
@@ -179,9 +180,10 @@ More in **[extras/screenshots/](extras/screenshots/)** — playlist management, 
 - **Parsing & sync** — M3U playlists are line-streamed and Xtream `player_api` JSON is read with
   `android.util.JsonReader`, so huge provider payloads are never fully buffered. `SyncManager` does a
   clear-then-insert refresh in ~500-row chunked transactions with Flow progress and cancellation.
-- **Storage** — a 19-entity Room schema: profiles & sources (`ProfileSourceCrossRef` for sharing),
+- **Storage** — a 27-entity Room schema: profiles & sources (`ProfileSourceCrossRef` for sharing),
   content (categories/channels/movies/series/seasons/episodes), per-profile favorites/history/progress/
-  downloads, EPG channels/programmes, and FTS4 search tables. Totals come from indexed `COUNT` queries.
+  downloads, EPG channels/programmes, external-subtitle cache/selection/timing/links, and FTS4 search
+  tables. Totals come from indexed `COUNT` queries.
 - **Lists** — Paging 3 with a bounded `maxSize` keeps memory flat across 50k+ item lists.
 - **EPG** — bulk XMLTV is stream-parsed (gzip-aware) into a rolling now→+48h window and pruned.
 - **Player** — two engines behind a small `PlaybackEngine` interface: **libmpv** (movies/series, and any

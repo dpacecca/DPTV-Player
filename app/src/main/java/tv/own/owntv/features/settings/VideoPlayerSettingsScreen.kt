@@ -95,8 +95,24 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val subLang by vm.preferredSubLang.collectAsStateWithLifecycle()
     val resumeMode by vm.resumeMode.collectAsStateWithLifecycle()
 
+    // OpenSubtitles account lives as an in-place sub-screen of this tab (plan §15). These three
+    // are declared before the early return so they survive while the sub-screen is shown — that's
+    // what lets Back land focus on the row that opened it instead of the top of the list.
+    var showOpenSubAccount by remember { mutableStateOf(false) }
+    var returnedFromOpenSub by remember { mutableStateOf(false) }
+    val openSubRowFocus = remember { FocusRequester() }
+    if (showOpenSubAccount) {
+        OpenSubtitlesAccountScreen(
+            onBack = { showOpenSubAccount = false; returnedFromOpenSub = true },
+            modifier = modifier,
+        )
+        return
+    }
+
     var dialog by remember { mutableStateOf(Dialog.NONE) }
     val firstFocus = remember { FocusRequester() }
+    // Kick focus into the group; the group's onEnter (below) decides the actual target — first row on
+    // a fresh open, or the OpenSubtitles row when we're returning from that sub-screen.
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     BackHandler { onBack() }
 
@@ -123,11 +139,13 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             .fillMaxSize()
             .roundedPanel()
             // onEnter fires for any entry from outside the group — including our own dialog-close
-            // restores (the dialogs live outside it) — so it must prefer the pending return row.
+            // restores (the dialogs live outside it) and the return from the OpenSubtitles sub-screen —
+            // so it must prefer the pending return row over the first row.
             .focusProperties {
                 onEnter = {
-                    val target = dialogReturn ?: firstFocus
+                    val target = dialogReturn ?: if (returnedFromOpenSub) openSubRowFocus else firstFocus
                     dialogReturn = null
+                    returnedFromOpenSub = false
                     runCatching { target.requestFocus() }
                 }
             }
@@ -195,6 +213,14 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             chip = langName(subLang), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SUB_LANG)),
             onClick = { dialog = Dialog.SUB_LANG },
+        )
+        Row2(
+            icon = OwnTVIcon.SUBTITLE, title = "OpenSubtitles account",
+            desc = "Sign in to search and download subtitles for movies and series episodes. " +
+                "Per profile; a free opensubtitles.com account is required.",
+            chevron = true,
+            modifier = Modifier.focusRequester(openSubRowFocus),
+            onClick = { showOpenSubAccount = true },
         )
 
         Divider()

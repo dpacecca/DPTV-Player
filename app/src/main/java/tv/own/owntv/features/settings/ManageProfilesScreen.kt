@@ -101,6 +101,8 @@ fun ManageProfilesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             initial = null,
             onConfirm = { name, avatarId, isKids, pin -> vm.create(name, avatarId, isKids, pin); creating = false },
             onDismiss = { creating = false },
+            // Names must stay unique (backup restore matches profiles by name).
+            takenNames = profiles.map { it.name.trim().lowercase() }.toSet(),
         )
     }
     editing?.let { p ->
@@ -108,6 +110,7 @@ fun ManageProfilesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             initial = p,
             onConfirm = { name, avatarId, isKids, pin -> vm.edit(p, name, avatarId, isKids, pin); editing = null },
             onDismiss = { editing = null },
+            takenNames = profiles.filter { it.id != p.id }.map { it.name.trim().lowercase() }.toSet(),
         )
     }
     confirmDelete?.let { p ->

@@ -38,6 +38,8 @@ class DownloadsViewModel(
     private val downloadManager: DownloadManager,
     val player: OwnTVPlayer,
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
+    private val subtitleController: tv.own.owntv.core.subtitles.SubtitleController,
+    private val metadata: tv.own.owntv.core.metadata.MetadataRepository,
 ) : ViewModel() {
 
     /**
@@ -108,6 +110,34 @@ class DownloadsViewModel(
                 return@launch
             }
             player.play(path, title = download.title, isLive = false)
+            setSubtitleContext(download, path)
+        }
+    }
+
+    /**
+     * Downloaded movies/episodes get the same external-subtitle experience as streams (subtitle plan
+     * §3.3): previously downloaded subs re-list offline (§9), local files attach, and a new search —
+     * when online — carries the optional moviehash enhancer via [localPath]. Best-effort: a download
+     * whose source item was deleted just plays without a subtitle context, as before.
+     */
+    private suspend fun setSubtitleContext(download: DownloadEntity, localPath: String) {
+        val pid = settings.activeProfileId.first()
+        runCatching {
+            when (download.mediaType) {
+                MediaType.MOVIE -> movieDao.getById(download.itemId)?.let { movie ->
+                    val tmdbId = runCatching { metadata.resolveMovie(movie)?.tmdbId?.toLong() }.getOrNull()
+                    subtitleController.setMovie(pid, movie, tmdbId, localFilePath = localPath)
+                } ?: subtitleController.clear()
+                MediaType.EPISODE -> {
+                    val ep = seriesDao.getEpisodeById(download.itemId)
+                    val show = ep?.let { seriesDao.getSeriesById(it.seriesId) }
+                    if (ep != null && show != null) {
+                        val parentTmdbId = runCatching { metadata.resolveSeries(show)?.tmdbId?.toLong() }.getOrNull()
+                        subtitleController.setEpisode(pid, show, ep, parentTmdbId, localFilePath = localPath)
+                    } else subtitleController.clear()
+                }
+                else -> subtitleController.clear()
+            }
         }
     }
 

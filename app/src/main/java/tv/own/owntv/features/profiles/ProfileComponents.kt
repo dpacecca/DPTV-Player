@@ -125,12 +125,16 @@ private fun PinDialogBody(title: String, onSubmit: (String) -> Unit, onDismiss: 
  * Create / edit a profile: name, avatar, kids flag and an optional PIN. [initial] non-null = edit.
  * [onConfirm] receives (name, avatarId, isKids, pin): null = leave the PIN unchanged,
  * "" = remove the PIN lock, otherwise = set this PIN.
+ *
+ * [takenNames] are the OTHER profiles' names (lowercased) — profile names must be unique (they're the
+ * merge key for backup restore), so a collision blocks Create/Save with an inline error.
  */
 @Composable
 internal fun ProfileEditorDialog(
     initial: ProfileEntity?,
     onConfirm: (name: String, avatarId: Int, isKids: Boolean, pin: String?) -> Unit,
     onDismiss: () -> Unit,
+    takenNames: Set<String> = emptySet(),
 ) {
     val colors = OwnTVTheme.colors
     var name by remember { mutableStateOf(initial?.name ?: "") }
@@ -140,11 +144,19 @@ internal fun ProfileEditorDialog(
     var removePin by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    val nameTaken = name.trim().isNotEmpty() && name.trim().lowercase() in takenNames
 
     ProfileScrim(onDismiss) {
         Text(if (initial == null) "New profile" else "Edit profile", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
         Spacer(Modifier.height(16.dp))
         OwnTVTextField(name, { name = it }, label = "Name", placeholder = "e.g. Alex", modifier = Modifier.fillMaxWidth().focusRequester(focus))
+        if (nameTaken) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "This name is already taken — please choose another name.",
+                style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444),
+            )
+        }
         Spacer(Modifier.height(16.dp))
 
         Text("AVATAR", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
@@ -190,7 +202,7 @@ internal fun ProfileEditorDialog(
             OwnTVButton(
                 label = if (initial == null) "Create" else "Save",
                 onClick = { onConfirm(name, avatarId, isKids, if (removePin) "" else pin.takeIf { it.isNotBlank() }) },
-                enabled = name.isNotBlank() && (removePin || pin.isEmpty() || pin.length >= 4),
+                enabled = name.isNotBlank() && !nameTaken && (removePin || pin.isEmpty() || pin.length >= 4),
             )
         }
     }

@@ -5,12 +5,36 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import tv.own.owntv.core.backup.BackupManager
 import java.io.File
 
 /** Phase 12 — drives Backup & Restore (selective export/import to a JSON file). */
-class BackupViewModel(private val backup: BackupManager) : ViewModel() {
+class BackupViewModel(
+    private val backup: BackupManager,
+    private val profileDao: tv.own.owntv.core.database.dao.ProfileDao,
+    private val settings: tv.own.owntv.features.settings.data.SettingsRepository,
+) : ViewModel() {
+
+    /** All profiles + the active one, for the export flow's profile-picker step. */
+    data class ProfileChoices(val profiles: List<tv.own.owntv.core.database.entity.ProfileEntity>, val activeId: Long)
+
+    private val _profileChoices = MutableStateFlow<ProfileChoices?>(null)
+    val profileChoices: StateFlow<ProfileChoices?> = _profileChoices.asStateFlow()
+
+    fun loadProfiles() {
+        viewModelScope.launch {
+            _profileChoices.value = ProfileChoices(
+                profiles = profileDao.getAllOnce(),
+                activeId = settings.activeProfileId.first(),
+            )
+        }
+    }
+
+    /** PIN check for ticking a locked, non-active profile in the export picker. */
+    fun verifyPin(profile: tv.own.owntv.core.database.entity.ProfileEntity, pin: String): Boolean =
+        tv.own.owntv.core.util.Pin.verify(pin, profile.pinHash)
 
     sealed interface State {
         data object Idle : State
@@ -36,11 +60,12 @@ class BackupViewModel(private val backup: BackupManager) : ViewModel() {
     private val _state = MutableStateFlow<State>(State.Idle)
     val state: StateFlow<State> = _state.asStateFlow()
 
-    /** Export with an optional backup passphrase (blank/null = omit secret password fields). */
-    fun export(folder: File, sections: Set<BackupManager.Section>, backupPassword: String?) {
+    /** Export with an optional backup passphrase (blank/null = omit secret password fields).
+     *  [profileIds] are the PIN-authorized profiles from the picker step. */
+    fun export(folder: File, sections: Set<BackupManager.Section>, backupPassword: String?, profileIds: Set<Long>) {
         viewModelScope.launch {
             _state.value = State.Working
-            backup.export(folder, sections, backupPassword).fold(
+            backup.export(folder, sections, backupPassword, profileIds).fold(
                 onSuccess = {
                     val note = if (backupPassword.isNullOrBlank()) " (passwords were not included)" else ""
                     _state.value = State.Done("Saved to $it$note")

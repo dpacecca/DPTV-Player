@@ -282,9 +282,9 @@ or **narrow the whole app to just one**.
   [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api), paste it into **Settings →
   Metadata → TMDB API key (v3)**, and hit **Test lookup**.
 - 🌐 **Self-host your own metadata server (free):** the exact Cloudflare Worker OwnTV's shared server runs
-  is in the repo at [`worker/`](../worker/) — [`worker/README.md`](../worker/README.md) has the full
+  is in the repo at [`worker/tmdb/`](../worker/tmdb/) — [`worker/tmdb/README.md`](../worker/tmdb/README.md) has the full
   step-by-step (deploy with `wrangler`, set your TMDB key as a secret via
-  [`worker/wrangler.toml`](../worker/wrangler.toml) + `wrangler secret put TMDB_KEY`, then paste your
+  [`worker/tmdb/wrangler.toml`](../worker/tmdb/wrangler.toml) + `wrangler secret put TMDB_KEY`, then paste your
   `https://….workers.dev` URL into **Settings → Metadata → Custom metadata server URL**). Your key stays
   on your Cloudflare account, and responses are edge-cached for 30 days.
 - **Movies/Series details:** focus a title to see enriched info in the side pane. **Long-press** a poster for
@@ -370,6 +370,30 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 
 ---
 
+## 💬 External subtitles (OpenSubtitles & local files)
+
+For **movies and series episodes** (streamed or downloaded), the player's **Subtitles** menu has an
+**ADD SUBTITLES** section:
+
+- **Search OpenSubtitles** — needs a free [opensubtitles.com](https://www.opensubtitles.com) account,
+  connected per profile in **Settings → Video Player → Subtitles → OpenSubtitles account** (or right
+  from the dialog that appears if you're not signed in). The search is pre-filled for the playing
+  title; use **Edit search** if the provider's name is odd, and **All languages** to widen it. Pick a
+  result and it downloads, turns on immediately, and is remembered for that title. Your remaining
+  daily downloads (set by OpenSubtitles per account) show in the account screen and after each
+  download — re-downloading something you already fetched costs nothing.
+- **Select local subtitle file** — no account or internet needed. Browse USB/internal storage for a
+  `.srt` / `.ass` / `.ssa` / `.vtt` / `.webvtt` file. Non-UTF-8 files (Arabic, etc.) are converted
+  automatically, and OwnTV keeps its own copy so the subtitle survives unplugging the USB.
+- **ADJUST → Subtitle timing** — nudge the active subtitle **earlier/later** in 0.1 s / 0.5 s steps
+  while the video plays. The offset is saved for that exact subtitle on that title.
+- On **replay**, previously downloaded subtitles for the title are re-listed in the Subtitles menu
+  (not auto-selected) — pick one and its saved timing comes back too.
+- **Deleting**: long-press a movie/episode → **Delete OpenSub subtitles**, or manage everything in
+  **Settings → … → OpenSubtitles account → Delete subtitles** (per profile).
+
+---
+
 ## 🎨 Personalize (make it yours)
 
 - **Settings → Customize Categories & Items**: **hide, rename and reorder** categories, plus **unhide**
@@ -429,11 +453,17 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
   needed.
 - 🔄 **Check updates on startup** — get notified when a newer version is on GitHub Releases.
 - 💾 **Backup & Restore** — export/restore your profiles, sources, customizations, favorites, history,
-  resume positions, **manual Move positions** and app settings. On export you can set a **backup password** to encrypt saved
+  resume positions, **manual Move positions** and app settings. Export starts by asking **which
+  profiles** to include — the file contains only the selected profiles and their data. Including a
+  **PIN-locked profile** that isn't your current one requires entering its PIN; without the PIN it
+  simply stays out of the backup. Then choose the data sections as before. On export you can set a **backup password** to encrypt saved
   passwords (source & proxy, plus your own TMDB API key if set); without one, passwords are left out of
   the file. Restoring an encrypted
   backup asks for that password — enter it to bring passwords back, or **Skip** to restore everything
-  else and re‑enter passwords later. Backups also preserve your **per‑source Auto refresh** choices,
+  else and re‑enter passwords later. **Restore merges — it never deletes your existing profiles or
+  sources:** a profile with the same **name** as one already on the device is updated from the backup,
+  profiles only in the backup are added, and everything else stays put (that's also why profile names
+  must be unique — the app matches by name). Backups also preserve your **per‑source Auto refresh** choices,
   your **default source**, any **compatibility‑mode / per‑item engine pins** (Live and Movies/Series),
   your **custom TMDB names** (long‑press → Custom TMDB name) and recent searches,
   so a restored setup behaves exactly like the original. Older backup files still restore fine — anything

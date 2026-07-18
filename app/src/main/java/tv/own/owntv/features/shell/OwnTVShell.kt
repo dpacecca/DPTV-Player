@@ -122,6 +122,12 @@ fun OwnTVShell(
     // One-shot: set when leaving the player so the returning browse screen re-focuses the item you played.
     var restoreFocus by remember { mutableStateOf(false) }
     val player = koinInject<OwnTVPlayer>()
+    val subtitleController = koinInject<tv.own.owntv.core.subtitles.SubtitleController>()
+    val subtitleContext by subtitleController.current.collectAsStateWithLifecycle()
+    var showSubtitleSearch by remember { mutableStateOf(false) }
+    // Local subtitle-file picker (plan §7) — the same TV-safe in-app browser local M3U import uses.
+    var showLocalSubPicker by remember { mutableStateOf(false) }
+    val localSubToast = tv.own.owntv.ui.components.rememberInAppToast()
     val mpvEngine = remember(player) { tv.own.owntv.player.MpvPlaybackEngine(player) }
     val launcherIntegrationRepository = koinInject<LauncherIntegrationRepository>()
     val homeVm = org.koin.androidx.compose.koinViewModel<HomeViewModel>()
@@ -202,6 +208,11 @@ fun OwnTVShell(
         // Only Live TV promotes a channel to the ExoPlayer engine. Movies/Series/Search/EPG/Downloads all
         // play on mpv — clear any stale live-on-ExoPlayer flag so the shell renders mpv, not the old channel.
         if (source != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
+        // Only Movies/Series/Downloads carry an external-subtitle item context (set by their play
+        // paths). Anything else (Live/EPG/Search-channel) clears it so ADD SUBTITLES never shows stale.
+        if (source != MainSection.MOVIES && source != MainSection.SERIES && source != MainSection.DOWNLOADS) {
+            subtitleController.clear()
+        }
         if (playerMode != PlayerMode.MINI) playerMode = PlayerMode.FULLSCREEN
     }
     // The mini-player's own expand button always maximizes.
@@ -211,6 +222,7 @@ fun OwnTVShell(
         showChannelList = false
         liveVm.onFullscreenExited() // no longer full-screen on ExoPlayer → let the preview re-take the engine
         player.stop()
+        subtitleController.clear() // leaving the player drops the OpenSubtitles item context
         if (selectedSection != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
         restoreFocus = true
         runCatching { sidebarFocus.requestFocus() }
@@ -536,7 +548,7 @@ fun OwnTVShell(
                     onPip = dockPlayer, // PiP/dock works for live on either engine now
                     // The channel-list overlay draws ABOVE the HUD; while it's open the HUD goes inert so
                     // its hide/error focus grabs can't yank D-pad focus off the overlay.
-                    inert = showChannelList,
+                    inert = showChannelList || showSubtitleSearch || showLocalSubPicker,
                     onChannelUp = zap?.let { z -> { z(-1) } },
                     onChannelDown = zap?.let { z -> { z(1) } },
                     onOpenChannelList = if (isLiveChannel && liveCanZap) { { showChannelList = true } } else null,
@@ -553,6 +565,15 @@ fun OwnTVShell(
                     // engine handling above): flip the current item between mpv and ExoPlayer.
                     vodOnExo = if (!isLiveStream && !isLiveChannel) vodExoActive else null,
                     onToggleVodEngine = if (!isLiveStream && !isLiveChannel) player::toggleVodEngine else null,
+                    // ADD SUBTITLES entry: movies/episodes only, and only when the play path set an
+                    // item context (subtitle plan §4). Opens the OpenSubtitles search overlay below.
+                    onSearchSubtitles = if (!isLiveStream && !isLiveChannel && subtitleContext != null) {
+                        { showSubtitleSearch = true }
+                    } else null,
+                    // Local subtitle file (plan §7): same movie/episode gating, no account needed.
+                    onSelectLocalSubtitle = if (!isLiveStream && !isLiveChannel && subtitleContext != null) {
+                        { showLocalSubPicker = true }
+                    } else null,
                     // Guide card for the playing channel (nowNext follows previewChannel = what's playing).
                     liveEpgCard = if (isLiveChannel) {
                         {
@@ -562,6 +583,37 @@ fun OwnTVShell(
                     } else null,
                     modifier = Modifier.fillMaxSize(),
                 )
+                // OpenSubtitles search overlay (movies/episodes) — drawn above the HUD; the HUD is inert
+                // while it's open so the D-pad stays on the overlay.
+                if (showSubtitleSearch) {
+                    tv.own.owntv.features.subtitles.SubtitleSearchScreen(
+                        onDismiss = { showSubtitleSearch = false },
+                        // §14/R1: the local-file path stays open from every dead end in the search.
+                        onSelectLocalFile = { showSubtitleSearch = false; showLocalSubPicker = true },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+                // Local subtitle-file picker (plan §7.3) — hosted in a Dialog window, so D-pad focus
+                // can't fall through to the HUD behind; picking imports a managed UTF-8 copy and
+                // attaches it live to whichever engine is playing.
+                if (showLocalSubPicker) {
+                    tv.own.owntv.ui.components.StorageBrowser(
+                        title = "Select local subtitle file",
+                        mode = tv.own.owntv.ui.components.BrowseMode.FILE,
+                        fileExtensions = setOf("srt", "ass", "ssa", "vtt", "webvtt"),
+                        onPick = { file ->
+                            showLocalSubPicker = false
+                            scope.launch {
+                                runCatching { subtitleController.applyLocal(file) }
+                                    .onFailure { e ->
+                                        localSubToast.show(e.message ?: "Couldn't load the subtitle file.")
+                                    }
+                            }
+                        },
+                        onDismiss = { showLocalSubPicker = false },
+                    )
+                }
+                tv.own.owntv.ui.components.InAppToast(localSubToast)
                 if (showChannelList && isLiveChannel && zapChannels.size > 1) {
                     tv.own.owntv.features.shell.components.ChannelListOverlay(
                         channels = zapChannels,

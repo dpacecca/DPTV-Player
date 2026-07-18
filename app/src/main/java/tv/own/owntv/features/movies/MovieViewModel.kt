@@ -79,6 +79,7 @@ class MovieViewModel(
     private val metadata: tv.own.owntv.core.metadata.MetadataRepository,
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
+    private val subtitleController: tv.own.owntv.core.subtitles.SubtitleController,
 ) : ViewModel() {
 
     data class MovieMoveState(val items: List<MovieEntity>, val activeIndex: Int, val contextKey: String)
@@ -413,6 +414,12 @@ class MovieViewModel(
                 userAgent = sourceUa,
             )
             playingMovie = movie
+            // Enable the player's OpenSubtitles search for this movie (subtitle plan §4). tmdbId is
+            // resolved from the metadata cache when available (review R7) for a stronger match.
+            if (pid != null) {
+                val tmdbId = runCatching { metadata.resolveMovie(movie)?.tmdbId?.toLong() }.getOrNull()
+                subtitleController.setMovie(pid, movie, tmdbId)
+            }
             if (pid != null) {
                 runCatching {
                     historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.MOVIE, itemId = movie.id))
@@ -456,6 +463,14 @@ class MovieViewModel(
                 fileName = "${StorageAccess.sanitize(movie.name)}.${movie.containerExt ?: StorageAccess.extOf(movie.streamUrl)}",
             )
         }
+    }
+
+    /** Downloaded OpenSubtitles subtitles for this movie (long-press "Delete subtitles" popup, §11). */
+    suspend fun downloadedSubtitles(movie: MovieEntity): List<tv.own.owntv.core.database.dao.LinkedSubtitle> =
+        subtitleController.downloadsForMovie(movie)
+
+    fun deleteSubtitle(cacheId: Long) {
+        viewModelScope.launch { subtitleController.deleteCached(cacheId) }
     }
 
     fun toggleFavorite(movie: MovieEntity) {

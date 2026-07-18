@@ -75,6 +75,11 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         }
     }
     var exportSections by remember { mutableStateOf(BackupManager.Section.entries.toSet()) }
+    // Export step 0: which profiles ride in the file (backup is profile-based). PIN-locked profiles
+    // other than the active one must be unlocked with their PIN to be ticked.
+    var showProfilePicker by remember { mutableStateOf(false) }
+    var exportProfiles by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    val profileChoices by vm.profileChoices.collectAsStateWithLifecycle()
     // After the folder is picked, hold it here to ask about password protection before exporting.
     var exportFolder by remember { mutableStateOf<File?>(null) }
     val firstFocus = remember { FocusRequester() }
@@ -87,7 +92,7 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // that opened it. The restore crosses INTO this group from the dialog, so onEnter intercepts
     // it — it consults dialogReturn first (and clears it) instead of hijacking.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    val anyDialogOpen = showBrowser || showExportPicker || pendingFolderBrowser || exportFolder != null ||
+    val anyDialogOpen = showBrowser || showExportPicker || showProfilePicker || pendingFolderBrowser || exportFolder != null ||
         state is BackupViewModel.State.ChooseRestore || state is BackupViewModel.State.NeedPassword
     LaunchedEffect(anyDialogOpen) {
         if (!anyDialogOpen) {
@@ -125,7 +130,7 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(24.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OwnTVButton("Export backup", onClick = { dialogReturn = firstFocus; showExportPicker = true }, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(firstFocus))
+            OwnTVButton("Export backup", onClick = { dialogReturn = firstFocus; vm.loadProfiles(); showProfilePicker = true }, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(firstFocus))
             OwnTVButton("Restore backup", onClick = { dialogReturn = restoreBtnFocus; browser = BrowseMode.FILE; showBrowser = true }, style = OwnTVButtonStyle.SECONDARY, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(restoreBtnFocus))
         }
         Spacer(Modifier.height(20.dp))
@@ -139,6 +144,24 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             is BackupViewModel.State.Done -> Text(s.message, style = MaterialTheme.typography.bodyLarge, color = colors.primary)
             is BackupViewModel.State.Error -> Text(s.message, style = MaterialTheme.typography.bodyLarge, color = Color(0xFFEF4444))
             else -> Unit
+        }
+    }
+
+    // Export step 0: pick the profiles to include (all unticked — the user chooses; locked
+    // non-active profiles need their PIN to be ticked).
+    if (showProfilePicker) {
+        profileChoices?.let { choices ->
+            ProfilePickerDialog(
+                profiles = choices.profiles,
+                activeId = choices.activeId,
+                verifyPin = vm::verifyPin,
+                onConfirm = { picked ->
+                    exportProfiles = picked
+                    showProfilePicker = false
+                    showExportPicker = true
+                },
+                onDismiss = { showProfilePicker = false },
+            )
         }
     }
 
@@ -189,8 +212,8 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 "are left out of the file and must be re-entered after restoring.",
             confirmLabel = "Encrypt & export",
             skipLabel = "Export without passwords",
-            onConfirm = { pass -> exportFolder = null; vm.export(folder, exportSections, pass) },
-            onSkip = { exportFolder = null; vm.export(folder, exportSections, null) },
+            onConfirm = { pass -> exportFolder = null; vm.export(folder, exportSections, pass, exportProfiles) },
+            onSkip = { exportFolder = null; vm.export(folder, exportSections, null, exportProfiles) },
             onDismiss = { exportFolder = null },
         )
     }
@@ -249,6 +272,125 @@ private fun BackupPasswordDialog(
                 Spacer(Modifier.weight(1f))
                 OwnTVButton(skipLabel, onClick = onSkip, style = OwnTVButtonStyle.SECONDARY)
                 OwnTVButton(confirmLabel, onClick = { onConfirm(password) }, enabled = password.isNotBlank())
+            }
+        }
+    }
+}
+
+/**
+ * Export step 0: choose which profiles the backup contains. All start UNTICKED (the user chooses
+ * explicitly). Ticking the active profile or an unlocked one is immediate; ticking another
+ * profile with a PIN prompts for it — wrong PIN shows "PIN incorrect" and leaves it unticked.
+ */
+@Composable
+private fun ProfilePickerDialog(
+    profiles: List<tv.own.owntv.core.database.entity.ProfileEntity>,
+    activeId: Long,
+    verifyPin: (tv.own.owntv.core.database.entity.ProfileEntity, String) -> Boolean,
+    onConfirm: (Set<Long>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    var ticked by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var pinFor by remember { mutableStateOf<tv.own.owntv.core.database.entity.ProfileEntity?>(null) }
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { if (pinFor != null) pinFor = null else onDismiss() }
+
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(), contentAlignment = Alignment.Center) {
+        Column(Modifier.dialogPanel(width = 560.dp, padding = 28.dp)) {
+            Text("Which profiles to back up", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "The backup will contain only the selected profiles and their data. Locked profiles " +
+                    "need their PIN.",
+                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
+            profiles.forEachIndexed { i, p ->
+                val locked = p.pinHash != null && p.id != activeId
+                CheckRow(
+                    label = p.name + (if (p.id == activeId) "  ·  current" else ""),
+                    desc = when {
+                        locked -> "PIN locked"
+                        p.isKids -> "Kids profile"
+                        else -> null
+                    },
+                    checked = p.id in ticked,
+                    onToggle = {
+                        when {
+                            p.id in ticked -> ticked = ticked - p.id
+                            locked -> pinFor = p
+                            else -> ticked = ticked + p.id
+                        }
+                    },
+                    modifier = if (i == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                )
+            }
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                Spacer(Modifier.weight(1f))
+                OwnTVButton("Continue", onClick = { onConfirm(ticked) }, enabled = ticked.isNotEmpty())
+            }
+        }
+    }
+
+    pinFor?.let { profile ->
+        ProfilePinDialog(
+            profileName = profile.name,
+            verify = { pin -> verifyPin(profile, pin) },
+            onUnlocked = { ticked = ticked + profile.id; pinFor = null },
+            onDismiss = { pinFor = null },
+        )
+    }
+}
+
+/** PIN prompt for including a locked, non-active profile in the backup. */
+@Composable
+private fun ProfilePinDialog(
+    profileName: String,
+    verify: (String) -> Boolean,
+    onUnlocked: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    var pin by remember { mutableStateOf("") }
+    var wrong by remember { mutableStateOf(false) }
+    val fieldFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { fieldFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(), contentAlignment = Alignment.Center) {
+        Column(Modifier.dialogPanel(width = 480.dp, padding = 28.dp)) {
+            Text("“$profileName” is locked", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "This isn't your current profile. Enter its PIN to include it in the backup — " +
+                    "without the PIN, its data won't be backed up.",
+                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
+            OwnTVTextField(
+                value = pin,
+                onValueChange = { pin = it; wrong = false },
+                label = "Profile PIN",
+                isPassword = true,
+                focusRequester = fieldFocus,
+            )
+            if (wrong) {
+                Spacer(Modifier.height(8.dp))
+                Text("PIN incorrect.", style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444))
+            }
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                Spacer(Modifier.weight(1f))
+                OwnTVButton(
+                    "Unlock",
+                    onClick = { if (verify(pin)) onUnlocked() else { wrong = true; pin = "" } },
+                    enabled = pin.isNotBlank(),
+                )
             }
         }
     }
