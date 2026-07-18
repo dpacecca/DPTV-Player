@@ -173,18 +173,10 @@ fun PlayerHud(
     } }
 
     LaunchedEffect(forceShow) { if (forceShow) controlsVisible = true }
-    // Refresh the chips immediately when controls open, then every ~2s while they stay open so the
-    // volatile bitrate chip (mpv's video-bitrate / Exo's measured throughput) stays current. The
-    // poll stops the moment controls hide or the composition disposes.
-    LaunchedEffect(controlsVisible, player) {
-        if (!controlsVisible) return@LaunchedEffect
-        player.refreshStreamChips()
-        while (true) { delay(2_000); player.refreshStreamChips() }
-    }
-    DisposableEffect(showInfo, controlsVisible, player) {
+    LaunchedEffect(controlsVisible, player) { if (controlsVisible) player.refreshStreamChips() }
+    DisposableEffect(showInfo, player) {
         if (showInfo) player.refreshStreamChips()
-        // Measure network throughput whenever the overlay OR the chips (which show the bitrate) are on.
-        player.setBitrateTrackingEnabled(showInfo || controlsVisible)
+        player.setBitrateTrackingEnabled(showInfo)
         onDispose { player.setBitrateTrackingEnabled(false) }
     }
     LaunchedEffect(controlsVisible, wakeTick, forceShow, inert) {
