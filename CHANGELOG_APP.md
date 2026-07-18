@@ -25,6 +25,8 @@
 - **📦 Smaller downloads — split arm + x86_64 APK builds**
 - **⬇️ In-app updater picks the APK matching your device**
 - **🔒 Customize PIN stored as a salted hash** (community PR #65 by @aravindtri)
+- **📊 Measured fps, bitrate & dropped-frame stats for ExoPlayer** (community PR #67 by @pt5pnzghm6-sys)
+- **📊 Bitrate in the player top-bar chips for all playback**
 - **🗂️ One-click full storage access that works on more TVs**
 - **🎨 Compact popup menus in a new serif font**
 

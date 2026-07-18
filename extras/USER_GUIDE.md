@@ -267,6 +267,10 @@ or **narrow the whole app to just one**.
   following the setting.
 - 🏷️ **Which engine is playing?** The player top‑left mini chips now start with **MPV** or **EXO** (on Live
   TV too), so you always know the active engine at a glance.
+- 🏷️ **Bitrate in the top‑bar chips.** The mini chips also show the stream's **bitrate** (Mbps) when the
+  provider declares it — for Live TV (preview & full), movies and series, on both engines. Raw `.ts`
+  live channels that don't declare a bitrate leave it blank; open the **info overlay (ⓘ)** for a live
+  measured value.
 
 ---
 

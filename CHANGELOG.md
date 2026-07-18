@@ -205,6 +205,21 @@
 - **Hero preview URLs are redacted in error logs.** A failed Home hero-preview playback no longer logs
   the raw stream URL (which can carry credentials); it's scrubbed via the existing `redactUrl` helper.
 
+### 📊 Player diagnostics — measured fps/bitrate & top-bar bitrate chip (community PR #67)
+
+- **ExoPlayer now shows real fps, bitrate and dropped-frame stats** (community PR #67 by
+  @pt5pnzghm6-sys). Raw MPEG-TS streams (most Xtream live TV) don't declare `frameRate` or `bitrate`,
+  so ExoPlayer's **Stream Info overlay** and the preview's top-left chips used to be blank where mpv
+  showed live values. This measures them on the fly — **fps** from decoder-rendered frame timing
+  (snapped to a standard rate so a brief stall doesn't give a stray reading), **bitrate** from actual
+  network bytes, and **dropped frames since the start of playback** — all with negligible CPU impact,
+  and only computed while the info overlay is open. It also fixes a couple of mpv↔ExoPlayer handoff
+  bugs that were blocking correct resolution/fps display for VOD on Exo.
+- **Bitrate now appears in the player top-bar chips** for all playback — Live TV (preview & full),
+  movies and series, on both engines. The chip uses the stream's declared bitrate (free to read), so
+  it adds no measurement overhead; raw live MPEG-TS streams that don't declare one stay blank in the
+  chip (the overlay still shows the live measurement when opened).
+
 ### 📦 Packaging
 
 - **Smaller downloads — split ABI builds.** Releases now ship a single **arm APK** (`OwnTV.apk` /
