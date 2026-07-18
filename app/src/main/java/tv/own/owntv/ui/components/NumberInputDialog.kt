@@ -97,7 +97,9 @@ fun NumberInputDialog(
                 Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(12.dp))
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Bottom-align: the text field carries a label above its input box, so it's taller than
+                // the − / + buttons. Aligning to the bottom lines the buttons up with the input box row.
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     StepBtn("–", enabled = value > min, modifier = Modifier.focusRequester(minusFocus)) {
                         commit(value - step)
                     }

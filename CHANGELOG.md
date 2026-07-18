@@ -178,6 +178,11 @@
   category rail moves focus only — selection still happens on OK, so a stray CH press never reloads
   a category's channels. All jumps use instant `scrollToItem` (no animation) to avoid jank on slow
   TVs over big distances. Defaults: enabled, skip 10 each direction.
+- **Long-press is disabled on the "All" list.** On the built-in All channels / All movies / All series
+  list a long-press jump to the very last item (e.g. the 170,000th movie) is pointless and janks, so
+  long-press does nothing there — short-press skipping still works normally. Real categories and
+  folders keep long-press jump-to-first/last. (This checks the built-in All key, not the name, so a
+  provider category literally called "All Hindi" is unaffected.)
 
 ### 🐛 Fixes
 
@@ -214,6 +219,13 @@
   / Series rails. ("All playlists" still shows the merged set.) Existing reorders/hides are preserved.
 - **Customize screen renamed** to **"Customize Categories & Items"** (was "Customize & Hidden Items")
   for clarity — it's where you hide/unhide items, rename, and reorder categories.
+- **Live TV "Now" no longer shows a future programme** (#68). For channels without a configured guide,
+  OwnTV falls back to the provider's short-EPG. When that data had a gap around the current moment, the
+  "Now" slot could pick the next upcoming programme and mislabel it as live. It now correctly leaves
+  "Now" blank on a genuine gap; the upcoming programme still shows under "Next". EPG display only — no
+  playback impact.
+- **CH+- skip dialog alignment.** In the CH+- Key Paging skip-count popup, the − / + buttons no longer
+  sit above the number field — they now line up with it (the field's label was pushing them up).
 
 ### 🔒 Security (community PR #65)
 
@@ -237,6 +249,11 @@
   movies and series, on both engines. The chip uses the stream's declared bitrate (free to read), so
   it adds no measurement overhead; raw live MPEG-TS streams that don't declare one stay blank in the
   chip (the overlay still shows the live measurement when opened).
+- **New "Measured stream stats" toggle** (**Settings → Video Player → Diagnostics**, on by default) —
+  a one-switch escape hatch. On, the Stream Info overlay measures fps/bitrate/dropped frames as above.
+  Off, no live measuring runs at all (declared values only), for the rare low-end TV where the
+  measuring is ever suspected of causing stutter. It only gates the diagnostic numbers — never the
+  actual video pipeline or the mpv↔ExoPlayer handoff.
 
 ### 📦 Packaging
 

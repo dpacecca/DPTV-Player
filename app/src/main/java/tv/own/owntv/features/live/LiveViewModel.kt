@@ -911,8 +911,11 @@ class LiveViewModel(
             }.getOrNull().orEmpty()
             else -> return@withContext null
         }
+        // A gap in the provider's own guide data around "now" (nothing covers this instant) must leave
+        // current null — picking the next entry that simply hasn't ended yet would mislabel an upcoming
+        // programme as live (issue #68). "Next"/"Later" are computed independently below, so a genuine
+        // gap correctly shows no "Now" while the upcoming programme still appears as "Next".
         val current = entries.firstOrNull { it.startMs <= now && it.stopMs > now }
-            ?: entries.firstOrNull { it.stopMs > now }
         val future = entries.filter { it.startMs > (current?.startMs ?: now) }.sortedBy { it.startMs }
         // Short-EPG responses sometimes include the just-finished programme — surface it as "Before".
         val previous = entries.filter { it.stopMs <= (current?.startMs ?: now) }.maxByOrNull { it.stopMs }

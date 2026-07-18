@@ -47,6 +47,10 @@ fun Modifier.chNavPaging(
     lastIndex: () -> Int,
     currentTargetIndex: () -> Int,
     onJumpToIndex: (Int) -> Unit,
+    // When false, long-press (jump-to-first / jump-to-last) is ignored — short-press skipping still
+    // works. Used to disable the end-jump on the huge "All" list (a jump to the last of 170k items is
+    // pointless and just janks), while keeping it on real categories/folders.
+    longPressEnabled: () -> Boolean = { true },
 ): Modifier = composed {
     if (!enabled) return@composed this
 
@@ -73,7 +77,7 @@ fun Modifier.chNavPaging(
                 // A repeat = another KeyDown within LONG_PRESS_MS of the previous one (no KeyUp between).
                 val isRepeat = lastKeyDownAt > 0 && now - lastKeyDownAt < LONG_PRESS_MS
                 lastKeyDownAt = now
-                if (isRepeat) {
+                if (isRepeat && longPressEnabled()) {
                     // First repeat = the long-press threshold was reached. Fire the end-jump once;
                     // swallow further repeats so a held key doesn't keep re-jumping.
                     if (!longPressFired) {

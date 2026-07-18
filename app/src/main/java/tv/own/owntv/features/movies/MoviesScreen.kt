@@ -261,6 +261,9 @@ fun MoviesScreen(
                     upSkip = chNavUpSkip,
                     downSkip = chNavDownSkip,
                     isFocused = { gridPaneFocused },
+                    // On the "All" list (every movie) a long-press jump to the very last item is
+                    // pointless and janks, so disable long-press there — short-press skipping stays.
+                    longPressEnabled = { selectedKey != LiveKey.All },
                     lastIndex = { movies.itemCount - 1 },
                     currentTargetIndex = {
                         val sel = selectedMovie

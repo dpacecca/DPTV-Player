@@ -87,6 +87,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val vm: SettingsViewModel = koinViewModel()
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
     val vodExo by vm.vodPreferExo.collectAsStateWithLifecycle()
+    val measuredStats by vm.measuredStreamStats.collectAsStateWithLifecycle()
     val externalPlayer by vm.externalPlayer.collectAsStateWithLifecycle()
     val zoom by vm.defaultZoom.collectAsStateWithLifecycle()
     val subScale by vm.subtitleScale.collectAsStateWithLifecycle()
@@ -238,6 +239,17 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             chip = "%+d ms".format(audioDelay), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.AUDIO_SYNC)),
             onClick = { dialog = Dialog.AUDIO_SYNC },
+        )
+
+        Divider()
+        GroupLabel("Diagnostics")
+        Row2(
+            icon = OwnTVIcon.VIDEO, title = "Measured stream stats",
+            desc = "Show live fps, bitrate and dropped frames in the stream-info overlay (measured while " +
+                "the overlay is open, for streams that don't declare these values). Turn off only if a " +
+                "low-end TV stutters — it never affects the actual video, only the diagnostic numbers.",
+            chip = if (measuredStats) "On" else "Off", primaryChip = measuredStats,
+            onClick = { vm.setMeasuredStreamStats(!measuredStats) },
         )
     }
 

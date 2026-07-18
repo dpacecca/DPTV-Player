@@ -116,6 +116,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Text(
             "• Skips are clamped at the ends, so short lists reach the end in one press.\n" +
                 "• Long-press CH+ = first item, long-press CH− = last item.\n" +
+                "• Long-press is disabled on the \"All\" list (every channel / movie / series) — short-press skipping still works there.\n" +
                 "• Applies to whichever panel currently has focus — the category rail or the item list/grid.",
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,

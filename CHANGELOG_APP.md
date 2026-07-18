@@ -27,6 +27,7 @@
 - **🔒 Customize PIN stored as a salted hash** (community PR #65 by @aravindtri)
 - **📊 Measured fps, bitrate & dropped-frame stats for ExoPlayer** (community PR #67 by @pt5pnzghm6-sys)
 - **📊 Bitrate in the player top-bar chips for all playback**
+- **📊 "Measured stream stats" toggle (Settings → Video Player → Diagnostics)**
 - **🔀 CH+ / CH− keys now page the category & item lists (skip N, long-press for first/last)**
 - **🗂️ One-click full storage access that works on more TVs**
 - **🎨 Compact popup menus in a new serif font**
@@ -43,6 +44,8 @@
 - **Customize screen now respects the selected playlist**
 - **Customize screen renamed to "Customize Categories & Items"**
 - **Hero preview URLs redacted in error logs**
+- **Live TV "Now" no longer shows a future programme on short-EPG gaps (#68)**
+- **CH+ / CH− long-press disabled on the "All" list; skip-dialog buttons aligned**
 
 ## v4.1.2 — 2026-07-14
 

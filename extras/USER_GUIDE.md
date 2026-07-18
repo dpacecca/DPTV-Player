@@ -163,9 +163,10 @@ or **narrow the whole app to just one**.
   top‑to‑bottom is painful. **CH−** skips N items **down** (toward the last), **CH+** skips N items **up**
   (toward the first) — in whichever panel has focus (the category column **or** the channel list). **Long‑press
   CH−** jumps straight to the **last** item, **long‑press CH+** to the **first**. Skips are clamped at the ends,
-  so a short list reaches the end in one press for free. Set the skip counts or turn it off in
-  **Settings → Content → CH+- Key Paging** (default: on, 10 items per press). Same shortcut works in
-  **Movies**, **Series** (grid + episode list).
+  so a short list reaches the end in one press for free. (Long‑press is disabled on the built‑in **All**
+  list — jumping to the 170,000th item is pointless — but short‑press skipping still works there.) Set the
+  skip counts or turn it off in **Settings → Content → CH+- Key Paging** (default: on, 10 items per press).
+  Same shortcut works in **Movies**, **Series** (grid + episode list).
 
 ### Inside the full‑screen live player
 - 🗓️ **Guide card**: bring up the controls (press OK) and a card on the **right edge** shows the
@@ -451,6 +452,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   DTS/TrueHD audio and has no A/V sync fix). Either way, if the chosen player fails, the other is
   tried automatically before an error is shown. The player's **info overlay** shows which engine is
   active.
+- 📊 **Measured stream stats** (Video Player Settings → Diagnostics) — on by default. When on, the
+  player's **info overlay** measures live fps, bitrate and dropped frames for streams that don't
+  declare them (most Xtream live TV). Turn it **off** only if a low‑end TV ever stutters — it affects
+  the diagnostic numbers only, never the actual video.
 - 📤 **External player** (Video Player Settings) — play **Movies, Series episodes and Downloads** in an
   external app (VLC, MX Player, …) instead of the built‑in player. Live TV always stays in‑app. You can
   also play a **single item** externally without the setting: **long‑press OK** on a movie/episode and

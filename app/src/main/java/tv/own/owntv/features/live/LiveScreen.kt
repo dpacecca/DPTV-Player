@@ -279,6 +279,9 @@ fun LiveScreen(
                     upSkip = chNavUpSkip,
                     downSkip = chNavDownSkip,
                     isFocused = { channelPaneFocused },
+                    // On the "All" list (every channel) a long-press jump to the very last item is
+                    // pointless and janks, so disable long-press there — short-press skipping stays.
+                    longPressEnabled = { selectedKey != LiveKey.All },
                     lastIndex = { channels.itemCount - 1 },
                     currentTargetIndex = {
                         val pc = previewChannel

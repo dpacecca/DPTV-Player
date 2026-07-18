@@ -341,6 +341,9 @@ private fun SeriesGrid(
                     upSkip = chNavUpSkip,
                     downSkip = chNavDownSkip,
                     isFocused = { gridPaneFocused },
+                    // On the "All" list (every series) a long-press jump to the very last item is
+                    // pointless and janks, so disable long-press there — short-press skipping stays.
+                    longPressEnabled = { selectedKey != LiveKey.All },
                     lastIndex = { series.itemCount - 1 },
                     currentTargetIndex = {
                         val sel = selectedSeries
