@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -167,6 +168,12 @@ fun PlayerHud(
     } }
 
     LaunchedEffect(forceShow) { if (forceShow) controlsVisible = true }
+    LaunchedEffect(controlsVisible, player) { if (controlsVisible) player.refreshStreamChips() }
+    DisposableEffect(showInfo, player) {
+        if (showInfo) player.refreshStreamChips()
+        player.setBitrateTrackingEnabled(showInfo)
+        onDispose { player.setBitrateTrackingEnabled(false) }
+    }
     LaunchedEffect(controlsVisible, wakeTick, forceShow, inert) {
         // Don't auto-hide under an overlay — hiding is what triggers the catch-all focus grab below.
         if (controlsVisible && !forceShow && !inert) { delay(4500); controlsVisible = false }
