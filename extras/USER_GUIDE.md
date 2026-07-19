@@ -166,7 +166,8 @@ or **narrow the whole app to just one**.
   so a short list reaches the end in one press for free. (Long‑press is disabled on the built‑in **All**
   list — jumping to the 170,000th item is pointless — but short‑press skipping still works there.) Set the
   skip counts or turn it off in **Settings → Content → CH+- Key Paging** (default: on, 10 items per press).
-  Same shortcut works in **Movies**, **Series** (grid + episode list).
+  Same shortcut works in **Movies**, **Series** (grid + episode list), and the category list in
+  **Settings → Customize Categories & Items**.
 
 ### Inside the full‑screen live player
 - 🗓️ **Guide card**: bring up the controls (press OK) and a card on the **right edge** shows the
@@ -413,6 +414,7 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 - **Settings → Customize Categories & Items**: **hide, rename and reorder** categories, plus **unhide**
   individual channels, movies and series from one place. Pick a section at the top (Live TV / Movies /
   Series) — hidden items are listed first, each with an **Unhide** button, and your categories follow below.
+  With a long provider category list, use **CH+ / CH−** to page it (long‑press = first/last folder).
   - **Hide a range of categories fast**: focus a category's **Hide** button and **long‑press (select‑hold)** it to
     enter **span/range mode**. Then scroll **up or down** — every category between your starting point and the
     category you land on gets hidden together as a range. Handy for quickly hiding a big block of categories (or
@@ -444,9 +446,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   Auto‑play · Check for update) flip the most‑used options without opening a sub‑menu.
 - 🧭 **Menu layout** — **Profiles** is the first row; **Live preview / Preview audio** are under
   **Playback**; **App startup** is under **App**; the **Home screen** page is under Content.
-- 🔀 **CH+- Key Paging** (Content) — page the category & item lists in Live/Movies/Series with the remote's
-  **CH+ / CH−** keys. Separate skip counts per direction (typed or ±‑stepped), long‑press jumps to
-  first/last, with an advisory warning above 50. Turn it off here if your remote maps CH keys elsewhere.
+- 🔀 **CH+- Key Paging** (Content) — page the category & item lists in Live/Movies/Series (and the
+  category list in **Customize Categories & Items**) with the remote's **CH+ / CH−** keys. Separate skip
+  counts per direction (typed or ±‑stepped), long‑press jumps to first/last, with an advisory warning
+  above 50. Turn it off here if your remote maps CH keys elsewhere.
 - 🚀 **App startup** — where each profile opens: **Home**, **Last channel** (auto‑plays the channel you last
   watched), or **Live · Favorites** (lands you right inside your favourites list).
 - 🌈 **HDR** — use HDR output when the video and TV support it. Turn on for HDR/Dolby Vision content.

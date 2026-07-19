@@ -35,7 +35,7 @@ private enum class ChNavDialog { NONE, ENABLED, UP_SKIP, DOWN_SKIP }
 
 /**
  * CH+- Key Paging — lets the user page the focused panel (category rail or item list/grid) in
- * Live/Movies/Series using the remote's CH+ / CH− keys.
+ * Live/Movies/Series, and the category list in Settings → Customize, using the remote's CH+ / CH− keys.
  *
  * Behaviour (set here, applied everywhere CH paging is wired):
  *  - Short press CH+ : skip [upSkip] items toward the FIRST item.
@@ -83,7 +83,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Row2(
             icon = OwnTVIcon.MENU,
             title = "Use CH+- keys to page lists",
-            desc = "When on, CH+ and CH− skip inside the focused panel (category rail or item list). When off, those keys do nothing in browse screens.",
+            desc = "When on, CH+ and CH− skip inside the focused panel (category rail or item list, and the Customize category list). When off, those keys do nothing in those screens.",
             chip = if (enabled) "On" else "Off",
             primaryChip = enabled,
             chevron = true,
@@ -117,7 +117,8 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             "• Skips are clamped at the ends, so short lists reach the end in one press.\n" +
                 "• Long-press CH+ = first item, long-press CH− = last item.\n" +
                 "• Long-press is disabled on the \"All\" list (every channel / movie / series) — short-press skipping still works there.\n" +
-                "• Applies to whichever panel currently has focus — the category rail or the item list/grid.",
+                "• Applies to whichever panel currently has focus — the category rail or the item list/grid.\n" +
+                "• Also pages the category list in Settings → Customize Categories & Items.",
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),

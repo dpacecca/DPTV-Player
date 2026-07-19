@@ -30,7 +30,7 @@
 - **📊 Measured fps, bitrate & dropped-frame stats for ExoPlayer** (community PR #67 by @pt5pnzghm6-sys)
 - **📊 Bitrate in the player top-bar chips for all playback**
 - **📊 "Measured stream stats" toggle (Settings → Video Player → Diagnostics)**
-- **🔀 CH+ / CH− keys now page the category & item lists (skip N, long-press for first/last)**
+- **🔀 CH+ / CH− keys now page the category & item lists — incl. Settings → Customize (skip N, long-press for first/last)**
 - **🗂️ One-click full storage access that works on more TVs**
 - **🎨 Compact popup menus in a new serif font**
 

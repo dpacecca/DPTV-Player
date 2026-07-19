@@ -207,6 +207,11 @@
   long-press does nothing there — short-press skipping still works normally. Real categories and
   folders keep long-press jump-to-first/last. (This checks the built-in All key, not the name, so a
   provider category literally called "All Hindi" is unaffected.)
+- **Also pages the Customize category list.** The same CH+ / CH− paging now works in **Settings →
+  Customize Categories & Items**, where the list is just the raw provider folders (no "All"). Handy
+  with big provider category lists; long-press jumps to the first/last folder. The keys move focus
+  within the list only — they can never push focus out of it — and the CH+- Key Paging settings screen
+  notes this coverage.
 
 ### 🐛 Fixes
 

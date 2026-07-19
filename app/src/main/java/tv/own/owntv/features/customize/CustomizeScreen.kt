@@ -14,11 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -45,7 +48,10 @@ import tv.own.owntv.core.util.Pin
 import tv.own.owntv.features.profiles.PinDialog
 import tv.own.owntv.features.settings.PickerDialog
 import tv.own.owntv.features.settings.Row2
+import tv.own.owntv.features.settings.SettingsViewModel
+import tv.own.owntv.ui.components.chNavPaging
 import tv.own.owntv.ui.components.FocusableSurface
+import tv.own.owntv.ui.components.jumpLazyListTo
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.dialogPanel
@@ -83,6 +89,23 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var confirmPinStage by remember { mutableStateOf(false) }
     var pinMismatch by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
+
+    // CH+- key paging for the category list (same as Live/Movies/Series browse). The modifier consumes
+    // the CH keys and moves focus itself, so it can never leak focus out of the list.
+    val settingsVm: SettingsViewModel = koinViewModel()
+    val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
+    val chNavUpSkip by settingsVm.chNavUpSkip.collectAsStateWithLifecycle()
+    val chNavDownSkip by settingsVm.chNavDownSkip.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var listPaneFocused by remember { mutableStateOf(false) }
+    // Index (within `rows`) of the category row that currently holds focus — the paging anchor.
+    var focusedCatIndex by remember { mutableIntStateOf(0) }
+    // One FocusRequester per category row, so a jump can land focus on the target row.
+    val rowFocusers = remember(rows) { rows.map { FocusRequester() } }
+    // LazyColumn items before the category rows (hidden-items header + hidden rows + "Categories"
+    // header) — the offset that maps a category index to its LazyColumn item index.
+    val headerOffset = if (hiddenChannels.isNotEmpty()) hiddenChannels.size + 2 else 0
 
     // Wait for the stored lock state before showing anything (no unlocked flash).
     if (!pinLock.loaded) {
@@ -216,7 +239,26 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             Spacer(Modifier.height(12.dp))
         }
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .onFocusChanged { listPaneFocused = it.hasFocus }
+                .chNavPaging(
+                    enabled = chNavEnabled,
+                    upSkip = chNavUpSkip,
+                    downSkip = chNavDownSkip,
+                    isFocused = { listPaneFocused },
+                    lastIndex = { rows.lastIndex },
+                    currentTargetIndex = { focusedCatIndex },
+                    onJumpToIndex = { idx ->
+                        scope.jumpLazyListTo(listState, headerOffset + idx) {
+                            rowFocusers.getOrNull(idx)?.let { runCatching { it.requestFocus() } }
+                        }
+                    },
+                ),
+        ) {
             // Hidden items of this section first (hidden via each section's long-press menu) — kept on
             // top so they're findable even when a provider has hundreds of categories below.
             if (hiddenChannels.isNotEmpty()) {
@@ -272,11 +314,13 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     )
                 }
             }
-            items(rows, key = { it.key }) { row ->
+            itemsIndexed(rows, key = { _, r -> r.key }) { index, row ->
                 CategoryRow(
                     row = row,
                     inRangeMode = rangeAnchorKey != null,
                     isAnchor = row.key == rangeAnchorKey,
+                    focusRequester = rowFocusers.getOrNull(index),
+                    onRowFocused = { focusedCatIndex = index },
                     onMoveUp = { vm.move(row, up = true) },
                     onMoveDown = { vm.move(row, up = false) },
                     onMoveTop = { vm.moveToEdge(row, top = true) },
@@ -431,6 +475,8 @@ private fun CategoryRow(
     row: CustomizeCatRow,
     inRangeMode: Boolean,
     isAnchor: Boolean,
+    focusRequester: FocusRequester?,
+    onRowFocused: () -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onMoveTop: () -> Unit,
@@ -447,7 +493,12 @@ private fun CategoryRow(
             .clip(RoundedCornerShape(12.dp))
             // Tint the anchor while a range is in progress so its starting point is obvious.
             .background(if (isAnchor) colors.primaryContainer else colors.surfaceContainerHigh)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            // CH+- paging: a focusGroup with a FocusRequester so a jump lands focus on this row's first
+            // button; report up whenever any of the row's buttons gains focus (the paging anchor).
+            .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+            .focusGroup()
+            .onFocusChanged { if (it.hasFocus) onRowFocused() },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
