@@ -88,6 +88,23 @@
   to enter the app while the guide keeps downloading (matching the playlist import's own background
   option).
 
+### 🗂️ Categories grouped by provider + new-category control
+
+- **Multi-provider category lists no longer interleave.** When you view **All playlists** (or a profile
+  with two or more linked sources), the category lists across Live/Movies/Series browse, Customize, EPG,
+  Search and Home now stay **grouped by provider** (in the order you added them) instead of mixing two
+  providers' categories together. A single selected playlist looks exactly as before.
+- **Provider name on Customize rows.** When more than one source is in scope, each Customize category row
+  shows which provider it belongs to, so bulk-hiding across providers is easier to follow.
+- **"New category behavior" (Show / Hide) — per profile.** A new setting at the top of **Settings →
+  Customize** decides what happens to a category the provider adds on a later re-sync: **Show** (default,
+  the old behavior) or **Hide** it automatically. Useful if you keep only a few categories visible and
+  don't want new ones appearing. It rides in the Customize backup/restore like other per-profile settings.
+- **Re-sync tells you the category churn.** The sync-complete message now shows "N categories added,
+  M removed" when a re-sync changes them — so you still know new categories exist even when you hide them
+  by default. (Never shown on a source's first sync, where everything is new.)
+- *Community PR #70 by **@pt5pnzghm6-sys** (related to issue #60).*
+
 ### 🎨 Smaller tweaks
 
 - **Default UI zoom is now 90%** (was 100%) so more of each screen fits on smaller TVs out of the box;

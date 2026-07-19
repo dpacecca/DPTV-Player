@@ -16,6 +16,7 @@
 - **💬 External subtitles — OpenSubtitles search & local subtitle files**
 - **👥 Profile-based backups — pick profiles to export (PIN-protected), restore now merges without wiping**
 - **🔐 OpenSubtitles logins now ride in encrypted backups (per profile)**
+- **🗂️ Categories grouped by provider + new-category Show/Hide control** (community PR #70 by @pt5pnzghm6-sys)
 - **📱 Add a playlist from your phone (Remote setup)** (core idea from @zarga03, PR #66)
 - **⏱️ EPG guide sync can Run in background during setup**
 - **🔍 Default UI zoom is now 90% for a better out-of-the-box fit**

@@ -417,6 +417,12 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     enter **span/range mode**. Then scroll **up or down** — every category between your starting point and the
     category you land on gets hidden together as a range. Handy for quickly hiding a big block of categories (or
     even scrolling all the way to hide most of the list) instead of hiding them one by one.
+  - 🗂️ **New category behavior (Show / Hide)**: at the top of the screen, choose what happens to a
+    category your provider adds on a **later re-sync** — **Show** (default) or **Hide** it automatically.
+    Handy if you keep only a few categories visible and don't want new ones popping up. It's per profile
+    and rides in Backup & Restore. When a re-sync changes categories, the completion message tells you how
+    many were **added / removed**. With two or more playlists in view, category lists are **grouped by
+    provider** and each Customize row shows which provider it belongs to.
   - 🔒 **Optional PIN lock**: tap **Set PIN** at the top-right to lock this screen. Once set, opening
     Customize Categories & Items asks for the PIN each time, so nobody else can unhide items or change your category
     setup. The PIN is per-profile and is **not** included in backups (so a restore can never lock you out).
