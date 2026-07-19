@@ -803,7 +803,7 @@ class SettingsViewModel(
     }
 
     private fun String.withWarnings(result: SyncResult.Success): String =
-        result.warningSummary()?.let { "$this\n$it" } ?: this
+        listOfNotNull(this, result.categoryChangeSummary(), result.warningSummary()).joinToString("\n")
 
     // --- Global proxy (Approach 1 — one app-wide HTTP proxy) ---
 
