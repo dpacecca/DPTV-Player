@@ -125,6 +125,18 @@ class CustomizeViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
+    /** Whether a category this provider adds on a future resync should be hidden automatically, for
+     *  this profile — same across Live/Movies/Series, so it doesn't follow [_section]. */
+    val hideNewCategories: StateFlow<Boolean> = ctx
+        .flatMapLatest { c -> if (c.profileId < 0) flowOf(false) else settings.hideNewCategoriesDefault(c.profileId) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setHideNewCategories(hidden: Boolean) {
+        val pid = ctx.value.profileId
+        if (pid < 0) return
+        viewModelScope.launch { settings.setHideNewCategoriesDefault(pid, hidden) }
+    }
+
     fun setCategoryHidden(row: CustomizeCatRow, hidden: Boolean) {
         viewModelScope.launch {
             customize.setCategoryHidden(ctx.value.profileId, _section.value, row.key, hidden)

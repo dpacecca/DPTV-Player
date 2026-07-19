@@ -43,8 +43,11 @@ import androidx.tv.material3.Text
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.util.Pin
 import tv.own.owntv.features.profiles.PinDialog
+import tv.own.owntv.features.settings.PickerDialog
+import tv.own.owntv.features.settings.Row2
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
+import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.TextInputDialog
@@ -63,10 +66,12 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val section by vm.section.collectAsStateWithLifecycle()
     val rows by vm.rows.collectAsStateWithLifecycle()
     val hiddenChannels by vm.hiddenChannels.collectAsStateWithLifecycle()
+    val hideNewCategories by vm.hideNewCategories.collectAsStateWithLifecycle()
     val rangeAnchorKey by vm.rangeAnchorKey.collectAsStateWithLifecycle()
     val pinLock by vm.pinLock.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
     var renaming by remember { mutableStateOf<CustomizeCatRow?>(null) }
+    var showNewCatPicker by remember { mutableStateOf(false) }
     // The category whose Hide button was clicked to close a range — opens the Show/Hide/Cancel prompt.
     var rangeEnd by remember { mutableStateOf<CustomizeCatRow?>(null) }
     // PIN gate: asked on every entry (state is per-composition, so leaving the screen re-locks it).
@@ -162,6 +167,23 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 "profile. Survives re-syncs.",
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(16.dp))
+
+        // Same preference for every section (Live/Movies/Series), so it lives above the section picker
+        // rather than being buried in each section's category list.
+        Row2(
+            icon = OwnTVIcon.PLAYLIST,
+            title = "New category behavior",
+            desc = if (hideNewCategories) {
+                "Hide - new categories added on re-sync are hidden by default"
+            } else {
+                "Show - new categories added on re-sync are shown by default"
+            },
+            chip = if (hideNewCategories) "Hide" else "Show",
+            primaryChip = !hideNewCategories,
+            chevron = true,
+            onClick = { showNewCatPicker = true },
         )
         Spacer(Modifier.height(16.dp))
 
@@ -266,6 +288,16 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 )
             }
         }
+    }
+
+    if (showNewCatPicker) {
+        PickerDialog(
+            title = "New category behavior",
+            options = listOf("SHOW" to "Show", "HIDE" to "Hide"),
+            selected = if (hideNewCategories) "HIDE" else "SHOW",
+            onSelect = { value -> vm.setHideNewCategories(value == "HIDE"); showNewCatPicker = false },
+            onDismiss = { showNewCatPicker = false },
+        )
     }
 
     renaming?.let { row ->
