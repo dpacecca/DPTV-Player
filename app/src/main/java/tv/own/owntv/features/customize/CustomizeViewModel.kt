@@ -24,13 +24,15 @@ import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
 
-/** One category row in the Customize screen (hidden rows stay visible here, marked, for unhiding). */
+/** One category row in the Customize screen (hidden rows stay visible here, marked, for unhiding).
+ *  [providerName] is null when only one source is in scope. */
 data class CustomizeCatRow(
     val key: String,
     val originalName: String,
     val displayName: String,
     val hidden: Boolean,
     val renamed: Boolean,
+    val providerName: String? = null,
 )
 
 /**
@@ -95,7 +97,9 @@ class CustomizeViewModel(
             else combine(
                 categoryDao.observe(c.sourceIds, type),
                 customize.observe(c.profileId, type),
-            ) { cats, cust ->
+                sourceDao.observeForProfile(c.profileId),
+            ) { cats, cust, sources ->
+                val providerNames = sources.associate { it.id to it.name }.takeIf { c.sourceIds.size > 1 }
                 val orderIndex = cust.categoryOrder.withIndex().associate { (i, k) -> k to i }
                 val keyed = cats.map { it to CustomizeKeys.category(it) }
                 val (pinned, rest) = keyed.partition { (_, k) -> k in orderIndex }
@@ -106,6 +110,7 @@ class CustomizeViewModel(
                         displayName = cust.categoryNames[key] ?: cat.name,
                         hidden = key in cust.hiddenCategories,
                         renamed = key in cust.categoryNames,
+                        providerName = providerNames?.get(cat.sourceId),
                     )
                 }
             }
@@ -119,6 +124,18 @@ class CustomizeViewModel(
             else customize.observe(c.profileId, s).map { it.hiddenItems }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** Whether a category this provider adds on a future resync should be hidden automatically, for
+     *  this profile — same across Live/Movies/Series, so it doesn't follow [_section]. */
+    val hideNewCategories: StateFlow<Boolean> = ctx
+        .flatMapLatest { c -> if (c.profileId < 0) flowOf(false) else settings.hideNewCategoriesDefault(c.profileId) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setHideNewCategories(hidden: Boolean) {
+        val pid = ctx.value.profileId
+        if (pid < 0) return
+        viewModelScope.launch { settings.setHideNewCategoriesDefault(pid, hidden) }
+    }
 
     fun setCategoryHidden(row: CustomizeCatRow, hidden: Boolean) {
         viewModelScope.launch {
