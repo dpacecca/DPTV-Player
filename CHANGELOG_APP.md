@@ -9,12 +9,13 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
-## v4.1.3 — unreleased
+## v4.1.3 — 2026-07-19
 
 ### ✨ New features
 
 - **💬 External subtitles — OpenSubtitles search & local subtitle files**
 - **👥 Profile-based backups — pick profiles to export (PIN-protected), restore now merges without wiping**
+- **🔐 OpenSubtitles logins now ride in encrypted backups (per profile)**
 - **📱 Add a playlist from your phone (Remote setup)** (core idea from @zarga03, PR #66)
 - **⏱️ EPG guide sync can Run in background during setup**
 - **🔍 Default UI zoom is now 90% for a better out-of-the-box fit**

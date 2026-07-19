@@ -216,8 +216,8 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onClick = { dialog = Dialog.SUB_LANG },
         )
         Row2(
-            icon = OwnTVIcon.SUBTITLE, title = "OpenSubtitles account",
-            desc = "Sign in to search and download subtitles for movies and series episodes. " +
+            icon = OwnTVIcon.SUBTITLE, title = "OpenSubtitles",
+            desc = "Sign in to search and download subtitles, and manage downloaded subtitles. " +
                 "Per profile; a free opensubtitles.com account is required.",
             chevron = true,
             modifier = Modifier.focusRequester(openSubRowFocus),

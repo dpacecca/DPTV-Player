@@ -390,7 +390,7 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 **ADD SUBTITLES** section:
 
 - **Search OpenSubtitles** — needs a free [opensubtitles.com](https://www.opensubtitles.com) account,
-  connected per profile in **Settings → Video Player → Subtitles → OpenSubtitles account** (or right
+  connected per profile in **Settings → Video Player → Subtitles → OpenSubtitles** (or right
   from the dialog that appears if you're not signed in). The search is pre-filled for the playing
   title; use **Edit search** if the provider's name is odd, and **All languages** to widen it. Pick a
   result and it downloads, turns on immediately, and is remembered for that title. Your remaining
@@ -404,7 +404,7 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 - On **replay**, previously downloaded subtitles for the title are re-listed in the Subtitles menu
   (not auto-selected) — pick one and its saved timing comes back too.
 - **Deleting**: long-press a movie/episode → **Delete OpenSub subtitles**, or manage everything in
-  **Settings → … → OpenSubtitles account → Delete subtitles** (per profile).
+  **Settings → … → OpenSubtitles → Delete subtitles** (per profile).
 
 ---
 
@@ -478,7 +478,8 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   profiles** to include — the file contains only the selected profiles and their data. Including a
   **PIN-locked profile** that isn't your current one requires entering its PIN; without the PIN it
   simply stays out of the backup. Then choose the data sections as before. On export you can set a **backup password** to encrypt saved
-  passwords (source & proxy, plus your own TMDB API key if set); without one, passwords are left out of
+  passwords (source & proxy, plus your own TMDB API key and each profile's **OpenSubtitles login** if
+  set); without one, those secrets are left out of
   the file. Restoring an encrypted
   backup asks for that password — enter it to bring passwords back, or **Skip** to restore everything
   else and re‑enter passwords later. **Restore merges — it never deletes your existing profiles or

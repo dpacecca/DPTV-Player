@@ -85,7 +85,7 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { Header("OpenSubtitles account", onBack) }
+            Box(Modifier.weight(1f)) { Header("OpenSubtitles", onBack) }
             if (state is OpenSubtitlesViewModel.UiState.SignedIn) {
                 OwnTVButton("Refresh", onClick = { vm.refresh() }, style = OwnTVButtonStyle.SECONDARY)
             }
