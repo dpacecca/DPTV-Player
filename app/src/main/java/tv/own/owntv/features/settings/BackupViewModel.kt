@@ -15,7 +15,37 @@ class BackupViewModel(
     private val backup: BackupManager,
     private val profileDao: tv.own.owntv.core.database.dao.ProfileDao,
     private val settings: tv.own.owntv.features.settings.data.SettingsRepository,
+    private val companion: tv.own.owntv.core.companion.CompanionController,
 ) : ViewModel() {
+
+    // ---- Remote restore: a phone uploads a backup JSON to the TV over the LAN companion server. ----
+    /** Server lifecycle (Idle / Starting / Listening with PIN+QR / Failed) for the remote-restore panel. */
+    val remoteState get() = companion.state
+
+    /** Uploaded backup files — the screen collects this and feeds each into [inspect]. */
+    val remoteBackups get() = companion.backups
+
+    fun startRemoteRestore(port: Int = tv.own.owntv.core.companion.CompanionLink.DEFAULT_PORT) =
+        companion.startForBackupRestore(port)
+
+    fun stopRemoteRestore() = companion.stop()
+
+    /** Exports to an app-internal cache file, then serves it over the companion server for a phone/laptop
+     *  to download. On failure the base screen shows the error; on success the remote panel shows PIN+QR. */
+    fun exportRemote(sections: Set<BackupManager.Section>, backupPassword: String?, profileIds: Set<Long>) {
+        viewModelScope.launch {
+            _state.value = State.Working
+            backup.export(companion.backupExportDir, sections, backupPassword, profileIds).fold(
+                onSuccess = { path ->
+                    companion.startForBackupDownload(tv.own.owntv.core.companion.CompanionLink.DEFAULT_PORT, File(path))
+                    _state.value = State.Idle
+                },
+                onFailure = { _state.value = State.Error(it.message ?: "Export failed") },
+            )
+        }
+    }
+
+    fun stopRemoteExport() = companion.stop()
 
     /** All profiles + the active one, for the export flow's profile-picker step. */
     data class ProfileChoices(val profiles: List<tv.own.owntv.core.database.entity.ProfileEntity>, val activeId: Long)

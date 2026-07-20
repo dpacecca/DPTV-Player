@@ -50,10 +50,11 @@ import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.features.settings.EpgSyncDialog
+import tv.own.owntv.features.settings.RemoteBackupRestoreScreen
 import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.theme.OwnTVTheme
 
-private enum class Step { WELCOME, DISCLAIMER, SETUP_CHOICE, CREATE_PROFILE, ADD_CONTENT, ADD_SOURCE_CHOOSER, ADD_SOURCE_REMOTE, ADD_SOURCE, IMPORTING, EXISTING, IMPORT_BACKUP }
+private enum class Step { WELCOME, DISCLAIMER, SETUP_CHOICE, CREATE_PROFILE, ADD_CONTENT, ADD_SOURCE_CHOOSER, ADD_SOURCE_REMOTE, ADD_SOURCE, IMPORTING, EXISTING, IMPORT_BACKUP_CHOOSER, IMPORT_BACKUP_REMOTE, IMPORT_BACKUP }
 
 /**
  * Onboarding for one profile. [firstRun] shows the welcome/disclaimer; otherwise it starts at profile
@@ -83,7 +84,7 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
             // no point creating a profile first that the restore would replace).
             Step.SETUP_CHOICE -> SetupChoiceScreen(
                 onCreate = { step = Step.CREATE_PROFILE },
-                onRestore = { backupOrigin = Step.SETUP_CHOICE; step = Step.IMPORT_BACKUP },
+                onRestore = { backupOrigin = Step.SETUP_CHOICE; step = Step.IMPORT_BACKUP_CHOOSER },
                 onBack = { step = Step.DISCLAIMER },
             )
             Step.CREATE_PROFILE -> ProfileEditorDialog(
@@ -95,7 +96,7 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
                 hasExisting = existing.isNotEmpty(),
                 onNew = { step = Step.ADD_SOURCE_CHOOSER },
                 onExisting = { step = Step.EXISTING },
-                onImport = { backupOrigin = Step.ADD_CONTENT; step = Step.IMPORT_BACKUP },
+                onImport = { backupOrigin = Step.ADD_CONTENT; step = Step.IMPORT_BACKUP_CHOOSER },
                 onSkip = { vm.finish(onDone) },
             )
             Step.ADD_SOURCE_CHOOSER -> AddSourceChooserScreen(
@@ -143,6 +144,21 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
                 sources = existing,
                 onAdd = { ids -> vm.linkExisting(ids); importOrigin = Step.EXISTING; step = Step.IMPORTING },
                 onBack = { step = Step.ADD_CONTENT },
+            )
+            Step.IMPORT_BACKUP_CHOOSER -> ImportBackupChooserScreen(
+                onRemote = { step = Step.IMPORT_BACKUP_REMOTE },
+                onLocal = { step = Step.IMPORT_BACKUP },
+                onBack = { step = backupOrigin },
+            )
+            Step.IMPORT_BACKUP_REMOTE -> RemoteBackupRestoreScreen(
+                state = vm.remoteState.collectAsStateWithLifecycle().value,
+                backups = vm.remoteBackups,
+                onStart = { port -> vm.startRemoteRestore(port) },
+                onStop = { vm.stopRemoteRestore() },
+                // An uploaded file starts the restore; the state-driven IMPORT_BACKUP screen shows
+                // progress, the password prompt, or the result from here on.
+                onBackupReceived = { file -> vm.importBackup(file) { onDone() }; step = Step.IMPORT_BACKUP },
+                onBack = { vm.stopRemoteRestore(); step = Step.IMPORT_BACKUP_CHOOSER },
             )
             Step.IMPORT_BACKUP -> ImportBackupScreen(
                 state = importState,
@@ -343,6 +359,30 @@ private fun ImportBackupScreen(
             onPick = onPick,
             onDismiss = onBack,
         )
+    }
+}
+
+/** Restore chooser: send the backup from a phone (LAN companion server) or pick a local file. */
+@Composable
+private fun ImportBackupChooserScreen(onRemote: () -> Unit, onLocal: () -> Unit, onBack: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    val fr = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
+    BackHandler { onBack() }
+    Centered {
+        Text("Restore a backup", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Send the backup from another device (phone or laptop) on the same Wi-Fi, or pick a backup file already on this device.",
+            style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(24.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            ChoiceCard(icon = OwnTVIcon.PLAYLIST, title = "Remote", desc = "Upload from a device on your Wi-Fi", modifier = Modifier.focusRequester(fr), onClick = onRemote)
+            ChoiceCard(icon = OwnTVIcon.DOWNLOADS, title = "Local file", desc = "Pick a backup file on this device", onClick = onLocal)
+        }
+        Spacer(Modifier.height(24.dp))
+        OwnTVButton("Back", onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
     }
 }
 

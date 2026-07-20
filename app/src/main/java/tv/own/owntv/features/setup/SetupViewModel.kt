@@ -66,6 +66,13 @@ class SetupViewModel(
     fun stopRemoteListener() = companion.stop()
     fun consumeRemotePayload() = companion.consumePayload()
 
+    // ---- Remote restore: a phone uploads a backup JSON to the TV over the LAN companion server. ----
+    /** Uploaded backup files — the remote-restore screen collects this and hands each to [importBackup]. */
+    val remoteBackups get() = companion.backups
+
+    fun startRemoteRestore(port: Int) = companion.startForBackupRestore(port)
+    fun stopRemoteRestore() = companion.stop()
+
     // Semi-auto EPG: after the first playlist imports, offer a one-tap guide sync (with a live count) if it
     // has a guide feed.
     private var pendingEpgSource: SourceEntity? = null

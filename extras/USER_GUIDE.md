@@ -455,6 +455,14 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 - 🌈 **HDR** — use HDR output when the video and TV support it. Turn on for HDR/Dolby Vision content.
 - 🧩 **Hardware decoder** (Video Player Settings) — hardware decoding is on for smooth 4K; switch to software
   only if a specific codec misbehaves.
+- 📡 **Live latency** (Video Player Settings) — how close to the live edge Live TV plays, trading latency
+  against stability: **Low latency**, **Balanced** (default), **Stable**, or a **Custom** buffer in seconds.
+  It applies on the next channel open, to live streams only, on both engines. **Balanced** changes nothing
+  (so it can't regress a working stream); picking **Low latency** or a below‑Balanced custom value warns
+  first that a smaller buffer can stutter on weaker connections.
+- 🪟 **Mini‑player** (Settings → Playback) — set the docked live‑PiP window's **size** (percentage of screen
+  width) and **screen position** (four corners plus top/bottom centre). Both are also adjustable **on the
+  fly** from the mini‑player's own resize / move controls, and the window scales with your TV size and UI zoom.
 - 🎬 **Movies & Series player** (Video Player Settings) — which engine plays movies/episodes first:
   **mpv** (default — widest format support incl. DTS/TrueHD audio, plus the A/V sync fix) or
   **ExoPlayer** (try it **only if movies/episodes won't start** on your device — it can't decode
@@ -498,7 +506,11 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   your **default source**, any **compatibility‑mode / per‑item engine pins** (Live and Movies/Series),
   your **custom TMDB names** (long‑press → Custom TMDB name) and recent searches,
   so a restored setup behaves exactly like the original. Older backup files still restore fine — anything
-  they don't contain just keeps its default.
+  they don't contain just keeps its default. **Move a backup between TVs over Wi‑Fi:** choose **Restore
+  from another device** (also offered in the setup wizard) to show a PIN + QR — a phone or laptop on the
+  same network uploads a backup file straight to the TV, which then runs the normal restore. **Send to
+  another device** does the reverse, serving the exported backup for a remote device to download. No USB
+  stick or cloud needed; the local USB/file flows still work as before.
 - 🧹 **Clear watch history** — wipe a profile's recently‑watched / continue rows.
 - 📥 **Downloads** — download movies/episodes for offline play; pick the **Download folder** (app storage or
   external). To browse outside app storage, choose **Grant full storage access** in the folder picker — it

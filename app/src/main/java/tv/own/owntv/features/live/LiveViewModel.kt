@@ -508,6 +508,17 @@ class LiveViewModel(
      *  playing (no stop) — just clears the flag so [playPreview] works again. */
     fun onFullscreenExited() {
         _liveOnExo.value = false
+        // With the in-pane preview enabled, the preview pane re-takes the ExoPlayer engine on the next
+        // focus and re-applies the preview mute — so we can leave it running here. But when live preview
+        // is OFF, nothing ever re-takes it, and the engine would keep decoding the (unmuted) channel's
+        // audio in the background after exit. Stop it so leaving fullscreen actually silences the stream.
+        if (!livePreviewEnabled.value) {
+            exoOutcomeJob?.cancel()
+            stalkerPreviewJob?.cancel()
+            stalkerPreviewCmd = null
+            setStalkerReconnect(null)
+            previewEngine.stop()
+        }
     }
 
     fun clearLiveOnExo() {

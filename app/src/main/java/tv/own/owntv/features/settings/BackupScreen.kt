@@ -86,6 +86,24 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val restoreBtnFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(50); runCatching { firstFocus.requestFocus() } }
 
+    // Restore: first pick Remote (phone upload) or Local (file picker). Remote opens a full-screen
+    // companion panel; an uploaded file drops back into the same inspect → section-picker flow.
+    var showRestoreChooser by remember { mutableStateOf(false) }
+    var showRemoteRestore by remember { mutableStateOf(false) }
+    val remoteState by vm.remoteState.collectAsStateWithLifecycle()
+
+    // Export: Remote (serve the file for a phone/laptop to download) or Local (save to a folder).
+    var showExportChooser by remember { mutableStateOf(false) }
+    var exportToRemote by remember { mutableStateOf(false) }
+    var showRemoteExportPassword by remember { mutableStateOf(false) }
+    var showRemoteExport by remember { mutableStateOf(false) }
+    // If the remote export fails to prepare, drop the panel so the base screen shows the error.
+    LaunchedEffect(state) {
+        if (state is BackupViewModel.State.Error && showRemoteExport) {
+            vm.stopRemoteExport(); showRemoteExport = false
+        }
+    }
+
     BackHandler { onBack() }
 
     // Dialog-close focus return: closing the section picker / file browser refocuses the button
@@ -93,6 +111,7 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // it — it consults dialogReturn first (and clears it) instead of hijacking.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
     val anyDialogOpen = showBrowser || showExportPicker || showProfilePicker || pendingFolderBrowser || exportFolder != null ||
+        showRestoreChooser || showRemoteRestore || showExportChooser || showRemoteExportPassword || showRemoteExport ||
         state is BackupViewModel.State.ChooseRestore || state is BackupViewModel.State.NeedPassword
     LaunchedEffect(anyDialogOpen) {
         if (!anyDialogOpen) {
@@ -130,8 +149,8 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(24.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OwnTVButton("Export backup", onClick = { dialogReturn = firstFocus; vm.loadProfiles(); showProfilePicker = true }, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(firstFocus))
-            OwnTVButton("Restore backup", onClick = { dialogReturn = restoreBtnFocus; browser = BrowseMode.FILE; showBrowser = true }, style = OwnTVButtonStyle.SECONDARY, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(restoreBtnFocus))
+            OwnTVButton("Export backup", onClick = { dialogReturn = firstFocus; showExportChooser = true }, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(firstFocus))
+            OwnTVButton("Restore backup", onClick = { dialogReturn = restoreBtnFocus; showRestoreChooser = true }, style = OwnTVButtonStyle.SECONDARY, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(restoreBtnFocus))
         }
         Spacer(Modifier.height(20.dp))
 
@@ -165,17 +184,17 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         }
     }
 
-    // Export step 1: choose what to include, then pick the folder.
+    // Export step 1: choose what to include, then pick the folder (local) or continue (remote).
     if (showExportPicker) {
         SectionPickerDialog(
             title = "What to back up",
             sections = BackupManager.Section.entries,
             initial = BackupManager.Section.entries.toSet(),
-            confirmLabel = "Choose folder",
+            confirmLabel = if (exportToRemote) "Continue" else "Choose folder",
             onConfirm = { chosen ->
                 exportSections = chosen
                 showExportPicker = false
-                pendingFolderBrowser = true
+                if (exportToRemote) showRemoteExportPassword = true else pendingFolderBrowser = true
             },
             onDismiss = { showExportPicker = false },
         )
@@ -233,6 +252,100 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             onSkip = { vm.import(need.file, need.sections, null) },
             onDismiss = { vm.reset() },
         )
+    }
+
+    // Export step 0: Remote (serve for a phone/laptop to download) or Local (save to a folder).
+    if (showExportChooser) {
+        RemoteLocalChooserDialog(
+            title = "Export a backup",
+            message = "Send the backup to another device (phone or laptop) on the same Wi-Fi, or save it to a file on this device.",
+            onRemote = { showExportChooser = false; exportToRemote = true; vm.loadProfiles(); showProfilePicker = true },
+            onLocal = { showExportChooser = false; exportToRemote = false; vm.loadProfiles(); showProfilePicker = true },
+            onDismiss = { showExportChooser = false },
+        )
+    }
+
+    // Remote export step 2: password prompt, then export to cache + start serving the file.
+    if (showRemoteExportPassword) {
+        BackupPasswordDialog(
+            title = "Protect passwords?",
+            message = "Source and proxy passwords can be encrypted with a backup password you choose. " +
+                "You'll need the same password to restore them on another device. Without one, passwords " +
+                "are left out of the file and must be re-entered after restoring.",
+            confirmLabel = "Encrypt & prepare",
+            skipLabel = "Prepare without passwords",
+            onConfirm = { pass -> showRemoteExportPassword = false; showRemoteExport = true; vm.exportRemote(exportSections, pass, exportProfiles) },
+            onSkip = { showRemoteExportPassword = false; showRemoteExport = true; vm.exportRemote(exportSections, null, exportProfiles) },
+            onDismiss = { showRemoteExportPassword = false },
+        )
+    }
+
+    // Remote export: full-screen panel with PIN + QR while the file is served for download.
+    if (showRemoteExport) {
+        Box(Modifier.fillMaxSize().background(colors.background)) {
+            RemoteBackupExportScreen(
+                state = remoteState,
+                preparing = state == BackupViewModel.State.Working,
+                onStop = { vm.stopRemoteExport() },
+                onBack = { vm.stopRemoteExport(); showRemoteExport = false },
+            )
+        }
+    }
+
+    // Restore step 0: Remote (send the backup from a phone) or Local (pick a file on this device).
+    if (showRestoreChooser) {
+        RemoteLocalChooserDialog(
+            title = "Restore a backup",
+            message = "Send the backup from another device (phone or laptop) on the same Wi-Fi, or pick a backup file already on this device.",
+            onRemote = { showRestoreChooser = false; showRemoteRestore = true },
+            onLocal = { showRestoreChooser = false; browser = BrowseMode.FILE; showBrowser = true },
+            onDismiss = { showRestoreChooser = false },
+        )
+    }
+
+    // Remote restore: full-screen companion panel (PIN + QR). An uploaded file feeds the normal
+    // inspect → section-picker flow; the panel closes itself when a file arrives.
+    if (showRemoteRestore) {
+        Box(Modifier.fillMaxSize().background(colors.background)) {
+            RemoteBackupRestoreScreen(
+                state = remoteState,
+                backups = vm.remoteBackups,
+                onStart = { port -> vm.startRemoteRestore(port) },
+                onStop = { vm.stopRemoteRestore() },
+                onBackupReceived = { file -> showRemoteRestore = false; vm.inspect(file) },
+                onBack = { vm.stopRemoteRestore(); showRemoteRestore = false },
+            )
+        }
+    }
+}
+
+/** Two-way chooser: send/receive over the LAN companion server, or use a local file. */
+@Composable
+private fun RemoteLocalChooserDialog(
+    title: String,
+    message: String,
+    onRemote: () -> Unit,
+    onLocal: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(), contentAlignment = Alignment.Center) {
+        Column(Modifier.dialogPanel(width = 560.dp, padding = 28.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(8.dp))
+            Text(message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                Spacer(Modifier.weight(1f))
+                OwnTVButton("Local file", onClick = onLocal, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton("Remote", onClick = onRemote, modifier = Modifier.focusRequester(firstFocus))
+            }
+        }
     }
 }
 

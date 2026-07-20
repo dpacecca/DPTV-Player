@@ -95,6 +95,11 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val audioLang by vm.preferredAudioLang.collectAsStateWithLifecycle()
     val subLang by vm.preferredSubLang.collectAsStateWithLifecycle()
     val resumeMode by vm.resumeMode.collectAsStateWithLifecycle()
+    val liveLatency by vm.liveLatencyMode.collectAsStateWithLifecycle()
+    val liveCustomSecs by vm.liveLatencyCustomSecs.collectAsStateWithLifecycle()
+    // Low-latency acknowledgement popup (shown for "Low latency" and below-Balanced custom values).
+    // First lambda runs on "I understand", second on "Cancel".
+    var lowWarning by remember { mutableStateOf<Pair<() -> Unit, () -> Unit>?>(null) }
 
     // OpenSubtitles account lives as an in-place sub-screen of this tab (plan §15). These three
     // are declared before the early return so they survive while the sub-screen is shown — that's
@@ -122,10 +127,14 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     // intercepts it — it consults dialogReturn first (and clears it) instead of hijacking.
     val dialogRowFocus = remember { Dialog.entries.associateWith { FocusRequester() } }
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(dialog) {
+    LaunchedEffect(dialog, lowWarning) {
         if (dialog != Dialog.NONE) {
-            dialogReturn = dialogRowFocus.getValue(dialog)
-        } else {
+            // The custom-seconds dialog has no row of its own — it belongs to the Live latency row.
+            val returnRow = if (dialog == Dialog.LIVE_CUSTOM) Dialog.LIVE_LATENCY else dialog
+            dialogReturn = dialogRowFocus.getValue(returnRow)
+        } else if (lowWarning == null) {
+            // Don't steal focus back to the row while the low-latency warning popup is up — it keeps
+            // focus itself. Restore only once it (and every dialog) is closed.
             dialogReturn?.let { row ->
                 kotlinx.coroutines.delay(80)
                 runCatching { row.requestFocus() }
@@ -242,6 +251,18 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
         )
 
         Divider()
+        GroupLabel("Live TV")
+        Row2(
+            icon = OwnTVIcon.LIVE_TV, title = "Live latency",
+            desc = "How close to the live broadcast to play. Lower means closer to live but a smaller " +
+                "buffer, so weak streams may stutter or reconnect more. Applies to the next channel you open.",
+            chip = if (liveLatency == tv.own.owntv.features.settings.data.LiveLatency.CUSTOM) "${liveCustomSecs}s" else liveLatency.label,
+            chevron = true,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_LATENCY)),
+            onClick = { dialog = Dialog.LIVE_LATENCY },
+        )
+
+        Divider()
         GroupLabel("Diagnostics")
         Row2(
             icon = OwnTVIcon.VIDEO, title = "Measured stream stats",
@@ -297,11 +318,86 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onReset = { vm.setAudioDelayMs(0) },
             onDismiss = { dialog = Dialog.NONE },
         )
+        Dialog.LIVE_LATENCY -> PickerDialog(
+            title = "Live latency",
+            options = tv.own.owntv.features.settings.data.LiveLatency.entries.map { it.name to it.label },
+            selected = liveLatency.name,
+            onSelect = { name ->
+                val mode = tv.own.owntv.features.settings.data.LiveLatency.fromName(name)
+                dialog = Dialog.NONE
+                when (mode) {
+                    // "Low latency" — warn before applying; Cancel leaves the current choice untouched.
+                    tv.own.owntv.features.settings.data.LiveLatency.LOW ->
+                        lowWarning = Pair({ vm.setLiveLatencyMode(mode) }, {})
+                    // "Custom" — enter the seconds; the below-Balanced warning fires when that dialog closes.
+                    tv.own.owntv.features.settings.data.LiveLatency.CUSTOM -> {
+                        vm.setLiveLatencyMode(mode)
+                        dialog = Dialog.LIVE_CUSTOM
+                    }
+                    else -> vm.setLiveLatencyMode(mode)
+                }
+            },
+            onDismiss = { dialog = Dialog.NONE },
+        )
+        Dialog.LIVE_CUSTOM -> StepperDialog(
+            title = "Custom live buffer",
+            value = liveCustomSecs,
+            step = 1,
+            min = tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_MIN,
+            max = tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_MAX,
+            format = { "${it}s" },
+            onSet = { vm.setLiveLatencyCustomSecs(it) },
+            onReset = { vm.setLiveLatencyCustomSecs(tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_DEFAULT) },
+            onDismiss = {
+                dialog = Dialog.NONE
+                // A below-Balanced custom value gets the same acknowledgement; Cancel reverts to Balanced.
+                if (tv.own.owntv.features.settings.data.LiveBuffer.isLowLatency(liveCustomSecs)) {
+                    lowWarning = Pair({}, { vm.setLiveLatencyMode(tv.own.owntv.features.settings.data.LiveLatency.BALANCED) })
+                }
+            },
+        )
         Dialog.NONE -> Unit
+    }
+
+    lowWarning?.let { (onConfirm, onCancel) ->
+        LiveLatencyWarningDialog(
+            onConfirm = { lowWarning = null; onConfirm() },
+            onCancel = { lowWarning = null; onCancel() },
+        )
     }
 }
 
-private enum class Dialog { NONE, ZOOM, SUB_SIZE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME }
+/** Acknowledgement popup when picking a below-Balanced live buffer (Low latency, or a low custom value). */
+@Composable
+private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onCancel() }
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(modifier = Modifier.dialogPanel(width = 500.dp, padding = 28.dp)) {
+            Text("⚠️ Low latency", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Playing closer to the live broadcast leaves a smaller buffer. On slower connections or " +
+                    "unstable streams this can cause more buffering, stutter, or reconnects.\n\n" +
+                    "Choose Balanced if a channel becomes unreliable.",
+                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton("Cancel", onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
+                Spacer(Modifier.weight(1f))
+                OwnTVButton("I understand", onClick = onConfirm, modifier = Modifier.focusRequester(firstFocus))
+            }
+        }
+    }
+}
+
+private enum class Dialog { NONE, ZOOM, SUB_SIZE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM }
 
 // --- Shared building blocks (kept local to the settings sub-screens) ---
 

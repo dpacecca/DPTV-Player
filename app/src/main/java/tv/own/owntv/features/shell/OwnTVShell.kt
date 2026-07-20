@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -122,6 +123,12 @@ fun OwnTVShell(
     // One-shot: set when leaving the player so the returning browse screen re-focuses the item you played.
     var restoreFocus by remember { mutableStateOf(false) }
     val player = koinInject<OwnTVPlayer>()
+    // Docked mini-player size (% of screen width) + position, configurable in Settings and from the
+    // mini-player's own controls. Read straight from settings so both entry points stay in sync.
+    val settingsRepo = koinInject<tv.own.owntv.features.settings.data.SettingsRepository>()
+    val miniSizePct by settingsRepo.miniPlayerSizePct.collectAsStateWithLifecycle(initialValue = tv.own.owntv.player.MiniPlayerSize.DEFAULT)
+    val miniPosName by settingsRepo.miniPlayerPosition.collectAsStateWithLifecycle(initialValue = tv.own.owntv.player.MiniPlayerPosition.DEFAULT.name)
+    val miniPos = tv.own.owntv.player.MiniPlayerPosition.fromName(miniPosName)
     val subtitleController = koinInject<tv.own.owntv.core.subtitles.SubtitleController>()
     val subtitleContext by subtitleController.current.collectAsStateWithLifecycle()
     var showSubtitleSearch by remember { mutableStateOf(false) }
@@ -514,7 +521,10 @@ fun OwnTVShell(
             modifier = if (isFull) {
                 Modifier.fillMaxSize().background(Color.Black)
             } else {
-                Modifier.align(Alignment.BottomEnd).padding(24.dp).size(width = 340.dp, height = 191.dp)
+                // Dynamic docked size/position: a screen-width fraction at the chosen corner/edge, so it
+                // scales with the panel + UI zoom (unlike the old fixed 340×191 dp box).
+                Modifier.align(miniPos.alignment).padding(24.dp)
+                    .fillMaxWidth(tv.own.owntv.player.MiniPlayerSize.fraction(miniSizePct)).aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(14.dp)).background(Color.Black)
             },
         ) {
@@ -625,7 +635,14 @@ fun OwnTVShell(
                     )
                 }
             } else {
-                MiniPlayer(player = if (liveOnExo) liveVm.previewEngine else mpvEngine, onExpand = expandPlayer, onClose = exitPlayer, modifier = Modifier.fillMaxSize())
+                MiniPlayer(
+                    player = if (liveOnExo) liveVm.previewEngine else mpvEngine,
+                    onExpand = expandPlayer,
+                    onClose = exitPlayer,
+                    onCycleSize = { scope.launch { settingsRepo.setMiniPlayerSizePct(tv.own.owntv.player.MiniPlayerSize.next(miniSizePct)) } },
+                    onCyclePosition = { scope.launch { settingsRepo.setMiniPlayerPosition(miniPos.next().name) } },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
       }

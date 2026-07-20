@@ -433,6 +433,34 @@ class SettingsViewModel(
     val uiZoomPercent: StateFlow<Int> = settings.uiZoomPercent.stateIn(viewModelScope, SharingStarted.Eagerly, UiZoom.DEFAULT)
     fun setUiZoom(percent: Int) { viewModelScope.launch { settings.setUiZoomPercent(UiZoom.clamp(percent)) } }
 
+    // Docked mini-player: size (% of screen width) and screen position.
+    val miniPlayerSizePct: StateFlow<Int> =
+        settings.miniPlayerSizePct.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.player.MiniPlayerSize.DEFAULT)
+    fun setMiniPlayerSize(percent: Int) { viewModelScope.launch { settings.setMiniPlayerSizePct(percent) } }
+
+    val miniPlayerPosition: StateFlow<tv.own.owntv.player.MiniPlayerPosition> =
+        settings.miniPlayerPosition
+            .map { tv.own.owntv.player.MiniPlayerPosition.fromName(it) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.player.MiniPlayerPosition.DEFAULT)
+    fun setMiniPlayerPosition(position: tv.own.owntv.player.MiniPlayerPosition) {
+        viewModelScope.launch { settings.setMiniPlayerPosition(position.name) }
+    }
+
+    // Live TV latency (#72): preset + custom seconds.
+    val liveLatencyMode: StateFlow<tv.own.owntv.features.settings.data.LiveLatency> =
+        settings.liveLatencyMode
+            .map { tv.own.owntv.features.settings.data.LiveLatency.fromName(it) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.features.settings.data.LiveLatency.DEFAULT)
+    fun setLiveLatencyMode(mode: tv.own.owntv.features.settings.data.LiveLatency) {
+        viewModelScope.launch { settings.setLiveLatencyMode(mode.name) }
+    }
+
+    val liveLatencyCustomSecs: StateFlow<Int> =
+        settings.liveLatencyCustomSecs.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_DEFAULT)
+    fun setLiveLatencyCustomSecs(secs: Int) {
+        viewModelScope.launch { settings.setLiveLatencyCustomSecs(secs) }
+    }
+
     val animationLevel: StateFlow<tv.own.owntv.ui.theme.AnimationLevel> =
         settings.animationLevel.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.ui.theme.AnimationLevel.FULL)
     fun setAnimationLevel(level: tv.own.owntv.ui.theme.AnimationLevel) { viewModelScope.launch { settings.setAnimationLevel(level) } }

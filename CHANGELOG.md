@@ -1,5 +1,55 @@
 # Changelog
 
+## v4.1.4 — unreleased
+
+### 📤 Remote Backup & Restore — move a backup between TVs over Wi-Fi
+
+- **Remote restore.** **Settings → Backup & Restore → Restore from another device**, and the same
+  option in the first-run / add-profile **setup wizard**, open the LAN companion server in
+  backup-upload mode and show a **PIN, a QR code, and the URL**. A phone or laptop on the same Wi-Fi
+  opens the page and uploads an OwnTV backup JSON straight to the TV; when it arrives it flows into
+  the normal restore path (section picker, backup-password prompt). No cloud, no USB stick, no file
+  browser on the TV.
+- **Remote export.** **Settings → Backup & Restore → Send to another device** serves the exported
+  backup from the TV so a remote device on the same Wi-Fi can **download** it — the mirror of remote
+  restore for getting a backup *off* the TV.
+- Both reuse the existing companion **PIN + QR pairing**, the profile / section pickers and the same
+  encryption as local backups; the listener stops automatically when you leave the screen. Local
+  backup/restore (USB, on-device file) is unchanged.
+
+### 📡 Live TV latency control (#72)
+
+- **Settings → Video Player → Live latency** trades how close to the live edge you play against
+  stability: **Low latency**, **Balanced** (default), **Stable**, or a **Custom** buffer in seconds.
+  It applies on the next channel open, to live streams only (VOD is never affected).
+- Works on **both engines** — ExoPlayer live uses it as the HLS live-edge target offset, mpv live as
+  the demuxer read-ahead. **Balanced applies no override at all**, so it can never regress a stream
+  that already plays well. Picking **Low latency** (or a below-Balanced custom value) shows a quick
+  heads-up that a smaller buffer can stutter on weaker connections.
+
+### 🪟 Configurable mini-player
+
+- The docked mini-player (live PiP) now has an adjustable **size** (percentage of screen width) and
+  **screen position** (six docking spots — the four corners plus top/bottom centre), set in
+  **Settings → Playback → Mini-player** and also changeable **on the fly** from the mini-player's own
+  resize / move controls. The window is laid out proportionally (`fillMaxWidth% × 16:9`), so it scales
+  consistently across TV sizes and the UI zoom instead of the old fixed box.
+
+### 🐛 Fixes
+
+- **Live preview off: audio no longer keeps playing after you leave a channel.** With the in-pane
+  Live preview turned off in Settings, exiting a full-screen live channel left the ExoPlayer engine
+  decoding the stream's audio in the background (nothing re-took the engine to silence it, unlike when
+  preview is on). Leaving full-screen now stops that engine when the preview is disabled.
+- **4K live channels no longer lag/judder on mpv when a provider sends broken timestamps.** Some IPTV
+  4K feeds send non-increasing / duplicate presentation timestamps; mpv is strict about PTS and was
+  dropping nearly every frame (render output collapsing to ~8–12 of 30 fps) while decode itself was
+  fine — so the channel looked laggy on mpv even though ExoPlayer played it cleanly. Live playback on
+  mpv now derives timing from the container FPS (`correct-pts=no`), stops chasing the audio clock
+  (`video-sync=desync`), and no longer drops frames (`framedrop=no`) — all **live-only**, so VOD keeps
+  accurate PTS/seeking and normal frame-dropping. Confirmed on Realtek 4K hardware across 24/30/50/60 fps
+  channels with zero frame drops.
+
 ## v4.1.3 — 2026-07-19
 
 ### 💬 External subtitles — OpenSubtitles search & local subtitle files

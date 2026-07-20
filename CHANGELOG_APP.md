@@ -9,6 +9,19 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v4.1.4 — unreleased
+
+### ✨ New features
+
+- **📤 Remote Backup & Restore — move a backup between TVs over Wi-Fi**
+- **📡 Live TV latency control (#72)**
+- **🪟 Configurable mini-player — size & screen position**
+
+### 🐛 Fixes
+
+- **Live preview off: audio no longer keeps playing after you leave a channel**
+- **4K live channels no longer lag/judder on mpv when a provider sends broken timestamps**
+
 ## v4.1.3 — 2026-07-19
 
 ### ✨ New features

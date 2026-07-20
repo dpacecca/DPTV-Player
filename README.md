@@ -71,7 +71,7 @@ Scan to join from your phone:
 - **Subtitles** — text (SRT/ASS) + image (PGS/VOBSUB/DVB on its own layer) + closed captions (CEA-608/708)
 - **External subtitles** — in-player **OpenSubtitles** search & download (per-profile account, quota-aware caching) and **local subtitle files** (srt/ass/ssa/vtt, auto charset conversion), with per-subtitle **timing adjustment** — for movies, episodes & downloads on both engines
 - **Resume & auto-play** — per-title resume prompt, auto-play next episode (across seasons) with a next-episode countdown card, opens on last-watched episode, watched ✓ / progress indicators on movies and episodes
-- **Mini-player / PiP** — dock any stream and keep browsing
+- **Mini-player / PiP** — dock any stream and keep browsing; configurable size & screen position (six docking spots), adjustable on the fly
 - **Stream info overlay** — live codec · resolution · fps · HDR · bitrate · decoder readout
 - 📺 **[Complete player design & feature reference →](extras/player.html)**
 
@@ -116,9 +116,9 @@ Scan to join from your phone:
 - **Sidebar Menu Customization** — **Static** (manually hide any side icon) or **Dynamic** (icons auto-adapt to what the active playlist contains — a VOD-only playlist hides Live TV/Guide, a Live-only playlist hides Movies/Series/Downloads); included in backups
 - **Customize Categories & Items** — hide/unhide items, rename, and reorder categories per section (Live / Movies / Series); respects the selected playlist; optional PIN lock (stored as a salted hash); included in backups
 - **Background sync status** — a small semi-transparent pill at the bottom reports both catalog syncs (background import, auto refresh) and EPG/Guide downloads
-- **Video Player** — hardware decoding, zoom, subtitle size/language, audio sync, surround sound, HDR, **external player** (VLC / MX Player for movies, series & downloads — global setting or per-item long-press)
+- **Video Player** — hardware decoding, zoom, subtitle size/language, audio sync, surround sound, HDR, **Live latency** (Low / Balanced / Stable / Custom, both engines), **external player** (VLC / MX Player for movies, series & downloads — global setting or per-item long-press)
 - **Weather** — top-bar weather chip: on/off, custom location (VPN-friendly), **°C / °F**
-- **Backup & Restore** — profiles, sources, customizations, favorites, history, resume, manual Move positions, settings, auto-refresh choices, default source, per-item engine/compatibility pins and custom TMDB names; **per-profile** (pick which profiles to export, PIN-protected for locked ones) and **merge on restore** (matches profiles by name — never wipes your existing ones)
+- **Backup & Restore** — profiles, sources, customizations, favorites, history, resume, manual Move positions, settings, auto-refresh choices, default source, per-item engine/compatibility pins and custom TMDB names; **per-profile** (pick which profiles to export, PIN-protected for locked ones) and **merge on restore** (matches profiles by name — never wipes your existing ones); local (USB/file) or **remote over Wi-Fi** (phone uploads/downloads a backup via QR + PIN, in Settings & setup wizard)
 - **Updates** — in-app from GitHub Releases; auto-check (toggleable) + manual; installs APK on TV
 - **Android TV home** — feeds system Watch Next row; refresh button
 

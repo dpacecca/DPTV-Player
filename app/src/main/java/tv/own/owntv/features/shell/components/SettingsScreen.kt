@@ -72,7 +72,7 @@ import tv.own.owntv.ui.theme.UiZoom
 
 private enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
-private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, HOME, NETWORK, METADATA, WEATHER, NAV_MENU, CH_NAV }
+private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, MINI_PLAYER, CUSTOMIZE, HOME, NETWORK, METADATA, WEATHER, NAV_MENU, CH_NAV }
 
 /**
  * The MD3 Settings screen (shown when [MainSection.SETTINGS] is active): grouped sections, each row
@@ -166,6 +166,7 @@ fun SettingsScreen(
         SettingsTab.PROFILES to FocusRequester(),
         SettingsTab.BACKUP to FocusRequester(),
         SettingsTab.VIDEO to FocusRequester(),
+        SettingsTab.MINI_PLAYER to FocusRequester(),
         SettingsTab.CUSTOMIZE to FocusRequester(),
         SettingsTab.HOME to FocusRequester(),
         SettingsTab.NETWORK to FocusRequester(),
@@ -191,6 +192,7 @@ fun SettingsScreen(
         SettingsTab.PROFILES -> { ManageProfilesScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.BACKUP -> { BackupScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.VIDEO -> { VideoPlayerSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+        SettingsTab.MINI_PLAYER -> { tv.own.owntv.features.settings.MiniPlayerSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.HOME -> { HomeSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.NETWORK -> { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
@@ -397,6 +399,12 @@ fun SettingsScreen(
             )
         }
         SettingsRow(
+            tone = TileTone.TERTIARY, icon = OwnTVIcon.PIP,
+            title = "Mini-player", desc = "Size and position of the docked mini-player",
+            onClick = { open(SettingsTab.MINI_PLAYER) }, showChevron = true,
+            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.MINI_PLAYER)),
+        )
+        SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.VIDEO,
             title = "HDR", desc = "Use HDR output when the video & TV support it",
             chip = if (hdr) "On" else "Off",
@@ -517,6 +525,7 @@ fun SettingsScreen(
                     chip = if (livePreview) "On" else "Off", chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewEnabled(!livePreview) },
                 SettingsSearchEntry("Playback", "Preview audio", "sound live preview", OwnTVIcon.AUDIO, TileTone.SECONDARY,
                     chip = if (previewAudio) "On" else "Off", chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewAudio(!previewAudio) },
+                SettingsSearchEntry("Playback", "Mini-player", "docked pip miniplayer size position scale percent corner move", OwnTVIcon.PIP, TileTone.TERTIARY) { open(SettingsTab.MINI_PLAYER) },
                 SettingsSearchEntry("Playback", "HDR", "high dynamic range output", OwnTVIcon.VIDEO, TileTone.PRIMARY,
                     chip = if (hdr) "On" else "Off", chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setHdrEnabled(!hdr) },
                 SettingsSearchEntry("Playback", "Surround sound", "dolby dts 5.1 7.1 receiver audio", OwnTVIcon.AUDIO, TileTone.SECONDARY,
@@ -529,6 +538,7 @@ fun SettingsScreen(
                         SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
                     }) { dialogReturn = searchFieldFocus; showCatchupTime = true },
                 SettingsSearchEntry("Playback", "Video Player Settings", "decoder subtitles sync", OwnTVIcon.VIDEO, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
+                SettingsSearchEntry("Playback", "Live latency", "live buffer latency delay low latency seconds close to live edge", OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
                 SettingsSearchEntry("Playback", "Playback error log", "error crash failure diagnostics report", OwnTVIcon.HISTORY, TileTone.SECONDARY) { dialogReturn = searchFieldFocus; showErrorLog = true },
                 SettingsSearchEntry("Network", "Proxy", "http traffic route", OwnTVIcon.SHARE, TileTone.SECONDARY) { open(SettingsTab.NETWORK) },
                 SettingsSearchEntry("App", "App startup", "launch open landing", OwnTVIcon.HOME, TileTone.SECONDARY,
