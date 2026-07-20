@@ -19,7 +19,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.sync.EpgActivityTracker
 import tv.own.owntv.core.sync.SyncActivityTracker
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,19 +49,17 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
     val catalogSync = activeCatalog.values.firstOrNull()
     val epgSync = activeEpg.values.firstOrNull()
 
-    val completedQueue = remember { mutableListOf<SyncActivityTracker.CompletedSync>() }
-    var queueChangeTrigger by remember { mutableStateOf(0) }
+    val completedQueue = remember { mutableStateListOf<SyncActivityTracker.CompletedSync>() }
     var currentCompleted by remember { mutableStateOf<SyncActivityTracker.CompletedSync?>(null) }
 
     LaunchedEffect(lastCompleted) {
         val completed = lastCompleted ?: return@LaunchedEffect
         if (completedQueue.none { it.timestamp == completed.timestamp && it.sourceId == completed.sourceId }) {
             completedQueue.add(completed)
-            queueChangeTrigger++
         }
     }
 
-    LaunchedEffect(catalogSync, epgSync, currentCompleted, queueChangeTrigger) {
+    LaunchedEffect(catalogSync, epgSync, currentCompleted, completedQueue.size) {
         if (catalogSync == null && epgSync == null && currentCompleted == null && completedQueue.isNotEmpty()) {
             currentCompleted = completedQueue.removeAt(0)
         }
