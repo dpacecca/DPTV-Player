@@ -311,12 +311,39 @@ Scan to donate from your phone:
 
 Thank you for using OwnTV! 🙏
 
-## 🎬 Credits — TMDB
+## 🙏 Credits
+
+### 🎬 TMDB
 
 <img src="extras/tmdb_logo.svg" alt="TMDB" width="200">
 
 Movie & series metadata and trailers are provided by [TMDB](https://www.themoviedb.org/).
 **This product uses the TMDB API but is not endorsed or certified by TMDB.**
+
+### 💬 OpenSubtitles
+
+<img src="extras/opensubtitles_logo.svg" alt="OpenSubtitles" width="200">
+
+Subtitle search & download is powered by [OpenSubtitles.com](https://www.opensubtitles.com/).
+**This product uses the OpenSubtitles API but is not endorsed or certified by OpenSubtitles.** You sign
+in with your own OpenSubtitles account and are subject to their terms and download quotas.
+
+### ▶️ Playback engines
+
+- **[mpv](https://mpv.io/)** (via [libmpv](https://github.com/mpv-android/mpv-android), built on
+  [FFmpeg](https://ffmpeg.org/)) — the default engine, for the widest IPTV/codec, audio and HDR support.
+- **[Media3 / ExoPlayer](https://github.com/androidx/media)** — the fast-start engine for Live TV
+  preview and HLS.
+
+### 🧩 Built with
+
+[Jetpack Compose for TV](https://developer.android.com/jetpack/compose) ·
+[Room](https://developer.android.com/jetpack/androidx/releases/room) ·
+[Koin](https://insert-koin.io/) ·
+[OkHttp](https://square.github.io/okhttp/) ·
+[Coil](https://coil-kt.github.io/coil/) ·
+[ZXing](https://github.com/zxing/zxing) — and the wider Kotlin / AndroidX open-source ecosystem.
+Thank you to all their maintainers. See each project for its own license.
 
 ## ⚖️ Legal
 
