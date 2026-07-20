@@ -107,172 +107,172 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         is SettingsViewModel.StalkerTestState.Failed -> StalkerTestUi.Failed(t.message)
     }
 
-    editingSource?.let { src ->
-        AddSourceScreen(
-            initial = src,
-            initialAutoRefresh = playlistAutoRefresh[src.id] ?: PlaylistAutoRefresh.OFF,
-            initialIsDefault = src.id == defaultId,
-            onStartXtream = { n, server, u, p, ua, epg, autoRefresh, _, _, _, isDefault ->
-                vm.updateSource(src.id, n, server, u, p, ua, epg, autoRefresh, isDefault)
-                editingSource = null
-            },
-            onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.updateSource(src.id, n, url, "", "", ua, epg, autoRefresh, isDefault); editingSource = null },
-            onStartStalker = { n, url, mac, ua, autoRefresh, isDefault ->
-                vm.updateSource(src.id, n, url, "", "", ua, "", autoRefresh, isDefault, mac = mac)
-                vm.resetStalkerTest()
-                editingSource = null
-            },
-            onTestStalker = { url, mac, ua -> vm.testStalker(url, mac, ua) },
-            stalkerTest = stalkerTestUi,
-            onBack = { vm.resetStalkerTest(); editingSource = null },
-            modifier = modifier,
-        )
-        return
-    }
-
-    if (showAdd) {
-        when (val s = importState) {
-            SettingsViewModel.ImportState.Idle -> when (addMode) {
-                null -> AddSourceChooserScreen(
-                    onRemote = { addMode = AddMode.REMOTE },
-                    onManual = { addMode = AddMode.MANUAL },
-                    onBack = { showAdd = false },
-                    modifier = modifier,
-                )
-                AddMode.REMOTE -> RemoteSetupScreen(
-                    state = vm.remoteState.collectAsStateWithLifecycle().value,
-                    payloads = vm.remotePayloads,
-                    onStartListener = { port -> vm.startRemoteListener(port) },
-                    onStopListener = { vm.stopRemoteListener() },
-                    // A phone submission hands off to the pre-filled Manual form.
-                    onPayloadReceived = { addMode = AddMode.MANUAL },
-                    onBack = { vm.stopRemoteListener(); addMode = null },
-                    modifier = modifier,
-                )
-                AddMode.MANUAL -> AddSourceScreen(
-                onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault ->
-                    vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault)
+    Box(modifier = modifier.fillMaxSize()) {
+        if (editingSource != null) {
+            val src = editingSource!!
+            AddSourceScreen(
+                initial = src,
+                initialAutoRefresh = playlistAutoRefresh[src.id] ?: PlaylistAutoRefresh.OFF,
+                initialIsDefault = src.id == defaultId,
+                onStartXtream = { n, server, u, p, ua, epg, autoRefresh, _, _, _, isDefault ->
+                    vm.updateSource(src.id, n, server, u, p, ua, epg, autoRefresh, isDefault)
+                    editingSource = null
                 },
-                onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.addM3u(n, url, ua, epg, autoRefresh, isDefault) },
+                onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.updateSource(src.id, n, url, "", "", ua, epg, autoRefresh, isDefault); editingSource = null },
                 onStartStalker = { n, url, mac, ua, autoRefresh, isDefault ->
+                    vm.updateSource(src.id, n, url, "", "", ua, "", autoRefresh, isDefault, mac = mac)
                     vm.resetStalkerTest()
-                    vm.addStalker(n, url, mac, ua, autoRefresh, isDefault)
+                    editingSource = null
                 },
                 onTestStalker = { url, mac, ua -> vm.testStalker(url, mac, ua) },
                 stalkerTest = stalkerTestUi,
-                // Submissions from the Remote screen land here pre-filled (type + fields).
-                remotePayload = vm.remotePayload,
-                onRemotePayloadConsumed = { vm.consumeRemotePayload() },
-                // A newly-added playlist can be made default only when others already exist.
-                showDefaultToggle = sources.isNotEmpty(),
-                onBack = { vm.resetStalkerTest(); addMode = null },
-                modifier = modifier,
-                initial = vm.lastFailedSource, // pre-fill on retry — no re-typing after a typo
-                )
-            }
-            SettingsViewModel.ImportState.Running -> CenterStatus {
-                val display = progress?.importProgressDisplay()
-                OwnTVSpinner(sizeDp = 56)
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    display?.title ?: "Importing catalog…",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onSurface,
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(display?.primaryText ?: "Preparing catalog", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
-                Spacer(Modifier.height(4.dp))
-                Text(display?.detail ?: "Preparing catalog", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                Spacer(Modifier.height(20.dp))
-                OwnTVButton("Cancel", onClick = { showAdd = false; vm.cancelImport() }, style = OwnTVButtonStyle.SECONDARY)
-            }
-            is SettingsViewModel.ImportState.Success -> {
-                // Semi-auto EPG: ask → sync (with a live count, like the import) → done, before returning.
-                if (epgSync !is EpgSyncUi.Hidden) {
-                    EpgSyncDialog(state = epgSync, onSync = vm::syncPendingEpg, onDismiss = vm::dismissPendingEpg)
-                } else if (s.summary.contains("Imported with warnings:")) {
-                    CenterStatus {
-                        Text("Import complete", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                        Spacer(Modifier.height(8.dp))
-                        Text(s.summary, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                        Spacer(Modifier.height(20.dp))
-                        OwnTVButton("Done", onClick = { showAdd = false; vm.resetImport() })
-                    }
-                } else {
-                    LaunchedEffect(Unit) { showAdd = false; vm.resetImport() }
-                }
-            }
-            is SettingsViewModel.ImportState.Failed -> CenterStatus {
-                Text("Import failed", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                Spacer(Modifier.height(8.dp))
-                Text(s.message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                Spacer(Modifier.height(20.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OwnTVButton("Back", onClick = { showAdd = false; vm.resetImport() }, style = OwnTVButtonStyle.SECONDARY)
-                    OwnTVButton("Try again", onClick = { vm.resetImport() }, modifier = Modifier.focusRequester(errorFocus))
-                }
-            }
-        }
-        return
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .roundedPanel()
-            // Spatial D-pad entry from the sidebar would land mid-list — route it to "Add Source".
-            // onEnter fires only for directional entry from outside; internal focus moves and
-            // programmatic restores never re-trigger it (an onFocusChanged redirect did, freezing focus).
-            .focusProperties { onEnter = { runCatching { addFocus.requestFocus() } } }
-            .focusGroup()
-            .padding(horizontal = 40.dp, vertical = 28.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Sources", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
-            Spacer(Modifier.weight(1f))
-            OwnTVButton("Add Source", onClick = { showAdd = true }, icon = tv.own.owntv.ui.components.OwnTVIcon.ADD, modifier = Modifier.focusRequester(addFocus))
-        }
-        Spacer(Modifier.height(8.dp))
-        Text("Sources are shared across all profiles.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-        Spacer(Modifier.height(20.dp))
-
-        if (sources.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No sources yet. Add an M3U or Xtream source.", color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
-            }
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(sources, key = { it.id }) { source ->
-                    // Default is only the explicitly-chosen source; when none is set every playlist shows
-                    // (no badge). Chosen via the add/edit form's "Default playlist" toggle, not a row action.
-                    val isDefault = source.id == defaultId
-                    val counts by remember(source.id) { vm.contentCounts(source.id) }.collectAsStateWithLifecycle(null)
-                    val syncState by remember(source.id) { vm.syncState(source.id) }.collectAsStateWithLifecycle(CatalogSyncState.Idle)
-                    SourceRow(
-                        source = source,
-                        autoRefresh = playlistAutoRefresh[source.id] ?: PlaylistAutoRefresh.OFF,
-                        isDefault = isDefault,
-                        expiry = sourceExpiry[source.id],
-                        counts = counts,
-                        syncState = syncState,
-                        isDeleting = source.id in deletingIds,
-                        onEdit = { editingSource = source },
-                        onResync = { vm.resync(source) },
-                        onCancelSync = { vm.cancelResync(source) },
-                        onDelete = { confirmDelete = source },
+                onBack = { vm.resetStalkerTest(); editingSource = null },
+                modifier = Modifier,
+            )
+        } else if (showAdd) {
+            when (val s = importState) {
+                SettingsViewModel.ImportState.Idle -> when (addMode) {
+                    null -> AddSourceChooserScreen(
+                        onRemote = { addMode = AddMode.REMOTE },
+                        onManual = { addMode = AddMode.MANUAL },
+                        onBack = { showAdd = false },
+                        modifier = Modifier,
+                    )
+                    AddMode.REMOTE -> RemoteSetupScreen(
+                        state = vm.remoteState.collectAsStateWithLifecycle().value,
+                        payloads = vm.remotePayloads,
+                        onStartListener = { port -> vm.startRemoteListener(port) },
+                        onStopListener = { vm.stopRemoteListener() },
+                        // A phone submission hands off to the pre-filled Manual form.
+                        onPayloadReceived = { addMode = AddMode.MANUAL },
+                        onBack = { vm.stopRemoteListener(); addMode = null },
+                        modifier = Modifier,
+                    )
+                    AddMode.MANUAL -> AddSourceScreen(
+                        onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault ->
+                            vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault)
+                        },
+                        onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.addM3u(n, url, ua, epg, autoRefresh, isDefault) },
+                        onStartStalker = { n, url, mac, ua, autoRefresh, isDefault ->
+                            vm.resetStalkerTest()
+                            vm.addStalker(n, url, mac, ua, autoRefresh, isDefault)
+                        },
+                        onTestStalker = { url, mac, ua -> vm.testStalker(url, mac, ua) },
+                        stalkerTest = stalkerTestUi,
+                        // Submissions from the Remote screen land here pre-filled (type + fields).
+                        remotePayload = vm.remotePayload,
+                        onRemotePayloadConsumed = { vm.consumeRemotePayload() },
+                        // A newly-added playlist can be made default only when others already exist.
+                        showDefaultToggle = sources.isNotEmpty(),
+                        onBack = { vm.resetStalkerTest(); addMode = null },
+                        modifier = Modifier,
+                        initial = vm.lastFailedSource, // pre-fill on retry — no re-typing after a typo
                     )
                 }
+                SettingsViewModel.ImportState.Running -> CenterStatus {
+                    val display = progress?.importProgressDisplay()
+                    OwnTVSpinner(sizeDp = 56)
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        display?.title ?: "Importing catalog…",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colors.onSurface,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(display?.primaryText ?: "Preparing catalog", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
+                    Spacer(Modifier.height(4.dp))
+                    Text(display?.detail ?: "Preparing catalog", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(20.dp))
+                    OwnTVButton("Cancel", onClick = { showAdd = false; vm.cancelImport() }, style = OwnTVButtonStyle.SECONDARY)
+                }
+                is SettingsViewModel.ImportState.Success -> {
+                    // Semi-auto EPG: ask → sync (with a live count, like the import) → done, before returning.
+                    if (epgSync !is EpgSyncUi.Hidden) {
+                        EpgSyncDialog(state = epgSync, onSync = vm::syncPendingEpg, onDismiss = vm::dismissPendingEpg)
+                    } else if (s.summary.contains("Imported with warnings:")) {
+                        CenterStatus {
+                            Text("Import complete", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                            Spacer(Modifier.height(8.dp))
+                            Text(s.summary, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                            Spacer(Modifier.height(20.dp))
+                            OwnTVButton("Done", onClick = { showAdd = false; vm.resetImport() })
+                        }
+                    } else {
+                        LaunchedEffect(Unit) { showAdd = false; vm.resetImport() }
+                    }
+                }
+                is SettingsViewModel.ImportState.Failed -> CenterStatus {
+                    Text("Import failed", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Spacer(Modifier.height(8.dp))
+                    Text(s.message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(20.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OwnTVButton("Back", onClick = { showAdd = false; vm.resetImport() }, style = OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton("Try again", onClick = { vm.resetImport() }, modifier = Modifier.focusRequester(errorFocus))
+                    }
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .roundedPanel()
+                    // Spatial D-pad entry from the sidebar would land mid-list — route it to "Add Source".
+                    // onEnter fires only for directional entry from outside; internal focus moves and
+                    // programmatic restores never re-trigger it (an onFocusChanged redirect did, freezing focus).
+                    .focusProperties { onEnter = { runCatching { addFocus.requestFocus() } } }
+                    .focusGroup()
+                    .padding(horizontal = 40.dp, vertical = 28.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Sources", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+                    Spacer(Modifier.weight(1f))
+                    OwnTVButton("Add Source", onClick = { showAdd = true }, icon = tv.own.owntv.ui.components.OwnTVIcon.ADD, modifier = Modifier.focusRequester(addFocus))
+                }
+                Spacer(Modifier.height(8.dp))
+                Text("Sources are shared across all profiles.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Spacer(Modifier.height(20.dp))
+
+                if (sources.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No sources yet. Add an M3U or Xtream source.", color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+                    }
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(sources, key = { it.id }) { source ->
+                            // Default is only the explicitly-chosen source; when none is set every playlist shows
+                            // (no badge). Chosen via the add/edit form's "Default playlist" toggle, not a row action.
+                            val isDefault = source.id == defaultId
+                            val counts by remember(source.id) { vm.contentCounts(source.id) }.collectAsStateWithLifecycle(null)
+                            val syncState by remember(source.id) { vm.syncState(source.id) }.collectAsStateWithLifecycle(CatalogSyncState.Idle)
+
+                            SourceRow(
+                                source = source,
+                                autoRefresh = playlistAutoRefresh[source.id] ?: PlaylistAutoRefresh.OFF,
+                                isDefault = isDefault,
+                                expiry = sourceExpiry[source.id],
+                                counts = counts,
+                                syncState = syncState,
+                                isDeleting = source.id in deletingIds,
+                                onEdit = { editingSource = source },
+                                onResync = { vm.resync(source) },
+                                onCancelSync = { vm.cancelResync(source) },
+                                onDelete = { confirmDelete = source },
+                            )
+                        }
+                    }
+                }
             }
         }
-    }
 
-    confirmDelete?.let { src ->
-        ConfirmDialog(
-            title = "Delete “${src.name}”?",
-            message = "This removes the source and all its channels, movies and series from every profile.",
-            onConfirm = { vm.delete(src); confirmDelete = null },
-            onDismiss = { confirmDelete = null },
-        )
+        confirmDelete?.let { src ->
+            ConfirmDialog(
+                title = "Delete “${src.name}”?",
+                message = "This removes the source and all its channels, movies and series from every profile.",
+                onConfirm = { vm.delete(src); confirmDelete = null },
+                onDismiss = { confirmDelete = null },
+            )
+        }
     }
 }
 
