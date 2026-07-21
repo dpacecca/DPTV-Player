@@ -313,14 +313,10 @@ Thank you for using OwnTV! 🙏
 
 ## 🙏 Credits
 
-### 🎬 TMDB
-
 <img src="extras/tmdb_logo.svg" alt="TMDB" width="200">
 
 Movie & series metadata and trailers are provided by [TMDB](https://www.themoviedb.org/).
 **This product uses the TMDB API but is not endorsed or certified by TMDB.**
-
-### 💬 OpenSubtitles
 
 <img src="extras/opensubtitles_logo.svg" alt="OpenSubtitles" width="200">
 
