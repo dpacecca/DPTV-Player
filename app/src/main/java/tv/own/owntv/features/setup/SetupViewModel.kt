@@ -427,7 +427,7 @@ class SetupViewModel(
     }
 
     private fun String.withWarnings(result: SyncResult.Success): String =
-        listOfNotNull(this, result.categoryChangeSummary(), result.warningSummary()).joinToString("\n")
+        listOfNotNull(this, result.warningSummary()).joinToString("\n")
 
     private companion object {
         /** Sentinel sourceId for the pre-save Stalker handshake (same as SettingsViewModel's). */

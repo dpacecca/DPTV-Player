@@ -768,6 +768,9 @@ class SettingsViewModel(
         catalogSyncScheduler.cancelSync(source.id)
     }
 
+    fun getLastSyncStats(sourceId: Long): tv.own.owntv.core.sync.SyncRunStats? =
+        sourceRepository.getLastSyncStats(sourceId)
+
     // Deleting a huge source (hundreds of thousands of cascaded rows) takes a while — surface it
     // per-row so the user can see the removal is in progress instead of a silently frozen list.
     private val _deletingSourceIds = MutableStateFlow<Set<Long>>(emptySet())
@@ -831,7 +834,7 @@ class SettingsViewModel(
     }
 
     private fun String.withWarnings(result: SyncResult.Success): String =
-        listOfNotNull(this, result.categoryChangeSummary(), result.warningSummary()).joinToString("\n")
+        listOfNotNull(this, result.warningSummary()).joinToString("\n")
 
     // --- Global proxy (Approach 1 — one app-wide HTTP proxy) ---
 
