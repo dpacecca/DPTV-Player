@@ -132,7 +132,12 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             // The custom-seconds dialog has no row of its own — it belongs to the Live latency row.
             val returnRow = if (dialog == Dialog.LIVE_CUSTOM) Dialog.LIVE_LATENCY else dialog
             dialogReturn = dialogRowFocus.getValue(returnRow)
-        } else if (lowWarning == null) {
+        } else if (lowWarning != null) {
+            // The warning popup has no row of its own — it always returns to the Live latency row.
+            // Re-assert this here because the picker→popup transition lets focus dip back into the
+            // list, firing onEnter and clearing dialogReturn before the popup grabs focus.
+            dialogReturn = dialogRowFocus.getValue(Dialog.LIVE_LATENCY)
+        } else {
             // Don't steal focus back to the row while the low-latency warning popup is up — it keeps
             // focus itself. Restore only once it (and every dialog) is closed.
             dialogReturn?.let { row ->
@@ -153,10 +158,17 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             // so it must prefer the pending return row over the first row.
             .focusProperties {
                 onEnter = {
-                    val target = dialogReturn ?: if (returnedFromOpenSub) openSubRowFocus else firstFocus
-                    dialogReturn = null
-                    returnedFromOpenSub = false
-                    runCatching { target.requestFocus() }
+                    if (lowWarning != null) {
+                        // The warning popup is opening and will grab focus itself. Route the
+                        // transitional dip to the Live latency row WITHOUT clearing dialogReturn,
+                        // so the popup-close restore still has a target to return to.
+                        runCatching { dialogRowFocus.getValue(Dialog.LIVE_LATENCY).requestFocus() }
+                    } else {
+                        val target = dialogReturn ?: if (returnedFromOpenSub) openSubRowFocus else firstFocus
+                        dialogReturn = null
+                        returnedFromOpenSub = false
+                        runCatching { target.requestFocus() }
+                    }
                 }
             }
             .focusGroup()

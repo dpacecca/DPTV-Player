@@ -218,7 +218,10 @@ or **narrow the whole app to just one**.
   guide keeps downloading.
 - 🔄 **EPG sync status**: when a guide feed is downloading (a manual resync or the automatic startup/
   staleness refresh), the same **status pill** that reports playlist syncs shows "Updating guide ·
-  *source* · N programmes" at the bottom of the screen.
+  *source* · N programmes" at the bottom of the screen. When a **playlist sync finishes** the same pill
+  shows the result for a few seconds — "Sync complete · *source* · N categories added", or "Sync
+  failed"/"Sync cancelled" — so you always know how a resync ended; if several finish back-to-back
+  they queue and show one after another.
 - ⭐ **Favourites from the Guide**: **long‑press a channel label** to add/remove it from Favourites
   (the same menu also holds the EPG match options), or use the **Favourite** button inside a
   programme's details. Stars apply everywhere — Live TV, Search, and the Home Favourites rail.

@@ -35,8 +35,33 @@
   resize / move controls. The window is laid out proportionally (`fillMaxWidth% × 16:9`), so it scales
   consistently across TV sizes and the UI zoom instead of the old fixed box.
 
+### 🔄 Sync reliability — completion notices, restore visibility, concurrent sync
+
+- **Sync completion pill.** When a catalog sync finishes — success, failure, or cancel — the global
+  status pill now shows the result for a few seconds ("Sync complete · Playlist · 3 categories added")
+  instead of silently disappearing. Multiple back-to-back completions queue and display one after
+  another. (community PR #73 by @pt5pnzghm6-sys)
+- **Restoring a backup no longer hides all your channels.** A restored source starts with empty
+  catalog tables, but its saved `lastSyncAt` timestamp made the first post-restore sync behave like a
+  *re-sync* — and with "hide new categories on resync" on, every category looked "new" and got hidden,
+  leaving the screen empty. Restored sources now take the fresh-install sync path, so your restored
+  show/hide preferences are honored exactly as they were. (community PR #73)
+- **Concurrent playlist syncs no longer corrupt each other.** Syncing two or more playlists at once
+  (manual resync, startup auto-refresh) used to race on the shared SQLite tables: one source's
+  index/FTS-trigger drop-and-restore cycled against another's concurrent writes, throwing
+  `SQLiteDatabaseLockedException`s that truncated the second source's movies and skipped its series
+  entirely — silently reported as success. PR #73 added a per-table index lock that fixed the
+  "trigger already exists" crash; this release closes the remaining cross-source race by serializing
+  all catalog syncs through a single app-wide lock, so every playlist syncs to completion regardless
+  of how many run at once. (community PR #73 by @pt5pnzghm6-sys)
+
 ### 🐛 Fixes
 
+- **Latency warning popup: focus returns to the Live latency row.** After picking **Low latency** (or
+  a below-Balanced custom value) and dismissing the heads-up with "I understand", focus used to jump
+  to the first row of Video Player settings ("Hardware decoding") instead of the row you were on. The
+  picker→popup transition was clearing the pending return-focus target; it is now preserved through
+  the popup so focus lands back on the Live latency row.
 - **Live preview off: audio no longer keeps playing after you leave a channel.** With the in-pane
   Live preview turned off in Settings, exiting a full-screen live channel left the ExoPlayer engine
   decoding the stream's audio in the background (nothing re-took the engine to silence it, unlike when

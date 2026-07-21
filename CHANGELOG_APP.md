@@ -16,9 +16,13 @@
 - **📤 Remote Backup & Restore — move a backup between TVs over Wi-Fi**
 - **📡 Live TV latency control (#72)**
 - **🪟 Configurable mini-player — size & screen position**
+- **🔄 Sync completion pill — see sync results, queued notifications** (community PR #73 by @pt5pnzghm6-sys)
 
 ### 🐛 Fixes
 
+- **Restored backups no longer hide all channels on first sync** (community PR #73 by @pt5pnzghm6-sys)
+- **Concurrent playlist syncs no longer truncate movies / skip series** (community PR #73 by @pt5pnzghm6-sys)
+- **Latency warning popup: focus returns to the Live latency row**
 - **Live preview off: audio no longer keeps playing after you leave a channel**
 - **4K live channels no longer lag/judder on mpv when a provider sends broken timestamps**
 
