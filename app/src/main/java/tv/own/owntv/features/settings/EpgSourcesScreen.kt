@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -26,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +49,7 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.roundedPanel
+import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.core.sync.work.EpgSyncState
 
@@ -68,14 +71,47 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
     var confirmDelete by remember { mutableStateOf<EpgSource?>(null) }
     val addFocus = remember { FocusRequester() }
 
+    // Per-row focus restore (mirrors ManageSourcesScreen / MoviesScreen): track the row the user is
+    // acting on so edit/re-sync/delete returns focus INSIDE the list — same row if it survived, else
+    // the nearest neighbour, else the first row, else "Add EPG". Without this the old code always
+    // refocused the "Add EPG" button, which is why focus escaped the menu.
+    var contextId by remember { mutableStateOf<Long?>(null) }
+    var contextIndex by remember { mutableStateOf(-1) }
+    val contextFocus = remember { FocusRequester() }
+    val firstRowFocus = remember { FocusRequester() }
+
     BackHandler { onBack() }
 
-    // Grab focus when the list view is showing (entry, and after returning from the form or a dialog).
-    // The Column's onEnter only fires on directional entry, not on this internal tab-swap.
+    // Grab focus inside the list (not on "Add EPG") whenever the list view is showing.
     LaunchedEffect(adding, editing, confirmDelete) {
-        if (!adding && editing == null && confirmDelete == null) {
-            kotlinx.coroutines.delay(80); runCatching { addFocus.requestFocus() }
+        if (adding || editing != null || confirmDelete != null) return@LaunchedEffect
+        kotlinx.coroutines.delay(80)
+        val targetId = contextId
+        if (targetId != null && sources.any { it.id == targetId }) {
+            runCatching { contextFocus.requestFocus() }
+        } else if (sources.isNotEmpty()) {
+            runCatching { firstRowFocus.requestFocus() }
+        } else {
+            runCatching { addFocus.requestFocus() }
         }
+    }
+
+    // When the deleted row vanishes from `sources`, move focus to the nearest surviving neighbour
+    // (same index slot, else new last row) instead of letting it escape the menu.
+    LaunchedEffect(sources) {
+        val targetId = contextId ?: return@LaunchedEffect
+        if (sources.any { it.id == targetId }) return@LaunchedEffect
+        withFrameNanos { }
+        if (sources.isEmpty()) {
+            contextId = null; contextIndex = -1
+            runCatching { addFocus.requestFocus() }
+            return@LaunchedEffect
+        }
+        val neighbor = sources.getOrNull(contextIndex.coerceAtLeast(0)) ?: sources.last()
+        contextId = neighbor.id
+        contextIndex = sources.indexOfFirst { it.id == neighbor.id }
+        withFrameNanos { }
+        runCatching { contextFocus.requestFocus() }
     }
 
     // Add / edit form.
@@ -100,7 +136,18 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
         modifier = modifier
             .fillMaxSize()
             .roundedPanel()
-            .focusProperties { onEnter = { runCatching { addFocus.requestFocus() } } }
+            // D-pad entry from outside should fall INSIDE the menu — last-acted row, else first row,
+            // else "Add EPG" (only when the list is empty). Previously this always went to "Add EPG".
+            .focusProperties {
+                onEnter = {
+                    val tid = contextId
+                    when {
+                        tid != null && sources.any { it.id == tid } -> runCatching { contextFocus.requestFocus() }
+                        sources.isNotEmpty() -> runCatching { firstRowFocus.requestFocus() }
+                        else -> runCatching { addFocus.requestFocus() }
+                    }
+                }
+            }
             .focusGroup()
             .padding(horizontal = 40.dp, vertical = 28.dp),
     ) {
@@ -123,7 +170,7 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
             }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(sources, key = { it.id }) { source ->
+                itemsIndexed(sources, key = { _, it -> it.id }) { index, source ->
                     val syncState by remember(source.id) { vm.observeSync(source.id) }
                         .collectAsStateWithLifecycle(EpgSyncState.Idle)
                     EpgRow(
@@ -132,10 +179,16 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
                         counts = { vm.counts(source.id) },
                         syncState = syncState,
                         deleting = source.id in deletingIds,
-                        onResync = { vm.resync(source) },
-                        onCancelSync = { vm.cancelSync(source) },
-                        onEdit = { editing = source },
-                        onDelete = { confirmDelete = source },
+                        // Bind contextFocus to the acted-on row (restore target), firstRowFocus to row 0.
+                        rowModifier = when {
+                            source.id == contextId -> Modifier.focusRequester(contextFocus)
+                            index == 0 -> Modifier.focusRequester(firstRowFocus)
+                            else -> Modifier
+                        },
+                        onResync = { contextId = source.id; contextIndex = index; vm.resync(source) },
+                        onCancelSync = { contextId = source.id; contextIndex = index; vm.cancelSync(source) },
+                        onEdit = { contextId = source.id; contextIndex = index; editing = source },
+                        onDelete = { contextId = source.id; contextIndex = index; confirmDelete = source },
                     )
                 }
             }
@@ -159,6 +212,7 @@ private fun EpgRow(
     counts: suspend () -> Triple<Int, Int, Int>,
     syncState: EpgSyncState,
     deleting: Boolean,
+    rowModifier: Modifier,
     onResync: () -> Unit,
     onCancelSync: () -> Unit,
     onEdit: () -> Unit,
@@ -177,7 +231,7 @@ private fun EpgRow(
         }
     }
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
+        modifier = rowModifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -235,11 +289,13 @@ private fun EpgRow(
         // large delete can take a moment.
         if (!deleting) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (syncState.isActive) {
-                    OwnTVButton("Cancel", onClick = onCancelSync, style = OwnTVButtonStyle.SECONDARY)
-                } else {
-                    OwnTVButton("Re-sync", onClick = onResync, style = OwnTVButtonStyle.SECONDARY)
-                }
+                // One stable button whose label/action flips with syncState — same composable stays in
+                // the tree across the swap, so focus survives instead of escaping the row.
+                OwnTVButton(
+                    label = if (syncState.isActive) "Cancel" else "Re-sync",
+                    onClick = if (syncState.isActive) onCancelSync else onResync,
+                    style = OwnTVButtonStyle.SECONDARY,
+                )
                 OwnTVButton("Edit", onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
                 OwnTVButton("Delete", onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
             }
@@ -355,7 +411,7 @@ private fun PlaylistEpgPicker(
     LaunchedEffect(options) { if (!options.isNullOrEmpty()) runCatching { firstFocus.requestFocus() } }
     BackHandler { onDismiss() }
 
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
         Column(Modifier.width(560.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
             Text("Fill from playlist", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(14.dp))

@@ -58,6 +58,8 @@ import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.TextInputDialog
 import tv.own.owntv.ui.components.roundedPanel
+import tv.own.owntv.ui.components.trapAllFocusExit
+import tv.own.owntv.ui.components.trapVerticalFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -89,6 +91,10 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var confirmPinStage by remember { mutableStateOf(false) }
     var pinMismatch by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
+    val newCatRowFocus = remember { FocusRequester() } // "New category behavior" row — restore target after its picker
+    // Opener row for whichever dialog (new-category picker, rename) is open — restored on close so
+    // focus doesn't always jump back to the Live TV section chip.
+    var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
 
     // CH+- key paging for the category list (same as Live/Movies/Series browse). The modifier consumes
     // the CH keys and moves focus itself, so it can never leak focus out of the list.
@@ -141,6 +147,16 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     }
 
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
+    // Restore focus to the row that opened a dialog (new-category picker / rename) when it closes —
+    // previously closing either always landed on the Live TV section chip (firstFocus).
+    LaunchedEffect(showNewCatPicker, renaming) {
+        if (showNewCatPicker || renaming != null) return@LaunchedEffect
+        dialogReturn?.let { opener ->
+            kotlinx.coroutines.delay(60)
+            runCatching { opener.requestFocus() }
+        }
+        dialogReturn = null
+    }
 
     // While a span selection is in progress, Back cancels the selection instead of leaving the screen.
     BackHandler { if (rangeAnchorKey != null) vm.cancelRange() else onBack() }
@@ -206,7 +222,8 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             chip = if (hideNewCategories) "Hide" else "Show",
             primaryChip = !hideNewCategories,
             chevron = true,
-            onClick = { showNewCatPicker = true },
+            onClick = { dialogReturn = newCatRowFocus; showNewCatPicker = true },
+            modifier = Modifier.focusRequester(newCatRowFocus),
         )
         Spacer(Modifier.height(16.dp))
 
@@ -244,6 +261,10 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
                 .fillMaxSize()
+                // Pin vertical focus inside the category list: a held Up/Down that outruns the lazy
+                // composition would otherwise escape to the section chips / sidebar. Every other browse
+                // list in the app (Movies/Series/Live/Epg/Downloads) uses this same trap.
+                .trapVerticalFocusExit()
                 .onFocusChanged { listPaneFocused = it.hasFocus }
                 .chNavPaging(
                     enabled = chNavEnabled,
@@ -421,7 +442,7 @@ private fun RangeHideDialog(count: Int, onHide: () -> Unit, onShow: () -> Unit, 
     LaunchedEffect(Unit) { runCatching { hideFocus.requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -572,7 +593,7 @@ private fun PinConfirmDialog(
     BackHandler { onDismiss() }
     tv.own.owntv.ui.theme.PopupFontTheme {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(

@@ -1,6 +1,7 @@
 package tv.own.owntv.features.settings
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -75,6 +77,13 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxSize()
             .roundedPanel()
+            // onEnter + focusGroup: a safety net for two dispose-on-collapse paths — (1) toggling
+            // "Advanced options" off while focus is on a field inside it, and (2) switching Metadata
+            // mode to PROVIDER (mode.enrich=false), which disposes the whole advanced block + the row
+            // the user clicked. Either path leaves focus dangling; onEnter recaptures it onto the
+            // always-composed first mode row whenever directional focus re-enters the group.
+            .focusProperties { onEnter = { runCatching { firstFocus.requestFocus() } } }
+            .focusGroup()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),

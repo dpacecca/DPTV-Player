@@ -80,6 +80,7 @@ import tv.own.owntv.ui.components.chNavPaging
 import tv.own.owntv.ui.components.longPressMenuGuard
 import androidx.compose.foundation.layout.width
 import tv.own.owntv.ui.components.SearchBar
+import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.trapVerticalFocusExit
 import tv.own.owntv.ui.components.SortChip
 import tv.own.owntv.ui.components.formatCount
@@ -156,6 +157,7 @@ private fun SeriesContextMenu(
     BackHandler { onDismiss() }
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f))
+            .trapAllFocusExit().focusGroup()
             .longPressMenuGuard(),
         contentAlignment = Alignment.Center,
     ) {
@@ -778,7 +780,7 @@ private fun EpisodeContextMenu(
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).longPressMenuGuard(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup().longPressMenuGuard(),
         contentAlignment = Alignment.Center,
     ) {
         Column(

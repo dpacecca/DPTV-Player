@@ -59,6 +59,7 @@ import tv.own.owntv.features.shell.components.RailCategory
 import tv.own.owntv.ui.components.chNavPaging
 import tv.own.owntv.ui.components.jumpLazyListTo
 import tv.own.owntv.ui.components.longPressMenuGuard
+import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.trapVerticalFocusExit
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
@@ -562,6 +563,7 @@ private fun ChannelContextMenu(
     androidx.activity.compose.BackHandler { onDismiss() }
     Box(
         modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f))
+            .trapAllFocusExit().focusGroup()
             .longPressMenuGuard(), // the long-press OK is still held — don't let it auto-click a menu item
         contentAlignment = Alignment.Center,
     ) {

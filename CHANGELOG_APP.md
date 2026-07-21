@@ -26,6 +26,14 @@
 - **Latency warning popup: focus returns to the Live latency row**
 - **Live preview off: audio no longer keeps playing after you leave a channel**
 - **4K live channels no longer lag/judder on mpv when a provider sends broken timestamps**
+- **Playlists & EPG Sources menus: focus stays inside the list on entry, edit, re-sync, delete**
+- **Settings dialogs: D-pad can no longer escape behind the scrim**
+- **Settings / Video Player lists no longer scroll-animate from the top when a dialog closes**
+- **OpenSubtitles / Network / Metadata settings: focus no longer escapes on entry or state changes**
+- **Profiles / Mini-player / Customize / CH+- paging / Weather: focus returns to the row that opened a dialog**
+- **Long-press menus in Movies / Series / Live / Guide trap D-pad focus**
+- **Downloads: focus moves to the next download when you delete one**
+- **Home & Customize category lists trap vertical D-pad focus**
 
 ## v4.1.3 — 2026-07-19
 

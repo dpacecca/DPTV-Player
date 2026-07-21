@@ -56,15 +56,31 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val colors = OwnTVTheme.colors
 
     val firstFocus = remember { FocusRequester() }
+    val upSkipFocus = remember { FocusRequester() }
+    val downSkipFocus = remember { FocusRequester() }
     var dialog by remember { mutableStateOf(ChNavDialog.NONE) }
+    // The row that opened the current dialog — restored when the dialog closes, instead of always
+    // landing on the first ("Use CH+- keys") row. Without this the CH+/CH− skip rows had no
+    // FocusRequester at all and relied on Compose's implicit restore.
+    var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
 
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    LaunchedEffect(dialog) {
+        if (dialog != ChNavDialog.NONE) return@LaunchedEffect
+        dialogReturn?.let { opener ->
+            kotlinx.coroutines.delay(60)
+            runCatching { opener.requestFocus() }
+        }
+        dialogReturn = null
+    }
     BackHandler { onBack() }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .roundedPanel()
+            // onEnter handles only external directional entry — targets the first row. Dialog-close
+            // restore is owned by the LaunchedEffect above.
             .focusProperties { onEnter = { runCatching { firstFocus.requestFocus() } } }
             .focusGroup()
             .verticalScroll(rememberScrollState())
@@ -87,7 +103,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             chip = if (enabled) "On" else "Off",
             primaryChip = enabled,
             chevron = true,
-            onClick = { dialog = ChNavDialog.ENABLED },
+            onClick = { dialogReturn = firstFocus; dialog = ChNavDialog.ENABLED },
             modifier = Modifier.focusRequester(firstFocus),
         )
 
@@ -100,7 +116,8 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             desc = "How many items one CH+ press jumps up. Long-press always goes to the first item.",
             chip = upSkip.toString(),
             chevron = true,
-            onClick = { dialog = ChNavDialog.UP_SKIP },
+            onClick = { dialogReturn = upSkipFocus; dialog = ChNavDialog.UP_SKIP },
+            modifier = Modifier.focusRequester(upSkipFocus),
         )
         Row2(
             icon = OwnTVIcon.SKIP_NEXT,
@@ -108,7 +125,8 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             desc = "How many items one CH− press jumps down. Long-press always goes to the last item.",
             chip = downSkip.toString(),
             chevron = true,
-            onClick = { dialog = ChNavDialog.DOWN_SKIP },
+            onClick = { dialogReturn = downSkipFocus; dialog = ChNavDialog.DOWN_SKIP },
+            modifier = Modifier.focusRequester(downSkipFocus),
         )
 
         Spacer(Modifier.height(12.dp))

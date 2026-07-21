@@ -77,6 +77,7 @@ import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.SearchBar
+import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.trapVerticalFocusExit
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.features.epg.GuideGridDefaults
@@ -561,7 +562,7 @@ private fun EpgMatchChooserDialog(
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
 
     Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup()
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup()
             .longPressMenuGuard(), // long-press OK is still held — don't auto-click the first option
         contentAlignment = Alignment.Center,
     ) {

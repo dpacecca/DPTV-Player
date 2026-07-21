@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -65,13 +66,25 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
     }
     val firstFocus = remember { FocusRequester() }
     val deleteFocus = remember { FocusRequester() }
-    LaunchedEffect(state) {
-        if (showSignIn) return@LaunchedEffect
-        if (returnedFromDelete) {
+    // Entry focus — keyed on Unit (NOT state). Keying on `state` stole focus on every state change,
+    // e.g. yanking it off the "Refresh" button back to "Sign out" once a refresh completed. We only
+    // want to set entry focus once, on first composition.
+    LaunchedEffect(Unit) {
+        // During Busy, firstFocus is not attached to any node (it lives on the SignedIn/Out rows);
+        // fall back to deleteFocus (the always-composed "Delete subtitles" row) so focus doesn't
+        // escape to the sidebar while the screen is contacting OpenSubtitles.
+        val target = if (state is OpenSubtitlesViewModel.UiState.Busy) deleteFocus else firstFocus
+        kotlinx.coroutines.delay(60)
+        runCatching { target.requestFocus() }
+    }
+    // Returning from Delete-subtitles lands back on the row that opened it. Decoupled from `state`
+    // (the previous version only consumed the latch inside LaunchedEffect(state), so if state didn't
+    // change during the visit, focus never came back here).
+    LaunchedEffect(showDeleteSubs) {
+        if (!showDeleteSubs && returnedFromDelete) {
             returnedFromDelete = false
+            kotlinx.coroutines.delay(60)
             runCatching { deleteFocus.requestFocus() }
-        } else {
-            runCatching { firstFocus.requestFocus() }
         }
     }
     BackHandler { onBack() }
@@ -80,6 +93,16 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
         modifier = modifier
             .fillMaxSize()
             .roundedPanel()
+            // Safety net: any focus that escapes (e.g. when the SignedIn↔SignedOut swap disposes the
+            // focused "Sign out"/"Refresh" nodes) is recaptured onto a still-composed row whenever
+            // directional focus re-enters the group. firstFocus during SignedIn/Out, deleteFocus during Busy.
+            .focusProperties {
+                onEnter = {
+                    val target = if (state is OpenSubtitlesViewModel.UiState.Busy) deleteFocus else firstFocus
+                    runCatching { target.requestFocus() }
+                }
+            }
+            .focusGroup()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),

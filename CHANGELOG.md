@@ -87,6 +87,42 @@
   (`video-sync=desync`), and no longer drops frames (`framedrop=no`) — all **live-only**, so VOD keeps
   accurate PTS/seeking and normal frame-dropping. Confirmed on Realtek 4K hardware across 24/30/50/60 fps
   channels with zero frame drops.
+- **Playlists & EPG Sources menus: focus now stays inside the list.** Entering either sub-menu used to
+  land focus on the "Add" button instead of the list; after editing, re-syncing, or deleting a source,
+  focus escaped the menu to the "Add" button. Both screens now track the row you acted on (per-row
+  `FocusRequester`) and restore focus to that same row on edit/re-sync, move it to the nearest surviving
+  neighbour on delete, and fall inside the list on entry.
+- **Settings dialogs no longer let D-pad escape behind the scrim.** Every scrim dialog in Settings
+  (Zoom, Accent, Theme, About, Playback error log, Clear history, Catch-up time, plus the Backup,
+  Video Player picker/stepper, Customize and shared Number/Picker dialogs) was missing the focus trap,
+  so a D-pad press toward the edge could land on the settings rows behind the dialog. All now use
+  `trapAllFocusExit` like the rest of the app.
+- **No more "scroll animates from the top" when closing a Settings / Video Player dialog.** Opening a
+  scrim dialog over a scrollable settings list reset the list's scroll to the top, so closing it made
+  the list visibly scroll back down to the row you came from. The scroll position is now snapshotted
+  when you tap a row and restored instantly on dialog close, so the list stays exactly where it was.
+- **Settings dialog-close focus return hardened.** The `dialogReturn` target (which row to refocus when
+  a dialog closes) was being cleared in the wrong place, so it leaked and could misroute the next
+  directional entry; it is now cleared in the restore effect itself. The entry fallback is also
+  search-aware (uses the always-bound search field while searching, instead of an unbound row).
+- **OpenSubtitles, Network & Metadata settings: focus no longer escapes on entry / state changes.**
+  These three screens had no focus-group safety net, so entry focus could fall to the sidebar. The
+  OpenSubtitles screen also stole focus back to the first row on every server state change (e.g. after
+  pressing Refresh) and never restored focus when returning from the Delete-subtitles screen with no
+  state change — all fixed.
+- **Profiles, Mini-player, Customize, CH+- paging, Weather: focus returns to the row that opened a
+  dialog.** Closing a dialog in these sub-menus used to send focus to the screen's first row. Each now
+  tracks its opener row and restores focus there; the CH+ / CH− skip rows also got their own
+  `FocusRequester`s (they had none).
+- **Long-press context menus in Movies / Series / Live / Guide no longer let D-pad escape behind them.**
+  The long-press menus used the OK-key guard but not the focus trap; D-pad could now escape behind the
+  scrim. All now trap focus inside.
+- **Downloads: focus moves to the next download when you delete one.** Deleting a download used to let
+  focus escape to the sidebar; it now moves to the nearest surviving download row (same slot, else the
+  last row).
+- **Home & Customize category lists trap vertical focus.** A held D-pad Up/Down that outran the lazy
+  composition could escape the list to the sidebar; both now use `trapVerticalFocusExit` like every
+  other browse list.
 
 ## v4.1.3 — 2026-07-19
 

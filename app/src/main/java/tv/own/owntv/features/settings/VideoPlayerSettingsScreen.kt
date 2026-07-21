@@ -22,10 +22,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +53,7 @@ import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.components.roundedPanel
+import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /** Common languages offered for the audio/subtitle preference (code → display name; "" = no preference). */
@@ -127,6 +130,12 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     // intercepts it — it consults dialogReturn first (and clears it) instead of hijacking.
     val dialogRowFocus = remember { Dialog.entries.associateWith { FocusRequester() } }
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
+    // Hoisted scroll state: snapshot at click time, restore on dialog close, so the list doesn't
+    // visibly jump/scroll-animate when a scrim picker opens or closes over it (same fix as the
+    // Settings root list — Compose resets the scrollable's offset when a scrim dialog tears down).
+    val scrollState = rememberScrollState()
+    var savedScroll by remember { mutableIntStateOf(0) }
+    val anyDialogOpen = dialog != Dialog.NONE || lowWarning != null
     LaunchedEffect(dialog, lowWarning) {
         if (dialog != Dialog.NONE) {
             // The custom-seconds dialog has no row of its own — it belongs to the Live latency row.
@@ -139,7 +148,11 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             dialogReturn = dialogRowFocus.getValue(Dialog.LIVE_LATENCY)
         } else {
             // Don't steal focus back to the row while the low-latency warning popup is up — it keeps
-            // focus itself. Restore only once it (and every dialog) is closed.
+            // focus itself. Restore only once it (and every dialog) is closed. First snap the scroll
+            // back to where the user was (one frame, so the scrim is gone) — then the opener row is
+            // already in view and requestFocus() won't animate.
+            withFrameNanos { }
+            runCatching { scrollState.scrollTo(savedScroll) }
             dialogReturn?.let { row ->
                 kotlinx.coroutines.delay(80)
                 runCatching { row.requestFocus() }
@@ -172,7 +185,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
                 }
             }
             .focusGroup()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -210,14 +223,14 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             desc = "Aspect/zoom applied when playback starts.",
             chip = zoomMode.label, chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.ZOOM)),
-            onClick = { dialog = Dialog.ZOOM },
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.ZOOM },
         )
         Row2(
             icon = OwnTVIcon.PLAY, title = "Resume playback",
             desc = "What to do when a movie or episode has a saved position.",
             chip = resumeMode.label, chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.RESUME)),
-            onClick = { dialog = Dialog.RESUME },
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.RESUME },
         )
 
         Divider()
@@ -227,14 +240,14 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             desc = "Scale subtitle text.",
             chip = subSizeName(subScale), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SUB_SIZE)),
-            onClick = { dialog = Dialog.SUB_SIZE },
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.SUB_SIZE },
         )
         Row2(
             icon = OwnTVIcon.SUBTITLE, title = "Preferred subtitle language",
             desc = "Auto-select this subtitle track when available.",
             chip = langName(subLang), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SUB_LANG)),
-            onClick = { dialog = Dialog.SUB_LANG },
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.SUB_LANG },
         )
         Row2(
             icon = OwnTVIcon.SUBTITLE, title = "OpenSubtitles",
@@ -252,14 +265,14 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             desc = "Auto-select this audio track when available.",
             chip = langName(audioLang), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.AUDIO_LANG)),
-            onClick = { dialog = Dialog.AUDIO_LANG },
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.AUDIO_LANG },
         )
         Row2(
             icon = OwnTVIcon.AUDIO, title = "Audio sync",
             desc = "Shift audio earlier or later to match the video.",
             chip = "%+d ms".format(audioDelay), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.AUDIO_SYNC)),
-            onClick = { dialog = Dialog.AUDIO_SYNC },
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.AUDIO_SYNC },
         )
 
         Divider()
@@ -271,7 +284,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             chip = if (liveLatency == tv.own.owntv.features.settings.data.LiveLatency.CUSTOM) "${liveCustomSecs}s" else liveLatency.label,
             chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_LATENCY)),
-            onClick = { dialog = Dialog.LIVE_LATENCY },
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_LATENCY },
         )
 
         Divider()
@@ -387,7 +400,7 @@ private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     BackHandler { onCancel() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(modifier = Modifier.dialogPanel(width = 500.dp, padding = 28.dp)) {
@@ -517,7 +530,7 @@ internal fun PickerDialog(
     LaunchedEffect(Unit) { runCatching { (if (searchable) searchFr else fr).requestFocus() } }
     BackHandler { onDismiss() }
     tv.own.owntv.ui.theme.PopupFontTheme {
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier.width(280.dp).clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHigh).padding(14.dp),
         ) {
@@ -579,7 +592,7 @@ internal fun StepperDialog(
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
     BackHandler { onDismiss() }
     tv.own.owntv.ui.theme.PopupFontTheme {
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier.dialogPanel(width = 280.dp, corner = 16.dp, padding = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

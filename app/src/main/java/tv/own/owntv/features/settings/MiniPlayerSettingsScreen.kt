@@ -45,15 +45,30 @@ fun MiniPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
     val colors = OwnTVTheme.colors
 
     val firstFocus = remember { FocusRequester() }
+    val positionFocus = remember { FocusRequester() } // "Position" row — restore target after its picker closes
     var dialog by remember { mutableStateOf(MiniPlayerDialog.NONE) }
 
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    // Restore focus to the row that opened the dialog when it closes (dialog → NONE), instead of
+    // always landing on the Size row. We track the opener here because by the time the effect runs,
+    // `dialog` is already NONE.
+    var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
+    LaunchedEffect(dialog) {
+        if (dialog != MiniPlayerDialog.NONE) return@LaunchedEffect
+        dialogReturn?.let { opener ->
+            kotlinx.coroutines.delay(60)
+            runCatching { opener.requestFocus() }
+        }
+        dialogReturn = null
+    }
     BackHandler { onBack() }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .roundedPanel()
+            // onEnter handles only external directional entry — targets the Size row (firstFocus).
+            // Dialog-close restore is owned by the LaunchedEffect above.
             .focusProperties { onEnter = { runCatching { firstFocus.requestFocus() } } }
             .focusGroup()
             .verticalScroll(rememberScrollState())
@@ -77,7 +92,7 @@ fun MiniPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
             chip = MiniPlayerSize.label(sizePct),
             primaryChip = false,
             chevron = true,
-            onClick = { dialog = MiniPlayerDialog.SIZE },
+            onClick = { dialogReturn = firstFocus; dialog = MiniPlayerDialog.SIZE },
             modifier = Modifier.focusRequester(firstFocus),
         )
         Row2(
@@ -87,7 +102,8 @@ fun MiniPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
             chip = position.label,
             primaryChip = false,
             chevron = true,
-            onClick = { dialog = MiniPlayerDialog.POSITION },
+            onClick = { dialogReturn = positionFocus; dialog = MiniPlayerDialog.POSITION },
+            modifier = Modifier.focusRequester(positionFocus),
         )
     }
 

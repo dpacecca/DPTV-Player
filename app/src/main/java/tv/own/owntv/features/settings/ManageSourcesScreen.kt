@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.focusGroup
@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +53,7 @@ import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.roundedPanel
+import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /** Phase 13 — list / add / re-sync / delete the active profile's IPTV sources. */
@@ -75,11 +77,48 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var confirmDelete by remember { mutableStateOf<SourceEntity?>(null) }
     val addFocus = remember { FocusRequester() }
     val errorFocus = remember { FocusRequester() }
-    // Whenever we land back on the source list (add/edit/re-sync/delete closed), refocus "Add Source".
+
+    // Per-row focus restore (mirrors MoviesScreen): track the row the user is acting on so, when
+    // edit/re-sync/delete closes, focus lands back inside the list — on the same row if it survived,
+    // else the nearest neighbour that slid into its slot, else the first row, else "Add Source".
+    var contextId by remember { mutableStateOf<Long?>(null) }
+    var contextIndex by remember { mutableStateOf(-1) }
+    val contextFocus = remember { FocusRequester() }
+    val firstRowFocus = remember { FocusRequester() }
+
+    // Whenever the list view is showing (no add form / edit form / delete dialog on top), restore
+    // focus inside the list — not on "Add Source" as before, which is what pushed focus out of the
+    // menu. contextId/contextFocus decide the specific row; firstRowFocus is the empty-list fallback.
     LaunchedEffect(showAdd, editingSource, confirmDelete) {
-        if (!showAdd && editingSource == null && confirmDelete == null) {
-            kotlinx.coroutines.delay(120); runCatching { addFocus.requestFocus() }
+        if (showAdd || editingSource != null || confirmDelete != null) return@LaunchedEffect
+        kotlinx.coroutines.delay(120)
+        val targetId = contextId
+        if (targetId != null && sources.any { it.id == targetId }) {
+            runCatching { contextFocus.requestFocus() }
+        } else if (sources.isNotEmpty()) {
+            runCatching { firstRowFocus.requestFocus() }
+        } else {
+            runCatching { addFocus.requestFocus() }
         }
+    }
+
+    // When the row a delete landed on disappears from `sources`, move focus to the nearest surviving
+    // neighbour (same index slot, else new last row, else first row) instead of letting focus escape
+    // outside the menu.
+    LaunchedEffect(sources) {
+        val targetId = contextId ?: return@LaunchedEffect
+        if (sources.any { it.id == targetId }) return@LaunchedEffect
+        withFrameNanos { }
+        if (sources.isEmpty()) {
+            contextId = null; contextIndex = -1
+            runCatching { addFocus.requestFocus() }
+            return@LaunchedEffect
+        }
+        val neighbor = sources.getOrNull(contextIndex.coerceAtLeast(0)) ?: sources.last()
+        contextId = neighbor.id
+        contextIndex = sources.indexOfFirst { it.id == neighbor.id }
+        withFrameNanos { }
+        runCatching { contextFocus.requestFocus() }
     }
     // Leaving "Add source" always returns to the Remote|Manual chooser next time (and drops any
     // running Remote listener), so a prior choice never skips the chooser.
@@ -217,10 +256,20 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .fillMaxSize()
                     .roundedPanel()
-                    // Spatial D-pad entry from the sidebar would land mid-list — route it to "Add Source".
-                    // onEnter fires only for directional entry from outside; internal focus moves and
-                    // programmatic restores never re-trigger it (an onFocusChanged redirect did, freezing focus).
-                    .focusProperties { onEnter = { runCatching { addFocus.requestFocus() } } }
+                    // D-pad entry from outside (sidebar / back from a sub-screen) should fall INSIDE the
+                    // menu — on the last-acted row if there is one, else the first row, else "Add Source"
+                    // (only when the list is empty). Previously this always went to "Add Source", which is
+                    // why focus never landed in the list.
+                    .focusProperties {
+                        onEnter = {
+                            val tid = contextId
+                            when {
+                                tid != null && sources.any { it.id == tid } -> runCatching { contextFocus.requestFocus() }
+                                sources.isNotEmpty() -> runCatching { firstRowFocus.requestFocus() }
+                                else -> runCatching { addFocus.requestFocus() }
+                            }
+                        }
+                    }
                     .focusGroup()
                     .padding(horizontal = 40.dp, vertical = 28.dp),
             ) {
@@ -239,7 +288,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     }
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        items(sources, key = { it.id }) { source ->
+                        itemsIndexed(sources, key = { _, it -> it.id }) { index, source ->
                             // Default is only the explicitly-chosen source; when none is set every playlist shows
                             // (no badge). Chosen via the add/edit form's "Default playlist" toggle, not a row action.
                             val isDefault = source.id == defaultId
@@ -254,10 +303,17 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 counts = counts,
                                 syncState = syncState,
                                 isDeleting = source.id in deletingIds,
-                                onEdit = { editingSource = source },
-                                onResync = { vm.resync(source) },
-                                onCancelSync = { vm.cancelResync(source) },
-                                onDelete = { confirmDelete = source },
+                                // Bind contextFocus to the row the user is acting on (so we can restore it),
+                                // and firstRowFocus to row 0 (entry / empty-context fallback).
+                                rowModifier = when {
+                                    source.id == contextId -> Modifier.focusRequester(contextFocus)
+                                    index == 0 -> Modifier.focusRequester(firstRowFocus)
+                                    else -> Modifier
+                                },
+                                onEdit = { contextId = source.id; contextIndex = index; editingSource = source },
+                                onResync = { contextId = source.id; contextIndex = index; vm.resync(source) },
+                                onCancelSync = { contextId = source.id; contextIndex = index; vm.cancelResync(source) },
+                                onDelete = { contextId = source.id; contextIndex = index; confirmDelete = source },
                             )
                         }
                     }
@@ -285,6 +341,7 @@ private fun SourceRow(
     counts: SyncCounts?,
     syncState: CatalogSyncState,
     isDeleting: Boolean,
+    rowModifier: Modifier,
     onEdit: () -> Unit,
     onResync: () -> Unit,
     onCancelSync: () -> Unit,
@@ -294,7 +351,7 @@ private fun SourceRow(
     val activeSync = syncState as? CatalogSyncState.Syncing
     val activeCountsLabel = activeSync?.countsLabel(source.type, counts)
     Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
+        modifier = rowModifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -355,11 +412,15 @@ private fun SourceRow(
         } else {
             OwnTVButton("Edit", onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
             Spacer(Modifier.width(10.dp))
-            if (syncState.isActive) {
-                OwnTVButton("Cancel", onClick = onCancelSync, style = OwnTVButtonStyle.SECONDARY)
-            } else {
-                OwnTVButton("Re-sync", onClick = onResync, style = OwnTVButtonStyle.SECONDARY)
-            }
+            // One stable button whose label/action flips with syncState. Keeping the SAME composable
+            // in the tree (instead of an if/else that disposes "Re-sync" and composes "Cancel") means
+            // the focusable node is never removed, so D-pad focus survives the swap instead of escaping
+            // the row — that swap was the re-sync focus loss.
+            OwnTVButton(
+                label = if (syncState.isActive) "Cancel" else "Re-sync",
+                onClick = if (syncState.isActive) onCancelSync else onResync,
+                style = OwnTVButtonStyle.SECONDARY,
+            )
             Spacer(Modifier.width(10.dp))
             OwnTVButton("Delete", onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
         }
@@ -424,7 +485,7 @@ internal fun ConfirmDialog(title: String, message: String, onConfirm: () -> Unit
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
-    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
         Column(Modifier.dialogPanel(width = 460.dp, padding = 28.dp)) {
             Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(10.dp))

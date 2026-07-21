@@ -23,10 +23,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -65,6 +67,7 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.StorageBrowser
+import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.ThemeMode
@@ -127,16 +130,31 @@ fun SettingsScreen(
     val animationsRowFocus = remember { FocusRequester() }
     val startupRowFocus = remember { FocusRequester() }
     val errorLogRowFocus = remember { FocusRequester() }
-    // NOTE: this restore request crosses INTO the root focus group from outside (the dialog), so
-    // the group's onEnter intercepts it — onEnter must consult dialogReturn first (it does, below)
-    // or it would hijack the restore to its own default target. dialogReturn is cleared by onEnter.
+    // Hoisted scroll state for the root settings list. We snapshot its position the instant a row is
+    // clicked (in onClick, before any recomposition) and restore it on dialog close, so the list
+    // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
+    val scrollState = rememberScrollState()
+    var savedScroll by remember { mutableIntStateOf(0) }
+    val anyDialogOpen = showZoom || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showClearHistory || showAnimations || showStartup || showErrorLog
+    // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
+    // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
+    // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
+    // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
     LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showClearHistory, showAnimations, showStartup, showErrorLog) {
-        if (!showZoom && !showTheme && !showAccent && !showFolderPicker && !showUpdate && !showAbout && !showCatchupTime && !showClearHistory && !showAnimations && !showStartup && !showErrorLog) {
+        if (!anyDialogOpen) {
+            // When a scrim dialog is torn down, Compose's focus re-search through the newly-exposed
+            // scrollable Column resets its scroll to 0 and then bringIntoView-animates to wherever
+            // focus lands. We counter that by waiting one frame (so the scrim is fully gone), snapping
+            // the scroll back to where the user left it (scrollTo is instant — no animation), THEN
+            // requesting focus on the opener row, which is now already in view — so no animation.
+            withFrameNanos { }
+            runCatching { scrollState.scrollTo(savedScroll) }
             dialogReturn?.let { row ->
                 kotlinx.coroutines.delay(80)
                 runCatching { row.requestFocus() }
             }
+            dialogReturn = null
         }
     }
     val settingsVm: SettingsViewModel = koinViewModel()
@@ -176,6 +194,9 @@ fun SettingsScreen(
         SettingsTab.CH_NAV to FocusRequester(),
     ) }
     val open: (SettingsTab) -> Unit = { lastTab = it; tab = it }
+    // Restore focus to the row a sub-screen was opened from when the user navigates back. Fresh entry
+    // intentionally does NOT grab focus here — every other main-menu section lets the shell/sidebar
+    // own initial focus, and Settings stays consistent with them.
     LaunchedEffect(tab) {
         if (tab == SettingsTab.ROOT && lastTab != null) {
             kotlinx.coroutines.delay(60)
@@ -208,19 +229,21 @@ fun SettingsScreen(
         modifier = modifier
             .fillMaxSize()
             .roundedPanel(fillColor = ContentPanelFill)
-            // onEnter fires for ANY focus entry from outside the group: D-pad entry from the
-            // sidebar, but ALSO our own programmatic dialog-close restores (the dialogs live
-            // outside this group). So it must route to the pending dialog-return row first, then
-            // the last-opened sub-menu's row, then the first row.
+            // onEnter fires ONLY for directional entry into this group (sidebar D-pad, etc.), NOT for
+            // programmatic restores — those are handled by the dialog-return LaunchedEffect above (and
+            // dialogReturn is cleared there). So this only picks the entry fallback: the last-opened
+            // sub-menu's row if any, else — during search — the always-bound search field (every rowFocus
+            // is only attached while the search list is hidden, so PROFILES is unbound mid-search), else
+            // the Profiles row.
             .focusProperties {
                 onEnter = {
-                    val target = dialogReturn ?: rowFocus[lastTab] ?: rowFocus.getValue(SettingsTab.PROFILES)
-                    dialogReturn = null
+                    val target = rowFocus[lastTab]
+                        ?: if (searchQuery.isBlank()) rowFocus.getValue(SettingsTab.PROFILES) else searchFieldFocus
                     runCatching { target.requestFocus() }
                 }
             }
             .focusGroup()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -324,7 +347,7 @@ fun SettingsScreen(
             title = "Download folder",
             chip = downloadRoot.ifBlank { "App storage" }.let { java.io.File(it).name.ifBlank { it } },
             chipTone = TileTone.TERTIARY,
-            onClick = { dialogReturn = folderRowFocus; showFolderPicker = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = folderRowFocus; showFolderPicker = true }, showChevron = true,
             modifier = Modifier.focusRequester(folderRowFocus),
         )
         SettingsRow(
@@ -336,7 +359,7 @@ fun SettingsScreen(
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HISTORY,
             title = "Clear watch history", desc = "Remove this profile's recently-watched & continue rows",
-            onClick = { dialogReturn = clearHistoryRowFocus; showClearHistory = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = clearHistoryRowFocus; showClearHistory = true }, showChevron = true,
             modifier = Modifier.focusRequester(clearHistoryRowFocus),
         )
         SectionDivider()
@@ -345,7 +368,7 @@ fun SettingsScreen(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.THEME,
             title = "Theme", desc = "Light, dark or follow the system",
             chip = themeLabel(themeMode), chipTone = TileTone.PRIMARY,
-            onClick = { dialogReturn = themeRowFocus; showTheme = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = themeRowFocus; showTheme = true }, showChevron = true,
             modifier = Modifier.focusRequester(themeRowFocus),
         )
         SettingsRow(
@@ -353,21 +376,21 @@ fun SettingsScreen(
             title = "Accent color", desc = "Tint the interface — presets, palette or hex code",
             chip = if (customAccent.isNotBlank()) customAccent.uppercase() else accent.label,
             chipTone = TileTone.SECONDARY,
-            onClick = { dialogReturn = accentRowFocus; showAccent = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = accentRowFocus; showAccent = true }, showChevron = true,
             modifier = Modifier.focusRequester(accentRowFocus),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.ZOOM,
             title = "UI Zoom", desc = "Scale the whole interface",
             chip = UiZoom.label(uiZoomPercent), chipTone = TileTone.SECONDARY,
-            onClick = { dialogReturn = zoomRowFocus; showZoom = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = zoomRowFocus; showZoom = true }, showChevron = true,
             modifier = Modifier.focusRequester(zoomRowFocus),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.THEME,
             title = "Animations", desc = "Turn interface motion on or off — Off feels snappier on lower-end TV boxes",
             chip = animationLevel.label, chipTone = TileTone.SECONDARY,
-            onClick = { dialogReturn = animationsRowFocus; showAnimations = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = animationsRowFocus; showAnimations = true }, showChevron = true,
             modifier = Modifier.focusRequester(animationsRowFocus),
         )
         SettingsRow(
@@ -437,7 +460,7 @@ fun SettingsScreen(
                 SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
             },
             chipTone = TileTone.PRIMARY,
-            onClick = { dialogReturn = catchupRowFocus; showCatchupTime = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = catchupRowFocus; showCatchupTime = true }, showChevron = true,
             modifier = Modifier.focusRequester(catchupRowFocus),
         )
         SettingsRow(
@@ -449,7 +472,7 @@ fun SettingsScreen(
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HISTORY,
             title = "Playback error log", desc = "The last playback failures — details to read or report",
-            onClick = { dialogReturn = errorLogRowFocus; showErrorLog = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = errorLogRowFocus; showErrorLog = true }, showChevron = true,
             modifier = Modifier.focusRequester(errorLogRowFocus),
         )
 
@@ -468,14 +491,14 @@ fun SettingsScreen(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HOME,
             title = "App startup", desc = "What OwnTV opens when it starts",
             chip = startupMode.label, chipTone = TileTone.PRIMARY,
-            onClick = { dialogReturn = startupRowFocus; showStartup = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = startupRowFocus; showStartup = true }, showChevron = true,
             modifier = Modifier.focusRequester(startupRowFocus),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.DOWNLOADS,
             title = "Check for updates", desc = "Get the latest version from GitHub Releases",
             chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}",
-            onClick = { dialogReturn = updateRowFocus; showUpdate = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = updateRowFocus; showUpdate = true }, showChevron = true,
             modifier = Modifier.focusRequester(updateRowFocus),
         )
         SettingsRow(
@@ -488,7 +511,7 @@ fun SettingsScreen(
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.MENU,
             title = "About", desc = "Version, license & project info",
-            onClick = { dialogReturn = aboutRowFocus; showAbout = true }, showChevron = true,
+            onClick = { savedScroll = scrollState.value; dialogReturn = aboutRowFocus; showAbout = true }, showChevron = true,
             modifier = Modifier.focusRequester(aboutRowFocus),
         )
         } else {
@@ -508,17 +531,17 @@ fun SettingsScreen(
                 SettingsSearchEntry("Content", "Home screen", "rows hero reorder filter", OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
                 SettingsSearchEntry("Content", "Metadata (TMDB)", "posters plots cast ratings", OwnTVIcon.VIDEO, TileTone.PRIMARY) { open(SettingsTab.METADATA) },
                 SettingsSearchEntry("Content", "Download folder", "storage path directory", OwnTVIcon.DOWNLOADS, TileTone.TERTIARY,
-                    chip = downloadRoot.ifBlank { "App storage" }.let { java.io.File(it).name.ifBlank { it } }, chipTone = TileTone.TERTIARY) { dialogReturn = searchFieldFocus; showFolderPicker = true },
+                    chip = downloadRoot.ifBlank { "App storage" }.let { java.io.File(it).name.ifBlank { it } }, chipTone = TileTone.TERTIARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showFolderPicker = true },
                 SettingsSearchEntry("Content", "Backup & Restore", "export import profiles sources", OwnTVIcon.DOWNLOADS, TileTone.TERTIARY) { open(SettingsTab.BACKUP) },
-                SettingsSearchEntry("Content", "Clear watch history", "recently watched continue remove", OwnTVIcon.HISTORY, TileTone.SECONDARY) { dialogReturn = searchFieldFocus; showClearHistory = true },
+                SettingsSearchEntry("Content", "Clear watch history", "recently watched continue remove", OwnTVIcon.HISTORY, TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showClearHistory = true },
                 SettingsSearchEntry("Appearance", "Theme", "light dark system", OwnTVIcon.THEME, TileTone.PRIMARY,
-                    chip = themeLabel(themeMode)) { dialogReturn = searchFieldFocus; showTheme = true },
+                    chip = themeLabel(themeMode)) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showTheme = true },
                 SettingsSearchEntry("Appearance", "Accent color", "tint palette hex preset", OwnTVIcon.PALETTE, TileTone.SECONDARY,
-                    chip = if (customAccent.isNotBlank()) customAccent.uppercase() else accent.label, chipTone = TileTone.SECONDARY) { dialogReturn = searchFieldFocus; showAccent = true },
+                    chip = if (customAccent.isNotBlank()) customAccent.uppercase() else accent.label, chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAccent = true },
                 SettingsSearchEntry("Appearance", "UI Zoom", "scale interface size", OwnTVIcon.ZOOM, TileTone.SECONDARY,
-                    chip = UiZoom.label(uiZoomPercent), chipTone = TileTone.SECONDARY) { dialogReturn = searchFieldFocus; showZoom = true },
+                    chip = UiZoom.label(uiZoomPercent), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showZoom = true },
                 SettingsSearchEntry("Appearance", "Animations", "motion snappier performance", OwnTVIcon.THEME, TileTone.SECONDARY,
-                    chip = animationLevel.label, chipTone = TileTone.SECONDARY) { dialogReturn = searchFieldFocus; showAnimations = true },
+                    chip = animationLevel.label, chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAnimations = true },
                 SettingsSearchEntry("Appearance", "Weather", "top bar chip location celsius fahrenheit", OwnTVIcon.EPG, TileTone.SECONDARY,
                     chip = if (weatherEnabled) "On" else "Off", chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.WEATHER) },
                 SettingsSearchEntry("Playback", "Live preview", "auto play focus channel", OwnTVIcon.LIVE_TV, TileTone.TERTIARY,
@@ -536,18 +559,18 @@ fun SettingsScreen(
                     chip = when (catchupTz) {
                         SettingsRepository.CatchupTimezone.DEVICE -> "Device"
                         SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
-                    }) { dialogReturn = searchFieldFocus; showCatchupTime = true },
+                    }) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showCatchupTime = true },
                 SettingsSearchEntry("Playback", "Video Player Settings", "decoder subtitles sync", OwnTVIcon.VIDEO, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
                 SettingsSearchEntry("Playback", "Live latency", "live buffer latency delay low latency seconds close to live edge", OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-                SettingsSearchEntry("Playback", "Playback error log", "error crash failure diagnostics report", OwnTVIcon.HISTORY, TileTone.SECONDARY) { dialogReturn = searchFieldFocus; showErrorLog = true },
+                SettingsSearchEntry("Playback", "Playback error log", "error crash failure diagnostics report", OwnTVIcon.HISTORY, TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showErrorLog = true },
                 SettingsSearchEntry("Network", "Proxy", "http traffic route", OwnTVIcon.SHARE, TileTone.SECONDARY) { open(SettingsTab.NETWORK) },
                 SettingsSearchEntry("App", "App startup", "launch open landing", OwnTVIcon.HOME, TileTone.SECONDARY,
-                    chip = startupMode.label) { dialogReturn = searchFieldFocus; showStartup = true },
+                    chip = startupMode.label) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showStartup = true },
                 SettingsSearchEntry("App", "Check for updates", "github release version", OwnTVIcon.DOWNLOADS, TileTone.PRIMARY,
-                    chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}") { dialogReturn = searchFieldFocus; showUpdate = true },
+                    chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}") { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showUpdate = true },
                 SettingsSearchEntry("App", "Check updates on startup", "auto update new version", OwnTVIcon.HISTORY, TileTone.SECONDARY,
                     chip = if (updateCheckOnStart) "On" else "Off", chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
-                SettingsSearchEntry("App", "About", "version license project info", OwnTVIcon.MENU, TileTone.SECONDARY) { dialogReturn = searchFieldFocus; showAbout = true },
+                SettingsSearchEntry("App", "About", "version license project info", OwnTVIcon.MENU, TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAbout = true },
             )
             val tokens = searchQuery.trim().lowercase().split(" ").filter { it.isNotBlank() }
             val results = entries.filter { e -> tokens.all { t -> e.haystack.contains(t) } }
@@ -673,7 +696,7 @@ private fun AccentPaletteDialog(
     BackHandler { onDismiss() }
 
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -793,7 +816,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -869,7 +892,7 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
     BackHandler { onDismiss() }
     val timeFmt = remember { java.text.SimpleDateFormat("d MMM HH:mm", java.util.Locale.getDefault()) }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(modifier = Modifier.dialogPanel(width = 640.dp, padding = 28.dp)) {
@@ -942,7 +965,7 @@ private fun ClearHistoryDialog(
     LaunchedEffect(pending) { runCatching { firstFocus.requestFocus() } }
     BackHandler { if (pending != null) pending = null else onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -994,7 +1017,7 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
     var pendingLowZoom by remember { mutableStateOf<Int?>(null) }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -1048,7 +1071,7 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
                 runCatching { firstFocus.requestFocus() }
             }
             Box(
-                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.8f)),
+                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.8f)).trapAllFocusExit().focusGroup(),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(
@@ -1111,7 +1134,7 @@ private fun CatchupTimeDialog(
     BackHandler { onDismiss() }
     val manual = mode == SettingsRepository.CatchupTimezone.MANUAL
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).focusGroup(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
