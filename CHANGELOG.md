@@ -46,14 +46,27 @@
   *re-sync* — and with "hide new categories on resync" on, every category looked "new" and got hidden,
   leaving the screen empty. Restored sources now take the fresh-install sync path, so your restored
   show/hide preferences are honored exactly as they were. (community PR #73)
-- **Concurrent playlist syncs no longer corrupt each other.** Syncing two or more playlists at once
-  (manual resync, startup auto-refresh) used to race on the shared SQLite tables: one source's
-  index/FTS-trigger drop-and-restore cycled against another's concurrent writes, throwing
-  `SQLiteDatabaseLockedException`s that truncated the second source's movies and skipped its series
-  entirely — silently reported as success. PR #73 added a per-table index lock that fixed the
-  "trigger already exists" crash; this release closes the remaining cross-source race by serializing
-  all catalog syncs through a single app-wide lock, so every playlist syncs to completion regardless
-  of how many run at once. (community PR #73 by @pt5pnzghm6-sys)
+- **Concurrent playlist syncs no longer corrupt each other — and still run in parallel.** Syncing
+  two or more playlists at once (manual resync, startup auto-refresh) used to race on the shared
+  SQLite tables: one source's index/FTS-trigger drop-and-restore cycled against another's concurrent
+  writes, throwing `SQLiteDatabaseLockedException`s that truncated the second source's movies and
+  skipped its series entirely — silently reported as success. PR #73 added a per-table index lock
+  that fixed the "trigger already exists" crash; this release closes the remaining race at its
+  source: a second sync arriving on a table in bulk-insert mode now *joins* that mode (writer-counted)
+  instead of bypassing the lock, and the index restore waits for the last writer. Sources download,
+  parse and insert fully in parallel — no app-wide queueing — with every playlist syncing to
+  completion regardless of how many run at once. (community PR #73 by @pt5pnzghm6-sys)
+- **Incremental M3U resync — no more clear-and-reimport.** M3U playlists used to be wiped and fully
+  reinserted on every resync (playlists carry no provider item ids), which was slow on big playlists,
+  briefly emptied the grids mid-sync, and re-created every row so favorites/history/manual order
+  pointed at dead entries. Each M3U item now gets a stable synthesized key (name + group), and
+  resyncs run the same hash-diffed upsert as Xtream/Stalker: unchanged items are skipped, changed
+  items (including reordered playlists and series that gained/lost episodes) update in place keeping
+  their identity, and removed items are pruned. **Favorites, watch history, playback progress and
+  manual ordering on M3U content now survive resyncs.** The first resync after this update migrates
+  old rows to stable keys once (that one resync still relinks like before; per-item hide/rename
+  customizations on M3U sources reset once); every resync after that is incremental. A failed
+  download or a playlist missing a content type still never wipes existing rows.
 
 ### 🐛 Fixes
 

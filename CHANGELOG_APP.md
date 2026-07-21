@@ -17,6 +17,7 @@
 - **📡 Live TV latency control (#72)**
 - **🪟 Configurable mini-player — size & screen position**
 - **🔄 Sync completion pill — see sync results, queued notifications** (community PR #73 by @pt5pnzghm6-sys)
+- **⚡ Incremental M3U resync — faster, and favorites/history survive resyncs**
 
 ### 🐛 Fixes
 
