@@ -480,7 +480,6 @@ fun OwnTVShell(
                             ContentPane(
                                 sectionTitle = selectedSection.label,
                                 categoryName = categories.getOrNull(selectedRail)?.fullName ?: "All",
-                                categoryAbbr = categories.getOrNull(selectedRail)?.abbr ?: "ALL",
                                 countLabel = placeholderCount(selectedSection),
                                 emptyIcon = selectedSection.emptyIcon,
                                 emptyMessage = "Content for ${selectedSection.label} arrives in a later phase. Add an M3U or Xtream source to populate this list.",
@@ -734,36 +733,36 @@ private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (
     MainSection.HOME -> emptyList()
     MainSection.EPG -> emptyList()
     MainSection.LIVE_TV -> listOf(
-        RailCategory("FAV", "Favorites"),
-        RailCategory("HIS", "History"),
-        RailCategory("ALL", "All Channels"),
-        RailCategory("UK", "United Kingdom"),
-        RailCategory("US", "United States"),
-        RailCategory("DE", "Germany"),
-        RailCategory("SPO", "Sports"),
+        RailCategory("Favorites", OwnTVIcon.STAR),
+        RailCategory("History", OwnTVIcon.HISTORY),
+        RailCategory("All Channels"),
+        RailCategory("United Kingdom"),
+        RailCategory("United States"),
+        RailCategory("Germany"),
+        RailCategory("Sports"),
     )
     MainSection.MOVIES -> listOf(
-        RailCategory("FAV", "Favorites"),
-        RailCategory("HIS", "History"),
-        RailCategory("ALL", "All Movies"),
-        RailCategory("ACT", "Action"),
-        RailCategory("DRA", "Drama"),
-        RailCategory("COM", "Comedy"),
-        RailCategory("HOR", "Horror"),
+        RailCategory("Favorites", OwnTVIcon.STAR),
+        RailCategory("History", OwnTVIcon.HISTORY),
+        RailCategory("All Movies"),
+        RailCategory("Action"),
+        RailCategory("Drama"),
+        RailCategory("Comedy"),
+        RailCategory("Horror"),
     )
     MainSection.SERIES -> listOf(
-        RailCategory("FAV", "Favorites"),
-        RailCategory("HIS", "History"),
-        RailCategory("ALL", "All Series"),
-        RailCategory("DRA", "Drama"),
-        RailCategory("ACT", "Action"),
-        RailCategory("ANI", "Animation"),
-        RailCategory("DOC", "Documentary"),
+        RailCategory("Favorites", OwnTVIcon.STAR),
+        RailCategory("History", OwnTVIcon.HISTORY),
+        RailCategory("All Series"),
+        RailCategory("Drama"),
+        RailCategory("Action"),
+        RailCategory("Animation"),
+        RailCategory("Documentary"),
     )
     MainSection.DOWNLOADS -> listOf(
-        RailCategory("ALL", "All Downloads"),
-        RailCategory("MOV", "Movies"),
-        RailCategory("SER", "Series"),
+        RailCategory("All Downloads"),
+        RailCategory("Movies"),
+        RailCategory("Series"),
     )
     MainSection.SETTINGS -> emptyList()
 }

@@ -123,6 +123,12 @@
 - **Home & Customize category lists trap vertical focus.** A held D-pad Up/Down that outran the lazy
   composition could escape the list to the sidebar; both now use `trapVerticalFocusExit` like every
   other browse list.
+- **Category rail: abbreviation badges removed.** Next to each category name the rail showed a short
+  2–3 letter code derived from the name (e.g. `UPR` beside "UK PRIME RAW") in a fixed-width column.
+  This was left over from the old compact-pill rail and read as clutter on what was otherwise a
+  full-label column. Category folders now show just the name; **Favorites** and **History** keep their
+  star / clock icons inline before the name. The content-pane subtitle also shows the full category
+  name instead of the abbreviation. (#75)
 
 ## v4.1.3 — 2026-07-19
 

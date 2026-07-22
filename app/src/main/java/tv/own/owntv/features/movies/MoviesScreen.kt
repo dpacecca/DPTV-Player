@@ -232,7 +232,7 @@ fun MoviesScreen(
 
     Row(modifier = modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         CategoryRail(
-            categories = railItems.map { RailCategory(it.abbr, it.title, it.icon) },
+            categories = railItems.map { RailCategory(it.title, it.icon) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             listState = catListState,
@@ -318,7 +318,7 @@ fun MoviesScreen(
             Text("Movies / ${selectedItem?.title ?: "All"}", style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface)
             Spacer(Modifier.height(4.dp))
             Text(
-                "${selectedItem?.abbr ?: "ALL"} (${formatCount(count)} movies)",
+                "${selectedItem?.title ?: "All"} (${formatCount(count)} movies)",
                 style = MaterialTheme.typography.titleMedium,
                 color = OwnTVTheme.colors.primary,
                 fontWeight = FontWeight.Bold,

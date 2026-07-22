@@ -236,7 +236,7 @@ class MovieViewModel(
                 // A–Z also sorts the category folders; manually moved categories stay pinned first.
                 val folders = cats.applyCustomizations(cust, alphaRest = sort == SettingsRepository.SortMode.ALPHA)
                 defaultRail + folders.map { (cat, name) ->
-                    LiveRailItem(LiveKey.Folder(cat.id), name.take(3).uppercase(), name)
+                    LiveRailItem(LiveKey.Folder(cat.id), name)
                 }
             }
         }
@@ -651,9 +651,9 @@ class MovieViewModel(
     private companion object {
         const val TAG = "OwnTVHome"
         val defaultRail = listOf(
-            LiveRailItem(LiveKey.Favorites, "FAV", "Favorites", OwnTVIcon.STAR),
-            LiveRailItem(LiveKey.History, "HIS", "History", OwnTVIcon.HISTORY),
-            LiveRailItem(LiveKey.All, "ALL", "All Movies"),
+            LiveRailItem(LiveKey.Favorites, "Favorites", OwnTVIcon.STAR),
+            LiveRailItem(LiveKey.History, "History", OwnTVIcon.HISTORY),
+            LiveRailItem(LiveKey.All, "All Movies"),
         )
     }
 }

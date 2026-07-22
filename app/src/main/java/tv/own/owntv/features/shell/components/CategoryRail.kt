@@ -57,11 +57,12 @@ import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
- * A category as shown in the rail: a 2–3 char abbreviation plus its full name. Special rails
- * (Favorites / History) render an [icon] instead of the abbreviation.
+ * A category as shown in the rail: just its full name, optionally prefixed with an [icon] (the
+ * Favorites / History special rails). Category folders render the name alone — no abbreviation
+ * badge (#75).
  */
 @Immutable
-data class RailCategory(val abbr: String, val fullName: String, val icon: OwnTVIcon? = null)
+data class RailCategory(val fullName: String, val icon: OwnTVIcon? = null)
 
 /**
  * Layer 2 — the vertical folder rail. Collapsed (focus elsewhere) it shows compact abbreviation
@@ -241,24 +242,13 @@ private fun RailPill(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = if (expanded) Arrangement.Start else Arrangement.Center,
         ) {
-            // The compact badge (icon or abbreviation) — the row's anchor in both states.
-            Box(
-                modifier = Modifier.size(if (expanded) 36.dp else Dimens.RailPillSize),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (category.icon != null) {
-                    OwnTVIcon(icon = category.icon, tint = ladder.icon, filled = activeSelected, modifier = Modifier.size(if (expanded) 20.dp else Dimens.RailPillSize / 2))
-                } else {
-                    Text(
-                        text = category.abbr,
-                        color = ladder.content,
-                        style = if (expanded) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+            // Favorites / History carry an [icon] inline before the name; category folders show the
+            // name alone with no abbreviation badge (#75).
+            if (category.icon != null) {
+                OwnTVIcon(icon = category.icon, tint = ladder.icon, filled = activeSelected, modifier = Modifier.size(if (expanded) 20.dp else Dimens.RailPillSize / 2))
+                if (expanded) Spacer(Modifier.width(8.dp))
             }
             if (expanded) {
-                Spacer(Modifier.width(8.dp))
                 Text(
                     text = category.fullName,
                     color = ladder.content,

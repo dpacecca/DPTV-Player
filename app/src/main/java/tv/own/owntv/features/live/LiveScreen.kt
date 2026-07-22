@@ -241,7 +241,7 @@ fun LiveScreen(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         CategoryRail(
-            categories = railItems.map { RailCategory(it.abbr, it.title, it.icon) },
+            categories = railItems.map { RailCategory(it.title, it.icon) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             // Focusing a folder stops the in-pane preview — but only when a preview is actually running.
@@ -339,7 +339,7 @@ fun LiveScreen(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "${selectedItem?.abbr ?: "ALL"} (${formatCount(count)} channels)",
+                "${selectedItem?.title ?: "All"} (${formatCount(count)} channels)",
                 style = MaterialTheme.typography.titleMedium,
                 color = OwnTVTheme.colors.primary,
                 fontWeight = FontWeight.Bold,

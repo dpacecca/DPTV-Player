@@ -34,6 +34,7 @@
 - **Long-press menus in Movies / Series / Live / Guide trap D-pad focus**
 - **Downloads: focus moves to the next download when you delete one**
 - **Home & Customize category lists trap vertical D-pad focus**
+- **Category rail: abbreviation badges removed (#75)**
 
 ## v4.1.3 — 2026-07-19
 

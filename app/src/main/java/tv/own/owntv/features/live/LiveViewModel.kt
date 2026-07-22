@@ -75,9 +75,9 @@ sealed interface LiveKey {
     data class Folder(val id: Long) : LiveKey
 }
 
-/** A rail entry. Favorites/History carry an [icon] (rendered instead of the abbreviation). */
+/** A rail entry. Favorites/History carry an [icon] rendered inline before the title. */
 @Immutable
-data class LiveRailItem(val key: LiveKey, val abbr: String, val title: String, val icon: OwnTVIcon? = null)
+data class LiveRailItem(val key: LiveKey, val title: String, val icon: OwnTVIcon? = null)
 
 /** Now-playing + up-next EPG for the focused channel (null entries when the guide is unavailable). */
 @Immutable
@@ -230,7 +230,7 @@ class LiveViewModel(
                 // A–Z also sorts the category folders; manually moved categories stay pinned first.
                 val folders = cats.applyCustomizations(cust, alphaRest = sort == SettingsRepository.SortMode.ALPHA)
                 defaultRail + folders.map { (cat, name) ->
-                    LiveRailItem(LiveKey.Folder(cat.id), abbreviate(name), name)
+                    LiveRailItem(LiveKey.Folder(cat.id), name)
                 }
             }
         }
@@ -1083,21 +1083,10 @@ class LiveViewModel(
         const val EPG_PICKER_SCAN_LIMIT = 20_000
         const val EPG_PICKER_RESULT_LIMIT = 300
         val defaultRail = listOf(
-            LiveRailItem(LiveKey.Favorites, "FAV", "Favorites", OwnTVIcon.STAR),
-            LiveRailItem(LiveKey.History, "HIS", "History", OwnTVIcon.HISTORY),
-            LiveRailItem(LiveKey.All, "ALL", "All Channels"),
+            LiveRailItem(LiveKey.Favorites, "Favorites", OwnTVIcon.STAR),
+            LiveRailItem(LiveKey.History, "History", OwnTVIcon.HISTORY),
+            LiveRailItem(LiveKey.All, "All Channels"),
         )
         const val CATCHUP_LOOKBACK_CAP_MS = 48L * 60 * 60 * 1000 // bounded by the EPG we retain (~2 days)
-    }
-}
-
-/** Short 2–3 char rail label from a category name. */
-private fun abbreviate(name: String): String {
-    val cleaned = name.filter { it.isLetterOrDigit() || it == ' ' }.trim()
-    val words = cleaned.split(' ').filter { it.isNotBlank() }
-    return when {
-        words.isEmpty() -> "•"
-        words.size == 1 -> words[0].take(3).uppercase()
-        else -> words.take(3).joinToString("") { it.first().uppercase() }
     }
 }
