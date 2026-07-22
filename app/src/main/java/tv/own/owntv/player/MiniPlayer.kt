@@ -44,6 +44,7 @@ fun MiniPlayer(
     onClose: () -> Unit,
     onCycleSize: () -> Unit = {},
     onCyclePosition: () -> Unit = {},
+    onAudioMode: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val isPlaying by player.isPlaying.collectAsStateWithLifecycle()
@@ -55,14 +56,21 @@ fun MiniPlayer(
     var focused by remember { mutableStateOf(false) }
     val controlsAlpha by animateFloatAsState(if (focused) 1f else 0f, label = "miniControls")
     Box(modifier = modifier.onFocusChanged { focused = it.hasFocus }.focusGroup()) {
-        // Title (top-left, on a slight scrim). Padded on the right so it never sits under the
-        // window controls in the top-right corner.
+        // Title (top-left, on a slight scrim). Padded left to clear the Audio-Mode button and right so
+        // it never sits under the window controls in the top-right corner.
         Row(
             modifier = Modifier.align(Alignment.TopStart).fillMaxWidth().alpha(controlsAlpha)
                 .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)))
-                .padding(start = 10.dp, end = 96.dp, top = 6.dp, bottom = 6.dp),
+                .padding(start = 48.dp, end = 96.dp, top = 6.dp, bottom = 6.dp),
         ) {
             Text(meta.title ?: "", style = MaterialTheme.typography.labelMedium, color = Color.White, maxLines = 1)
+        }
+
+        // Audio Mode (top-left): switch to audio-only and surface the top-bar now-playing bar.
+        Row(
+            modifier = Modifier.align(Alignment.TopStart).alpha(controlsAlpha).padding(6.dp).focusGroup(),
+        ) {
+            MiniBtn(OwnTVIcon.HEADPHONES, onClick = onAudioMode)
         }
 
         // Window controls (top-right): resize (cycles size) and move (cycles the 6 positions). Kept up

@@ -13,6 +13,7 @@
 
 ### ✨ New features
 
+- **🎧 Audio Mode — listen with the screen free**
 - **📤 Remote Backup & Restore — move a backup between TVs over Wi-Fi**
 - **📡 Live TV latency control (#72)**
 - **🪟 Configurable mini-player — size & screen position**

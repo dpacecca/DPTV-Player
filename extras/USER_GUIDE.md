@@ -384,7 +384,25 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 | **MPV/EXO (⇄)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (shows the active engine; teal on the non‑default one). Flipping it briefly confirms "Switched to MPV/ExoPlayer" at the bottom. |
 | **Aspect/Zoom** | Change aspect ratio / zoom (works in every render mode). |
 | **PiP** | Picture‑in‑picture for live. |
+| **Headphones** | **Audio Mode** — see below. |
 | **Volume** | mpv VODs/channels can be **boosted to 150%** for quiet streams. |
+
+---
+
+## 🎧 Audio Mode (listen with the screen free)
+
+Audio Mode plays the **sound only** and stops video decoding entirely, so you can browse the app
+while the current channel, movie or episode keeps playing. A compact **now‑playing bar** appears in
+the top bar — an animated equaliser, the title, and controls (play/pause, previous, next, volume,
+fullscreen, close). Live shows a pulsing **LIVE** badge; movies/episodes show a slim progress line
+with the remaining time.
+
+- **Turn it on** with the **headphones button** on the full‑screen player controls, or on the docked
+  mini‑player.
+- **Using the bar (D‑pad):** move focus onto it and the whole bar highlights; press **OK** to step
+  **inside**. Now **Left/Right** move between the buttons and **OK** runs the highlighted one. Focus
+  stays inside the bar — press **Back** to step out.
+- **Fullscreen** returns to full video; **close** (✕) stops playback.
 
 ---
 

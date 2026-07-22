@@ -2,6 +2,20 @@
 
 ## v4.1.4 — unreleased
 
+### 🎧 Audio Mode — listen with the screen free
+
+- A new third player mode, alongside fullscreen and the docked mini-player: **switch the current
+  stream to audio-only** and keep browsing. Video decoding is stopped entirely (true audio-only, not a
+  hidden video), and a compact **now-playing bar** appears in the top bar — an animated equaliser,
+  the title, and transport controls (play/pause, previous, next, volume, fullscreen, close). The
+  equaliser dances while sound plays and freezes flat when paused. Live shows a pulsing **LIVE**
+  badge; movies/episodes show a slim progress line with remaining time.
+- **Enter it** from the **headphones button** on the fullscreen player controls or on the docked
+  mini-player. **Two-stage D-pad focus:** move onto the bar and it highlights as one target; press
+  **OK** to step inside, where Left/Right move between the buttons and OK runs the focused one; focus
+  stays locked in the bar and **Back** is the way out. **Fullscreen** returns to full video, **close**
+  stops playback. Works for Live TV (both engines), movies and series.
+
 ### 📤 Remote Backup & Restore — move a backup between TVs over Wi-Fi
 
 - **Remote restore.** **Settings → Backup & Restore → Restore from another device**, and the same

@@ -56,6 +56,9 @@ fun TopBar(
     continueLabel: String? = null,
     continueIcon: OwnTVIcon = OwnTVIcon.PLAY,
     onContinueClick: () -> Unit = {},
+    // Audio Mode (plan §8): the now-playing bar, shown left of the weather chip while PlayerMode.AUDIO
+    // is active. Null = not in Audio Mode.
+    audioBar: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -74,6 +77,7 @@ fun TopBar(
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            audioBar?.invoke()
             if (weatherInfo != null) WeatherChip(info = weatherInfo, fahrenheit = weatherFahrenheit)
             ClockChip()
             if (playlistName.isNotBlank()) {

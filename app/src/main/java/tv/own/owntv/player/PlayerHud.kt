@@ -72,6 +72,8 @@ fun PlayerHud(
     player: PlaybackEngine,
     onBack: () -> Unit,
     onPip: (() -> Unit)? = null,
+    // Switch to audio-only mode (stops video decode, surfaces the top-bar now-playing bar). Null hides it.
+    onAudioMode: (() -> Unit)? = null,
     // True while the shell draws an overlay ABOVE the HUD (e.g. the channel-list overlay). The HUD goes
     // inert: its auto-hide timer pauses and — crucially — it makes no focus requests, so it can't yank
     // D-pad focus off the overlay. The existing dialog guard below covers only the HUD's OWN dialogs;
@@ -257,7 +259,7 @@ fun PlayerHud(
                     compatMode = compatMode, onToggleCompatMode = toggleCompat,
                     vodOnExo = vodOnExo, onToggleVodEngine = toggleVod,
                     onInfo = { showInfo = !showInfo }, infoOn = showInfo,
-                    onOpenDialog = { dialog = it }, onPip = onPip, onBack = onBack,
+                    onOpenDialog = { dialog = it }, onPip = onPip, onAudioMode = onAudioMode, onBack = onBack,
                     modifier = Modifier.align(Alignment.BottomStart),
                 )
             }
@@ -488,7 +490,7 @@ private fun BottomBar(
     compatMode: Boolean?, onToggleCompatMode: (() -> Unit)?,
     vodOnExo: Boolean?, onToggleVodEngine: (() -> Unit)?,
     onInfo: (() -> Unit)? = null, infoOn: Boolean = false,
-    onOpenDialog: (HudDialog) -> Unit, onPip: (() -> Unit)?, onBack: () -> Unit, modifier: Modifier = Modifier,
+    onOpenDialog: (HudDialog) -> Unit, onPip: (() -> Unit)?, onAudioMode: (() -> Unit)?, onBack: () -> Unit, modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
         when {
@@ -532,6 +534,7 @@ private fun BottomBar(
                 // (see MpvVideoSurface), GL mode scales internally.
                 CtrlButton(OwnTVIcon.ASPECT, active = zoomMode != ZoomMode.FIT) { onOpenDialog(HudDialog.ZOOM) }
                 if (onPip != null) CtrlButton(OwnTVIcon.PIP) { onPip() }
+                if (onAudioMode != null) CtrlButton(OwnTVIcon.HEADPHONES) { onAudioMode() }
                 CtrlButton(OwnTVIcon.FULLSCREEN_EXIT) { onBack() }
             }
         }

@@ -74,8 +74,8 @@ import tv.own.owntv.ui.theme.ThemeMode
 /** Which layer currently holds focus (drives Back navigation). */
 private enum class ShellLayer { SIDEBAR, RAIL, CONTENT }
 
-/** Player presentation: hidden, fullscreen, or docked mini-player over the browse UI. */
-private enum class PlayerMode { NONE, FULLSCREEN, MINI }
+/** Player presentation: hidden, fullscreen, docked mini-player, or audio-only now-playing bar. */
+private enum class PlayerMode { NONE, FULLSCREEN, MINI, AUDIO }
 
 /**
  * The MD3 shell: a fixed navigation panel (Layer 1) plus the active destination. Settings is a
@@ -220,11 +220,21 @@ fun OwnTVShell(
         if (source != MainSection.MOVIES && source != MainSection.SERIES && source != MainSection.DOWNLOADS) {
             subtitleController.clear()
         }
+        // A new stream is opening — make sure any Audio Mode video-off state is cleared, else mpv keeps
+        // `vid=no` and the new item would play with no picture.
+        player.exitAudioOnly(); runCatching { liveVm.previewEngine.exitAudioOnly() }
         if (playerMode != PlayerMode.MINI) playerMode = PlayerMode.FULLSCREEN
     }
+    // Restore video output on both engines (no-op unless we were in Audio Mode). mpv `vid=auto` /
+    // ExoPlayer surface is re-attached by the surface remount right after.
+    val resumeVideo = {
+        player.exitAudioOnly()
+        runCatching { liveVm.previewEngine.exitAudioOnly() }
+    }
     // The mini-player's own expand button always maximizes.
-    val expandPlayer = { restoreFocus = false; playerMode = PlayerMode.FULLSCREEN }
+    val expandPlayer = { resumeVideo(); restoreFocus = false; playerMode = PlayerMode.FULLSCREEN }
     val exitPlayer = {
+        resumeVideo() // restore mpv `vid=auto` before stop so the next played item isn't left video-less
         playerMode = PlayerMode.NONE
         showChannelList = false
         liveVm.onFullscreenExited() // no longer full-screen on ExoPlayer → let the preview re-take the engine
@@ -236,7 +246,17 @@ fun OwnTVShell(
         Unit
     }
     val dockPlayer = {
+        resumeVideo()
         playerMode = PlayerMode.MINI
+        restoreFocus = true
+        runCatching { sidebarFocus.requestFocus() }
+        Unit
+    }
+    // Switch the current stream to audio-only and surface the now-playing bar in the top bar. Stop the
+    // video decoder FIRST (plan §5 ordering rule), then drop the video surface by leaving FULLSCREEN/MINI.
+    val toAudioMode = {
+        (if (liveOnExo) liveVm.previewEngine else mpvEngine).enterAudioOnly()
+        playerMode = PlayerMode.AUDIO
         restoreFocus = true
         runCatching { sidebarFocus.requestFocus() }
         Unit
@@ -377,6 +397,36 @@ fun OwnTVShell(
                             }
                         }
                     },
+                    // Audio Mode: the now-playing bar, left of the weather chip. Present only while
+                    // PlayerMode.AUDIO; focusable only while the nav panel holds focus (same rule as Search).
+                    audioBar = if (playerMode == PlayerMode.AUDIO) {
+                        {
+                            val isLiveStream = liveOnExo || player.isLiveContent
+                            val zapFn: ((Int) -> Unit)? = when {
+                                !isLiveStream -> null
+                                zapSource == MainSection.EPG && epgCanZap -> epgVm::zap
+                                zapSource == MainSection.LIVE_TV && liveCanZap -> liveVm::zap
+                                else -> null
+                            }
+                            val audioEngine = if (liveOnExo) liveVm.previewEngine else mpvEngine
+                            val vodNav by audioEngine.nav.collectAsStateWithLifecycle()
+                            tv.own.owntv.player.AudioNowPlayingBar(
+                                player = audioEngine,
+                                isLive = isLiveStream,
+                                canPrev = if (isLiveStream) zapFn != null else vodNav.hasPrev,
+                                canNext = if (isLiveStream) zapFn != null else vodNav.hasNext,
+                                onPrev = { if (isLiveStream) zapFn?.invoke(-1) else mpvEngine.previous() },
+                                onNext = { if (isLiveStream) zapFn?.invoke(1) else mpvEngine.next() },
+                                onExpand = expandPlayer,
+                                onClose = exitPlayer,
+                                // Always reachable while Audio Mode is active (from the Search/Continue
+                                // pills on the left or the playlist chip on the right) — not gated on the
+                                // nav panel like the other chips, because its own D-pad trap keeps focus
+                                // inside once entered and Back is the only way out.
+                                focusable = true,
+                            )
+                        }
+                    } else null,
                 )
                 Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 0.dp, end = 6.dp, bottom = 6.dp)) {
                     when {
@@ -513,8 +563,9 @@ fun OwnTVShell(
       }
 
       // Player surface — hoisted so it persists across fullscreen <-> mini (same call site = the
-      // SurfaceView isn't recreated when docking/expanding, so playback never blips).
-      if (playerMode != PlayerMode.NONE) {
+      // SurfaceView isn't recreated when docking/expanding, so playback never blips). NOT composed in
+      // AUDIO mode: there's no video surface — audio plays and the top-bar now-playing bar drives it.
+      if (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI) {
         val isFull = playerMode == PlayerMode.FULLSCREEN
         Box(
             modifier = if (isFull) {
@@ -555,6 +606,7 @@ fun OwnTVShell(
                     player = if (liveOnExo) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
                     onBack = exitPlayer,
                     onPip = dockPlayer, // PiP/dock works for live on either engine now
+                    onAudioMode = toAudioMode,
                     // The channel-list overlay draws ABOVE the HUD; while it's open the HUD goes inert so
                     // its hide/error focus grabs can't yank D-pad focus off the overlay.
                     inert = showChannelList || showSubtitleSearch || showLocalSubPicker,
@@ -640,6 +692,7 @@ fun OwnTVShell(
                     onClose = exitPlayer,
                     onCycleSize = { scope.launch { settingsRepo.setMiniPlayerSizePct(tv.own.owntv.player.MiniPlayerSize.next(miniSizePct)) } },
                     onCyclePosition = { scope.launch { settingsRepo.setMiniPlayerPosition(miniPos.next().name) } },
+                    onAudioMode = toAudioMode,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

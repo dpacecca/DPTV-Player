@@ -23,7 +23,7 @@ enum class OwnTVIcon {
     PERSON, ADD, SETTINGS, PALETTE, THEME, ZOOM, PLAYLIST, EPG, VIDEO, SHARE, CHEVRON, FAVORITE,
     PAUSE, REWIND, FORWARD, AUDIO, SUBTITLE, SKIP_NEXT, SKIP_PREVIOUS,
     BACK, VOLUME_HIGH, VOLUME_LOW, VOLUME_MUTE, ASPECT, FULLSCREEN, FULLSCREEN_EXIT, PIP, CLOSE,
-    SORT, SWAP,
+    SORT, SWAP, HEADPHONES,
 }
 
 @Composable
@@ -232,6 +232,14 @@ fun OwnTVIcon(
                 drawLineStroke(p(11.5f, 17.5f), p(11.5f, 5f), tint, stroke)   // stem
                 drawLineStroke(p(11.5f, 5f), p(16.5f, 7f), tint, stroke)      // upper flag
                 drawLineStroke(p(11.5f, 8.5f), p(16.5f, 10.5f), tint, stroke) // lower flag
+            }
+            OwnTVIcon.HEADPHONES -> {
+                // Over-ear headphones: headband arc + two filled earcups.
+                drawArc(tint, 180f, 180f, false, topLeft = p(4f, 5f), size = Size(16f * s, 16f * s), style = stroke)
+                drawRoundRectStroke(p(4f, 13f), p(8f, 20f), 2f * s, tint, stroke)
+                drawRect(tint, topLeft = p(4.5f, 13.5f), size = Size(3f * s, 6f * s))
+                drawRoundRectStroke(p(16f, 13f), p(20f, 20f), 2f * s, tint, stroke)
+                drawRect(tint, topLeft = p(16.5f, 13.5f), size = Size(3f * s, 6f * s))
             }
             OwnTVIcon.SUBTITLE -> {
                 drawRoundRectStroke(p(3f, 5f), p(21f, 19f), 2.5f * s, tint, stroke)
