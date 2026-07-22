@@ -649,8 +649,6 @@ fun OwnTVShell(
                 if (showSubtitleSearch) {
                     tv.own.owntv.features.subtitles.SubtitleSearchScreen(
                         onDismiss = { showSubtitleSearch = false },
-                        // §14/R1: the local-file path stays open from every dead end in the search.
-                        onSelectLocalFile = { showSubtitleSearch = false; showLocalSubPicker = true },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

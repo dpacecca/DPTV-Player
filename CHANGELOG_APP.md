@@ -36,6 +36,7 @@
 - **Downloads: focus moves to the next download when you delete one**
 - **Home & Customize category lists trap vertical D-pad focus**
 - **Category rail: abbreviation badges removed (#75)**
+- **OpenSubtitles sign-in & local-file buttons removed from the subtitle search overlay — sign in from Settings**
 
 ## v4.1.3 — 2026-07-19
 

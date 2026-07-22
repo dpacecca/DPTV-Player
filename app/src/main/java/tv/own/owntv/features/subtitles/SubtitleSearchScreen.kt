@@ -51,15 +51,12 @@ import tv.own.owntv.ui.theme.PopupFontTheme
 @Composable
 fun SubtitleSearchScreen(
     onDismiss: () -> Unit,
-    // §14/R1 escape hatch: close the search and open the local subtitle-file picker instead.
-    onSelectLocalFile: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val vm: SubtitleSearchViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
     val applying by vm.applying.collectAsStateWithLifecycle()
     val quotaNote by vm.quotaNote.collectAsStateWithLifecycle()
-    val signInError by vm.signInError.collectAsStateWithLifecycle()
 
     // Fresh search each time the overlay opens (the ViewModel is reused across opens), and close on
     // the one-shot "applied" event.
@@ -67,7 +64,6 @@ fun SubtitleSearchScreen(
     LaunchedEffect(Unit) { vm.applied.collect { onDismiss() } }
 
     var editing by remember { mutableStateOf(false) }
-    var showSignIn by remember { mutableStateOf(false) }
     BackHandler { if (editing) editing = false else onDismiss() }
 
     PopupFontTheme {
@@ -95,23 +91,18 @@ fun SubtitleSearchScreen(
                     )
                 } else {
                     when (val s = state) {
-                        // R1 "account needed" / §14 "session expired" dialog — friendly explanation,
-                        // in-place sign-in, and the no-account local-file path always open.
+                        // Not signed in (or session expired) — sign-in lives in Settings only.
                         is SubtitleSearchViewModel.UiState.SignedOut -> Message(
                             if (s.sessionExpired) {
-                                "Your OpenSubtitles session has expired. Sign in again to keep searching " +
-                                    "and downloading subtitles."
+                                "Your OpenSubtitles session has expired. To keep searching and downloading " +
+                                    "subtitles, sign in again from Settings → Video player → Subtitles → OpenSubtitles."
                             } else {
-                                "OpenSubtitles account needed\n\nOpenSubtitles is a free, open community " +
-                                    "subtitle service — anyone can create a free account at opensubtitles.com. " +
-                                    "Sign in with that account to search and download subtitles for movies " +
-                                    "and series episodes.\n\nOr skip for now and pick a local subtitle file instead."
+                                "OpenSubtitles account needed\n\nTo search and download subtitles, sign in " +
+                                    "from Settings → Video player → Subtitles → OpenSubtitles. OpenSubtitles " +
+                                    "is a free, open community service — anyone can create a free account at " +
+                                    "opensubtitles.com."
                             },
-                            primary = if (s.sessionExpired) "Sign in again" else "Add account",
-                            onPrimary = { showSignIn = true },
-                            secondary = onSelectLocalFile?.let { "Select local file" },
-                            onSecondary = onSelectLocalFile,
-                            tertiary = "Skip", onTertiary = onDismiss,
+                            primary = "Close", onPrimary = onDismiss,
                         )
                         SubtitleSearchViewModel.UiState.Loading ->
                             Centered { OwnTVSpinner(); Spacer(Modifier.height(12.dp)); Text("Working…", color = OwnTVTheme.colors.onSurfaceVariant) }
@@ -124,8 +115,6 @@ fun SubtitleSearchScreen(
                         is SubtitleSearchViewModel.UiState.Error -> Message(
                             s.message,
                             primary = "Try again", onPrimary = vm::retry,
-                            secondary = if (s.offerLocalFile && onSelectLocalFile != null) "Select local file" else null,
-                            onSecondary = onSelectLocalFile,
                             tertiary = "Close", onTertiary = onDismiss,
                         )
                         is SubtitleSearchViewModel.UiState.Results -> ResultsList(
@@ -144,49 +133,7 @@ fun SubtitleSearchScreen(
         }
     }
 
-    // In-place sign-in (review R1): success re-runs the search that started the flow (§5.2).
-    if (showSignIn) {
-        tv.own.owntv.features.settings.OpenSubtitlesSignInDialog(
-            onSubmit = { user, pass, stay ->
-                showSignIn = false
-                vm.signIn(user, pass, stay)
-            },
-            onDismiss = { showSignIn = false },
-        )
-    }
-    // §14 "Sign-in failed": [Try again] reopens the sign-in dialog, [Cancel] returns to the message.
-    signInError?.let { err ->
-        SignInFailedDialog(
-            message = err,
-            onTryAgain = { vm.dismissSignInError(); showSignIn = true },
-            onCancel = vm::dismissSignInError,
-        )
-    }
-}
-
-@Composable
-private fun SignInFailedDialog(message: String, onTryAgain: () -> Unit, onCancel: () -> Unit) {
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    BackHandler { onCancel() }
-    PopupFontTheme {
-        Box(
-            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(Modifier.dialogPanel(width = 460.dp, padding = 24.dp)) {
-                Text("OpenSubtitles", style = MaterialTheme.typography.titleLarge, color = OwnTVTheme.colors.onSurface)
-                Spacer(Modifier.height(10.dp))
-                Text(message, style = MaterialTheme.typography.bodyMedium, color = OwnTVTheme.colors.onSurfaceVariant)
-                Spacer(Modifier.height(18.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OwnTVButton("Cancel", onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
-                    Spacer(Modifier.weight(1f))
-                    OwnTVButton("Try again", onClick = onTryAgain, modifier = Modifier.focusRequester(focus))
-                }
-            }
-        }
-    }
+    // Sign-in is handled in Settings → Video player → Subtitles → OpenSubtitles only.
 }
 
 /** Logo + credit line, mirroring the TMDB attribution in Metadata settings. */

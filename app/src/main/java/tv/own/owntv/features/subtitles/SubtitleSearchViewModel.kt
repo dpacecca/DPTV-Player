@@ -40,8 +40,7 @@ class SubtitleSearchViewModel(
         data object Loading : UiState
         data class Results(val results: List<Result>, val showingAllLanguages: Boolean) : UiState
         data object Empty : UiState
-        /** [offerLocalFile] adds the §14 "Select local file" escape hatch (quota/network failures). */
-        data class Error(val message: String, val offerLocalFile: Boolean = false) : UiState
+        data class Error(val message: String) : UiState
     }
 
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
@@ -63,10 +62,6 @@ class SubtitleSearchViewModel(
     private val _quotaNote = MutableStateFlow<String?>(null)
     val quotaNote: StateFlow<String?> = _quotaNote.asStateFlow()
 
-    /** Non-null after an in-overlay sign-in attempt failed (§14 "Sign-in failed" dialog). */
-    private val _signInError = MutableStateFlow<String?>(null)
-    val signInError: StateFlow<String?> = _signInError.asStateFlow()
-
     private var preferred: List<String> = emptyList()
 
     /**
@@ -76,7 +71,6 @@ class SubtitleSearchViewModel(
     fun start() {
         _applying.value = null
         _quotaNote.value = null
-        _signInError.value = null
         if (!controller.isSignedIn()) {
             _state.value = UiState.SignedOut()
             return
@@ -133,28 +127,6 @@ class SubtitleSearchViewModel(
         }
     }
 
-    /** In-overlay sign-in (review R1): success drops the user straight into the search they started. */
-    fun signIn(username: String, password: String, staySignedIn: Boolean) {
-        viewModelScope.launch {
-            _state.value = UiState.Loading
-            _signInError.value = null
-            runCatching { controller.signIn(username, password, staySignedIn) }
-                .onSuccess { start() }
-                .onFailure { e ->
-                    _state.value = UiState.SignedOut()
-                    _signInError.value = if (e is OpenSubtitlesClient.ApiException && e.code == 401) {
-                        "OpenSubtitles couldn't sign in with those account details. Please check the " +
-                            "username and password and try again — both are case-sensitive, and you " +
-                            "need an account created at opensubtitles.com (not .org)."
-                    } else {
-                        "Couldn't reach OpenSubtitles. Check your internet connection and try again."
-                    }
-                }
-        }
-    }
-
-    fun dismissSignInError() { _signInError.value = null }
-
     private fun showingAll(): Boolean = (_state.value as? UiState.Results)?.showingAllLanguages ?: preferred.isEmpty()
 
     private suspend fun runSearch(languages: List<String>, editedQuery: String?, showingAll: Boolean) {
@@ -198,16 +170,14 @@ class SubtitleSearchViewModel(
     private fun languageDisplayName(code: String): String =
         runCatching { java.util.Locale.forLanguageTag(code).displayLanguage.ifBlank { code } }.getOrDefault(code)
 
-    /** §14 mapping. 401 here means the one-shot silent re-login already failed → manual sign-in. */
+    /** §14 mapping. 401 here means the one-shot silent re-login already failed → sign in via Settings. */
     private fun errorState(e: Throwable): UiState = when {
         e is OpenSubtitlesClient.ApiException && e.code == 406 -> UiState.Error(
             "Your OpenSubtitles download limit has been reached. Embedded subtitles and local subtitle files are still available.",
-            offerLocalFile = true,
         )
         e is OpenSubtitlesClient.ApiException && e.code == 401 -> UiState.SignedOut(sessionExpired = true)
         else -> UiState.Error(
             "Couldn't reach OpenSubtitles. Check your internet connection and try again.",
-            offerLocalFile = true,
         )
     }
 }

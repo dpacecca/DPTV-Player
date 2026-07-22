@@ -143,6 +143,14 @@
   full-label column. Category folders now show just the name; **Favorites** and **History** keep their
   star / clock icons inline before the name. The content-pane subtitle also shows the full category
   name instead of the abbreviation. (#75)
+- **Subtitle search overlay: sign-in moved to Settings only, local-file button removed.** Opening
+  **Search OpenSubtitles** while signed out (or after the session expired) used to offer three buttons
+  — add account / select local file / skip — plus an in-place username+password sign-in popup. Sign-in
+  now lives only in **Settings → Video Player → Subtitles → OpenSubtitles** (which already had it):
+  the signed-out overlay shows a clear note pointing there with just a **Close** button, and the
+  in-overlay sign-in and sign-in-failed dialogs are gone. The overlay's **Select local file** button
+  was removed too — the dedicated **Select local subtitle file** row in the Subtitles menu (right
+  below **Search OpenSubtitles**) already covers local subs.
 
 ## v4.1.3 — 2026-07-19
 

@@ -412,12 +412,13 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 **ADD SUBTITLES** section:
 
 - **Search OpenSubtitles** — needs a free [opensubtitles.com](https://www.opensubtitles.com) account,
-  connected per profile in **Settings → Video Player → Subtitles → OpenSubtitles** (or right
-  from the dialog that appears if you're not signed in). The search is pre-filled for the playing
-  title; use **Edit search** if the provider's name is odd, and **All languages** to widen it. Pick a
-  result and it downloads, turns on immediately, and is remembered for that title. Your remaining
-  daily downloads (set by OpenSubtitles per account) show in the account screen and after each
-  download — re-downloading something you already fetched costs nothing.
+  connected per profile in **Settings → Video Player → Subtitles → OpenSubtitles**. The search is
+  pre-filled for the playing title; use **Edit search** if the provider's name is odd, and **All
+  languages** to widen it. Pick a result and it downloads, turns on immediately, and is remembered
+  for that title. Your remaining daily downloads (set by OpenSubtitles per account) show in the
+  account screen and after each download — re-downloading something you already fetched costs
+  nothing. If you open this while not signed in, it shows a note pointing you to that Settings screen
+  to connect your account.
 - **Select local subtitle file** — no account or internet needed. Browse USB/internal storage for a
   `.srt` / `.ass` / `.ssa` / `.vtt` / `.webvtt` file. Non-UTF-8 files (Arabic, etc.) are converted
   automatically, and OwnTV keeps its own copy so the subtitle survives unplugging the USB.

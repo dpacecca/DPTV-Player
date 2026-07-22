@@ -225,8 +225,7 @@ private fun InfoRow(label: String, value: String) {
     }
 }
 
-/** Username + password + "Stay signed in" (review R5). TV keyboard comes from OwnTVTextField.
- *  Internal: also reused by the player's subtitle-search overlay for in-place sign-in (review R1). */
+/** Username + password + "Stay signed in" (review R5). TV keyboard comes from OwnTVTextField. */
 @Composable
 internal fun OpenSubtitlesSignInDialog(onSubmit: (String, String, Boolean) -> Unit, onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
