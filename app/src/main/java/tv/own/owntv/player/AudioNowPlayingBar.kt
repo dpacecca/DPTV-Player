@@ -163,7 +163,9 @@ fun AudioNowPlayingBar(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(18.dp))
-                .background(Color(0xFF080D0C)) // AMOLED-dark card (owner spec), never a glassy tint
+                // AMOLED-dark card (owner spec) in dark; the same "extreme" in light = a crisp pure-white
+                // card. Never a glassy tint in either theme.
+                .background(if (colors.isDark) Color(0xFF080D0C) else Color(0xFFFFFFFF))
                 .border(
                     width = if (active) 2.dp else 1.dp,
                     color = if (active) colors.primary else colors.onSurfaceVariant.copy(alpha = 0.18f),
@@ -319,7 +321,7 @@ private fun AudioBtn(
         selectedContainerColor = Color.Transparent,
         contentAlignment = Alignment.Center,
     ) { focused ->
-        OwnTVIcon(icon, tint = if (focused) colors.primary else Color.White, filled = true, modifier = Modifier.size(iconDp.dp))
+        OwnTVIcon(icon, tint = if (focused) colors.primary else if (colors.isDark) Color.White else colors.onSurface, filled = true, modifier = Modifier.size(iconDp.dp))
     }
 }
 
