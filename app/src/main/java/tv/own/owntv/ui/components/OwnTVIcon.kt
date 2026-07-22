@@ -23,7 +23,7 @@ enum class OwnTVIcon {
     PERSON, ADD, SETTINGS, PALETTE, THEME, ZOOM, PLAYLIST, EPG, VIDEO, SHARE, CHEVRON, FAVORITE,
     PAUSE, REWIND, FORWARD, AUDIO, SUBTITLE, SKIP_NEXT, SKIP_PREVIOUS,
     BACK, VOLUME_HIGH, VOLUME_LOW, VOLUME_MUTE, ASPECT, FULLSCREEN, FULLSCREEN_EXIT, PIP, CLOSE,
-    SORT, SWAP, HEADPHONES,
+    SORT, SWAP, HEADPHONES, EXPAND,
 }
 
 @Composable
@@ -277,6 +277,13 @@ fun OwnTVIcon(
                 drawLineStroke(p(20f, 9f), p(20f, 4f), tint, stroke); drawLineStroke(p(20f, 4f), p(15f, 4f), tint, stroke)
                 drawLineStroke(p(4f, 15f), p(4f, 20f), tint, stroke); drawLineStroke(p(4f, 20f), p(9f, 20f), tint, stroke)
                 drawLineStroke(p(20f, 15f), p(20f, 20f), tint, stroke); drawLineStroke(p(20f, 20f), p(15f, 20f), tint, stroke)
+            }
+            OwnTVIcon.EXPAND -> { // ⤢ open-in-full: diagonal with arrowheads at both ends
+                drawLineStroke(p(6f, 18f), p(18f, 6f), tint, stroke)
+                drawLineStroke(p(18f, 6f), p(12.5f, 6f), tint, stroke)
+                drawLineStroke(p(18f, 6f), p(18f, 11.5f), tint, stroke)
+                drawLineStroke(p(6f, 18f), p(11.5f, 18f), tint, stroke)
+                drawLineStroke(p(6f, 18f), p(6f, 12.5f), tint, stroke)
             }
             OwnTVIcon.FULLSCREEN_EXIT -> {
                 drawLineStroke(p(9f, 4f), p(9f, 9f), tint, stroke); drawLineStroke(p(9f, 9f), p(4f, 9f), tint, stroke)
