@@ -189,9 +189,12 @@ fun AudioNowPlayingBar(
                 if (expanded) {
                     when {
                         isLive -> LiveRow(colors.favorite)
-                        // "subtitle · 2:14 / 5:55" time text replaces the old mini seekbar.
+                        // The 2nd line is reserved for the timelapse only — series info would crowd out
+                        // the time on the 1-line, width-clamped text. (Series subtitle still shows in
+                        // the fullscreen HUD; it only falls back to `meta.subtitle` below when there's
+                        // no time to show, e.g. before duration is known.)
                         hasTime -> Text(
-                            listOfNotNull(meta.subtitle, "${fmtTime(position)} / ${fmtTime(duration)}").joinToString(" · "),
+                            "${fmtTime(position)} / ${fmtTime(duration)}",
                             style = MaterialTheme.typography.labelSmall.copy(fontFamily = PopupFontFamily),
                             color = colors.onSurfaceVariant,
                             maxLines = 1,
