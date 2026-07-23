@@ -7,6 +7,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -62,6 +64,7 @@ import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.trapVerticalFocusExit
 import tv.own.owntv.ui.components.FocusableSurface
+import tv.own.owntv.ui.components.ChannelGenre
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -78,6 +81,7 @@ import tv.own.owntv.ui.components.gridFocusTarget
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.theme.PopupFontFamily
 
 /** Layer 2–4 for Live TV: real category rail, Paging channel list, and a live preview pane. */
 @Composable
@@ -95,6 +99,7 @@ fun LiveScreen(
     val count by vm.count.collectAsStateWithLifecycle()
     val favoriteIds by vm.favoriteIds.collectAsStateWithLifecycle()
     val previewChannel by vm.previewChannel.collectAsStateWithLifecycle()
+    val previewCategoryName by vm.previewCategoryName.collectAsStateWithLifecycle()
     val previewArmed by vm.previewArmed.collectAsStateWithLifecycle()
     val nowNext by vm.nowNext.collectAsStateWithLifecycle()
     val searchQuery by vm.searchQuery.collectAsStateWithLifecycle()
@@ -398,19 +403,14 @@ fun LiveScreen(
             }
         }
 
-        // Layer 4 — preview pane
+        // Layer 4 — preview pane (informational only — no focusable actions; management lives in long-press)
         Box(modifier = Modifier.weight(1f).fillMaxSize().roundedPanel(fillColor = PreviewPanelFill).padding(Dimens.GapLarge)) {
             LivePreviewPane(
                 channel = previewChannel,
+                categoryName = previewCategoryName,
                 nowNext = nowNext,
                 previewEngine = vm.previewEngine,
                 showVideo = effectivePreview,
-                isFavorite = previewChannel?.let { favoriteIds.contains(it.id) } ?: false,
-                onToggleFavorite = { previewChannel?.let { vm.toggleFavorite(it) } },
-                onRename = { renaming = previewChannel },
-                onHide = { previewChannel?.let { vm.hideChannel(it) } },
-                onMatchEpg = { matchingEpg = previewChannel },
-                onCatchup = { catchupChannel = previewChannel },
             )
         }
     }
@@ -593,15 +593,10 @@ private fun ChannelContextMenu(
 @Composable
 private fun LivePreviewPane(
     channel: ChannelEntity?,
+    categoryName: String?,
     nowNext: EpgNowNext?,
     previewEngine: tv.own.owntv.player.LivePreviewEngine,
     showVideo: Boolean,
-    isFavorite: Boolean,
-    onToggleFavorite: () -> Unit,
-    onRename: () -> Unit,
-    onHide: () -> Unit,
-    onMatchEpg: () -> Unit,
-    onCatchup: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
     val previewState by previewEngine.state.collectAsStateWithLifecycle()
@@ -617,9 +612,9 @@ private fun LivePreviewPane(
         return
     }
     Column(
-        // Scrollable so the action buttons are never clipped when the EPG (Now/Next/Later) makes the
-        // pane taller than the screen — focusing a button brings it into view.
-        // Outer preview Box carries the rounded panel (Phase 6); no clip/background here.
+        // Scrollable so the EPG (Now/Next/Later) never gets clipped when it makes the pane taller
+        // than the screen. The pane is informational only — there are NO focusable elements here,
+        // so D-pad right never enters it (management actions live in the long-press menu).
         modifier = Modifier.fillMaxSize()
             .verticalScroll(rememberScrollState()).padding(Dimens.GapLarge),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -663,30 +658,110 @@ private fun LivePreviewPane(
         Spacer(Modifier.height(14.dp))
         Text(channel.name, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
 
+        // Metadata row — category · inferred genre (with colour dot) · catch-up status · EPG status.
+        // All informational, never focusable.
+        ChannelMetaRow(channel = channel, categoryName = categoryName, nowNext = nowNext)
+
         EpgSection(nowNext)
 
-        // Catch-up channels: jump straight to a recent programme to replay it (no Guide gymnastics).
-        if (channel.catchup) {
-            Spacer(Modifier.height(16.dp))
-            OwnTVButton(label = "Catch-up", onClick = onCatchup, icon = OwnTVIcon.HISTORY)
-        }
-
-        Spacer(Modifier.height(16.dp))
-        OwnTVButton(
-            label = if (isFavorite) "Favorited" else "Favorite",
-            onClick = onToggleFavorite,
-            style = OwnTVButtonStyle.SECONDARY,
-            icon = OwnTVIcon.STAR,
+        // No action buttons — all management (Favorite / Rename / Hide / Match EPG / Catch-up) is in
+        // the long-press menu. Just a hint so the watch affordance + where-to-find-options stay obvious.
+        Spacer(Modifier.height(14.dp))
+        Text(
+            "Press OK to watch fullscreen · Long-press for options",
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            OwnTVButton(label = "Rename", onClick = onRename, style = OwnTVButtonStyle.SECONDARY)
-            OwnTVButton(label = "Hide", onClick = onHide, style = OwnTVButtonStyle.SECONDARY)
+    }
+}
+
+/**
+ * Informational metadata row under the channel name: the channel's category, its inferred genre
+ * (with a colour dot), catch-up availability, and a short EPG-coverage hint. Purely visual —
+ * nothing here is selectable/focusable, so D-pad navigation never enters the preview pane.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ChannelMetaRow(
+    channel: ChannelEntity,
+    categoryName: String?,
+    nowNext: EpgNowNext?,
+) {
+    val colors = OwnTVTheme.colors
+    // Genre is inferred from the channel's real category name. Unmatched categories fall back to OTHER
+    // (grey dot) so every channel still gets a genre marker — the genre is never inferred from the
+    // channel NAME (a station brand like "CNN" / "Hindi MTV Plus" would be misleading).
+    val genre = remember(categoryName) { ChannelGenre.fromCategory(categoryName) }
+
+    // EPG status — "EPG · Nd" when we know the stored coverage span (bulk-guide channels), plain "EPG"
+    // when only now/next is available (short-EPG API channels), "No EPG" when nothing was resolved.
+    val epgStatus = when {
+        nowNext == null || (nowNext.now == null && nowNext.next == null) -> "No EPG"
+        nowNext.coverageDays != null && nowNext.coverageDays > 0 -> "EPG · ${nowNext.coverageDays}d"
+        else -> "EPG"
+    }
+
+    // Catch-up status — only meaningful when the channel actually supports it.
+    val catchupLabel = if (channel.catchup) {
+        channel.catchupDays.takeIf { it > 0 }?.let { "Catch-up · ${it}d" } ?: "Catch-up"
+    } else null
+
+    val chips = buildList {
+        // Genre chip (always shown, with its colour dot — including the grey "Other" fallback so every
+        // channel has a genre marker), then the raw category name when it differs from the genre label.
+        add(MetaChip(genre.label, dot = genre.dot, primary = genre != ChannelGenre.OTHER))
+        if (!categoryName.isNullOrBlank() && categoryName != genre.label) add(MetaChip(categoryName))
+        if (catchupLabel != null) add(MetaChip(catchupLabel, accent = true))
+        add(MetaChip(epgStatus))
+    }
+
+    FlowRow(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        chips.forEach { chip -> MetaChipBadge(chip) }
+    }
+}
+
+/** A single metadata chip — small text, optional colour dot, on a hairline-rounded surface. */
+private data class MetaChip(
+    val text: String,
+    val dot: Color? = null,
+    val primary: Boolean = false,
+    val accent: Boolean = false,
+)
+
+@Composable
+private fun MetaChipBadge(chip: MetaChip) {
+    val colors = OwnTVTheme.colors
+    val fg = when {
+        chip.primary -> colors.primary
+        chip.accent -> colors.primary
+        else -> colors.onSurfaceVariant
+    }
+    Row(
+        modifier = Modifier
+            .height(26.dp)                  // uniform chip height — long category names can't wrap to 2 lines and make one chip taller than the others
+            .clip(RoundedCornerShape(7.dp))
+            .background(colors.surfaceContainerLow)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        chip.dot?.let {
+            Box(Modifier.size(8.dp).clip(androidx.compose.foundation.shape.CircleShape).background(it))
         }
-        Spacer(Modifier.height(10.dp))
-        OwnTVButton(label = "Match EPG", onClick = onMatchEpg, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG)
-        Spacer(Modifier.height(8.dp))
-        Text("Press OK to watch fullscreen", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        Text(
+            chip.text,
+            style = MaterialTheme.typography.labelSmall,
+            color = fg,
+            fontFamily = PopupFontFamily,   // Lora serif, matching the popup-menu font
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,                   // never wrap — keeps every chip the same height
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -777,15 +852,28 @@ private fun CatchupDialog(
         if (list.isNullOrEmpty()) return@LaunchedEffect
         kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() }
     }
-    Box(
-        Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)).focusGroup(),
-        contentAlignment = Alignment.Center,
+    // Popup(focusable = true) is a hard focus boundary: a stray D-pad press or the Live screen's own
+    // LaunchedEffect focus requests can no longer drop focus onto the channel grid behind the scrim
+    // (same fix as EpgMatchDialog / ChannelContextMenu). trapAllFocusExit() additionally blocks
+    // directional exits through the scrim. PopupFontTheme swaps in the Lora serif + scales fonts to
+    // match the other popup menus (0.75f), and the box is shrunk to that same denser size.
+    androidx.compose.ui.window.Popup(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.PopupProperties(focusable = true),
     ) {
+    tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
+        Box(
+            Modifier.fillMaxSize()
+                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f))
+                .trapAllFocusExit()
+                .focusGroup(),
+            contentAlignment = Alignment.Center,
+        ) {
         // Inner list is height-capped to the screen (minus the dialog chrome) so the Close button
         // stays reachable on small/low-res screens; the outer column can't verticalScroll (LazyColumn).
-        val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 200.dp).coerceIn(160.dp, 360.dp)
-        Column(Modifier.width(620.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(24.dp)) {
-            Text("Catch-up · $channelName", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 220.dp).coerceIn(140.dp, 300.dp)
+        Column(Modifier.width(460.dp).clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHigh).padding(18.dp)) {
+            Text("Catch-up · $channelName", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
             Text("Pick a recent programme to replay from the start.", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
@@ -805,7 +893,7 @@ private fun CatchupDialog(
                                 shape = RoundedCornerShape(12.dp),
                                 contentAlignment = Alignment.CenterStart,
                             ) { _ ->
-                                Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
+                                Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
                                     Text(p.title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(formatCatchupTime(p.startMs, p.stopMs, formatTime), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                                 }
@@ -814,9 +902,11 @@ private fun CatchupDialog(
                     }
                 }
             }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(14.dp))
             OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
         }
+        }
+    } // PopupFontTheme
     }
 }
 

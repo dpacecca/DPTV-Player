@@ -212,8 +212,8 @@ private fun RailPill(
     val ladder = rememberNavLadderColors(selected = selected, focused = focused)
     val activeSelected = selected && focused
 
-    // Box-style corners (14.dp), close to the live-TV channel list item, not an over-rounded pill.
-    val shape = if (expanded) RoundedCornerShape(14.dp) else CircleShape
+    // Box-style corners (8.dp), close to the live-TV channel list item, not an over-rounded pill.
+    val shape = if (expanded) RoundedCornerShape(8.dp) else CircleShape
 
     Box(
         modifier = modifier

@@ -17,6 +17,7 @@
 - **📤 Remote Backup & Restore — move a backup between TVs over Wi-Fi**
 - **📡 Live TV latency control (#72)**
 - **🪟 Configurable mini-player — size & screen position**
+- **🖼️ Live TV preview pane — info-only, genre dots & EPG coverage; no more accidental buttons**
 - **🔄 Sync completion pill — see sync results, queued notifications** (community PR #73 by @pt5pnzghm6-sys)
 - **⚡ Incremental M3U resync — faster, and favorites/history survive resyncs**
 
@@ -37,6 +38,8 @@
 - **Home & Customize category lists trap vertical D-pad focus**
 - **Category rail: abbreviation badges removed (#75)**
 - **OpenSubtitles sign-in & local-file buttons removed from the subtitle search overlay — sign in from Settings**
+- **Catch-up dialog: D-pad focus no longer escapes the popup; picks up Lora popup styling**
+- **Category rail highlight: sharper 8dp corners (Live / Series / Movies)**
 
 ## v4.1.3 — 2026-07-19
 

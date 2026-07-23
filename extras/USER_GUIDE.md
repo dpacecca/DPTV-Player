@@ -146,6 +146,15 @@ or **narrow the whole app to just one**.
 - **Live preview**: focus a channel and its video plays in the preview pane (with the **real stream
   resolution**, e.g. `1080p`/`4K`, so a mislabelled "4K" channel can't fool you). Toggle this in
   **Settings → Playback → Live preview**; sound for the preview is **Settings → Playback → Preview audio**.
+- 🖼️ **The preview pane is info-only now.** There are **no buttons** in it — Favorite, Rename, Hide,
+  Match EPG and Catch-up all live in the **long-press menu** (below). Because nothing in the pane is
+  focusable, **right-arrow no longer drops you onto the buttons by accident** — D-pad stays in the
+  channel list. A short note at the bottom reminds you: **OK to watch fullscreen · long-press for options**.
+- 🏷️ **Channel info row**: under the name, small chips show the channel's **real category** (so a
+  channel you reached via Favorites / History / All still shows the category it actually belongs to),
+  its **genre** with a colour dot, **catch-up** availability (with days, e.g. `Catch-up · 7d`), and
+  **EPG coverage** (`EPG · Nd` when the stored guide span is known, else `EPG` / `No EPG`). Unmatched
+  categories get a neutral grey **Other** dot — every channel has a genre marker.
 - 📺 **Now playing on every row**: each channel in the list shows the **programme currently airing**
   (a small line under the name) when guide data is available — so you can see what's on at a glance.
   Channels with no guide show a single line as before.
@@ -208,7 +217,8 @@ or **narrow the whole app to just one**.
   🔵 blue = music · 🩵 teal = documentary. Channels whose category doesn't match any of these show
   **no dot** (a missing dot is intentional — better than a misleading colour). The dot reflects the
   channel's category/group, not its individual name, so it depends on how your provider names its
-  categories.
+  categories. (The **Live preview** info row uses the same colour system, but there unmatched
+  categories show a neutral grey **Other** dot so every channel still has a genre marker.)
 - 📋 **Cursor preview strip**: while browsing a row (move **Right** into the timeline), a strip at the
   bottom shows the programme under the cursor — title, channel, time, runtime, catch‑up, synopsis —
   without opening it. Press **OK** to open the full details.

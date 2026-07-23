@@ -81,7 +81,15 @@ data class LiveRailItem(val key: LiveKey, val title: String, val icon: OwnTVIcon
 
 /** Now-playing + up-next EPG for the focused channel (null entries when the guide is unavailable). */
 @Immutable
-data class EpgNowNext(val now: XtEpgEntry?, val next: XtEpgEntry?, val upcoming: List<XtEpgEntry> = emptyList(), val previous: XtEpgEntry? = null)
+data class EpgNowNext(
+    val now: XtEpgEntry?,
+    val next: XtEpgEntry?,
+    val upcoming: List<XtEpgEntry> = emptyList(),
+    val previous: XtEpgEntry? = null,
+    /** Whole days of stored guide coverage for this channel (latest stop − earliest start).
+     *  Null when unknown/short-EPG only. Drives the "EPG · Nd" hint in the preview metadata. */
+    val coverageDays: Int? = null,
+)
 
 class LiveViewModel(
     private val appContext: Context,
@@ -190,6 +198,16 @@ class LiveViewModel(
         .debounce(350)
         .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
         .mapLatest { (ch, _) -> ch?.let { loadEpg(it) } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /**
+     * The focused channel's REAL category name — resolved from its `categoryId`, NOT from whatever rail
+     * item the user is currently browsing (Favorites / History / All are browse contexts, not the
+     * channel's actual category). Null when the channel has no category or it can't be resolved.
+     * Drives the category chip + genre-dot in the preview pane's metadata row.
+     */
+    val previewCategoryName: StateFlow<String?> = _previewChannel
+        .mapLatest { ch -> ch?.categoryId?.let { id -> categoryDao.getById(id)?.name } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     /** This profile's hide/rename/reorder customizations for Live TV. */
     private val custom: StateFlow<SectionCustomizations> = ctx
@@ -904,7 +922,10 @@ class LiveViewModel(
             val nextProg = future.firstOrNull()
             if (nowProg != null || nextProg != null) {
                 val prevProg = epgDao.previousProgramme(epgKey, nowProg?.startMs ?: now)
-                val result = EpgNowNext(nowProg?.toXt(), nextProg?.toXt(), future.drop(1).take(4).map { it.toXt() }, previous = prevProg?.toXt())
+                // Days of stored guide — accurate for bulk-guide channels (the short-EPG API path
+                // leaves this null, since its ~8 entries only span a few hours).
+                val days = runCatching { epgDao.coverageDays(epgKey) }.getOrNull()?.takeIf { it > 0 }
+                val result = EpgNowNext(nowProg?.toXt(), nextProg?.toXt(), future.drop(1).take(4).map { it.toXt() }, previous = prevProg?.toXt(), coverageDays = days)
                 epgCache[ch.id] = CachedEpg(now, result)
                 return@withContext result
             }

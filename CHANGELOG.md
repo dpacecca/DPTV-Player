@@ -49,6 +49,25 @@
   resize / move controls. The window is laid out proportionally (`fillMaxWidth% × 16:9`), so it scales
   consistently across TV sizes and the UI zoom instead of the old fixed box.
 
+### 🖼️ Live TV preview pane — info-only, genre dots, EPG coverage
+
+- **The preview pane is now informational only — the action buttons are gone.** Favorite / Rename /
+  Hide / Match EPG / Catch-up all moved to the long-press channel menu (where Move and Remove-from-History
+  already lived), so nothing in the pane is selectable or focusable any more. **Right-arrow no longer
+  enters the pane** — D-pad focus stays in the channel list — which fixes the common complaint that a
+  stray right press dropped you onto the buttons by accident. The pane instead shows a short note
+  ("Press OK to watch fullscreen · Long-press for options").
+- **Channel metadata row.** Under the channel name, a compact row of chips shows the channel's **real
+  category** (resolved from its `categoryId`, so it's correct even when you're browsing via Favorites /
+  History / All — never the browse context), its inferred **genre** with a colour dot, **catch-up**
+  availability (with days, e.g. "Catch-up · 7d"), and **EPG coverage** ("EPG · Nd" from the stored guide
+  span, or plain "EPG" / "No EPG"). Every channel gets a genre marker — unmatched categories fall back to
+  a neutral grey **Other** dot rather than none.
+- **Shared genre colour system.** The Guide's category→colour inference and the preview's genre dot now
+  use one shared `ChannelGenre` helper (sport→green, news→red, movies→violet, kids→amber, music→blue,
+  documentary→teal, other→grey), so the two surfaces agree. The chips use the Lora serif font and a
+  uniform fixed height so long category names never make one chip taller than the others.
+
 ### 🔄 Sync reliability — completion notices, restore visibility, concurrent sync
 
 - **Sync completion pill.** When a catalog sync finishes — success, failure, or cancel — the global
@@ -151,6 +170,15 @@
   in-overlay sign-in and sign-in-failed dialogs are gone. The overlay's **Select local file** button
   was removed too — the dedicated **Select local subtitle file** row in the Subtitles menu (right
   below **Search OpenSubtitles**) already covers local subs.
+- **Catch-up dialog: D-pad focus no longer escapes the popup.** Opening the catch-up programme picker
+  (long-press a channel → Catch-up) left the dialog without a hard focus boundary, so a stray D-pad
+  press — or the Live screen's own focus restoration — could drop focus onto the channel grid behind
+  the scrim. The dialog now wraps in `Popup(focusable = true)` and traps focus exit, matching the other
+  scrim dialogs. It also picks up the standard popup-menu styling: the **Lora** serif font at 75% scale
+  and a denser box, so it reads like the EPG-match and other popups.
+- **Category rail highlight: sharper corners.** The focused / selected box on the category rail (used
+  by Live TV, Series and Movies — one shared component) had a soft `14dp` corner radius that read as
+  nearly pill-like; it's now `8dp`, crisper and closer to the channel-list item style next to it.
 
 ## v4.1.3 — 2026-07-19
 

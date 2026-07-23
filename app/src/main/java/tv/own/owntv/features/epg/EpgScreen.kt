@@ -68,6 +68,7 @@ import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.ui.components.longPressMenuGuard
+import tv.own.owntv.ui.components.ChannelGenre
 import tv.own.owntv.ui.components.ErrorState
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
@@ -380,7 +381,7 @@ fun EpgScreen(
                             onExitToChannels = { inCellMode = false },
                             onMoveCursor = { cursorTime = it },
                             onStripFocused = { focusedChannel = channel },
-                            categoryColor = guideCategories.firstOrNull { it.id == channel.categoryId }?.name?.let { categoryColor(it) },
+                            categoryColor = guideCategories.firstOrNull { it.id == channel.categoryId }?.name?.let { ChannelGenre.dotFor(it) },
                         )
                     }
                 }
@@ -733,22 +734,6 @@ private fun openAtCursor(progs: List<EpgProgrammeEntity>, cursorTime: Long, onOp
 private fun CenterBox(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, content = content)
-    }
-}
-
-/** Best-effort genre colour from a channel category's free-text name — sport→green, news→red, movie→violet,
- *  kid→gold, music→blue, docu→teal. Null when unmatched (no dot rather than a misleading colour). */
-private fun categoryColor(name: String?): Color? {
-    if (name.isNullOrBlank()) return null
-    val n = name.lowercase()
-    return when {
-        n.contains("sport") -> Color(0xFF4CAF50)
-        n.contains("news") -> Color(0xFFEF5350)
-        n.contains("movie") || n.contains("film") || n.contains("cinema") -> Color(0xFFAB47BC)
-        n.contains("kid") || n.contains("child") || n.contains("anim") -> Color(0xFFFFB300)
-        n.contains("music") -> Color(0xFF42A5F5)
-        n.contains("docu") -> Color(0xFF26A69A)
-        else -> null
     }
 }
 
