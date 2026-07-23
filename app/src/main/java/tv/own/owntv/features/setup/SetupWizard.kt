@@ -120,8 +120,8 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
                     step = Step.IMPORTING
                 },
                 onStartM3u = { name, url, ua, epg, refresh, _ -> vm.startM3u(name, url, ua, epg, refresh); importOrigin = Step.ADD_SOURCE; step = Step.IMPORTING },
-                onStartStalker = { name, portalUrl, mac, ua, refresh, _ ->
-                    vm.startStalker(name, portalUrl, mac, ua, refresh)
+                onStartStalker = { name, portalUrl, mac, ua, refresh, _, live, movies, series ->
+                    vm.startStalker(name, portalUrl, mac, ua, refresh, live, movies, series)
                     importOrigin = Step.ADD_SOURCE
                     step = Step.IMPORTING
                 },

@@ -153,13 +153,23 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 initial = src,
                 initialAutoRefresh = playlistAutoRefresh[src.id] ?: PlaylistAutoRefresh.OFF,
                 initialIsDefault = src.id == defaultId,
-                onStartXtream = { n, server, u, p, ua, epg, autoRefresh, _, _, _, isDefault ->
-                    vm.updateSource(src.id, n, server, u, p, ua, epg, autoRefresh, isDefault)
+                onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault ->
+                    vm.updateSource(
+                        src.id, n, server, u, p, ua, epg, autoRefresh, isDefault,
+                        syncLive = live != tv.own.owntv.core.sync.SyncScopeChoice.Off,
+                        syncMovies = movies != tv.own.owntv.core.sync.SyncScopeChoice.Off,
+                        syncSeries = series != tv.own.owntv.core.sync.SyncScopeChoice.Off,
+                    )
                     editingSource = null
                 },
                 onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.updateSource(src.id, n, url, "", "", ua, epg, autoRefresh, isDefault); editingSource = null },
-                onStartStalker = { n, url, mac, ua, autoRefresh, isDefault ->
-                    vm.updateSource(src.id, n, url, "", "", ua, "", autoRefresh, isDefault, mac = mac)
+                onStartStalker = { n, url, mac, ua, autoRefresh, isDefault, live, movies, series ->
+                    vm.updateSource(
+                        src.id, n, url, "", "", ua, "", autoRefresh, isDefault, mac = mac,
+                        syncLive = live != tv.own.owntv.core.sync.SyncScopeChoice.Off,
+                        syncMovies = movies != tv.own.owntv.core.sync.SyncScopeChoice.Off,
+                        syncSeries = series != tv.own.owntv.core.sync.SyncScopeChoice.Off,
+                    )
                     vm.resetStalkerTest()
                     editingSource = null
                 },
@@ -192,9 +202,9 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                             vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault)
                         },
                         onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.addM3u(n, url, ua, epg, autoRefresh, isDefault) },
-                        onStartStalker = { n, url, mac, ua, autoRefresh, isDefault ->
+                        onStartStalker = { n, url, mac, ua, autoRefresh, isDefault, live, movies, series ->
                             vm.resetStalkerTest()
-                            vm.addStalker(n, url, mac, ua, autoRefresh, isDefault)
+                            vm.addStalker(n, url, mac, ua, autoRefresh, isDefault, live, movies, series)
                         },
                         onTestStalker = { url, mac, ua -> vm.testStalker(url, mac, ua) },
                         stalkerTest = stalkerTestUi,

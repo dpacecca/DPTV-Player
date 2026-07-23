@@ -1,0 +1,645 @@
+<title>OwnTV · Skip-Sync Scope</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#040E0B; --surface:#0E1513; --sc-low:#161D1B; --sc:#1B211F; --sc-high:#252B29; --sc-highest:#303634;
+    --on:#DEE4E1; --onvar:#BFC9C4; --outline:#89938F; --outlinevar:#3F4945;
+    --primary:#52DBC8; --onPrimary:#003730; --primaryC:#004F46; --onPrimaryC:#6FF8E4;
+    --tertC:#294B5D; --onTertC:#C5E7FF; --tert:#A9CBE4;
+    --error:#FFB4AB; --danger:#EF4444;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  :where(.grid,.flex)>*{min-width:0}
+  :where(p,h1,h2,h3,h4,li,td,th,.badge){overflow-wrap:anywhere}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--on);font-family:var(--font);line-height:1.55;
+    -webkit-font-smoothing:antialiased;padding:0 20px 90px}
+  .wrap{max-width:1180px;margin:0 auto}
+  a{color:var(--primary)}
+  h1,h2,h3{line-height:1.2;margin:0}
+  code,.mono{font-family:var(--mono)}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--primary);font-weight:700}
+  .muted{color:var(--onvar)}
+  .dim{color:var(--outline)}
+
+  header.hero{padding:56px 0 28px;border-bottom:1px solid var(--outlinevar)}
+  header.hero h1{font-size:38px;font-weight:800;letter-spacing:-.02em;margin:14px 0 12px}
+  header.hero p.lede{font-size:18px;color:var(--onvar);max-width:760px;margin:0}
+  .metastrip{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .pill{font-size:12.5px;padding:5px 12px;border-radius:999px;background:var(--sc-high);color:var(--onvar);
+    border:1px solid var(--outlinevar);white-space:nowrap}
+  .pill.accent{background:var(--primaryC);color:var(--onPrimaryC);border-color:transparent}
+
+  section.block{padding:44px 0;border-bottom:1px solid var(--outlinevar)}
+  section.block > h2{font-size:26px;font-weight:750;letter-spacing:-.01em;display:flex;align-items:baseline;gap:12px}
+  section.block > h2 .n{font-size:14px;color:var(--primary);font-weight:800;font-family:var(--mono)}
+  section.block > .sub{color:var(--onvar);margin:10px 0 26px;max-width:820px;font-size:15.5px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:860px){.grid2,.grid3{grid-template-columns:1fr}}
+
+  .card{background:var(--sc);border:1px solid var(--outlinevar);border-radius:18px;padding:22px}
+  .card h3{font-size:16px;font-weight:700;margin-bottom:6px}
+  .card p{margin:6px 0 0;color:var(--onvar);font-size:14.5px}
+  .card.good{border-color:#1F5135}
+  .card.warn{border-color:#624000}
+  .card.bad{border-color:#5b2a26}
+  .tagrow{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .tag{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:6px}
+  .tag.now{background:var(--primaryC);color:var(--onPrimaryC)}
+  .tag.later{background:var(--tertC);color:var(--onTertC)}
+  .tag.off{background:transparent;color:var(--outline);border:1px solid var(--outlinevar)}
+  .tag.today{background:var(--sc-highest);color:var(--onvar)}
+
+  /* ---- Faithful OwnTV device mock ---- */
+  .device{background:var(--surface);border:1px solid var(--outlinevar);border-radius:22px;padding:30px 30px 34px;
+    box-shadow:0 24px 60px -30px #000;position:relative;overflow:hidden}
+  .device::before{content:"";position:absolute;inset:0;background:
+    radial-gradient(120% 90% at 80% -10%,rgba(82,219,200,.10),transparent 55%);pointer-events:none}
+  .device .scr-title{font-size:24px;font-weight:800;letter-spacing:-.01em}
+  .device .scr-desc{color:var(--onvar);font-size:14px;margin-top:5px}
+  .field{margin-top:14px}
+  .field label{display:block;font-size:12px;color:var(--onvar);margin-bottom:5px}
+  .field .box{background:var(--sc-low);border:1px solid var(--outlinevar);border-radius:12px;
+    padding:12px 14px;color:var(--on);font-size:14px}
+  .field .box.ph{color:var(--outline)}
+  .kinds{display:flex;gap:10px;margin-bottom:6px}
+  .kchip{flex:1;text-align:center;border-radius:13px;padding:11px 0;font-weight:700;font-size:14px;
+    background:var(--sc-high);color:var(--on);border:1px solid transparent}
+  .kchip.sel{background:var(--primaryC);color:var(--onPrimaryC)}
+
+  .scope-head{margin-top:24px}
+  .scope-head .t{font-size:16px;font-weight:750}
+  .scope-head .d{font-size:13.5px;color:var(--onvar);margin-top:3px}
+
+  .srow{display:flex;align-items:center;gap:14px;background:var(--sc-high);border-radius:14px;
+    padding:13px 15px;margin-top:9px}
+  .srow.focused{outline:2px solid var(--primary);outline-offset:1px}
+  .srow .meta{flex:1;min-width:0}
+  .srow .meta .l{font-size:15px;font-weight:650}
+  .srow .meta .s{font-size:12.5px;color:var(--onvar);margin-top:1px}
+
+  /* Legacy binary toggle (current) */
+  .toggle{width:52px;height:30px;border-radius:999px;background:var(--sc-highest);position:relative;flex:none}
+  .toggle.on{background:var(--primary)}
+  .toggle .knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff}
+  .toggle.on .knob{left:25px}
+
+  /* Proposed segmented tri-state */
+  .seg{display:inline-flex;border:1px solid var(--outlinevar);border-radius:11px;overflow:hidden;flex:none;background:var(--sc-low)}
+  .seg .opt{padding:8px 15px;font-size:13px;font-weight:700;color:var(--outline);display:flex;align-items:center;gap:6px;
+    border-right:1px solid var(--outlinevar)}
+  .seg .opt:last-child{border-right:0}
+  .seg .opt.a-now{background:var(--primaryC);color:var(--onPrimaryC)}
+  .seg .opt.a-later{background:var(--tertC);color:var(--onTertC)}
+  .seg .opt.a-off{background:var(--sc-highest);color:var(--on)}
+  .seg .opt .ic{font-size:13px}
+
+  .cta{display:flex;gap:12px;margin-top:26px;align-items:center}
+  .btn{border-radius:13px;padding:12px 22px;font-weight:750;font-size:14px}
+  .btn.sec{background:var(--sc-high);color:var(--on)}
+  .btn.pri{background:var(--primary);color:var(--onPrimary)}
+  .spacer{flex:1}
+  .caption{font-size:12.5px;color:var(--outline);margin-top:12px;display:flex;gap:7px;align-items:flex-start}
+  .caption .dpad{font-family:var(--mono);background:var(--sc-high);border:1px solid var(--outlinevar);border-radius:6px;
+    padding:1px 6px;color:var(--onvar);white-space:nowrap}
+
+  table.beh{width:100%;border-collapse:collapse;font-size:14px}
+  table.beh th,table.beh td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--outlinevar);vertical-align:top}
+  table.beh thead th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--onvar);font-weight:700}
+  table.beh td.k{font-weight:650;white-space:nowrap;color:var(--on)}
+  table.beh .now{color:var(--primary);font-weight:650}
+  table.beh .off{color:var(--error);font-weight:650}
+  .tblwrap{overflow-x:auto;border:1px solid var(--outlinevar);border-radius:14px}
+
+  .mermaid{background:var(--sc);border:1px solid var(--outlinevar);border-radius:16px;padding:20px;overflow-x:auto}
+  .mermaid svg{max-width:100%;height:auto}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:0;display:grid;gap:14px}
+  ol.steps li{counter-increment:s;background:var(--sc);border:1px solid var(--outlinevar);border-radius:16px;
+    padding:18px 20px 18px 62px;position:relative}
+  ol.steps li::before{content:counter(s);position:absolute;left:18px;top:16px;width:30px;height:30px;border-radius:9px;
+    background:var(--primaryC);color:var(--onPrimaryC);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+  ol.steps li h4{margin:0 0 4px;font-size:15.5px;font-weight:750}
+  ol.steps li p{margin:0;color:var(--onvar);font-size:14px}
+  ol.steps li .fp{font-family:var(--mono);font-size:12.5px;color:var(--primary);background:var(--sc-low);
+    border:1px solid var(--outlinevar);border-radius:6px;padding:1px 7px;display:inline-block;margin-top:8px}
+  .risk{display:flex;gap:12px;background:var(--sc);border:1px solid var(--outlinevar);border-radius:14px;padding:16px 18px;margin-top:12px}
+  .risk .icn{font-size:18px;flex:none;line-height:1.3}
+  .risk h4{margin:0 0 3px;font-size:14.5px;font-weight:750}
+  .risk p{margin:0;color:var(--onvar);font-size:13.5px}
+
+  /* input / decision forms */
+  .q{background:var(--sc);border:1px solid var(--outlinevar);border-radius:16px;padding:22px;margin-top:18px}
+  .q h3{font-size:16px;font-weight:750;margin-bottom:4px}
+  .q .qh{color:var(--onvar);font-size:14px;margin-bottom:14px}
+  .opts{display:grid;gap:10px}
+  .opts label{display:flex;gap:12px;align-items:flex-start;background:var(--sc-low);border:1px solid var(--outlinevar);
+    border-radius:12px;padding:13px 15px;cursor:pointer;transition:border-color .12s,background .12s}
+  .opts label:hover{border-color:var(--outline)}
+  .opts label:has(input:checked){border-color:var(--primary);background:#0d1a18}
+  .opts input{margin-top:3px;accent-color:var(--primary);width:16px;height:16px;flex:none}
+  .opts .ot{font-weight:700;font-size:14px}
+  .opts .od{font-size:13px;color:var(--onvar);margin-top:2px}
+  .opts .rec{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:var(--onPrimaryC);background:var(--primaryC);
+    padding:2px 7px;border-radius:5px;margin-left:8px;vertical-align:middle}
+  .qbtn{margin-top:14px;background:var(--primary);color:var(--onPrimary);border:none;border-radius:11px;
+    padding:11px 20px;font-weight:750;font-size:14px;cursor:pointer;font-family:inherit}
+  .qbtn:hover{filter:brightness(1.06)}
+  .sendbar{position:sticky;bottom:0;background:linear-gradient(0deg,var(--bg) 60%,transparent);padding:18px 0 22px;margin-top:8px}
+  .sendbar button{background:var(--primaryC);color:var(--onPrimaryC);border:1px solid var(--primary);border-radius:12px;
+    padding:12px 24px;font-weight:750;font-size:14.5px;cursor:pointer;font-family:inherit}
+  .foot{padding:26px 0 10px;color:var(--outline);font-size:12.5px}
+  #file,#diff{margin-top:14px}
+
+  .answered{background:#0d1a18;border:1px solid #1F5135;border-radius:14px;padding:18px 20px;margin-top:20px}
+  .answered .ahead{font-weight:750;font-size:14.5px;margin-bottom:8px;color:var(--onPrimaryC);display:flex;gap:9px;align-items:baseline}
+  .answered .qmark{font-family:var(--mono);font-size:11px;font-weight:800;background:var(--primaryC);color:var(--onPrimaryC);
+    border-radius:5px;padding:2px 7px;flex:none}
+  .answered p{margin:0;color:var(--on);font-size:14px}
+  .answered .fp{font-family:var(--mono);font-size:12.5px;color:var(--primary);background:var(--sc-low);
+    border:1px solid var(--outlinevar);border-radius:6px;padding:1px 7px;display:inline-block;margin-top:10px}
+
+  .decided{display:grid;grid-template-columns:auto 1fr;gap:12px 16px;align-items:baseline;
+    background:var(--sc);border:1px solid #1F5135;border-radius:14px;padding:18px 20px;margin-top:12px}
+  .decided .dq{font-size:14px;color:var(--onvar)}
+  .decided .da{font-size:14px;font-weight:750;color:var(--onPrimaryC);white-space:nowrap}
+  .decided .da::before{content:"✓ ";color:var(--primary)}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <div class="eyebrow">OwnTV · Sync design proposal</div>
+  <h1>Skip-sync: never spend time on sections you don't want</h1>
+  <p class="lede">Today every Live / Movies / Series section of an Xtream source is <em>always</em> synced - the only
+  choice is <strong>now</strong> vs <strong>in the background</strong>. This adds a real third state, <strong>Off</strong>,
+  so a user can tell OwnTV to never fetch a section at all - saved on the source, and honored on every add, re-sync and auto-refresh.</p>
+  <div class="metastrip">
+    <span class="pill accent">Xtream (primary)</span>
+    <span class="pill">Stalker (same model)</span>
+    <span class="pill">DB v16 → v17 migration</span>
+    <span class="pill">TV D-pad UI</span>
+    <span class="pill">No behavior change for existing sources</span>
+  </div>
+</header>
+
+<!-- ============ GOAL / CURRENT STATE ============ -->
+<section class="block">
+  <h2><span class="n">01</span> The gap today</h2>
+  <p class="sub">The add / re-sync flow already models three content types as <code>SyncContentTypes(live, movies, series)</code>,
+  but a checkbox only routes a type to the foreground (<em>now</em>) or the background remainder (<em>later</em>).
+  There is no way to say <em>"don't sync this."</em> Unchecking still syncs it - just later.</p>
+
+  <div class="grid2">
+    <div class="device">
+      <div class="tagrow"><span class="tag today">Current — Add Source</span></div>
+      <div class="scope-head" style="margin-top:6px">
+        <div class="t">Sync first</div>
+        <div class="d">Pick what to import now. The rest syncs in the background.</div>
+      </div>
+      <div class="srow">
+        <div class="meta"><div class="l">Live TV</div><div class="s">Channels and categories</div></div>
+        <div class="toggle on"><div class="knob"></div></div>
+      </div>
+      <div class="srow">
+        <div class="meta"><div class="l">Movies</div><div class="s">VOD movie catalog</div></div>
+        <div class="toggle on"><div class="knob"></div></div>
+      </div>
+      <div class="srow">
+        <div class="meta"><div class="l">Series</div><div class="s">TV series catalog</div></div>
+        <div class="toggle"><div class="knob"></div></div>
+      </div>
+      <div class="caption"><span>↳</span><span>Series toggle OFF today = <strong style="color:var(--onvar)">still synced</strong>,
+      just enqueued to the background remainder worker. Bandwidth + time are spent regardless.</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <h3>What "off" does today</h3>
+        <p><code>runImport()</code> passes checked types as the <em>priority</em> foreground pass;
+        <code>SyncContentTypes().remainderAfter(priority)</code> computes <em>everything not checked</em> and
+        enqueues it to <code>CatalogSyncWorker</code>. The remainder always covers the full catalog.</p>
+      </div>
+      <div class="card">
+        <h3>Re-sync ignores the choice entirely</h3>
+        <p><code>SettingsViewModel.resync()</code> and <code>ShellViewModel.checkAutoRefresh()</code> enqueue with the
+        default <code>SyncContentTypes()</code> = all-true. So even a "later" choice is forgotten on the next sync -
+        every re-sync pulls all three sections.</p>
+      </div>
+      <div class="card">
+        <h3>Nothing is persisted</h3>
+        <p>The three booleans live only in the Add screen's local state. <code>SourceEntity</code> stores no per-section
+        scope, so there is nowhere for "skip Series forever" to live.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROPOSED UI ============ -->
+<section class="block">
+  <h2><span class="n">02</span> Proposed UI — a three-way scope</h2>
+  <p class="sub">Replace the binary "Sync first" toggles with a segmented <strong>Now / Later / Off</strong> control per section.
+  On the Edit screen (and implicitly on re-sync) it collapses to <strong>On / Off</strong>, since "now vs later" only means
+  something during the very first import.</p>
+
+  <div class="answered">
+    <div class="ahead"><span class="qmark">Q</span> "Do these three sections already exist, or do we add the sections themselves?"</div>
+    <p><strong>They already exist - we only add the toggle.</strong> Live / Movies / Series are first-class
+    <code>MainSection</code> entries (<code>LIVE_TV</code>, <code>MOVIES</code>, <code>SERIES</code>) with their own browse
+    screens and view-models, and the add form <em>already</em> shows the three Live/Movies/Series toggles today. The nav
+    even hides a section when the source has none of that type (<code>if (hasMovies) add(MOVIES)</code>). So this is a
+    <strong>toggle upgrade + a persisted flag</strong>, not a new content pipeline.</p>
+    <span class="fp">features/shell/ShellViewModel.kt:46-75</span>
+  </div>
+
+  <div class="grid2">
+    <!-- ADD -->
+    <div class="device">
+      <div class="tagrow"><span class="tag now">Proposed — Add Source (Xtream)</span></div>
+      <div class="scope-head" style="margin-top:6px">
+        <div class="t">What to sync</div>
+        <div class="d">Import <strong style="color:var(--onPrimaryC)">Now</strong>, sync
+        <strong style="color:var(--onTertC)">Later</strong> in the background, or turn it
+        <strong style="color:var(--on)">Off</strong> to skip it completely.</div>
+      </div>
+      <div class="srow focused">
+        <div class="meta"><div class="l">Live TV</div><div class="s">Channels and categories</div></div>
+        <div class="seg">
+          <span class="opt a-now"><span class="ic">⚡</span>Now</span>
+          <span class="opt">Later</span>
+          <span class="opt">Off</span>
+        </div>
+      </div>
+      <div class="srow">
+        <div class="meta"><div class="l">Movies</div><div class="s">VOD movie catalog</div></div>
+        <div class="seg">
+          <span class="opt">Now</span>
+          <span class="opt a-later"><span class="ic">◷</span>Later</span>
+          <span class="opt">Off</span>
+        </div>
+      </div>
+      <div class="srow">
+        <div class="meta"><div class="l">Series</div><div class="s">TV series catalog</div></div>
+        <div class="seg">
+          <span class="opt">Now</span>
+          <span class="opt">Later</span>
+          <span class="opt a-off"><span class="ic">⊘</span>Off</span>
+        </div>
+      </div>
+      <div class="caption"><span>🎮</span><span>Row focused → <span class="dpad">◀ / ▶</span> cycles Now → Later → Off.
+      Single focusable node per row, so D-pad focus never escapes the row (matches the app's existing focus rules).</span></div>
+      <div class="cta">
+        <span class="btn sec">Back</span><span class="spacer"></span><span class="btn pri">Start Import</span>
+      </div>
+    </div>
+
+    <!-- EDIT / RESYNC -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="device">
+        <div class="tagrow"><span class="tag later">Proposed — Edit Source</span></div>
+        <div class="scope-head" style="margin-top:6px">
+          <div class="t">What to sync</div>
+          <div class="d">Turn a section off to stop syncing it. The catalog is cleared to save space -
+          your progress &amp; favorites are kept and restored if you turn it back on.</div>
+        </div>
+        <div class="srow">
+          <div class="meta"><div class="l">Live TV</div><div class="s">4,120 channels</div></div>
+          <div class="seg">
+            <span class="opt a-now" style="background:var(--primaryC);color:var(--onPrimaryC)">On</span>
+            <span class="opt">Off</span>
+          </div>
+        </div>
+        <div class="srow">
+          <div class="meta"><div class="l">Movies</div><div class="s">18,300 movies</div></div>
+          <div class="seg">
+            <span class="opt a-now" style="background:var(--primaryC);color:var(--onPrimaryC)">On</span>
+            <span class="opt">Off</span>
+          </div>
+        </div>
+        <div class="srow">
+          <div class="meta"><div class="l">Series</div><div class="s">Off — not synced</div></div>
+          <div class="seg">
+            <span class="opt">On</span>
+            <span class="opt a-off">Off</span>
+          </div>
+        </div>
+        <div class="caption"><span>↳</span><span>Re-sync &amp; auto-refresh read this scope from the source, so a
+        skipped section is never fetched again - <strong style="color:var(--onvar)">"do not spend time syncing them."</strong></span></div>
+      </div>
+      <div class="card good">
+        <div class="tagrow"><span class="tag now">Now</span></div>
+        <p>Foreground pass on first import - you watch it while the rest loads. Same as a checked box today.</p>
+      </div>
+      <div class="card">
+        <div class="tagrow"><span class="tag later">Later</span></div>
+        <p>Enqueued to the background remainder worker. Same as an unchecked box today.</p>
+      </div>
+      <div class="card bad">
+        <div class="tagrow"><span class="tag off">Off</span></div>
+        <p><strong style="color:var(--error)">New.</strong> Never fetched. Excluded from the initial sync, the remainder,
+        every manual re-sync and every auto-refresh. Persisted on the source. Catalog rows cleared;
+        <strong style="color:var(--onPrimaryC)">progress &amp; favorites survive</strong> in the pending store and re-attach on re-enable.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BEHAVIOR COMPARISON ============ -->
+<section class="block">
+  <h2><span class="n">03</span> Behavior: current vs target</h2>
+  <p class="sub">The single new rule: an <span class="off">Off</span> section is subtracted at every entry point, not just at add time.</p>
+  <div class="tblwrap">
+  <table class="beh">
+    <thead><tr><th>Entry point</th><th>Today</th><th>With skip-sync</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Add source</td>
+        <td>Checked = foreground, unchecked = background remainder. All 3 always sync.</td>
+        <td><span class="now">Now</span> = foreground · <span class="later">Later</span> = remainder ·
+        <span class="off">Off</span> = never enqueued. Scope saved to <code>SourceEntity</code>.</td></tr>
+      <tr><td class="k">Manual re-sync</td>
+        <td>Always full catalog (defaults to all-true), ignoring the add-time choice.</td>
+        <td>Reads the saved scope → syncs only <span class="now">On</span> sections.</td></tr>
+      <tr><td class="k">Auto-refresh</td>
+        <td>Always full catalog on staleness / startup.</td>
+        <td>Reads the saved scope → <span class="off">Off</span> sections stay untouched.</td></tr>
+      <tr><td class="k">Background worker</td>
+        <td>Syncs whatever <code>contentTypes</code> the enqueue carried.</td>
+        <td>Intersects the enqueue with the source's saved scope as the source of truth - a stale enqueue can never revive an <span class="off">Off</span> section.</td></tr>
+      <tr><td class="k">Turn a section Off later</td>
+        <td>n/a</td>
+        <td>Catalog rows purged so nothing stale lingers; per-profile <strong>progress &amp; favorites are snapshotted to the
+        persisted pending store</strong>, not deleted. Re-enable + resync re-attaches them (existing <code>resolvePending</code> path).</td></tr>
+      <tr><td class="k">Existing sources (migration)</td>
+        <td>n/a</td>
+        <td>All 3 default to <span class="now">On</span> → identical to today. Zero behavior change until edited.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============ FLOW DIAGRAM ============ -->
+<section class="block">
+  <h2><span class="n">04</span> How a scope routes a section</h2>
+  <p class="sub">One decision per section, applied identically whether the trigger is a fresh add or a scheduled refresh.</p>
+  <div class="mermaid">
+flowchart TD
+    A["Section scope, Live Movies or Series"] --> B{"On or Off"}
+    B -->|Off| X["Skip forever, catalog purged, progress kept in pending"]
+    B -->|On| C{"Trigger"}
+    C -->|"First add Now"| D["Foreground pass, watch immediately"]
+    C -->|"First add Later"| E["Background remainder worker"]
+    C -->|"Re-sync or auto-refresh"| F["Background sync, scope from source"]
+    D --> G["Persisted scope on SourceEntity, syncLive syncMovies syncSeries"]
+    E --> G
+    F --> G
+    G --> H["Worker intersects enqueue with saved scope, Off never revived"]
+    X -->|"turn On and resync"| R["resolvePending re-attaches progress"]
+    R --> C
+  </div>
+</section>
+
+<!-- ============ IMPLEMENTATION ============ -->
+<section class="block">
+  <h2><span class="n">05</span> Implementation plan</h2>
+  <p class="sub">Small, additive, and centered on one idea: <strong>persist the enabled set on the source</strong>, then make
+  every sync entry point subtract the disabled sections.</p>
+
+  <ol class="steps">
+    <li>
+      <h4>Persist scope on <code>SourceEntity</code></h4>
+      <p>Add <code>syncLive</code>, <code>syncMovies</code>, <code>syncSeries</code> booleans (default <code>true</code>).
+      This is the enabled set = <em>On</em> sections; <em>Off</em> = false. "Now vs later" is <strong>not</strong> stored -
+      it's a transient first-import-only priority.</p>
+      <span class="fp">core/database/entity/ProfileEntities.kt</span>
+    </li>
+    <li>
+      <h4>DB v16 → v17 migration</h4>
+      <p>Three <code>ALTER TABLE sources ADD COLUMN … NOT NULL DEFAULT 1</code>, mirroring the v13→v14
+      <code>sources.mac</code> migration. Existing rows become all-On = today's behavior.</p>
+      <span class="fp">core/database/OwnTVDatabase.kt</span>
+    </li>
+    <li>
+      <h4>Make the remainder relative to the enabled set</h4>
+      <p>Add <code>SyncContentTypes.enabledOf(source)</code> and change the remainder from
+      <code>SyncContentTypes().remainderAfter(priority)</code> (full − now) to <code>enabled.remainderAfter(priority)</code>
+      (enabled − now). Off sections drop out of both the foreground pass and the remainder.</p>
+      <span class="fp">core/sync/SyncStatus.kt · SetupViewModel.kt · SettingsViewModel.kt</span>
+    </li>
+    <li>
+      <h4>Honor scope on re-sync &amp; auto-refresh</h4>
+      <p><code>resync()</code> and <code>checkAutoRefresh()</code> pass <code>enabledOf(source)</code> as
+      <code>contentTypes</code> instead of the default all-true.</p>
+      <span class="fp">SettingsViewModel.kt:754 · ShellViewModel.kt:168</span>
+    </li>
+    <li>
+      <h4>Worker treats saved scope as source of truth</h4>
+      <p><code>CatalogSyncWorker</code> intersects the input <code>contentTypes</code> with the source's saved flags,
+      so a queued job from before an edit can't fetch a now-Off section. Slots next to the existing M3U/backup override.</p>
+      <span class="fp">core/sync/work/CatalogSyncWorker.kt:55</span>
+    </li>
+    <li>
+      <h4>Turn Off: purge catalog, <em>keep</em> progress &amp; favorites</h4>
+      <p>On Edit save, diff old vs new scope. For each newly-Off type: (1) snapshot that section's user data via
+      <code>exportForSource(id, kinds)</code> into the persisted pending store, (2) <code>clearSource</code> only its catalog
+      rows. Do <strong>not</strong> run the destructive orphan-purge (it's gated on a full-catalog success anyway). Newly-On
+      triggers a scoped resync; <code>resolvePending</code> re-attaches progress as the rows reappear - the exact mechanism
+      that already survives clear-then-insert churn. Favorites/history/progress FK only to the profile, so nothing cascades.</p>
+      <span class="fp">UserDataResolver.kt (exportForSource / resolvePending) · SourceRepository.clearSourceContent:71</span>
+    </li>
+    <li>
+      <h4>UI: segmented control + Edit-form scope</h4>
+      <p>New <code>SyncScopeRow</code> composable (Now/Later/Off on add, On/Off on edit) replacing the three
+      <code>ToggleRow</code>s. Show the scope section when editing an Xtream/Stalker source too
+      (today <code>showContentToggles</code> hides it on edit).</p>
+      <span class="fp">features/setup/AddSourceScreen.kt:280</span>
+    </li>
+    <li>
+      <h4>Carry scope through the plumbing</h4>
+      <p>Thread the enabled set through <code>onStartXtream</code> → <code>SetupViewModel.startXtream</code> /
+      <code>SettingsViewModel.addXtream</code> → <code>addXtreamSource</code>. Extend the companion (phone) add-form's
+      existing <code>syncLive/syncMovies/syncSeries</code> to a tri-state where relevant.</p>
+      <span class="fp">SetupWizard.kt · CompanionHtml.kt · CompanionPayload.kt</span>
+    </li>
+  </ol>
+
+  <h3 style="margin:34px 0 4px;font-size:17px">Key change · the remainder becomes enabled-relative</h3>
+  <p class="muted" style="font-size:13.5px;margin-bottom:2px">core/sync/SyncStatus.kt — split "not in the priority pass" from "excluded".</p>
+  <div id="diff"></div>
+
+  <h3 style="margin:30px 0 4px;font-size:17px">Data model · SourceEntity gains a persisted scope</h3>
+  <p class="muted" style="font-size:13.5px;margin-bottom:2px">core/database/entity/ProfileEntities.kt</p>
+  <div id="file"></div>
+</section>
+
+<!-- ============ RISKS ============ -->
+<section class="block">
+  <h2><span class="n">06</span> Risks &amp; edge cases</h2>
+  <div class="risk"><div class="icn">🧭</div><div>
+    <h4>All-Off must stay impossible</h4>
+    <p>Keep the existing guard - <code>Start Import</code> disabled unless at least one section is On. On the Edit form,
+    block saving an all-Off source (it would be an empty, contentless source).</p></div></div>
+  <div class="risk"><div class="icn">🗑️</div><div>
+    <h4>Purge the catalog only - never the user data</h4>
+    <p>Clear only the toggled type's <em>catalog</em> rows for the one source (never other sources on the profile).
+    Favorites/history/progress must be snapshotted to pending first, and the full-catalog orphan-purge must stay off for a
+    scoped change. A short "Movies catalog will be cleared; progress kept" confirm sets expectations without implying data loss.</p></div></div>
+  <div class="risk"><div class="icn">📺</div><div>
+    <h4>M3U is single-stream</h4>
+    <p>M3U/backup sources are live-only in the worker already, so the scope UI is Xtream/Stalker only - don't surface
+    Now/Later/Off for M3U.</p></div></div>
+  <div class="risk"><div class="icn">💾</div><div>
+    <h4>Backup round-trip</h4>
+    <p>Include the three flags in <code>BackupManager</code> export/import so a restored source keeps its skip choices
+    instead of silently re-syncing everything.</p></div></div>
+  <div class="risk"><div class="icn">🏠</div><div>
+    <h4>Empty section in the shell &amp; on Home</h4>
+    <p>The sidebar already hides a section when the source has none of that type (<code>if (hasMovies) add(MOVIES)</code>),
+    so an Off section drops out of nav for free. Remaining work: make sure the <strong>Home screen</strong> rails
+    (recently-added Movies/Series, continue-watching) degrade gracefully when a whole section is intentionally absent -
+    hide the empty rail rather than showing a blank shelf.</p>
+    <span class="fp">ShellViewModel.kt:73-75 · features/home/HomeScreen.kt</span></div></div>
+</section>
+
+<!-- ============ DECISIONS / INPUT ============ -->
+<section class="block" style="border-bottom:none">
+  <h2><span class="n">07</span> Decisions - locked</h2>
+  <p class="sub">Your three answers, plus the two follow-ups resolved against the codebase. This is the spec I'll build to.</p>
+
+  <div class="decided">
+    <span class="dq">Tri-state control interaction on TV</span>
+    <span class="da">Segmented, ◀/▶ cycles</span>
+    <span class="dq">Turning a synced section Off</span>
+    <span class="da">Purge catalog + confirm - keep progress</span>
+    <span class="dq">Source types in v1</span>
+    <span class="da">Xtream + Stalker</span>
+  </div>
+
+  <div class="answered">
+    <div class="ahead"><span class="qmark">Q</span> "Can we drop the Series/VOD catalog but keep progress, and restore it on re-enable? If not possible, skip it."</div>
+    <p><strong>Possible - and it's how the app is already built, so we do it.</strong> Favorites, watch history and
+    resume positions FK only to the profile (never to content rows), and they're keyed to content by a
+    <em>stable identity</em>, not the volatile row id. Records that can't resolve sit in a <strong>persisted pending store</strong>
+    (<code>PENDING_KEY</code> in DataStore) and "heal after every sync as content appears." So turning Movies/Series Off
+    snapshots its user data to pending and clears only the catalog; turning it back On + resync re-attaches progress via the
+    existing <code>resolvePending</code> path. No new persistence layer needed.</p>
+    <span class="fp">core/backup/UserDataResolver.kt · core/database/entity/UserDataEntities.kt</span>
+  </div>
+
+  <div class="answered">
+    <div class="ahead"><span class="qmark">Q</span> "Make sure the Home screen also handles this gracefully."</div>
+    <p><strong>Added to the plan (§06).</strong> The sidebar already hides an absent section for free; the remaining work is
+    the Home rails - hide an empty Movies/Series shelf instead of rendering a blank row when a section is intentionally Off.</p>
+    <span class="fp">features/home/HomeScreen.kt</span>
+  </div>
+
+  <div class="q" style="margin-top:20px">
+    <h3>Still open · wording</h3>
+    <div class="qh">Only naming is unsettled - annotate directly on the mock if you'd word it differently.</div>
+    <p style="font-size:14px;margin:0">Section title <strong>"What to sync"</strong>; options <strong>Now / Later / Off</strong>.
+    Alternatives on the table: "Sync sections" / "Include", or "Skip" instead of "Off". Otherwise I'll proceed to build.</p>
+  </div>
+
+  <div class="sendbar">
+    <button onclick="window.lavish&&window.lavish.sendQueuedPrompts&&window.lavish.sendQueuedPrompts()">Send notes to agent →</button>
+  </div>
+
+  <div class="foot">Design source: OwnTV's own theme tokens (Compose app, no reusable CSS) - dark surfaces + cyan
+  primary from <code>ui/theme/Color.kt</code>. Mocks are HTML approximations of the real Add/Edit screens.</div>
+</section>
+</div>
+
+<!-- code renderer -->
+<script type="module">
+  import { File, FileDiff } from "https://esm.sh/@pierre/diffs@1.2.10?bundle";
+  const theme={light:"github-light",dark:"github-dark"};
+  const options={theme,themeType:"dark",overflow:"wrap"};
+
+  const entity={ name:"core/database/entity/ProfileEntities.kt", contents:
+`data class SourceEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val type: SourceType,
+    val url: String,
+    val username: String? = null,
+    val password: String? = null,
+    val mac: String? = null,
+    val userAgent: String? = null,
+    val epgUrl: String? = null,
+    // Per-section sync scope (v17). false = never fetch this section on any
+    // add / re-sync / auto-refresh. Defaults keep existing sources full-catalog.
+    val syncLive: Boolean = true,
+    val syncMovies: Boolean = true,
+    val syncSeries: Boolean = true,
+    val createdAt: Long = System.currentTimeMillis(),
+    val lastSyncAt: Long? = null,
+)
+`};
+  new File(options).render({containerWrapper:document.querySelector("#file"),file:entity});
+
+  const oldRemainder={ name:"core/sync/SyncStatus.kt", contents:
+`data class SyncContentTypes(
+    val live: Boolean = true,
+    val movies: Boolean = true,
+    val series: Boolean = true,
+) {
+    val hasAny: Boolean get() = live || movies || series
+
+    fun remainderAfter(priority: SyncContentTypes) = SyncContentTypes(
+        live = !priority.live && live,
+        movies = !priority.movies && movies,
+        series = !priority.series && series,
+    )
+}
+`};
+  const newRemainder={ name:"core/sync/SyncStatus.kt", contents:
+`data class SyncContentTypes(
+    val live: Boolean = true,
+    val movies: Boolean = true,
+    val series: Boolean = true,
+) {
+    val hasAny: Boolean get() = live || movies || series
+
+    /** enabled - priority: what to sync in the background AFTER the foreground pass. */
+    fun remainderAfter(priority: SyncContentTypes) = SyncContentTypes(
+        live = !priority.live && live,
+        movies = !priority.movies && movies,
+        series = !priority.series && series,
+    )
+
+    /** Intersect two scopes (worker: enqueue ∩ saved source scope). */
+    fun intersect(other: SyncContentTypes) = SyncContentTypes(
+        live = live && other.live,
+        movies = movies && other.movies,
+        series = series && other.series,
+    )
+
+    companion object {
+        /** The persisted enabled set for a source (Off sections = false). */
+        fun enabledOf(s: SourceEntity) =
+            SyncContentTypes(s.syncLive, s.syncMovies, s.syncSeries)
+    }
+}
+`};
+  new FileDiff({...options,diffStyle:"split"}).render({
+    containerWrapper:document.querySelector("#diff"),oldFile:oldRemainder,newFile:newRemainder,
+  });
+</script>
+
+<!-- mermaid (theme-aware) -->
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.15.0/dist/mermaid.esm.min.mjs";
+  const darkQuery=window.matchMedia("(prefers-color-scheme: dark)");
+  const paint=document.createElement("canvas").getContext("2d");
+  function toRgba(c){paint.clearRect(0,0,1,1);paint.fillStyle="#000";paint.fillStyle=c;paint.fillRect(0,0,1,1);return paint.getImageData(0,0,1,1).data;}
+  function comp(f,b){const fa=f[3]/255,ba=b[3]/255,a=fa+ba*(1-fa);if(a===0)return[0,0,0,0];return[(f[0]*fa+b[0]*ba*(1-fa))/a,(f[1]*fa+b[1]*ba*(1-fa))/a,(f[2]*fa+b[2]*ba*(1-fa))/a,a*255];}
+  function pageIsDark(){const r=document.documentElement;const rb=toRgba(getComputedStyle(r).backgroundColor);const bb=document.body?toRgba(getComputedStyle(document.body).backgroundColor):[0,0,0,0];const[R,G,B,A]=comp(bb,rb);if(A>0)return(0.2126*R+0.7152*G+0.0722*B)/255<0.5;return darkQuery.matches;}
+  const diagrams=[...document.querySelectorAll(".mermaid")].map(el=>({el,src:el.textContent}));
+  let applied,rendering=false,queued=false;
+  function q(){queued=true;if(rendering)return;render();}
+  async function render(){rendering=true;try{while(queued){queued=false;const t=pageIsDark()?"dark":"default";if(t===applied)continue;mermaid.initialize({startOnLoad:false,theme:t,securityLevel:"strict"});for(const{el,src}of diagrams){el.removeAttribute("data-processed");el.textContent=src;}try{await mermaid.run({nodes:diagrams.map(d=>d.el)});}catch(e){console.error(e);return;}applied=t;}}finally{rendering=false;if(queued)q();}}
+  if(document.readyState==="complete")q();else window.addEventListener("load",q,{once:true});
+  darkQuery.addEventListener("change",q);
+</script>

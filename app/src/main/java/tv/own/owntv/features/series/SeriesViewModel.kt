@@ -95,7 +95,7 @@ class SeriesViewModel(
     // Observe the active profile's sources reactively so adding/removing a playlist refreshes Series
     // immediately (was read once at startup, so a new playlist showed nothing until app restart).
     private val ctx: StateFlow<Ctx> = activeProfileSources(settings, sourceDao)
-        .map { aps -> Ctx(aps.profileId, aps.sourceIds) }
+        .map { aps -> Ctx(aps.profileId, aps.seriesSourceIds) }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
 

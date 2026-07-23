@@ -21,6 +21,7 @@ import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.database.dao.CategoryDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.model.MediaType
+import tv.own.owntv.core.repository.ActiveProfileSources
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
 
@@ -47,14 +48,17 @@ class CustomizeViewModel(
     private val customize: CustomizationStore,
 ) : ViewModel() {
 
-    private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
+    private data class Ctx(val profileId: Long, val sources: List<tv.own.owntv.core.database.entity.SourceEntity>) {
+        fun sourceIdsFor(type: MediaType): List<Long> = ActiveProfileSources(profileId, sources).sourceIdsFor(type)
+    }
 
     // Observe the active profile's sources reactively so adding/removing a playlist refreshes the
     // customize lists immediately. Goes through activeProfileSources (like the Browse screens) so the
     // chosen "active playlist" filter also applies HERE: with playlist A selected you only see A's
-    // categories, not B's. "All playlists" (default -1) still shows the merged set.
+    // categories, not B's. "All playlists" (default -1) still shows the merged set. Per-section Off
+    // flags also hide that source's categories for the selected section.
     private val ctx: StateFlow<Ctx> = activeProfileSources(settings, sourceDao)
-        .map { aps -> Ctx(aps.profileId, aps.sourceIds) }
+        .map { aps -> Ctx(aps.profileId, aps.sources) }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))
 
@@ -94,24 +98,27 @@ class CustomizeViewModel(
     val rows: StateFlow<List<CustomizeCatRow>> = combine(_section, ctx) { s, c -> s to c }
         .flatMapLatest { (type, c) ->
             if (c.profileId < 0) flowOf(emptyList())
-            else combine(
-                categoryDao.observe(c.sourceIds, type),
-                customize.observe(c.profileId, type),
-                sourceDao.observeForProfile(c.profileId),
-            ) { cats, cust, sources ->
-                val providerNames = sources.associate { it.id to it.name }.takeIf { c.sourceIds.size > 1 }
-                val orderIndex = cust.categoryOrder.withIndex().associate { (i, k) -> k to i }
-                val keyed = cats.map { it to CustomizeKeys.category(it) }
-                val (pinned, rest) = keyed.partition { (_, k) -> k in orderIndex }
-                (pinned.sortedBy { (_, k) -> orderIndex.getValue(k) } + rest).map { (cat, key) ->
-                    CustomizeCatRow(
-                        key = key,
-                        originalName = cat.name,
-                        displayName = cust.categoryNames[key] ?: cat.name,
-                        hidden = key in cust.hiddenCategories,
-                        renamed = key in cust.categoryNames,
-                        providerName = providerNames?.get(cat.sourceId),
-                    )
+            else {
+                val sourceIds = c.sourceIdsFor(type)
+                combine(
+                    categoryDao.observe(sourceIds, type),
+                    customize.observe(c.profileId, type),
+                    sourceDao.observeForProfile(c.profileId),
+                ) { cats, cust, sources ->
+                    val providerNames = sources.associate { it.id to it.name }.takeIf { sourceIds.size > 1 }
+                    val orderIndex = cust.categoryOrder.withIndex().associate { (i, k) -> k to i }
+                    val keyed = cats.map { it to CustomizeKeys.category(it) }
+                    val (pinned, rest) = keyed.partition { (_, k) -> k in orderIndex }
+                    (pinned.sortedBy { (_, k) -> orderIndex.getValue(k) } + rest).map { (cat, key) ->
+                        CustomizeCatRow(
+                            key = key,
+                            originalName = cat.name,
+                            displayName = cust.categoryNames[key] ?: cat.name,
+                            hidden = key in cust.hiddenCategories,
+                            renamed = key in cust.categoryNames,
+                            providerName = providerNames?.get(cat.sourceId),
+                        )
+                    }
                 }
             }
         }
