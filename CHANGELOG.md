@@ -2,6 +2,29 @@
 
 ## v4.1.4 — unreleased
 
+### 🗂️ Per-section sync scope — choose Now / Later / Off for each section (#74)
+
+- Every source now controls **Live**, **Movies** and **Series** independently with a **Now / Later /
+  Off** scope instead of the old on/off sync toggles. Set a section to **Off** and it is never
+  synced or shown (the long-requested "don't load VOD" — turn Movies off and the huge movie catalog
+  is skipped entirely), **Later** keeps it available to sync on demand without running now, and
+  **Now** syncs it with the rest. Editable per source in **Setup** and **Settings → Manage sources**,
+  and from the LAN **companion** page (Now/Later/Off dropdowns replace the old checkboxes).
+- A source with **every** section Off does no sync work at all. Changing a section's scope resyncs
+  just that source. Backups carry the per-section scope forward, and upgrading preserves your existing
+  behaviour (all sections default to **Now**). (community PR #78)
+
+### 🎨 Accent color — full HSV picker with a live preview
+
+- The accent dialog is rebuilt around a proper **color picker**: a **hue bar** and a large
+  **saturation / brightness square**, each a D-pad "enter-to-edit" control — focus it, press **OK** to
+  step inside (it glows amber), move with the D-pad, **OK/Back** to step out — plus a **live preview**
+  circle and a trimmed set of **6 quick presets**. Type an exact **hex code** at the top and **Apply**,
+  or dial one in and **Use this color**.
+- **Custom hex accents now render exactly.** Entering a hex code used to pin its lightness and show a
+  nearby shade; the seed color is now used verbatim as the accent (only the contrast roles are
+  derived). The dialog uses the shared Lora popup styling.
+
 ### 🎧 Audio Mode — listen with the screen free
 
 - A new third player mode, alongside fullscreen and the docked mini-player: **switch the current
@@ -103,6 +126,11 @@
 
 ### 🐛 Fixes
 
+- **Editing a source no longer shows the other source types.** The Edit-source screen listed all the
+  type chips (Xtream / M3U / Stalker) even though the type can't change while editing. It now shows
+  only the chip matching the source you're editing.
+- **Accent hex code field is no longer hidden behind the keyboard.** The hex input sits above the
+  color picker so the on-screen keyboard can't cover it while you type a code.
 - **Latency warning popup: focus returns to the Live latency row.** After picking **Low latency** (or
   a below-Balanced custom value) and dismissing the heads-up with "I understand", focus used to jump
   to the first row of Video Player settings ("Hardware decoding") instead of the row you were on. The

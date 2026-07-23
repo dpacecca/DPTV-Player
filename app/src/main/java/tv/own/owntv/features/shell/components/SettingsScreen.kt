@@ -3,6 +3,7 @@ package tv.own.owntv.features.shell.components
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
@@ -12,6 +13,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -36,8 +41,14 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -675,9 +686,22 @@ private fun themeLabel(mode: ThemeMode) = when (mode) {
     ThemeMode.SYSTEM -> "System"
 }
 
+/** The six quick presets shown at the top of the accent picker. */
+private val AccentPresetChoices: List<tv.own.owntv.ui.theme.AccentColor> =
+    tv.own.owntv.ui.theme.AccentColor.entries.take(6)
+
+/** Convert an HSV triple (h 0..360, s/v 0..1) into an uppercase "#RRGGBB" string. */
+private fun hsvToHex(h: Float, s: Float, v: Float): String {
+    val argb = android.graphics.Color.HSVToColor(floatArrayOf(h, s, v))
+    return "#%06X".format(argb and 0xFFFFFF)
+}
+
 /**
- * Accent picker: preset swatches, a hue/shade palette, and a hex-code field for an exact color.
- * Presets clear the custom color; palette/hex set it (custom overrides the preset in the theme).
+ * Accent picker: a handful of quick presets plus a full HSV color picker — a hue bar and a
+ * saturation/brightness square (each an enter-to-edit D-pad control) with a live preview — and a
+ * hex-code field for an exact color. The dialog scrolls so the on-screen keyboard never hides the
+ * hex field. Presets clear the custom color; the picker/hex set it exactly (custom overrides the
+ * preset in the theme).
  */
 @Composable
 private fun AccentPaletteDialog(
@@ -690,16 +714,35 @@ private fun AccentPaletteDialog(
     val colors = OwnTVTheme.colors
     val isDark = colors.isDark
     val firstFocus = remember { FocusRequester() }
+
+    // Live HSV state seeded from the current custom color (or a pleasant default).
+    val hsv = remember {
+        FloatArray(3).also { out ->
+            val seed = tv.own.owntv.ui.theme.parseAccentHex(customAccent)?.toArgb() ?: 0xFF52DBC8.toInt()
+            android.graphics.Color.colorToHSV(seed, out)
+        }
+    }
+    var hue by remember { mutableStateOf(hsv[0]) }
+    var sat by remember { mutableStateOf(hsv[1]) }
+    var value by remember { mutableStateOf(hsv[2]) }
+    val pickedHex = hsvToHex(hue, sat, value)
     var hexInput by remember { mutableStateOf(customAccent.removePrefix("#")) }
     var hexError by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     BackHandler { onDismiss() }
 
+    // Keep the sliders and hex field in step whenever the HSV picker moves.
+    fun syncHexFromPicker() { hexInput = pickedHex.removePrefix("#") }
+
+    // PopupFontTheme swaps in the Lora serif and applies the shared popup type scale.
+    tv.own.owntv.ui.theme.PopupFontTheme {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).imePadding().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
+            // dialogPanel already applies verticalScroll; imePadding on the parent Box lifts the
+            // whole panel above the on-screen keyboard so the hex field stays visible.
             modifier = Modifier.dialogPanel(width = 640.dp, padding = 28.dp),
         ) {
             Text("Accent color", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
@@ -708,7 +751,7 @@ private fun AccentPaletteDialog(
             Text("Presets", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                tv.own.owntv.ui.theme.AccentColor.entries.forEachIndexed { i, ac ->
+                AccentPresetChoices.forEachIndexed { i, ac ->
                     val isSel = customAccent.isBlank() && ac == accent
                     Swatch(
                         color = ac.primary(isDark),
@@ -719,29 +762,11 @@ private fun AccentPaletteDialog(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            Text("Palette", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(8.dp))
-            val hues = (0 until 360 step 30).toList()
-            listOf(0.85f to 0.55f, 0.55f to 0.72f).forEach { (sat, light) ->
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    hues.forEach { h ->
-                        val c = Color.hsl(h.toFloat(), sat, light)
-                        val hex = "#%06X".format(c.toArgb() and 0xFFFFFF)
-                        Swatch(
-                            color = c,
-                            selected = customAccent.equals(hex, ignoreCase = true),
-                            onClick = { onPickCustom(hex); onDismiss() },
-                            sizeDp = 36,
-                        )
-                    }
-                }
-                Spacer(Modifier.height(10.dp))
-            }
-
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(20.dp))
             Text("Hex code", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
+            // Kept above the picker on purpose: the on-screen keyboard covers the lower half of the
+            // screen, so the hex field must sit high enough to stay visible while the user types.
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("#", style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
                 tv.own.owntv.ui.components.OwnTVTextField(
@@ -760,15 +785,158 @@ private fun AccentPaletteDialog(
                         hexError = true
                     }
                 })
-                if (hexError) {
-                    Text("Enter 6 hex digits, e.g. 52DBC8", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
-                }
+            }
+            if (hexError) {
+                Spacer(Modifier.height(8.dp))
+                Text("Enter 6 hex digits, e.g. 52DBC8", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
             }
 
             Spacer(Modifier.height(20.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text("Color picker", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(10.dp))
+                    // Hue bar: OK to enter, ◀ ▶ to shift the hue, OK/Back to exit.
+                    HueBar(hue = hue) { h -> hue = h; syncHexFromPicker(); hexError = false }
+                }
+                // Live preview of the currently picked color.
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, sat, value))))
+                        .border(2.dp, colors.outline, androidx.compose.foundation.shape.CircleShape),
+                )
             }
+            Spacer(Modifier.height(14.dp))
+            // Saturation / Brightness square: OK to enter, D-pad to move the dot, OK/Back to exit.
+            SatValSquare(hue = hue, sat = sat, value = value) { s, v ->
+                sat = s; value = v; syncHexFromPicker(); hexError = false
+            }
+
+            Spacer(Modifier.height(24.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                Spacer(Modifier.weight(1f))
+                OwnTVButton("Use this color", onClick = { onPickCustom(pickedHex); onDismiss() })
+            }
+        }
+    }
+    }
+}
+
+/** The rainbow gradient for the hue bar (0°→360° across the full spectrum). */
+private val HueSpectrum: List<Color> = (0..360 step 30).map {
+    Color(android.graphics.Color.HSVToColor(floatArrayOf(it.toFloat(), 1f, 1f)))
+}
+
+/**
+ * Hue selector: one focusable rainbow strip. Press OK to enter edit mode (the strip glows amber),
+ * then ◀ ▶ shift the hue; OK or Back exits. Directional keys are consumed only while editing, so a
+ * stray press can't jump focus out of the strip mid-adjust. [hue] is 0..360.
+ */
+@Composable
+private fun HueBar(hue: Float, onHue: (Float) -> Unit) {
+    val colors = OwnTVTheme.colors
+    var editing by remember { mutableStateOf(false) }
+    var focused by remember { mutableStateOf(false) }
+    val ring = when {
+        editing -> Color(0xFFFFC24A)
+        focused -> colors.primary
+        else -> colors.outline
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(30.dp)
+            .clip(RoundedCornerShape(15.dp))
+            .background(Brush.horizontalGradient(HueSpectrum))
+            .border(if (editing || focused) 3.dp else 1.dp, ring, RoundedCornerShape(15.dp))
+            .onFocusChanged { focused = it.isFocused; if (!it.isFocused) editing = false }
+            .focusable()
+            .onKeyEvent { e ->
+                if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
+                when (e.key) {
+                    Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { editing = !editing; true }
+                    Key.Back -> if (editing) { editing = false; true } else false
+                    Key.DirectionLeft -> if (editing) { onHue(((hue - 4f) % 360f + 360f) % 360f); true } else false
+                    Key.DirectionRight -> if (editing) { onHue((hue + 4f) % 360f); true } else false
+                    Key.DirectionUp, Key.DirectionDown -> editing // trap vertical only while editing
+                    else -> false
+                }
+            },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        // Knob marking the current hue.
+        BoxWithConstraints {
+            val x = (maxWidth - 12.dp) * (hue / 360f).coerceIn(0f, 1f)
+            Box(
+                modifier = Modifier
+                    .offset(x = x)
+                    .width(12.dp)
+                    .height(38.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color.White)
+                    .border(2.dp, Color(0x99000000), RoundedCornerShape(6.dp)),
+            )
+        }
+    }
+}
+
+/**
+ * Saturation / Brightness square: OK to enter edit mode (the box glows amber), then D-pad moves the
+ * dot — left/right = saturation, up/down = brightness — and OK or Back exits. All four directions
+ * are consumed while editing so focus stays put; when not editing the box is a normal focus stop.
+ */
+@Composable
+private fun SatValSquare(hue: Float, sat: Float, value: Float, onChange: (Float, Float) -> Unit) {
+    val colors = OwnTVTheme.colors
+    var editing by remember { mutableStateOf(false) }
+    var focused by remember { mutableStateOf(false) }
+    val ring = when {
+        editing -> Color(0xFFFFC24A)
+        focused -> colors.primary
+        else -> colors.outline
+    }
+    val hueColor = Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, 1f, 1f)))
+    val step = 0.04f
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(190.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .border(if (editing || focused) 3.dp else 1.dp, ring, RoundedCornerShape(16.dp))
+            .onFocusChanged { focused = it.isFocused; if (!it.isFocused) editing = false }
+            .focusable()
+            .onKeyEvent { e ->
+                if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
+                when (e.key) {
+                    Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { editing = !editing; true }
+                    Key.Back -> if (editing) { editing = false; true } else false
+                    Key.DirectionLeft -> if (editing) { onChange((sat - step).coerceIn(0f, 1f), value); true } else false
+                    Key.DirectionRight -> if (editing) { onChange((sat + step).coerceIn(0f, 1f), value); true } else false
+                    Key.DirectionUp -> if (editing) { onChange(sat, (value + step).coerceIn(0f, 1f)); true } else false
+                    Key.DirectionDown -> if (editing) { onChange(sat, (value - step).coerceIn(0f, 1f)); true } else false
+                    else -> false
+                }
+            },
+    ) {
+        // Base hue, then white (left→right) and black (bottom→top) gradients = an HSV square.
+        Box(Modifier.matchParentSize().background(hueColor))
+        Box(Modifier.matchParentSize().background(Brush.horizontalGradient(listOf(Color.White, Color.Transparent))))
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black))))
+        // Cursor: x = saturation, y = 1 - brightness.
+        BoxWithConstraints(Modifier.matchParentSize()) {
+            val cx = (maxWidth - 22.dp) * sat.coerceIn(0f, 1f)
+            val cy = (maxHeight - 22.dp) * (1f - value).coerceIn(0f, 1f)
+            Box(
+                modifier = Modifier
+                    .offset(x = cx, y = cy)
+                    .size(22.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(Color.Transparent)
+                    .border(3.dp, Color.White, androidx.compose.foundation.shape.CircleShape),
+            )
         }
     }
 }

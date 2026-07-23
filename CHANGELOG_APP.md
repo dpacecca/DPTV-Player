@@ -13,6 +13,8 @@
 
 ### ✨ New features
 
+- **🗂️ Per-section sync scope — Now / Later / Off for Live, Movies & Series (#74)** (community PR #78)
+- **🎨 Accent color — full HSV picker (hue bar + saturation/brightness square) with live preview**
 - **🎧 Audio Mode — listen with the screen free**
 - **📤 Remote Backup & Restore — move a backup between TVs over Wi-Fi**
 - **📡 Live TV latency control (#72)**
@@ -23,6 +25,9 @@
 
 ### 🐛 Fixes
 
+- **Editing a source shows only its own type (no more inactive Xtream/M3U/Stalker chips)**
+- **Custom accent hex codes now render exactly, not a nearby shade**
+- **Accent hex field no longer hidden behind the on-screen keyboard**
 - **Restored backups no longer hide all channels on first sync** (community PR #73 by @pt5pnzghm6-sys)
 - **Concurrent playlist syncs no longer truncate movies / skip series** (community PR #73 by @pt5pnzghm6-sys)
 - **Latency warning popup: focus returns to the Live latency row**

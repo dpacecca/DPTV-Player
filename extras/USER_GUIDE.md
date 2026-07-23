@@ -464,6 +464,9 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     setup. The PIN is per-profile and is **not** included in backups (so a restore can never lock you out).
     Change or remove it from the **Change PIN** / **Remove lock** buttons at the top-right.
 - **Settings → Theme / Accent colour / UI Zoom**: dark/AMOLED/light, a tint colour, and scale the whole UI.
+  - The **Accent colour** dialog has quick presets plus a full colour picker: focus the **hue bar** or the
+    **saturation/brightness square**, press **OK** to step in (it glows amber), move with the **D-pad**, then
+    **OK/Back** to step out. A live preview shows the result. You can also type an exact **hex code** and **Apply**.
   - ⚠️ Going **below 85% zoom** shows a warning first — lower zoom draws many more items at once, which can
     crash devices with limited memory (e.g. 2 GB TV sticks) with big playlists/EPG. Press **OK** to accept
     and continue, or **Back** to stay at 85%.

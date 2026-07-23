@@ -236,9 +236,14 @@ fun AddSourceScreen(
             // Source type selector (locked while editing — the type can't change, so initial focus
             // goes to the Name field instead of a dead chip).
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                KindChip("Xtream", kind == SourceKind.XTREAM, Modifier.weight(1f).then(if (!editing) Modifier.focusRequester(firstFocus) else Modifier)) { if (!editing) kind = SourceKind.XTREAM }
-                KindChip("M3U / M3U8", kind == SourceKind.M3U, Modifier.weight(1f)) { if (!editing) kind = SourceKind.M3U }
-                if (onStartStalker != null) {
+                // While editing, the type is fixed — show only the matching chip.
+                if (!editing || kind == SourceKind.XTREAM) {
+                    KindChip("Xtream", kind == SourceKind.XTREAM, Modifier.weight(1f).then(if (!editing) Modifier.focusRequester(firstFocus) else Modifier)) { if (!editing) kind = SourceKind.XTREAM }
+                }
+                if (!editing || kind == SourceKind.M3U) {
+                    KindChip("M3U / M3U8", kind == SourceKind.M3U, Modifier.weight(1f)) { if (!editing) kind = SourceKind.M3U }
+                }
+                if (onStartStalker != null && (!editing || kind == SourceKind.STALKER)) {
                     KindChip("Stalker (MAC)", kind == SourceKind.STALKER, Modifier.weight(1f)) { if (!editing) kind = SourceKind.STALKER }
                 }
             }
