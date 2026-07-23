@@ -155,7 +155,7 @@ class LiveViewModel(
         .map { aps ->
             sourceUaMap = aps.sources.associate { it.id to it.userAgent }
             sourceById = aps.sources.associateBy { it.id }
-            Ctx(aps.profileId, aps.sourceIds)
+            Ctx(aps.profileId, aps.liveSourceIds)
         }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, Ctx(-1L, emptyList()))

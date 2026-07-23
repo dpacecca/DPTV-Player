@@ -22,6 +22,7 @@ import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.sync.ImportStage
 import tv.own.owntv.core.sync.SyncContentTypes
 import tv.own.owntv.core.sync.SyncResult
+import tv.own.owntv.core.sync.SyncScopeChoice
 import tv.own.owntv.core.sync.withRemainderNote
 import tv.own.owntv.core.sync.work.CatalogSyncScheduler
 import tv.own.owntv.core.util.Pin
@@ -150,12 +151,13 @@ class SetupViewModel(
         userAgent: String = "",
         epgUrl: String = "",
         autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
-        syncLive: Boolean = true,
-        syncMovies: Boolean = true,
-        syncSeries: Boolean = true,
+        live: SyncScopeChoice = SyncScopeChoice.Now,
+        movies: SyncScopeChoice = SyncScopeChoice.Now,
+        series: SyncScopeChoice = SyncScopeChoice.Now,
     ) {
-        val priority = SyncContentTypes(syncLive, syncMovies, syncSeries)
-        runImport(autoRefresh, priority, enqueueRemainder = true, requiresNetwork = true) { profileId ->
+        val enabled = SyncContentTypes.fromChoices(live, movies, series)
+        val priority = SyncContentTypes.priorityFromChoices(live, movies, series)
+        runImport(autoRefresh, priority, enabledScope = enabled, enqueueRemainder = true, requiresNetwork = true) { profileId ->
             sourceRepository.addXtreamSource(
                 profileId = profileId,
                 name = name.ifBlank { "My IPTV" },
@@ -164,22 +166,33 @@ class SetupViewModel(
                 password = password,
                 userAgent = userAgent.trim().takeIf { it.isNotBlank() },
                 epgUrl = epgUrl.trim().takeIf { it.isNotBlank() },
+                syncLive = enabled.live, syncMovies = enabled.movies, syncSeries = enabled.series,
             )
         }
     }
 
     /** Stalker/MAC portal onboarding — mirrors SettingsViewModel.addStalker: the handshake is verified
      *  BEFORE the source is saved, so a typo'd portal/MAC fails with a clear error instead of leaving a
-     *  dead source on the brand-new profile. Staged automatically (no toggles): live syncs in the
-     *  foreground (fast — one bulk get_all_channels), movies/series go to the background remainder
-     *  worker, because Stalker VOD has no bulk endpoint (~14 items/page → thousands of requests). */
-    fun startStalker(name: String, portalUrl: String, mac: String, userAgent: String = "", autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF) {
+     *  dead source on the brand-new profile. Defaults: Live Now, Movies/Series Later (Stalker VOD has
+     *  no bulk endpoint). Off sections are never fetched or shown. */
+    fun startStalker(
+        name: String,
+        portalUrl: String,
+        mac: String,
+        userAgent: String = "",
+        autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
+        live: SyncScopeChoice = SyncScopeChoice.Now,
+        movies: SyncScopeChoice = SyncScopeChoice.Later,
+        series: SyncScopeChoice = SyncScopeChoice.Later,
+    ) {
         val canonicalMac = tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(mac)
         if (canonicalMac == null) {
             _state.value = ImportState.Failed("Invalid MAC address — use AA:BB:CC:DD:EE:FF")
             return
         }
-        runImport(autoRefresh, contentTypes = STALKER_PRIORITY, enqueueRemainder = true, requiresNetwork = true) { profileId ->
+        val enabled = SyncContentTypes.fromChoices(live, movies, series)
+        val priority = SyncContentTypes.priorityFromChoices(live, movies, series)
+        runImport(autoRefresh, contentTypes = priority, enabledScope = enabled, enqueueRemainder = true, requiresNetwork = true) { profileId ->
             stalkerAuth.testConnection(
                 tv.own.owntv.core.stalker.StalkerCredentials(
                     sourceId = STALKER_TEST_SOURCE_ID,
@@ -191,6 +204,7 @@ class SetupViewModel(
             sourceRepository.addStalkerSource(
                 profileId, name.ifBlank { "My Portal" }, portalUrl.trim(), canonicalMac,
                 userAgent.trim().takeIf { it.isNotBlank() },
+                syncLive = enabled.live, syncMovies = enabled.movies, syncSeries = enabled.series,
             )
         }
     }
@@ -209,6 +223,7 @@ class SetupViewModel(
     private fun runImport(
         autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
         contentTypes: SyncContentTypes = SyncContentTypes(),
+        enabledScope: SyncContentTypes = SyncContentTypes(),
         enqueueRemainder: Boolean = false,
         requiresNetwork: Boolean = true,
         addSource: suspend (Long) -> SourceEntity,
@@ -226,14 +241,18 @@ class SetupViewModel(
                 val profileId = createdProfileId.takeIf { it > 0 } ?: ensureFallbackProfile()
                 source = addSource(profileId)
                 val freshSync = source.lastSyncAt == null
-                val remainder = if (enqueueRemainder) SyncContentTypes().remainderAfter(contentTypes) else SyncContentTypes(live = false, movies = false, series = false)
+                val remainder = if (enqueueRemainder) {
+                    enabledScope.remainderAfter(contentTypes)
+                } else {
+                    SyncContentTypes(live = false, movies = false, series = false)
+                }
                 settings.setPlaylistAutoRefresh(source.id, autoRefresh)
                 when (val result = sourceRepository.sync(source, onProgress = { _progress.value = it }, contentTypes = contentTypes)) {
                     is SyncResult.Success -> {
                         // Just the playlist content — EPG is added separately (Settings → EPG sources).
                         val counts = importFinalizer.finalize(source, deferIndexes = freshSync)
                         val syncedSource = sourceDao.getById(source.id) ?: source
-                        if (enqueueRemainder) enqueueRemainderSync(source, contentTypes)
+                        if (enqueueRemainder) enqueueRemainderSync(source, contentTypes, enabledScope)
                         if (freshSync && !remainder.hasAny) catalogSyncScheduler.enqueueContentIndexBuild(reason = "fresh_add")
                         lastFailedSource = null
                         _state.value = ImportState.Success(
@@ -271,11 +290,9 @@ class SetupViewModel(
     private fun String.isLocalPlaylistPath(): Boolean =
         startsWith("/") || startsWith("file://") || startsWith("content://")
 
-    private fun enqueueRemainderSync(source: SourceEntity, priority: SyncContentTypes) {
-        val remainder = SyncContentTypes().remainderAfter(priority)
+    private fun enqueueRemainderSync(source: SourceEntity, priority: SyncContentTypes, enabledScope: SyncContentTypes) {
+        val remainder = enabledScope.remainderAfter(priority)
         if (remainder.hasAny) {
-            // The priority pass + this remainder cover all content types, so a successful remainder
-            // run must mark the source synced (SyncManager only does that for single full syncs).
             catalogSyncScheduler.enqueueSync(source.id, reason = "add_remainder", contentTypes = remainder, completesInitialSync = true)
         }
     }
@@ -432,8 +449,5 @@ class SetupViewModel(
     private companion object {
         /** Sentinel sourceId for the pre-save Stalker handshake (same as SettingsViewModel's). */
         const val STALKER_TEST_SOURCE_ID = -1L
-
-        /** Stalker foreground pass: live only; movies/series are always the background remainder. */
-        val STALKER_PRIORITY = SyncContentTypes(live = true, movies = false, series = false)
     }
 }

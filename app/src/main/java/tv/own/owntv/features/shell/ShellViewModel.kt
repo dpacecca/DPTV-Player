@@ -168,6 +168,7 @@ class ShellViewModel(
                         catalogSyncScheduler.enqueueSync(
                             source.id,
                             reason = "auto_refresh",
+                            contentTypes = tv.own.owntv.core.sync.SyncContentTypes.enabledOf(source),
                             baseItemCount = counts.channels + counts.movies + counts.series,
                             policy = ExistingWorkPolicy.KEEP,
                         )
@@ -341,16 +342,26 @@ class ShellViewModel(
                 .flatMapLatest { sources -> settings.defaultSourceId.flatMapLatest { defaultId -> countCapsFlow(sources, defaultId) } }
         }
 
-    /** Resolves "which source ids count" (the chosen playlist, or all of the profile's when none chosen). */
+    /** Resolves "which source ids count" (the chosen playlist, or all of the profile's when none chosen).
+     *  Per-section Off flags drop that section from the nav even when cached rows remain. */
     private fun countCapsFlow(sources: List<tv.own.owntv.core.database.entity.SourceEntity>, defaultId: Long): Flow<Set<MainSection>> {
-        val ids = if (defaultId > 0) sources.filter { it.id == defaultId }.map { it.id } else sources.map { it.id }
-        if (ids.isEmpty()) return flowOf(setOf(MainSection.HOME))
+        val scoped = if (defaultId > 0) sources.filter { it.id == defaultId } else sources
+        if (scoped.isEmpty()) return flowOf(setOf(MainSection.HOME))
+        val liveIds = scoped.filter { it.syncLive }.map { it.id }
+        val movieIds = scoped.filter { it.syncMovies }.map { it.id }
+        val seriesIds = scoped.filter { it.syncSeries }.map { it.id }
+        // Empty id lists would make countAll misbehave — use a sentinel that matches nothing.
+        val empty = listOf(-1L)
         return combine(
-            channelDao.countAll(ids),
-            movieDao.countAll(ids),
-            seriesDao.countAll(ids),
+            channelDao.countAll(liveIds.ifEmpty { empty }),
+            movieDao.countAll(movieIds.ifEmpty { empty }),
+            seriesDao.countAll(seriesIds.ifEmpty { empty }),
         ) { channels, movies, series ->
-            MainSection.dynamicVisible(hasLive = channels > 0, hasMovies = movies > 0, hasSeries = series > 0)
+            MainSection.dynamicVisible(
+                hasLive = liveIds.isNotEmpty() && channels > 0,
+                hasMovies = movieIds.isNotEmpty() && movies > 0,
+                hasSeries = seriesIds.isNotEmpty() && series > 0,
+            )
         }
     }
 

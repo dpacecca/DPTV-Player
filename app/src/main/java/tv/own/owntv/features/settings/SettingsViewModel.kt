@@ -32,6 +32,7 @@ import tv.own.owntv.core.sync.ImportStage
 import tv.own.owntv.core.sync.SyncContentTypes
 import tv.own.owntv.core.sync.SyncResult
 import tv.own.owntv.core.sync.SyncCounts
+import tv.own.owntv.core.sync.SyncScopeChoice
 import tv.own.owntv.core.sync.withRemainderNote
 import tv.own.owntv.core.sync.work.CatalogSyncState
 import tv.own.owntv.core.sync.work.CatalogSyncScheduler
@@ -419,14 +420,22 @@ class SettingsViewModel(
         sources: List<SourceEntity>,
         defaultId: Long,
     ): kotlinx.coroutines.flow.Flow<Set<tv.own.owntv.features.shell.MainSection>> {
-        val ids = if (defaultId > 0) sources.filter { it.id == defaultId }.map { it.id } else sources.map { it.id }
-        if (ids.isEmpty()) return flowOf(setOf(tv.own.owntv.features.shell.MainSection.HOME))
+        val scoped = if (defaultId > 0) sources.filter { it.id == defaultId } else sources
+        if (scoped.isEmpty()) return flowOf(setOf(tv.own.owntv.features.shell.MainSection.HOME))
+        val liveIds = scoped.filter { it.syncLive }.map { it.id }
+        val movieIds = scoped.filter { it.syncMovies }.map { it.id }
+        val seriesIds = scoped.filter { it.syncSeries }.map { it.id }
+        val empty = listOf(-1L)
         return combine(
-            channelDao.countAll(ids),
-            movieDao.countAll(ids),
-            seriesDao.countAll(ids),
+            channelDao.countAll(liveIds.ifEmpty { empty }),
+            movieDao.countAll(movieIds.ifEmpty { empty }),
+            seriesDao.countAll(seriesIds.ifEmpty { empty }),
         ) { channels, movies, series ->
-            tv.own.owntv.features.shell.MainSection.dynamicVisible(hasLive = channels > 0, hasMovies = movies > 0, hasSeries = series > 0)
+            tv.own.owntv.features.shell.MainSection.dynamicVisible(
+                hasLive = liveIds.isNotEmpty() && channels > 0,
+                hasMovies = movieIds.isNotEmpty() && movies > 0,
+                hasSeries = seriesIds.isNotEmpty() && series > 0,
+            )
         }
     }
 
@@ -492,25 +501,49 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setEpgAutoRefresh(sourceId, mode) }
     }
 
-    /** Edit an existing source's settings (no re-import unless the user re-syncs). */
-    fun updateSource(id: Long, name: String, urlOrServer: String, user: String, pass: String, userAgent: String, epgUrl: String, autoRefresh: PlaylistAutoRefresh, isDefault: Boolean = false, mac: String = "") {
+    /**
+     * Edit an existing source's settings. When enabledScope changes (or lastSyncAt is still null),
+     * cancel any in-flight sync and enqueue a scoped resync so completion stamps and newly-On
+     * sections refresh. Cache is never deleted on Off.
+     */
+    fun updateSource(
+        id: Long,
+        name: String,
+        urlOrServer: String,
+        user: String,
+        pass: String,
+        userAgent: String,
+        epgUrl: String,
+        autoRefresh: PlaylistAutoRefresh,
+        isDefault: Boolean = false,
+        mac: String = "",
+        syncLive: Boolean = true,
+        syncMovies: Boolean = true,
+        syncSeries: Boolean = true,
+    ) {
         viewModelScope.launch {
             val existing = sourceDao.getById(id) ?: return@launch
             // A Stalker edit re-canonicalizes the MAC; a garbled edit keeps the stored one. On
             // MAC/URL change the cached portal session is stale — drop it so the next call re-handshakes.
             val newMac = tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(mac) ?: existing.mac
             if (existing.type == tv.own.owntv.core.model.SourceType.STALKER) stalkerAuth.invalidate(id)
-            sourceRepository.updateSource(
-                existing.copy(
-                    name = name.ifBlank { existing.name },
-                    url = urlOrServer.trim().ifBlank { existing.url },
-                    username = user.trim().takeIf { it.isNotBlank() } ?: existing.username,
-                    password = pass.takeIf { it.isNotBlank() } ?: existing.password,
-                    mac = newMac,
-                    userAgent = userAgent.trim().takeIf { it.isNotBlank() },
-                    epgUrl = epgUrl.trim().takeIf { it.isNotBlank() },
-                ),
+            val scopeChanged =
+                existing.syncLive != syncLive || existing.syncMovies != syncMovies || existing.syncSeries != syncSeries
+            val scopeTurnedOn =
+                (!existing.syncLive && syncLive) || (!existing.syncMovies && syncMovies) || (!existing.syncSeries && syncSeries)
+            val updated = existing.copy(
+                name = name.ifBlank { existing.name },
+                url = urlOrServer.trim().ifBlank { existing.url },
+                username = user.trim().takeIf { it.isNotBlank() } ?: existing.username,
+                password = pass.takeIf { it.isNotBlank() } ?: existing.password,
+                mac = newMac,
+                userAgent = userAgent.trim().takeIf { it.isNotBlank() },
+                epgUrl = epgUrl.trim().takeIf { it.isNotBlank() },
+                syncLive = syncLive,
+                syncMovies = syncMovies,
+                syncSeries = syncSeries,
             )
+            sourceRepository.updateSource(updated)
             settings.setPlaylistAutoRefresh(id, autoRefresh)
             // Apply the "Default playlist" toggle: on → this becomes the active playlist; off → if this was
             // the default, clear it back to All. Leaves another playlist's default untouched.
@@ -518,6 +551,20 @@ class SettingsViewModel(
                 isDefault -> settings.setDefaultSource(id)
                 settings.defaultSourceId.first() == id -> settings.setDefaultSource(-1L)
             }
+            if (scopeChanged) {
+                catalogSyncScheduler.cancelSync(id)
+            }
+            if (scopeTurnedOn || updated.lastSyncAt == null) {
+                val counts = importFinalizer.contentCounts(id)
+                catalogSyncScheduler.enqueueSync(
+                    id,
+                    reason = "scope_edit",
+                    contentTypes = SyncContentTypes.enabledFor(updated),
+                    baseItemCount = counts.channels + counts.movies + counts.series,
+                )
+            }
+            // Hidden sections must drop from the Android TV launcher immediately.
+            runCatching { refreshActiveTvHome(allowBrowsableRequest = true) }
         }
     }
 
@@ -542,17 +589,22 @@ class SettingsViewModel(
         userAgent: String = "",
         epgUrl: String = "",
         autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
-        syncLive: Boolean = true,
-        syncMovies: Boolean = true,
-        syncSeries: Boolean = true,
+        live: SyncScopeChoice = SyncScopeChoice.Now,
+        movies: SyncScopeChoice = SyncScopeChoice.Now,
+        series: SyncScopeChoice = SyncScopeChoice.Now,
         isDefault: Boolean = false,
     ) {
-        val priority = SyncContentTypes(syncLive, syncMovies, syncSeries)
-        runImport(autoRefresh, priority, enqueueRemainder = true, requiresNetwork = true, makeDefault = isDefault) { pid ->
+        val enabled = SyncContentTypes.fromChoices(live, movies, series)
+        val priority = SyncContentTypes.priorityFromChoices(live, movies, series)
+        runImport(
+            autoRefresh, priority, enabledScope = enabled, enqueueRemainder = true,
+            requiresNetwork = true, makeDefault = isDefault,
+        ) { pid ->
             sourceRepository.addXtreamSource(
                 pid, name.ifBlank { "My IPTV" }, server.trim(), user.trim(), pass,
                 userAgent.trim().takeIf { it.isNotBlank() },
                 epgUrl.trim().takeIf { it.isNotBlank() },
+                syncLive = enabled.live, syncMovies = enabled.movies, syncSeries = enabled.series,
             )
         }
     }
@@ -622,14 +674,28 @@ class SettingsViewModel(
      * enqueued as the background remainder — Stalker VOD has no bulk endpoint (~14 items/page), so
      * blocking the user on that crawl would take minutes on large catalogs.
      */
-    fun addStalker(name: String, portalUrl: String, mac: String, userAgent: String = "", autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF, isDefault: Boolean = false) {
+    fun addStalker(
+        name: String,
+        portalUrl: String,
+        mac: String,
+        userAgent: String = "",
+        autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
+        isDefault: Boolean = false,
+        live: SyncScopeChoice = SyncScopeChoice.Now,
+        movies: SyncScopeChoice = SyncScopeChoice.Later,
+        series: SyncScopeChoice = SyncScopeChoice.Later,
+    ) {
         val canonicalMac = tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(mac)
         if (canonicalMac == null) {
             _importState.value = ImportState.Failed("Invalid MAC address — use AA:BB:CC:DD:EE:FF")
             return
         }
-        val priority = SyncContentTypes(live = true, movies = false, series = false)
-        runImport(autoRefresh, priority, enqueueRemainder = true, requiresNetwork = true, makeDefault = isDefault) { pid ->
+        val enabled = SyncContentTypes.fromChoices(live, movies, series)
+        val priority = SyncContentTypes.priorityFromChoices(live, movies, series)
+        runImport(
+            autoRefresh, priority, enabledScope = enabled, enqueueRemainder = true,
+            requiresNetwork = true, makeDefault = isDefault,
+        ) { pid ->
             stalkerAuth.testConnection(
                 tv.own.owntv.core.stalker.StalkerCredentials(
                     sourceId = STALKER_TEST_SOURCE_ID,
@@ -641,6 +707,7 @@ class SettingsViewModel(
             sourceRepository.addStalkerSource(
                 pid, name.ifBlank { "My Portal" }, portalUrl.trim(), canonicalMac,
                 userAgent.trim().takeIf { it.isNotBlank() },
+                syncLive = enabled.live, syncMovies = enabled.movies, syncSeries = enabled.series,
             )
         }
     }
@@ -682,6 +749,7 @@ class SettingsViewModel(
     private fun runImport(
         autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
         contentTypes: SyncContentTypes = SyncContentTypes(),
+        enabledScope: SyncContentTypes = SyncContentTypes(),
         enqueueRemainder: Boolean = false,
         requiresNetwork: Boolean = true,
         makeDefault: Boolean = false,
@@ -701,7 +769,11 @@ class SettingsViewModel(
                 Log.d(TAG, "runImport profile=$pid autoRefresh=$autoRefresh")
                 source = addSource(pid)
                 val freshSync = source.lastSyncAt == null
-                val remainder = if (enqueueRemainder) SyncContentTypes().remainderAfter(contentTypes) else SyncContentTypes(live = false, movies = false, series = false)
+                val remainder = if (enqueueRemainder) {
+                    enabledScope.remainderAfter(contentTypes)
+                } else {
+                    SyncContentTypes(live = false, movies = false, series = false)
+                }
                 settings.setPlaylistAutoRefresh(source.id, autoRefresh)
                 when (val r = sourceRepository.sync(source, onProgress = { _progress.value = it }, contentTypes = contentTypes)) {
                     is SyncResult.Success -> {
@@ -711,7 +783,7 @@ class SettingsViewModel(
                         if (makeDefault) settings.setDefaultSource(source.id)
                         val syncedSource = sourceDao.getById(source.id) ?: source
                         Log.d(TAG, "runImport sync success sourceId=${source.id} profile=$pid")
-                        if (enqueueRemainder) enqueueRemainderSync(source, contentTypes)
+                        if (enqueueRemainder) enqueueRemainderSync(source, contentTypes, enabledScope)
                         if (freshSync && !remainder.hasAny) catalogSyncScheduler.enqueueContentIndexBuild(reason = "fresh_add")
                         _lastFailedSource = null
                         _importState.value = ImportState.Success(
@@ -758,6 +830,7 @@ class SettingsViewModel(
             catalogSyncScheduler.enqueueSync(
                 source.id,
                 reason = "manual_resync",
+                contentTypes = SyncContentTypes.enabledOf(source),
                 baseItemCount = counts.channels + counts.movies + counts.series,
             )
         }
@@ -815,11 +888,11 @@ class SettingsViewModel(
         launcherIntegrationRepository.refreshProfile(pid, allowBrowsableRequest)
     }
 
-    private fun enqueueRemainderSync(source: SourceEntity, priority: SyncContentTypes) {
-        val remainder = SyncContentTypes().remainderAfter(priority)
+    private fun enqueueRemainderSync(source: SourceEntity, priority: SyncContentTypes, enabledScope: SyncContentTypes) {
+        val remainder = enabledScope.remainderAfter(priority)
         if (remainder.hasAny) {
-            // The priority pass + this remainder cover all content types, so a successful remainder
-            // run must mark the source synced (SyncManager only does that for single full syncs).
+            // The priority pass + this remainder cover every enabled section, so a successful
+            // remainder run must mark the source synced (SyncManager only stamps complete passes).
             catalogSyncScheduler.enqueueSync(source.id, reason = "add_remainder", contentTypes = remainder, completesInitialSync = true)
         }
     }

@@ -1,6 +1,8 @@
 package tv.own.owntv.features.setup
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -20,14 +24,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
@@ -35,14 +40,15 @@ import androidx.tv.material3.Text
 import tv.own.owntv.core.companion.CompanionPayload
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.SourceType
+import tv.own.owntv.core.sync.SyncScopeChoice
 import tv.own.owntv.features.settings.PickerDialog
 import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.ui.components.BrowseMode
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
-import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVTextField
+import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
 
@@ -75,9 +81,9 @@ fun AddSourceScreen(
         userAgent: String,
         epgUrl: String,
         autoRefresh: PlaylistAutoRefresh,
-        syncLive: Boolean,
-        syncMovies: Boolean,
-        syncSeries: Boolean,
+        live: SyncScopeChoice,
+        movies: SyncScopeChoice,
+        series: SyncScopeChoice,
         isDefault: Boolean,
     ) -> Unit,
     onStartM3u: (name: String, url: String, userAgent: String, epgUrl: String, autoRefresh: PlaylistAutoRefresh, isDefault: Boolean) -> Unit,
@@ -94,7 +100,17 @@ fun AddSourceScreen(
     initialIsDefault: Boolean = false,
     showDefaultToggle: Boolean = true,
     // Stalker portal (plan Phase B). Null = the Stalker option is hidden (e.g. the setup wizard).
-    onStartStalker: ((name: String, portalUrl: String, mac: String, userAgent: String, autoRefresh: PlaylistAutoRefresh, isDefault: Boolean) -> Unit)? = null,
+    onStartStalker: ((
+        name: String,
+        portalUrl: String,
+        mac: String,
+        userAgent: String,
+        autoRefresh: PlaylistAutoRefresh,
+        isDefault: Boolean,
+        live: SyncScopeChoice,
+        movies: SyncScopeChoice,
+        series: SyncScopeChoice,
+    ) -> Unit)? = null,
     onTestStalker: ((portalUrl: String, mac: String, userAgent: String) -> Unit)? = null,
     stalkerTest: StalkerTestUi = StalkerTestUi.Idle,
 ) {
@@ -121,9 +137,18 @@ fun AddSourceScreen(
     var userAgent by remember(initial) { mutableStateOf(initial?.userAgent ?: "") }
     var autoRefresh by remember(initialAutoRefresh) { mutableStateOf(initialAutoRefresh) }
     var isDefault by remember(initialIsDefault) { mutableStateOf(initialIsDefault) }
-    var syncLive by remember { mutableStateOf(true) }
-    var syncMovies by remember { mutableStateOf(true) }
-    var syncSeries by remember { mutableStateOf(true) }
+    // Edit: On(=Now)/Off from persisted flags. Add: default all Now for Xtream; Stalker defaults
+    // Live Now + Movies/Series Later when the kind switches (see LaunchedEffect below).
+    var syncLive by remember(initial) {
+        mutableStateOf(if (initial?.syncLive == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
+    }
+    var syncMovies by remember(initial) {
+        mutableStateOf(if (initial?.syncMovies == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
+    }
+    var syncSeries by remember(initial) {
+        mutableStateOf(if (initial?.syncSeries == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
+    }
+    var hasRemoteStalkerScopes by remember { mutableStateOf(false) }
     var showFileBrowser by remember { mutableStateOf(false) }
     var showAutoRefreshPicker by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
@@ -141,8 +166,20 @@ fun AddSourceScreen(
             isDefault = payload.isDefault
             autoRefresh = runCatching { PlaylistAutoRefresh.valueOf(payload.autoRefresh) }.getOrDefault(PlaylistAutoRefresh.OFF)
             when (payload.type) {
-                SourceType.M3U -> { m3uUrl = payload.server; kind = SourceKind.M3U }
-                SourceType.STALKER -> { portalUrl = payload.portalUrl; mac = payload.mac; kind = SourceKind.STALKER }
+                SourceType.M3U -> {
+                    hasRemoteStalkerScopes = false
+                    m3uUrl = payload.server
+                    kind = SourceKind.M3U
+                }
+                SourceType.STALKER -> {
+                    portalUrl = payload.portalUrl
+                    mac = payload.mac
+                    syncLive = payload.syncLive
+                    syncMovies = payload.syncMovies
+                    syncSeries = payload.syncSeries
+                    hasRemoteStalkerScopes = true
+                    kind = SourceKind.STALKER
+                }
                 else -> {
                     server = payload.server
                     username = payload.user
@@ -150,6 +187,7 @@ fun AddSourceScreen(
                     syncLive = payload.syncLive
                     syncMovies = payload.syncMovies
                     syncSeries = payload.syncSeries
+                    hasRemoteStalkerScopes = false
                     kind = SourceKind.XTREAM
                 }
             }
@@ -158,12 +196,23 @@ fun AddSourceScreen(
         }
     }
 
-    val showContentToggles = kind == SourceKind.XTREAM && !editing
+    // Stalker add defaults: Live Now, Movies/Series Later (VOD has no bulk endpoint). Skip when
+    // editing, retrying a failed add, or applying explicit choices from a remote Stalker payload.
+    LaunchedEffect(kind, initial, hasRemoteStalkerScopes) {
+        if (initial != null || kind != SourceKind.STALKER || hasRemoteStalkerScopes) return@LaunchedEffect
+        if (syncLive == SyncScopeChoice.Now && syncMovies == SyncScopeChoice.Now && syncSeries == SyncScopeChoice.Now) {
+            syncMovies = SyncScopeChoice.Later
+            syncSeries = SyncScopeChoice.Later
+        }
+    }
+
+    val showContentToggles = kind == SourceKind.XTREAM || kind == SourceKind.STALKER
+    val hasAnySectionOn = syncLive != SyncScopeChoice.Off || syncMovies != SyncScopeChoice.Off || syncSeries != SyncScopeChoice.Off
     val macValid = tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(mac) != null
     val canStart = when (kind) {
-        SourceKind.XTREAM -> server.isNotBlank() && username.isNotBlank() && password.isNotBlank() && (syncLive || syncMovies || syncSeries)
+        SourceKind.XTREAM -> server.isNotBlank() && username.isNotBlank() && password.isNotBlank() && hasAnySectionOn
         SourceKind.M3U -> m3uUrl.isNotBlank()
-        SourceKind.STALKER -> tv.own.owntv.core.stalker.StalkerClient.isValidPortalUrl(portalUrl) && macValid
+        SourceKind.STALKER -> tv.own.owntv.core.stalker.StalkerClient.isValidPortalUrl(portalUrl) && macValid && hasAnySectionOn
     }
 
     Box(modifier.fillMaxSize().roundedPanel()) {
@@ -279,15 +328,23 @@ fun AddSourceScreen(
 
             if (showContentToggles) {
                 Spacer(Modifier.height(20.dp))
-                Text("Sync first", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text("What to sync", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
-                Text("Pick what to import now. The rest syncs in the background.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Text(
+                    if (editing) {
+                        "Off sections stay hidden and are never fetched. Turning a section back On shows cached rows immediately."
+                    } else {
+                        "Now imports first · Later syncs in the background · Off is never fetched or shown."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
                 Spacer(Modifier.height(10.dp))
-                ToggleRow(label = "Live TV", desc = "Channels and categories", checked = syncLive) { syncLive = it }
+                SyncScopeRow(label = "Live TV", desc = "Channels and categories", value = syncLive, editing = editing) { syncLive = it }
                 Spacer(Modifier.height(8.dp))
-                ToggleRow(label = "Movies", desc = "VOD movie catalog", checked = syncMovies) { syncMovies = it }
+                SyncScopeRow(label = "Movies", desc = "VOD movie catalog", value = syncMovies, editing = editing) { syncMovies = it }
                 Spacer(Modifier.height(8.dp))
-                ToggleRow(label = "Series", desc = "TV series catalog", checked = syncSeries) { syncSeries = it }
+                SyncScopeRow(label = "Series", desc = "TV series catalog", value = syncSeries, editing = editing) { syncSeries = it }
             }
 
             Spacer(Modifier.height(28.dp))
@@ -300,7 +357,9 @@ fun AddSourceScreen(
                         when (kind) {
                             SourceKind.XTREAM -> onStartXtream(name, server, username, password, userAgent, epgUrl, autoRefresh, syncLive, syncMovies, syncSeries, isDefault)
                             SourceKind.M3U -> onStartM3u(name, m3uUrl, userAgent, epgUrl, autoRefresh, isDefault)
-                            SourceKind.STALKER -> onStartStalker?.invoke(name, portalUrl, mac, userAgent, autoRefresh, isDefault)
+                            SourceKind.STALKER -> onStartStalker?.invoke(
+                                name, portalUrl, mac, userAgent, autoRefresh, isDefault, syncLive, syncMovies, syncSeries,
+                            )
                         }
                     },
                     enabled = canStart,
@@ -398,6 +457,59 @@ private fun ToggleRow(label: String, desc: String, checked: Boolean, onToggle: (
             ) {
                 Box(Modifier.padding(3.dp).size(24.dp).clip(CircleShape).background(Color.White))
             }
+        }
+    }
+}
+
+/** Single focusable row; D-pad ◀/▶ (or click) cycles Now/Later/Off — Edit uses On/Off only. */
+@Composable
+private fun SyncScopeRow(
+    label: String,
+    desc: String,
+    value: SyncScopeChoice,
+    editing: Boolean,
+    onChange: (SyncScopeChoice) -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val options = if (editing) {
+        listOf(SyncScopeChoice.Now, SyncScopeChoice.Off)
+    } else {
+        listOf(SyncScopeChoice.Now, SyncScopeChoice.Later, SyncScopeChoice.Off)
+    }
+    fun cycle(delta: Int) {
+        val idx = options.indexOf(value).coerceAtLeast(0)
+        onChange(options[(idx + delta + options.size) % options.size])
+    }
+    fun optionLabel(choice: SyncScopeChoice): String = when (choice) {
+        SyncScopeChoice.Now -> if (editing) "On" else "Now"
+        SyncScopeChoice.Later -> "Later"
+        SyncScopeChoice.Off -> "Off"
+    }
+    FocusableSurface(
+        onClick = { cycle(+1) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .onKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                when (event.key) {
+                    Key.DirectionLeft -> { cycle(-1); true }
+                    Key.DirectionRight -> { cycle(+1); true }
+                    else -> false
+                }
+            },
+        shape = RoundedCornerShape(14.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) { _ ->
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(desc, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            }
+            Text(
+                "◀ ${optionLabel(value)} ▶",
+                style = MaterialTheme.typography.titleMedium,
+                color = if (value == SyncScopeChoice.Off) colors.onSurfaceVariant else colors.primary,
+            )
         }
     }
 }

@@ -33,17 +33,19 @@ submission must include it. *Core idea from a community suggestion (PR #66 by @z
 
 ---
 
-## ⚡ Adding a playlist — priority sync
+## ⚡ Adding a playlist — per-section sync
 
 - **Run in background**: while a playlist is importing (setup wizard or Settings), press
   **Run in background** to enter the app right away — the import keeps going, and a small
   **status pill at the bottom of the screen** shows its progress ("Syncing *playlist* · N items").
-- When adding an **Xtream** playlist you can pick what imports **first** (e.g. **Live TV only**).
-  You get into the app as soon as that part is ready — **movies and series keep importing in the
-  background**, even if you leave the screen or the device goes to sleep.
-- **Stalker portals do this automatically**: live channels import in seconds, and the (much slower,
-  provider-paged) movies & series catalog fills in via a background sync that survives app
-  restarts. The status pill shows it running; re-syncs skip categories that haven't changed.
+- When adding an **Xtream** or **Stalker** playlist you can pick **What to sync** per section:
+  **Now** imports first (you get into the app as soon as that part is ready), **Later** syncs
+  in the background, and **Off** means the section is never fetched or shown. You can turn an
+  Off section back on later from **Settings → Manage sources → Edit**.
+- **Stalker portals default to Live Now, Movies/Series Later** because Stalker VOD has no bulk
+  endpoint (~14 items per page) — the movies & series crawl runs as a background worker that
+  survives app restarts. The status pill shows it running; re-syncs skip categories that haven't
+  changed.
 - **Re-syncs are incremental**: refreshing a playlist only writes what actually changed on the
   provider, so re-syncing big playlists is much faster.
 - **M3U playlists can carry movies and series too** — tag entries in the playlist and OwnTV sorts

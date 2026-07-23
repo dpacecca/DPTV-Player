@@ -103,7 +103,7 @@ class EpgViewModel(
         activeProfileSources(settings, sourceDao)
             .flatMapLatest { aps ->
                 if (aps.sources.isEmpty()) flowOf(emptyList())
-                else combine(categoryDao.observe(aps.sourceIds, MediaType.LIVE), settings.sortLive, custom) { cats, sort, cust ->
+                else combine(categoryDao.observe(aps.liveSourceIds, MediaType.LIVE), settings.sortLive, custom) { cats, sort, cust ->
                     // Mirror Live TV: hidden filtered + renames + pinned order; A–Z sorts the rest.
                     cats.applyCustomizations(cust, alphaRest = sort == SettingsRepository.SortMode.ALPHA)
                         .map { (cat, name) -> if (name == cat.name) cat else cat.copy(name = name) }
@@ -550,7 +550,7 @@ class EpgViewModel(
                 )
                 return@launch
             }
-            val playlistIds = activeSourceIds(settings, sourceDao, pid)
+            val playlistIds = activeSourceIds(settings, sourceDao, pid, MediaType.LIVE)
             val epgIds = epgSourceStore.getAll().map { it.id }
             // Channels come from the playlists; guide data is matched from BOTH the playlists' own EPG
             // (kept for compatibility) and the standalone EPG sources — by epgChannelId across all ids.
