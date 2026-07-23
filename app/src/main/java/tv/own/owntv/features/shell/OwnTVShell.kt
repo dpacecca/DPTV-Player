@@ -68,6 +68,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.ThemeMode
 
@@ -327,7 +329,13 @@ fun OwnTVShell(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize().background(colors.background)) {
+    // Liquid Glass: when a background image is active, the shell's own base paints must be transparent
+    // so the full-bleed image (rendered in MainActivity behind this shell) shows through the gaps
+    // between/around panels. Solid otherwise — the usual near-black base.
+    val glass = LocalGlass.current
+    val shellBase = if (glass.isGlassy(GlassSurface.PANELS) || glass.isGlassy(GlassSurface.SIDEBAR)) Color.Transparent else colors.background
+
+    Box(modifier = modifier.fillMaxSize().background(shellBase)) {
       // Browse UI — hidden while the player is fullscreen (stays visible behind the docked mini-player).
       if (playerMode != PlayerMode.FULLSCREEN) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -352,7 +360,9 @@ fun OwnTVShell(
                     .fillMaxSize()
                     // Phase 6 — unified panel surface: panels and content area share #102520 so the
                     // rounded borders define regions on one continuous dark-green surface.
-                    .background(colors.background),
+                    // Liquid Glass: transparent here (shellBase) when a background image is active, so
+                    // the image shows through the gaps between the content panels.
+                    .background(shellBase),
             ) {
                 // Phase 5 — top bar above the content (active section + Search pill + clock + playlist).
                 // Shown on EVERY section now, including Settings ("top bar same for all").

@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -78,11 +79,18 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.StorageBrowser
+import tv.own.owntv.ui.components.BackgroundImageChooserDialog
+import tv.own.owntv.ui.components.ingestBackgroundImage
 import tv.own.owntv.ui.components.trapAllFocusExit
+import tv.own.owntv.ui.theme.ALL_GLASS_SURFACES
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.GlassConfig
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.ThemeMode
 import tv.own.owntv.ui.theme.UiZoom
+import kotlin.math.roundToInt
+import java.io.File
 
 private enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
@@ -117,6 +125,10 @@ fun SettingsScreen(
     var showAnimations by remember { mutableStateOf(false) }
     var showStartup by remember { mutableStateOf(false) }
     var showErrorLog by remember { mutableStateOf(false) }
+    var showBgImageChooser by remember { mutableStateOf(false) }
+    var showBgPicker by remember { mutableStateOf(false) }
+    var showBgRemote by remember { mutableStateOf(false) }
+    var showGlassEffect by remember { mutableStateOf(false) }
 
     // Batch 4 · Settings search + quick toggles. Empty query = normal grouped list; a non-blank
     // query swaps the list for flat results that carry their group context ("Playback › HDR").
@@ -141,18 +153,19 @@ fun SettingsScreen(
     val animationsRowFocus = remember { FocusRequester() }
     val startupRowFocus = remember { FocusRequester() }
     val errorLogRowFocus = remember { FocusRequester() }
+    val glassEffectRowFocus = remember { FocusRequester() }
     // Hoisted scroll state for the root settings list. We snapshot its position the instant a row is
     // clicked (in onClick, before any recomposition) and restore it on dialog close, so the list
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
     val scrollState = rememberScrollState()
     var savedScroll by remember { mutableIntStateOf(0) }
-    val anyDialogOpen = showZoom || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showClearHistory || showAnimations || showStartup || showErrorLog
+    val anyDialogOpen = showZoom || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showClearHistory || showAnimations || showStartup || showErrorLog || showBgImageChooser || showBgPicker || showGlassEffect
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showClearHistory, showAnimations, showStartup, showErrorLog) {
+    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showClearHistory, showAnimations, showStartup, showErrorLog, showBgImageChooser, showBgPicker, showGlassEffect) {
         if (!anyDialogOpen) {
             // When a scrim dialog is torn down, Compose's focus re-search through the newly-exposed
             // scrollable Column resets its scroll to 0 and then bringIntoView-animates to wherever
@@ -181,6 +194,8 @@ fun SettingsScreen(
     val catchupChannels by settingsVm.catchupChannelCount.collectAsStateWithLifecycle()
     val accent by settingsVm.accent.collectAsStateWithLifecycle()
     val customAccent by settingsVm.customAccent.collectAsStateWithLifecycle()
+    val bgImagePath by settingsVm.bgImagePath.collectAsStateWithLifecycle()
+    val glassConfig by settingsVm.glassConfig.collectAsStateWithLifecycle()
     val animationLevel by settingsVm.animationLevel.collectAsStateWithLifecycle()
     val weatherEnabled by settingsVm.weatherEnabled.collectAsStateWithLifecycle()
     val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
@@ -389,6 +404,17 @@ fun SettingsScreen(
             chipTone = TileTone.SECONDARY,
             onClick = { savedScroll = scrollState.value; dialogReturn = accentRowFocus; showAccent = true }, showChevron = true,
             modifier = Modifier.focusRequester(accentRowFocus),
+        )
+        // One consolidated "Glass Effect" entry: opens a dialog holding the Liquid-glass on/off toggle,
+        // the background-image chooser, and the transparency stepper (see GlassEffectDialog).
+        val glassOn = glassConfig.enabled
+        SettingsRow(
+            tone = TileTone.PRIMARY, icon = OwnTVIcon.THEME,
+            title = "Glass Effect", desc = "Translucent frosted panels, background image and transparency",
+            chip = if (glassOn) "On" else "Off",
+            chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY,
+            onClick = { savedScroll = scrollState.value; dialogReturn = glassEffectRowFocus; showGlassEffect = true }, showChevron = true,
+            modifier = Modifier.focusRequester(glassEffectRowFocus),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.ZOOM,
@@ -667,6 +693,25 @@ fun SettingsScreen(
     if (showZoom) {
         ZoomDialog(current = uiZoomPercent, onSet = onSetZoom, onDismiss = { showZoom = false })
     }
+    if (showGlassEffect) {
+        GlassEffectDialog(
+            glassOn = glassConfig.enabled,
+            alphaPercent = (glassConfig.alpha * 100).roundToInt(),
+            bgOn = bgImagePath.isNotBlank(),
+            onToggleGlass = {
+                val on = glassConfig.enabled
+                settingsVm.setGlassScopeBitmask(if (on) 0 else GlassConfig(ALL_GLASS_SURFACES).toBitmask())
+            },
+            onSetAlpha = { settingsVm.setGlassAlphaPercent(it) },
+            blurPercent = (glassConfig.blurStrength * 100).roundToInt(),
+            onSetBlur = { settingsVm.setGlassBlurPercent(it) },
+            scope = glassConfig.scope,
+            onSetScope = { settingsVm.setGlassScopeBitmask(it) },
+            // Hand off to the existing background-image chooser; on close it returns to the Glass Effect row.
+            onOpenBackground = { showGlassEffect = false; dialogReturn = glassEffectRowFocus; showBgImageChooser = true },
+            onDismiss = { showGlassEffect = false },
+        )
+    }
     if (showErrorLog) {
         PlaybackErrorLogDialog(onDismiss = { showErrorLog = false })
     }
@@ -676,6 +721,50 @@ fun SettingsScreen(
             mode = BrowseMode.FOLDER,
             onPick = { settingsVm.setDownloadRoot(it.absolutePath); showFolderPicker = false },
             onDismiss = { showFolderPicker = false },
+        )
+    }
+    if (showBgImageChooser) {
+        BackgroundImageChooserDialog(
+            hasImage = bgImagePath.isNotBlank(),
+            onPickLocal = { showBgImageChooser = false; showBgPicker = true },
+            onPickRemote = { showBgImageChooser = false; showBgRemote = true },
+            onClear = { settingsVm.setBgImagePath(""); showBgImageChooser = false },
+            onDismiss = { showBgImageChooser = false },
+        )
+    }
+    if (showBgRemote) {
+        val context = LocalContext.current
+        val remoteState by settingsVm.remoteState.collectAsStateWithLifecycle()
+        tv.own.owntv.ui.components.RemoteBackgroundDialog(
+            state = remoteState,
+            images = settingsVm.remoteImages,
+            onStart = settingsVm::startRemoteImageListener,
+            onStop = settingsVm::stopRemoteListener,
+            onImageReceived = { file ->
+                // Same ingest as the local pick: copy into app-private storage, then drop the cache temp.
+                val destDir = File(context.filesDir, "backgrounds")
+                val path = runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
+                runCatching { file.delete() }
+                if (path != null) settingsVm.setBgImagePath(path)
+                showBgRemote = false
+            },
+            onDismiss = { showBgRemote = false },
+        )
+    }
+    if (showBgPicker) {
+        val context = LocalContext.current
+        StorageBrowser(
+            title = "Pick a background image",
+            mode = BrowseMode.FILE,
+            fileExtensions = setOf("png", "jpg", "jpeg", "webp", "bmp"),
+            onPick = { file ->
+                // Copy into app-private storage so USB unplug / source-folder delete can't blank it.
+                val destDir = File(context.filesDir, "backgrounds")
+                val path = runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
+                if (path != null) settingsVm.setBgImagePath(path)
+                showBgPicker = false
+            },
+            onDismiss = { showBgPicker = false },
         )
     }
 }
@@ -1275,6 +1364,219 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * A stepper for the Liquid Glass fill strength — how opaque the translucent panels are over the
+ * background photo. Higher = more solid (less see-through). Changes apply live. Range 20–95% in 5%
+ * steps so panels can never go fully transparent (text would be unreadable) or fully solid (pointless).
+ */
+@Composable
+private fun GlassEffectDialog(
+    glassOn: Boolean,
+    alphaPercent: Int,
+    blurPercent: Int,
+    bgOn: Boolean,
+    scope: Set<GlassSurface>,
+    onToggleGlass: () -> Unit,
+    onSetAlpha: (Int) -> Unit,
+    onSetBlur: (Int) -> Unit,
+    onSetScope: (Int) -> Unit,
+    onOpenBackground: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    // Per-surface scope sub-dialog (advanced). While it is open the main panel is NOT composed at all:
+    // the main panel's trapAllFocusExit would otherwise keep D-pad focus locked inside itself, making
+    // the sub-dialog unreachable. Re-request focus here whenever the main panel comes (back) on screen.
+    var showSurfaces by remember { mutableStateOf(false) }
+    LaunchedEffect(showSurfaces) { if (!showSurfaces) runCatching { firstFocus.requestFocus() } }
+    val min = 20
+    val max = 95
+    val step = 5
+    val default = (GlassConfig.DEFAULT_GLASS_ALPHA * 100).roundToInt()
+    fun clamp(v: Int) = v.coerceIn(min, max)
+    // Backdrop blur ("frost") stepper — 0..100 in 10% steps. 0 keeps the Tier-1 translucency-only look;
+    // only has an effect when a background image is set and the device supports it (API 31+).
+    val blurMin = 0
+    val blurMax = 100
+    val blurStep = 10
+    val blurDefault = (GlassConfig.DEFAULT_BLUR_STRENGTH * 100).roundToInt()
+    fun blurClamp(v: Int) = v.coerceIn(blurMin, blurMax)
+    BackHandler { onDismiss() }
+    if (!showSurfaces) Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        // Shared Lora popup font, matching the app's other dialogs.
+        tv.own.owntv.ui.theme.PopupFontTheme {
+        Column(
+            modifier = Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Glass Effect", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Translucent frosted panels over a background photo, or over the app's own background.",
+                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Spacer(Modifier.height(20.dp))
+            // Master on/off for the liquid glass (works with or without a background image).
+            OwnTVButton(
+                if (glassOn) "Liquid glass: On" else "Liquid glass: Off",
+                onClick = onToggleGlass,
+                style = if (glassOn) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                icon = OwnTVIcon.THEME,
+                modifier = Modifier.fillMaxWidth().focusRequester(firstFocus),
+            )
+            Spacer(Modifier.height(12.dp))
+            // Optional background photo behind everything.
+            OwnTVButton(
+                if (bgOn) "Background image: On" else "Background image: Off",
+                onClick = onOpenBackground,
+                style = OwnTVButtonStyle.SECONDARY,
+                icon = OwnTVIcon.IMAGE,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (glassOn) {
+                Spacer(Modifier.height(22.dp))
+                Text("Transparency", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "How much shows through the panels ($min%–$max%). Higher is more solid.",
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    StepButton("–", dimmed = alphaPercent <= min) { onSetAlpha(clamp(alphaPercent - step)) }
+                    Text(
+                        "$alphaPercent%",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = colors.primary,
+                        modifier = Modifier.width(120.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                    StepButton("+", dimmed = alphaPercent >= max) { onSetAlpha(clamp(alphaPercent + step)) }
+                }
+                // Backdrop blur — the real "frost" behind the panels (needs a background image; API 31+).
+                Spacer(Modifier.height(20.dp))
+                Text("Blur / Frost", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "How frosted the backdrop is ($blurMin%–$blurMax%). Only over a background image." +
+                        if (!bgOn) " Set a background image to enable." else "",
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    StepButton("–", dimmed = blurPercent <= blurMin) { onSetBlur(blurClamp(blurPercent - blurStep)) }
+                    Text(
+                        "$blurPercent%",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = colors.primary,
+                        modifier = Modifier.width(120.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                    StepButton("+", dimmed = blurPercent >= blurMax) { onSetBlur(blurClamp(blurPercent + blurStep)) }
+                }
+                // Advanced: choose exactly which surfaces render as glass.
+                Spacer(Modifier.height(16.dp))
+                OwnTVButton(
+                    if (scope == ALL_GLASS_SURFACES) "Surfaces: All" else "Surfaces: ${scope.size} of ${ALL_GLASS_SURFACES.size}",
+                    onClick = { showSurfaces = true },
+                    style = OwnTVButtonStyle.SECONDARY,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            Spacer(Modifier.height(24.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (glassOn) OwnTVButton("Reset", onClick = { onSetAlpha(default); onSetBlur(blurDefault); onSetScope(GlassConfig(ALL_GLASS_SURFACES).toBitmask()) }, style = OwnTVButtonStyle.SECONDARY)
+                Spacer(Modifier.weight(1f))
+                OwnTVButton("Done", onClick = onDismiss)
+            }
+        }
+        }
+    }
+    if (showSurfaces) {
+        GlassSurfacesDialog(scope = scope, onSetScope = onSetScope, onDismiss = { showSurfaces = false })
+    }
+}
+
+/** User-facing label for a glassable surface. */
+private fun glassSurfaceLabel(s: GlassSurface): String = when (s) {
+    GlassSurface.PANELS -> "Content panels"
+    GlassSurface.SIDEBAR -> "Sidebar"
+    GlassSurface.PREVIEW -> "Preview panes"
+    GlassSurface.DIALOGS -> "Dialogs & popups"
+    GlassSurface.TOPBAR -> "Top bar"
+    GlassSurface.CARDS -> "Cards"
+    GlassSurface.MINI_PLAYER -> "Mini player"
+}
+
+/**
+ * Advanced per-surface glass scope: one On/Off row per [GlassSurface] plus an "All" master.
+ * Changes apply live (persisted via the scope bitmask). Unticking every surface is the same as
+ * turning glass off — the helper text says so instead of blocking it.
+ */
+@Composable
+private fun GlassSurfacesDialog(
+    scope: Set<GlassSurface>,
+    onSetScope: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+    fun toggled(s: GlassSurface): Int = GlassConfig(if (s in scope) scope - s else scope + s).toBitmask()
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        tv.own.owntv.ui.theme.PopupFontTheme {
+        Column(
+            modifier = Modifier.dialogPanel(width = 440.dp, padding = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Glass surfaces", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Choose which parts of the app render as glass. Turning every surface off turns glass off.",
+                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Spacer(Modifier.height(16.dp))
+            // All rows use the SECONDARY chrome: with the accent (PRIMARY) fill on every "On" row the
+            // focused row was indistinguishable on TV. State lives in the ": On/Off" text; focus in the
+            // button's own focus highlight.
+            OwnTVButton(
+                if (scope == ALL_GLASS_SURFACES) "All surfaces: On" else "All surfaces: Off",
+                onClick = {
+                    onSetScope(if (scope == ALL_GLASS_SURFACES) 0 else GlassConfig(ALL_GLASS_SURFACES).toBitmask())
+                },
+                style = OwnTVButtonStyle.SECONDARY,
+                modifier = Modifier.fillMaxWidth().focusRequester(firstFocus),
+            )
+            Spacer(Modifier.height(12.dp))
+            GlassSurface.entries.forEach { s ->
+                val on = s in scope
+                OwnTVButton(
+                    "${glassSurfaceLabel(s)}: ${if (on) "On" else "Off"}",
+                    onClick = { onSetScope(toggled(s)) },
+                    style = OwnTVButtonStyle.SECONDARY,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+            Spacer(Modifier.height(12.dp))
+            OwnTVButton("Done", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+        }
         }
     }
 }

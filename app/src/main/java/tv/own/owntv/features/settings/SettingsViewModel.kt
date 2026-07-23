@@ -94,6 +94,13 @@ class SettingsViewModel(
     fun stopRemoteListener() = companion.stop()
     fun consumeRemotePayload() = companion.consumePayload()
 
+    // ---- Remote background image: the phone uploads a photo over LAN (same PIN/QR companion flow). ----
+
+    /** Background images received from the phone in image-upload mode. */
+    val remoteImages get() = companion.images
+
+    fun startRemoteImageListener(port: Int) = companion.startForImageUpload(port)
+
     // Semi-auto EPG: after a playlist import, if the playlist has a guide URL we offer to sync the EPG now
     // (instead of the old slow auto-sync). "Sync now" shows a live programme count, just like the import.
     private var pendingEpgSource: SourceEntity? = null
@@ -382,6 +389,14 @@ class SettingsViewModel(
     /** Custom accent hex ("#52DBC8"); blank = the preset is in effect. */
     val customAccent: StateFlow<String> = settings.customAccent.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     fun setCustomAccent(hex: String) { viewModelScope.launch { settings.setCustomAccent(hex) } }
+
+    // --- Liquid Glass: background image + per-surface translucency ---
+    val bgImagePath: StateFlow<String> = settings.bgImagePath.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+    val glassConfig: StateFlow<tv.own.owntv.ui.theme.GlassConfig> = settings.glassConfig.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.ui.theme.GlassConfig())
+    fun setBgImagePath(path: String) { viewModelScope.launch { settings.setBgImagePath(path) } }
+    fun setGlassScopeBitmask(bits: Int) { viewModelScope.launch { settings.setGlassScopeBitmask(bits) } }
+    fun setGlassAlphaPercent(pct: Int) { viewModelScope.launch { settings.setGlassAlphaPercent(pct) } }
+    fun setGlassBlurPercent(pct: Int) { viewModelScope.launch { settings.setGlassBlurPercent(pct) } }
 
     // --- Nav menu customization (v4.3.0) ---
     /** STATIC (default): user picks which icons to hide. DYNAMIC: icons adapt to the active playlist. */

@@ -955,7 +955,7 @@ internal fun EpgMatchDialog(
     ) {
         // Same small-screen cap as CatchupDialog: search bar + buttons must stay reachable.
         val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 260.dp).coerceIn(140.dp, 240.dp)
-        Column(Modifier.width(384.dp).clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHigh).padding(14.dp)) {
+        Column(Modifier.dialogPanel(width = 384.dp, corner = 16.dp, padding = 14.dp)) {
             Text("Match EPG", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
             Text(

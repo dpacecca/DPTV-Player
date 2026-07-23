@@ -47,6 +47,8 @@ import tv.own.owntv.ui.components.OwnTVAvatar
 import tv.own.owntv.ui.components.NavDuotoneIcon
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -70,6 +72,10 @@ fun Sidebar(
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
+    // Liquid Glass: when the SIDEBAR surface is glassy, the rail stays fully transparent so the
+    // background (photo or base colour) shows straight through and the rail blends into it instead of
+    // reading as a separate filled panel. Solid colors.background when glass is off.
+    val sidebarGlassy = LocalGlass.current.isGlassy(GlassSurface.SIDEBAR)
     var hasFocus by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     // Phase 2 — the nav is a FIXED icon rail: it never expands or collapses, so the layout never jumps on
@@ -102,7 +108,9 @@ fun Sidebar(
             }
             .focusGroup()
             .width(Dimens.SidebarWidthCollapsed)
-            .background(colors.background) // Phase 6 — unified panel surface
+            // Phase 6 — unified panel surface (solid). Transparent when glass is on so the rail melts
+            // into the background instead of appearing as a separate panel (see sidebarGlassy above).
+            .then(if (sidebarGlassy) Modifier else Modifier.background(colors.background))
             // Side inset (6.dp). Combined with the content area's start=0, this leaves a ~6.dp gap
             // between the nav pills and panel 1. Symmetric, so logo/profile stay centered.
             .padding(horizontal = 6.dp, vertical = 24.dp),

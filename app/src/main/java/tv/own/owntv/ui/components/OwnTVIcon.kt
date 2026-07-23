@@ -24,6 +24,7 @@ enum class OwnTVIcon {
     PAUSE, REWIND, FORWARD, AUDIO, SUBTITLE, SKIP_NEXT, SKIP_PREVIOUS,
     BACK, VOLUME_HIGH, VOLUME_LOW, VOLUME_MUTE, ASPECT, FULLSCREEN, FULLSCREEN_EXIT, PIP, CLOSE,
     SORT, SWAP, HEADPHONES, EXPAND,
+    IMAGE,
 }
 
 @Composable
@@ -284,6 +285,15 @@ fun OwnTVIcon(
                 drawLineStroke(p(18f, 6f), p(18f, 11.5f), tint, stroke)
                 drawLineStroke(p(6f, 18f), p(11.5f, 18f), tint, stroke)
                 drawLineStroke(p(6f, 18f), p(6f, 12.5f), tint, stroke)
+            }
+            OwnTVIcon.IMAGE -> { // photo/picture frame: rounded rect + sun + mountain
+                drawRoundRectStroke(p(3f, 5f), p(21f, 19f), 2f * s, tint, stroke)
+                drawCircle(tint, 1.2f * s, p(8f, 10f), style = Fill) // sun
+                // two-peak mountain ridge filling the lower frame
+                drawLineStroke(p(4.5f, 18f), p(9.5f, 12f), tint, stroke)
+                drawLineStroke(p(9.5f, 12f), p(13f, 15f), tint, stroke)
+                drawLineStroke(p(13f, 15f), p(16f, 11f), tint, stroke)
+                drawLineStroke(p(16f, 11f), p(19.5f, 18f), tint, stroke)
             }
             OwnTVIcon.FULLSCREEN_EXIT -> {
                 drawLineStroke(p(9f, 4f), p(9f, 9f), tint, stroke); drawLineStroke(p(9f, 9f), p(4f, 9f), tint, stroke)

@@ -470,6 +470,18 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   - ⚠️ Going **below 85% zoom** shows a warning first — lower zoom draws many more items at once, which can
     crash devices with limited memory (e.g. 2 GB TV sticks) with big playlists/EPG. Press **OK** to accept
     and continue, or **Back** to stay at 85%.
+- **Settings → Glass Effect**: an Apple‑style **frosted‑glass look** — panels turn translucent with a
+  real blurred backdrop over an optional **background photo**.
+  - The dialog has **Liquid glass On/Off**, a **Background image** chooser, a **Transparency** stepper
+    (20–95%, higher = more solid), a **Blur / Frost** stepper (0–100%), a **Surfaces** menu, and **Reset**.
+  - **Background image — Local or Remote.** **Local** browses USB/device storage for a JPG/PNG/WebP/BMP
+    (it's copied into the app, so unplugging the stick can't blank it). **Remote** shows a **PIN + QR** —
+    scan it with your phone on the same Wi‑Fi, enter the PIN, send a photo, and it applies instantly.
+    **Clear** removes the background.
+  - **Surfaces** toggles the glass per area — content panels, sidebar, preview panes, dialogs & popups,
+    top bar, cards, mini‑player — or all at once. Turning everything off turns glass off.
+  - The frost (blur) needs a background image and **Android 12+**; otherwise panels are simply
+    translucent. All glass settings are kept in backups.
 - **Settings → Animations**: turn interface motion **off** for a snappier feel on lower‑end TV boxes.
 - **Profiles** (Settings → Profiles): multiple viewers, a **Kids mode**, and **PIN locks**.
 

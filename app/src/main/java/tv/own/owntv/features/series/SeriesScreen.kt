@@ -501,8 +501,13 @@ private fun SeriesGrid(
                     else s.rating?.takeIf { it > 0 } ?: meta?.rating?.takeIf { it > 0 }
                 val genres = jsonStringList(meta?.genresJson)
                 val cast = jsonStringList(meta?.castJson)
+                // Outer details Box carries the rounded panel (glass-aware); no clip/background here,
+                // mirroring MovieDetailsPane so the PreviewPanelFill glass shows through.
                 Column(
-                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(Dimens.CardCorner)).background(OwnTVTheme.colors.panel).verticalScroll(rememberScrollState()).padding(Dimens.GapLarge),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(Dimens.GapLarge),
                 ) {
                     // Non-focusable status strip — only present while this series' episodes are downloading.
                     tv.own.owntv.ui.components.downloadStripFor(selectedSeriesDownloads)?.let {
@@ -1070,7 +1075,7 @@ private fun EpisodeView(
                             }
                         }
                     }
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(Dimens.CardCorner)).background(OwnTVTheme.colors.panel)) {
+                    Box(modifier = Modifier.weight(1f).fillMaxHeight().roundedPanel(fillColor = PreviewPanelFill)) {
                         val ep = selectedEpisode
                         val meta = selectedEpisodeMeta?.takeIf { it.episodeId == ep?.id }?.cache
                         val nextUpEp = nextUpId?.let { id -> episodes.firstOrNull { it.id == id } }

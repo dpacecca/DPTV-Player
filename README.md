@@ -77,7 +77,7 @@ Scan to join from your phone:
 - Offline movies & episodes — pause/resume/retry, queue groups + storage bar, live poster status strip
 
 ### 🎨 Settings & Robustness
-- Material 3 theming & accent, searchable settings, sidebar/category customization, external player, weather chip
+- Material 3 theming & accent, **Liquid Glass** frosted look over your own background photo, searchable settings, sidebar/category customization, external player, weather chip
 - **Backup & Restore** locally or over Wi-Fi, in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
 
 📖 Full details: **[player reference →](extras/player.html)** · **[user guide →](extras/USER_GUIDE.md)**

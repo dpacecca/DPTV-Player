@@ -240,6 +240,14 @@ class ShellViewModel(
     val customAccent: StateFlow<String> = settings.customAccent
         .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
+    /** Liquid Glass background image path (app-private); blank = no background (panels solid). */
+    val bgImagePath: StateFlow<String> = settings.bgImagePath
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+    /** Resolved glass config (which surfaces + alpha). Empty scope = feature off. */
+    val glassConfig: StateFlow<tv.own.owntv.ui.theme.GlassConfig> = settings.glassConfig
+        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.ui.theme.GlassConfig())
+
     /** The active profile's avatar (so the sidebar reflects profile edits, not a separate setting). */
     val avatarId: StateFlow<Int> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf(0) else profileDao.observeById(pid).map { it?.avatarId ?: 0 } }

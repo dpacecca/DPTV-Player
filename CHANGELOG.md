@@ -2,6 +2,26 @@
 
 ## v4.1.4 — unreleased
 
+### 🧊 Liquid Glass — frosted translucent interface over your own background photo
+
+- An opt-in **glass look**: content panels, sidebar, preview panes, dialogs, top bar, cards and the
+  mini-player turn **translucent with a real frosted-blur backdrop** over an optional **background
+  photo** — Apple-style glassmorphism on TV. Everything lives in one **Settings → Glass Effect**
+  dialog: Liquid glass On/Off, the background image, a **Transparency** stepper (20–95%), a
+  **Blur / Frost** stepper (0–100%), a **Surfaces** sub-menu, and **Reset**.
+- **Background image — Local or Remote.** **Local** picks a photo from USB/device storage (copied into
+  app-private storage so unplugging the stick can't blank it). **Remote** sends one from your phone:
+  the TV shows a **PIN + QR** (the same companion pairing as Remote Backup & Restore), the phone opens
+  the page on the same Wi-Fi and uploads a JPG/PNG/WebP/BMP, and it applies instantly.
+- **Per-surface control.** The **Surfaces** menu toggles glass individually for content panels,
+  sidebar, preview panes, dialogs & popups, top bar, cards and the mini-player — or all at once with
+  one master row. Turning every surface off turns glass off.
+- The frost is a real blurred slice of the photo aligned behind each panel, pre-processed with a
+  matching brightness scrim and a slight saturation lift so the glass blends with the scene instead of
+  reading backlit. It is computed once per image at a downscaled size, so it stays cheap on low-end
+  boxes. Backdrop blur needs Android 12+; older devices fall back to translucency without frost.
+  All glass settings persist per install and are included in backups.
+
 ### 🗂️ Per-section sync scope — choose Now / Later / Off for each section (#74)
 
 - Every source now controls **Live**, **Movies** and **Series** independently with a **Now / Later /
@@ -126,6 +146,7 @@
 
 ### 🐛 Fixes
 
+- **Settings → About shows the updated Telegram group QR code.**
 - **Editing a source no longer shows the other source types.** The Edit-source screen listed all the
   type chips (Xtream / M3U / Stalker) even though the type can't change while editing. It now shows
   only the chip matching the source you're editing.

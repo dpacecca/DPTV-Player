@@ -484,7 +484,7 @@ private fun EpgMatchReviewDialog(
         Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)),
         contentAlignment = Alignment.Center,
     ) {
-        Column(Modifier.width(576.dp).clip(RoundedCornerShape(18.dp)).background(colors.surfaceContainerHigh).padding(18.dp)) {
+        Column(Modifier.dialogPanel(width = 576.dp, corner = 18.dp, padding = 18.dp)) {
             Text("Review EPG matches", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
             Text(
