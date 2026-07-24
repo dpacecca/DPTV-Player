@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,6 +61,8 @@ import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.ui.theme.LocalActionSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 private val SPEEDS = listOf(0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0)
@@ -104,6 +107,10 @@ fun PlayerHud(
     onSearchSubtitles: (() -> Unit)? = null,
     // Movie/episode only: pick a local subtitle file (plan §7) — no account needed, same gating.
     onSelectLocalSubtitle: (() -> Unit)? = null,
+    // Favorite toggle for the CURRENT item (live channel / movie / series). Null hides the button
+    // (no item context). [favorite] = current state — fills the star teal when true.
+    favorite: Boolean = false,
+    onToggleFavorite: (() -> Unit)? = null,
     // Live guide card (Before / Now playing / Next for the playing channel) — supplied by the shell
     // (the EPG data lives in LiveViewModel, not the player). Rendered on the right edge whenever the
     // controls are visible, like the top-bar channel card; informational only, never focusable.
@@ -196,6 +203,9 @@ fun PlayerHud(
         } else runCatching { catchFocus.requestFocus() }
     }
 
+    // The player sits over opaque video (never a glass surface — see Glass.kt), so its HUD buttons
+    // stay flat regardless of glass mode: opt out of the DIALOGS default explicitly.
+    CompositionLocalProvider(LocalActionSurface provides null) {
     Box(
         modifier = modifier.fillMaxSize().onPreviewKeyEvent { e ->
             if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -259,6 +269,7 @@ fun PlayerHud(
                     compatMode = compatMode, onToggleCompatMode = toggleCompat,
                     vodOnExo = vodOnExo, onToggleVodEngine = toggleVod,
                     onInfo = { showInfo = !showInfo }, infoOn = showInfo,
+                    favorite = favorite, onToggleFavorite = onToggleFavorite,
                     onOpenDialog = { dialog = it }, onPip = onPip, onAudioMode = onAudioMode, onBack = onBack,
                     modifier = Modifier.align(Alignment.BottomStart),
                 )
@@ -326,6 +337,7 @@ fun PlayerHud(
             buffering -> OwnTVSpinner(modifier = Modifier.align(Alignment.Center), sizeDp = 56)
         }
     }
+    } // CompositionLocalProvider
 
     when (dialog) {
         // Track lists are SNAPSHOT once when the dialog opens (re-polled only while still empty —
@@ -490,6 +502,7 @@ private fun BottomBar(
     compatMode: Boolean?, onToggleCompatMode: (() -> Unit)?,
     vodOnExo: Boolean?, onToggleVodEngine: (() -> Unit)?,
     onInfo: (() -> Unit)? = null, infoOn: Boolean = false,
+    favorite: Boolean = false, onToggleFavorite: (() -> Unit)? = null,
     onOpenDialog: (HudDialog) -> Unit, onPip: (() -> Unit)?, onAudioMode: (() -> Unit)?, onBack: () -> Unit, modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
@@ -518,6 +531,8 @@ private fun BottomBar(
                 CtrlButton(OwnTVIcon.AUDIO, badge = audioCount.takeIf { it > 1 }) { onOpenDialog(HudDialog.AUDIO) }
                 // Stream technical info (codec/res/HDR/bitrate/decoder/audio/buffer) — toggles the overlay.
                 if (onInfo != null) CtrlButton(OwnTVIcon.VIDEO, active = infoOn) { onInfo() }
+                // Favorite the current channel/movie/series without leaving the stream (teal star = on).
+                if (onToggleFavorite != null) CtrlButton(OwnTVIcon.STAR, active = favorite) { onToggleFavorite() }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 // Live "compatibility mode" (Live TV + channels opened from the Guide): pin this channel
@@ -1025,7 +1040,7 @@ private fun formatSubDelay(ms: Int): String = when {
 
 @Composable
 private fun StepButton(label: String, enabled: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    FocusableSurface(onClick = onClick, enabled = enabled, modifier = modifier.size(64.dp), shape = RoundedCornerShape(18.dp), contentAlignment = Alignment.Center) { _ ->
+    FocusableSurface(onClick = onClick, enabled = enabled, modifier = modifier.size(64.dp), shape = RoundedCornerShape(18.dp), contentAlignment = Alignment.Center, surface = GlassSurface.DIALOGS) { _ ->
         Text(label, style = MaterialTheme.typography.headlineMedium, color = if (enabled) OwnTVTheme.colors.onSurface else OwnTVTheme.colors.outline)
     }
 }
@@ -1046,10 +1061,13 @@ private fun DialogScaffold(
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        tv.own.owntv.ui.theme.PopupFontTheme {
+        // Compact glass popup matching the storage picker: smaller font + narrow box.
+        tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.72f) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
-                Column(modifier = Modifier.width(264.dp).clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHigh).padding(14.dp)) {
-                    Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                // Liquid glass panel (same translucent chrome as the volume/timing dialogs) — the
+                // inner LazyColumn manages its own scroll, so scroll = false.
+                Column(modifier = Modifier.dialogPanel(width = 260.dp, corner = 16.dp, padding = 14.dp, scroll = false)) {
+                    Text(title, style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
                     Spacer(Modifier.height(8.dp))
                     // Cap to the screen (minus dialog chrome) so all rows stay reachable on small screens.
                     val listMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 160.dp).coerceIn(140.dp, 240.dp)
@@ -1066,6 +1084,7 @@ private fun OptionRow(label: String, selected: Boolean, modifier: Modifier = Mod
     FocusableSurface(
         onClick = onClick, modifier = modifier.fillMaxWidth(), selected = selected, shape = RoundedCornerShape(12.dp),
         selectedContainerColor = colors.primaryContainer, contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.DIALOGS,
     ) { focused ->
         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(label, style = MaterialTheme.typography.bodyMedium, color = if (selected) colors.onPrimaryContainer else if (focused) colors.primary else colors.onSurface)

@@ -61,7 +61,11 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
 
     LaunchedEffect(catalogSync, epgSync, currentCompleted, completedQueue.size) {
         if (catalogSync == null && epgSync == null && currentCompleted == null && completedQueue.isNotEmpty()) {
-            currentCompleted = completedQueue.removeAt(0)
+            val next = completedQueue.removeAt(0)
+            currentCompleted = next
+            // Clear it from the tracker so it isn't re-queued and re-shown when the pill is
+            // recomposed from scratch (e.g. after exiting fullscreen playback).
+            catalogTracker.consumeCompleted(next.timestamp)
         }
     }
 

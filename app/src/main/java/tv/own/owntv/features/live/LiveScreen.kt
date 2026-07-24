@@ -80,6 +80,7 @@ import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.gridFocusTarget
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.PopupFontFamily
 
@@ -246,7 +247,7 @@ fun LiveScreen(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         CategoryRail(
-            categories = railItems.map { RailCategory(it.title, it.icon) },
+            categories = railItems.map { RailCategory(it.title, it.icon, showGenreDot = it.key is LiveKey.Folder) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             // Focusing a folder stops the in-pane preview — but only when a preview is actually running.
@@ -496,6 +497,7 @@ private fun ChannelRow(
             .fillMaxWidth()
             .onFocusChanged { if (it.hasFocus) onFocus() },
         shape = RoundedCornerShape(12.dp),
+        surface = GlassSurface.CARDS,
         contentAlignment = Alignment.CenterStart,
     ) { focused ->
         Row(
@@ -872,7 +874,7 @@ private fun CatchupDialog(
         // Inner list is height-capped to the screen (minus the dialog chrome) so the Close button
         // stays reachable on small/low-res screens; the outer column can't verticalScroll (LazyColumn).
         val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 220.dp).coerceIn(140.dp, 300.dp)
-        Column(Modifier.width(460.dp).clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHigh).padding(18.dp)) {
+        Column(Modifier.dialogPanel(width = 460.dp, corner = 16.dp, padding = 18.dp, scroll = false)) {
             Text("Catch-up · $channelName", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
             Text("Pick a recent programme to replay from the start.", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
@@ -892,6 +894,7 @@ private fun CatchupDialog(
                                 modifier = if (p == progs.first()) Modifier.fillMaxWidth().focusRequester(firstFocus) else Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 contentAlignment = Alignment.CenterStart,
+                                surface = GlassSurface.DIALOGS,
                             ) { _ ->
                                 Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
                                     Text(p.title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -967,7 +970,7 @@ internal fun EpgMatchDialog(
             // reaches Close/Clear directly — no scrolling to the bottom of a long list.
             Row(Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
-                    SearchBar(query = query, onQueryChange = { query = it }, placeholder = "Search guide channels…", modifier = Modifier.fillMaxWidth().focusRequester(searchFocus))
+                    SearchBar(query = query, onQueryChange = { query = it }, placeholder = "Search guide channels…", modifier = Modifier.fillMaxWidth().focusRequester(searchFocus), surface = GlassSurface.DIALOGS)
                     Spacer(Modifier.height(12.dp))
                     val list = results
                     when {
@@ -983,6 +986,7 @@ internal fun EpgMatchDialog(
                                     modifier = if (epg == list.first()) Modifier.fillMaxWidth().focusRequester(firstItemFocus) else Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
                                     contentAlignment = Alignment.CenterStart,
+                                    surface = GlassSurface.DIALOGS,
                                 ) { _ ->
                                     Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp)) {
                                         Text(epg.displayName ?: epg.epgChannelId, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)

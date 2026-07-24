@@ -86,6 +86,7 @@ import tv.own.owntv.ui.theme.ALL_GLASS_SURFACES
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassConfig
 import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.ThemeMode
 import tv.own.owntv.ui.theme.UiZoom
@@ -1048,6 +1049,7 @@ private fun Swatch(
         unfocusedContainerColor = Color.Transparent,
         selectedContainerColor = Color.Transparent,
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.DIALOGS,
     ) { _ ->
         Box(
             modifier = Modifier
@@ -1668,6 +1670,7 @@ private fun StepButton(
         modifier = modifier.size(64.dp),
         shape = RoundedCornerShape(18.dp),
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.DIALOGS,
     ) { _ ->
         Text(label, style = MaterialTheme.typography.headlineMedium, color = if (enabled && !dimmed) colors.onSurface else colors.outline)
     }
@@ -1713,6 +1716,7 @@ private fun SettingsRow(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
+        surface = GlassSurface.CARDS,
         contentAlignment = Alignment.CenterStart,
     ) { _ ->
         Row(
@@ -1800,14 +1804,19 @@ private fun QuickToggleChip(
     val onColors = TileTone.PRIMARY.colors()
     val offColors = TileTone.SECONDARY.colors()
     val (bg, fg) = if (on) onColors else offColors
+    // Always-on faint glass edge over the tonal fill (which is opaque, so it hides an outer-surface
+    // rim) so these chips read as glass at rest too, matching the top-bar chips.
+    val glassy = LocalGlass.current.isGlassy(GlassSurface.CARDS)
     FocusableSurface(
         onClick = onToggle,
         shape = RoundedCornerShape(12.dp),
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.CARDS,
     ) { _ ->
         Row(
             modifier = Modifier
                 .background(bg, RoundedCornerShape(12.dp))
+                .then(if (glassy) Modifier.border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(12.dp)) else Modifier)
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),

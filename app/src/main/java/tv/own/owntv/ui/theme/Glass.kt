@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Liquid Glass — Apple-style translucent surface treatment.
+ * Liquid Glass — translucent frosted surface treatment.
  *
  * Each surface that can go glassy is tagged with a [GlassSurface]. When the feature is enabled
  * (a background image is set), a panel whose surface is in [GlassConfig.scope] renders with a
@@ -112,6 +112,19 @@ data class GlassConfig(
 val LocalGlass = compositionLocalOf { GlassConfig() }
 
 /**
+ * Which [GlassSurface] an ambient action control (e.g. `OwnTVButton`) should frost with, or null to
+ * stay flat. Used by the shared action pill so a button frosts with whatever surface its host renders
+ * on — `DIALOGS` inside a popup, `CARDS` on a settings panel — without each call site passing a flag.
+ *
+ * Defaults to [GlassSurface.DIALOGS]: most action pills live in dialogs/popups, and a `Popup` does
+ * NOT inherit the screen's CompositionLocals, so each popup would otherwise need its own provider.
+ * The DIALOGS default means dialog buttons are correct with zero per-dialog wiring; screens whose
+ * buttons sit on a panel (e.g. the settings list, Customize) override it to `CARDS`, and surfaces that
+ * should never frost (the fullscreen player, over opaque video) provide null.
+ */
+val LocalActionSurface = compositionLocalOf<GlassSurface?> { GlassSurface.DIALOGS }
+
+/**
  * Holder for the single shared blurred copy of the background image (Phase 4 backdrop blur).
  * Provided by `MainActivity` when a background image is set AND [supportsBackdropBlur]; null
  * otherwise (panels then fall back to Tier-1 translucency over the sharp image).
@@ -148,8 +161,15 @@ fun Modifier.glass(
     baseFill: Color,
     shape: Shape = RectangleShape,
     cornerRadius: Dp = 22.dp,
+    // Per-call frost multiplier (0..1) applied on top of the global blurStrength — lets small chrome
+    // (e.g. top-bar chips) read as lighter glass than the big panels without changing the global setting.
+    frostScale: Float = 1f,
 ): Modifier {
     val config = LocalGlass.current
+    // Fully transparent fill = nothing to render (e.g. an idle nav/list item whose highlight fill
+    // is Color.Transparent). Skip both the frost and the background so glass() can be called
+    // unconditionally on highlights that toggle between transparent (idle) and filled (focused).
+    if (baseFill.alpha == 0f) return this
     // No glass for this surface → keep the solid fill, no highlight, no frost.
     if (!config.isGlassy(surface)) return this.background(baseFill, shape)
 
@@ -160,7 +180,7 @@ fun Modifier.glass(
     // drawn here as a slice aligned to this panel's on-screen position, so the frost matches the photo
     // region behind it. O(1) per panel: one textured draw.
     val blurred = LocalBlurredBackdrop.current
-    val frostAlpha = config.blurStrength.coerceIn(0f, 1f)
+    val frostAlpha = (config.blurStrength * frostScale).coerceIn(0f, 1f)
     // Capture this panel's rect in root coordinates (same approach as HomeScreen hero preview). Root
     // space is correct: the background image lives in the same root Compose tree above the shell.
     var bounds by remember { mutableStateOf(Rect.Zero) }
@@ -220,12 +240,21 @@ fun Modifier.glass(
         }
 }
 
-/** Specular top-edge highlight: a subtle bright sweep near the top, like a glass bevel. */
+/**
+ * Specular top-edge highlight: a bright sweep near the top, like a glass bevel. Strength scales
+ * *inversely* with surface size — small chrome (buttons, chips, search pills) is a small piece of
+ * glass so it needs a brighter, glossier sheen to read; large panels stay subtle so they don't wash
+ * out. This is what gives a button the polished "Liquid Glass" look instead of a flat tint.
+ */
 private fun DrawScope.drawSheen() {
-    val sheenHeight = size.minDimension * 0.4f
+    val minDim = size.minDimension
+    val sheenHeight = minDim * 0.4f
+    // ~140dp and below = button/chip scale (full gloss); ~600dp+ = large panel (subtle). Linear between.
+    val gloss = (1f - ((minDim / 140f.dp.toPx()) - 1f).coerceIn(0f, 1f))
+    val peak = 0.16f + 0.30f * gloss
     drawRect(
         brush = Brush.verticalGradient(
-            colors = listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0f)),
+            colors = listOf(Color.White.copy(alpha = peak), Color.White.copy(alpha = 0f)),
             startY = 0f,
             endY = sheenHeight,
         ),

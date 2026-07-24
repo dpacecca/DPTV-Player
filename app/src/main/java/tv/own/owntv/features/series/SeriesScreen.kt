@@ -90,6 +90,7 @@ import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.gridFocusTarget
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 @Composable
@@ -315,7 +316,7 @@ private fun SeriesGrid(
 
     Row(modifier = modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         CategoryRail(
-            categories = railItems.map { RailCategory(it.title, it.icon) },
+            categories = railItems.map { RailCategory(it.title, it.icon, showGenreDot = it.key is LiveKey.Folder) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             listState = catListState,
@@ -1204,6 +1205,7 @@ private fun SeasonChip(season: Int, selected: Boolean, completedCount: Int, tota
         unfocusedContainerColor = colors.surfaceContainerHigh,
         selectedContainerColor = colors.primaryContainer,
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.CARDS,
     ) { _ ->
         Text(
             label,
@@ -1235,6 +1237,7 @@ private fun EpisodeRow(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.CARDS,
     ) { focused ->
         LaunchedEffect(focused) { if (focused) onFocus() }
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -1298,6 +1301,7 @@ private fun SeriesListRow(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.CARDS,
     ) { focused ->
         LaunchedEffect(focused) { if (focused) onFocus() }
         Row(

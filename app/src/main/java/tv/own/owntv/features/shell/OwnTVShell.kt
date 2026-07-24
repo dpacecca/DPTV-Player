@@ -160,6 +160,12 @@ fun OwnTVShell(
     var showChannelList by remember { mutableStateOf(false) }
     val zapChannels by liveVm.zapChannels.collectAsStateWithLifecycle()
     val previewChannel by liveVm.previewChannel.collectAsStateWithLifecycle()
+    // Favorite state for the player HUD's in-stream favorite toggle (live channel / movie / series).
+    val liveFavoriteIds by liveVm.favoriteIds.collectAsStateWithLifecycle()
+    val playingMovie by movieVm.playingMovie.collectAsStateWithLifecycle()
+    val movieFavoriteIds by movieVm.favoriteIds.collectAsStateWithLifecycle()
+    val playingSeries by seriesVm.playingSeries.collectAsStateWithLifecycle()
+    val seriesFavoriteIds by seriesVm.favoriteIds.collectAsStateWithLifecycle()
     // Current programme per channel for the in-player channel list overlay (small subtitle under each row).
     // Only resolved while the overlay is actually open. Keyed on the channel set so a zap-list change re-resolves.
     val overlayNowPlaying by produceState<Map<Long, String>>(emptyMap(), showChannelList, zapChannels) {
@@ -612,6 +618,20 @@ fun OwnTVShell(
                 }
                 // Live rewind controls apply to a Live-TV channel (live OR its timeshift archive).
                 val isLiveChannel = zapSource == MainSection.LIVE_TV
+                // Favorite toggle for whatever is playing: the live channel, the movie, or the series
+                // (episodes favorite their parent series). Picked by the section that armed the stream.
+                val favToggle: (() -> Unit)? = when {
+                    isLiveChannel -> previewChannel?.let { ch -> { liveVm.toggleFavorite(ch) } }
+                    zapSource == MainSection.MOVIES -> playingMovie?.let { m -> { movieVm.toggleFavorite(m) } }
+                    zapSource == MainSection.SERIES -> playingSeries?.let { s -> { seriesVm.toggleFavorite(s) } }
+                    else -> null
+                }
+                val favActive = when {
+                    isLiveChannel -> previewChannel?.let { liveFavoriteIds.contains(it.id) } ?: false
+                    zapSource == MainSection.MOVIES -> playingMovie?.let { movieFavoriteIds.contains(it.id) } ?: false
+                    zapSource == MainSection.SERIES -> playingSeries?.let { seriesFavoriteIds.contains(it.id) } ?: false
+                    else -> false
+                }
                 PlayerHud(
                     player = if (liveOnExo) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
                     onBack = exitPlayer,
@@ -645,6 +665,9 @@ fun OwnTVShell(
                     onSelectLocalSubtitle = if (!isLiveStream && !isLiveChannel && subtitleContext != null) {
                         { showLocalSubPicker = true }
                     } else null,
+                    // In-stream favorite toggle for the current channel/movie/series.
+                    favorite = favActive,
+                    onToggleFavorite = favToggle,
                     // Guide card for the playing channel (nowNext follows previewChannel = what's playing).
                     liveEpgCard = if (isLiveChannel) {
                         {

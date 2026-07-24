@@ -30,6 +30,7 @@ import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.roundedPanel
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -99,6 +100,7 @@ private fun ChooserCard(
         focusedContainerColor = colors.surfaceContainerHighest,
         unfocusedContainerColor = colors.surfaceContainerHigh,
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.CARDS,
     ) { focused ->
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(

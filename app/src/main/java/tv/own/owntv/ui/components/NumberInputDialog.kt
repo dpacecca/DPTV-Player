@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -171,6 +172,7 @@ private fun StepBtn(label: String, enabled: Boolean, modifier: Modifier = Modifi
         modifier = modifier.size(40.dp),
         shape = RoundedCornerShape(12.dp),
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.DIALOGS,
     ) { _ ->
         Text(
             label,

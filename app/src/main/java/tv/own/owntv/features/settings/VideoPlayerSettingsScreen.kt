@@ -52,6 +52,7 @@ import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -433,6 +434,7 @@ internal fun Header(title: String, onBack: () -> Unit) {
             onClick = onBack,
             modifier = Modifier.size(44.dp),
             shape = RoundedCornerShape(14.dp),
+            surface = GlassSurface.CARDS,
             contentAlignment = Alignment.Center,
         ) { _ -> OwnTVIcon(OwnTVIcon.BACK, tint = OwnTVTheme.colors.onSurface, modifier = Modifier.size(20.dp)) }
         Text(title, style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface)
@@ -478,6 +480,7 @@ internal fun Row2(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
+        surface = GlassSurface.CARDS,
         contentAlignment = Alignment.CenterStart,
     ) { _ ->
         Row(
@@ -532,7 +535,7 @@ internal fun PickerDialog(
     tv.own.owntv.ui.theme.PopupFontTheme {
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
         Column(
-            modifier = Modifier.width(280.dp).clip(RoundedCornerShape(16.dp)).background(colors.surfaceContainerHigh).padding(14.dp),
+            modifier = Modifier.dialogPanel(width = 280.dp, corner = 16.dp, padding = 14.dp, scroll = false),
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(10.dp))
@@ -542,6 +545,7 @@ internal fun PickerDialog(
                     onQueryChange = { query = it },
                     placeholder = "Search…",
                     modifier = Modifier.fillMaxWidth().focusRequester(searchFr),
+                    surface = GlassSurface.DIALOGS,
                 )
                 Spacer(Modifier.height(12.dp))
             }
@@ -557,6 +561,7 @@ internal fun PickerDialog(
                         shape = RoundedCornerShape(12.dp),
                         selectedContainerColor = colors.primaryContainer,
                         contentAlignment = Alignment.CenterStart,
+                        surface = GlassSurface.DIALOGS,
                     ) { _ ->
                         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(label, style = MaterialTheme.typography.bodyMedium, color = if (isSel) colors.onPrimaryContainer else colors.onSurface, modifier = Modifier.weight(1f))
@@ -624,5 +629,6 @@ private fun StepBtn(label: String, enabled: Boolean, modifier: Modifier = Modifi
         modifier = modifier.size(40.dp),
         shape = RoundedCornerShape(12.dp),
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.DIALOGS,
     ) { _ -> Text(label, style = MaterialTheme.typography.titleMedium, color = if (enabled) colors.onSurface else colors.outline) }
 }

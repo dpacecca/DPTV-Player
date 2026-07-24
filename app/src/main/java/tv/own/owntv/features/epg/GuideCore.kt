@@ -51,7 +51,9 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.theme.glass
 
 internal object GuideGridDefaults {
     val ChannelCol = 176.dp
@@ -170,9 +172,12 @@ internal fun ProgrammeDetailDialog(
             Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).longPressMenuGuard(),
             contentAlignment = Alignment.Center,
         ) {
-            // Scrollable: long XMLTV descriptions can exceed a small screen's height.
+            // Scrollable: long XMLTV descriptions can exceed a small screen's height. widthIn (not a
+            // fixed width) keeps it responsive on narrow screens, so this uses .glass() directly rather
+            // than dialogPanel (which sets a fixed width) — same DIALOGS surface + fill hook.
             Column(
-                Modifier.widthIn(max = 560.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh)
+                Modifier.widthIn(max = 560.dp).clip(RoundedCornerShape(20.dp))
+                    .glass(surface = GlassSurface.DIALOGS, baseFill = colors.surfaceContainerHigh, shape = RoundedCornerShape(20.dp), cornerRadius = 20.dp)
                     .verticalScroll(rememberScrollState()).padding(28.dp),
             ) {
                 Text(channelName.uppercase(), style = MaterialTheme.typography.labelMedium, color = colors.primary, fontWeight = FontWeight.SemiBold)

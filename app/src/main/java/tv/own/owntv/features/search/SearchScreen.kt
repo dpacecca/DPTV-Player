@@ -46,6 +46,7 @@ import tv.own.owntv.ui.components.SearchBar
 import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /** One row in the flattened results list — drives both the list rows and the detail pane. */
@@ -343,6 +344,7 @@ private fun DetailPane(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             contentAlignment = Alignment.Center,
+            surface = GlassSurface.CARDS,
         ) { focused ->
             Row(
                 modifier = Modifier
@@ -387,6 +389,7 @@ private fun ResultRow(
             .onFocusChanged { if (it.isFocused) onFocused() },
         shape = RoundedCornerShape(12.dp),
         contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.CARDS,
     ) { focused ->
         Row(
             modifier = Modifier.fillMaxWidth().padding(10.dp),
@@ -433,6 +436,7 @@ private fun PillChip(
         onClick = onClick,
         shape = RoundedCornerShape(999.dp),
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.CARDS,
     ) { focused ->
         val fg = when {
             focused -> colors.onPrimary

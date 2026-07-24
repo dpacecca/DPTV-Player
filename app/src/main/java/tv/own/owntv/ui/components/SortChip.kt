@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.features.settings.data.SettingsRepository.SortMode
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -38,6 +39,7 @@ fun SortChip(
         unfocusedContainerColor = colors.surfaceContainerHigh,
         selectedContainerColor = colors.surfaceContainerHigh,
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.CARDS,
     ) { focused ->
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),

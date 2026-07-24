@@ -6,7 +6,7 @@
 
 - An opt-in **glass look**: content panels, sidebar, preview panes, dialogs, top bar, cards and the
   mini-player turn **translucent with a real frosted-blur backdrop** over an optional **background
-  photo** — Apple-style glassmorphism on TV. Everything lives in one **Settings → Glass Effect**
+  photo** — glassmorphism on TV. Everything lives in one **Settings → Glass Effect**
   dialog: Liquid glass On/Off, the background image, a **Transparency** stepper (20–95%), a
   **Blur / Frost** stepper (0–100%), a **Surfaces** sub-menu, and **Reset**.
 - **Background image — Local or Remote.** **Local** picks a photo from USB/device storage (copied into
@@ -21,6 +21,26 @@
   reading backlit. It is computed once per image at a downscaled size, so it stays cheap on low-end
   boxes. Backdrop blur needs Android 12+; older devices fall back to translucency without frost.
   All glass settings persist per install and are included in backups.
+- **Every focused/selected control now frosts, not just the big panels.** The glass highlight was
+  extended to the focus rim itself: cards, list rows and chips on every content screen, every row and
+  list item inside popups/dialogs (pickers, storage browser, avatar/subtitle/backup/profile lists,
+  EPG match review), the sidebar's profile/avatar buttons, the action pill buttons (Save / Cancel /
+  Add / Edit / Delete / Done), and every search bar (category rail, Live/Movies/Series/Search/EPG
+  panels, and the in‑popup search fields) — so a pill or search field inside a dialog frosts with the
+  dialog and one on a panel frosts with the panel. The fullscreen player stays solid by design. Four
+  dialogs that previously kept a flat fill (Video Player pickers, EPG "Fill from playlist", Live
+  catch‑up, the Guide programme popup) now frost with the rest.
+- **The player's Subtitles & Audio pickers are now glass too.** Their track rows and the A/V-sync
+  buttons frost like the rest of the interface (they previously stayed flat inside the glass panel),
+  and the popups were tightened to the compact style used by the storage picker — a narrower box with
+  a smaller font.
+
+### ⭐ Favorite from the player — add to Favorites without leaving the stream
+
+- A **star button** in the fullscreen player's control bar favorites (or un-favorites) what you're
+  watching **without backing out** to the list — a live channel, a movie, or a series (an episode
+  favorites its parent show). The star fills when the item is already a favorite and updates
+  instantly, and it survives channel zapping. (community suggestion)
 
 ### 🗂️ Per-section sync scope — choose Now / Later / Off for each section (#74)
 

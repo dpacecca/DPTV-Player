@@ -50,6 +50,7 @@ import tv.own.owntv.core.database.entity.EpgProgrammeEntity
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import java.util.Date
 
@@ -130,6 +131,7 @@ private fun ChannelCardsRow(
                         focusedContainerColor = OwnTVTheme.colors.surfaceContainerHigh,
                         unfocusedContainerColor = OwnTVTheme.colors.surfaceContainerHigh,
                         selectedContainerColor = OwnTVTheme.colors.surfaceContainerHigh,
+                        surface = GlassSurface.CARDS,
                     ) { focused ->
                         Row(
                             modifier = Modifier

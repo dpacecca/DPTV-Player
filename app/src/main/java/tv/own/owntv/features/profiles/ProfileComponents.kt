@@ -45,6 +45,7 @@ import tv.own.owntv.ui.components.OwnTVAvatars
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVTextField
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /** Modal scrim wrapper for the profile dialogs. Phase 7 — Popup(focusable=true) creates
@@ -170,6 +171,7 @@ internal fun ProfileEditorDialog(
                     shape = CircleShape,
                     selectedContainerColor = colors.primaryContainer,
                     contentAlignment = Alignment.Center,
+                    surface = GlassSurface.DIALOGS,
                 ) { _ ->
                     OwnTVAvatar(avatarId = id, modifier = Modifier.size(48.dp))
                 }
@@ -216,6 +218,7 @@ private fun ToggleRow(label: String, desc: String, checked: Boolean, onToggle: (
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.DIALOGS,
     ) { _ ->
         Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {

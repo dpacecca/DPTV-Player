@@ -46,6 +46,7 @@ import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import java.io.File
 
@@ -572,6 +573,7 @@ private fun CheckRow(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.DIALOGS,
     ) { _ ->
         Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(

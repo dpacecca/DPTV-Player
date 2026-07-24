@@ -213,7 +213,9 @@ class MovieViewModel(
     val metadataMode: StateFlow<tv.own.owntv.core.metadata.MetadataMode> = settings.metadataMode
         .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB)
 
-    private var playingMovie: MovieEntity? = null
+    // Observable so the player HUD's favorite toggle can reflect/act on the movie being played.
+    private val _playingMovie = MutableStateFlow<MovieEntity?>(null)
+    val playingMovie: StateFlow<MovieEntity?> = _playingMovie.asStateFlow()
 
     init {
         // Periodically persist resume position for the movie currently playing.
@@ -413,7 +415,7 @@ class MovieViewModel(
                 startPositionMs = startPositionMs,
                 userAgent = sourceUa,
             )
-            playingMovie = movie
+            _playingMovie.value = movie
             // Enable the player's OpenSubtitles search for this movie (subtitle plan §4). tmdbId is
             // resolved from the metadata cache when available (review R7) for a stronger match.
             if (pid != null) {
@@ -507,7 +509,7 @@ class MovieViewModel(
 
     /** Persist the resume position if the player is actually playing the tracked movie. */
     fun saveProgressNow() {
-        val m = playingMovie ?: return
+        val m = _playingMovie.value ?: return
         if (player.currentMediaUrl != m.streamUrl || !player.isPlaying.value) return
         val pos = player.position.value
         val dur = player.duration.value

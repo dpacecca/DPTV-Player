@@ -86,6 +86,7 @@ import tv.own.owntv.features.epg.ProgrammeDetailDialog
 import tv.own.owntv.features.epg.ProgrammeStripCanvas
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -256,7 +257,7 @@ fun EpgScreen(
     ) {
         // Header: back + title + date + refresh
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            FocusableSurface(onClick = onBack, modifier = Modifier.size(44.dp), shape = RoundedCornerShape(14.dp), contentAlignment = Alignment.Center) { _ ->
+            FocusableSurface(onClick = onBack, modifier = Modifier.size(44.dp), shape = RoundedCornerShape(14.dp), contentAlignment = Alignment.Center, surface = GlassSurface.CARDS) { _ ->
                 OwnTVIcon(OwnTVIcon.BACK, tint = colors.onSurface, modifier = Modifier.size(20.dp))
             }
             Text("TV Guide", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
@@ -306,7 +307,7 @@ fun EpgScreen(
         matchSummary?.let { summary ->
             if (review.isEmpty()) {
                 Spacer(Modifier.height(6.dp))
-                FocusableSurface(onClick = vm::clearReview, shape = RoundedCornerShape(10.dp), unfocusedContainerColor = colors.surfaceContainerHigh, contentAlignment = Alignment.CenterStart) { _ ->
+                FocusableSurface(onClick = vm::clearReview, shape = RoundedCornerShape(10.dp), unfocusedContainerColor = colors.surfaceContainerHigh, contentAlignment = Alignment.CenterStart, surface = GlassSurface.CARDS) { _ ->
                     Text(summary, style = MaterialTheme.typography.labelLarge, color = colors.primary, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                 }
             }
@@ -517,12 +518,14 @@ private fun EpgMatchReviewDialog(
                             shape = RoundedCornerShape(10.dp),
                             unfocusedContainerColor = colors.primaryContainer,
                             contentAlignment = Alignment.Center,
+                            surface = GlassSurface.DIALOGS,
                         ) { _ -> Text("Accept", style = MaterialTheme.typography.labelLarge, color = colors.onPrimaryContainer, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) }
                         FocusableSurface(
                             onClick = { onSkip(s) },
                             shape = RoundedCornerShape(10.dp),
                             unfocusedContainerColor = colors.surfaceContainerHigh,
                             contentAlignment = Alignment.Center,
+                            surface = GlassSurface.DIALOGS,
                         ) { _ -> Text("Skip", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) }
                     }
                 }
@@ -642,6 +645,7 @@ private fun GuideChannelRow(
             shape = RoundedCornerShape(10.dp),
             unfocusedContainerColor = colors.surfaceContainerHigh,
             contentAlignment = Alignment.CenterStart,
+            surface = GlassSurface.CARDS,
         ) { focused ->
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp),

@@ -86,6 +86,7 @@ import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.PreviewPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 @Composable
@@ -232,7 +233,7 @@ fun MoviesScreen(
 
     Row(modifier = modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         CategoryRail(
-            categories = railItems.map { RailCategory(it.title, it.icon) },
+            categories = railItems.map { RailCategory(it.title, it.icon, showGenreDot = it.key is LiveKey.Folder) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             listState = catListState,
@@ -830,6 +831,7 @@ private fun MovieListRow(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.CARDS,
     ) { focused ->
         LaunchedEffect(focused) { if (focused) onFocus() }
         Row(

@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -60,6 +61,8 @@ import tv.own.owntv.ui.components.TextInputDialog
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.trapVerticalFocusExit
+import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.ui.theme.LocalActionSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -161,6 +164,9 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // While a span selection is in progress, Back cancels the selection instead of leaving the screen.
     BackHandler { if (rangeAnchorKey != null) vm.cancelRange() else onBack() }
 
+    // Action pills on this panel frost with CARDS (the surface the panel rows use), not the DIALOGS
+    // default. Covers the chip/move/unhide buttons; trailing Popups don't inherit this anyway.
+    CompositionLocalProvider(LocalActionSurface provides GlassSurface.CARDS) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -429,6 +435,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             }
         }
     }
+    } // CompositionLocalProvider
 }
 
 /**
@@ -476,6 +483,7 @@ private fun SectionChip(label: String, selected: Boolean, modifier: Modifier = M
         shape = RoundedCornerShape(50),
         selectedContainerColor = colors.primaryContainer,
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.CARDS,
     ) { focused ->
         Text(
             label,

@@ -33,6 +33,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.ui.components.FocusableSurface
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -119,6 +120,7 @@ private fun PlaylistRow(
         unfocusedContainerColor = colors.surfaceContainer,
         selectedContainerColor = colors.secondaryContainer,
         contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.DIALOGS,
     ) { focused ->
         val content = when {
             selected -> colors.onSecondaryContainer

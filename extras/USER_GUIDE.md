@@ -392,6 +392,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 | **Subtitles** | Pick a subtitle track (incl. **image subtitles**) and set **subtitle delay**. Live channels with **embedded closed captions (CC)** — common on US channels — show a CC track on both engines; on mpv, selecting it briefly switches the channel to software decoding (≤1080p) and hardware decoding returns when CC is turned off. On raw `.ts` channels the CC entry always appears, even when the channel carries no captions. |
 | **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±50 ms** steps) — use this if surround makes lips drift. |
 | **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · buffer. |
+| **Favorite** (★) | Add or remove what you're watching from **Favorites** without leaving the stream — a live channel, a movie, or a series (an episode favorites its parent show). The star fills when it's already a favorite. |
 | **Speed** | Playback speed (VOD). |
 | **MPV/EXO (⇄)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (shows the active engine; teal on the non‑default one). Flipping it briefly confirms "Switched to MPV/ExoPlayer" at the bottom. |
 | **Aspect/Zoom** | Change aspect ratio / zoom (works in every render mode). |
@@ -470,7 +471,7 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   - ⚠️ Going **below 85% zoom** shows a warning first — lower zoom draws many more items at once, which can
     crash devices with limited memory (e.g. 2 GB TV sticks) with big playlists/EPG. Press **OK** to accept
     and continue, or **Back** to stay at 85%.
-- **Settings → Glass Effect**: an Apple‑style **frosted‑glass look** — panels turn translucent with a
+- **Settings → Glass Effect**: a **frosted‑glass look** — panels turn translucent with a
   real blurred backdrop over an optional **background photo**.
   - The dialog has **Liquid glass On/Off**, a **Background image** chooser, a **Transparency** stepper
     (20–95%, higher = more solid), a **Blur / Frost** stepper (0–100%), a **Surfaces** menu, and **Reset**.

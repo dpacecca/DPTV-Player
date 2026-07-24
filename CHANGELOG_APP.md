@@ -13,7 +13,8 @@
 
 ### ✨ New features
 
-- **🧊 Liquid Glass — frosted translucent interface over your own background photo**
+- **🧊 Liquid Glass — frosted translucent interface over your own background photo (panels, dialogs, cards, rows, search bars & action buttons)**
+- **⭐ Favorite from the player — add to Favorites without leaving the stream (live, movies & series)**
 - **🗂️ Per-section sync scope — Now / Later / Off for Live, Movies & Series (#74)** (community PR #78)
 - **🎨 Accent color — full HSV picker (hue bar + saturation/brightness square) with live preview**
 - **🎧 Audio Mode — listen with the screen free**

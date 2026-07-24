@@ -215,6 +215,11 @@ class SeriesViewModel(
     private val _openedSeries = MutableStateFlow<SeriesEntity?>(null)
     val openedSeries: StateFlow<SeriesEntity?> = _openedSeries.asStateFlow()
 
+    // The series whose episode queue is currently playing — drives the player HUD's favorite toggle
+    // (distinct from _openedSeries, which tracks the browse/detail selection).
+    private val _playingSeries = MutableStateFlow<SeriesEntity?>(null)
+    val playingSeries: StateFlow<SeriesEntity?> = _playingSeries.asStateFlow()
+
     // --- Download status for poster-panel strips (display-only) ---
 
     /** Active episode-download rows keyed by episode id — for the focused-episode strip. */
@@ -624,6 +629,7 @@ class SeriesViewModel(
 
     fun playEpisodeQueue(show: SeriesEntity, queue: List<EpisodeEntity>, episode: EpisodeEntity, startPositionMs: Long = 0) {
         _openedSeries.value = show
+        _playingSeries.value = show
         _lastPlayedEpisodeId.value = episode.id
         viewModelScope.launch {
             val pid = currentProfileId()

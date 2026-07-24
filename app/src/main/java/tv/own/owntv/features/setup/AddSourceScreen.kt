@@ -50,6 +50,7 @@ import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.roundedPanel
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 private enum class SourceKind { XTREAM, M3U, STALKER }
@@ -423,6 +424,7 @@ private fun AutoRefreshRow(selected: PlaylistAutoRefresh, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.CARDS,
     ) { _ ->
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -450,6 +452,7 @@ private fun ToggleRow(label: String, desc: String, checked: Boolean, onToggle: (
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.CARDS,
     ) { _ ->
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -504,6 +507,7 @@ private fun SyncScopeRow(
             },
         shape = RoundedCornerShape(14.dp),
         contentAlignment = Alignment.CenterStart,
+        surface = GlassSurface.CARDS,
     ) { _ ->
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -531,6 +535,7 @@ private fun KindChip(label: String, selected: Boolean, modifier: Modifier, onCli
         unfocusedContainerColor = colors.surfaceContainerHigh,
         selectedContainerColor = colors.primaryContainer,
         contentAlignment = Alignment.Center,
+        surface = GlassSurface.CARDS,
     ) { _ ->
         Text(
             label,
