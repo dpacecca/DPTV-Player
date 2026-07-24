@@ -1,11 +1,11 @@
 name: Android CI
 
-# Builds the app on every push / PR, and publishes a GitHub Release with the APK on v* tags.
+# Builds the app on pushes to main and publishes a GitHub Release with the APK on v* tags.
+# No PR builds: pull_request is not a trigger, and push is limited to main so PR branches don't build.
 on:
   push:
-    branches: [ "**" ]
+    branches: [ main ]
     tags: [ "v*" ]
-  pull_request:
   workflow_dispatch:
 
 permissions:
