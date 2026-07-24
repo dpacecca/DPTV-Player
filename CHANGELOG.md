@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.1.4 — unreleased
+## v4.1.4 — 2026-07-24
 
 ### 🧊 Liquid Glass — frosted translucent interface over your own background photo
 
