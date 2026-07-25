@@ -75,6 +75,23 @@ sealed interface LiveKey {
     data class Folder(val id: Long) : LiveKey
 }
 
+// Persistence for the "remember last category" toggles. The same rail model backs Live TV, Movies and
+// Series, so all three view models share one encoding (stored per section in SettingsRepository).
+fun LiveKey.serialize(): String = when (this) {
+    LiveKey.Favorites -> "FAV"
+    LiveKey.History -> "HIST"
+    LiveKey.All -> "ALL"
+    is LiveKey.Folder -> "FOLDER:$id"
+}
+
+fun parseLiveKey(s: String): LiveKey? = when {
+    s == "FAV" -> LiveKey.Favorites
+    s == "HIST" -> LiveKey.History
+    s == "ALL" -> LiveKey.All
+    s.startsWith("FOLDER:") -> s.removePrefix("FOLDER:").toLongOrNull()?.let { LiveKey.Folder(it) }
+    else -> null
+}
+
 /** A rail entry. Favorites/History carry an [icon] rendered inline before the title. */
 @Immutable
 data class LiveRailItem(val key: LiveKey, val title: String, val icon: OwnTVIcon? = null)
@@ -359,22 +376,6 @@ class LiveViewModel(
         _selected.value = key
     }
 
-    // --- Remember the last selected category (so reopening Live TV lands where you left off, #6) ---
-    private fun LiveKey.serialize(): String = when (this) {
-        LiveKey.Favorites -> "FAV"
-        LiveKey.History -> "HIST"
-        LiveKey.All -> "ALL"
-        is LiveKey.Folder -> "FOLDER:$id"
-    }
-
-    private fun parseLiveKey(s: String): LiveKey? = when {
-        s == "FAV" -> LiveKey.Favorites
-        s == "HIST" -> LiveKey.History
-        s == "ALL" -> LiveKey.All
-        s.startsWith("FOLDER:") -> s.removePrefix("FOLDER:").toLongOrNull()?.let { LiveKey.Folder(it) }
-        else -> null
-    }
-
     init {
         // Persist the selected category (debounced — the rail fires select() on focus as you scroll).
         viewModelScope.launch {
@@ -382,7 +383,9 @@ class LiveViewModel(
         }
         // Restore it once at startup — but only while still on the default (don't yank a user who already
         // navigated). A saved folder is honoured only once it actually exists in this profile's rail.
+        // Gated by "Remember last category — Live TV" (Settings → Browsing & lists), on by default.
         viewModelScope.launch {
+            if (!settings.rememberCategoryLive.first()) return@launch
             val saved = parseLiveKey(settings.lastLiveCategory.first()) ?: return@launch
             if (saved is LiveKey.Folder) {
                 val ok = kotlinx.coroutines.withTimeoutOrNull(5_000) {
@@ -395,11 +398,15 @@ class LiveViewModel(
         }
         // Persist the last focused/interacted channel (debounced), and restore it once at startup so opening
         // Live TV lands focus back on it. Restore leaves the preview disarmed (no auto-preview on launch).
+        // The restore is gated by the "Remember last item — Live TV" setting so users who want each category
+        // to start at the top don't also get yanked to a saved channel on re-entry. The category restore
+        // above is a separate toggle ("Remember last category — Live TV").
         viewModelScope.launch {
             _previewChannel.drop(1).filterNotNull().map { it.id }.debounce(800).distinctUntilChanged()
                 .collect { settings.setLastLiveChannelId(it) }
         }
         viewModelScope.launch {
+            if (!settings.rememberLastLive.first()) return@launch
             val savedId = settings.lastLiveChannelId.first()
             if (savedId > 0 && _previewChannel.value == null) {
                 ctx.first { it.profileId >= 0 }

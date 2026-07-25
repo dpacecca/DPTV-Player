@@ -130,6 +130,8 @@ fun SettingsScreen(
     var showBgPicker by remember { mutableStateOf(false) }
     var showBgRemote by remember { mutableStateOf(false) }
     var showGlassEffect by remember { mutableStateOf(false) }
+    var showBrowsing by remember { mutableStateOf(false) }
+    val browsingRowFocus = remember { FocusRequester() }
 
     // Batch 4 · Settings search + quick toggles. Empty query = normal grouped list; a non-blank
     // query swaps the list for flat results that carry their group context ("Playback › HDR").
@@ -160,13 +162,13 @@ fun SettingsScreen(
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
     val scrollState = rememberScrollState()
     var savedScroll by remember { mutableIntStateOf(0) }
-    val anyDialogOpen = showZoom || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showClearHistory || showAnimations || showStartup || showErrorLog || showBgImageChooser || showBgPicker || showGlassEffect
+    val anyDialogOpen = showZoom || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showClearHistory || showAnimations || showStartup || showErrorLog || showBgImageChooser || showBgPicker || showGlassEffect || showBrowsing
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showClearHistory, showAnimations, showStartup, showErrorLog, showBgImageChooser, showBgPicker, showGlassEffect) {
+    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showClearHistory, showAnimations, showStartup, showErrorLog, showBgImageChooser, showBgPicker, showGlassEffect, showBrowsing) {
         if (!anyDialogOpen) {
             // When a scrim dialog is torn down, Compose's focus re-search through the newly-exposed
             // scrollable Column resets its scroll to 0 and then bringIntoView-animates to wherever
@@ -187,6 +189,7 @@ fun SettingsScreen(
     val livePreview by settingsVm.livePreviewEnabled.collectAsStateWithLifecycle()
     val previewAudio by settingsVm.livePreviewAudio.collectAsStateWithLifecycle()
     val hdr by settingsVm.hdrEnabled.collectAsStateWithLifecycle()
+    val autoFrameRate by settingsVm.autoFrameRate.collectAsStateWithLifecycle()
     val surroundSound by settingsVm.surroundSound.collectAsStateWithLifecycle()
     val autoPlayNext by settingsVm.autoPlayNext.collectAsStateWithLifecycle()
     val updateCheckOnStart by settingsVm.updateCheckOnStart.collectAsStateWithLifecycle()
@@ -202,6 +205,12 @@ fun SettingsScreen(
     val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
     val navMenuMode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
     val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
+    val rememberLastLive by settingsVm.rememberLastLive.collectAsStateWithLifecycle()
+    val rememberLastMovies by settingsVm.rememberLastMovies.collectAsStateWithLifecycle()
+    val rememberLastSeries by settingsVm.rememberLastSeries.collectAsStateWithLifecycle()
+    val rememberCatLive by settingsVm.rememberCategoryLive.collectAsStateWithLifecycle()
+    val rememberCatMovies by settingsVm.rememberCategoryMovies.collectAsStateWithLifecycle()
+    val rememberCatSeries by settingsVm.rememberCategorySeries.collectAsStateWithLifecycle()
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by remember { mutableStateOf<SettingsTab?>(null) }
@@ -358,6 +367,12 @@ fun SettingsScreen(
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.CH_NAV)),
         )
         SettingsRow(
+            tone = TileTone.PRIMARY, icon = OwnTVIcon.PLAYLIST,
+            title = "Browsing & lists", desc = "Remember the last category and the last item in Live TV, Movies & Series",
+            onClick = { savedScroll = scrollState.value; dialogReturn = browsingRowFocus; showBrowsing = true }, showChevron = true,
+            modifier = Modifier.focusRequester(browsingRowFocus),
+        )
+        SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HOME,
             title = "Home screen", desc = "Choose, reorder & filter the rows on Home",
             onClick = { open(SettingsTab.HOME) }, showChevron = true,
@@ -473,6 +488,14 @@ fun SettingsScreen(
             onClick = { settingsVm.setHdrEnabled(!hdr) },
         )
         SettingsRow(
+            tone = TileTone.PRIMARY, icon = OwnTVIcon.VIDEO,
+            title = "Auto frame rate",
+            desc = "Match the TV's refresh rate to the video (24/25/50/60 fps) in full screen, for Live TV and VOD, and restore it on exit. Turn off if your TV or receiver re-handshakes HDMI noisily on every channel change.",
+            chip = if (autoFrameRate) "On" else "Off",
+            chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY,
+            onClick = { settingsVm.setAutoFrameRate(!autoFrameRate) },
+        )
+        SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
             title = "Surround sound",
             desc = "Decode Dolby/DTS to surround (5.1/7.1) for a real 5.1/7.1 receiver. Leave OFF for TV speakers or a stereo soundbar — multichannel can lag audio behind video on some TVs/soundbars. If it drifts, nudge the player's Audio menu → A/V sync.",
@@ -566,6 +589,7 @@ fun SettingsScreen(
                     chip = navMenuMode.label, chipTone = if (navMenuMode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },
                 SettingsSearchEntry("Content", "CH+- Key Paging", "channel up down skip page list category channel", OwnTVIcon.PLAYLIST, TileTone.PRIMARY,
                     chip = if (chNavEnabled) "On" else "Off", chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
+                SettingsSearchEntry("Content", "Browsing & lists", "remember position scroll category last item live movies series reset top", OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { savedScroll = scrollState.value; dialogReturn = browsingRowFocus; showBrowsing = true },
                 SettingsSearchEntry("Content", "Home screen", "rows hero reorder filter", OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
                 SettingsSearchEntry("Content", "Metadata (TMDB)", "posters plots cast ratings", OwnTVIcon.VIDEO, TileTone.PRIMARY) { open(SettingsTab.METADATA) },
                 SettingsSearchEntry("Content", "Download folder", "storage path directory", OwnTVIcon.DOWNLOADS, TileTone.TERTIARY,
@@ -589,6 +613,8 @@ fun SettingsScreen(
                 SettingsSearchEntry("Playback", "Mini-player", "docked pip miniplayer size position scale percent corner move", OwnTVIcon.PIP, TileTone.TERTIARY) { open(SettingsTab.MINI_PLAYER) },
                 SettingsSearchEntry("Playback", "HDR", "high dynamic range output", OwnTVIcon.VIDEO, TileTone.PRIMARY,
                     chip = if (hdr) "On" else "Off", chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setHdrEnabled(!hdr) },
+                SettingsSearchEntry("Playback", "Auto frame rate", "afr refresh rate hz judder 24fps 25fps 50hz 60hz display mode match", OwnTVIcon.VIDEO, TileTone.PRIMARY,
+                    chip = if (autoFrameRate) "On" else "Off", chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoFrameRate(!autoFrameRate) },
                 SettingsSearchEntry("Playback", "Surround sound", "dolby dts 5.1 7.1 receiver audio", OwnTVIcon.AUDIO, TileTone.SECONDARY,
                     chip = if (surroundSound) "On" else "Off", chipTone = if (surroundSound) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setSurroundSound(!surroundSound) },
                 SettingsSearchEntry("Playback", "Auto-play next episode", "autoplay series season", OwnTVIcon.SKIP_NEXT, TileTone.SECONDARY,
@@ -693,6 +719,19 @@ fun SettingsScreen(
     }
     if (showZoom) {
         ZoomDialog(current = uiZoomPercent, onSet = onSetZoom, onDismiss = { showZoom = false })
+    }
+    if (showBrowsing) {
+        BrowsingListsDialog(
+            catLive = rememberCatLive, catMovies = rememberCatMovies, catSeries = rememberCatSeries,
+            itemLive = rememberLastLive, itemMovies = rememberLastMovies, itemSeries = rememberLastSeries,
+            onToggleCatLive = { settingsVm.setRememberCategoryLive(!rememberCatLive) },
+            onToggleCatMovies = { settingsVm.setRememberCategoryMovies(!rememberCatMovies) },
+            onToggleCatSeries = { settingsVm.setRememberCategorySeries(!rememberCatSeries) },
+            onToggleItemLive = { settingsVm.setRememberLastLive(!rememberLastLive) },
+            onToggleItemMovies = { settingsVm.setRememberLastMovies(!rememberLastMovies) },
+            onToggleItemSeries = { settingsVm.setRememberLastSeries(!rememberLastSeries) },
+            onDismiss = { showBrowsing = false },
+        )
     }
     if (showGlassEffect) {
         GlassEffectDialog(
@@ -1508,6 +1547,105 @@ private fun GlassEffectDialog(
     if (showSurfaces) {
         GlassSurfacesDialog(scope = scope, onSetScope = onSetScope, onDismiss = { showSurfaces = false })
     }
+}
+
+/**
+ * Browsing & lists — six per-section toggles, two for each of Live TV / Movies / Series:
+ *
+ *  - "Remember last category" (on by default): reopening the section lands on the category you left
+ *    rather than All. Live TV has always behaved this way; Movies/Series gained it alongside the toggle.
+ *  - "Remember last item" (off by default): each category keeps its own scroll position instead of
+ *    resetting to the top. The Live TV one additionally gates the last-focused-channel restore.
+ *
+ * The separate "App startup -> Last channel" setting is independent of all six.
+ */
+@Composable
+private fun BrowsingListsDialog(
+    catLive: Boolean,
+    catMovies: Boolean,
+    catSeries: Boolean,
+    itemLive: Boolean,
+    itemMovies: Boolean,
+    itemSeries: Boolean,
+    onToggleCatLive: () -> Unit,
+    onToggleCatMovies: () -> Unit,
+    onToggleCatSeries: () -> Unit,
+    onToggleItemLive: () -> Unit,
+    onToggleItemMovies: () -> Unit,
+    onToggleItemSeries: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        tv.own.owntv.ui.theme.PopupFontTheme {
+        // Six toggles + two group headers overflow a 720p panel — dialogPanel already scrolls the body
+        // (scroll = true by default), so do NOT add another verticalScroll here.
+        Column(
+            modifier = Modifier.dialogPanel(width = 520.dp, padding = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Browsing & lists", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "What Live TV, Movies and Series return to when you come back.",
+                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Spacer(Modifier.height(18.dp))
+
+            // SECONDARY chrome on every row (matching GlassSurfacesDialog): with an accent fill on each
+            // "On" row the focused row becomes hard to pick out on a TV. State reads from the ": On/Off"
+            // text; focus is carried by the button's own highlight.
+            BrowsingGroupLabel("Remember last category", "Reopen the section on the category you left, not All.")
+            OwnTVButton(
+                "Live TV: ${if (catLive) "On" else "Off"}", onClick = onToggleCatLive,
+                style = OwnTVButtonStyle.SECONDARY,
+                modifier = Modifier.fillMaxWidth().focusRequester(firstFocus),
+            )
+            Spacer(Modifier.height(8.dp))
+            OwnTVButton("Movies: ${if (catMovies) "On" else "Off"}", onClick = onToggleCatMovies,
+                style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(8.dp))
+            OwnTVButton("Series: ${if (catSeries) "On" else "Off"}", onClick = onToggleCatSeries,
+                style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+
+            Spacer(Modifier.height(18.dp))
+            BrowsingGroupLabel(
+                "Remember last item",
+                "Each category keeps its own scroll position instead of starting at the top. " +
+                    "Live TV also restores the last focused channel.",
+            )
+            OwnTVButton("Live TV: ${if (itemLive) "On" else "Off"}", onClick = onToggleItemLive,
+                style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(8.dp))
+            OwnTVButton("Movies: ${if (itemMovies) "On" else "Off"}", onClick = onToggleItemMovies,
+                style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(8.dp))
+            OwnTVButton("Series: ${if (itemSeries) "On" else "Off"}", onClick = onToggleItemSeries,
+                style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+
+            Spacer(Modifier.height(20.dp))
+            OwnTVButton("Done", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+        }
+        }
+    }
+}
+
+@Composable
+private fun BrowsingGroupLabel(title: String, desc: String) {
+    val colors = OwnTVTheme.colors
+    Text(title, style = MaterialTheme.typography.titleSmall, color = colors.onSurface,
+        modifier = Modifier.fillMaxWidth())
+    Spacer(Modifier.height(2.dp))
+    Text(desc, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth())
+    Spacer(Modifier.height(10.dp))
 }
 
 /** User-facing label for a glassable surface. */

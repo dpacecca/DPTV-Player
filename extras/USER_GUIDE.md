@@ -306,6 +306,10 @@ or **narrow the whole app to just one**.
   (default; your playlist's info wins, TMDB fills the blanks and adds cast/genres/backdrops), or *TMDB only*
   (prefer TMDB). Turn on **Advanced options** to use your own TMDB API key or a self-hosted server; otherwise
   the built-in shared server is used with no setup. A "Test lookup" button verifies it works.
+- 🌍 **Language** — pick the language TMDB descriptions, titles and artwork come back in: **Default
+  (English)**, **Device language**, or one of 40 languages (the list is searchable). Changing it clears
+  the cached metadata so existing movies and series are re-fetched in the new language; your
+  title→TMDB matches are kept, so nothing has to be re-matched.
 - 💡 **Recommended: use your own TMDB API key** (free for personal / non-commercial use) or a self-hosted
   server. TMDB keys are typically issued instantly — no waiting period or manual approval — and your own
   key means you're never affected by shared-server rate limits. Create one at
@@ -502,7 +506,17 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   above 50. Turn it off here if your remote maps CH keys elsewhere.
 - 🚀 **App startup** — where each profile opens: **Home**, **Last channel** (auto‑plays the channel you last
   watched), or **Live · Favorites** (lands you right inside your favourites list).
+- 🗂️ **Browsing & lists** (Content) — six toggles, two for each of **Live TV / Movies / Series**.
+  **Remember last category** (on) reopens the section on the category you left instead of *All*.
+  **Remember last item** (off) makes each category keep its own scroll position instead of starting at
+  the top — with Live TV also restoring the last focused channel. These are independent of **App startup
+  → Last channel**.
 - 🌈 **HDR** — use HDR output when the video and TV support it. Turn on for HDR/Dolby Vision content.
+- 🎞️ **Auto frame rate** (Playback, on) — in full screen, asks the TV to switch to a refresh rate matching
+  the video (24/25/30/50/60 fps) and hands the display back on exit, so 24fps films and 25/50fps
+  broadcasts stop juddering on a 60Hz panel. Works for Live TV and VOD on both engines, and never
+  changes resolution. Turn it off if your TV or receiver re-handshakes HDMI noisily on every channel
+  change.
 - 🧩 **Hardware decoder** (Video Player Settings) — hardware decoding is on for smooth 4K; switch to software
   only if a specific codec misbehaves.
 - 📡 **Live latency** (Video Player Settings) — how close to the live edge Live TV plays, trading latency

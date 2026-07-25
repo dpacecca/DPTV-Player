@@ -1,5 +1,49 @@
 # Changelog
 
+## v4.1.5 — unreleased
+
+### 🗂️ Browsing & lists — decide what Live TV, Movies and Series come back to
+
+- A new **Settings → Browsing & lists** popup with **six toggles**, two for each of Live TV, Movies and
+  Series:
+  - **Remember last category** *(on)* — reopening the section lands on the category you left instead of
+    jumping back to *All*. Live TV has always worked this way; **Movies and Series now do too**.
+  - **Remember last item** *(off)* — each category keeps **its own** scroll position instead of starting
+    at the top. The Live TV toggle also restores the last focused channel when you re-enter Live TV.
+- **Fixed: switching category kept the previous category's scroll position.** Picking a new category in
+  Live TV, Movies or Series left the list wherever the last one had been scrolled to, so a fresh
+  category could open halfway down. Every category now starts at the top by default, and only keeps its
+  place if you turn "Remember last item" on for that section.
+- The separate **App startup → Last channel** setting is untouched and independent of all six toggles.
+  All six are included in backups.
+
+### 🌍 Metadata language — descriptions and posters in your language
+
+- **Settings → Metadata (TMDB) → Language** picks the language TMDB descriptions, titles and artwork
+  come back in: **Default (English)**, **Device language**, or one of 40 languages (Greek, Arabic,
+  Spanish, French, German, Hindi, Portuguese (BR/PT), Spanish (MX), Turkish, Vietnamese and more). The
+  list is searchable.
+- Changing the language **clears the cached metadata** so existing movies and series are re-fetched in
+  the new language on next view. Title→TMDB matches are kept (they don't depend on language), so nothing
+  has to be re-matched.
+- Logo/artwork selection prefers your language, then English, then language-neutral art.
+- Default is unchanged (English), so upgrading changes nothing until you pick a language.
+
+### 🎞️ Auto frame rate — match the TV's refresh rate to the video
+
+- **Settings → Video player → Auto frame rate** *(on)*: in full screen, OwnTV now asks the TV to switch
+  to a refresh rate matching the video (24 / 25 / 30 / 50 / 60 fps) and hands the display back when you
+  exit — so 24fps films and 25/50fps broadcasts stop juddering on a fixed 60Hz panel.
+- **Fixed: auto frame rate did nothing on Android 10 and older devices** — including Fire TV Stick 4K /
+  4K Max on Fire OS 7. OwnTV only used `Surface.setFrameRate()`, which doesn't exist before Android 11,
+  so on those boxes there was no frame-rate matching at all, in **Live TV or VOD**. It now also requests
+  the display mode at the window level, which works from Android 6 up.
+- Applies to **both playback engines** (ExoPlayer and mpv) and to Live TV as well as movies and series.
+  Only the full-screen player switches the display — the mini-player and the Live preview pane never do.
+- Resolution is never changed: only the refresh rate varies, so a 4K output stays 4K. If the TV has no
+  matching mode, or ignores the request, playback is unaffected.
+- Turn it off if your TV or AV receiver re-handshakes HDMI noisily on every channel change.
+
 ## v4.1.4 — 2026-07-24
 
 ### 🧊 Liquid Glass — frosted translucent interface over your own background photo

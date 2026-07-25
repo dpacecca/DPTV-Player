@@ -151,6 +151,9 @@ fun OwnTVShell(
     // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
     val liveOnExo by liveVm.liveOnExo.collectAsStateWithLifecycle()
     val vodExoActive by player.exoActiveState.collectAsStateWithLifecycle()
+    // Auto frame rate: only ever applied to the FULL-SCREEN surface (never the mini-player or the
+    // in-pane Live preview) — see FrameRateController.
+    val autoFrameRate by settingsRepo.autoFrameRate.collectAsStateWithLifecycle(initialValue = true)
     // Live rewind / timeshift: whether the live channel supports catch-up, and how far behind live we are.
     val canRewindLive by liveVm.canRewindLive.collectAsStateWithLifecycle()
     val timeshiftOffset by liveVm.timeshiftOffsetSec.collectAsStateWithLifecycle()
@@ -598,9 +601,12 @@ fun OwnTVShell(
             // full-screen AND the docked mini-player (same call site = the surface persists across dock/
             // expand, so playback never blips). Everything else (mpv) renders mpv's surface.
             if (liveOnExo) {
-                tv.own.owntv.player.ExoPreviewSurface(engine = liveVm.previewEngine, modifier = Modifier.fillMaxSize(), keepAwake = true)
+                tv.own.owntv.player.ExoPreviewSurface(
+                    engine = liveVm.previewEngine, modifier = Modifier.fillMaxSize(),
+                    keepAwake = true, autoFrameRate = isFull && autoFrameRate,
+                )
             } else {
-                MpvVideoSurface(player = player, modifier = Modifier.fillMaxSize())
+                MpvVideoSurface(player = player, modifier = Modifier.fillMaxSize(), autoFrameRate = isFull && autoFrameRate)
             }
             // Direct render mode: mpv can't draw subtitles on the decoder-owned surface — the app does.
             if (isFull && !liveOnExo) tv.own.owntv.player.SubtitleOverlay(player = player, modifier = Modifier.fillMaxSize())

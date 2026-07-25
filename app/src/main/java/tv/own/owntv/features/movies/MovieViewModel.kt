@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -55,6 +56,8 @@ import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.util.throttleLatest
 import tv.own.owntv.features.live.LiveRailItem
 import tv.own.owntv.features.live.LiveKey
+import tv.own.owntv.features.live.parseLiveKey
+import tv.own.owntv.features.live.serialize
 import tv.own.owntv.core.download.DownloadManager
 import tv.own.owntv.core.storage.StorageAccess
 import tv.own.owntv.core.repository.activeProfileSources
@@ -647,6 +650,31 @@ class MovieViewModel(
             LiveKey.Favorites -> movieDao.countFavorites(c.profileId, ids)
             LiveKey.History -> movieDao.countHistory(c.profileId, ids)
             is LiveKey.Folder -> movieDao.countByCategory(key.id)
+        }
+    }
+
+    // Remember the last selected category (Settings → Browsing & lists → "Remember last category —
+    // Movies", on by default). Declared LAST in the class so railItems below/above is already assigned
+    // when this init runs. Mirrors LiveViewModel's identical block.
+    init {
+        // Persist on change, debounced — the rail fires select() on focus as you scroll it.
+        viewModelScope.launch {
+            _selected.drop(1).debounce(800).distinctUntilChanged()
+                .collect { settings.setLastMoviesCategory(it.serialize()) }
+        }
+        // Restore once at startup, and only while still on the default (never yank a user who already
+        // navigated). A saved folder is honoured only once it exists in this profile's rail.
+        viewModelScope.launch {
+            if (!settings.rememberCategoryMovies.first()) return@launch
+            val saved = parseLiveKey(settings.lastMoviesCategory.first()) ?: return@launch
+            if (saved is LiveKey.Folder) {
+                val ok = kotlinx.coroutines.withTimeoutOrNull(5_000) {
+                    railItems.first { list -> list.any { it.key == saved } }
+                } != null
+                if (ok && _selected.value == LiveKey.All) _selected.value = saved
+            } else if (_selected.value == LiveKey.All) {
+                _selected.value = saved
+            }
         }
     }
 

@@ -68,6 +68,7 @@ class SettingsViewModel(
     private val catalogSyncScheduler: CatalogSyncScheduler,
     private val okHttpClient: okhttp3.OkHttpClient,
     private val metadataProvider: tv.own.owntv.core.metadata.MetadataProvider,
+    private val metadataRepository: tv.own.owntv.core.metadata.MetadataRepository,
     private val stalkerAuth: tv.own.owntv.core.stalker.StalkerAuthManager,
     private val stalkerClient: tv.own.owntv.core.stalker.StalkerClient,
     private val xtreamClient: tv.own.owntv.core.parser.XtreamClient,
@@ -253,6 +254,13 @@ class SettingsViewModel(
 
     fun setHdrEnabled(enabled: Boolean) {
         viewModelScope.launch { settings.setHdrEnabled(enabled) }
+    }
+
+    val autoFrameRate: StateFlow<Boolean> = settings.autoFrameRate
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setAutoFrameRate(enabled: Boolean) {
+        viewModelScope.launch { settings.setAutoFrameRate(enabled) }
     }
 
     val surroundSound: StateFlow<Boolean> = settings.surroundSound
@@ -499,6 +507,40 @@ class SettingsViewModel(
     val weatherFahrenheit: StateFlow<Boolean> =
         settings.weatherFahrenheit.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     fun setWeatherFahrenheit(fahrenheit: Boolean) { viewModelScope.launch { settings.setWeatherFahrenheit(fahrenheit) } }
+
+    // Per-section "remember last item per category" (default OFF). OFF resets the browse list to the top
+    // when switching category; ON keeps a separate scroll position per category. The Live toggle also
+    // gates the last-focused-channel restore on re-entry.
+    val rememberCategoryLive: StateFlow<Boolean> =
+        settings.rememberCategoryLive.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    val rememberCategoryMovies: StateFlow<Boolean> =
+        settings.rememberCategoryMovies.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    val rememberCategorySeries: StateFlow<Boolean> =
+        settings.rememberCategorySeries.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setRememberCategoryLive(enabled: Boolean) {
+        viewModelScope.launch { settings.setRememberCategoryLive(enabled) }
+    }
+
+    fun setRememberCategoryMovies(enabled: Boolean) {
+        viewModelScope.launch { settings.setRememberCategoryMovies(enabled) }
+    }
+
+    fun setRememberCategorySeries(enabled: Boolean) {
+        viewModelScope.launch { settings.setRememberCategorySeries(enabled) }
+    }
+
+    val rememberLastLive: StateFlow<Boolean> =
+        settings.rememberLastLive.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    fun setRememberLastLive(enabled: Boolean) { viewModelScope.launch { settings.setRememberLastLive(enabled) } }
+    val rememberLastMovies: StateFlow<Boolean> =
+        settings.rememberLastMovies.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    fun setRememberLastMovies(enabled: Boolean) { viewModelScope.launch { settings.setRememberLastMovies(enabled) } }
+    val rememberLastSeries: StateFlow<Boolean> =
+        settings.rememberLastSeries.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    fun setRememberLastSeries(enabled: Boolean) { viewModelScope.launch { settings.setRememberLastSeries(enabled) } }
 
     /** Per-source playlist auto-refresh selection (Off / Startup / staleness threshold). */
     val playlistAutoRefresh: StateFlow<Map<Long, PlaylistAutoRefresh>> = settings.playlistAutoRefresh
@@ -1008,6 +1050,26 @@ class SettingsViewModel(
     val metadataServerUrl: StateFlow<String> =
         settings.metadataServerUrl.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     fun setMetadataServerUrl(url: String) { viewModelScope.launch { settings.setMetadataServerUrl(url) } }
+
+    /** TMDB content language ("" = TMDB default en-US, "auto" = device locale, else an ISO 639-1 code). */
+    val metadataLanguage: StateFlow<String> =
+        settings.metadataLanguage.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+    /**
+     * Persist the metadata language and wipe the cached TMDB detail rows, which hold text in the *old*
+     * language under a language-agnostic key — without the wipe the change wouldn't show until the 60-day
+     * TTL expired. Runs under NonCancellable so navigating away mid-write can't leave a half-cleared cache
+     * paired with the new language. Matches are kept (title→tmdbId doesn't depend on language).
+     */
+    fun setMetadataLanguage(code: String) {
+        viewModelScope.launch {
+            withContext(NonCancellable) {
+                settings.setMetadataLanguage(code)
+                runCatching { metadataRepository.clearCacheForLanguageChange() }
+                    .onFailure { Log.w("SettingsViewModel", "Metadata cache wipe after language change failed: ${it.message}") }
+            }
+        }
+    }
 
     /** Which access tier the current config resolves to — shown as the Metadata screen's status chip. */
     val metadataTier: StateFlow<tv.own.owntv.core.metadata.MetadataConfig.Tier> =

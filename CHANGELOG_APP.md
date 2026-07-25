@@ -9,6 +9,19 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v4.1.5 — unreleased
+
+### ✨ New features
+
+- **🗂️ Browsing & lists — decide what Live TV, Movies and Series come back to**
+- **🌍 Metadata language — descriptions and posters in your language**
+- **🎞️ Auto frame rate — match the TV's refresh rate to the video**
+
+### 🐛 Fixes
+
+- **Switching category kept the previous category's scroll position**
+- **Auto frame rate did nothing on Android 10 and older devices (Fire OS 7)**
+
 ## v4.1.4 — 2026-07-24
 
 ### ✨ New features

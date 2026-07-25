@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.produceState
@@ -156,6 +157,18 @@ fun LiveScreen(
     val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
     val chNavUpSkip by settingsVm.chNavUpSkip.collectAsStateWithLifecycle()
     val chNavDownSkip by settingsVm.chNavDownSkip.collectAsStateWithLifecycle()
+    val rememberLive by settingsVm.rememberLastLive.collectAsStateWithLifecycle()
+
+    // "Remember last item per category": ON → each category keeps its own scroll position via a per-category
+    // state map (so A→B→A lands back where you were in A). OFF → reset the shared state to the top whenever
+    // the category changes (fixes the cross-category scroll-leak bug).
+    val perCategoryStates = remember { mutableStateMapOf<LiveKey, androidx.compose.foundation.lazy.LazyListState>() }
+    val effectiveListState =
+        if (rememberLive) perCategoryStates.getOrPut(selectedKey) { androidx.compose.foundation.lazy.LazyListState() }
+        else listState
+    LaunchedEffect(selectedKey, rememberLive) {
+        if (!rememberLive) runCatching { listState.scrollToItem(0) }
+    }
     val catListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val scope = rememberCoroutineScope()
     var channelPaneFocused by remember { mutableStateOf(false) }
@@ -183,7 +196,7 @@ fun LiveScreen(
 
         val idx = channels.itemSnapshotList.items.indexOfFirst { it.id == targetId }
         if (idx >= 0) {
-            runCatching { listState.scrollToItem(idx) }
+            runCatching { effectiveListState.scrollToItem(idx) }
             withFrameNanos { } // wait one frame so the row is laid out and contextFocus is attached
             runCatching { contextFocus.requestFocus() }
         } else {
@@ -227,7 +240,7 @@ fun LiveScreen(
         val ch = previewChannel
         val idx = if (ch != null) channels.itemSnapshotList.items.indexOfFirst { it.id == ch.id } else -1
         if (idx >= 0) {
-            runCatching { listState.scrollToItem(idx) }
+            runCatching { effectiveListState.scrollToItem(idx) }
             delay(60)
             runCatching { selFocus.requestFocus() }
         } else {
@@ -294,9 +307,9 @@ fun LiveScreen(
                         val pc = previewChannel
                         if (pc != null) {
                             val idx = channels.itemSnapshotList.items.indexOfFirst { it.id == pc.id }
-                            if (idx >= 0) idx else listState.firstVisibleItemIndex
+                            if (idx >= 0) idx else effectiveListState.firstVisibleItemIndex
                         } else {
-                            listState.firstVisibleItemIndex
+                            effectiveListState.firstVisibleItemIndex
                         }
                     },
                     onJumpToIndex = { idx ->
@@ -305,7 +318,7 @@ fun LiveScreen(
                         // one (which also fires the debounced 700ms preview — desired).
                         val target = channels.itemSnapshotList.items.getOrNull(idx)?.id
                         scope.launch {
-                            runCatching { listState.scrollToItem(idx) }
+                            runCatching { effectiveListState.scrollToItem(idx) }
                             withFrameNanos { }
                             if (target != null) {
                                 // Set the previewed channel so selFocus binds to the new row, then focus.
@@ -373,7 +386,7 @@ fun LiveScreen(
                     )
                 }
             } else {
-                LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                LazyColumn(state = effectiveListState, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(
                         count = channels.itemCount,
                         key = channels.itemKey { it.id },

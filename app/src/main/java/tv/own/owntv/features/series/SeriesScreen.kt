@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -247,6 +248,20 @@ private fun SeriesGrid(
     val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
     val chNavUpSkip by settingsVm.chNavUpSkip.collectAsStateWithLifecycle()
     val chNavDownSkip by settingsVm.chNavDownSkip.collectAsStateWithLifecycle()
+    val rememberSeries by settingsVm.rememberLastSeries.collectAsStateWithLifecycle()
+
+    // "Remember last item per category": ON → each category keeps its own scroll position (per-category
+    // grid + list states). OFF → reset the shared grid/list states to the top on category change
+    // (fixes the cross-category scroll-leak bug).
+    val perCategoryGrid = remember { mutableStateMapOf<LiveKey, androidx.compose.foundation.lazy.grid.LazyGridState>() }
+    val perCategoryList = remember { mutableStateMapOf<LiveKey, androidx.compose.foundation.lazy.LazyListState>() }
+    // NOTE: plain constructors, not remember*State() — these are created lazily inside getOrPut, so a
+    // @Composable/rememberSaveable call here would register slots conditionally and corrupt the slot table.
+    val effectiveGridState = if (rememberSeries) perCategoryGrid.getOrPut(selectedKey) { androidx.compose.foundation.lazy.grid.LazyGridState() } else gridState
+    val effectiveListState = if (rememberSeries) perCategoryList.getOrPut(selectedKey) { androidx.compose.foundation.lazy.LazyListState() } else listState
+    LaunchedEffect(selectedKey, rememberSeries) {
+        if (!rememberSeries) { runCatching { gridState.scrollToItem(0) }; runCatching { listState.scrollToItem(0) } }
+    }
     val catListState = androidx.compose.foundation.lazy.rememberLazyListState()
     var gridPaneFocused by remember { mutableStateOf(false) }
     var railPaneFocused by remember { mutableStateOf(false) }
@@ -259,7 +274,7 @@ private fun SeriesGrid(
             val sel = selectedSeries
             val idx = if (sel != null) series.itemSnapshotList.items.indexOfFirst { it.id == sel.id } else -1
             if (idx >= 0) {
-                runCatching { gridState.scrollToItem(idx) }
+                runCatching { effectiveGridState.scrollToItem(idx) }
                 kotlinx.coroutines.delay(60)
                 runCatching { gridSelFocus.requestFocus() }
             } else {
@@ -289,8 +304,8 @@ private fun SeriesGrid(
         val idx = items.indexOfFirst { it.id == targetId }
         if (idx >= 0) {
             runCatching {
-                if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(idx)
-                else gridState.scrollToItem(idx)
+                if (viewMode == SettingsRepository.VodViewMode.LIST) effectiveListState.scrollToItem(idx)
+                else effectiveGridState.scrollToItem(idx)
             }
             withFrameNanos { }
             runCatching { contextFocus.requestFocus() }
@@ -303,8 +318,8 @@ private fun SeriesGrid(
                 val neighbor = settled.getOrNull(contextSeriesIndex.coerceAtLeast(0)) ?: settled.last()
                 val neighborIdx = items.indexOfFirst { it.id == neighbor.id }.coerceAtLeast(0)
                 runCatching {
-                    if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(neighborIdx)
-                    else gridState.scrollToItem(neighborIdx)
+                    if (viewMode == SettingsRepository.VodViewMode.LIST) effectiveListState.scrollToItem(neighborIdx)
+                    else effectiveGridState.scrollToItem(neighborIdx)
                 }
                 contextSeriesId = neighbor.id
                 withFrameNanos { }
@@ -353,20 +368,20 @@ private fun SeriesGrid(
                         if (sel != null) {
                             val idx = series.itemSnapshotList.items.indexOfFirst { it.id == sel.id }
                             if (idx >= 0) idx
-                            else if (viewMode == SettingsRepository.VodViewMode.GRID) gridState.firstVisibleItemIndex
-                            else listState.firstVisibleItemIndex
+                            else if (viewMode == SettingsRepository.VodViewMode.GRID) effectiveGridState.firstVisibleItemIndex
+                            else effectiveListState.firstVisibleItemIndex
                         } else {
-                            if (viewMode == SettingsRepository.VodViewMode.GRID) gridState.firstVisibleItemIndex
-                            else listState.firstVisibleItemIndex
+                            if (viewMode == SettingsRepository.VodViewMode.GRID) effectiveGridState.firstVisibleItemIndex
+                            else effectiveListState.firstVisibleItemIndex
                         }
                     },
                     onJumpToIndex = { idx ->
                         scope.launch {
                             val item = series.itemSnapshotList.items.getOrNull(idx)
                             if (viewMode == SettingsRepository.VodViewMode.GRID) {
-                                runCatching { gridState.scrollToItem(idx) }
+                                runCatching { effectiveGridState.scrollToItem(idx) }
                             } else {
-                                runCatching { listState.scrollToItem(idx) }
+                                runCatching { effectiveListState.scrollToItem(idx) }
                             }
                             withFrameNanos { }
                             if (item != null) {
@@ -421,7 +436,7 @@ private fun SeriesGrid(
                 }
             } else if (viewMode == SettingsRepository.VodViewMode.LIST) {
                 LazyColumn(
-                    state = listState,
+                    state = effectiveListState,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(
@@ -449,7 +464,7 @@ private fun SeriesGrid(
                 }
             } else {
                 LazyVerticalGrid(
-                    state = gridState,
+                    state = effectiveGridState,
                     columns = GridCells.Adaptive(minSize = 130.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),

@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
@@ -27,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -167,6 +170,20 @@ fun MoviesScreen(
     val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
     val chNavUpSkip by settingsVm.chNavUpSkip.collectAsStateWithLifecycle()
     val chNavDownSkip by settingsVm.chNavDownSkip.collectAsStateWithLifecycle()
+    val rememberMovies by settingsVm.rememberLastMovies.collectAsStateWithLifecycle()
+
+    // "Remember last item per category": ON → each category keeps its own scroll position (per-category
+    // grid + list states, so view-mode toggles also keep their offsets). OFF → reset the shared grid/list
+    // states to the top whenever the category changes (fixes the cross-category scroll-leak bug).
+    val perCategoryGrid = remember { mutableStateMapOf<LiveKey, LazyGridState>() }
+    val perCategoryList = remember { mutableStateMapOf<LiveKey, LazyListState>() }
+    // NOTE: plain constructors, not remember*State() — these are created lazily inside getOrPut, so a
+    // @Composable/rememberSaveable call here would register slots conditionally and corrupt the slot table.
+    val effectiveGridState = if (rememberMovies) perCategoryGrid.getOrPut(selectedKey) { LazyGridState() } else gridState
+    val effectiveListState = if (rememberMovies) perCategoryList.getOrPut(selectedKey) { LazyListState() } else listState
+    LaunchedEffect(selectedKey, rememberMovies) {
+        if (!rememberMovies) { runCatching { gridState.scrollToItem(0) }; runCatching { listState.scrollToItem(0) } }
+    }
     val catListState = rememberLazyListState()
     var gridPaneFocused by remember { mutableStateOf(false) }
     var railPaneFocused by remember { mutableStateOf(false) }
@@ -176,7 +193,7 @@ fun MoviesScreen(
         val sel = selectedMovie
         val idx = if (sel != null) movies.itemSnapshotList.items.indexOfFirst { it.id == sel.id } else -1
         if (idx >= 0) {
-            runCatching { gridState.scrollToItem(idx) }
+            runCatching { effectiveGridState.scrollToItem(idx) }
             delay(60)
             runCatching { selFocus.requestFocus() }
         }
@@ -202,8 +219,8 @@ fun MoviesScreen(
         if (idx >= 0) {
             // Item survived — re-focus it directly.
             runCatching {
-                if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(idx)
-                else gridState.scrollToItem(idx)
+                if (viewMode == SettingsRepository.VodViewMode.LIST) effectiveListState.scrollToItem(idx)
+                else effectiveGridState.scrollToItem(idx)
             }
             withFrameNanos { }
             runCatching { contextFocus.requestFocus() }
@@ -217,8 +234,8 @@ fun MoviesScreen(
                 val neighbor = settled.getOrNull(contextMovieIndex.coerceAtLeast(0)) ?: settled.last()
                 val neighborIdx = items.indexOfFirst { it.id == neighbor.id }.coerceAtLeast(0)
                 runCatching {
-                    if (viewMode == SettingsRepository.VodViewMode.LIST) listState.scrollToItem(neighborIdx)
-                    else gridState.scrollToItem(neighborIdx)
+                    if (viewMode == SettingsRepository.VodViewMode.LIST) effectiveListState.scrollToItem(neighborIdx)
+                    else effectiveGridState.scrollToItem(neighborIdx)
                 }
                 // selFocus is bound to selectedMovie; reuse the generic firstItemFocus path only if that
                 // fails. Here we re-purpose contextFocus by re-binding it: re-request after a frame so the
@@ -272,11 +289,11 @@ fun MoviesScreen(
                         if (sel != null) {
                             val idx = movies.itemSnapshotList.items.indexOfFirst { it.id == sel.id }
                             if (idx >= 0) idx
-                            else if (viewMode == SettingsRepository.VodViewMode.GRID) gridState.firstVisibleItemIndex
-                            else listState.firstVisibleItemIndex
+                            else if (viewMode == SettingsRepository.VodViewMode.GRID) effectiveGridState.firstVisibleItemIndex
+                            else effectiveListState.firstVisibleItemIndex
                         } else {
-                            if (viewMode == SettingsRepository.VodViewMode.GRID) gridState.firstVisibleItemIndex
-                            else listState.firstVisibleItemIndex
+                            if (viewMode == SettingsRepository.VodViewMode.GRID) effectiveGridState.firstVisibleItemIndex
+                            else effectiveListState.firstVisibleItemIndex
                         }
                     },
                     onJumpToIndex = { idx ->
@@ -286,9 +303,9 @@ fun MoviesScreen(
                         scope.launch {
                             val item = movies.itemSnapshotList.items.getOrNull(idx)
                             if (viewMode == SettingsRepository.VodViewMode.GRID) {
-                                runCatching { gridState.scrollToItem(idx) }
+                                runCatching { effectiveGridState.scrollToItem(idx) }
                             } else {
-                                runCatching { listState.scrollToItem(idx) }
+                                runCatching { effectiveListState.scrollToItem(idx) }
                             }
                             withFrameNanos { }
                             if (item != null) {
@@ -354,7 +371,7 @@ fun MoviesScreen(
                 }
             } else if (viewMode == SettingsRepository.VodViewMode.LIST) {
                 LazyColumn(
-                    state = listState,
+                    state = effectiveListState,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(
@@ -384,7 +401,7 @@ fun MoviesScreen(
                 }
             } else {
                 LazyVerticalGrid(
-                    state = gridState,
+                    state = effectiveGridState,
                     columns = GridCells.Adaptive(minSize = 130.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),

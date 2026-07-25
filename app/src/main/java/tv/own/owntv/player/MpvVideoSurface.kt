@@ -68,11 +68,15 @@ private class MpvSurfaceView(context: Context, private val player: OwnTVPlayer) 
  */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
-fun MpvVideoSurface(player: OwnTVPlayer, modifier: Modifier = Modifier) {
+fun MpvVideoSurface(player: OwnTVPlayer, modifier: Modifier = Modifier, autoFrameRate: Boolean = true) {
     val aspect by player.videoAspect.collectAsStateWithLifecycle()
     val videoSize by player.videoSize.collectAsStateWithLifecycle()
     val zoom by player.zoomMode.collectAsStateWithLifecycle()
     val fps by player.videoFps.collectAsStateWithLifecycle()
+
+    // Auto frame rate, mechanism 2: window-level display-mode switch. Complements the per-surface
+    // setFrameRate() hint below, which is a no-op before Android 11 (e.g. Fire OS 7 boxes).
+    AutoFrameRateEffect(fps, autoFrameRate)
 
     BoxWithConstraints(modifier.background(Color.Black).clipToBounds(), contentAlignment = Alignment.Center) {
         val viewModifier = Modifier.videoZoom(zoom, aspect, videoSize, maxWidth, maxHeight)
@@ -124,7 +128,16 @@ fun MpvVideoSurface(player: OwnTVPlayer, modifier: Modifier = Modifier) {
  * watching full-screen/PiP.
  */
 @Composable
-fun ExoPreviewSurface(engine: LivePreviewEngine, modifier: Modifier = Modifier, keepAwake: Boolean = false) {
+fun ExoPreviewSurface(
+    engine: LivePreviewEngine,
+    modifier: Modifier = Modifier,
+    keepAwake: Boolean = false,
+    autoFrameRate: Boolean = false,
+) {
+    // Only the full-screen live player passes autoFrameRate = true — the in-pane preview must never
+    // reconfigure the display while the user is just scrolling the channel list.
+    val fps by engine.videoFps.collectAsStateWithLifecycle()
+    AutoFrameRateEffect(fps, autoFrameRate)
     BoxWithConstraints(modifier.background(Color.Black).clipToBounds(), contentAlignment = Alignment.Center) {
         val aspect by engine.videoAspect.collectAsStateWithLifecycle()
         val videoSize by engine.videoSize.collectAsStateWithLifecycle()
