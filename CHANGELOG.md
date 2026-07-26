@@ -2,6 +2,30 @@
 
 ## v4.1.5 — unreleased
 
+### 📺 Channel numbers — type a number on the remote to tune
+
+- **Type a channel number while watching Live TV full screen** and OwnTV tunes straight to it, the way a
+  set-top box does — no list, no guide, no holding CH+ through fifty channels. Works with the **number
+  row and the numpad** on your remote.
+- The number appears top-left as you type, with a **bar that drains over the two seconds** before it
+  submits, so you always know how long you have to add another digit. Press **OK** to tune immediately,
+  or **Back** to cancel. Five digits submit on their own.
+- Once it resolves, the same card becomes the **channel OSD** — logo, name and number — and stays up
+  until the new channel is actually on screen. If nothing matches you get **"Channel not found"** on that
+  card with the number you entered.
+- The number searched is your provider's own channel number, **from the playlist you're currently
+  watching**. Only if that playlist has no channel with the number do your other active Live playlists
+  get searched, so a number in your current playlist is never hijacked by another one.
+- **Hidden channels and hidden categories are skipped**, and renamed channels show your name. If a
+  playlist genuinely uses one number for several visible channels, the one from the list you opened wins;
+  if that's still not decisive you get **"Multiple channels"** rather than a guess.
+- **CH+/− keeps working right after a numeric jump**, even when you land far outside the list you opened.
+- Channel numbers are now shown in more places so you can learn the ones you use: the **channel-list
+  overlay** lists them before the channel name, and the player's channel card shows **#number** under the
+  name on every channel.
+- Numeric tuning is only active on a live channel in full screen — during **catch-up or timeshift** the
+  number keys are left alone.
+
 ### 💾 A proper backup file — `.own`, with your wallpaper inside and real encryption
 
 - Backups are now written as **`owntv-backup.own`** instead of a plain `owntv-backup.json`. It is one
@@ -214,6 +238,11 @@
 - **Fewer "failed on both engines" errors.** When mpv had to be torn down and playback handed to
   ExoPlayer, the handoff could grab a video surface that was already being replaced and die instantly
   on an item that played fine on the next try. The handoff now waits for the new surface.
+- **The resolution badge no longer under-reports wide-format streams.** The stream-info overlay worked out
+  the quality label from the picture **height** alone, so a channel broadcasting a wide 1920×800 picture was
+  labelled from its short edge and read **720p** even though it's a 1080p-class stream. The label is now
+  chosen by **total pixel count** against the standard resolutions (4K / 1440p / 1080p / 720p / 480p), so
+  cinema-format and letterboxed channels report the quality they actually deliver.
 
 ### 📺 Live TV
 

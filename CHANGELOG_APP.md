@@ -13,6 +13,7 @@
 
 ### ✨ New features
 
+- **📺 Channel numbers — type a number on the remote to tune in Live TV**
 - **💾 A proper backup file — `.own`, with your wallpaper inside and real encryption**
 - **🗂️ Browsing & lists — decide what Live TV, Movies and Series come back to**
 - **🌍 Metadata language — descriptions and posters in your language**
@@ -58,6 +59,7 @@
 - **A live channel opened from the Guide did not appear in History**
 - **Live preview played sound on surround channels with preview audio off**
 - **The Preview audio setting did not apply to a preview already playing**
+- **Resolution badge under-reported wide-format streams (1920×800 read as 720p)**
 
 ## v4.1.4 — 2026-07-24
 
