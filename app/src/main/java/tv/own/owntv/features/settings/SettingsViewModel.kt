@@ -221,7 +221,7 @@ class SettingsViewModel(
 
     /** Configured download folder ("" = app-specific storage). */
     val downloadRoot: StateFlow<String> = settings.downloadRoot
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
     fun setDownloadRoot(path: String) {
         viewModelScope.launch { settings.setDownloadRoot(path) }
@@ -250,35 +250,35 @@ class SettingsViewModel(
     }
 
     val hdrEnabled: StateFlow<Boolean> = settings.hdrEnabled
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     fun setHdrEnabled(enabled: Boolean) {
         viewModelScope.launch { settings.setHdrEnabled(enabled) }
     }
 
     val autoFrameRate: StateFlow<Boolean> = settings.autoFrameRate
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     fun setAutoFrameRate(enabled: Boolean) {
         viewModelScope.launch { settings.setAutoFrameRate(enabled) }
     }
 
     val surroundSound: StateFlow<Boolean> = settings.surroundSound
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     fun setSurroundSound(enabled: Boolean) {
         viewModelScope.launch { settings.setSurroundSound(enabled) }
     }
 
     val autoPlayNext: StateFlow<Boolean> = settings.autoPlayNext
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     fun setAutoPlayNext(enabled: Boolean) {
         viewModelScope.launch { settings.setAutoPlayNext(enabled) }
     }
 
     val catchupTimezone: StateFlow<SettingsRepository.CatchupTimezone> = settings.catchupTimezone
-        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.CatchupTimezone.MANUAL)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.CatchupTimezone.MANUAL)
 
     val catchupOffsetMinutes: StateFlow<Int> = settings.catchupOffsetMinutes
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
@@ -295,7 +295,7 @@ class SettingsViewModel(
     }
 
     val androidTvHomeEnabled: StateFlow<Boolean> = settings.androidTvHomeEnabled
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     fun setAndroidTvHomeEnabled(enabled: Boolean) {
         viewModelScope.launch {
@@ -326,24 +326,24 @@ class SettingsViewModel(
     }
 
     // --- Video Player Settings ---
-    val hwDecoding: StateFlow<Boolean> = settings.hwDecoding.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val hwDecoding: StateFlow<Boolean> = settings.hwDecoding.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setHwDecoding(enabled: Boolean) { viewModelScope.launch { settings.setHwDecoding(enabled) } }
 
-    val vodPreferExo: StateFlow<Boolean> = settings.vodPreferExo.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val vodPreferExo: StateFlow<Boolean> = settings.vodPreferExo.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setVodPreferExo(enabled: Boolean) { viewModelScope.launch { settings.setVodPreferExo(enabled) } }
 
-    val measuredStreamStats: StateFlow<Boolean> = settings.measuredStreamStats.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val measuredStreamStats: StateFlow<Boolean> = settings.measuredStreamStats.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setMeasuredStreamStats(enabled: Boolean) { viewModelScope.launch { settings.setMeasuredStreamStats(enabled) } }
 
-    val externalPlayer: StateFlow<Boolean> = settings.externalPlayer.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val externalPlayer: StateFlow<Boolean> = settings.externalPlayer.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setExternalPlayer(enabled: Boolean) { viewModelScope.launch { settings.setExternalPlayer(enabled) } }
 
     val updateCheckOnStart: StateFlow<Boolean> =
-        settings.updateCheckOnStart.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        settings.updateCheckOnStart.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setUpdateCheckOnStart(enabled: Boolean) { viewModelScope.launch { settings.setUpdateCheckOnStart(enabled) } }
 
     val resumeLastChannel: StateFlow<Boolean> =
-        settings.resumeLastChannel.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        settings.resumeLastChannel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setResumeLastChannel(enabled: Boolean) { viewModelScope.launch { settings.setResumeLastChannel(enabled) } }
 
     // Per-profile startup landing (v4.0.0): Home / Last channel / Live·Favorites.
@@ -351,40 +351,40 @@ class SettingsViewModel(
     val startupMode: StateFlow<tv.own.owntv.features.settings.data.StartupMode> =
         settings.activeProfileId
             .flatMapLatest { settings.startupMode(it) }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.features.settings.data.StartupMode.HOME)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.StartupMode.HOME)
     fun setStartupMode(mode: tv.own.owntv.features.settings.data.StartupMode) {
         viewModelScope.launch { settings.setStartupMode(settings.activeProfileId.first(), mode) }
     }
 
     val resumeMode: StateFlow<SettingsRepository.ResumeMode> =
-        settings.resumeMode.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.ResumeMode.ASK)
+        settings.resumeMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.ResumeMode.ASK)
     fun setResumeMode(name: String) {
         viewModelScope.launch {
             settings.setResumeMode(runCatching { SettingsRepository.ResumeMode.valueOf(name) }.getOrDefault(SettingsRepository.ResumeMode.ASK))
         }
     }
 
-    val defaultZoom: StateFlow<String> = settings.defaultZoom.stateIn(viewModelScope, SharingStarted.Eagerly, "FIT")
+    val defaultZoom: StateFlow<String> = settings.defaultZoom.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "FIT")
     fun setDefaultZoom(name: String) { viewModelScope.launch { settings.setDefaultZoom(name) } }
 
-    val subtitleScale: StateFlow<Float> = settings.subtitleScale.stateIn(viewModelScope, SharingStarted.Eagerly, 1.0f)
+    val subtitleScale: StateFlow<Float> = settings.subtitleScale.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 1.0f)
     fun setSubtitleScale(scale: Float) { viewModelScope.launch { settings.setSubtitleScale(scale) } }
 
-    val audioDelayMs: StateFlow<Int> = settings.audioDelayMs.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    val audioDelayMs: StateFlow<Int> = settings.audioDelayMs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
     fun setAudioDelayMs(ms: Int) { viewModelScope.launch { settings.setAudioDelayMs(ms) } }
 
     // --- CH+- key paging (browse panels): master toggle + per-direction skip counts ---
-    val chNavEnabled: StateFlow<Boolean> = settings.chNavEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val chNavEnabled: StateFlow<Boolean> = settings.chNavEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setChNavEnabled(enabled: Boolean) { viewModelScope.launch { settings.setChNavEnabled(enabled) } }
-    val chNavUpSkip: StateFlow<Int> = settings.chNavUpSkip.stateIn(viewModelScope, SharingStarted.Eagerly, ChNavLimits.DEFAULT_SKIP)
+    val chNavUpSkip: StateFlow<Int> = settings.chNavUpSkip.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ChNavLimits.DEFAULT_SKIP)
     fun setChNavUpSkip(n: Int) { viewModelScope.launch { settings.setChNavUpSkip(n) } }
-    val chNavDownSkip: StateFlow<Int> = settings.chNavDownSkip.stateIn(viewModelScope, SharingStarted.Eagerly, ChNavLimits.DEFAULT_SKIP)
+    val chNavDownSkip: StateFlow<Int> = settings.chNavDownSkip.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ChNavLimits.DEFAULT_SKIP)
     fun setChNavDownSkip(n: Int) { viewModelScope.launch { settings.setChNavDownSkip(n) } }
 
-    val preferredAudioLang: StateFlow<String> = settings.preferredAudioLang.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+    val preferredAudioLang: StateFlow<String> = settings.preferredAudioLang.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setPreferredAudioLang(lang: String) { viewModelScope.launch { settings.setPreferredAudioLang(lang) } }
 
-    val preferredSubLang: StateFlow<String> = settings.preferredSubLang.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+    val preferredSubLang: StateFlow<String> = settings.preferredSubLang.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setPreferredSubLang(lang: String) { viewModelScope.launch { settings.setPreferredSubLang(lang) } }
 
     // --- Personalization (theme / accent / UI zoom) ---
@@ -395,12 +395,12 @@ class SettingsViewModel(
     fun setAccent(accent: AccentColor) { viewModelScope.launch { settings.setAccent(accent) } }
 
     /** Custom accent hex ("#52DBC8"); blank = the preset is in effect. */
-    val customAccent: StateFlow<String> = settings.customAccent.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+    val customAccent: StateFlow<String> = settings.customAccent.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setCustomAccent(hex: String) { viewModelScope.launch { settings.setCustomAccent(hex) } }
 
     // --- Liquid Glass: background image + per-surface translucency ---
-    val bgImagePath: StateFlow<String> = settings.bgImagePath.stateIn(viewModelScope, SharingStarted.Eagerly, "")
-    val glassConfig: StateFlow<tv.own.owntv.ui.theme.GlassConfig> = settings.glassConfig.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.ui.theme.GlassConfig())
+    val bgImagePath: StateFlow<String> = settings.bgImagePath.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    val glassConfig: StateFlow<tv.own.owntv.ui.theme.GlassConfig> = settings.glassConfig.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.ui.theme.GlassConfig())
     fun setBgImagePath(path: String) { viewModelScope.launch { settings.setBgImagePath(path) } }
     fun setGlassScopeBitmask(bits: Int) { viewModelScope.launch { settings.setGlassScopeBitmask(bits) } }
     fun setGlassAlphaPercent(pct: Int) { viewModelScope.launch { settings.setGlassAlphaPercent(pct) } }
@@ -409,7 +409,7 @@ class SettingsViewModel(
     // --- Nav menu customization (v4.3.0) ---
     /** STATIC (default): user picks which icons to hide. DYNAMIC: icons adapt to the active playlist. */
     val navMenuMode: StateFlow<tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode> =
-        settings.navMenuMode.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.STATIC)
+        settings.navMenuMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.STATIC)
     fun setNavMenuMode(mode: tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode) {
         viewModelScope.launch { settings.setNavMenuMode(mode) }
     }
@@ -417,7 +417,7 @@ class SettingsViewModel(
     /** Browse sections the user has hidden (STATIC mode only). */
     val navMenuHidden: StateFlow<Set<tv.own.owntv.features.shell.MainSection>> = settings.navMenuHidden
         .map { raw -> raw.mapNotNull { name -> runCatching { tv.own.owntv.features.shell.MainSection.valueOf(name) }.getOrNull() }.toSet() }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
     fun setNavSectionHidden(section: tv.own.owntv.features.shell.MainSection, hidden: Boolean) {
         viewModelScope.launch {
             val current = navMenuHidden.first()
@@ -462,18 +462,18 @@ class SettingsViewModel(
         }
     }
 
-    val uiZoomPercent: StateFlow<Int> = settings.uiZoomPercent.stateIn(viewModelScope, SharingStarted.Eagerly, UiZoom.DEFAULT)
+    val uiZoomPercent: StateFlow<Int> = settings.uiZoomPercent.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiZoom.DEFAULT)
     fun setUiZoom(percent: Int) { viewModelScope.launch { settings.setUiZoomPercent(UiZoom.clamp(percent)) } }
 
     // Docked mini-player: size (% of screen width) and screen position.
     val miniPlayerSizePct: StateFlow<Int> =
-        settings.miniPlayerSizePct.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.player.MiniPlayerSize.DEFAULT)
+        settings.miniPlayerSizePct.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.player.MiniPlayerSize.DEFAULT)
     fun setMiniPlayerSize(percent: Int) { viewModelScope.launch { settings.setMiniPlayerSizePct(percent) } }
 
     val miniPlayerPosition: StateFlow<tv.own.owntv.player.MiniPlayerPosition> =
         settings.miniPlayerPosition
             .map { tv.own.owntv.player.MiniPlayerPosition.fromName(it) }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.player.MiniPlayerPosition.DEFAULT)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.player.MiniPlayerPosition.DEFAULT)
     fun setMiniPlayerPosition(position: tv.own.owntv.player.MiniPlayerPosition) {
         viewModelScope.launch { settings.setMiniPlayerPosition(position.name) }
     }
@@ -482,43 +482,43 @@ class SettingsViewModel(
     val liveLatencyMode: StateFlow<tv.own.owntv.features.settings.data.LiveLatency> =
         settings.liveLatencyMode
             .map { tv.own.owntv.features.settings.data.LiveLatency.fromName(it) }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.features.settings.data.LiveLatency.DEFAULT)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.LiveLatency.DEFAULT)
     fun setLiveLatencyMode(mode: tv.own.owntv.features.settings.data.LiveLatency) {
         viewModelScope.launch { settings.setLiveLatencyMode(mode.name) }
     }
 
     val liveLatencyCustomSecs: StateFlow<Int> =
-        settings.liveLatencyCustomSecs.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_DEFAULT)
+        settings.liveLatencyCustomSecs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_DEFAULT)
     fun setLiveLatencyCustomSecs(secs: Int) {
         viewModelScope.launch { settings.setLiveLatencyCustomSecs(secs) }
     }
 
     val animationLevel: StateFlow<tv.own.owntv.ui.theme.AnimationLevel> =
-        settings.animationLevel.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.ui.theme.AnimationLevel.FULL)
+        settings.animationLevel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.ui.theme.AnimationLevel.FULL)
     fun setAnimationLevel(level: tv.own.owntv.ui.theme.AnimationLevel) { viewModelScope.launch { settings.setAnimationLevel(level) } }
 
     // Weather chip: visibility toggle + manual location override (for VPN users).
     val weatherEnabled: StateFlow<Boolean> =
-        settings.weatherEnabled.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        settings.weatherEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setWeatherEnabled(enabled: Boolean) { viewModelScope.launch { settings.setWeatherEnabled(enabled) } }
     val weatherLocation: StateFlow<String> =
-        settings.weatherLocation.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+        settings.weatherLocation.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setWeatherLocation(location: String) { viewModelScope.launch { settings.setWeatherLocation(location) } }
     val weatherFahrenheit: StateFlow<Boolean> =
-        settings.weatherFahrenheit.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        settings.weatherFahrenheit.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setWeatherFahrenheit(fahrenheit: Boolean) { viewModelScope.launch { settings.setWeatherFahrenheit(fahrenheit) } }
 
     // Per-section "remember last item per category" (default OFF). OFF resets the browse list to the top
     // when switching category; ON keeps a separate scroll position per category. The Live toggle also
     // gates the last-focused-channel restore on re-entry.
     val rememberCategoryLive: StateFlow<Boolean> =
-        settings.rememberCategoryLive.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        settings.rememberCategoryLive.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     val rememberCategoryMovies: StateFlow<Boolean> =
-        settings.rememberCategoryMovies.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        settings.rememberCategoryMovies.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     val rememberCategorySeries: StateFlow<Boolean> =
-        settings.rememberCategorySeries.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+        settings.rememberCategorySeries.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
     fun setRememberCategoryLive(enabled: Boolean) {
         viewModelScope.launch { settings.setRememberCategoryLive(enabled) }
@@ -533,22 +533,22 @@ class SettingsViewModel(
     }
 
     val rememberLastLive: StateFlow<Boolean> =
-        settings.rememberLastLive.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        settings.rememberLastLive.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setRememberLastLive(enabled: Boolean) { viewModelScope.launch { settings.setRememberLastLive(enabled) } }
     val rememberLastMovies: StateFlow<Boolean> =
-        settings.rememberLastMovies.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        settings.rememberLastMovies.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setRememberLastMovies(enabled: Boolean) { viewModelScope.launch { settings.setRememberLastMovies(enabled) } }
     val rememberLastSeries: StateFlow<Boolean> =
-        settings.rememberLastSeries.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        settings.rememberLastSeries.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setRememberLastSeries(enabled: Boolean) { viewModelScope.launch { settings.setRememberLastSeries(enabled) } }
 
     /** Per-source playlist auto-refresh selection (Off / Startup / staleness threshold). */
     val playlistAutoRefresh: StateFlow<Map<Long, PlaylistAutoRefresh>> = settings.playlistAutoRefresh
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** Per-source EPG auto-refresh selection (Off / Startup / staleness threshold). */
     val epgAutoRefresh: StateFlow<Map<Long, EpgAutoRefresh>> = settings.epgAutoRefresh
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun setPlaylistAutoRefresh(sourceId: Long, mode: PlaylistAutoRefresh) {
         viewModelScope.launch { settings.setPlaylistAutoRefresh(sourceId, mode) }
@@ -879,16 +879,26 @@ class SettingsViewModel(
     private fun String.isLocalPlaylistPath(): Boolean =
         startsWith("/") || startsWith("file://") || startsWith("content://")
 
-    /** Re-sync an existing source through WorkManager so it can continue after leaving this screen. */
-    fun resync(source: SourceEntity) {
-        Log.d(TAG, "resync enqueue sourceId=${source.id}")
+    /**
+     * Re-sync an existing source through WorkManager so it can continue after leaving this screen.
+     *
+     * [clean] bypasses the catalog-shrink prune guard for this run only. That guard normally refuses
+     * to delete more than half a source's rows, because a truncated provider response looks exactly
+     * like a shrunken catalog — but it also means a provider that genuinely dropped a lot of titles
+     * leaves them stuck in the app forever, with no way out short of deleting and re-adding the
+     * playlist. This is that way out. It is *not* a delete-and-reimport: rows keep their ids, so
+     * favorites, history and resume positions on everything still listed survive untouched.
+     */
+    fun resync(source: SourceEntity, clean: Boolean = false) {
+        Log.d(TAG, "resync enqueue sourceId=${source.id} clean=$clean")
         viewModelScope.launch {
             val counts = importFinalizer.contentCounts(source.id)
             catalogSyncScheduler.enqueueSync(
                 source.id,
-                reason = "manual_resync",
+                reason = if (clean) "manual_clean_resync" else "manual_resync",
                 contentTypes = SyncContentTypes.enabledOf(source),
                 baseItemCount = counts.channels + counts.movies + counts.series,
+                forcePrune = clean,
             )
         }
     }
@@ -969,7 +979,7 @@ class SettingsViewModel(
     // --- Global proxy (Approach 1 — one app-wide HTTP proxy) ---
 
     val proxyConfig: StateFlow<tv.own.owntv.core.network.ProxyConfig> = settings.proxyConfig
-        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.network.ProxyConfig())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.network.ProxyConfig())
 
     fun saveProxy(enabled: Boolean, host: String, port: Int, username: String, password: String) {
         viewModelScope.launch { settings.saveProxy(enabled, host, port, username, password) }
@@ -1040,20 +1050,20 @@ class SettingsViewModel(
     // --- TMDB metadata enrichment (plan §4) — Phase M1 config + manual "look up title" test ---
 
     val metadataMode: StateFlow<tv.own.owntv.core.metadata.MetadataMode> =
-        settings.metadataMode.stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB)
+        settings.metadataMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB)
     fun setMetadataMode(mode: tv.own.owntv.core.metadata.MetadataMode) { viewModelScope.launch { settings.setMetadataMode(mode) } }
 
     val tmdbApiKey: StateFlow<String> =
-        settings.tmdbApiKey.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+        settings.tmdbApiKey.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setTmdbApiKey(key: String) { viewModelScope.launch { settings.setTmdbApiKey(key) } }
 
     val metadataServerUrl: StateFlow<String> =
-        settings.metadataServerUrl.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+        settings.metadataServerUrl.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setMetadataServerUrl(url: String) { viewModelScope.launch { settings.setMetadataServerUrl(url) } }
 
     /** TMDB content language ("" = TMDB default en-US, "auto" = device locale, else an ISO 639-1 code). */
     val metadataLanguage: StateFlow<String> =
-        settings.metadataLanguage.stateIn(viewModelScope, SharingStarted.Eagerly, "")
+        settings.metadataLanguage.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
     /**
      * Persist the metadata language and wipe the cached TMDB detail rows, which hold text in the *old*
@@ -1075,7 +1085,7 @@ class SettingsViewModel(
     val metadataTier: StateFlow<tv.own.owntv.core.metadata.MetadataConfig.Tier> =
         settings.metadataConfigFlow
             .map { it.tier }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER)
 
     sealed interface MetadataTestState {
         data object Idle : MetadataTestState

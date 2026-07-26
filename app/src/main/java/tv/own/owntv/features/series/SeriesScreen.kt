@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
@@ -1068,8 +1069,10 @@ private fun EpisodeView(
                             Spacer(Modifier.height(14.dp))
                         }
                         LazyColumn(state = epListState, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            items(visibleEpisodes.size) { index ->
-                                val ep = visibleEpisodes[index]
+                            // Keyed by episode id, not index: on a season switch the item at a
+                            // given position is a different episode, and index keys would carry
+                            // focus/row state across to it.
+                            itemsIndexed(visibleEpisodes, key = { _, ep -> ep.id }) { index, ep ->
                                 val prog = episodeProgress[ep.id]
                                 val completed = ep.id in completedIds
                                 val progressFraction = prog?.takeIf { !completed && it.durationMs > 0 }

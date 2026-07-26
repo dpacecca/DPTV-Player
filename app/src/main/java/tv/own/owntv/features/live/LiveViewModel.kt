@@ -138,7 +138,8 @@ class LiveViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     /** Channels pinned to mpv ("compatibility mode") — opened straight on mpv, bypassing ExoPlayer. Eagerly
-     *  collected so the routing decision in [ensurePlaying] always sees the current set. Keyed by stream URL. */
+     *  collected so the routing decision in [ensurePlaying] always sees the current set. Keyed by
+     *  [enginePinKey], with legacy stream-URL entries still honoured (P6). */
     val forceMpvUrls: StateFlow<Set<String>> = forceMpvStore.urls
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
@@ -251,12 +252,12 @@ class LiveViewModel(
                 }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     /** Customizations + resolved hidden-category ids, bundled so the list pipeline takes one flow. */
     private data class CustState(val cust: SectionCustomizations, val hiddenCats: Set<Long>)
     private val custResolved: StateFlow<CustState> = combine(custom, hiddenCategoryIds) { c, h -> CustState(c, h) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, CustState(SectionCustomizations(), emptySet()))
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CustState(SectionCustomizations(), emptySet()))
 
     val railItems: StateFlow<List<LiveRailItem>> = ctx
         .flatMapLatest { c ->
@@ -269,7 +270,7 @@ class LiveViewModel(
                 }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, defaultRail)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), defaultRail)
 
     val channels: Flow<PagingData<ChannelEntity>> = combine(
         _selected,
@@ -354,7 +355,7 @@ class LiveViewModel(
 
     val count: StateFlow<Int> = combine(_selected, ctx, hiddenCategoryIds) { key, c, hidden -> Triple(key, c, hidden) }
         .flatMapLatest { (key, c, hidden) -> countFlow(key, c, hidden).throttleLatest() } // C2: cap live COUNT re-runs during bulk sync
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     val favoriteIds: StateFlow<Set<Long>> = ctx
         .flatMapLatest { favoriteDao.observeFavoriteIds(it.profileId, MediaType.LIVE) }
@@ -370,7 +371,7 @@ class LiveViewModel(
             }
                 .map { ch -> cs.cust.itemNames[CustomizeKeys.channel(ch)]?.let { ch.copy(name = it) } ?: ch }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun select(key: LiveKey) {
         _selected.value = key
@@ -592,10 +593,26 @@ class LiveViewModel(
         timeshiftJob?.cancel(); tickJob?.cancel(); _timeshiftOffsetSec.value = null // normal live = not timeshifted
         // Self-learning routing: a channel the user pinned to mpv skips ExoPlayer entirely (no artifacts/silent
         // first), straight to the engine that plays it. Everyone else gets the fast ExoPlayer-first path.
-        val pinned = channel.streamUrl in forceMpvUrls.value
+        val pinned = isPinnedToMpv(channel)
         android.util.Log.i(ENGINE_TAG, "tune '${channel.name}' -> ${if (pinned) "mpv (pinned)" else "exoplayer"}")
         if (pinned) startOnMpv(channel) else startOnExo(channel)
         recordLiveHistory(channel)
+    }
+
+    /** P6 — the stable "compatibility mode" pin key for [channel], or null when the row has no
+     *  provider id (some hand-made M3U entries), where the stream URL stays the key. */
+    private fun mpvPinKey(channel: ChannelEntity): String? =
+        tv.own.owntv.core.player.enginePinKey(channel.sourceId, "LIVE", channel.remoteId)
+
+    /** Whether [channel] is pinned to mpv, honouring pins written by older builds under the stream
+     *  URL. A legacy hit is rewritten under the stable key so it survives the next Stalker resolve. */
+    private fun isPinnedToMpv(channel: ChannelEntity): Boolean {
+        val pins = forceMpvUrls.value
+        val key = mpvPinKey(channel)
+        if (key != null && key in pins) return true
+        if (channel.streamUrl !in pins) return false
+        if (key != null) viewModelScope.launch { forceMpvStore.migrateKey(channel.streamUrl, key) }
+        return true
     }
 
     private fun startOnExo(channel: ChannelEntity) {
@@ -660,7 +677,11 @@ class LiveViewModel(
         val goToMpv = _liveOnExo.value // on Exo now → switch to mpv; on mpv now → switch to Exo
         android.util.Log.i(ENGINE_TAG, "engine toggle '${channel.name}' -> ${if (goToMpv) "mpv" else "exoplayer"} (currentlyOnExo=${_liveOnExo.value})")
         viewModelScope.launch {
-            forceMpvStore.set(channel.streamUrl, goToMpv) // pin to mpv when choosing mpv; unpin when choosing Exo
+            // Pin to mpv when choosing mpv; unpin when choosing Exo. Write the stable key, and clear
+            // any legacy URL-keyed entry too so an un-pin can't leave the old one behind (P6).
+            val key = mpvPinKey(channel)
+            forceMpvStore.set(key ?: channel.streamUrl, goToMpv)
+            if (key != null) forceMpvStore.set(channel.streamUrl, false)
             if (goToMpv) {
                 fallbackToMpv(channel) // ExoPlayer → mpv now
             } else {                    // mpv → ExoPlayer now

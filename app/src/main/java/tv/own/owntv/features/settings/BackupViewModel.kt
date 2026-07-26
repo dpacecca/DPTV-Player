@@ -121,9 +121,11 @@ class BackupViewModel(
         viewModelScope.launch {
             _state.value = State.Working
             backup.import(file, sections, backupPassword).fold(
-                onSuccess = {
+                onSuccess = { summary ->
                     val note = if (backupPassword.isNullOrBlank()) " Re-enter any saved passwords in Sources/Proxy." else ""
-                    _state.value = State.Done("Restored $it items. Re-sync your sources to load content.$note")
+                    _state.value = State.Done(
+                        "Restored ${summary.items} items. Re-sync your sources to load content.$note${summary.skippedNote}",
+                    )
                 },
                 onFailure = {
                     if (it is BackupManager.WrongPasswordException) {

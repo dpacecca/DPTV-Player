@@ -138,12 +138,12 @@ class MovieViewModel(
                 }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     /** Customizations + resolved hidden-category ids, bundled so the list pipeline takes one flow. */
     private data class CustState(val cust: SectionCustomizations, val hiddenCats: Set<Long>)
     private val custResolved: StateFlow<CustState> = combine(custom, hiddenCategoryIds) { c, h -> CustState(c, h) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, CustState(SectionCustomizations(), emptySet()))
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CustState(SectionCustomizations(), emptySet()))
 
     /** List ordering for this section (Provider order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortMovies
@@ -206,7 +206,7 @@ class MovieViewModel(
             if (m == null) null
             else MovieMeta(m.id, runCatching { metadata.resolveMovie(m) }.getOrNull())
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** TMDB metadata tagged with the movie id it was resolved for, so the UI never shows stale meta on a
      *  different card during the debounce window. [cache] is null while resolving or on no match. */
@@ -214,7 +214,7 @@ class MovieViewModel(
 
     /** Source mode (plan §4.1) — the detail pane uses it to flip provider/TMDB field precedence. */
     val metadataMode: StateFlow<tv.own.owntv.core.metadata.MetadataMode> = settings.metadataMode
-        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB)
 
     // Observable so the player HUD's favorite toggle can reflect/act on the movie being played.
     private val _playingMovie = MutableStateFlow<MovieEntity?>(null)
@@ -245,7 +245,7 @@ class MovieViewModel(
                 }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, defaultRail)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), defaultRail)
 
     val movies: Flow<PagingData<MovieEntity>> = combine(
         _selected, ctx, _search.map { it.trim() }.debounce(300).distinctUntilChanged(), sortMode, _listRefresh,
@@ -273,7 +273,7 @@ class MovieViewModel(
 
     val count: StateFlow<Int> = combine(_selected, ctx, hiddenCategoryIds) { key, c, hidden -> Triple(key, c, hidden) }
         .flatMapLatest { (key, c, hidden) -> countFlow(key, c, hidden).throttleLatest() } // C2: cap live COUNT re-runs during bulk sync
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     val favoriteIds: StateFlow<Set<Long>> = ctx
         .flatMapLatest { favoriteDao.observeFavoriteIds(it.profileId, MediaType.MOVIE) }
@@ -285,13 +285,13 @@ class MovieViewModel(
     val movieProgress: StateFlow<Map<Long, PlaybackProgressEntity>> = ctx
         .flatMapLatest { c -> if (c.profileId < 0) flowOf(emptyList()) else progressDao.observeMovieProgress(c.profileId) }
         .map { list -> list.associateBy { it.itemId } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     val selectedProgress: StateFlow<PlaybackProgressEntity?> = combine(_selectedMovie, ctx) { m, c -> m to c }
         .flatMapLatest { (m, c) ->
             if (m == null) flowOf(null) else progressDao.observe(c.profileId, MediaType.MOVIE, m.id)
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun select(key: LiveKey) { _selected.value = key }
     fun setSearchQuery(query: String) { _search.value = query }
@@ -338,7 +338,7 @@ class MovieViewModel(
 
     /** The user's resume preference (Always / Ask / Never) — the screen drives the prompt. */
     val resumeMode: StateFlow<SettingsRepository.ResumeMode> = settings.resumeMode
-        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.ResumeMode.ASK)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.ResumeMode.ASK)
 
     /** Saved resume position for [movie] (0 when none) — used by the screen to decide the prompt. */
     suspend fun savedPositionMs(movie: MovieEntity): Long =
@@ -417,6 +417,8 @@ class MovieViewModel(
                 isLive = false,
                 startPositionMs = startPositionMs,
                 userAgent = sourceUa,
+                // P6 — engine pins key on this, not on playUrl (a Stalker playUrl is minted per play).
+                contentKey = tv.own.owntv.core.player.enginePinKey(movie.sourceId, "MOVIE", movie.remoteId),
             )
             _playingMovie.value = movie
             // Enable the player's OpenSubtitles search for this movie (subtitle plan §4). tmdbId is
@@ -452,7 +454,7 @@ class MovieViewModel(
     val downloadStates: StateFlow<Map<Long, DownloadEntity>> = ctx
         .flatMapLatest { c -> if (c.profileId < 0) flowOf(emptyList()) else downloadManager.observe(c.profileId) }
         .map { list -> list.filter { it.mediaType == MediaType.MOVIE }.associateBy { it.itemId } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun download(movie: MovieEntity) {
         viewModelScope.launch {

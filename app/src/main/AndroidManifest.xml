@@ -8,6 +8,13 @@
     <!-- In-app updates: hand the downloaded release APK to the system installer. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- Downloads keep transferring after the user leaves the app, as a foreground service with an
+         ongoing progress notification. POST_NOTIFICATIONS is only asked for by the system on API 33+;
+         if it is denied the service still runs, the notification is just not shown. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Android TV provider writes for Watch Next cards. -->
     <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" />
 
@@ -69,12 +76,18 @@
                 tools:node="remove" />
         </provider>
 
+        <!-- WorkManager's foreground-service host, typed for the download worker's data sync. -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
+
         <activity
             android:name=".MainActivity"
             android:banner="@drawable/tv_banner"
             android:exported="true"
             android:launchMode="singleTop"
-            android:theme="@style/Theme.OwnTV">
+            android:theme="@style/Theme.OwnTV.Starting">
             <!-- LEANBACK_LAUNCHER shows it on TV launchers; LAUNCHER shows it on phone/tablet/box home
                  screens (so non-TV devices get an app icon, not just an install). -->
             <intent-filter>

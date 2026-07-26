@@ -375,9 +375,12 @@ class SetupViewModel(
 
     private suspend fun doRestore(file: File, password: String?, onDone: () -> Unit) {
         backup.import(file, backupPassword = password).fold(
-            onSuccess = {
+            onSuccess = { summary ->
                 val note = if (password.isNullOrBlank()) " Re-enter any saved passwords afterwards." else ""
-                _state.value = ImportState.Success("Restored $it items. Re-sync your sources to load content.$note"); onDone()
+                _state.value = ImportState.Success(
+                    "Restored ${summary.items} items. Re-sync your sources to load content.$note${summary.skippedNote}",
+                )
+                onDone()
             },
             onFailure = {
                 if (it is BackupManager.WrongPasswordException) _state.value = ImportState.NeedPassword(file, retry = true)

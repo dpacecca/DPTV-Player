@@ -54,7 +54,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -132,6 +134,8 @@ fun SettingsScreen(
     var showGlassEffect by remember { mutableStateOf(false) }
     var showBrowsing by remember { mutableStateOf(false) }
     val browsingRowFocus = remember { FocusRequester() }
+    // U2 — background-image ingest copies a multi-megabyte file; it runs here, off the main thread.
+    val ingestScope = rememberCoroutineScope()
 
     // Batch 4 · Settings search + quick toggles. Empty query = normal grouped list; a non-blank
     // query swaps the list for flat results that carry their group context ("Playback › HDR").
@@ -783,9 +787,13 @@ fun SettingsScreen(
             onImageReceived = { file ->
                 // Same ingest as the local pick: copy into app-private storage, then drop the cache temp.
                 val destDir = File(context.filesDir, "backgrounds")
-                val path = runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
-                runCatching { file.delete() }
-                if (path != null) settingsVm.setBgImagePath(path)
+                ingestScope.launch {
+                    val path = withContext(Dispatchers.IO) {
+                        runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
+                            .also { runCatching { file.delete() } }
+                    }
+                    if (path != null) settingsVm.setBgImagePath(path)
+                }
                 showBgRemote = false
             },
             onDismiss = { showBgRemote = false },
@@ -800,8 +808,12 @@ fun SettingsScreen(
             onPick = { file ->
                 // Copy into app-private storage so USB unplug / source-folder delete can't blank it.
                 val destDir = File(context.filesDir, "backgrounds")
-                val path = runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
-                if (path != null) settingsVm.setBgImagePath(path)
+                ingestScope.launch {
+                    val path = withContext(Dispatchers.IO) {
+                        runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
+                    }
+                    if (path != null) settingsVm.setBgImagePath(path)
+                }
                 showBgPicker = false
             },
             onDismiss = { showBgPicker = false },

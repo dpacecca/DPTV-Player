@@ -58,6 +58,7 @@ import tv.own.owntv.features.shell.components.AvatarPickerDialog
 import tv.own.owntv.features.shell.components.CategoryRail
 import tv.own.owntv.features.shell.components.ContentPane
 import tv.own.owntv.features.shell.components.ExitDialog
+import tv.own.owntv.features.shell.components.IncompleteRestoreDialog
 import tv.own.owntv.features.shell.components.PlaylistPickerDialog
 import tv.own.owntv.features.shell.components.PreviewPane
 import tv.own.owntv.features.shell.components.RailCategory
@@ -759,6 +760,21 @@ fun OwnTVShell(
         // top-right status card shows "Checking… / up to date" (auto-hides) or stays with
         // Update now / Later when a release is newer. Hidden while in Settings (its manual
         // "Check for updates" dialog drives the same state machine) and during playback.
+        // Interrupted restore (B2): the marker outlives the process, so if it's still set at launch
+        // the last restore didn't complete. Acknowledging clears it.
+        val restoreSettings = koinInject<tv.own.owntv.features.settings.data.SettingsRepository>()
+        val incompleteRestore by restoreSettings.restoreInProgress.collectAsStateWithLifecycle(initialValue = null)
+        var restoreNoticeDismissed by remember { mutableStateOf(false) }
+        incompleteRestore?.takeIf { !restoreNoticeDismissed }?.let { description ->
+            IncompleteRestoreDialog(
+                description = description,
+                onDismiss = {
+                    restoreNoticeDismissed = true
+                    scope.launch { restoreSettings.clearRestoreMarker() }
+                },
+            )
+        }
+
         val updateManager = koinInject<UpdateManager>()
         var showStartupToast by remember { mutableStateOf(false) }
         var showChangelog by remember { mutableStateOf(false) }

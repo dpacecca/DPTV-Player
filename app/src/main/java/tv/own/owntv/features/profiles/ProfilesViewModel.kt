@@ -27,8 +27,11 @@ class ProfilesViewModel(
     private val openSubtitlesAccounts: tv.own.owntv.core.subtitles.OpenSubtitlesAccountManager,
 ) : ViewModel() {
 
+    // Eagerly on purpose: MainActivity's splash gate blocks the first frame on this list, so the
+    // query has to start when the ViewModel is built, not on first collection inside composition.
+    // Measured: WhileSubscribed here cost ~1.3s of cold start.
     val profiles: StateFlow<List<ProfileEntity>> = profileDao.observeAll()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** Make [profile] active (routes the app into the shell) once the preference write commits. */
     fun switchTo(profile: ProfileEntity, onSwitched: () -> Unit = {}) {

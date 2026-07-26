@@ -44,6 +44,138 @@
   matching mode, or ignores the request, playback is unaffected.
 - Turn it off if your TV or AV receiver re-handshakes HDMI noisily on every channel change.
 
+### ↕️ Span move — reorder a whole block of categories at once
+
+- **Settings → Customize Categories & Items** already let you long-press **Hide** to select a *span* of
+  categories and hide them all together. The same span selection now works on the four **move** buttons
+  (**⤒ ↑ ↓ ⤓**), so a block of categories can be reordered in one go instead of one row at a time.
+- **How it works**: long-press any arrow on the first category to anchor the span, then press an arrow on
+  the last category — every category in between moves as one block, keeping its internal order: **↑ / ↓**
+  step it one place, **⤒ / ⤓** send it straight to the top or bottom of the list.
+- The block **stays selected after the move**, so the arrows can be pressed repeatedly to walk it further
+  up or down. **Back**, the banner's **Cancel**, or switching section clears the selection.
+- Every category in the selected block is **tinted**, not just the anchor, so the span is visible at a
+  glance; the banner shows how many categories are selected and what the arrows will do.
+- A move that would run off either end is ignored, and while a *move* span is active the **Hide** button
+  goes back to a plain single toggle — the two span modes never fight over the same press.
+- Single-row **⤒ ↑ ↓ ⤓** behaviour is unchanged; internally a single move is now just a block of one.
+
+### 🛡️ Your library can no longer be wiped by a database problem
+
+- **A schema problem no longer deletes everything.** OwnTV used to be built to drop every table and
+  start empty if the database didn't look the way it expected — the failure mode behind the 4.1.0
+  upgrade reports. That is gone. The database is now opened on a background thread before the UI, and
+  if it can't be opened you get a **recovery screen** with **Try again** and a **Reset app data**
+  button behind a second confirmation. Nothing is erased unless you ask for it.
+- **A half-finished sync can no longer delete your catalog.** If a provider returns a short or broken
+  response, OwnTV now refuses to remove titles when that would delete more than half of a source, and
+  Stalker cross-checks the channel dump against the portal's own item count before removing anything.
+- **Xtream panels that are too big to answer in one request** ("response too large") fall back to
+  per-category loading, and now clean up correctly — only inside the categories that actually
+  answered, so uncategorised titles are never dropped.
+- **Provider reorders no longer rewrite your whole catalog.** A changed sort order is now detected on
+  its own, so a 170,000-item library updates the rows that moved instead of all of them.
+- **Backups are written safely.** A backup is written to a temporary file, flushed, and only then
+  swapped in — with the previous copy kept as a fallback that is used automatically if the newest file
+  is unreadable. An interrupted restore is no longer silent: OwnTV notices on the next start and tells
+  you.
+- **Manual ordering survives a re-sync.** Items you moved by hand in folders and Favorites are now
+  included in the pre-sync snapshot, like favorites, history and resume positions already were.
+- **A backup containing a source type this build doesn't know is skipped and reported**, instead of
+  being silently imported as an M3U playlist.
+
+### 📡 Live TV that recovers instead of giving up
+
+- **A single hiccup no longer kills a live channel.** The "stop immediately" shortcut meant for VOD was
+  firing on live streams too; live now goes through the full retry ladder.
+- **Reconnect keeps trying.** The retry ladder is 1.5 / 3 / 6 / 10 / 15 s and then holds at 15 s
+  instead of giving up after roughly half a minute, and it only resets once playback has actually held
+  for a minute.
+- **Outages recover by themselves.** If the network drops long enough for the channel to stop, OwnTV
+  now resumes it as soon as the connection is back — no matter how long it was gone.
+- **The error log stopped clearing itself** after an internal player reset, so playback problems can
+  actually be diagnosed.
+
+### 🎬 Playback fixes
+
+- **Audio-only content no longer shows a playback error.** Radio stations filed under Movies, music
+  videos and audio-only catch-up used to fail after 8 seconds with a "video could not be rendered"
+  message. Content that really does declare video and fails to show it still reports the error.
+- **"Compatibility mode" and the player-engine choice now stick on Stalker portals.** Those pins were
+  stored against the stream link, and Stalker issues a brand-new link every time you press play, so
+  the pin never matched again. They are now stored against the item itself. Existing pins on
+  Xtream/M3U are carried over automatically.
+- **Short clips no longer count as "watched" at position 0**, and content with an unknown length is
+  never marked finished.
+- **4K playback surface handling** and the mpv→ExoPlayer handoff now follow the same timing rules as
+  every other engine switch, which removes a class of black-screen-after-switch cases on Realtek boxes.
+- **Subtitle timing offset no longer freezes the UI** — the shifted subtitle file is generated in the
+  background and cached.
+
+### 📅 Guide & series
+
+- **New episodes now appear in a series you already opened.** Episodes were cached once and never
+  refreshed, so a show you had opened before would never gain a new episode. They now refresh every
+  6 hours and after a sync — and merging keeps your watch progress and resume positions on the right
+  episodes. A failed or empty fetch never empties a show that already has episodes.
+- **A truncated guide download is no longer trusted for 24 hours.** The downloaded guide is only
+  promoted to the cache once it has been fully parsed.
+- **Channels added while a guide sync was running now get their programmes**, instead of staying empty
+  until the next full guide download.
+- **Guides emptied by the 4.1.x upgrade refill themselves** once, automatically, on the next start.
+- **"Resync now" vs "Resync and remove missing titles"** — refreshing a source now asks which you want,
+  so removing titles a provider has dropped is a deliberate choice. Neither option deletes your data.
+- **The sync status pill** shows one line per running sync with real per-type counts, instead of
+  collapsing everything into a single line.
+
+### ⬇️ Downloads that survive the background
+
+- **Downloads keep running when you leave the app.** Transfers moved to a proper foreground background
+  worker with a notification, so Android no longer kills them the moment OwnTV goes to the background.
+- **Pause and resume no longer re-download what you already had** — the real file length is saved when
+  you pause, and a download interrupted by the app being killed resumes rather than restarting.
+- **Pulling out the USB/SD card mid-download fails the download** instead of quietly continuing into
+  internal storage.
+
+### 🚀 Startup & speed
+
+- **A branded splash instead of a blank window** on cold start, held until OwnTV actually knows which
+  screen to show (with a 4 s safety limit).
+- **Roughly 3× faster to a usable screen** on the developer's TV with a full catalog: shell 1879 →
+  557 ms, Home data 3171 → 1096 ms, guide preload 3072 → 1782 ms.
+- **A fresh install is no longer slow for the first few days.** Android normally leaves most of an
+  app's code in a slow form and only speeds it up gradually as it learns what you use — which hits
+  sideloaded apps like OwnTV hardest, since every new release starts that over. The APK now ships a
+  recorded startup profile so the code that runs at launch is compiled ahead of time, from the very
+  first launch after installing.
+- **The database is no longer repaired on every single open** — it is checked first and only repaired
+  when something is actually missing.
+- **Settings reads no longer wake every screen** on each preference write, and around 95 background
+  data streams now stop when nothing is watching them.
+- **The image cache is sized to the free space available** (up to 250 MB, 5% of free space, never below
+  32 MB) instead of a fixed guess.
+- **Browsing storage folders and importing a background image no longer block the UI.**
+
+### Internal
+
+- **Tests and lint now gate CI.** Pull requests run unit tests and Android Lint before anything is
+  built, lint fails the build on an error (0 errors, from 122), and reports are uploaded on failure.
+  APKs are still only built for `main` and tags.
+- **New tests** for the database migration chain (every exported schema version migrates to the current
+  one; the repair path restores every guaranteed index and search table), for backup merge/restore id
+  remapping, and for the re-linking that keeps favorites, history and resume positions attached across
+  a sync.
+- **Release notes now come from `CHANGELOG_APP.md`, not `CHANGELOG.md`.** The tag build in
+  `android.yml` was publishing the newest **full** `CHANGELOG.md` section as the GitHub release body —
+  and GitHub's auto-generated commit list on top of it — which is what the in-app update dialog shows.
+  It now extracts that tag's short, bullet-only section from `CHANGELOG_APP.md` and no longer appends
+  the generated notes. `CHANGELOG.md` stays what it was meant to be: the detailed changelog developers
+  and contributors read on GitHub by hand.
+- `release-notes.yml` did already do this, but never ran for tag builds: a release published with
+  `GITHUB_TOKEN` doesn't trigger other workflows. It remains as the fallback for releases published by
+  hand from the GitHub UI. Both jobs now match the version header as a whole word, so a header without
+  a trailing date (`## v4.1.5`) is found too.
+
 ## v4.1.4 — 2026-07-24
 
 ### 🧊 Liquid Glass — frosted translucent interface over your own background photo

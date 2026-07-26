@@ -79,6 +79,9 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val hiddenChannels by vm.hiddenChannels.collectAsStateWithLifecycle()
     val hideNewCategories by vm.hideNewCategories.collectAsStateWithLifecycle()
     val rangeAnchorKey by vm.rangeAnchorKey.collectAsStateWithLifecycle()
+    val rangeMode by vm.rangeMode.collectAsStateWithLifecycle()
+    val rangeEndKey by vm.rangeEndKey.collectAsStateWithLifecycle()
+    val rangeSelectedKeys by vm.rangeSelectedKeys.collectAsStateWithLifecycle()
     val pinLock by vm.pinLock.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
     var renaming by remember { mutableStateOf<CustomizeCatRow?>(null) }
@@ -251,7 +254,14 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Span selection started. Press Show/Hide on the end item to select the span.",
+                    when {
+                        rangeMode == CustomizeViewModel.RangeMode.HIDE ->
+                            "Span selection started. Press Show/Hide on the end item to select the span."
+                        rangeEndKey == null ->
+                            "Move span started. Press ⤒ ↑ ↓ ⤓ on the end item to move the whole span."
+                        else ->
+                            "${rangeSelectedKeys.size} categories selected. Keep pressing ⤒ ↑ ↓ ⤓ to move them together."
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onPrimaryContainer,
                     modifier = Modifier.weight(1f),
@@ -342,16 +352,19 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 }
             }
             itemsIndexed(rows, key = { _, r -> r.key }) { index, row ->
+                val inMoveRange = rangeAnchorKey != null && rangeMode == CustomizeViewModel.RangeMode.MOVE
                 CategoryRow(
                     row = row,
-                    inRangeMode = rangeAnchorKey != null,
-                    isAnchor = row.key == rangeAnchorKey,
+                    inRangeMode = rangeAnchorKey != null && rangeMode == CustomizeViewModel.RangeMode.HIDE,
+                    isInSpan = row.key in rangeSelectedKeys,
                     focusRequester = rowFocusers.getOrNull(index),
                     onRowFocused = { focusedCatIndex = index },
-                    onMoveUp = { vm.move(row, up = true) },
-                    onMoveDown = { vm.move(row, up = false) },
-                    onMoveTop = { vm.moveToEdge(row, top = true) },
-                    onMoveBottom = { vm.moveToEdge(row, top = false) },
+                    // While a move span is active every arrow acts on the whole block, not this row.
+                    onMoveUp = { if (inMoveRange) vm.moveRange(row, CustomizeViewModel.MoveKind.UP) else vm.move(row, up = true) },
+                    onMoveDown = { if (inMoveRange) vm.moveRange(row, CustomizeViewModel.MoveKind.DOWN) else vm.move(row, up = false) },
+                    onMoveTop = { if (inMoveRange) vm.moveRange(row, CustomizeViewModel.MoveKind.TOP) else vm.moveToEdge(row, top = true) },
+                    onMoveBottom = { if (inMoveRange) vm.moveRange(row, CustomizeViewModel.MoveKind.BOTTOM) else vm.moveToEdge(row, top = false) },
+                    onMoveLongPress = { vm.beginMoveRange(row) },
                     onRename = { renaming = row },
                     onToggleHidden = { vm.setCategoryHidden(row, !row.hidden) },
                     onHideLongPress = { vm.beginRange(row) },
@@ -503,13 +516,14 @@ private fun SectionChip(label: String, selected: Boolean, modifier: Modifier = M
 private fun CategoryRow(
     row: CustomizeCatRow,
     inRangeMode: Boolean,
-    isAnchor: Boolean,
+    isInSpan: Boolean,
     focusRequester: FocusRequester?,
     onRowFocused: () -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onMoveTop: () -> Unit,
     onMoveBottom: () -> Unit,
+    onMoveLongPress: () -> Unit,
     onRename: () -> Unit,
     onToggleHidden: () -> Unit,
     onHideLongPress: () -> Unit,
@@ -520,8 +534,8 @@ private fun CategoryRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            // Tint the anchor while a range is in progress so its starting point is obvious.
-            .background(if (isAnchor) colors.primaryContainer else colors.surfaceContainerHigh)
+            // Tint every row in the span while a range is in progress, so the selected block is obvious.
+            .background(if (isInSpan) colors.primaryContainer else colors.surfaceContainerHigh)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             // CH+- paging: a focusGroup with a FocusRequester so a jump lands focus on this row's first
             // button; report up whenever any of the row's buttons gains focus (the paging anchor).
@@ -559,13 +573,15 @@ private fun CategoryRow(
             }
         }
         Spacer(Modifier.width(10.dp))
-        OwnTVButton("⤒", onClick = onMoveTop, style = OwnTVButtonStyle.SECONDARY)
+        // Long-pressing any arrow anchors a move span; pressing an arrow on a second row picks the
+        // span end and moves the whole block, and keeps it selected for further steps.
+        OwnTVButton("⤒", onClick = onMoveTop, onLongClick = onMoveLongPress, style = OwnTVButtonStyle.SECONDARY)
         Spacer(Modifier.width(6.dp))
-        OwnTVButton("↑", onClick = onMoveUp, style = OwnTVButtonStyle.SECONDARY)
+        OwnTVButton("↑", onClick = onMoveUp, onLongClick = onMoveLongPress, style = OwnTVButtonStyle.SECONDARY)
         Spacer(Modifier.width(6.dp))
-        OwnTVButton("↓", onClick = onMoveDown, style = OwnTVButtonStyle.SECONDARY)
+        OwnTVButton("↓", onClick = onMoveDown, onLongClick = onMoveLongPress, style = OwnTVButtonStyle.SECONDARY)
         Spacer(Modifier.width(6.dp))
-        OwnTVButton("⤓", onClick = onMoveBottom, style = OwnTVButtonStyle.SECONDARY)
+        OwnTVButton("⤓", onClick = onMoveBottom, onLongClick = onMoveLongPress, style = OwnTVButtonStyle.SECONDARY)
         Spacer(Modifier.width(6.dp))
         OwnTVButton("Rename", onClick = onRename, style = OwnTVButtonStyle.SECONDARY)
         Spacer(Modifier.width(6.dp))

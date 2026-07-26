@@ -220,7 +220,7 @@ class HomeViewModel(
 
     val isPreviewActive: StateFlow<Boolean> = combine(_heroFocused, _previewEnabled, _uiState) { focused, enabled, state ->
         focused && enabled && state.heroItems.isNotEmpty()
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     fun setPreviewEnabled(enabled: Boolean) {
         _previewEnabled.value = enabled

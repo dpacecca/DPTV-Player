@@ -16,11 +16,33 @@
 - **🗂️ Browsing & lists — decide what Live TV, Movies and Series come back to**
 - **🌍 Metadata language — descriptions and posters in your language**
 - **🎞️ Auto frame rate — match the TV's refresh rate to the video**
+- **↕️ Span move — reorder a whole block of categories at once**
+- **🛡️ Database recovery screen — Try again or reset, instead of silent data loss**
+- **🔁 Resync now vs Resync and remove missing titles**
+- **⬇️ Downloads keep running in the background, with a notification**
+- **🚀 Faster cold start with a branded splash screen**
+- **⚡ Fast from the first launch after install, not after a few days**
 
 ### 🐛 Fixes
 
 - **Switching category kept the previous category's scroll position**
 - **Auto frame rate did nothing on Android 10 and older devices (Fire OS 7)**
+- **A schema problem could wipe your whole library**
+- **A half-finished sync could delete your catalog**
+- **A provider reorder rewrote the entire catalog**
+- **Manual ordering was lost after a re-sync**
+- **Interrupted restores and unreadable backups were silent**
+- **Live TV gave up after a single hiccup, and stopped retrying too early**
+- **Live TV did not resume by itself after a network outage**
+- **Audio-only content showed a false playback error**
+- **Compatibility mode and the engine choice did not stick on Stalker portals**
+- **Short clips were marked watched at position 0**
+- **New episodes never appeared in a series you had already opened**
+- **A truncated guide download was trusted for 24 hours**
+- **Channels added during a guide sync never got programmes**
+- **Paused downloads re-downloaded data they already had**
+- **A removed USB/SD card made a download continue into internal storage**
+- **Subtitle timing offset froze the interface**
 
 ## v4.1.4 — 2026-07-24
 

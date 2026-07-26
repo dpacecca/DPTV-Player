@@ -129,7 +129,7 @@ class ShellViewModel(
 
     /** Whether the device currently has internet (drives the offline banner). */
     val isOnline: StateFlow<Boolean> = connectivity.isOnline
-        .stateIn(viewModelScope, SharingStarted.Eagerly, connectivity.isOnlineNow())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), connectivity.isOnlineNow())
 
     /**
      * Staleness-based auto-refresh check.
@@ -193,7 +193,44 @@ class ShellViewModel(
                     }
                 }
             }
+            if (includeStartup) refillGuideEmptiedByMigration()
         }
+    }
+
+    /**
+     * Audit D4 — refill a guide that `MIGRATION_8_9` emptied.
+     *
+     * That migration deletes every `epg_programmes` row and nothing schedules a re-fetch, so an
+     * upgrading user's Guide is simply blank until they think to re-sync EPG by hand. Runs **once per
+     * install** (so it also catches users who passed through 8→9 in an earlier version) and only for
+     * sources that had previously synced successfully but now hold zero programmes — that is the
+     * exact signature of the wipe.
+     *
+     * EPG is opt-in by design, and this respects that: adding an EPG source *is* the opt-in, and a
+     * source the user has never synced is left alone rather than silently downloaded. The enqueue is
+     * an ordinary [EpgSyncScheduler] job, so it shows the standard EPG-syncing pill.
+     *
+     * The one-shot flag is read first and the DB is touched only when it is unset, so this adds no
+     * work to a normal cold start.
+     */
+    private suspend fun refillGuideEmptiedByMigration() {
+        if (settings.epgRefillChecked.first()) return
+        runCatching {
+            val sources = epgSourceStore.getAll().filter { (it.lastSyncAt ?: 0L) > 0L }
+            for (src in sources) {
+                if (epgDao.countForSources(listOf(src.id)) > 0) continue
+                Log.i(TAG, "epgRefill sourceId=${src.id} — synced before but guide is empty, re-fetching")
+                epgSyncScheduler.enqueueSync(
+                    src.id,
+                    reason = "migration_refill",
+                    baseProgrammes = 0,
+                    policy = ExistingWorkPolicy.KEEP,
+                )
+            }
+        }.onFailure { Log.w(TAG, "epgRefill check failed", it) }
+        // Marked regardless: a failed check must not retry on every launch forever, and a failed
+        // *sync* is already retried by the scheduler's own policy.
+        settings.markEpgRefillChecked()
     }
 
     /**
@@ -251,12 +288,12 @@ class ShellViewModel(
     /** The active profile's avatar (so the sidebar reflects profile edits, not a separate setting). */
     val avatarId: StateFlow<Int> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf(0) else profileDao.observeById(pid).map { it?.avatarId ?: 0 } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     /** The active profile's name, shown in the sidebar profile card. */
     val profileName: StateFlow<String> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf("") else profileDao.observeById(pid).map { it?.name ?: "" } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
     /** The active (default) source's name for the sidebar; "No source" when the profile has none. */
     val sourceSummary: StateFlow<String> = settings.activeProfileId
@@ -267,16 +304,16 @@ class ShellViewModel(
                 else -> (sources.firstOrNull { it.id == defaultId } ?: sources.first()).name
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "No source")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "No source")
 
     /** The active profile's playlists, for the top-bar quick switcher (empty when the profile has none). */
     val playlists: StateFlow<List<tv.own.owntv.core.database.entity.SourceEntity>> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf(emptyList()) else sourceRepository.observeSources(pid) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** The chosen active-playlist filter: -1 = All playlists (merged view), else a single playlist id. */
     val activePlaylistId: StateFlow<Long> = settings.defaultSourceId
-        .stateIn(viewModelScope, SharingStarted.Eagerly, -1L)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), -1L)
 
     /** Switch the active-playlist filter from the top-bar picker. Persists (survives restart). */
     fun setActivePlaylist(id: Long) {
@@ -294,11 +331,11 @@ class ShellViewModel(
         }.flatMapLatest { (online, enabled, loc) ->
             if (!online || !enabled) flowOf(null as WeatherInfo?)
             else flow { emit(weatherRepository.get(loc)) }
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, null as WeatherInfo?)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null as WeatherInfo?)
 
     /** °F display for the weather chip (default °C). */
     val weatherFahrenheit: StateFlow<Boolean> = settings.weatherFahrenheit
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     /** null = still loading; < 0 = first run (show setup wizard); >= 0 = active profile (show shell). */
     val activeProfileId: StateFlow<Long?> = settings.activeProfileId
@@ -325,7 +362,7 @@ class ShellViewModel(
      * table write — so icons update on their own right after each sync, with no migration or probe call.
      */
     val visibleSections: StateFlow<Set<MainSection>> = visibleSectionsFlow()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, MainSection.allBrowse)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MainSection.allBrowse)
 
     private fun visibleSectionsFlow(): Flow<Set<MainSection>> = settings.navMenuMode
         .flatMapLatest { mode ->

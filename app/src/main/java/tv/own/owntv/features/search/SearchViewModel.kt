@@ -288,7 +288,13 @@ class SearchViewModel(
                 externalPlayerLauncher.launch(url, movie.name)
                 return@launch
             }
-            player.play(url, title = movie.name, year = movie.year?.toString(), isLive = false, userAgent = source?.userAgent)
+            player.play(
+                url, title = movie.name, year = movie.year?.toString(), isLive = false,
+                userAgent = source?.userAgent,
+                // P6 — same stable engine-pin identity MovieViewModel uses, so a pin made in one
+                // screen applies in the other.
+                contentKey = tv.own.owntv.core.player.enginePinKey(movie.sourceId, "MOVIE", movie.remoteId),
+            )
         }
         record(MediaType.MOVIE, movie.id)
         rememberCurrentQuery()

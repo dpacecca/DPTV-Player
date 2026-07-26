@@ -71,7 +71,7 @@ class CustomizeViewModel(
             if (c.profileId < 0) flowOf(PinLock(loaded = true))
             else settings.customizePin(c.profileId).map { PinLock(loaded = true, pin = it) }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, PinLock())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PinLock())
 
     /** Set (or with null: remove) the PIN lock for this profile. */
     fun setPin(pin: String?) {
@@ -83,15 +83,29 @@ class CustomizeViewModel(
     private val _section = MutableStateFlow(MediaType.LIVE)
     val section: StateFlow<MediaType> = _section.asStateFlow()
 
-    // Range select: key of the anchor category (first long-pressed Hide button), or null when no
+    /** What a span selection in progress will do once its end is picked. */
+    enum class RangeMode { HIDE, MOVE }
+
+    /** Which way a move (single row or whole span) shifts the affected rows. */
+    enum class MoveKind { UP, DOWN, TOP, BOTTOM }
+
+    // Range select: key of the anchor category (the long-pressed Hide/move button), or null when no
     // range is in progress. The UI highlights the anchor and shows a hint while this is set.
     private val _rangeAnchorKey = MutableStateFlow<String?>(null)
     val rangeAnchorKey: StateFlow<String?> = _rangeAnchorKey.asStateFlow()
 
+    private val _rangeMode = MutableStateFlow(RangeMode.HIDE)
+    val rangeMode: StateFlow<RangeMode> = _rangeMode.asStateFlow()
+
+    // MOVE spans only: once the end has been picked the block stays selected, so the user can keep
+    // pressing ↑/↓/⤒/⤓ to walk the whole block instead of re-selecting it for every step.
+    private val _rangeEndKey = MutableStateFlow<String?>(null)
+    val rangeEndKey: StateFlow<String?> = _rangeEndKey.asStateFlow()
+
     fun selectSection(type: MediaType) {
         _section.value = type
         // A pending range belongs to the section it was started in — switching sections cancels it.
-        _rangeAnchorKey.value = null
+        cancelRange()
     }
 
     /** Categories of the selected section, in their customized order, including hidden ones. */
@@ -122,7 +136,7 @@ class CustomizeViewModel(
                 }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Hidden items of the selected section (key → label) so they can be unhidden from here. */
     val hiddenChannels: StateFlow<Map<String, String>> = combine(ctx, _section) { c, s -> c to s }
@@ -130,13 +144,13 @@ class CustomizeViewModel(
             if (c.profileId < 0) flowOf(emptyMap())
             else customize.observe(c.profileId, s).map { it.hiddenItems }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** Whether a category this provider adds on a future resync should be hidden automatically, for
      *  this profile — same across Live/Movies/Series, so it doesn't follow [_section]. */
     val hideNewCategories: StateFlow<Boolean> = ctx
         .flatMapLatest { c -> if (c.profileId < 0) flowOf(false) else settings.hideNewCategoriesDefault(c.profileId) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     fun setHideNewCategories(hidden: Boolean) {
         val pid = ctx.value.profileId
@@ -158,27 +172,36 @@ class CustomizeViewModel(
     }
 
     /** Moves a category one step up/down and persists the full resulting order. */
-    fun move(row: CustomizeCatRow, up: Boolean) {
-        val current = rows.value
-        val index = current.indexOfFirst { it.key == row.key }
-        val target = if (up) index - 1 else index + 1
-        if (index < 0 || target < 0 || target > current.lastIndex) return
-        moveTo(current, index, target)
-    }
+    fun move(row: CustomizeCatRow, up: Boolean) =
+        moveSingle(row, if (up) MoveKind.UP else MoveKind.DOWN)
 
     /** Jumps a category straight to the top or bottom of the list and persists the new order. */
-    fun moveToEdge(row: CustomizeCatRow, top: Boolean) {
-        val current = rows.value
-        val index = current.indexOfFirst { it.key == row.key }
-        val target = if (top) 0 else current.lastIndex
-        if (index < 0 || index == target) return
-        moveTo(current, index, target)
+    fun moveToEdge(row: CustomizeCatRow, top: Boolean) =
+        moveSingle(row, if (top) MoveKind.TOP else MoveKind.BOTTOM)
+
+    private fun moveSingle(row: CustomizeCatRow, kind: MoveKind) {
+        val index = rows.value.indexOfFirst { it.key == row.key }
+        if (index < 0) return
+        moveBlock(index, index, kind)
     }
 
-    private fun moveTo(current: List<CustomizeCatRow>, index: Int, target: Int) {
+    /**
+     * Shifts the contiguous block of rows [lo]..[hi] as one unit and persists the resulting order.
+     * The block keeps its internal order; a move that would run off either end is a no-op.
+     */
+    private fun moveBlock(lo: Int, hi: Int, kind: MoveKind) {
+        val current = rows.value
+        if (lo < 0 || hi > current.lastIndex || lo > hi) return
+        val target = when (kind) {
+            MoveKind.UP -> if (lo == 0) return else lo - 1
+            MoveKind.DOWN -> if (hi == current.lastIndex) return else lo + 1
+            MoveKind.TOP -> if (lo == 0) return else 0
+            MoveKind.BOTTOM -> if (hi == current.lastIndex) return else current.size - (hi - lo + 1)
+        }
+        val block = current.subList(lo, hi + 1).toList()
         val reordered = current.toMutableList().apply {
-            val item = removeAt(index)
-            add(target, item)
+            subList(lo, hi + 1).clear()
+            addAll(target, block)
         }
         viewModelScope.launch {
             customize.setCategoryOrder(ctx.value.profileId, _section.value, reordered.map { it.key })
@@ -191,15 +214,27 @@ class CustomizeViewModel(
         }
     }
 
-    // --- range (span) select: long-press a Hide button to anchor, click another to set the end ---
+    // --- range (span) select: long-press a Hide or move button to anchor, press another to set the
+    // end. A HIDE span then hides/shows the whole block; a MOVE span walks it up/down/top/bottom. ---
 
-    /** Begins a range at [row] (its Hide button was long-pressed). */
+    /** Begins a hide/show range at [row] (its Hide button was long-pressed). */
     fun beginRange(row: CustomizeCatRow) {
+        _rangeMode.value = RangeMode.HIDE
+        _rangeEndKey.value = null
+        _rangeAnchorKey.value = row.key
+    }
+
+    /** Begins a move range at [row] (one of its ⤒ ↑ ↓ ⤓ buttons was long-pressed). */
+    fun beginMoveRange(row: CustomizeCatRow) {
+        _rangeMode.value = RangeMode.MOVE
+        _rangeEndKey.value = null
         _rangeAnchorKey.value = row.key
     }
 
     fun cancelRange() {
         _rangeAnchorKey.value = null
+        _rangeEndKey.value = null
+        _rangeMode.value = RangeMode.HIDE
     }
 
     /**
@@ -223,6 +258,37 @@ class CustomizeViewModel(
         viewModelScope.launch {
             customize.setCategoriesHidden(ctx.value.profileId, _section.value, keys, hidden)
         }
-        _rangeAnchorKey.value = null
+        cancelRange()
     }
+
+    /**
+     * Moves the whole selected block one step [kind]. The first press after anchoring uses [endRow]
+     * as the span end and locks the block in; later presses reuse that block, so ↑/↓/⤒/⤓ can be
+     * pressed repeatedly to walk it. The selection survives the move — Back or Cancel clears it.
+     */
+    fun moveRange(endRow: CustomizeCatRow, kind: MoveKind) {
+        val anchorKey = _rangeAnchorKey.value ?: return
+        val endKey = _rangeEndKey.value ?: endRow.key
+        val current = rows.value
+        val anchorIndex = current.indexOfFirst { it.key == anchorKey }
+        val endIndex = current.indexOfFirst { it.key == endKey }
+        if (anchorIndex < 0 || endIndex < 0) return
+        _rangeEndKey.value = endKey
+        moveBlock(minOf(anchorIndex, endIndex), maxOf(anchorIndex, endIndex), kind)
+    }
+
+    /**
+     * Keys of every row in the span currently selected — the anchor alone until an end is picked.
+     * Drives the block highlight; empty when no range is in progress.
+     */
+    val rangeSelectedKeys: StateFlow<Set<String>> =
+        combine(_rangeAnchorKey, _rangeEndKey, rows) { anchorKey, endKey, current ->
+            if (anchorKey == null) return@combine emptySet()
+            val anchorIndex = current.indexOfFirst { it.key == anchorKey }
+            if (anchorIndex < 0) return@combine emptySet()
+            val endIndex = endKey?.let { k -> current.indexOfFirst { it.key == k } } ?: anchorIndex
+            if (endIndex < 0) return@combine setOf(anchorKey)
+            current.subList(minOf(anchorIndex, endIndex), maxOf(anchorIndex, endIndex) + 1)
+                .mapTo(mutableSetOf()) { it.key }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 }

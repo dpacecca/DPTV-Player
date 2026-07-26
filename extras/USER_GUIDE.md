@@ -48,6 +48,11 @@ submission must include it. *Core idea from a community suggestion (PR #66 by @z
   changed.
 - **Re-syncs are incremental**: refreshing a playlist only writes what actually changed on the
   provider, so re-syncing big playlists is much faster.
+- **Resync asks what you want**: choosing to refresh a playlist offers **Resync now** (add and update,
+  keep everything you already have) or **Resync and remove missing titles** (also drop titles the
+  provider no longer lists — that run only). Neither one re-imports from scratch, and neither touches
+  your favourites, history, resume positions or manual ordering. If a provider answers badly,
+  OwnTV refuses to remove titles rather than emptying your library.
 - **M3U playlists can carry movies and series too** — tag entries in the playlist and OwnTV sorts
   them into the right tab:
   - `type="vod"`, `type="movie"` or `tvg-type="movie"` → the **Movies** grid.
@@ -384,6 +389,11 @@ or **narrow the whole app to just one**.
   series**, or a **single episode**, a small **status strip** (Downloading / Queued / Paused, with a
   progress bar) appears at the top of that item's **poster panel**. It only shows while a download is in
   flight and disappears once it finishes.
+- 📍 **Downloads keep going when you leave the app.** A transfer runs in the background with a
+  notification, one at a time, and survives OwnTV being closed or killed. Pausing saves exactly what has
+  been written, so resuming picks up from there instead of starting over.
+- ⚠️ If the **USB stick or SD card you are downloading to is removed**, that download is marked
+  **Failed** — it will not quietly continue into internal storage.
 
 ---
 
@@ -458,6 +468,12 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     enter **span/range mode**. Then scroll **up or down** — every category between your starting point and the
     category you land on gets hidden together as a range. Handy for quickly hiding a big block of categories (or
     even scrolling all the way to hide most of the list) instead of hiding them one by one.
+  - ↕️ **Move a block of categories together**: the same span trick works on the **move** buttons
+    (**⤒ ↑ ↓ ⤓**). **Long‑press** any of them on the first category, then press an arrow on the last
+    category — every category in between moves as one block: up/down a step, or straight to the
+    top/bottom. The block **stays selected**, so you can keep pressing the arrows to walk it further.
+    Press **Back** (or **Cancel** in the banner) when you're done. Great for lifting all your sports or
+    kids categories to the top at once instead of one at a time.
   - 🗂️ **New category behavior (Show / Hide)**: at the top of the screen, choose what happens to a
     category your provider adds on a **later re-sync** — **Show** (default) or **Hide** it automatically.
     Handy if you keep only a few categories visible and don't want new ones popping up. It's per profile

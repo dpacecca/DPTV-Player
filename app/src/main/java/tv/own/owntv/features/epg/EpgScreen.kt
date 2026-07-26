@@ -55,11 +55,13 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.os.ConfigurationCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
@@ -261,12 +263,16 @@ fun EpgScreen(
                 OwnTVIcon(OwnTVIcon.BACK, tint = colors.onSurface, modifier = Modifier.size(20.dp))
             }
             Text("TV Guide", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+            val headerLocales = ConfigurationCompat.getLocales(LocalConfiguration.current)
+            val headerLocale = remember(headerLocales) { headerLocales.get(0) ?: Locale.getDefault() }
             if (state.now > 0) {
                 // The day being browsed: "now" on open; follows the cursor when D-padding left into
                 // the catch-up archive (windowStart would show the archive start — days in the past).
                 val headerDate = if (inCellMode && cursorTime > 0) cursorTime else state.now
                 Text(
-                    SimpleDateFormat("EEE d MMM", Locale.getDefault()).format(Date(headerDate)),
+                    // Locale read off the configuration, not Locale.getDefault(), so the header
+                    // recomposes if the TV's language changes while the guide is open.
+                    SimpleDateFormat("EEE d MMM", headerLocale).format(Date(headerDate)),
                     style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant,
                 )
             }

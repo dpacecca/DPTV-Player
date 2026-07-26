@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,6 +42,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.tv.material3.MaterialTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.tv.material3.Text
 import tv.own.owntv.core.storage.StorageAccess
 import tv.own.owntv.ui.theme.GlassSurface
@@ -48,6 +51,11 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 import java.io.File
 
 enum class BrowseMode { FOLDER, FILE }
+
+/** One directory's contents, already split and sorted off the main thread (audit U2). */
+private data class Listing(val folders: List<File>, val files: List<File>) {
+    companion object { val EMPTY = Listing(emptyList(), emptyList()) }
+}
 
 /**
  * An in-app file/folder picker (the TV-safe replacement for SAF). In [BrowseMode.FOLDER] the user
@@ -120,11 +128,25 @@ private fun StorageBrowserContent(
             Spacer(Modifier.height(12.dp))
 
             val dir = current
-            val children = remember(dir, refresh) { runCatching { dir?.listFiles()?.toList() }.getOrNull().orEmpty() }
-            val folders = children.filter { it.isDirectory }.sortedBy { it.name.lowercase() }
-            val files = if (mode == BrowseMode.FILE) {
-                children.filter { it.isFile && (fileExtensions == null || it.extension.lowercase() in fileExtensions) }.sortedBy { it.name.lowercase() }
-            } else emptyList()
+            // U2 — listFiles() plus the per-child isDirectory/isFile stats are disk work, and a
+            // `remember` block still runs it on the main thread during composition: a USB drive with
+            // a large folder stalled the frame. Load it on IO instead; the ".." / roots rows render
+            // immediately either way, so D-pad focus still lands the moment the dialog opens.
+            val listing by produceState(Listing.EMPTY, dir, refresh, mode, fileExtensions) {
+                value = Listing.EMPTY
+                value = withContext(Dispatchers.IO) {
+                    val children = runCatching { dir?.listFiles()?.toList() }.getOrNull().orEmpty()
+                    Listing(
+                        folders = children.filter { it.isDirectory }.sortedBy { it.name.lowercase() },
+                        files = if (mode == BrowseMode.FILE) {
+                            children.filter { it.isFile && (fileExtensions == null || it.extension.lowercase() in fileExtensions) }
+                                .sortedBy { it.name.lowercase() }
+                        } else emptyList(),
+                    )
+                }
+            }
+            val folders = listing.folders
+            val files = listing.files
 
             // Cap the list to the screen (minus dialog chrome) so the footer buttons stay reachable.
             val listMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 200.dp).coerceIn(140.dp, 200.dp)

@@ -143,12 +143,12 @@ class SeriesViewModel(
                 }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     /** Customizations + resolved hidden-category ids, bundled so the list pipeline takes one flow. */
     private data class CustState(val cust: SectionCustomizations, val hiddenCats: Set<Long>)
     private val custResolved: StateFlow<CustState> = combine(custom, hiddenCategoryIds) { c, h -> CustState(c, h) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, CustState(SectionCustomizations(), emptySet()))
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CustState(SectionCustomizations(), emptySet()))
 
     /** List ordering for this section (Provider order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortSeries
@@ -207,13 +207,13 @@ class SeriesViewModel(
             if (s == null) null
             else SeriesMeta(s.id, runCatching { metadata.resolveSeries(s) }.getOrNull())
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     data class SeriesMeta(val seriesId: Long, val cache: tv.own.owntv.core.database.entity.MetadataCacheEntity?)
 
     /** Source mode (plan §4.1) — the pane/details use it to flip provider/TMDB precedence. */
     val metadataMode: StateFlow<tv.own.owntv.core.metadata.MetadataMode> = settings.metadataMode
-        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB)
 
     private val _openedSeries = MutableStateFlow<SeriesEntity?>(null)
     val openedSeries: StateFlow<SeriesEntity?> = _openedSeries.asStateFlow()
@@ -229,7 +229,7 @@ class SeriesViewModel(
     val episodeDownloadStates: StateFlow<Map<Long, DownloadEntity>> = ctx
         .flatMapLatest { c -> if (c.profileId < 0) flowOf(emptyList()) else downloadManager.observe(c.profileId) }
         .map { list -> list.filter { it.mediaType == MediaType.EPISODE }.associateBy { it.itemId } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** All episode downloads for the grid-selected series (entire-series aggregate strip). */
     val selectedSeriesDownloads: StateFlow<List<DownloadEntity>> = _selectedSeries
@@ -338,7 +338,7 @@ class SeriesViewModel(
                 }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, defaultRail)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), defaultRail)
 
     val series: Flow<PagingData<SeriesEntity>> = combine(
         _selected, ctx, _search.map { it.trim() }.debounce(300).distinctUntilChanged(), sortMode, _listRefresh,
@@ -366,7 +366,7 @@ class SeriesViewModel(
 
     val count: StateFlow<Int> = combine(_selected, ctx, hiddenCategoryIds) { key, c, hidden -> Triple(key, c, hidden) }
         .flatMapLatest { (key, c, hidden) -> countFlow(key, c, hidden).throttleLatest() } // C2: cap live COUNT re-runs during bulk sync
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     val favoriteIds: StateFlow<Set<Long>> = ctx
         .flatMapLatest { favoriteDao.observeFavoriteIds(it.profileId, MediaType.SERIES) }
@@ -387,13 +387,13 @@ class SeriesViewModel(
                 else progressDao.observeSeriesEpisodeProgress(c.profileId, s.id)
             }
             .map { list -> list.associateBy { it.itemId } }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** Episode ids in the open series that have been watched to ≥95% — drives ✓ marks, season "x/y" counts,
      *  and the "Hide watched" filter. */
     val completedEpisodeIds: StateFlow<Set<Long>> = episodeProgress
         .map { prog -> prog.values.filter { isEpisodeCompleted(it) }.map { it.itemId }.toSet() }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     /** The episode to surface as the "Next up" Play card: the last-watched one if still in progress (resume),
      *  the first episode after a completed one, the first episode when nothing's been watched yet, or null
@@ -413,7 +413,7 @@ class SeriesViewModel(
                 else -> ordered.firstOrNull { it.id == lastWatched.itemId }?.id
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** "Hide watched" toggle for the episode list (off by default). */
     private val _hideWatched = MutableStateFlow(false)
@@ -522,7 +522,7 @@ class SeriesViewModel(
             if (ep == null || show == null) null
             else EpisodeMeta(ep.id, runCatching { metadata.resolveEpisode(show, ep) }.getOrNull())
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     data class EpisodeMeta(val episodeId: Long, val cache: tv.own.owntv.core.database.entity.MetadataCacheEntity?)
 
@@ -578,7 +578,7 @@ class SeriesViewModel(
 
     /** The user's resume preference (Always / Ask / Never) — the screen drives the prompt. */
     val resumeMode: StateFlow<SettingsRepository.ResumeMode> = settings.resumeMode
-        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.ResumeMode.ASK)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.ResumeMode.ASK)
 
     /** Saved resume position for [episode] (0 when none) — used by the screen to decide the prompt. */
     suspend fun savedPositionMs(episode: EpisodeEntity): Long =
@@ -668,6 +668,9 @@ class SeriesViewModel(
                         meta = MediaMeta(
                             title = ep.name,
                             subtitle = listOfNotNull(show.name, "Season ${ep.seasonNumber}").joinToString(" · "),
+                            // P6 — engine pins key on this, not on the URL: for Stalker the queue's
+                            // stored URL is the shared season cmd and the played URL is minted per item.
+                            contentKey = tv.own.owntv.core.player.enginePinKey(show.sourceId, "EPISODE", ep.remoteId),
                         ),
                         resolveUrl = if (needsResolve && source != null) {
                             { streamUrlResolver.resolve(source, ep.streamUrl, vod = true, episode = ep.episodeNumber) }
@@ -721,7 +724,7 @@ class SeriesViewModel(
     val episodeDownloads: StateFlow<Map<Long, DownloadEntity>> = ctx
         .flatMapLatest { c -> if (c.profileId < 0) flowOf(emptyList()) else downloadManager.observe(c.profileId) }
         .map { list -> list.filter { it.mediaType == MediaType.EPISODE }.associateBy { it.itemId } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun downloadEpisode(episode: EpisodeEntity) {
         val show = _openedSeries.value

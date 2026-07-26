@@ -163,6 +163,17 @@ fun RemoteBackgroundDialog(
                     Spacer(Modifier.height(12.dp))
                     OwnTVButton("Try again", onClick = { onStart(tv.own.owntv.core.companion.CompanionLink.DEFAULT_PORT) })
                 }
+                tv.own.owntv.core.companion.CompanionServerState.Locked -> {
+                    Text(
+                        tv.own.owntv.core.companion.CompanionHttpServer.LOCKOUT_MESSAGE,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFFEF4444),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    // Restarting mints a fresh PIN, so this is the recovery path — not a retry of a failure.
+                    OwnTVButton("Start again with a new PIN", onClick = { onStart(tv.own.owntv.core.companion.CompanionLink.DEFAULT_PORT) })
+                }
             }
             Spacer(Modifier.height(20.dp))
             OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(firstFocus))

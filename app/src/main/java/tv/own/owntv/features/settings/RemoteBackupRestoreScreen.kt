@@ -32,6 +32,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.flow.Flow
 import tv.own.owntv.core.companion.CompanionLink
+import tv.own.owntv.core.companion.CompanionHttpServer
 import tv.own.owntv.core.companion.CompanionServerState
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -118,6 +119,12 @@ fun RemoteBackupRestoreScreen(
                         Text(state.message, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444), textAlign = TextAlign.Center)
                         Spacer(Modifier.height(20.dp))
                         OwnTVButton("Try again", onClick = { onStart(CompanionLink.DEFAULT_PORT) })
+                    }
+                    CompanionServerState.Locked -> {
+                        Text(CompanionHttpServer.LOCKOUT_MESSAGE, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444), textAlign = TextAlign.Center)
+                        Spacer(Modifier.height(20.dp))
+                        // Restarting mints a fresh PIN, so this is the recovery path — not a retry of a failure.
+                        OwnTVButton("Start again with a new PIN", onClick = { onStart(CompanionLink.DEFAULT_PORT) })
                     }
                 }
                 Spacer(Modifier.height(16.dp))

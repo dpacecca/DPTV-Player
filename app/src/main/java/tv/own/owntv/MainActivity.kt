@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import android.view.WindowManager
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +12,7 @@ import kotlinx.coroutines.withContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -33,6 +35,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import org.koin.android.ext.android.get
 import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -60,7 +63,29 @@ private const val BG_TAG = "BgImage"
 class MainActivity : ComponentActivity() {
     companion object {
         private const val TAG = "OwnTVHome"
+
+        /** Bounded wait for the startup database probe (see [probeDatabase]). */
+        private const val DB_PROBE_TIMEOUT_MS = 5_000L
+
+        /**
+         * Hard ceiling on the ST3 splash. A stuck DataStore/profile read must never leave the user
+         * staring at a static logo — past this the splash dismisses whatever the state is.
+         *
+         * Kept short deliberately: the old build drew its (blank) first frame at ~1.1s, so anything
+         * beyond ~2s of splash is a perceived-responsiveness regression even though the app is doing
+         * strictly less work than before.
+         */
+        private const val SPLASH_TIMEOUT_MS = 2_000L
     }
+
+    /**
+     * ST3: false while the app has no destination to draw yet (active profile id unknown, or the
+     * profile query has not returned on a cold start) — exactly the two `when` branches that used to
+     * render a blank window. Latched true and never cleared, so the mid-session empty-profile window
+     * a backup restore creates (see `everHadProfiles` below) can't bring the splash back.
+     */
+    @Volatile
+    private var contentReady = false
 
     private val player: tv.own.owntv.player.OwnTVPlayer by inject()
     private val previewEngine: tv.own.owntv.player.LivePreviewEngine by inject()
@@ -101,11 +126,64 @@ class MainActivity : ComponentActivity() {
         shellViewModel.checkAutoRefresh(includeStartup = false)
     }
 
+    /**
+     * Probe the database before anything touches it. Room opens lazily, so a failed migration would
+     * otherwise surface as a random crash inside whichever coroutine queried first — and with the
+     * destructive fallback gone (D1) that crash would repeat on every launch. Opening it here, on a
+     * worker thread with a bounded wait, turns that into a deterministic recovery screen.
+     *
+     * On a healthy install this is a version check on an already-migrated file: milliseconds, and it
+     * is work the first query would have done anyway. A timeout is treated as "healthy" so a slow
+     * device never sits on a blank window.
+     */
+    private fun probeDatabase(): String? {
+        var error: String? = null
+        val worker = Thread {
+            runCatching { get<tv.own.owntv.core.database.OwnTVDatabase>().openHelper.readableDatabase }
+                .onFailure { error = it.message ?: it.javaClass.simpleName }
+        }
+        worker.start()
+        worker.join(DB_PROBE_TIMEOUT_MS)
+        if (error != null) Log.e(TAG, "database probe failed: $error")
+        return error
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // ST3 — must be installed BEFORE super.onCreate() per the library's contract. It also applies
+        // postSplashScreenTheme (Theme.OwnTV), so the activity ends up in the same theme as before.
+        val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
+        val splashDeadline = SystemClock.uptimeMillis() + SPLASH_TIMEOUT_MS
+        splash.setKeepOnScreenCondition { !contentReady && SystemClock.uptimeMillis() < splashDeadline }
         pendingDeepLink = LauncherDeepLink.parse(intent.data)
         Log.d(TAG, "onCreate deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}")
+        val dbError = probeDatabase()
+        if (dbError != null) {
+            contentReady = true // the recovery screen IS the destination — don't hold the splash over it
+            setContent {
+                tv.own.owntv.features.recovery.DatabaseRecoveryScreen(
+                    message = dbError,
+                    onRetry = { recreate() },
+                    onResetData = {
+                        // Explicit, twice-confirmed user choice — the only thing that clears a
+                        // database SQLite refuses to open. Never automatic (that was D1's bug).
+                        runCatching { deleteDatabase(tv.own.owntv.core.database.OwnTVDatabase.NAME) }
+                        finishAffinity()
+                    },
+                )
+            }
+            return
+        }
+        Perf.stamp("db-probed") // main thread was blocked here: everything above is pre-composition
         setContent {
+            // First composition pass — splits "process start → Compose is running" from
+            // "Compose is running → the destination's data arrived".
+            // Deliberately a Unit-returning remember: the point is the side effect happening DURING
+            // the first composition pass. LaunchedEffect/SideEffect would run after it and measure
+            // something else.
+            @Suppress("RememberReturnType")
+            remember { Perf.stamp("first-composition"); Unit }
+
             // Hold the screen on while video is actually playing, so the TV screensaver doesn't
             // start mid-channel/episode; released when paused/stopped (then the screensaver is fine).
             val playing by player.isPlaying.collectAsStateWithLifecycle()
@@ -151,6 +229,25 @@ class MainActivity : ComponentActivity() {
             BackHandler(enabled = switchProfileRequested && !gatePassed && !addingProfile) {
                 switchProfileRequested = false
                 gatePassed = true
+            }
+
+            // ST3 — dismiss the splash the moment a real destination exists: onboarding, the profile
+            // gate or the shell. Mirrors the two blank `when` branches below exactly; `everHadProfiles`
+            // keeps a mid-session restore (which briefly empties `profiles`) out of the condition.
+            val loadedProfileId = activeProfileId
+            LaunchedEffect(loadedProfileId != null) {
+                if (loadedProfileId != null) Perf.stamp("profile-id-loaded")
+            }
+            LaunchedEffect(profiles.isNotEmpty()) {
+                if (profiles.isNotEmpty()) Perf.stamp("profiles-loaded")
+            }
+            val destinationReady = loadedProfileId != null &&
+                (loadedProfileId < 0L || profiles.isNotEmpty() || everHadProfiles)
+            LaunchedEffect(destinationReady) {
+                if (destinationReady && !contentReady) {
+                    contentReady = true
+                    Perf.stamp("destination-ready") // splash hand-off — the number ST1/ST2 move
+                }
             }
 
             // "Refresh on startup" — re-sync sources once the active profile is known.

@@ -75,6 +75,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var addMode by remember { mutableStateOf<AddMode?>(null) }
     var editingSource by remember { mutableStateOf<SourceEntity?>(null) }
     var confirmDelete by remember { mutableStateOf<SourceEntity?>(null) }
+    var resyncChoice by remember { mutableStateOf<SourceEntity?>(null) }
     val addFocus = remember { FocusRequester() }
     val errorFocus = remember { FocusRequester() }
 
@@ -321,7 +322,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                     else -> Modifier
                                 },
                                 onEdit = { contextId = source.id; contextIndex = index; editingSource = source },
-                                onResync = { contextId = source.id; contextIndex = index; vm.resync(source) },
+                                onResync = { contextId = source.id; contextIndex = index; resyncChoice = source },
                                 onCancelSync = { contextId = source.id; contextIndex = index; vm.cancelResync(source) },
                                 onDelete = { contextId = source.id; contextIndex = index; confirmDelete = source },
                             )
@@ -329,6 +330,15 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     }
                 }
             }
+        }
+
+        resyncChoice?.let { src ->
+            ResyncChoiceDialog(
+                sourceName = src.name,
+                onNormal = { vm.resync(src); resyncChoice = null },
+                onClean = { vm.resync(src, clean = true); resyncChoice = null },
+                onDismiss = { resyncChoice = null },
+            )
         }
 
         confirmDelete?.let { src ->
@@ -505,6 +515,56 @@ internal fun ConfirmDialog(title: String, message: String, onConfirm: () -> Unit
                 OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(focus))
                 Spacer(Modifier.weight(1f))
                 OwnTVButton("Delete", onClick = onConfirm)
+            }
+        }
+    }
+}
+
+/**
+ * Resync picker: an ordinary refresh, or one that is also allowed to drop titles the provider has
+ * stopped listing.
+ *
+ * A normal resync will not remove more than half a source's rows, because a truncated provider
+ * response is indistinguishable from a genuinely shrunken catalog and guessing wrong wipes a working
+ * playlist. The consequence is that a provider that really did drop a lot of titles leaves them
+ * behind with no way out — this dialog is that way out, kept behind a deliberate choice.
+ *
+ * Focus starts on the ordinary refresh, so the common case is still Select-then-Select and a
+ * mis-press can't trigger removals. Back cancels.
+ */
+@Composable
+private fun ResyncChoiceDialog(
+    sourceName: String,
+    onNormal: () -> Unit,
+    onClean: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    BackHandler { onDismiss() }
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
+        Column(Modifier.dialogPanel(width = 520.dp, padding = 28.dp)) {
+            Text("Resync “$sourceName”", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Resync now fetches the latest catalog and keeps everything already saved.\n\n" +
+                    "Resync and remove missing titles does the same, but also allows removing titles the " +
+                    "provider no longer lists. Your favorites, history and resume positions for titles " +
+                    "that are still listed are kept.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(22.dp))
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OwnTVButton("Resync now", onClick = onNormal, modifier = Modifier.fillMaxWidth().focusRequester(focus))
+                OwnTVButton(
+                    "Resync and remove missing titles",
+                    onClick = onClean,
+                    style = OwnTVButtonStyle.SECONDARY,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             }
         }
     }
