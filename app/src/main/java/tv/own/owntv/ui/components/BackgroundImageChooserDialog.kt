@@ -182,16 +182,22 @@ fun RemoteBackgroundDialog(
 }
 
 /**
- * Copy a user-picked image [source] File into app-private storage under [dir]/`background.<ext>`,
- * returning the new absolute path. The copy is what gets persisted — the original may live on a USB
- * stick / removable folder that could vanish, so owning our own copy guarantees the background survives.
+ * Copy a user-picked image [source] File into app-private storage under
+ * [dir]/`background_<timestamp>.<ext>`, returning the new absolute path. The copy is what gets
+ * persisted — the original may live on a USB stick / removable folder that could vanish, so owning
+ * our own copy guarantees the background survives.
+ *
+ * The timestamp makes every ingest a NEW path. A fixed `background.<ext>` name meant picking a
+ * second image of the same type produced an identical path: the settings Flow deduplicates, so
+ * nothing recomposed, and Coil keyed its cache on the path and served the old bitmap — the
+ * background only changed after an app restart.
  */
 fun ingestBackgroundImage(source: File, dir: File): String {
     if (!dir.exists()) dir.mkdirs()
     // Wipe any previous ingest so the folder never accumulates old backgrounds.
     dir.listFiles()?.forEach { runCatching { it.delete() } }
     val ext = source.extension.ifBlank { "png" }.lowercase()
-    val dest = File(dir, "background.$ext")
+    val dest = File(dir, "background_${System.currentTimeMillis()}.$ext")
     source.inputStream().use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
     return dest.absolutePath
 }

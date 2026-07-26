@@ -156,8 +156,26 @@
   32 MB) instead of a fixed guess.
 - **Browsing storage folders and importing a background image no longer block the UI.**
 
+### 🛠️ Setup & appearance
+
+- **Fixed: Stalker portals with a "virtual" MAC were rejected at setup.** Some panels hand out MACs
+  containing letters past F (for example `…:PQ`), which the app refused with *"Enter 12 hex digits"* —
+  locking those users out entirely. The portal only ever echoes the MAC back to itself, so there was no
+  protocol reason to insist on hexadecimal. Any 12 letters/digits are now accepted, in any of the usual
+  separator styles, which still catches typos and truncated pastes.
+- **Fixed: picking a new background image did nothing until the app was restarted.** In Liquid Glass
+  mode, choosing a second image of the same file type reused the same filename, so nothing detected a
+  change and the previous picture stayed on screen. Each pick now lands under its own name and appears
+  immediately; the old file is still cleaned up, so only one background is ever kept.
+
 ### Internal
 
+- **The bundled baseline profile was rebuilt from obfuscated names and did nothing.** Every release
+  build reshuffles those names, so ~98% of the 7,238 recorded entries matched nothing in the shipped
+  app — and `assembleStandardRelease` printed ~7,100 *"Startup class not found"* warnings because of it.
+  The dead recording is removed. The baseline profiles that come from Compose, coroutines, lifecycle and
+  Room are unaffected and still ship, so startup speed is unchanged. Recording our own again is blocked
+  on an upstream fix; see `future-plan/baseline-profile-agp9-plan.md`.
 - **Tests and lint now gate CI.** Pull requests run unit tests and Android Lint before anything is
   built, lint fails the build on an error (0 errors, from 122), and reports are uploaded on failure.
   APKs are still only built for `main` and tags.

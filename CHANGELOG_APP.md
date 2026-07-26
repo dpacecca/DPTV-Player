@@ -43,6 +43,8 @@
 - **Paused downloads re-downloaded data they already had**
 - **A removed USB/SD card made a download continue into internal storage**
 - **Subtitle timing offset froze the interface**
+- **Stalker portals with a "virtual" MAC were rejected at setup**
+- **Picking a new background image did nothing until the app was restarted**
 
 ## v4.1.4 — 2026-07-24
 

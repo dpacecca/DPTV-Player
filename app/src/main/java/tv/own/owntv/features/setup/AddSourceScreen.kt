@@ -280,7 +280,7 @@ fun AddSourceScreen(
                     OwnTVTextField(mac, { mac = it }, label = "MAC address", placeholder = "00:1A:79:AA:BB:CC", modifier = Modifier.fillMaxWidth())
                     if (mac.isNotBlank() && !macValid) {
                         Spacer(Modifier.height(6.dp))
-                        Text("Enter 12 hex digits, e.g. 00:1A:79:AA:BB:CC", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
+                        Text("Enter 12 characters, e.g. 00:1A:79:AA:BB:CC", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
                     }
                     Spacer(Modifier.height(10.dp))
                     OwnTVButton(
