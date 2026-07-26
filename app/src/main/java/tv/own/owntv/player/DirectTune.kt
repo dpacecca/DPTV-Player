@@ -20,6 +20,10 @@ sealed interface DirectTuneResult {
 data class DirectTuneChannelInfo(
     val number: Int?,
     val name: String,
+    val logoUrl: String? = null,
+    /** False when the tuned channel was already playing and no stream was restarted — the HUD then has no
+     *  playback start to wait for before it retires the OSD. */
+    val restarted: Boolean = true,
 )
 
 /** Resolve a list of candidate channel IDs (same provider number, same source) to a single one.

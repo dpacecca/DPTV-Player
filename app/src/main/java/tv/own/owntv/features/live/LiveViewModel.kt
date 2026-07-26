@@ -789,7 +789,9 @@ class LiveViewModel(
             // restart. Still return Found so the HUD shows normal success feedback.
             if (tuned.id == currentChannel.id) {
                 return tv.own.owntv.player.DirectTuneResult.Found(
-                    tv.own.owntv.player.DirectTuneChannelInfo(tuned.number, tuned.name),
+                    tv.own.owntv.player.DirectTuneChannelInfo(
+                        tuned.number, tuned.name, tuned.logoUrl, restarted = false,
+                    ),
                 )
             }
 
@@ -859,7 +861,9 @@ class LiveViewModel(
             }
 
             return tv.own.owntv.player.DirectTuneResult.Found(
-                tv.own.owntv.player.DirectTuneChannelInfo(tuned.number, tuned.name),
+                tv.own.owntv.player.DirectTuneChannelInfo(
+                    tuned.number, tuned.name, tuned.logoUrl, restarted = true,
+                ),
             )
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e

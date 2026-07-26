@@ -1,6 +1,13 @@
 package tv.own.owntv.player
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.focusGroup
@@ -34,9 +41,13 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -51,11 +62,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -70,9 +84,18 @@ private val TEAL = Color(0xFF52DBC8)
 
 private const val DIRECT_TUNE_TIMEOUT_MS = 2_000L
 private const val DIRECT_TUNE_FEEDBACK_MS = 1_500L
+private const val DIRECT_TUNE_PLAYBACK_WAIT_MS = 8_000L
 private const val MAX_DIRECT_TUNE_DIGITS = 5
 
 private enum class HudDialog { NONE, AUDIO, SUBS, SPEED, ZOOM, VOLUME, SUB_TIMING }
+
+/** What the top-left channel OSD shows for direct tune: the digits being typed, the channel a number
+ *  resolved to, or a failure message. All three render as the same card as the channel OSD. */
+private sealed interface TuneOsd {
+    data class Entry(val digits: String) : TuneOsd
+    data class Tuned(val info: DirectTuneChannelInfo) : TuneOsd
+    data class Message(val digits: String, val text: String) : TuneOsd
+}
 
 @Composable
 fun PlayerHud(
@@ -198,8 +221,7 @@ fun PlayerHud(
 
     var lookupInFlight by remember { mutableStateOf(false) }
 
-    var tuneOsdText by remember { mutableStateOf<String?>(null) }
-    var tuneOsdIsResult by remember { mutableStateOf(false) }
+    var tuneOsd by remember { mutableStateOf<TuneOsd?>(null) }
     var tuneOsdTick by remember { mutableIntStateOf(0) }
 
     val digitsActive = digitBuffer.isNotEmpty()
@@ -208,8 +230,7 @@ fun PlayerHud(
     val cancelDirectTune: () -> Unit = {
         digitBuffer = ""
         submissionRequest = null
-        tuneOsdText = null
-        tuneOsdIsResult = false
+        tuneOsd = null
         heldDigitKeys.clear()
         submissionTick++
         tuneOsdTick++
@@ -227,10 +248,10 @@ fun PlayerHud(
         val num = digitBuffer.toIntOrNull()
         digitBuffer = ""
         if (num != null) { submissionRequest = num; submissionTick++ }
-        else tuneOsdText = null
+        else tuneOsd = null
     }
     // Submission: keyed on the immutable tick so setting submissionRequest=null doesn't cancel us.
-    // lookupInFlight covers only the suspend callback, not the 1.5 s result-display period.
+    // lookupInFlight covers only the suspend callback, not the result-display period.
     LaunchedEffect(submissionTick) {
         val num = submissionRequest ?: return@LaunchedEffect
         submissionRequest = null
@@ -240,29 +261,35 @@ fun PlayerHud(
         } finally {
             lookupInFlight = false
         }
-        tuneOsdText = when (result) {
-            is DirectTuneResult.Found -> "#${result.channel.number ?: num} \u00b7 ${result.channel.name}"
-            is DirectTuneResult.NotFound -> "Channel $num not found"
-            is DirectTuneResult.Ambiguous -> "Multiple channels found"
-            is DirectTuneResult.Failed -> "Tune failed"
+        tuneOsd = when (result) {
+            is DirectTuneResult.Found -> TuneOsd.Tuned(result.channel)
+            is DirectTuneResult.NotFound -> TuneOsd.Message("$num", "Channel not found")
+            is DirectTuneResult.Ambiguous -> TuneOsd.Message("$num", "Multiple channels")
+            is DirectTuneResult.Failed -> TuneOsd.Message("$num", "Tune failed")
             is DirectTuneResult.Cancelled -> null
             null -> null
         }
-        if (tuneOsdText != null) {
-            tuneOsdIsResult = true
-            tuneOsdTick++
-        }
+        if (tuneOsd != null) tuneOsdTick++
     }
-    // Result-feedback expiry: clears the OSD after DIRECT_TUNE_FEEDBACK_MS if it hasn't been
-    // replaced by a new digit entry. Keyed on tuneOsdTick so a new entry invalidates the old timer.
+    // Result-feedback expiry, keyed on tuneOsdTick so a new entry invalidates the old timer. A tuned
+    // channel holds the OSD until the new stream is actually on screen (the lookup returns the moment
+    // playback is KICKED OFF, not when it starts) and then DIRECT_TUNE_FEEDBACK_MS longer.
     LaunchedEffect(tuneOsdTick) {
-        if (!tuneOsdIsResult || tuneOsdText == null) {
-            return@LaunchedEffect
-        }
-        delay(DIRECT_TUNE_FEEDBACK_MS)
-        if (tuneOsdIsResult) {
-            tuneOsdText = null
-            tuneOsdIsResult = false
+        when (val osd = tuneOsd) {
+            is TuneOsd.Tuned -> {
+                if (osd.info.restarted) {
+                    withTimeoutOrNull(DIRECT_TUNE_PLAYBACK_WAIT_MS) {
+                        // Two phases: the outgoing stream can still report playing for a beat (Stalker/mpv
+                        // resolve their URL asynchronously), so wait for the teardown before the start.
+                        snapshotFlow { isPlaying && !buffering && error == null }.first { !it }
+                        snapshotFlow { (isPlaying && !buffering) || error != null }.first { it }
+                    }
+                }
+                delay(DIRECT_TUNE_FEEDBACK_MS)
+                tuneOsd = null
+            }
+            is TuneOsd.Message -> { delay(DIRECT_TUNE_FEEDBACK_MS); tuneOsd = null }
+            is TuneOsd.Entry, null -> Unit
         }
     }
     // Cancellation triggers (CH+/-, D-pad, overlay open, HUD dialog open).
@@ -276,10 +303,12 @@ fun PlayerHud(
             submissionRequest = null
             heldDigitKeys.clear()
             submissionTick++
+            // Abandoned digits have no timer of their own — drop the card with the entry it belonged to.
+            if (tuneOsd is TuneOsd.Entry) tuneOsd = null
         }
     }
     // Back cancels digit entry before it hides/exits controls.
-    BackHandler(enabled = digitsActive) { digitBuffer = ""; tuneOsdText = null }
+    BackHandler(enabled = digitsActive) { digitBuffer = ""; tuneOsd = null }
 
     LaunchedEffect(forceShow) { if (forceShow) controlsVisible = true }
     LaunchedEffect(controlsVisible, player) { if (controlsVisible) player.refreshStreamChips() }
@@ -321,9 +350,8 @@ fun PlayerHud(
                             return@onPreviewKeyEvent true
                         }
                         val enteredDigits = digitBuffer + digit
-                        tuneOsdIsResult = false
+                        tuneOsd = TuneOsd.Entry(enteredDigits)
                         tuneOsdTick++
-                        tuneOsdText = enteredDigits
                         if (enteredDigits.length == MAX_DIRECT_TUNE_DIGITS) {
                             digitBuffer = ""
                             submissionRequest = enteredDigits.toIntOrNull()
@@ -377,19 +405,31 @@ fun PlayerHud(
             StreamInfoOverlay(player, modifier = Modifier.align(Alignment.TopEnd).padding(top = 112.dp, end = 20.dp))
         }
 
-        // Channel flash card (zapping with the HUD hidden) — shown independently of the full controls.
-        if (isLive && showFlash && !controlsVisible) {
-            ChannelCard(player, modifier = Modifier.align(Alignment.TopStart).padding(start = 28.dp, top = 28.dp))
-        }
-
-        // Direct-tune OSD: shows typed digits while entering, or brief feedback after a tune result.
-        // Rendered independently of controls visibility so digits are visible even when the HUD is hidden.
-        val activeTuneText = tuneOsdText
-        if (onTuneToNumber != null && activeTuneText != null) {
-            ChannelNumberEntryOverlay(
-                text = activeTuneText,
-                modifier = Modifier.align(Alignment.TopStart).padding(start = 28.dp, top = if (isLive && showFlash && !controlsVisible) 84.dp else 28.dp),
-            )
+        // Top-left OSD stack: the channel card (briefly on a zap, or the freshly tuned channel) plus the
+        // direct-tune card, which pushes down under it. Drawn outside the controls-visible block so both
+        // zapping and digit entry stay visible with the HUD hidden. With the controls up the unified top
+        // strip already names the channel, so only a direct tune — whose card names the channel the stream
+        // is still switching to — draws here.
+        val tuned = (tuneOsd as? TuneOsd.Tuned)?.info
+        Column(
+            modifier = Modifier.align(Alignment.TopStart)
+                .padding(start = 28.dp, top = if (controlsVisible) 92.dp else 28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (isLive && (tuned != null || (showFlash && !controlsVisible))) {
+                // A fresh tune drives the card from the lookup result, not player metadata: the Stalker and
+                // mpv paths publish their metadata after an async resolve, which would show the old channel.
+                if (tuned != null) {
+                    ChannelOsdCard(title = tuned.name, subtitle = tuned.number?.let { "#$it" }, logoUrl = tuned.logoUrl)
+                } else {
+                    ChannelCard(player)
+                }
+            }
+            when (val osd = tuneOsd) {
+                is TuneOsd.Entry -> ChannelNumberCard(osd.digits)
+                is TuneOsd.Message -> ChannelNumberCard(osd.digits, error = osd.text)
+                is TuneOsd.Tuned, null -> Unit
+            }
         }
 
         if (controlsVisible) {
@@ -626,38 +666,89 @@ private fun LiveBadge() {
     }
 }
 
-/** Small OSD for direct-tune digit entry and feedback. Shown at the top-left of the player. */
+/** The player's channel OSD: channel logo beside its name and number. */
 @Composable
-private fun ChannelNumberEntryOverlay(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text,
-        style = MaterialTheme.typography.headlineSmall,
-        color = Color.White,
-        fontWeight = FontWeight.Bold,
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.Black.copy(alpha = 0.7f))
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-    )
+private fun ChannelOsdCard(
+    title: String?,
+    subtitle: String?,
+    logoUrl: String?,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.widthIn(max = 340.dp).clip(RoundedCornerShape(14.dp)).background(Color.Black.copy(alpha = 0.55f)).padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF004F46)), contentAlignment = Alignment.Center) {
+            if (!logoUrl.isNullOrBlank()) AsyncImage(model = logoUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
+            else Text((title ?: "?").take(3).uppercase(), style = MaterialTheme.typography.labelMedium, color = Color(0xFF6FF8E4), fontWeight = FontWeight.Bold)
+        }
+        Column {
+            Text(title ?: "", style = MaterialTheme.typography.titleSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            subtitle?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
 }
 
 @Composable
 private fun ChannelCard(player: PlaybackEngine, modifier: Modifier = Modifier) {
     // Collect the reactive meta so the card refreshes the instant a zap changes the channel.
     val meta by player.currentMeta.collectAsStateWithLifecycle()
-    Row(
-        modifier = modifier.widthIn(max = 340.dp).clip(RoundedCornerShape(14.dp)).background(Color.Black.copy(alpha = 0.55f)).padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ChannelOsdCard(title = meta.title ?: "", subtitle = meta.subtitle, logoUrl = meta.logoUrl, modifier = modifier)
+}
+
+/** Direct-tune entry OSD: the number as it's typed, on the same surface (position, radius, scrim) the
+ *  channel card uses, so a resolved number simply becomes that card. A blinking caret says "still
+ *  accepting digits" and the bar along the bottom drains over the auto-submit window, so the wait is
+ *  visible instead of mysterious. [error] turns it into the failure readout for the same number. */
+@Composable
+private fun ChannelNumberCard(digits: String, error: String? = null, modifier: Modifier = Modifier) {
+    val caret = rememberInfiniteTransition(label = "tuneCaret")
+    val caretAlpha by caret.animateFloat(
+        initialValue = 1f, targetValue = 0f,
+        animationSpec = infiniteRepeatable(tween(600, easing = LinearEasing), RepeatMode.Reverse),
+        label = "tuneCaretAlpha",
+    )
+    val countdown = remember { Animatable(0f) }
+    LaunchedEffect(digits, error) {
+        if (error != null) { countdown.snapTo(0f); return@LaunchedEffect }
+        countdown.snapTo(1f)
+        countdown.animateTo(0f, tween(DIRECT_TUNE_TIMEOUT_MS.toInt(), easing = LinearEasing))
+    }
+    Column(
+        modifier.widthIn(min = 148.dp, max = 340.dp).clip(RoundedCornerShape(14.dp)).background(Color.Black.copy(alpha = 0.55f))
+            // Painted, not laid out: a real bar would fillMaxWidth and stretch the card to its max width.
+            .drawWithContent {
+                drawContent()
+                val barHeight = 3.dp.toPx()
+                val top = Offset(0f, size.height - barHeight)
+                drawRect(Color.White.copy(alpha = 0.08f), topLeft = top, size = Size(size.width, barHeight))
+                drawRect(TEAL, topLeft = top, size = Size(size.width * countdown.value, barHeight))
+            }
+            .padding(bottom = 3.dp),
     ) {
-        Box(Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF004F46)), contentAlignment = Alignment.Center) {
-            val logo = meta.logoUrl
-            if (!logo.isNullOrBlank()) AsyncImage(model = logo, contentDescription = null, modifier = Modifier.fillMaxSize())
-            else Text((meta.title ?: "?").take(3).uppercase(), style = MaterialTheme.typography.labelMedium, color = Color(0xFF6FF8E4), fontWeight = FontWeight.Bold)
-        }
-        Column {
-            Text(meta.title ?: "", style = MaterialTheme.typography.titleSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            meta.subtitle?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(Modifier.padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp)) {
+            Text(
+                "CHANNEL",
+                style = MaterialTheme.typography.labelSmall, color = TEAL, fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp,
+            )
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    digits,
+                    style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold,
+                    letterSpacing = 3.sp,
+                )
+                if (error == null) {
+                    Box(
+                        Modifier.padding(start = 4.dp, bottom = 4.dp).width(3.dp).height(22.dp)
+                            .clip(RoundedCornerShape(2.dp)).background(TEAL.copy(alpha = caretAlpha)),
+                    )
+                }
+            }
+            error?.let {
+                Text(it, style = MaterialTheme.typography.labelMedium, color = Color(0xFFFF8A80), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
