@@ -695,6 +695,8 @@ fun OwnTVShell(
                     onGoToLive = if (isTunedLive) liveVm::goToLive else null,
                     onScrubLive = if (isTunedLive && canRewindLive) liveVm::scrubLive else null,
                     timeshiftOffsetSec = if (isTunedLive) timeshiftOffset else null,
+                    onTuneToNumber = if (isTunedLive && isLiveStream && timeshiftOffset == null && previewChannel != null) liveVm::tuneByNumber else null,
+                    directTuneContextKey = previewChannel?.id ?: 0L,
                     // Show the ACTUAL running engine (mpv when pinned OR auto-fallen-back), not just the pin —
                     // otherwise an auto-fallback to mpv still read "EXO". true = on mpv (pill shows MPV, teal).
                     compatMode = if (isTunedLive) !liveOnExo else null,
