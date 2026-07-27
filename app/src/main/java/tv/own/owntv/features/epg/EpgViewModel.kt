@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.epg
 
+import tv.own.owntv.core.epg.displayLogoUrl
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
@@ -257,7 +258,7 @@ class EpgViewModel(
             } else {
                 channel.streamUrl
             }
-            player.play(url, title = channel.name, logoUrl = channel.logoUrl, isLive = true, userAgent = source?.userAgent)
+            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent)
             val pid = currentProfileId() ?: return@launch
             runCatching {
                 historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.LIVE, itemId = channel.id))
@@ -283,7 +284,7 @@ class EpgViewModel(
             _canZap.value = false // archive playback isn't part of the live zap list
             // isLive = false → the archive plays back seekable, with a normal progress bar.
             // preferSoftware → tolerate mid-GOP archive segments the hardware decoder can't (blank/crash).
-            player.play(url, title = channel.name, subtitle = programme.title, logoUrl = channel.logoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
+            player.play(url, title = channel.name, subtitle = programme.title, logoUrl = channel.displayLogoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
         }
     }
 

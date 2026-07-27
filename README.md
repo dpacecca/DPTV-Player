@@ -72,6 +72,7 @@ Scan to join from your phone:
 ### 📥 Sources & EPG
 - **Xtream**, **M3U** (typed playlists), and **Stalker/Ministra** MAC portals; add a source from your phone over LAN (QR + PIN)
 - XMLTV **TV Guide** grid, **Catch-up TV** (up to 7 days) + live rewind, auto EPG matching, multiple guide sources
+- Optional **guide channel logos** — per EPG source, use that feed's own logos instead of your playlist's
 
 ### 👥 Profiles & Downloads
 - Multiple profiles with own favorites/history/resume, PIN locks, kids flag, "Who's watching?" gate

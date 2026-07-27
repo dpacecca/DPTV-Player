@@ -208,6 +208,9 @@ or **narrow the whole app to just one**.
   the engine that's **actually playing** (teal while on mpv, whether you pinned it or OwnTV auto‑switched), and
   **one tap always flips** the engine — a small "Switched to MPV/ExoPlayer" note confirms it. It's **remembered
   per channel**, so that one channel always uses mpv while everything else stays fast.
+  Picking **ExoPlayer** on a channel that had auto‑switched to mpv is treated as your decision: the automatic
+  fallback stops interfering with that channel until you tune elsewhere, so it can no longer flip straight back
+  to mpv. If ExoPlayer genuinely can't play it, press the toggle again to return to mpv.
 - 🔇 **Audio with no picture**: if a channel ever plays sound but shows a black screen, OwnTV now detects this
   automatically and switches engines for you (briefly shows a loading spinner). If neither engine can render
   video for that stream, you'll see a clear on‑screen message instead of a silent black screen.
@@ -256,6 +259,11 @@ or **narrow the whole app to just one**.
 - 🙈 **Hidden categories stay hidden**: categories you hide via long‑press → Customize are excluded
   from the Guide too — the "Category" dropdown and the guide rows both respect them (category
   renames and manual order carry over from Live TV as well).
+- 🖼️ **Use this guide's channel logos (per EPG source)**: when adding or editing an EPG feed
+  (Settings → EPG Sources), turn this on to show that feed's own channel logos instead of your
+  playlist's — everywhere channels appear. Channels the feed has no logo for keep the playlist logo.
+  Your playlist logos are never overwritten, so turning it off restores them instantly. Re-sync the EPG
+  source once after switching it on, so the logos get stored.
 - 🔄 **Auto refresh (per source)**: each **playlist** (Settings → Manage sources) and each **EPG feed**
   (Settings → EPG sources) has an **Auto refresh** dropdown — **Off** (default), **Refresh at startup**,
   or an interval (playlists 6–48h, EPG 1–48h). Intervals refresh only when the source is actually stale,

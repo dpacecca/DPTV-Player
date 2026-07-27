@@ -1,5 +1,6 @@
 package tv.own.owntv.features.search
 
+import tv.own.owntv.core.epg.displayLogoUrl
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
@@ -225,7 +226,7 @@ private fun ResultsWithDetail(
                 when (item) {
                     is SearchItem.ChannelItem -> item(key = "c${item.row.channel.id}") {
                         ResultRow(
-                            thumbUrl = item.row.channel.logoUrl,
+                            thumbUrl = item.row.channel.displayLogoUrl,
                             fallbackIcon = OwnTVIcon.LIVE_TV,
                             title = item.row.channel.name,
                             subtitle = channelDetail(item.row),
@@ -298,7 +299,7 @@ private fun DetailPane(
     val action: () -> Unit
     when (item) {
         is SearchItem.ChannelItem -> {
-            posterUrl = item.row.channel.logoUrl; icon = OwnTVIcon.LIVE_TV
+            posterUrl = item.row.channel.displayLogoUrl; icon = OwnTVIcon.LIVE_TV
             title = item.row.channel.name; subtitle = channelDetail(item.row); plot = null
             actionLabel = "Watch live"; action = { onPlayChannel(item.row.channel) }
         }

@@ -1,5 +1,6 @@
 package tv.own.owntv.features.live
 
+import tv.own.owntv.core.epg.displayLogoUrl
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.rememberScrollState
@@ -553,8 +554,8 @@ private fun ChannelRow(
                 modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(colors.surfaceContainerLowest),
                 contentAlignment = Alignment.Center,
             ) {
-                if (!channel.logoUrl.isNullOrBlank()) {
-                    AsyncImage(model = channel.logoUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
+                if (!channel.displayLogoUrl.isNullOrBlank()) {
+                    AsyncImage(model = channel.displayLogoUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
                 } else {
                     OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(24.dp))
                 }
@@ -673,8 +674,8 @@ private fun LivePreviewPane(
             modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp)).background(colors.surfaceContainerLowest),
             contentAlignment = Alignment.Center,
         ) {
-            if (!channel.logoUrl.isNullOrBlank()) {
-                AsyncImage(model = channel.logoUrl, contentDescription = null, modifier = Modifier.size(120.dp))
+            if (!channel.displayLogoUrl.isNullOrBlank()) {
+                AsyncImage(model = channel.displayLogoUrl, contentDescription = null, modifier = Modifier.size(120.dp))
             } else {
                 OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(56.dp))
             }

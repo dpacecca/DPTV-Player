@@ -44,6 +44,19 @@
   matching mode, or ignores the request, playback is unaffected.
 - Turn it off if your TV or AV receiver re-handshakes HDMI noisily on every channel change.
 
+### 🖼️ Guide channel logos — take logos from your XMLTV feed
+
+- **Settings → EPG Sources → Add / Edit an EPG source → "Use this guide's channel logos"** *(off)*: that
+  feed's own `<icon>` logos replace the ones your playlist supplies, in Live TV, the channel lists, the
+  Guide, Search, Home and the player.
+- It is set **per EPG source**, not app-wide, so one feed can supply logos while another only supplies
+  programmes.
+- Channels the feed has no logo for keep their playlist logo, so a partial guide never leaves blank tiles.
+- Your provider's logos are never overwritten in the database — this is a display override. Turn it off
+  and the playlist logos come straight back, and a catalog re-sync can't undo your choice.
+- Logos are stored when the feed is parsed, so **re-sync the EPG source once** after switching it on.
+- The setting is included in backups, alongside that source's Auto refresh choice.
+
 ### ↕️ Span move — reorder a whole block of categories at once
 
 - **Settings → Customize Categories & Items** already let you long-press **Hide** to select a *span* of
@@ -175,6 +188,13 @@
 
 ### 📺 Live TV
 
+- **Choosing ExoPlayer for a channel that had fallen back to mpv now sticks.** When a channel dropped to
+  mpv automatically, pressing the player's engine toggle to go back to ExoPlayer re-started it on
+  ExoPlayer — and the fallback watchdog, armed again by that restart, immediately sent it back to mpv, so
+  the button looked like it did nothing. Picking ExoPlayer is now treated as a deliberate override: the
+  automatic fallback stays out of the way for that channel until you tune elsewhere. If ExoPlayer really
+  can't play it you stay there and can press the toggle again for mpv. Automatic tunes are unchanged —
+  ExoPlayer first, mpv if it fails.
 - **A live channel opened from the Guide now appears in History.** Tuning a channel from the guide grid
   (or *Watch channel* in a programme popup) is recorded straight away, rather than going through the
   delay that exists to keep rapid channel-surfing out of your history.

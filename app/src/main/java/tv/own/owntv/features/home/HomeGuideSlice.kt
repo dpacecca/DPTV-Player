@@ -1,5 +1,6 @@
 package tv.own.owntv.features.home
 
+import tv.own.owntv.core.epg.displayLogoUrl
 import android.text.format.DateFormat
 import coil3.compose.AsyncImage
 import androidx.compose.foundation.background
@@ -466,9 +467,9 @@ private fun ChannelLogoBadge(
             .background(if (focused) colors.primaryContainer else colors.surfaceContainerLowest),
         contentAlignment = Alignment.Center,
     ) {
-        if (!channel.logoUrl.isNullOrBlank()) {
+        if (!channel.displayLogoUrl.isNullOrBlank()) {
             AsyncImage(
-                model = channel.logoUrl,
+                model = channel.displayLogoUrl,
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
                 contentScale = ContentScale.Fit,
@@ -491,9 +492,9 @@ private fun ChannelLogo(
             .background(OwnTVTheme.colors.surfaceContainerLowest),
         contentAlignment = Alignment.Center,
     ) {
-        if (!channel.logoUrl.isNullOrBlank()) {
+        if (!channel.displayLogoUrl.isNullOrBlank()) {
             AsyncImage(
-                model = channel.logoUrl,
+                model = channel.displayLogoUrl,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,

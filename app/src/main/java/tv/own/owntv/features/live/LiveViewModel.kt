@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.live
 
+import tv.own.owntv.core.epg.displayLogoUrl
 import android.content.Context
 import androidx.compose.runtime.Immutable
 import android.util.Log
@@ -482,7 +483,7 @@ class LiveViewModel(
         setStalkerReconnect(null) // non-Stalker: URLs are stable, replay on reconnect
         previewEngine.play(
             channel.streamUrl, muted = !livePreviewAudio.value,
-            meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
+            meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.displayLogoUrl),
             userAgent = sourceUaMap[channel.sourceId],
         )
     }
@@ -506,7 +507,7 @@ class LiveViewModel(
             setStalkerReconnect(channel.streamUrl) // C-3: re-resolve on reconnect if the URL expires
             previewEngine.play(
                 url, muted = !livePreviewAudio.value,
-                meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
+                meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.displayLogoUrl),
                 userAgent = source.userAgent,
             )
         }
@@ -682,6 +683,8 @@ class LiveViewModel(
         // Self-learning routing: a channel the user pinned to mpv skips ExoPlayer entirely (no artifacts/silent
         // first), straight to the engine that plays it. Everyone else gets the fast ExoPlayer-first path.
         val pinned = isPinnedToMpv(channel)
+        // A new tune clears any "user chose ExoPlayer" override — that choice is per channel.
+        if (exoChosenByUser != channel.streamUrl) exoChosenByUser = null
         android.util.Log.i(ENGINE_TAG, "tune '${channel.name}' -> ${if (pinned) "mpv (pinned)" else "exoplayer"}")
         if (pinned) startOnMpv(channel) else startOnExo(channel)
         recordLiveHistory(channel)
@@ -719,7 +722,7 @@ class LiveViewModel(
             setStalkerReconnect(null) // non-Stalker: URLs are stable, replay on reconnect
             previewEngine.play(
                 channel.streamUrl, muted = false,
-                meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
+                meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.displayLogoUrl),
                 userAgent = sourceUaMap[channel.sourceId],
             )
         }
@@ -746,7 +749,7 @@ class LiveViewModel(
             setStalkerReconnect(channel.streamUrl) // C-3: re-resolve on reconnect if the URL expires
             previewEngine.play(
                 url, muted = false,
-                meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
+                meta = tv.own.owntv.player.MediaMeta(title = channel.name, logoUrl = channel.displayLogoUrl),
                 userAgent = source.userAgent,
             )
             watchExoOutcome(channel)
@@ -772,6 +775,9 @@ class LiveViewModel(
             // Pin to mpv when choosing mpv; unpin when choosing Exo. Write the stable key, and clear
             // any legacy URL-keyed entry too so an un-pin can't leave the old one behind (P6).
             val key = mpvPinKey(channel)
+            // Choosing ExoPlayer here is an explicit override: suppress the auto-fallback for this
+            // channel until the next tune, so it can't be undone a second later by watchExoOutcome.
+            exoChosenByUser = if (goToMpv) null else channel.streamUrl
             forceMpvStore.set(key ?: channel.streamUrl, goToMpv)
             if (key != null) forceMpvStore.set(channel.streamUrl, false)
             if (goToMpv) {
@@ -804,8 +810,19 @@ class LiveViewModel(
      *  plays but ExoPlayer can decode **none of its audio** (e.g. an AC3/E-AC3/DTS movie file added via M3U,
      *  on a device without that decoder — it'd play silently). mpv (FFmpeg) decodes everything. */
     private var exoOutcomeJob: Job? = null
+
+    /** Stream URL of the channel the user explicitly switched BACK to ExoPlayer with the HUD toggle.
+     *  While it is set, the auto-fallback below stays out of the way for that channel — otherwise the
+     *  same condition that bounced it to mpv fires again immediately and the manual choice looks
+     *  ignored ("I switch to Exo and it jumps straight back to MPV"). Cleared on the next tune. */
+    private var exoChosenByUser: String? = null
+
     private fun watchExoOutcome(channel: ChannelEntity) {
         exoOutcomeJob?.cancel()
+        if (exoChosenByUser == channel.streamUrl) {
+            android.util.Log.i(ENGINE_TAG, "auto-fallback disabled for '${channel.name}' — user chose ExoPlayer")
+            return
+        }
         exoOutcomeJob = viewModelScope.launch {
             // Runs alongside the terminal-state wait below: audio/position can be progressing fine (so
             // ExoPlayer never reaches ERROR) while a video track never renders a single frame — the "audio
@@ -850,7 +867,7 @@ class LiveViewModel(
             if (_previewChannel.value?.streamUrl != channel.streamUrl) return // zapped away while resolving
             // C-3: mpv is now the active engine — install/clear the reconnect provider to match.
             setStalkerReconnect(if (isStalker) channel.streamUrl else null)
-            player.play(url, title = channel.name, logoUrl = channel.logoUrl, isLive = true, muted = false, userAgent = source?.userAgent)
+            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent)
         }
     }
 
@@ -957,7 +974,7 @@ class LiveViewModel(
             _catchupActive.value = true      // HUD: VOD engine toggle, not the live compatibility toggle
             clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
             // isLive=false → seekable archive; preferSoftware → tolerate mid-GOP archive segments.
-            player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.logoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
+            player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.displayLogoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
         }
     }
 
@@ -1018,7 +1035,7 @@ class LiveViewModel(
             val localLabel = formatSystemTime(appContext, startMs)
             _previewChannel.value = ch
             clearLiveOnExo() // archive plays as a VOD-style mpv stream, not the live ExoPlayer channel
-            player.play(url, title = ch.name, subtitle = "Rewind · $localLabel", logoUrl = ch.logoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
+            player.play(url, title = ch.name, subtitle = "Rewind · $localLabel", logoUrl = ch.displayLogoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
             timeshiftStartWall = startMs
             startOffsetTick()
         }

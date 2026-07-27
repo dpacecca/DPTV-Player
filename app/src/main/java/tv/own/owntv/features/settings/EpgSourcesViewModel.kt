@@ -46,10 +46,19 @@ class EpgSourcesViewModel(
         viewModelScope.launch { settings.setEpgAutoRefresh(source.id, mode) }
     }
 
-    fun add(name: String, url: String, userAgent: String? = null, autoRefresh: EpgAutoRefresh = EpgAutoRefresh.OFF) {
+    /** EPG sources whose own `<icon src>` logos replace the playlist's channel logos. */
+    val useLogos: StateFlow<Set<Long>> = settings.epgUseLogos
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    fun setUseLogos(source: EpgSource, enabled: Boolean) {
+        viewModelScope.launch { settings.setEpgUseLogos(source.id, enabled) }
+    }
+
+    fun add(name: String, url: String, userAgent: String? = null, autoRefresh: EpgAutoRefresh = EpgAutoRefresh.OFF, useLogos: Boolean = false) {
         viewModelScope.launch {
             val source = store.add(name, url, userAgent)
             settings.setEpgAutoRefresh(source.id, autoRefresh)
+            if (useLogos) settings.setEpgUseLogos(source.id, true)
             epgSyncScheduler.enqueueSync(source.id, "add")
         }
     }

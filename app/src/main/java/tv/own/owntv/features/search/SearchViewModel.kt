@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.search
 
+import tv.own.owntv.core.epg.displayLogoUrl
 import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
@@ -265,7 +266,7 @@ class SearchViewModel(
             } else {
                 channel.streamUrl
             }
-            player.play(url, title = channel.name, logoUrl = channel.logoUrl, isLive = true, userAgent = source?.userAgent)
+            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent)
         }
         record(MediaType.LIVE, channel.id)
         rememberCurrentQuery()

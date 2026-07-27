@@ -16,6 +16,7 @@
 - **🗂️ Browsing & lists — decide what Live TV, Movies and Series come back to**
 - **🌍 Metadata language — descriptions and posters in your language**
 - **🎞️ Auto frame rate — match the TV's refresh rate to the video**
+- **🖼️ Guide channel logos — take logos from your XMLTV feed**
 - **↕️ Span move — reorder a whole block of categories at once**
 - **📺 Live TV full screen — redesigned top bar, and a History channel list**
 - **📼 Catch-up from Live TV, and catch-up in the player of your choice**
@@ -29,6 +30,7 @@
 ### 🐛 Fixes
 
 - **Switching category kept the previous category's scroll position**
+- **Choosing ExoPlayer for a channel that had fallen back to mpv did not stick**
 - **Auto frame rate did nothing on Android 10 and older devices (Fire OS 7)**
 - **A schema problem could wipe your whole library**
 - **A half-finished sync could delete your catalog**

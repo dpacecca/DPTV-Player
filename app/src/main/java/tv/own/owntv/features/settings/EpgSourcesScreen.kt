@@ -65,6 +65,7 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
     val vm: EpgSourcesViewModel = koinViewModel()
     val sources by vm.sources.collectAsStateWithLifecycle()
     val autoRefreshMap by vm.autoRefresh.collectAsStateWithLifecycle()
+    val useLogosIds by vm.useLogos.collectAsStateWithLifecycle()
     val deletingIds by vm.deletingIds.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
 
@@ -121,11 +122,12 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
         EpgSourceForm(
             initial = editing,
             initialAutoRefresh = editing?.let { autoRefreshMap[it.id] } ?: EpgAutoRefresh.OFF,
+            initialUseLogos = editing?.let { it.id in useLogosIds } ?: false,
             loadPlaylistOptions = { vm.playlistEpgOptions() },
-            onSave = { name, url, ua, autoRefresh ->
+            onSave = { name, url, ua, autoRefresh, useLogos ->
                 val e = editing
-                if (e == null) vm.add(name, url, ua, autoRefresh)
-                else { vm.update(e, name, url, ua); vm.setAutoRefresh(e, autoRefresh) }
+                if (e == null) vm.add(name, url, ua, autoRefresh, useLogos)
+                else { vm.update(e, name, url, ua); vm.setAutoRefresh(e, autoRefresh); vm.setUseLogos(e, useLogos) }
                 adding = false; editing = null
             },
             onCancel = { adding = false; editing = null },
@@ -309,8 +311,9 @@ private fun EpgRow(
 internal fun EpgSourceForm(
     initial: EpgSource?,
     initialAutoRefresh: EpgAutoRefresh,
+    initialUseLogos: Boolean,
     loadPlaylistOptions: suspend () -> List<EpgSourcesViewModel.PlaylistEpg>,
-    onSave: (name: String, url: String, userAgent: String?, autoRefresh: EpgAutoRefresh) -> Unit,
+    onSave: (name: String, url: String, userAgent: String?, autoRefresh: EpgAutoRefresh, useLogos: Boolean) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -319,6 +322,7 @@ internal fun EpgSourceForm(
     var url by remember { mutableStateOf(initial?.url ?: "") }
     var ua by remember { mutableStateOf(initial?.userAgent ?: "") }
     var autoRefresh by remember { mutableStateOf(initialAutoRefresh) }
+    var useLogos by remember { mutableStateOf(initialUseLogos) }
     var showPlaylistPicker by remember { mutableStateOf(false) }
     var showAutoRefreshPicker by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
@@ -345,10 +349,14 @@ internal fun EpgSourceForm(
         // Auto-refresh dropdown — same Off/Startup/staleness-threshold semantics as playlist sources.
         EpgAutoRefreshRow(selected = autoRefresh) { showAutoRefreshPicker = true }
 
+        Spacer(Modifier.height(10.dp))
+        // Per-feed logo override: this guide's <icon src> replaces the playlist's channel logos.
+        EpgUseLogosRow(enabled = useLogos) { useLogos = !useLogos }
+
         Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OwnTVButton("Cancel", onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
-            OwnTVButton(if (initial == null) "Add & sync" else "Save & sync", onClick = { onSave(name, url, ua, autoRefresh) }, enabled = url.isNotBlank())
+            OwnTVButton(if (initial == null) "Add & sync" else "Save & sync", onClick = { onSave(name, url, ua, autoRefresh, useLogos) }, enabled = url.isNotBlank())
         }
     }
 
@@ -370,6 +378,31 @@ internal fun EpgSourceForm(
             },
             onDismiss = { showAutoRefreshPicker = false },
         )
+    }
+}
+
+/** Per-EPG-source toggle: use this feed's own channel logos instead of the playlist's. */
+@Composable
+private fun EpgUseLogosRow(enabled: Boolean, onClick: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    FocusableSurface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().widthIn(max = 680.dp),
+        shape = RoundedCornerShape(14.dp),
+        surface = GlassSurface.CARDS,
+        contentAlignment = Alignment.CenterStart,
+    ) { _ ->
+        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Use this guide's channel logos", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(
+                    "Show logos from this XMLTV feed instead of your playlist's. Channels this feed has no logo for keep the playlist one.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            Text(if (enabled) "On" else "Off", style = MaterialTheme.typography.titleMedium, color = if (enabled) colors.primary else colors.onSurfaceVariant)
+        }
     }
 }
 

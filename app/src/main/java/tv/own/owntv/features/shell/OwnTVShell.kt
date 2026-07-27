@@ -159,6 +159,13 @@ fun OwnTVShell(
     // Auto frame rate: only ever applied to the FULL-SCREEN surface (never the mini-player or the
     // in-pane Live preview) — see FrameRateController.
     val autoFrameRate by settingsRepo.autoFrameRate.collectAsStateWithLifecycle(initialValue = true)
+    // "Prefer EPG logos": start following the setting once, here rather than in Application.onCreate —
+    // the store queries nothing at all while the toggle is off, so cold start stays free of EPG reads.
+    val epgDaoForLogos = koinInject<tv.own.owntv.core.database.dao.EpgDao>()
+    val logoScope = rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        tv.own.owntv.core.epg.EpgLogoStore.start(logoScope, settingsRepo, epgDaoForLogos)
+    }
     // Live rewind / timeshift: whether the live channel supports catch-up, and how far behind live we are.
     val canRewindLive by liveVm.canRewindLive.collectAsStateWithLifecycle()
     val timeshiftOffset by liveVm.timeshiftOffsetSec.collectAsStateWithLifecycle()

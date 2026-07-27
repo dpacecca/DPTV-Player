@@ -589,6 +589,7 @@ fun SettingsScreen(
                 SettingsSearchEntry("Profile", "Profiles", "viewers kids mode pin lock account", OwnTVIcon.PERSON, TileTone.SECONDARY) { open(SettingsTab.PROFILES) },
                 SettingsSearchEntry("Content", "Playlists", "m3u xtream source sync add remove", OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { open(SettingsTab.SOURCES) },
                 SettingsSearchEntry("Content", "EPG Sources", "xmltv guide feed program", OwnTVIcon.EPG, TileTone.PRIMARY) { open(SettingsTab.EPG) },
+                SettingsSearchEntry("Content", "Guide channel logos", "channel logo icon xmltv guide picon playlist", OwnTVIcon.EPG, TileTone.SECONDARY) { open(SettingsTab.EPG) },
                 SettingsSearchEntry("Content", "Customize Categories & Items", "hide unhide rename reorder categories", OwnTVIcon.SORT, TileTone.PRIMARY) { open(SettingsTab.CUSTOMIZE) },
                 SettingsSearchEntry("Content", "Sidebar Menu Customization", "side rail icons dynamic static hide show adapt playlist", OwnTVIcon.MENU, TileTone.PRIMARY,
                     chip = navMenuMode.label, chipTone = if (navMenuMode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },

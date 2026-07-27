@@ -1,5 +1,6 @@
 package tv.own.owntv.features.shell.components
 
+import tv.own.owntv.core.epg.displayLogoUrl
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -133,8 +134,8 @@ private fun ChannelRow(
                 modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)).background(colors.surfaceContainerLowest),
                 contentAlignment = Alignment.Center,
             ) {
-                if (!channel.logoUrl.isNullOrBlank()) {
-                    AsyncImage(model = channel.logoUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
+                if (!channel.displayLogoUrl.isNullOrBlank()) {
+                    AsyncImage(model = channel.displayLogoUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
                 } else {
                     OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
                 }
