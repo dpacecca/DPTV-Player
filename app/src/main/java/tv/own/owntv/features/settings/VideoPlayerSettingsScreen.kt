@@ -92,7 +92,9 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
     val vodExo by vm.vodPreferExo.collectAsStateWithLifecycle()
     val measuredStats by vm.measuredStreamStats.collectAsStateWithLifecycle()
-    val externalPlayer by vm.externalPlayer.collectAsStateWithLifecycle()
+    val externalLive by vm.externalPlayerLive.collectAsStateWithLifecycle()
+    val externalMovies by vm.externalPlayerMovies.collectAsStateWithLifecycle()
+    val externalSeries by vm.externalPlayerSeries.collectAsStateWithLifecycle()
     val zoom by vm.defaultZoom.collectAsStateWithLifecycle()
     val subScale by vm.subtitleScale.collectAsStateWithLifecycle()
     val audioDelay by vm.audioDelayMs.collectAsStateWithLifecycle()
@@ -212,12 +214,14 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
         )
         Row2(
             icon = OwnTVIcon.PLAY, title = "External player",
-            desc = "Open movies, series, and downloads in an external app (VLC, MX Player) instead of the " +
-                "built-in player. Useful for streams this app can't decode, or if you prefer another " +
+            desc = "Open streams in an external app (VLC, MX Player) instead of the built-in player, " +
+                "chosen per section. Useful for streams this app can't decode, or if you prefer another " +
                 "player. Resume position and prev/next are unavailable while playing externally; streams " +
-                "needing a custom User-Agent or referer may not play. Live TV is unaffected.",
-            chip = if (externalPlayer) "On" else "Off", primaryChip = externalPlayer,
-            onClick = { vm.setExternalPlayer(!externalPlayer) },
+                "needing a custom User-Agent or referer may not play.",
+            chip = externalPlayerChip(externalLive, externalMovies, externalSeries), chevron = true,
+            primaryChip = externalLive || externalMovies || externalSeries,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.EXTERNAL_PLAYER)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.EXTERNAL_PLAYER },
         )
         Row2(
             icon = OwnTVIcon.ASPECT, title = "Default zoom",
@@ -382,6 +386,11 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
                 }
             },
         )
+        Dialog.EXTERNAL_PLAYER -> ExternalPlayerDialog(
+            live = externalLive, movies = externalMovies, series = externalSeries,
+            onToggle = { section, enabled -> vm.setExternalPlayer(section, enabled) },
+            onDismiss = { dialog = Dialog.NONE },
+        )
         Dialog.NONE -> Unit
     }
 
@@ -423,7 +432,21 @@ private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit
     }
 }
 
-private enum class Dialog { NONE, ZOOM, SUB_SIZE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM }
+private enum class Dialog { NONE, ZOOM, SUB_SIZE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, EXTERNAL_PLAYER }
+
+/** Row chip for the External player row: "Off", "On" (all three), or the sections that are on. */
+private fun externalPlayerChip(live: Boolean, movies: Boolean, series: Boolean): String {
+    val on = buildList {
+        if (live) add("Live TV")
+        if (movies) add("Movies")
+        if (series) add("Series")
+    }
+    return when (on.size) {
+        0 -> "Off"
+        3 -> "On"
+        else -> on.joinToString(", ")
+    }
+}
 
 // --- Shared building blocks (kept local to the settings sub-screens) ---
 
@@ -576,6 +599,67 @@ internal fun PickerDialog(
             }
         }
     }
+    }
+}
+
+/**
+ * External player defaults, one independent toggle per section. Unlike [PickerDialog] these aren't
+ * mutually exclusive, so the dialog stays open as rows are flipped and closes only on Close/Back.
+ * Same chrome as every other settings popup — `dialogPanel` + `GlassSurface.DIALOGS`, so it follows
+ * the Liquid Glass setting instead of hard-coding a solid panel.
+ */
+@Composable
+private fun ExternalPlayerDialog(
+    live: Boolean,
+    movies: Boolean,
+    series: Boolean,
+    onToggle: (tv.own.owntv.features.settings.data.SettingsRepository.ExternalPlayerSection, Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val fr = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
+    BackHandler { onDismiss() }
+    val rows = listOf(
+        Triple(tv.own.owntv.features.settings.data.SettingsRepository.ExternalPlayerSection.LIVE_TV, "Live TV", live),
+        Triple(tv.own.owntv.features.settings.data.SettingsRepository.ExternalPlayerSection.MOVIES, "Movies", movies),
+        Triple(tv.own.owntv.features.settings.data.SettingsRepository.ExternalPlayerSection.SERIES, "Series", series),
+    )
+    tv.own.owntv.ui.theme.PopupFontTheme {
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
+            Column(modifier = Modifier.dialogPanel(width = 300.dp, corner = 16.dp, padding = 14.dp, scroll = false)) {
+                Text("External player", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Pick which sections open in an external app.",
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                rows.forEachIndexed { index, (section, label, enabled) ->
+                    if (index > 0) Spacer(Modifier.height(4.dp))
+                    FocusableSurface(
+                        onClick = { onToggle(section, !enabled) },
+                        modifier = if (index == 0) Modifier.fillMaxWidth().focusRequester(fr) else Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        contentAlignment = Alignment.CenterStart,
+                        surface = GlassSurface.DIALOGS,
+                    ) { _ ->
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(label, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, modifier = Modifier.weight(1f))
+                            Text(
+                                if (enabled) "On" else "Off",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (enabled) colors.primary else colors.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                }
+            }
+        }
     }
 }
 

@@ -90,6 +90,7 @@ class EpgViewModel(
     private val favoriteDao: tv.own.owntv.core.database.dao.FavoriteDao,
     private val categoryDao: tv.own.owntv.core.database.dao.CategoryDao,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
+    private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
 ) : ViewModel() {
 
     /** Guide category filter: null = all channels, otherwise only that category's channels (#8). */
@@ -283,6 +284,22 @@ class EpgViewModel(
             // isLive = false → the archive plays back seekable, with a normal progress bar.
             // preferSoftware → tolerate mid-GOP archive segments the hardware decoder can't (blank/crash).
             player.play(url, title = channel.name, subtitle = programme.title, logoUrl = channel.logoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
+        }
+    }
+
+    /** Which player takes a catch-up archive — read by the Guide's programme dialog to route itself. */
+    val catchupPlayer: StateFlow<SettingsRepository.CatchupPlayer> = settings.catchupPlayer
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.CatchupPlayer.INTERNAL)
+
+    /** Hand an archive programme to an external app (VLC, MX Player) instead of the in-app player. */
+    fun playCatchupExternal(channel: ChannelEntity, programme: EpgProgrammeEntity) {
+        viewModelScope.launch {
+            val url = withContext(kotlinx.coroutines.Dispatchers.IO) { catchupUrlFor(channel, programme) }
+            if (url == null) {
+                _matchSummary.value = "Catch-up isn't available for this channel."
+                return@launch
+            }
+            externalPlayerLauncher.launch(url, "${channel.name} · ${programme.title}")
         }
     }
 

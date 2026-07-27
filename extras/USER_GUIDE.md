@@ -166,7 +166,10 @@ or **narrow the whole app to just one**.
   (a small line under the name) when guide data is available — so you can see what's on at a glance.
   Channels with no guide show a single line as before.
 - ⭐ **Add to Favourites (and more)**: **long‑press OK** on a channel to open the quick menu — **Favourite,
-  Rename, Hide, Match EPG, Catch‑up**. (Closing it returns you to the same channel.)
+  Rename, Hide, Match EPG, Catch‑up, Play in external player**. (Closing it returns you to the same channel.)
+- 📼 **Catch‑up from the channel list**: the long‑press **Catch‑up** picker lists recent programmes; picking
+  one opens the **same programme popup as the Guide** — description and times, then **Watch from start**,
+  **Watch channel**, favourite the channel, or close.
 - 🎯 **Match EPG is smarter**: the picker lists **guide channels similar to the channel's name first**
   (best match on top; searching re‑ranks too), and the **Close / Clear match** buttons sit in a column on
   the **right** — press **Right** from any row to reach them. The same right‑side layout applies to the
@@ -559,11 +562,16 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   player's **info overlay** measures live fps, bitrate and dropped frames for streams that don't
   declare them (most Xtream live TV). Turn it **off** only if a low‑end TV ever stutters — it affects
   the diagnostic numbers only, never the actual video.
-- 📤 **External player** (Video Player Settings) — play **Movies, Series episodes and Downloads** in an
-  external app (VLC, MX Player, …) instead of the built‑in player. Live TV always stays in‑app. You can
-  also play a **single item** externally without the setting: **long‑press OK** on a movie/episode and
-  choose **Play with external player** (Downloads have an **External** button). Note: resume position and
+- 📤 **External player** (Video Player Settings) — opens a popup with **separate On/Off switches for
+  Live TV, Movies and Series**, so you can send live channels to VLC (or MX Player, …) while keeping
+  movies in OwnTV, or any other mix. **Downloads** follow the Movies or Series switch, depending on
+  what was downloaded. Live TV is **off** by default. You can also play a **single item** externally
+  without any setting: **long‑press OK** on a channel, movie or episode and choose **Play in external
+  player** (Downloads have an **External** button). Note: resume position, the OwnTV controls and
   next/previous aren't available while an external app plays.
+- 📼 **Catch‑up** (Playback → Catch‑up) — the same popup that holds the catch‑up **timezone/offset** now
+  also has **Play catch‑up in**: **OwnTV player** (default), **External player**, or **Always ask**.
+  With *Always ask*, pressing **Watch from start** on a recording asks which player to use each time.
 - 🌦️ **Weather** — its own submenu: **Show weather** (top‑bar chip on/off), **Custom location** (city or
   "lat,lon"; blank = auto‑detect — set this if a VPN shows the wrong city), and **Temperature unit**
   (**°C / °F**).

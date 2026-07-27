@@ -100,6 +100,8 @@ fun LiveScreen(
     val selectedKey by vm.selectedKey.collectAsStateWithLifecycle()
     val count by vm.count.collectAsStateWithLifecycle()
     val favoriteIds by vm.favoriteIds.collectAsStateWithLifecycle()
+    val externalPlayerOn by vm.externalPlayerOn.collectAsStateWithLifecycle()
+    val catchupPlayer by vm.catchupPlayer.collectAsStateWithLifecycle()
     val previewChannel by vm.previewChannel.collectAsStateWithLifecycle()
     val previewCategoryName by vm.previewCategoryName.collectAsStateWithLifecycle()
     val previewArmed by vm.previewArmed.collectAsStateWithLifecycle()
@@ -176,6 +178,12 @@ fun LiveScreen(
     var renaming by remember { mutableStateOf<ChannelEntity?>(null) }
     var matchingEpg by remember { mutableStateOf<ChannelEntity?>(null) }
     var catchupChannel by remember { mutableStateOf<ChannelEntity?>(null) }
+    // Programme picked in the catch-up dialog, awaiting the "Watch from start / Watch channel" choice.
+    // The Live picker used to start the archive straight from the pick, so the same programme opened
+    // from the Guide (which asks) and from here behaved differently — this makes the two match.
+    var catchupDetail by remember {
+        mutableStateOf<Pair<ChannelEntity, tv.own.owntv.core.database.entity.EpgProgrammeEntity>?>(null)
+    }
     var contextChannel by remember { mutableStateOf<ChannelEntity?>(null) } // long-press quick menu
     // When the long-press menu closes (Cancel, Favourite, Hide) WITHOUT opening another dialog, return focus
     // to the channel it was opened from — otherwise focus falls back to the nav panel.
@@ -407,7 +415,9 @@ fun LiveScreen(
                                 onFocus = { vm.onChannelFocused(channel) },
                                 onClick = {
                                     vm.watchFullscreen(channel, channels.itemSnapshotList.items.filterNotNull())
-                                    onFullscreen()
+                                    // External player on for Live TV: the channel went to another app, so
+                                    // don't mount the fullscreen player (it would spin up an idle engine).
+                                    if (!externalPlayerOn) onFullscreen()
                                 },
                                 onLongClick = { contextChannel = channel; contextChannelId = channel.id },
                             )
@@ -433,8 +443,28 @@ fun LiveScreen(
         CatchupDialog(
             channelName = ch.name,
             loadProgrammes = { vm.catchupProgrammes(ch) },
-            onPick = { prog -> catchupChannel = null; vm.playCatchupProgramme(ch, prog); onFullscreen() },
+            onPick = { prog -> catchupChannel = null; catchupDetail = ch to prog },
             onDismiss = { catchupChannel = null },
+        )
+    }
+
+    // Same dialog the Guide shows for a programme, so both routes offer the identical choice:
+    // replay from the start, tune the channel live, favourite it, or back out.
+    catchupDetail?.let { (ch, prog) ->
+        tv.own.owntv.features.epg.ProgrammeDetailDialog(
+            channelName = ch.name,
+            programme = prog,
+            loadDescription = { vm.programmeDescription(it) },
+            canCatchup = true, // only reachable from the catch-up picker, which already gated on this
+            isFavorite = favoriteIds.contains(ch.id),
+            onToggleFavorite = { vm.toggleFavorite(ch) },
+            onWatch = { catchupDetail = null; vm.watchFullscreen(ch, emptyList()); if (!externalPlayerOn) onFullscreen() },
+            onPlayCatchup = { catchupDetail = null; vm.playCatchupProgramme(ch, prog); onFullscreen() },
+            // External: the archive went to another app, so don't mount the fullscreen player over it.
+            onPlayCatchupExternal = { catchupDetail = null; vm.playCatchupExternal(ch, prog) },
+            catchupPlayer = catchupPlayer,
+            onDismiss = { catchupDetail = null },
+            compact = true,
         )
     }
 
@@ -472,6 +502,7 @@ fun LiveScreen(
             onHide = { vm.hideChannel(ch); contextChannel = null },
             onMatchEpg = { matchingEpg = ch; contextChannel = null },
             onCatchup = { catchupChannel = ch; contextChannel = null },
+            onPlayExternal = { vm.playExternal(ch); contextChannel = null },
             onMove = { contextChannel = null; enteringMoveMode = true; vm.enterMoveMode(ch, selectedKey) },
             onRemoveFromHistory = { vm.removeFromHistory(ch.id); contextChannel = null },
             onDismiss = { contextChannel = null },
@@ -568,6 +599,7 @@ private fun ChannelContextMenu(
     onHide: () -> Unit,
     onMatchEpg: () -> Unit,
     onCatchup: () -> Unit,
+    onPlayExternal: () -> Unit,
     onMove: () -> Unit,
     onRemoveFromHistory: () -> Unit,
     onDismiss: () -> Unit,
@@ -597,6 +629,9 @@ private fun ChannelContextMenu(
             OwnTVButton("Hide channel", onClick = onHide, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             OwnTVButton("Match EPG", onClick = onMatchEpg, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
             if (hasCatchup) OwnTVButton("Catch-up", onClick = onCatchup, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            // Always offered, regardless of the Live TV external-player default — this is the per-channel
+            // escape hatch for a stream neither in-app engine can open (same as Movies/Series/Downloads).
+            OwnTVButton("Play in external player", onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.PLAY, modifier = Modifier.fillMaxWidth())
             if (canMove) OwnTVButton("Move", onClick = onMove, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             if (isHistory) OwnTVButton("Remove from History", onClick = onRemoveFromHistory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(4.dp))

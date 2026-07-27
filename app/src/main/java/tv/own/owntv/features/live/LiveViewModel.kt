@@ -128,6 +128,7 @@ class LiveViewModel(
     private val contentOrderDao: ContentOrderDao,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
+    private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
 ) : ViewModel() {
 
     data class ChannelMoveState(val items: List<ChannelEntity>, val activeIndex: Int, val contextKey: String)
@@ -619,6 +620,15 @@ class LiveViewModel(
         ensurePlaying(channel)
     }
 
+    /** Tune a channel picked in the Guide. Same as [ensurePlaying] except history is written straight
+     *  away: the Guide is a deliberate one-shot pick (you chose a channel, or "Watch channel" in a
+     *  programme dialog), not the zap-through-a-category flow the history debounce exists to filter,
+     *  and a live channel opened from the Guide was not reliably landing in History. */
+    fun watchFromGuide(channel: ChannelEntity) {
+        ensurePlaying(channel)
+        recordLiveHistory(channel, immediate = true)
+    }
+
     /** Zap to the neighbouring channel ([delta] = +1 down / -1 up) within the opened list, wrapping
      *  around at the ends so you never dead-end (last → first, first → last). */
     fun zap(delta: Int) {
@@ -636,10 +646,39 @@ class LiveViewModel(
      *  (re)start ExoPlayer on it. We fall back to the full **mpv** player ONLY if ExoPlayer **errors** (a
      *  stream it can't open) — never just because it's still loading (clicking OK before the preview is ready
      *  used to drop to mpv and stick on a black screen for HLS). */
+    /** "External player" is on for Live TV — the screen must NOT open the fullscreen in-app player
+     *  (mounting it spins up an engine even though the channel went to the external app). */
+    val externalPlayerOn: StateFlow<Boolean> = settings.externalPlayerLive
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** Hand [channel] to an external app (VLC, MX Player). Used by the Live TV long-press menu, and by
+     *  [ensurePlaying] when Live TV's external-player default is on. Stalker channels store a portal
+     *  cmd rather than a URL, so it's resolved first — an external app can't mint one. */
+    fun playExternal(channel: ChannelEntity) {
+        viewModelScope.launch {
+            val source = withContext(Dispatchers.IO) { sourceDao.getById(channel.sourceId) }
+            val url = if (streamUrlResolver.needsResolve(source)) {
+                withContext(Dispatchers.IO) {
+                    runCatching { streamUrlResolver.resolve(source!!, channel.streamUrl) }
+                        .onFailure { Log.w(TAG, "stalker resolve failed channelId=${channel.id}", it) }
+                        .getOrNull()
+                } ?: return@launch
+            } else {
+                channel.streamUrl
+            }
+            externalPlayerLauncher.launch(url, channel.name)
+            recordLiveHistory(channel, immediate = true)
+        }
+    }
+
     fun ensurePlaying(channel: ChannelEntity) {
+        // Live TV set to play externally: hand the channel over instead of tuning an in-app engine.
+        // History is still recorded, so the channel shows up in History/Recently watched either way.
+        if (externalPlayerOn.value) { playExternal(channel); return }
         _previewChannel.value = channel
         armZapList(channel) // zap/browse within THIS channel's category, whatever rail we came from
         timeshiftJob?.cancel(); tickJob?.cancel(); _timeshiftOffsetSec.value = null // normal live = not timeshifted
+        _catchupActive.value = false // tuning live ends any archive playback the HUD was showing
         // Self-learning routing: a channel the user pinned to mpv skips ExoPlayer entirely (no artifacts/silent
         // first), straight to the engine that plays it. Everyone else gets the fast ExoPlayer-first path.
         val pinned = isPinnedToMpv(channel)
@@ -720,6 +759,10 @@ class LiveViewModel(
     /** HUD "compatibility mode" toggle: pin/unpin the current channel to mpv and swap engines live. */
     fun toggleForceMpv() {
         val channel = _previewChannel.value ?: return
+        // A catch-up archive is loaded, not the live stream: re-tuning here would replace the programme
+        // the user is watching with the channel's CURRENT one. The HUD already hides this toggle during
+        // catch-up (it offers the VOD engine toggle instead) — this is the belt-and-braces guard.
+        if (_catchupActive.value) return
         // Base the swap on the ACTUAL running engine, not the pin: after an auto-fallback to mpv the channel
         // runs on mpv while still unpinned, and the old pin-based logic then did nothing on click. Keying off
         // _liveOnExo makes every click flip the live engine, with the pin following the choice.
@@ -813,10 +856,19 @@ class LiveViewModel(
 
     private var historyJob: Job? = null
 
-    private fun recordLiveHistory(channel: ChannelEntity) {
+    /**
+     * Record [channel] in the profile's watch history.
+     *
+     * Normally deferred by [HISTORY_DEBOUNCE_MS] and cancelled by the next tune, so zapping through a
+     * category doesn't fill History with channels the user only passed over. [immediate] skips that
+     * wait for entry points where the tune is unambiguously deliberate and no zapping follows — the
+     * Guide's "Watch channel", and handing a channel to an external player (where the user leaves the
+     * app immediately and the delayed write would have nothing to protect against anyway).
+     */
+    private fun recordLiveHistory(channel: ChannelEntity, immediate: Boolean = false) {
         historyJob?.cancel()
         historyJob = viewModelScope.launch {
-            delay(5_000L)
+            if (!immediate) delay(HISTORY_DEBOUNCE_MS)
             val pid = currentProfileId() ?: return@launch
             Log.d(TAG, "ensurePlaying history profile=$pid channelId=${channel.id}")
             runCatching {
@@ -845,26 +897,64 @@ class LiveViewModel(
             .take(80)
     }
 
+    /** Full description for a programme picked in the catch-up dialog. The list query drops it to stay
+     *  under the CursorWindow limit, so the detail popup fetches it on demand (same as the Guide). */
+    suspend fun programmeDescription(programmeId: Long): String? =
+        withContext(Dispatchers.IO) { runCatching { epgDao.programmeDescription(programmeId) }.getOrNull() }
+
+    /** True while a catch-up **archive programme** is what's on screen, rather than the live stream.
+     *  The HUD keys off this: an archive is VOD-style playback, so it must offer the mpv/ExoPlayer VOD
+     *  engine toggle (which reloads the SAME archive URL at the same position) instead of Live TV's
+     *  compatibility toggle — the latter re-tunes the live stream and drops you onto the current
+     *  programme, which is exactly the bug this flag exists to prevent. Live rewind/timeshift is NOT
+     *  catch-up: that one is still the live channel and keeps the live controls. */
+    private val _catchupActive = MutableStateFlow(false)
+    val catchupActive: StateFlow<Boolean> = _catchupActive.asStateFlow()
+
+    /** Which player takes a catch-up archive — read by the UI so "Watch from start" can route itself. */
+    val catchupPlayer: StateFlow<SettingsRepository.CatchupPlayer> = settings.catchupPlayer
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.CatchupPlayer.INTERNAL)
+
+    /** The archive URL for [programme] on [ch], or null when it can't be built. */
+    private suspend fun catchupUrl(ch: ChannelEntity, programme: tv.own.owntv.core.database.entity.EpgProgrammeEntity): String? =
+        withContext(Dispatchers.IO) {
+            val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
+            // Stalker archive URLs are minted per-play via create_link (Phase E §5.6); the others
+            // are pure string templates handled by CatchupUrl.
+            if (source.type == SourceType.STALKER) {
+                ch.remoteId?.let { rid ->
+                    runCatching { streamUrlResolver.resolveCatchup(source, rid, programme.startMs, programme.stopMs) }
+                        .onFailure { Log.w(TAG, "Stalker catch-up resolve failed channelId=${ch.id}", it) }
+                        .getOrNull()
+                }
+            } else {
+                CatchupUrl.forSource(ch, programme, source, settings.resolveCatchupTimeZone(), xtreamClient)
+            }
+        }
+
+    /** Hand an archive programme to an external app (VLC, MX Player). No HUD, resume or engine toggle
+     *  once it leaves, but external players cope with mid-GOP archive segments some providers serve. */
+    fun playCatchupExternal(ch: ChannelEntity, programme: tv.own.owntv.core.database.entity.EpgProgrammeEntity) {
+        viewModelScope.launch {
+            val url = catchupUrl(ch, programme) ?: return@launch
+            Log.i(ENGINE_TAG, "catch-up external '${ch.name}' prog='${programme.title}'")
+            externalPlayerLauncher.launch(url, "${ch.name} · ${programme.title}")
+            recordLiveHistory(ch, immediate = true)
+        }
+    }
+
     /** Replay a past programme from the channel's archive (seekable, like the Guide's "Watch from start"). */
     fun playCatchupProgramme(ch: ChannelEntity, programme: tv.own.owntv.core.database.entity.EpgProgrammeEntity) {
         viewModelScope.launch {
-            val url = withContext(Dispatchers.IO) {
-                val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
-                // Stalker archive URLs are minted per-play via create_link (Phase E §5.6); the others
-                // are pure string templates handled by CatchupUrl.
-                if (source.type == SourceType.STALKER) {
-                    ch.remoteId?.let { rid ->
-                        runCatching { streamUrlResolver.resolveCatchup(source, rid, programme.startMs, programme.stopMs) }
-                            .onFailure { Log.w(TAG, "Stalker catch-up resolve failed channelId=${ch.id}", it) }
-                            .getOrNull()
-                    }
-                } else {
-                    CatchupUrl.forSource(ch, programme, source, settings.resolveCatchupTimeZone(), xtreamClient)
-                }
-            } ?: return@launch
+            val url = catchupUrl(ch, programme) ?: return@launch
             val sourceUa = withContext(Dispatchers.IO) { sourceDao.getById(ch.sourceId)?.userAgent }
+            // The archive URL shape decides whether ExoPlayer can take it at all (progressive .ts vs
+            // .m3u8 vs an extension-less panel endpoint), so log it redacted — it's the first thing
+            // needed when the HUD's engine toggle can't get a catch-up programme playing.
+            Log.i(ENGINE_TAG, "catch-up '${ch.name}' prog='${programme.title}' -> ${tv.own.owntv.core.network.HttpClient.redactUrl(url)}")
             _previewChannel.value = ch
             _timeshiftOffsetSec.value = null // guide archive isn't the live-rewind timeshift
+            _catchupActive.value = true      // HUD: VOD engine toggle, not the live compatibility toggle
             clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
             // isLive=false → seekable archive; preferSoftware → tolerate mid-GOP archive segments.
             player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.logoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
@@ -1172,6 +1262,8 @@ class LiveViewModel(
 
     private companion object {
         const val ENGINE_TAG = "LiveEngine"
+        /** How long a channel must stay tuned before it counts as watched — see [recordLiveHistory]. */
+        const val HISTORY_DEBOUNCE_MS = 5_000L
         const val TAG = "OwnTVHome"
         // Match EPG picker: how many guide channels to scan for name-ranking vs. show in the dialog.
         const val EPG_PICKER_SCAN_LIMIT = 20_000

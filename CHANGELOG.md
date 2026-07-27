@@ -83,6 +83,38 @@
   instead of a star, which on a poster reads as a rating. The star is still used for ratings and for
   selection ticks.
 
+### 📼 Catch-up from Live TV, and catch-up in the player of your choice
+
+- **The Live TV catch-up picker now opens the same programme popup the Guide does.** Long-pressing a
+  catch-up channel and picking a past programme used to start it immediately. It now opens the
+  programme details — description, times, and the choice of **Watch from start**, **Watch channel**,
+  favourite the channel, or close — exactly as the Guide has always done. The popup is drawn compact
+  here, since it sits on top of the channel picker.
+- **New: play a catch-up recording in an external player.** Archive recordings are the hardest streams
+  for any in-app engine (providers serve them mid-GOP), so VLC or MX Player is now an option for them.
+- **Settings → Playback → Catch-up** (renamed from *Catch-up time*) gained **Play catch-up in**:
+  - **OwnTV player** *(default — unchanged behaviour)*
+  - **External player** — every recording goes straight to VLC/MX Player
+  - **Always ask** — pressing *Watch from start* asks which player to use, each time
+- Sent to an external player, a recording loses the OwnTV HUD, resume position and the engine toggle.
+- The timezone/offset controls are unchanged and still live in the same popup. The new setting is
+  included in backups.
+
+### ▶️ External player — Live TV support, and a default per section
+
+- **Live TV can now be played in an external player.** Long-press any channel → **Play in external
+  player**. It is always offered, whatever your default is, as the escape hatch for a channel neither
+  in-app engine can open.
+- **The single external-player switch is now three.** *Settings → Video Player Settings → External
+  player* opens a popup with an independent **On/Off for Live TV, Movies and Series**, so you can send
+  live channels to VLC while keeping movies in OwnTV (or the other way around). Downloads follow the
+  Movies or Series setting depending on what was downloaded.
+- Your existing setting is carried over to **Movies and Series**; **Live TV starts off**, so upgrading
+  never silently starts throwing channels at another app. All three are included in backups.
+- **Fixed: "no external player found" for live channels.** Live streams ending in `.ts` or `.m3u8` were
+  offered to other apps under a MIME type VLC and MX Player don't advertise, so nothing matched even
+  with both installed. OwnTV now widens the type until a player accepts it.
+
 ### 🛡️ Your library can no longer be wiped by a database problem
 
 - **A schema problem no longer deletes everything.** OwnTV used to be built to drop every table and
@@ -134,6 +166,18 @@
   every other engine switch, which removes a class of black-screen-after-switch cases on Realtek boxes.
 - **Subtitle timing offset no longer freezes the UI** — the shifted subtitle file is generated in the
   background and cached.
+- **Switching engine during a catch-up recording no longer jumps to the live programme.** The player
+  now knows an archive recording is playing and reloads the same recording at the same position,
+  instead of re-tuning the channel and dropping you onto whatever is on air now.
+- **Fewer "failed on both engines" errors.** When mpv had to be torn down and playback handed to
+  ExoPlayer, the handoff could grab a video surface that was already being replaced and die instantly
+  on an item that played fine on the next try. The handoff now waits for the new surface.
+
+### 📺 Live TV
+
+- **A live channel opened from the Guide now appears in History.** Tuning a channel from the guide grid
+  (or *Watch channel* in a programme popup) is recorded straight away, rather than going through the
+  delay that exists to keep rapid channel-surfing out of your history.
 
 ### 📅 Guide & series
 

@@ -586,7 +586,7 @@ class SeriesViewModel(
 
     /** Global "External player" toggle — screens must NOT open the fullscreen in-app player when on
      *  (mounting it spins up an mpv instance even though playback branched to the external app). */
-    val externalPlayerOn: StateFlow<Boolean> = settings.externalPlayer
+    val externalPlayerOn: StateFlow<Boolean> = settings.externalPlayerSeries
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** Phase B: long-press "Play with external player" — always external, regardless of the global toggle. */
@@ -639,7 +639,7 @@ class SeriesViewModel(
             // External player (global toggle): launch only the selected episode (external players are
             // single-item — no prev/next queue). History is still recorded; resume position and the
             // in-app HUD/progress tick are not, since OwnTV can't observe the external app.
-            if (settings.externalPlayer.first()) {
+            if (settings.externalPlayerSeries.first()) {
                 Log.d(TAG, "playEpisodeQueue seriesId=${show.id} episodeId=${episode.id} -> external player")
                 val url = resolvedEpisodeUrlOrNull(episode) ?: return@launch
                 externalPlayerLauncher.launch(url, episode.name)

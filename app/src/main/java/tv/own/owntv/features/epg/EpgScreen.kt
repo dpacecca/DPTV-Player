@@ -108,6 +108,10 @@ fun EpgScreen(
     restoreFocus: Boolean = false,
     onRestored: () -> Unit = {},
     onPlayChannel: ((channel: ChannelEntity, channels: List<ChannelEntity>) -> Unit)? = null,
+    /** "Watch from start" on a catch-up programme. The shell routes this through LiveViewModel so the
+     *  archive is tracked as catch-up playback (which decides what engine toggle the player HUD offers);
+     *  null falls back to EpgViewModel's own mpv-only path. */
+    onPlayCatchup: ((channel: ChannelEntity, programme: EpgProgrammeEntity) -> Unit)? = null,
 ) {
     val vm: EpgViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -119,6 +123,7 @@ fun EpgScreen(
     val categoryFilter by vm.categoryFilter.collectAsStateWithLifecycle()
     val guideCategories by vm.guideCategories.collectAsStateWithLifecycle()
     val favoriteIds by vm.favoriteChannelIds.collectAsStateWithLifecycle()
+    val catchupPlayer by vm.catchupPlayer.collectAsStateWithLifecycle()
     var showCategoryPicker by remember { mutableStateOf(false) }
     val colors = OwnTVTheme.colors
     val hScroll = rememberScrollState()
@@ -413,7 +418,16 @@ fun EpgScreen(
             isFavorite = channel.id in favoriteIds,
             onToggleFavorite = { vm.toggleFavoriteChannel(channel) },
             onWatch = { detail = null; vm.noteChannelTuned(channel); if (onPlayChannel != null) onPlayChannel(channel, state.channels) else { vm.play(channel); onFullscreen() } },
-            onPlayCatchup = { detail = null; vm.playCatchup(channel, p); onFullscreen() },
+            onPlayCatchup = {
+                detail = null
+                vm.noteChannelTuned(channel)
+                val viaShell = onPlayCatchup
+                if (viaShell != null) viaShell(channel, p) else { vm.playCatchup(channel, p); onFullscreen() }
+            },
+            // External play needs no shell involvement: nothing is mounted in-app, so it goes straight
+            // through the Guide's own VM (which owns the archive-URL builder) in both hosting modes.
+            onPlayCatchupExternal = { detail = null; vm.noteChannelTuned(channel); vm.playCatchupExternal(channel, p) },
+            catchupPlayer = catchupPlayer,
             onDismiss = { detail = null },
         )
     }

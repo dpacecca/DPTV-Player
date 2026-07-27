@@ -18,6 +18,8 @@
 - **🎞️ Auto frame rate — match the TV's refresh rate to the video**
 - **↕️ Span move — reorder a whole block of categories at once**
 - **📺 Live TV full screen — redesigned top bar, and a History channel list**
+- **📼 Catch-up from Live TV, and catch-up in the player of your choice**
+- **▶️ External player — Live TV support, and a default per section**
 - **🛡️ Database recovery screen — Try again or reset, instead of silent data loss**
 - **🔁 Resync now vs Resync and remove missing titles**
 - **⬇️ Downloads keep running in the background, with a notification**
@@ -47,6 +49,10 @@
 - **Stalker portals with a "virtual" MAC were rejected at setup**
 - **Picking a new background image did nothing until the app was restarted**
 - **The full-screen ◀ channel list showed the wrong channels**
+- **Live channels reported "no external player found" with VLC and MX installed**
+- **Switching engine during a catch-up recording jumped to the live programme**
+- **"Failed on both engines" on items that played fine on the next try**
+- **A live channel opened from the Guide did not appear in History**
 
 ## v4.1.4 — 2026-07-24
 

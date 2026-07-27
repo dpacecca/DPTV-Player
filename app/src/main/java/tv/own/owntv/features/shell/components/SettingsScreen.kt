@@ -200,6 +200,7 @@ fun SettingsScreen(
     val catchupTz by settingsVm.catchupTimezone.collectAsStateWithLifecycle()
     val catchupOffset by settingsVm.catchupOffsetMinutes.collectAsStateWithLifecycle()
     val catchupChannels by settingsVm.catchupChannelCount.collectAsStateWithLifecycle()
+    val catchupPlayer by settingsVm.catchupPlayer.collectAsStateWithLifecycle()
     val accent by settingsVm.accent.collectAsStateWithLifecycle()
     val customAccent by settingsVm.customAccent.collectAsStateWithLifecycle()
     val bgImagePath by settingsVm.bgImagePath.collectAsStateWithLifecycle()
@@ -517,8 +518,8 @@ fun SettingsScreen(
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.EPG,
-            title = "Catch-up time",
-            desc = if (catchupChannels > 0) "$catchupChannels channels support catch-up · timezone for archive playback"
+            title = "Catch-up",
+            desc = if (catchupChannels > 0) "$catchupChannels channels support catch-up · timezone and player for archive playback"
                 else "No catch-up channels available on this playlist",
             chip = when (catchupTz) {
                 SettingsRepository.CatchupTimezone.DEVICE -> "Device"
@@ -623,7 +624,7 @@ fun SettingsScreen(
                     chip = if (surroundSound) "On" else "Off", chipTone = if (surroundSound) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setSurroundSound(!surroundSound) },
                 SettingsSearchEntry("Playback", "Auto-play next episode", "autoplay series season", OwnTVIcon.SKIP_NEXT, TileTone.SECONDARY,
                     chip = if (autoPlayNext) "On" else "Off", chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoPlayNext(!autoPlayNext) },
-                SettingsSearchEntry("Playback", "Catch-up time", "archive timezone offset", OwnTVIcon.EPG, TileTone.SECONDARY,
+                SettingsSearchEntry("Playback", "Catch-up", "archive timezone offset catchup external player vlc mx", OwnTVIcon.EPG, TileTone.SECONDARY,
                     chip = when (catchupTz) {
                         SettingsRepository.CatchupTimezone.DEVICE -> "Device"
                         SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
@@ -673,6 +674,8 @@ fun SettingsScreen(
             offsetRange = settingsVm.catchupOffsetRangeMinutes,
             onSetMode = settingsVm::setCatchupTimezone,
             onAdjustOffset = settingsVm::adjustCatchupOffset,
+            player = catchupPlayer,
+            onSetPlayer = settingsVm::setCatchupPlayer,
             onDismiss = { showCatchupTime = false },
         )
     }
@@ -1748,6 +1751,8 @@ private fun CatchupTimeDialog(
     offsetRange: IntRange,
     onSetMode: (SettingsRepository.CatchupTimezone) -> Unit,
     onAdjustOffset: (Int) -> Unit,
+    player: SettingsRepository.CatchupPlayer,
+    onSetPlayer: (SettingsRepository.CatchupPlayer) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
@@ -1763,7 +1768,7 @@ private fun CatchupTimeDialog(
             modifier = Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Catch-up time", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text("Catch-up", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
                 "How catch-up timestamps are sent. Use your device timezone, or set the offset your provider's server expects.",
@@ -1797,6 +1802,26 @@ private fun CatchupTimeDialog(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     )
                     StepButton("+", enabled = offsetMinutes < offsetRange.last) { onAdjustOffset(60) }
+                }
+            }
+            // Which player takes an archive programme. Archives are the streams the in-app engines
+            // struggle with most, so an external app is a useful fallback — "Ask" puts the choice on
+            // the "Watch from start" action itself instead of forcing one answer forever.
+            Spacer(Modifier.height(24.dp))
+            Text("Play catch-up in", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SettingsRepository.CatchupPlayer.entries.forEach { p ->
+                    OwnTVButton(
+                        when (p) {
+                            SettingsRepository.CatchupPlayer.ASK -> "Always ask"
+                            SettingsRepository.CatchupPlayer.INTERNAL -> "OwnTV player"
+                            SettingsRepository.CatchupPlayer.EXTERNAL -> "External player"
+                        },
+                        onClick = { onSetPlayer(p) },
+                        style = if (player == p) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                        compact = true,
+                    )
                 }
             }
             Spacer(Modifier.height(24.dp))

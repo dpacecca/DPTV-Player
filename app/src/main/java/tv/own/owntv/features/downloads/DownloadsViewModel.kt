@@ -86,10 +86,13 @@ class DownloadsViewModel(
     private val _lastPlayedId = MutableStateFlow<Long?>(null)
     val lastPlayedId: StateFlow<Long?> = _lastPlayedId.asStateFlow()
 
-    /** Global "External player" toggle — the screen must NOT open the fullscreen in-app player when on
-     *  (mounting it spins up an mpv instance even though play() branched to the external app). */
-    val externalPlayerOn: StateFlow<Boolean> = settings.externalPlayer
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    /** "External player" for downloadable content — the screen must NOT open the fullscreen in-app player
+     *  when on (mounting it spins up an mpv instance even though play() branched to the external app).
+     *  The list mixes movies and episodes, so this is true when EITHER section is set to play externally;
+     *  [play] then re-checks the individual download's own section before branching. */
+    val externalPlayerOn: StateFlow<Boolean> =
+        kotlinx.coroutines.flow.combine(settings.externalPlayerMovies, settings.externalPlayerSeries) { m, s -> m || s }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** Phase B: always play this download in an external player, regardless of the global toggle. */
     fun playExternal(download: DownloadEntity) {
@@ -105,7 +108,7 @@ class DownloadsViewModel(
         viewModelScope.launch {
             // External player (global toggle): share the downloaded file with an external app via its
             // FileProvider URI. Otherwise play it in the built-in player.
-            if (settings.externalPlayer.first()) {
+            if (settings.externalPlayerFor(download.mediaType).first()) {
                 externalPlayerLauncher.launch(path, download.title)
                 return@launch
             }

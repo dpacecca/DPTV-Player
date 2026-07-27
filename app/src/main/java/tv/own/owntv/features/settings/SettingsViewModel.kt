@@ -285,6 +285,13 @@ class SettingsViewModel(
 
     val catchupOffsetRangeMinutes: IntRange = settings.catchupOffsetRangeMinutes
 
+    val catchupPlayer: StateFlow<SettingsRepository.CatchupPlayer> = settings.catchupPlayer
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.CatchupPlayer.INTERNAL)
+
+    fun setCatchupPlayer(mode: SettingsRepository.CatchupPlayer) {
+        viewModelScope.launch { settings.setCatchupPlayer(mode) }
+    }
+
     fun setCatchupTimezone(mode: SettingsRepository.CatchupTimezone) {
         viewModelScope.launch { settings.setCatchupTimezone(mode) }
     }
@@ -335,8 +342,15 @@ class SettingsViewModel(
     val measuredStreamStats: StateFlow<Boolean> = settings.measuredStreamStats.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setMeasuredStreamStats(enabled: Boolean) { viewModelScope.launch { settings.setMeasuredStreamStats(enabled) } }
 
-    val externalPlayer: StateFlow<Boolean> = settings.externalPlayer.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
-    fun setExternalPlayer(enabled: Boolean) { viewModelScope.launch { settings.setExternalPlayer(enabled) } }
+    // External player is per-section (Live TV / Movies / Series) — the settings row opens a popup with
+    // one toggle each rather than a single global On/Off.
+    val externalPlayerLive: StateFlow<Boolean> = settings.externalPlayerLive.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    val externalPlayerMovies: StateFlow<Boolean> = settings.externalPlayerMovies.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    val externalPlayerSeries: StateFlow<Boolean> = settings.externalPlayerSeries.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun setExternalPlayer(section: SettingsRepository.ExternalPlayerSection, enabled: Boolean) {
+        viewModelScope.launch { settings.setExternalPlayer(section, enabled) }
+    }
 
     val updateCheckOnStart: StateFlow<Boolean> =
         settings.updateCheckOnStart.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)

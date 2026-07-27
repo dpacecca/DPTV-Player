@@ -346,7 +346,7 @@ class MovieViewModel(
 
     /** Global "External player" toggle — screens must NOT open the fullscreen in-app player when on
      *  (mounting it spins up an mpv instance even though play() branched to the external app). */
-    val externalPlayerOn: StateFlow<Boolean> = settings.externalPlayer
+    val externalPlayerOn: StateFlow<Boolean> = settings.externalPlayerMovies
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /** Stalker movies resolve to a real URL at play time; anything else returns streamUrl as-is.
@@ -384,7 +384,7 @@ class MovieViewModel(
             // in-app engine entirely. History is still recorded (recently-watched); resume position
             // and the playing-movie HUD/progress tick are intentionally not — the external app owns
             // playback and OwnTV can't observe it.
-            if (settings.externalPlayer.first()) {
+            if (settings.externalPlayerMovies.first()) {
                 Log.d(TAG, "play movieId=${movie.id} -> external player")
                 val url = resolvedUrlOrNull(movie) ?: return@launch
                 externalPlayerLauncher.launch(url, movie.name)

@@ -79,7 +79,7 @@ class SearchViewModel(
 ) : ViewModel() {
 
     /** Global "External player" toggle — the screen must NOT open the fullscreen in-app player when on. */
-    val externalPlayerOn: kotlinx.coroutines.flow.StateFlow<Boolean> = settings.externalPlayer
+    val externalPlayerOn: kotlinx.coroutines.flow.StateFlow<Boolean> = settings.externalPlayerMovies
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private data class Ctx(
@@ -284,7 +284,7 @@ class SearchViewModel(
                 movie.streamUrl
             }
             // Global external-player toggle: same chokepoint behavior as MovieViewModel.play().
-            if (settings.externalPlayer.first()) {
+            if (settings.externalPlayerMovies.first()) {
                 externalPlayerLauncher.launch(url, movie.name)
                 return@launch
             }

@@ -152,6 +152,9 @@ fun OwnTVShell(
     val epgCanZap by epgVm.canZap.collectAsStateWithLifecycle()
     // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
     val liveOnExo by liveVm.liveOnExo.collectAsStateWithLifecycle()
+    // A catch-up archive programme is playing (Guide "Watch from start" or the Live TV catch-up picker)
+    // rather than the live stream — the HUD swaps live-only controls for the VOD ones.
+    val catchupActive by liveVm.catchupActive.collectAsStateWithLifecycle()
     val vodExoActive by player.exoActiveState.collectAsStateWithLifecycle()
     // Auto frame rate: only ever applied to the FULL-SCREEN surface (never the mini-player or the
     // in-pane Live preview) — see FrameRateController.
@@ -538,9 +541,18 @@ fun OwnTVShell(
                         selectedSection == MainSection.EPG -> EpgScreen(
                             onBack = { runCatching { sidebarFocus.requestFocus() } },
                             onFullscreen = { openFullscreen() },
-                            onPlayChannel = { ch, list ->
+                            onPlayChannel = { ch, _ ->
                                 restoreFocus = false
-                                liveVm.watchFullscreen(ch, list)
+                                liveVm.watchFromGuide(ch)
+                                zapSource = MainSection.LIVE_TV
+                                homeVm.stopPreview()
+                                // Live TV set to play externally → the channel went to another app;
+                                // don't mount the fullscreen player over it.
+                                if (playerMode != PlayerMode.MINI && !liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
+                            },
+                            onPlayCatchup = { ch, prog ->
+                                restoreFocus = false
+                                liveVm.playCatchupProgramme(ch, prog)
                                 zapSource = MainSection.LIVE_TV
                                 homeVm.stopPreview()
                                 if (playerMode != PlayerMode.MINI) playerMode = PlayerMode.FULLSCREEN
@@ -640,6 +652,11 @@ fun OwnTVShell(
                 }
                 // Live rewind controls apply to a Live-TV channel (live OR its timeshift archive).
                 val isLiveChannel = zapSource == MainSection.LIVE_TV
+                // ...but NOT to a catch-up archive programme. That's VOD-style playback of a past
+                // programme, so it gets the VOD engine toggle (reloads the same archive URL at the same
+                // position on the other engine) rather than Live TV's compatibility toggle, which would
+                // re-tune the live stream and jump the user to the current programme.
+                val isTunedLive = isLiveChannel && !catchupActive
                 // Favorite toggle for whatever is playing: the live channel, the movie, or the series
                 // (episodes favorite their parent series). Picked by the section that armed the stream.
                 val favToggle: (() -> Unit)? = when {
@@ -664,21 +681,21 @@ fun OwnTVShell(
                     inert = showChannelList || showHistoryList || showSubtitleSearch || showLocalSubPicker,
                     onChannelUp = zap?.let { z -> { z(-1) } },
                     onChannelDown = zap?.let { z -> { z(1) } },
-                    onOpenChannelList = if (isLiveChannel && liveCanZap) { { showChannelList = true } } else null,
-                    onOpenHistoryList = if (isLiveChannel) { { showHistoryList = true } } else null,
-                    onRewindLive = if (isLiveChannel && canRewindLive) liveVm::rewindLive else null,
-                    onForwardLive = if (isLiveChannel) liveVm::forwardLive else null,
-                    onGoToLive = if (isLiveChannel) liveVm::goToLive else null,
-                    onScrubLive = if (isLiveChannel && canRewindLive) liveVm::scrubLive else null,
-                    timeshiftOffsetSec = if (isLiveChannel) timeshiftOffset else null,
+                    onOpenChannelList = if (isTunedLive && liveCanZap) { { showChannelList = true } } else null,
+                    onOpenHistoryList = if (isTunedLive) { { showHistoryList = true } } else null,
+                    onRewindLive = if (isTunedLive && canRewindLive) liveVm::rewindLive else null,
+                    onForwardLive = if (isTunedLive) liveVm::forwardLive else null,
+                    onGoToLive = if (isTunedLive) liveVm::goToLive else null,
+                    onScrubLive = if (isTunedLive && canRewindLive) liveVm::scrubLive else null,
+                    timeshiftOffsetSec = if (isTunedLive) timeshiftOffset else null,
                     // Show the ACTUAL running engine (mpv when pinned OR auto-fallen-back), not just the pin —
                     // otherwise an auto-fallback to mpv still read "EXO". true = on mpv (pill shows MPV, teal).
-                    compatMode = if (isLiveChannel) !liveOnExo else null,
-                    onToggleCompatMode = if (isLiveChannel) liveVm::toggleForceMpv else null,
+                    compatMode = if (isTunedLive) !liveOnExo else null,
+                    onToggleCompatMode = if (isTunedLive) liveVm::toggleForceMpv else null,
                     // VOD engine toggle (movies/series only — live and catch-up channels keep their own
                     // engine handling above): flip the current item between mpv and ExoPlayer.
-                    vodOnExo = if (!isLiveStream && !isLiveChannel) vodExoActive else null,
-                    onToggleVodEngine = if (!isLiveStream && !isLiveChannel) player::toggleVodEngine else null,
+                    vodOnExo = if (!isLiveStream && !isTunedLive) vodExoActive else null,
+                    onToggleVodEngine = if (!isLiveStream && !isTunedLive) player::toggleVodEngine else null,
                     // ADD SUBTITLES entry: movies/episodes only, and only when the play path set an
                     // item context (subtitle plan §4). Opens the OpenSubtitles search overlay below.
                     onSearchSubtitles = if (!isLiveStream && !isLiveChannel && subtitleContext != null) {
