@@ -195,6 +195,14 @@
   automatic fallback stays out of the way for that channel until you tune elsewhere. If ExoPlayer really
   can't play it you stay there and can press the toggle again for mpv. Automatic tunes are unchanged —
   ExoPlayer first, mpv if it fails.
+- **Live preview no longer plays sound on surround channels when preview audio is off.** Channels with
+  5.1 audio (Dolby Digital / DTS) kept playing sound while browsing even with **Settings → Live TV →
+  Preview audio** turned off. The preview was muted by volume alone, which has no effect on a surround
+  bitstream passed straight through to the TV over HDMI — the TV received it at full level. The preview
+  now switches the audio track off entirely while muted, so every channel stays quiet. Radio and other
+  audio-only channels are unaffected and still play.
+- **The Preview audio setting now applies to a preview that's already playing.** Turning it on or off
+  took effect only on the next channel; it now changes the current preview immediately.
 - **A live channel opened from the Guide now appears in History.** Tuning a channel from the guide grid
   (or *Watch channel* in a programme popup) is recorded straight away, rather than going through the
   delay that exists to keep rapid channel-surfing out of your history.

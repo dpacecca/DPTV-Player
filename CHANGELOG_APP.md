@@ -55,6 +55,8 @@
 - **Switching engine during a catch-up recording jumped to the live programme**
 - **"Failed on both engines" on items that played fine on the next try**
 - **A live channel opened from the Guide did not appear in History**
+- **Live preview played sound on surround channels with preview audio off**
+- **The Preview audio setting did not apply to a preview already playing**
 
 ## v4.1.4 — 2026-07-24
 

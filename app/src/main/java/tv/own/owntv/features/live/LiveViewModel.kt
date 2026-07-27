@@ -577,6 +577,19 @@ class LiveViewModel(
     private val _liveOnExo = MutableStateFlow(false)
     val liveOnExo: StateFlow<Boolean> = _liveOnExo.asStateFlow()
 
+    // Apply the "Preview audio" toggle to a preview that is ALREADY playing — it used to take effect only
+    // on the next tune, so turning it off left the current channel audible until focus moved. Never while
+    // promoted to full-screen (_liveOnExo): that stream is meant to be heard.
+    // Declared HERE, below _liveOnExo/previewEngine: viewModelScope is Main.immediate, so this collector
+    // starts inline during construction and must not touch a property initialized further down the class.
+    init {
+        viewModelScope.launch {
+            livePreviewAudio.collect { on ->
+                if (!_liveOnExo.value && previewEngine.currentUrl != null) previewEngine.setMuted(!on)
+            }
+        }
+    }
+
     /** Called when anything OTHER than a promoted live channel takes over full-screen (a movie/episode,
      *  catch-up, an EPG/search channel — all play on mpv). Clears the ExoPlayer flag so the shell renders
      *  mpv's surface (not the leftover live channel) and stops the preview so it doesn't hold a connection. */
