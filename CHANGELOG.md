@@ -2,6 +2,35 @@
 
 ## v4.1.5 — unreleased
 
+### 💾 A proper backup file — `.own`, with your wallpaper inside and real encryption
+
+- Backups are now written as **`owntv-backup.own`** instead of a plain `owntv-backup.json`. It is one
+  container holding the backup itself plus any files that belong with it.
+- **Your background image travels with the backup.** The Liquid Glass wallpaper lives in OwnTV's own
+  storage, and a backup only ever carried its file *path* — which means nothing on another TV, so the
+  background silently came back blank after a restore. The picture's actual data now rides inside the
+  `.own` file and is put back in place on restore. It's included whenever the **App settings** section
+  is ticked.
+- **A backup password now encrypts the whole file, not just the passwords in it.** Before, only the
+  saved secrets (source & proxy passwords, TMDB key, OpenSubtitles login) were encrypted — your
+  playlist URLs, usernames, profile names and watch history sat next to them in readable text that
+  anyone opening the file could see. With a password, nothing in the file is readable without it, not
+  even the list of what's inside.
+  - Keep that password safe: **a `.own` backup encrypted with a password you've lost cannot be opened
+    at all.** Without a password the file isn't encrypted and saved secrets are left out, exactly as
+    before.
+  - Because a protected backup can't be read until it's unlocked, restoring one asks for the password
+    **first** and then shows what it contains. There is no "Skip" for these — there is nothing to
+    restore without the password. Older encrypted `.json` backups are unchanged: sections first,
+    password after, and Skip still restores everything except the saved passwords.
+- **Old backups still restore, and always will.** Restore accepts both `.own` and any `owntv-backup.json`
+  from an earlier version. The file is identified by its contents rather than its name, so a renamed
+  file works too. Restoring an old `.json` no longer leaves a dead background-image path behind.
+- Sending a backup between TVs over Wi‑Fi works exactly as before and transfers `.own` files, in both
+  directions.
+- Note for anyone downgrading: an older OwnTV build cannot read a `.own` file. Keep a `.json` backup if
+  you plan to go back to an older version.
+
 ### 🗂️ Browsing & lists — decide what Live TV, Movies and Series come back to
 
 - A new **Settings → Browsing & lists** popup with **six toggles**, two for each of Live TV, Movies and

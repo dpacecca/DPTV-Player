@@ -80,7 +80,7 @@ Scan to join from your phone:
 
 ### 🎨 Settings & Robustness
 - Material 3 theming & accent, **Liquid Glass** frosted look over your own background photo, searchable settings, sidebar/category customization, external player, weather chip
-- **Backup & Restore** locally or over Wi-Fi, in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
+- **Backup & Restore** locally or over Wi-Fi — a single `.own` file carrying your background image, optionally encrypted end to end with your own password (older `.json` backups still restore); in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
 
 📖 Full details: **[player reference →](extras/player.html)** · **[user guide →](extras/USER_GUIDE.md)**
 

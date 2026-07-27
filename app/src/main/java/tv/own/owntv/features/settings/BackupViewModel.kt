@@ -70,21 +70,35 @@ class BackupViewModel(
         data object Idle : State
         data object Working : State
 
-        /** A restore file was picked & inspected: let the user choose which sections to apply. */
+        /** A restore file was picked & inspected: let the user choose which sections to apply.
+         *  [password] is non-null only for a sealed `.own` already unlocked in the step before —
+         *  it must ride through to the import, or the file would have to be decrypted twice. */
         data class ChooseRestore(
             val file: File,
             val available: Set<BackupManager.Section>,
             val encrypted: Boolean,
+            val password: String? = null,
         ) : State
         data class Done(val message: String) : State
         data class Error(val message: String) : State
 
-        /** Encrypted restore needs the backup password — [retry] is true after a wrong attempt. */
+        /**
+         * Encrypted restore needs the backup password — [retry] is true after a wrong attempt.
+         *
+         * [sections] is null for a **sealed** `.own` container, which is asked for the password
+         * BEFORE anything else: none of its contents — not even the section list — is readable until
+         * it is decrypted, so there is nothing to pick yet and nothing to gain by skipping.
+         * A non-null [sections] is the older field-encrypted flow: sections picked, password
+         * optional, skipping restores everything but the saved passwords.
+         */
         data class NeedPassword(
             val file: File,
-            val sections: Set<BackupManager.Section>,
+            val sections: Set<BackupManager.Section>?,
             val retry: Boolean = false,
-        ) : State
+        ) : State {
+            /** Whole-file encryption: the password is mandatory and there is nothing to skip to. */
+            val sealed: Boolean get() = sections == null
+        }
     }
 
     private val _state = MutableStateFlow<State>(State.Idle)
@@ -105,13 +119,39 @@ class BackupViewModel(
         }
     }
 
-    /** Step 1 of restore: inspect the picked file so the section picker can show what's inside. */
+    /**
+     * Step 1 of restore: inspect the picked file so the section picker can show what's inside.
+     *
+     * A sealed `.own` can't be inspected at all yet — it asks for the password first and comes back
+     * through [unlock]. Everything else (plain `.own`, legacy `.json`) inspects immediately.
+     */
     fun inspect(file: File) {
         viewModelScope.launch {
             _state.value = State.Working
+            if (backup.isSealed(file)) {
+                _state.value = State.NeedPassword(file, sections = null)
+                return@launch
+            }
             backup.sectionsIn(file).fold(
                 onSuccess = { _state.value = State.ChooseRestore(file, it.sections, it.encrypted) },
                 onFailure = { _state.value = State.Error(it.message ?: "Couldn't read the backup file") },
+            )
+        }
+    }
+
+    /** Sealed-container step 1b: decrypt with [password], then show the section picker. */
+    fun unlock(file: File, password: String) {
+        viewModelScope.launch {
+            _state.value = State.Working
+            backup.sectionsIn(file, password).fold(
+                onSuccess = { _state.value = State.ChooseRestore(file, it.sections, it.encrypted, password) },
+                onFailure = {
+                    _state.value = if (it is BackupManager.WrongPasswordException) {
+                        State.NeedPassword(file, sections = null, retry = true)
+                    } else {
+                        State.Error(it.message ?: "Couldn't read the backup file")
+                    }
+                },
             )
         }
     }
@@ -138,10 +178,19 @@ class BackupViewModel(
         }
     }
 
-    /** Restore proceeds: either prompt for the password (encrypted) or import straight away. */
-    fun beginImport(file: File, sections: Set<BackupManager.Section>, encrypted: Boolean) {
-        if (encrypted) _state.value = State.NeedPassword(file, sections)
-        else import(file, sections, null)
+    /** Restore proceeds: import straight away when we already hold the password (sealed container,
+     *  unlocked in [unlock]) or nothing is encrypted; otherwise prompt for the optional passphrase. */
+    fun beginImport(
+        file: File,
+        sections: Set<BackupManager.Section>,
+        encrypted: Boolean,
+        password: String? = null,
+    ) {
+        when {
+            password != null -> import(file, sections, password)
+            encrypted -> _state.value = State.NeedPassword(file, sections)
+            else -> import(file, sections, null)
+        }
     }
 
     fun reset() { _state.value = State.Idle }

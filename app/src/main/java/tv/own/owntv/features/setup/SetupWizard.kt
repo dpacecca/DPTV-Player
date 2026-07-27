@@ -324,8 +324,12 @@ private fun ImportBackupScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                if (state.retry) "That password didn't match. Try again, or skip to restore everything except saved passwords."
-                else "This backup's passwords are encrypted. Enter the backup password to restore them, or skip to restore everything else and re-enter passwords later.",
+                when {
+                    state.retry && state.sealed -> "That password didn't match. This backup is encrypted — it can't be opened without the password it was created with."
+                    state.retry -> "That password didn't match. Try again, or skip to restore everything except saved passwords."
+                    state.sealed -> "This backup is encrypted. Enter the backup password to open and restore it."
+                    else -> "This backup's passwords are encrypted. Enter the backup password to restore them, or skip to restore everything else and re-enter passwords later."
+                },
                 style = MaterialTheme.typography.bodyMedium, color = OwnTVTheme.colors.onSurfaceVariant,
                 textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 520.dp),
             )
@@ -341,7 +345,10 @@ private fun ImportBackupScreen(
             Spacer(Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OwnTVButton("Back", onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
-                OwnTVButton("Skip (no passwords)", onClick = { onPassword(state.file, null) }, style = OwnTVButtonStyle.SECONDARY)
+                // No "Skip" for a sealed container: without the password there is nothing to restore.
+                if (!state.sealed) {
+                    OwnTVButton("Skip (no passwords)", onClick = { onPassword(state.file, null) }, style = OwnTVButtonStyle.SECONDARY)
+                }
                 OwnTVButton("Restore", onClick = { onPassword(state.file, password) }, enabled = password.isNotBlank())
             }
         }
@@ -355,7 +362,8 @@ private fun ImportBackupScreen(
         else -> StorageBrowser(
             title = "Pick a backup file to restore",
             mode = BrowseMode.FILE,
-            fileExtensions = setOf("json"),
+            // `.own` containers plus pre-4.2 `.json` backups.
+            fileExtensions = tv.own.owntv.core.backup.BackupManager.RESTORE_EXTENSIONS,
             onPick = onPick,
             onDismiss = onBack,
         )

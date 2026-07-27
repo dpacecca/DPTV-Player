@@ -209,7 +209,7 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             sections = BackupManager.Section.entries.filter { it in choose.available },
             initial = choose.available,
             confirmLabel = "Restore",
-            onConfirm = { chosen -> vm.beginImport(choose.file, chosen, choose.encrypted) },
+            onConfirm = { chosen -> vm.beginImport(choose.file, chosen, choose.encrypted, choose.password) },
             onDismiss = { vm.reset() },
         )
     }
@@ -218,7 +218,8 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         StorageBrowser(
             title = if (browser == BrowseMode.FOLDER) "Choose a folder to save the backup" else "Pick a backup file to restore",
             mode = browser,
-            fileExtensions = setOf("json"),
+            // `.own` is what we write now; `.json` stays so pre-4.2 backups keep restoring.
+            fileExtensions = BackupManager.RESTORE_EXTENSIONS,
             onPick = { file -> showBrowser = false; if (browser == BrowseMode.FOLDER) exportFolder = file else vm.inspect(file) },
             onDismiss = { showBrowser = false },
         )
@@ -227,31 +228,40 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Export step 3: ask whether to protect passwords with a backup passphrase (or export without them).
     exportFolder?.let { folder ->
         BackupPasswordDialog(
-            title = "Protect passwords?",
-            message = "Source and proxy passwords can be encrypted with a backup password you choose. " +
-                "You'll need the same password to restore them on another device. Without one, passwords " +
-                "are left out of the file and must be re-entered after restoring.",
+            title = "Encrypt this backup?",
+            message = "With a backup password, the whole file is encrypted — playlists, profiles and saved " +
+                "passwords included — and nothing in it can be read without that password. Keep it safe: " +
+                "if you lose it, the backup cannot be opened at all. Without a password the file is not " +
+                "encrypted and saved passwords are left out of it.",
             confirmLabel = "Encrypt & export",
-            skipLabel = "Export without passwords",
+            skipLabel = "Export unencrypted",
             onConfirm = { pass -> exportFolder = null; vm.export(folder, exportSections, pass, exportProfiles) },
             onSkip = { exportFolder = null; vm.export(folder, exportSections, null, exportProfiles) },
             onDismiss = { exportFolder = null },
         )
     }
 
-    // Restore step 3 (encrypted only): prompt for the backup password, allow skipping or retrying.
+    // Restore password prompt. Two shapes, see BackupViewModel.State.NeedPassword:
+    //  - sealed .own  → asked FIRST, mandatory; unlocking then reveals the section picker.
+    //  - field-encrypted → asked after the section picker, optional (skip = no saved passwords).
     (state as? BackupViewModel.State.NeedPassword)?.let { need ->
         BackupPasswordDialog(
             title = if (need.retry) "Wrong backup password" else "Enter backup password",
-            message = if (need.retry)
-                "That password didn't match. Try again, or skip to restore everything except saved passwords."
-            else
-                "This backup's passwords are encrypted. Enter the backup password to restore them, or skip " +
-                    "to restore everything else and re-enter passwords later.",
-            confirmLabel = "Restore",
-            skipLabel = "Skip (no passwords)",
-            onConfirm = { pass -> vm.import(need.file, need.sections, pass) },
-            onSkip = { vm.import(need.file, need.sections, null) },
+            message = when {
+                need.retry && need.sealed -> "That password didn't match. This backup is encrypted — it can't be " +
+                    "opened without the password it was created with."
+                need.retry -> "That password didn't match. Try again, or skip to restore everything except saved passwords."
+                need.sealed -> "This backup is encrypted. Enter the backup password to open it and choose what to restore."
+                else -> "This backup's passwords are encrypted. Enter the backup password to restore them, or skip " +
+                    "to restore everything else and re-enter passwords later."
+            },
+            confirmLabel = if (need.sealed) "Unlock" else "Restore",
+            skipLabel = if (need.sealed) null else "Skip (no passwords)",
+            onConfirm = { pass ->
+                val sections = need.sections
+                if (sections == null) vm.unlock(need.file, pass) else vm.import(need.file, sections, pass)
+            },
+            onSkip = { need.sections?.let { vm.import(need.file, it, null) } },
             onDismiss = { vm.reset() },
         )
     }
@@ -270,12 +280,13 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Remote export step 2: password prompt, then export to cache + start serving the file.
     if (showRemoteExportPassword) {
         BackupPasswordDialog(
-            title = "Protect passwords?",
-            message = "Source and proxy passwords can be encrypted with a backup password you choose. " +
-                "You'll need the same password to restore them on another device. Without one, passwords " +
-                "are left out of the file and must be re-entered after restoring.",
+            title = "Encrypt this backup?",
+            message = "With a backup password, the whole file is encrypted — playlists, profiles and saved " +
+                "passwords included — and nothing in it can be read without that password. Keep it safe: " +
+                "if you lose it, the backup cannot be opened at all. Without a password the file is not " +
+                "encrypted and saved passwords are left out of it.",
             confirmLabel = "Encrypt & prepare",
-            skipLabel = "Prepare without passwords",
+            skipLabel = "Prepare unencrypted",
             onConfirm = { pass -> showRemoteExportPassword = false; showRemoteExport = true; vm.exportRemote(exportSections, pass, exportProfiles) },
             onSkip = { showRemoteExportPassword = false; showRemoteExport = true; vm.exportRemote(exportSections, null, exportProfiles) },
             onDismiss = { showRemoteExportPassword = false },
@@ -357,7 +368,8 @@ private fun BackupPasswordDialog(
     title: String,
     message: String,
     confirmLabel: String,
-    skipLabel: String,
+    /** Null hides the skip button entirely — a sealed `.own` has nothing to fall back to. */
+    skipLabel: String?,
     onConfirm: (String) -> Unit,
     onSkip: () -> Unit,
     onDismiss: () -> Unit,
@@ -385,7 +397,7 @@ private fun BackupPasswordDialog(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
-                OwnTVButton(skipLabel, onClick = onSkip, style = OwnTVButtonStyle.SECONDARY)
+                if (skipLabel != null) OwnTVButton(skipLabel, onClick = onSkip, style = OwnTVButtonStyle.SECONDARY)
                 OwnTVButton(confirmLabel, onClick = { onConfirm(password) }, enabled = password.isNotBlank())
             }
         }

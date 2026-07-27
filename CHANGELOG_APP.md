@@ -13,6 +13,7 @@
 
 ### ✨ New features
 
+- **💾 A proper backup file — `.own`, with your wallpaper inside and real encryption**
 - **🗂️ Browsing & lists — decide what Live TV, Movies and Series come back to**
 - **🌍 Metadata language — descriptions and posters in your language**
 - **🎞️ Auto frame rate — match the TV's refresh rate to the video**

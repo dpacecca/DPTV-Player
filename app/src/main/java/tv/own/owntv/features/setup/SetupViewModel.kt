@@ -110,8 +110,10 @@ class SetupViewModel(
         /** Per-type breakdown (incl. EPG) shown on the onboarding "All set" screen. */
         data class Success(val summary: String) : ImportState
         data class Failed(val message: String) : ImportState
-        /** Encrypted backup needs the backup password before restoring; [retry] after a wrong attempt. */
-        data class NeedPassword(val file: File, val retry: Boolean = false) : ImportState
+        /** Encrypted backup needs the backup password before restoring; [retry] after a wrong attempt.
+         *  [sealed] marks a whole-file-encrypted `.own`, where the password is mandatory — there is
+         *  nothing to restore without it, so the wizard hides "Skip". */
+        data class NeedPassword(val file: File, val retry: Boolean = false, val sealed: Boolean = false) : ImportState
     }
 
     private val _state = MutableStateFlow<ImportState>(ImportState.Idle)
@@ -356,6 +358,11 @@ class SetupViewModel(
     fun importBackup(file: File, onDone: () -> Unit) {
         viewModelScope.launch {
             _state.value = ImportState.Running
+            // A sealed .own reveals nothing before it is decrypted — ask for the password first.
+            if (backup.isSealed(file)) {
+                _state.value = ImportState.NeedPassword(file, sealed = true)
+                return@launch
+            }
             val inspection = backup.sectionsIn(file).getOrElse {
                 _state.value = ImportState.Failed(it.message ?: "Couldn't read the backup file")
                 return@launch
@@ -383,7 +390,9 @@ class SetupViewModel(
                 onDone()
             },
             onFailure = {
-                if (it is BackupManager.WrongPasswordException) _state.value = ImportState.NeedPassword(file, retry = true)
+                if (it is BackupManager.WrongPasswordException) {
+                    _state.value = ImportState.NeedPassword(file, retry = true, sealed = backup.isSealed(file))
+                }
                 else _state.value = ImportState.Failed(it.message ?: "Restore failed")
             },
         )

@@ -596,19 +596,25 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   resume positions, **manual Move positions** and app settings. Export starts by asking **which
   profiles** to include — the file contains only the selected profiles and their data. Including a
   **PIN-locked profile** that isn't your current one requires entering its PIN; without the PIN it
-  simply stays out of the backup. Then choose the data sections as before. On export you can set a **backup password** to encrypt saved
-  passwords (source & proxy, plus your own TMDB API key and each profile's **OpenSubtitles login** if
-  set); without one, those secrets are left out of
-  the file. Restoring an encrypted
-  backup asks for that password — enter it to bring passwords back, or **Skip** to restore everything
-  else and re‑enter passwords later. **Restore merges — it never deletes your existing profiles or
+  simply stays out of the backup. Then choose the data sections as before. Backups are saved as a
+  single **`owntv-backup.own`** file, which also carries your **background image** (with the App
+  settings section) so the wallpaper comes back on the other TV instead of blank. On export you can set
+  a **backup password**, which encrypts the **whole file** — playlists, profiles, history and the saved
+  secrets (source & proxy passwords, your own TMDB API key and each profile's **OpenSubtitles login**)
+  — so nothing in it can be read without that password. **Keep it safe: a protected backup cannot be
+  opened at all if you lose the password.** Without a password the file is not encrypted and those
+  secrets are simply left out. Restoring a protected `.own` asks for the password **first**, then shows
+  what's inside; there is no Skip, since nothing can be restored without it. **Older `.json` backups
+  still restore** — those ask for the password after you pick the sections, and **Skip** restores
+  everything except the saved passwords, as before. **Restore merges — it never deletes your existing profiles or
   sources:** a profile with the same **name** as one already on the device is updated from the backup,
   profiles only in the backup are added, and everything else stays put (that's also why profile names
   must be unique — the app matches by name). Backups also preserve your **per‑source Auto refresh** choices,
   your **default source**, any **compatibility‑mode / per‑item engine pins** (Live and Movies/Series),
   your **custom TMDB names** (long‑press → Custom TMDB name) and recent searches,
   so a restored setup behaves exactly like the original. Older backup files still restore fine — anything
-  they don't contain just keeps its default. **Move a backup between TVs over Wi‑Fi:** choose **Restore
+  they don't contain just keeps its default. (An older OwnTV version cannot read a new `.own` file, so keep
+  a `.json` backup if you plan to go back to one.) **Move a backup between TVs over Wi‑Fi:** choose **Restore
   from another device** (also offered in the setup wizard) to show a PIN + QR — a phone or laptop on the
   same network uploads a backup file straight to the TV, which then runs the normal restore. **Send to
   another device** does the reverse, serving the exported backup for a remote device to download. No USB
