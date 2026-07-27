@@ -38,7 +38,8 @@ This is an **open-source** project — the code is original (not derived from an
 targets **Android TV only** (leanback launcher, D-pad-first UI).
 
 > ### 📖 New here? Read the [**User Guide & Hidden Features →**](extras/USER_GUIDE.md)
-> Long‑press to favourite, **Left** for the channel list, the MPV/EXO toggle's **compatibility mode**,
+> Long‑press to favourite, **Left** for the channel list and **Right** for recently watched, the
+> MPV/EXO toggle's **compatibility mode**,
 > catch‑up from the Guide, startup landing, A/V‑sync — all the remote shortcuts in one place.
 
 ---

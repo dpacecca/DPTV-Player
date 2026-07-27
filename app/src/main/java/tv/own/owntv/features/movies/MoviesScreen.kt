@@ -647,7 +647,7 @@ private fun MovieContextMenu(
             Spacer(Modifier.height(4.dp))
             OwnTVButton(
                 if (isFavorite) "Remove from Favourites" else "Add to Favourites",
-                onClick = onToggleFavorite, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.STAR,
+                onClick = onToggleFavorite, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.FAVORITE,
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )
             OwnTVButton(
@@ -892,7 +892,7 @@ private fun MovieListRow(
                 }
             }
             if (isFavorite) {
-                OwnTVIcon(OwnTVIcon.STAR, tint = colors.primary, modifier = Modifier.size(18.dp))
+                OwnTVIcon(OwnTVIcon.FAVORITE, tint = colors.primary, modifier = Modifier.size(18.dp))
             }
         }
     }

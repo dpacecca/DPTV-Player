@@ -511,15 +511,64 @@ class LiveViewModel(
         }
     }
 
-    // The ordered channel list of the row the user opened fullscreen from, so the player HUD can
-    // zap up/down with the remote without going back to the list. Snapshot of the loaded paging
-    // window (enough neighbours either side of the opened channel).
+    // The ordered channel list the player zaps within (CH+/CH-, D-pad up/down) and shows in the
+    // left-hand overlay. It is ALWAYS the playing channel's own provider category — never the rail
+    // the user happened to launch from. Opening a channel from History or All Channels used to leave
+    // the player stuck browsing that rail; now tuning re-arms the list from `channel.categoryId`.
     private var zapList: List<ChannelEntity> = emptyList()
     private val _canZap = MutableStateFlow(false)
     val canZap: StateFlow<Boolean> = _canZap.asStateFlow()
     // The opened channel list, exposed so the in-player channel-list overlay can show & jump within it.
     private val _zapChannels = MutableStateFlow<List<ChannelEntity>>(emptyList())
     val zapChannels: StateFlow<List<ChannelEntity>> = _zapChannels.asStateFlow()
+    /** Heading for the left overlay — the playing channel's category name (or "All Channels"). */
+    private val _zapListTitle = MutableStateFlow("Channels")
+    val zapListTitle: StateFlow<String> = _zapListTitle.asStateFlow()
+    /** The category [zapList] was built from; null means the uncategorized → All fallback. */
+    private var zapCategoryId: Long? = null
+    private var zapArmed = false
+    private var zapListJob: Job? = null
+
+    /** Rebuild [zapList] from [channel]'s own provider category. No-op while zapping inside the same
+     *  category (the list is already right), so CH+/CH- stays a pure in-memory step. */
+    private fun armZapList(channel: ChannelEntity) {
+        if (zapArmed && channel.categoryId == zapCategoryId && zapList.any { it.id == channel.id }) return
+        zapListJob?.cancel()
+        zapListJob = viewModelScope.launch {
+            val catId = channel.categoryId
+            val pid = currentProfileId()
+            val raw = withContext(Dispatchers.IO) {
+                if (catId != null && pid != null) {
+                    channelDao.snapshotByCategoryManual(catId, pid, folderContextKeys.value[catId] ?: "", ZAP_LIST_LIMIT)
+                } else {
+                    // No category on this row (hand-made M3U entries) — fall back to All Channels.
+                    channelDao.snapshotAll(ctx.value.sourceIds.ifEmpty { listOf(-1L) }, ZAP_LIST_LIMIT)
+                }
+            }
+            // Same hide/rename treatment the browsing lists get, so the overlay matches what the user sees.
+            val cust = custom.value
+            val hiddenCats = hiddenCategoryIds.value
+            val list = raw
+                .filter { CustomizeKeys.channel(it) !in cust.hiddenItems && (it.categoryId == null || it.categoryId !in hiddenCats) }
+                .map { ch -> cust.itemNames[CustomizeKeys.channel(ch)]?.let { ch.copy(name = it) } ?: ch }
+            zapCategoryId = catId
+            zapArmed = true
+            zapList = list
+            _zapChannels.value = list
+            _canZap.value = list.size > 1
+            _zapListTitle.value = (catId?.let { categoryDao.getById(it)?.name })?.takeIf { it.isNotBlank() } ?: "All Channels"
+        }
+    }
+
+    /** The profile's recently-watched channels, for the right-hand in-player history overlay. */
+    suspend fun historyChannels(limit: Int = HISTORY_LIST_LIMIT): List<ChannelEntity> {
+        val pid = currentProfileId() ?: return emptyList()
+        val cust = custom.value
+        val hiddenCats = hiddenCategoryIds.value
+        return channelDao.recentlyWatched(pid, limit).first()
+            .filter { CustomizeKeys.channel(it) !in cust.hiddenItems && (it.categoryId == null || it.categoryId !in hiddenCats) }
+            .map { ch -> cust.itemNames[CustomizeKeys.channel(ch)]?.let { ch.copy(name = it) } ?: ch }
+    }
 
     /** True when full-screen is running on the **ExoPlayer** engine (a promoted preview) rather than mpv.
      *  The shell renders the ExoPlayer surface instead of mpv's when this is set. */
@@ -563,11 +612,10 @@ class LiveViewModel(
         return channelDao.recentlyWatched(pid, 1).first().firstOrNull()
     }
 
-    /** Open a channel fullscreen, remembering [list] so the remote can zap up/down from here. */
+    /** Open a channel fullscreen. [list] is the rail the user launched from and is deliberately IGNORED:
+     *  the player always zaps/browses within the channel's own provider category ([armZapList]). */
+    @Suppress("UNUSED_PARAMETER")
     fun watchFullscreen(channel: ChannelEntity, list: List<ChannelEntity>) {
-        zapList = list
-        _zapChannels.value = list
-        _canZap.value = list.size > 1
         ensurePlaying(channel)
     }
 
@@ -590,6 +638,7 @@ class LiveViewModel(
      *  used to drop to mpv and stick on a black screen for HLS). */
     fun ensurePlaying(channel: ChannelEntity) {
         _previewChannel.value = channel
+        armZapList(channel) // zap/browse within THIS channel's category, whatever rail we came from
         timeshiftJob?.cancel(); tickJob?.cancel(); _timeshiftOffsetSec.value = null // normal live = not timeshifted
         // Self-learning routing: a channel the user pinned to mpv skips ExoPlayer entirely (no artifacts/silent
         // first), straight to the engine that plays it. Everyone else gets the fast ExoPlayer-first path.
@@ -699,15 +748,11 @@ class LiveViewModel(
         }
     }
 
+    /** [zapChannels] is the caller's rail and is deliberately IGNORED — the zap/overlay list always comes
+     *  from the channel's own category ([armZapList]), which also fixes the stale-list case in #55. */
+    @Suppress("UNUSED_PARAMETER")
     suspend fun ensurePlayingByIdAsync(channelId: Long, zapChannels: List<ChannelEntity> = emptyList()): Boolean {
         val channel = channelDao.getById(channelId) ?: return false
-        zapList = zapChannels
-        // Also drive the left-arrow channel-list overlay, which reads _zapChannels. Without this, a
-        // channel launched from Home (Keep Watching / Favourites) left the overlay showing the stale
-        // list from the previous Live-TV session (#55). CH+/CH- already used zapList, so only the
-        // overlay was wrong — keep both in sync here as watchFullscreen() does.
-        _zapChannels.value = zapChannels
-        _canZap.value = zapChannels.size > 1
         ensurePlaying(channel)
         return true
     }
@@ -1131,8 +1176,12 @@ class LiveViewModel(
         // Match EPG picker: how many guide channels to scan for name-ranking vs. show in the dialog.
         const val EPG_PICKER_SCAN_LIMIT = 20_000
         const val EPG_PICKER_RESULT_LIMIT = 300
+        // In-player channel lists: one category is normally far smaller, but cap the uncategorized
+        // → All Channels fallback so a huge playlist can't be pulled into memory on every tune.
+        const val ZAP_LIST_LIMIT = 2_000
+        const val HISTORY_LIST_LIMIT = 30
         val defaultRail = listOf(
-            LiveRailItem(LiveKey.Favorites, "Favorites", OwnTVIcon.STAR),
+            LiveRailItem(LiveKey.Favorites, "Favorites", OwnTVIcon.FAVORITE),
             LiveRailItem(LiveKey.History, "History", OwnTVIcon.HISTORY),
             LiveRailItem(LiveKey.All, "All Channels"),
         )

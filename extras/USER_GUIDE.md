@@ -186,12 +186,18 @@ or **narrow the whole app to just one**.
   **Settings → Customize Categories & Items**.
 
 ### Inside the full‑screen live player
-- 🗓️ **Guide card**: bring up the controls (press OK) and a card on the **right edge** shows the
-  channel's **Before / Now playing / Next** programmes with times (from your EPG, or the provider's
-  short guide). It's informational only — it never takes D‑pad focus.
+- 🗓️ **Top bar**: bring up the controls (press OK) and one strip across the top shows **back · channel
+  logo · quality/audio chips · channel name**, then the **Now / Next** programmes with times (from your
+  EPG, or the provider's short guide). The Now line has a thin progress bar and the minutes left, and
+  updates by itself. It's informational only — it never takes D‑pad focus.
 - **Left key → channel list**: with the on‑screen controls hidden, press **Left** to pop up a **channel
-  list overlay** — scroll and **OK** to switch channels without leaving full‑screen. Each row also shows
-  the **current programme** (small line) so you can pick by what's on.
+  list overlay** for the **playing channel's own category** (its name is the heading) — scroll and **OK**
+  to switch channels without leaving full‑screen. Each row also shows the **current programme** (small
+  line) so you can pick by what's on. Press **Left** again, or **Back**, to close it.
+- **Right key → History list**: press **Right** with the controls hidden for the **last 30 channels you
+  watched**, so you can hop back without leaving full screen. Press **Right** again, or **Back**, to close.
+- ⓘ **Stream info** is the right‑most button on the control bar; **Back** exits full screen (there's no
+  separate exit button).
 - **CH+ / CH−** (or Up/Down on the channel‑list overlay) zap through the current category.
 - 🔧 **Compatibility mode (two playback engines)**: live channels play on the fast **ExoPlayer** engine by
   default. If a channel shows **UHD artifacts**, won't open, or stutters, bring up the controls and press the
@@ -241,7 +247,7 @@ or **narrow the whole app to just one**.
   they queue and show one after another.
 - ⭐ **Favourites from the Guide**: **long‑press a channel label** to add/remove it from Favourites
   (the same menu also holds the EPG match options), or use the **Favourite** button inside a
-  programme's details. Stars apply everywhere — Live TV, Search, and the Home Favourites rail.
+  programme's details. Favourites apply everywhere — Live TV, Search, and the Home Favourites rail.
 - **Auto‑match EPG**: the guide can smart‑match your channels to guide data; you can also fix one channel
   manually via the long‑press channel menu.
 - 🙈 **Hidden categories stay hidden**: categories you hide via long‑press → Customize are excluded
@@ -406,7 +412,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 | **Subtitles** | Pick a subtitle track (incl. **image subtitles**) and set **subtitle delay**. Live channels with **embedded closed captions (CC)** — common on US channels — show a CC track on both engines; on mpv, selecting it briefly switches the channel to software decoding (≤1080p) and hardware decoding returns when CC is turned off. On raw `.ts` channels the CC entry always appears, even when the channel carries no captions. |
 | **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±50 ms** steps) — use this if surround makes lips drift. |
 | **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · buffer. |
-| **Favorite** (★) | Add or remove what you're watching from **Favorites** without leaving the stream — a live channel, a movie, or a series (an episode favorites its parent show). The star fills when it's already a favorite. |
+| **Favorite** (♥) | Add or remove what you're watching from **Favorites** without leaving the stream — a live channel, a movie, or a series (an episode favorites its parent show). The heart fills when it's already a favorite. |
 | **Speed** | Playback speed (VOD). |
 | **MPV/EXO (⇄)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (shows the active engine; teal on the non‑default one). Flipping it briefly confirms "Switched to MPV/ExoPlayer" at the bottom. |
 | **Aspect/Zoom** | Change aspect ratio / zoom (works in every render mode). |

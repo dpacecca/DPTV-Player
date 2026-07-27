@@ -418,7 +418,7 @@ private fun ResultRow(
                 }
             }
             if (isFavorite) {
-                OwnTVIcon(OwnTVIcon.STAR, tint = colors.primary, modifier = Modifier.size(18.dp))
+                OwnTVIcon(OwnTVIcon.FAVORITE, tint = colors.primary, modifier = Modifier.size(18.dp))
             }
         }
     }

@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.launcher.LauncherDeepLink
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.launcher.LauncherLaunch
@@ -162,7 +163,10 @@ fun OwnTVShell(
     var zapSource by remember { mutableStateOf<MainSection?>(null) }
     // In-player channel-list overlay (Left while controls hidden, live only).
     var showChannelList by remember { mutableStateOf(false) }
+    // In-player watch-history list (Right while controls hidden, live only).
+    var showHistoryList by remember { mutableStateOf(false) }
     val zapChannels by liveVm.zapChannels.collectAsStateWithLifecycle()
+    val zapListTitle by liveVm.zapListTitle.collectAsStateWithLifecycle()
     val previewChannel by liveVm.previewChannel.collectAsStateWithLifecycle()
     // Favorite state for the player HUD's in-stream favorite toggle (live channel / movie / series).
     val liveFavoriteIds by liveVm.favoriteIds.collectAsStateWithLifecycle()
@@ -175,6 +179,16 @@ fun OwnTVShell(
     val overlayNowPlaying by produceState<Map<Long, String>>(emptyMap(), showChannelList, zapChannels) {
         if (!showChannelList || zapChannels.size <= 1) { value = emptyMap(); return@produceState }
         value = runCatching { liveVm.nowPlayingFor(zapChannels) }.getOrDefault(emptyMap())
+    }
+    // Recently-watched channels for the right-hand history overlay — re-read each time it opens (and
+    // after a zap, since tuning writes a new history row) so the newest channel is always on top.
+    val historyChannels by produceState(emptyList<ChannelEntity>(), showHistoryList, previewChannel?.id) {
+        if (!showHistoryList) { value = emptyList(); return@produceState }
+        value = runCatching { liveVm.historyChannels() }.getOrDefault(emptyList())
+    }
+    val historyNowPlaying by produceState<Map<Long, String>>(emptyMap(), historyChannels) {
+        if (historyChannels.isEmpty()) { value = emptyMap(); return@produceState }
+        value = runCatching { liveVm.nowPlayingFor(historyChannels) }.getOrDefault(emptyMap())
     }
     // Batch 7 — the single most-recent resumable item, surfaced as a shared top-bar "Continue" chip.
     val continueTarget by homeVm.continueTarget.collectAsStateWithLifecycle()
@@ -249,6 +263,7 @@ fun OwnTVShell(
         resumeVideo() // restore mpv `vid=auto` before stop so the next played item isn't left video-less
         playerMode = PlayerMode.NONE
         showChannelList = false
+        showHistoryList = false
         liveVm.onFullscreenExited() // no longer full-screen on ExoPlayer → let the preview re-take the engine
         player.stop()
         subtitleController.clear() // leaving the player drops the OpenSubtitles item context
@@ -646,10 +661,11 @@ fun OwnTVShell(
                     onAudioMode = toAudioMode,
                     // The channel-list overlay draws ABOVE the HUD; while it's open the HUD goes inert so
                     // its hide/error focus grabs can't yank D-pad focus off the overlay.
-                    inert = showChannelList || showSubtitleSearch || showLocalSubPicker,
+                    inert = showChannelList || showHistoryList || showSubtitleSearch || showLocalSubPicker,
                     onChannelUp = zap?.let { z -> { z(-1) } },
                     onChannelDown = zap?.let { z -> { z(1) } },
                     onOpenChannelList = if (isLiveChannel && liveCanZap) { { showChannelList = true } } else null,
+                    onOpenHistoryList = if (isLiveChannel) { { showHistoryList = true } } else null,
                     onRewindLive = if (isLiveChannel && canRewindLive) liveVm::rewindLive else null,
                     onForwardLive = if (isLiveChannel) liveVm::forwardLive else null,
                     onGoToLive = if (isLiveChannel) liveVm::goToLive else null,
@@ -713,13 +729,28 @@ fun OwnTVShell(
                     )
                 }
                 tv.own.owntv.ui.components.InAppToast(localSubToast)
+                // Left — the playing channel's own provider category.
                 if (showChannelList && isLiveChannel && zapChannels.size > 1) {
                     tv.own.owntv.features.shell.components.ChannelListOverlay(
                         channels = zapChannels,
                         currentId = previewChannel?.id,
                         nowPlaying = overlayNowPlaying,
+                        title = zapListTitle,
                         onSelect = { liveVm.ensurePlaying(it); showChannelList = false },
                         onDismiss = { showChannelList = false },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+                // Right — recently watched, to hop straight back to the previous channel.
+                if (showHistoryList && isLiveChannel && historyChannels.isNotEmpty()) {
+                    tv.own.owntv.features.shell.components.ChannelListOverlay(
+                        channels = historyChannels,
+                        currentId = previewChannel?.id,
+                        nowPlaying = historyNowPlaying,
+                        title = "History",
+                        alignEnd = true,
+                        onSelect = { liveVm.ensurePlaying(it); showHistoryList = false },
+                        onDismiss = { showHistoryList = false },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -839,7 +870,7 @@ private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (
     MainSection.HOME -> emptyList()
     MainSection.EPG -> emptyList()
     MainSection.LIVE_TV -> listOf(
-        RailCategory("Favorites", OwnTVIcon.STAR),
+        RailCategory("Favorites", OwnTVIcon.FAVORITE),
         RailCategory("History", OwnTVIcon.HISTORY),
         RailCategory("All Channels"),
         RailCategory("United Kingdom"),
@@ -848,7 +879,7 @@ private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (
         RailCategory("Sports"),
     )
     MainSection.MOVIES -> listOf(
-        RailCategory("Favorites", OwnTVIcon.STAR),
+        RailCategory("Favorites", OwnTVIcon.FAVORITE),
         RailCategory("History", OwnTVIcon.HISTORY),
         RailCategory("All Movies"),
         RailCategory("Action"),
@@ -857,7 +888,7 @@ private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (
         RailCategory("Horror"),
     )
     MainSection.SERIES -> listOf(
-        RailCategory("Favorites", OwnTVIcon.STAR),
+        RailCategory("Favorites", OwnTVIcon.FAVORITE),
         RailCategory("History", OwnTVIcon.HISTORY),
         RailCategory("All Series"),
         RailCategory("Drama"),

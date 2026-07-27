@@ -549,7 +549,7 @@ private fun ChannelRow(
                 }
             }
             if (isFavorite) {
-                OwnTVIcon(OwnTVIcon.STAR, tint = colors.favorite, filled = true, modifier = Modifier.size(20.dp))
+                OwnTVIcon(OwnTVIcon.FAVORITE, tint = colors.favorite, filled = true, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -590,7 +590,7 @@ private fun ChannelContextMenu(
             Spacer(Modifier.height(4.dp))
             OwnTVButton(
                 if (isFavorite) "Remove from Favourites" else "Add to Favourites",
-                onClick = onToggleFavorite, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.STAR,
+                onClick = onToggleFavorite, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.FAVORITE,
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )
             OwnTVButton("Rename", onClick = onRename, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())

@@ -172,7 +172,7 @@ private fun SeriesContextMenu(
             Spacer(Modifier.height(4.dp))
             OwnTVButton(
                 if (isFavorite) "Remove from Favourites" else "Add to Favourites",
-                onClick = onToggleFavorite, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.STAR,
+                onClick = onToggleFavorite, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.FAVORITE,
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )
             if (canMove) OwnTVButton("Move", onClick = onMove, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
@@ -998,7 +998,7 @@ private fun EpisodeView(
                 label = if (favoriteIds.contains(series.id)) "Favorited" else "Favorite",
                 onClick = { vm.toggleFavorite(series) },
                 style = OwnTVButtonStyle.SECONDARY,
-                icon = OwnTVIcon.STAR,
+                icon = OwnTVIcon.FAVORITE,
             )
             // "Hide watched" toggle (moved up from the season rail). Shown only once the series has at
             // least one watched episode; filters the active season's episode list.
@@ -1354,7 +1354,7 @@ private fun SeriesListRow(
                 }
             }
             if (isFavorite) {
-                OwnTVIcon(OwnTVIcon.STAR, tint = colors.primary, modifier = Modifier.size(18.dp))
+                OwnTVIcon(OwnTVIcon.FAVORITE, tint = colors.primary, modifier = Modifier.size(18.dp))
             }
         }
     }

@@ -24,7 +24,7 @@ enum class OwnTVIcon {
     PAUSE, REWIND, FORWARD, AUDIO, SUBTITLE, SKIP_NEXT, SKIP_PREVIOUS,
     BACK, VOLUME_HIGH, VOLUME_LOW, VOLUME_MUTE, ASPECT, FULLSCREEN, FULLSCREEN_EXIT, PIP, CLOSE,
     SORT, SWAP, HEADPHONES, EXPAND,
-    IMAGE,
+    IMAGE, INFO,
 }
 
 @Composable
@@ -100,16 +100,48 @@ fun OwnTVIcon(
                 if (filled) drawPath(star, tint, style = Fill) else drawPath(star, tint, style = stroke)
             }
             OwnTVIcon.FAVORITE -> {
-                // bookmark
-                val bm = Path().apply {
-                    moveTo(p(7f, 4f).x, p(7f, 4f).y)
-                    lineTo(p(17f, 4f).x, p(17f, 4f).y)
-                    lineTo(p(17f, 20f).x, p(17f, 20f).y)
-                    lineTo(p(12f, 16f).x, p(12f, 16f).y)
-                    lineTo(p(7f, 20f).x, p(7f, 20f).y)
+                // Heart — the app-wide favourite mark (a star reads as a *rating* on posters, which is
+                // exactly what PosterCard's rating badge uses STAR for).
+                val heart = Path().apply {
+                    moveTo(p(12f, 20.5f).x, p(12f, 20.5f).y)
+                    cubicTo(
+                        p(6.5f, 16.2f).x, p(6.5f, 16.2f).y,
+                        p(3f, 12.8f).x, p(3f, 12.8f).y,
+                        p(3f, 9f).x, p(3f, 9f).y,
+                    )
+                    cubicTo(
+                        p(3f, 6f).x, p(3f, 6f).y,
+                        p(5.3f, 3.8f).x, p(5.3f, 3.8f).y,
+                        p(8f, 3.8f).x, p(8f, 3.8f).y,
+                    )
+                    cubicTo(
+                        p(10f, 3.8f).x, p(10f, 3.8f).y,
+                        p(11.4f, 5f).x, p(11.4f, 5f).y,
+                        p(12f, 6.3f).x, p(12f, 6.3f).y,
+                    )
+                    cubicTo(
+                        p(12.6f, 5f).x, p(12.6f, 5f).y,
+                        p(14f, 3.8f).x, p(14f, 3.8f).y,
+                        p(16f, 3.8f).x, p(16f, 3.8f).y,
+                    )
+                    cubicTo(
+                        p(18.7f, 3.8f).x, p(18.7f, 3.8f).y,
+                        p(21f, 6f).x, p(21f, 6f).y,
+                        p(21f, 9f).x, p(21f, 9f).y,
+                    )
+                    cubicTo(
+                        p(21f, 12.8f).x, p(21f, 12.8f).y,
+                        p(17.5f, 16.2f).x, p(17.5f, 16.2f).y,
+                        p(12f, 20.5f).x, p(12f, 20.5f).y,
+                    )
                     close()
                 }
-                if (filled) drawPath(bm, tint, style = Fill) else drawPath(bm, tint, style = stroke)
+                if (filled) drawPath(heart, tint, style = Fill) else drawPath(heart, tint, style = stroke)
+            }
+            OwnTVIcon.INFO -> {
+                drawCircleStroke(p(12f, 12f), 9f * s, tint, stroke)
+                drawCircle(tint, 1.2f * s, p(12f, 7.6f), style = Fill)
+                drawLineStroke(p(12f, 11f), p(12f, 16.5f), tint, stroke)
             }
             OwnTVIcon.PLAY -> {
                 val tri = Path().apply {

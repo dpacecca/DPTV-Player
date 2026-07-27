@@ -86,6 +86,9 @@ fun PlayerHud(
     onChannelDown: (() -> Unit)? = null,
     // Live: open the channel-list overlay (Left while the controls are hidden). Null = not a live channel.
     onOpenChannelList: (() -> Unit)? = null,
+    // Live: open the watch-history list (Right while the controls are hidden) — jump straight back to a
+    // recent channel without leaving full-screen. Null = not a live channel.
+    onOpenHistoryList: (() -> Unit)? = null,
     // Live rewind / timeshift (catch-up channels). onRewindLive non-null = this live channel can rewind;
     // timeshiftOffsetSec non-null = currently watching that many seconds behind the live edge.
     onRewindLive: (() -> Unit)? = null,
@@ -217,8 +220,10 @@ fun PlayerHud(
                 canZap && (e.key == Key.ChannelDown || e.key == Key.MediaNext) -> { zap(1); true }
                 canZap && !controlsVisible && e.key == Key.DirectionUp -> { zap(-1); true }
                 canZap && !controlsVisible && e.key == Key.DirectionDown -> { zap(1); true }
-                // Left while the HUD is hidden opens the channel-list overlay (live only).
+                // With the HUD hidden, Left opens this channel's category list and Right the watch
+                // history — the two in-player channel lists (live only).
                 onOpenChannelList != null && !controlsVisible && e.key == Key.DirectionLeft -> { onOpenChannelList(); true }
+                onOpenHistoryList != null && !controlsVisible && e.key == Key.DirectionRight -> { onOpenHistoryList(); true }
                 controlsVisible -> { wakeTick++; false }
                 else -> false
             }
@@ -234,7 +239,8 @@ fun PlayerHud(
         // Stream technical info — drawn over everything (and kept up even when the controls auto-hide), so
         // you can read live bitrate/buffer while watching. Toggled from the bottom bar's info button.
         if (showInfo) {
-            StreamInfoOverlay(player, modifier = Modifier.align(Alignment.TopEnd).padding(top = 84.dp, end = 20.dp))
+            // Sits clear of the taller unified top strip (logo + guide) rather than under the old title row.
+            StreamInfoOverlay(player, modifier = Modifier.align(Alignment.TopEnd).padding(top = 112.dp, end = 20.dp))
         }
 
         // Channel flash card (zapping with the HUD hidden) — shown independently of the full controls.
@@ -243,22 +249,36 @@ fun PlayerHud(
         }
 
         if (controlsVisible) {
-            // Scrim gradients top + bottom for legibility.
-            Box(Modifier.align(Alignment.TopStart).fillMaxWidth().height(200.dp)
-                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.8f), Color.Transparent))))
-            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(240.dp)
-                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)))))
+            // Scrims: a FLAT semi-transparent panel behind the controls, feathered to transparent only at
+            // the inner edge. A pure gradient faded out exactly where the chips and the Now/Next text sit,
+            // so those washed out on bright scenes; a hard-edged band would instead draw a visible seam
+            // across the picture. The colour stops give the panel first, then the feather.
+            Box(Modifier.align(Alignment.TopStart).fillMaxWidth().height(210.dp)
+                .background(Brush.verticalGradient(
+                    0.0f to Color.Black.copy(alpha = 0.72f),
+                    0.5f to Color.Black.copy(alpha = 0.68f),
+                    1.0f to Color.Transparent,
+                )))
+            Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(260.dp)
+                .background(Brush.verticalGradient(
+                    0.0f to Color.Transparent,
+                    0.45f to Color.Black.copy(alpha = 0.68f),
+                    1.0f to Color.Black.copy(alpha = 0.78f),
+                )))
 
             // The active engine (MPV/EXO) leads the mini chips so users can always tell which player is on.
-            TopBar(player, isLive, listOfNotNull(engineChip) + streamChips.ifEmpty { listOfNotNull(videoRes) }, duration, onBack, modifier = Modifier.align(Alignment.TopStart))
-            if (isLive) ChannelCard(player, modifier = Modifier.align(Alignment.TopStart).padding(start = 28.dp, top = 92.dp))
+            // One unified strip: back · logo · chips-over-channel-name · Now/Next guide. The channel name
+            // used to be drawn twice (here and in a floating card below), with the guide stranded on the
+            // right edge — that space belongs to the history list now.
+            TopBar(
+                player, isLive, listOfNotNull(engineChip) + streamChips.ifEmpty { listOfNotNull(videoRes) }, duration, onBack,
+                modifier = Modifier.align(Alignment.TopStart),
+                trailing = if (error == null) liveEpgCard else null,
+            )
 
             // Hide the transport (play/seek/prev/next) and bottom bar while an error is up — the error
             // overlay owns the screen with its own Retry, so the play/rewind/forward must not show behind it.
             if (error == null) {
-                if (liveEpgCard != null) {
-                    Box(Modifier.align(Alignment.CenterEnd).padding(end = 28.dp)) { liveEpgCard() }
-                }
                 CenterControls(player, nav, isPlaying, isLive, onRewindLive, onForwardLive, onGoToLive, timeshiftOffsetSec, playFocus, modifier = Modifier.align(Alignment.Center))
 
                 BottomBar(
@@ -385,35 +405,69 @@ fun PlayerHud(
 private fun TopBar(
     player: PlaybackEngine, isLive: Boolean, chips: List<String>, duration: Long,
     onBack: () -> Unit, modifier: Modifier = Modifier,
+    // Live only: the Now/Next guide, rendered at the far end of the same strip.
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     // Reactive meta so the title row updates instantly on a channel zap (the plain vars aren't observed).
     val meta by player.currentMeta.collectAsStateWithLifecycle()
     Row(modifier = modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
         CircleButton(OwnTVIcon.BACK, size = 40, onClick = onBack)
         Spacer(Modifier.width(14.dp))
+        // Live: the channel logo sits with the channel NAME (identity), not with the programme — so the
+        // whole "which channel am I on" group reads as one unit however wide the TV is.
+        if (isLive) {
+            ChannelLogo(meta.logoUrl, meta.title, size = 46)
+            Spacer(Modifier.width(14.dp))
+        }
         Column(Modifier.weight(1f)) {
-            meta.subtitle?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.45f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val chipRow: @Composable () -> Unit = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val durMin = (duration / 60000)
+                    val parts = buildList {
+                        meta.year?.takeIf { it.isNotBlank() }?.let { add(it) }
+                        if (!isLive && durMin > 0) add("$durMin min")
+                        addAll(chips) // aspect · resolution · fps · audio
+                    }
+                    parts.forEachIndexed { i, label ->
+                        if (i > 0) Box(Modifier.size(3.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.3f)))
+                        Text(label, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.5f))
+                    }
+                    if (isLive) {
+                        if (parts.isNotEmpty()) Box(Modifier.size(3.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.3f)))
+                        LiveBadge()
+                    }
+                }
             }
-            Text(meta.title ?: "", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val durMin = (duration / 60000)
-                val parts = buildList {
-                    meta.year?.takeIf { it.isNotBlank() }?.let { add(it) }
-                    if (!isLive && durMin > 0) add("$durMin min")
-                    addAll(chips) // aspect · resolution · fps · audio
+            // Live stacks the technical chips ABOVE the channel name; VOD keeps title-then-chips.
+            if (isLive) {
+                chipRow()
+                Spacer(Modifier.height(2.dp))
+                Text(meta.title ?: "", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            } else {
+                meta.subtitle?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.45f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                parts.forEachIndexed { i, label ->
-                    if (i > 0) Box(Modifier.size(3.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.3f)))
-                    Text(label, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.5f))
-                }
-                if (isLive) {
-                    if (parts.isNotEmpty()) Box(Modifier.size(3.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.3f)))
-                    LiveBadge()
-                }
+                Text(meta.title ?: "", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(2.dp))
+                chipRow()
             }
         }
+        if (trailing != null) {
+            Spacer(Modifier.width(28.dp))
+            trailing()
+        }
+    }
+}
+
+/** The channel logo tile, falling back to the first letters of the channel name. */
+@Composable
+private fun ChannelLogo(logoUrl: String?, title: String?, size: Int, modifier: Modifier = Modifier) {
+    Box(
+        modifier.size(size.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF004F46)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (!logoUrl.isNullOrBlank()) AsyncImage(model = logoUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
+        else Text((title ?: "?").take(3).uppercase(), style = MaterialTheme.typography.labelMedium, color = Color(0xFF6FF8E4), fontWeight = FontWeight.Bold)
     }
 }
 
@@ -529,10 +583,8 @@ private fun BottomBar(
                 SpeedButton(label = speedLabel, active = speedLabel != "1.0x") { onOpenDialog(HudDialog.SPEED) }
                 CtrlButton(OwnTVIcon.SUBTITLE, badge = subCount.takeIf { it > 0 }) { onOpenDialog(HudDialog.SUBS) }
                 CtrlButton(OwnTVIcon.AUDIO, badge = audioCount.takeIf { it > 1 }) { onOpenDialog(HudDialog.AUDIO) }
-                // Stream technical info (codec/res/HDR/bitrate/decoder/audio/buffer) — toggles the overlay.
-                if (onInfo != null) CtrlButton(OwnTVIcon.VIDEO, active = infoOn) { onInfo() }
-                // Favorite the current channel/movie/series without leaving the stream (teal star = on).
-                if (onToggleFavorite != null) CtrlButton(OwnTVIcon.STAR, active = favorite) { onToggleFavorite() }
+                // Favorite the current channel/movie/series without leaving the stream (teal heart = on).
+                if (onToggleFavorite != null) CtrlButton(OwnTVIcon.FAVORITE, active = favorite) { onToggleFavorite() }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 // Live "compatibility mode" (Live TV + channels opened from the Guide): pin this channel
@@ -550,7 +602,10 @@ private fun BottomBar(
                 CtrlButton(OwnTVIcon.ASPECT, active = zoomMode != ZoomMode.FIT) { onOpenDialog(HudDialog.ZOOM) }
                 if (onPip != null) CtrlButton(OwnTVIcon.PIP) { onPip() }
                 if (onAudioMode != null) CtrlButton(OwnTVIcon.HEADPHONES) { onAudioMode() }
-                CtrlButton(OwnTVIcon.FULLSCREEN_EXIT) { onBack() }
+                // Stream technical info (codec/res/HDR/bitrate/decoder/audio/buffer) — toggles the overlay.
+                // Parked at the far right, where the redundant exit-fullscreen button used to sit (Back
+                // already leaves the player, so that button never did anything the remote couldn't).
+                if (onInfo != null) CtrlButton(OwnTVIcon.INFO, active = infoOn) { onInfo() }
             }
         }
     }
@@ -591,8 +646,9 @@ private fun SpeedButton(label: String, active: Boolean, onClick: () -> Unit) {
         selectedContainerColor = Color.Transparent,
         contentAlignment = Alignment.Center,
     ) { focused ->
-        Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            OwnTVIcon(OwnTVIcon.FORWARD, tint = if (active) TEAL else if (focused) Color.White else Color.White.copy(alpha = 0.78f), filled = true, modifier = Modifier.size(16.dp))
+        // The rate itself is the icon — the extra ">>" glyph read as a seek control next to the real
+        // rewind/forward buttons, and "1.0x" already says everything the button does.
+        Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(label, style = MaterialTheme.typography.labelLarge, color = if (active) TEAL else if (focused) Color.White else Color.White.copy(alpha = 0.78f), fontWeight = FontWeight.SemiBold)
         }
     }

@@ -60,6 +60,29 @@
   goes back to a plain single toggle — the two span modes never fight over the same press.
 - Single-row **⤒ ↑ ↓ ⤓** behaviour is unchanged; internally a single move is now just a block of one.
 
+### 📺 Live TV full screen — redesigned top bar, and a History channel list
+
+- **The top bar is now one strip**: back · channel logo · quality/audio chips · channel name ·
+  **Now / Next guide**. The floating channel card that repeated the channel name and the tall guide
+  card pinned to the right edge are both gone, so the picture is far less covered.
+- The **Now** line shows a thin accent progress bar and how many minutes are left, and refreshes on its
+  own while you watch; **Next** sits beside it, dimmed.
+- **Fixed: the ◀ channel list showed the wrong channels.** Pressing Left in full screen listed whatever
+  rail you happened to launch from (History, or *All channels*), not the channel's own category. It now
+  always lists the playing channel's category — with its name as the heading — no matter how you got
+  there. Uncategorised channels fall back to *All Channels*.
+- **New: press ▶ in full screen for a History channel list** — the last 30 channels you watched, with
+  what's on now, so you can hop back to a recent channel without leaving full screen. Press ▶ again, or
+  Back, to close it. Both lists respect hidden channels, hidden categories, renames and manual order.
+- **Player controls tidied**: the redundant *exit full screen* button is gone (Back already does it),
+  **stream info** moved to the far right with a clearer ⓘ icon, and the speed button shows just `1.0x`
+  without the extra `»` glyph.
+- The top and bottom control bars now sit on a **soft dark gradient**, so white icons and text stay
+  readable over a bright scene.
+- **Favorites now use a heart everywhere** — Live TV, Movies, Series, Search, posters and the player —
+  instead of a star, which on a poster reads as a rating. The star is still used for ratings and for
+  selection ticks.
+
 ### 🛡️ Your library can no longer be wiped by a database problem
 
 - **A schema problem no longer deletes everything.** OwnTV used to be built to drop every table and

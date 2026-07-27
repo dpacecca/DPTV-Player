@@ -40,9 +40,11 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
- * A channel list that slides in over the playing video (opened with Left while the player controls are
- * hidden). Browse with the D-pad, OK switches channel, Back / Left again closes it — all without leaving
- * full-screen. The currently-playing channel is highlighted and focused first.
+ * A channel list that slides in over the playing video. Two instances exist in the player: Left opens
+ * the playing channel's own provider category (anchored left), Right opens the profile's watch history
+ * (anchored right). Browse with the D-pad, OK switches channel, Back — or pushing outwards past the
+ * list edge — closes it, all without leaving full-screen. The current channel is highlighted and
+ * focused first; for the history list nothing may be current, so the newest row takes focus.
  */
 @Composable
 fun ChannelListOverlay(
@@ -51,9 +53,13 @@ fun ChannelListOverlay(
     onSelect: (ChannelEntity) -> Unit,
     onDismiss: () -> Unit,
     nowPlaying: Map<Long, String> = emptyMap(),
+    title: String = "Channels",
+    alignEnd: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
+    // Pushing further outwards at the edge closes the panel: Left for the left panel, Right for the right.
+    val dismissKey = if (alignEnd) Key.DirectionRight else Key.DirectionLeft
     val currentIndex = remember(channels, currentId) {
         channels.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
     }
@@ -68,17 +74,17 @@ fun ChannelListOverlay(
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
+                .align(if (alignEnd) Alignment.CenterEnd else Alignment.CenterStart)
                 .fillMaxHeight()
                 .width(380.dp)
                 .background(Color.Black.copy(alpha = 0.82f))
-                // Pressing Left again at the list edge closes the overlay (it's anchored on the left).
                 .onPreviewKeyEvent { e ->
-                    if (e.type == KeyEventType.KeyDown && e.key == Key.DirectionLeft) { onDismiss(); true } else false
+                    if (e.type == KeyEventType.KeyDown && e.key == dismissKey) { onDismiss(); true } else false
                 }
                 .padding(vertical = 18.dp),
         ) {
             Text(
-                "Channels",
+                title,
                 style = MaterialTheme.typography.titleMedium,
                 color = colors.primary,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),

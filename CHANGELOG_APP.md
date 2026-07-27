@@ -17,6 +17,7 @@
 - **🌍 Metadata language — descriptions and posters in your language**
 - **🎞️ Auto frame rate — match the TV's refresh rate to the video**
 - **↕️ Span move — reorder a whole block of categories at once**
+- **📺 Live TV full screen — redesigned top bar, and a History channel list**
 - **🛡️ Database recovery screen — Try again or reset, instead of silent data loss**
 - **🔁 Resync now vs Resync and remove missing titles**
 - **⬇️ Downloads keep running in the background, with a notification**
@@ -45,6 +46,7 @@
 - **Subtitle timing offset froze the interface**
 - **Stalker portals with a "virtual" MAC were rejected at setup**
 - **Picking a new background image did nothing until the app was restarted**
+- **The full-screen ◀ channel list showed the wrong channels**
 
 ## v4.1.4 — 2026-07-24
 

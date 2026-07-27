@@ -112,7 +112,7 @@ fun PosterCard(
 
                 if (isFavorite) {
                     OwnTVIcon(
-                        OwnTVIcon.STAR,
+                        OwnTVIcon.FAVORITE,
                         tint = colors.favorite,
                         filled = true,
                         modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(18.dp),
