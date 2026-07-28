@@ -159,6 +159,8 @@ fun OwnTVShell(
     // Auto frame rate: only ever applied to the FULL-SCREEN surface (never the mini-player or the
     // in-pane Live preview) — see FrameRateController.
     val autoFrameRate by settingsRepo.autoFrameRate.collectAsStateWithLifecycle(initialValue = true)
+    // Direct tune (type a channel number on the remote). Settings → Video Player → Live TV; default on.
+    val directTuneEnabled by settingsRepo.directTune.collectAsStateWithLifecycle(initialValue = true)
     // "Prefer EPG logos": start following the setting once, here rather than in Application.onCreate —
     // the store queries nothing at all while the toggle is off, so cold start stays free of EPG reads.
     val epgDaoForLogos = koinInject<tv.own.owntv.core.database.dao.EpgDao>()
@@ -695,7 +697,7 @@ fun OwnTVShell(
                     onGoToLive = if (isTunedLive) liveVm::goToLive else null,
                     onScrubLive = if (isTunedLive && canRewindLive) liveVm::scrubLive else null,
                     timeshiftOffsetSec = if (isTunedLive) timeshiftOffset else null,
-                    onTuneToNumber = if (isTunedLive && isLiveStream && timeshiftOffset == null && previewChannel != null) liveVm::tuneByNumber else null,
+                    onTuneToNumber = if (directTuneEnabled && isTunedLive && isLiveStream && timeshiftOffset == null && previewChannel != null) liveVm::tuneByNumber else null,
                     directTuneContextKey = previewChannel?.id ?: 0L,
                     // Show the ACTUAL running engine (mpv when pinned OR auto-fallen-back), not just the pin —
                     // otherwise an auto-fallback to mpv still read "EXO". true = on mpv (pill shows MPV, teal).
@@ -762,6 +764,7 @@ fun OwnTVShell(
                         currentId = previewChannel?.id,
                         nowPlaying = overlayNowPlaying,
                         title = zapListTitle,
+                        showNumbers = directTuneEnabled,
                         onSelect = { liveVm.ensurePlaying(it); showChannelList = false },
                         onDismiss = { showChannelList = false },
                         modifier = Modifier.fillMaxSize(),
@@ -774,6 +777,7 @@ fun OwnTVShell(
                         currentId = previewChannel?.id,
                         nowPlaying = historyNowPlaying,
                         title = "History",
+                        showNumbers = directTuneEnabled,
                         alignEnd = true,
                         onSelect = { liveVm.ensurePlaying(it); showHistoryList = false },
                         onDismiss = { showHistoryList = false },

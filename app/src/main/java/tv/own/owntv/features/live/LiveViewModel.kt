@@ -161,6 +161,18 @@ class LiveViewModel(
     private val livePreviewAudio: StateFlow<Boolean> = settings.livePreviewAudio
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    /** Settings → "Channel numbers": shows the provider number in the lists and the player, and enables
+     *  typing one to tune. Off hides every number without touching the stored data. Eager so a playback
+     *  path can read [StateFlow.value] synchronously when building its [tv.own.owntv.player.MediaMeta]. */
+    val showChannelNumbers: StateFlow<Boolean> = settings.directTune
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    /** The "#123" the player shows under the channel name, in the top bar and on the channel card.
+     *  Gating it here rather than at each call site means every playback path — Exo, mpv, Stalker —
+     *  is covered by the one check, and a null simply omits the line as it did before numbers existed. */
+    private fun channelNumberLabel(channel: ChannelEntity): String? =
+        channel.number?.takeIf { showChannelNumbers.value }?.let { "#$it" }
+
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
 
     // Observe the active profile's sources REACTIVELY so adding/removing a playlist refreshes Live TV
@@ -480,7 +492,7 @@ class LiveViewModel(
         setStalkerReconnect(null) // non-Stalker: URLs are stable, replay on reconnect
         previewEngine.play(
             channel.streamUrl, muted = !livePreviewAudio.value,
-            meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channel.number?.let { "#$it" }, logoUrl = channel.displayLogoUrl),
+            meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
             userAgent = sourceUaMap[channel.sourceId],
         )
     }
@@ -504,7 +516,7 @@ class LiveViewModel(
             setStalkerReconnect(channel.streamUrl) // C-3: re-resolve on reconnect if the URL expires
             previewEngine.play(
                 url, muted = !livePreviewAudio.value,
-                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channel.number?.let { "#$it" }, logoUrl = channel.displayLogoUrl),
+                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
                 userAgent = source.userAgent,
             )
         }
@@ -1019,7 +1031,7 @@ class LiveViewModel(
             setStalkerReconnect(null) // non-Stalker: URLs are stable, replay on reconnect
             previewEngine.play(
                 channel.streamUrl, muted = false,
-                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channel.number?.let { "#$it" }, logoUrl = channel.displayLogoUrl),
+                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
                 userAgent = sourceUaMap[channel.sourceId],
             )
         }
@@ -1046,7 +1058,7 @@ class LiveViewModel(
             setStalkerReconnect(channel.streamUrl) // C-3: re-resolve on reconnect if the URL expires
             previewEngine.play(
                 url, muted = false,
-                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channel.number?.let { "#$it" }, logoUrl = channel.displayLogoUrl),
+                meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
                 userAgent = source.userAgent,
             )
             watchExoOutcome(channel)
@@ -1164,7 +1176,7 @@ class LiveViewModel(
             if (_previewChannel.value?.streamUrl != channel.streamUrl) return // zapped away while resolving
             // C-3: mpv is now the active engine — install/clear the reconnect provider to match.
             setStalkerReconnect(if (isStalker) channel.streamUrl else null)
-            player.play(url, title = channel.name, subtitle = channel.number?.let { "#$it" }, logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent)
+            player.play(url, title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent)
         }
     }
 

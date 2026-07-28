@@ -56,6 +56,7 @@ fun ChannelListOverlay(
     nowPlaying: Map<Long, String> = emptyMap(),
     title: String = "Channels",
     alignEnd: Boolean = false,
+    showNumbers: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -102,6 +103,7 @@ fun ChannelListOverlay(
                         channel = ch,
                         isCurrent = isCurrent,
                         nowTitle = nowPlaying[ch.id],
+                        showNumber = showNumbers,
                         onClick = { onSelect(ch) },
                         modifier = if (ch.id == channels.getOrNull(currentIndex)?.id) Modifier.focusRequester(focusCurrent) else Modifier,
                     )
@@ -117,6 +119,7 @@ private fun ChannelRow(
     isCurrent: Boolean,
     onClick: () -> Unit,
     nowTitle: String? = null,
+    showNumber: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -140,10 +143,17 @@ private fun ChannelRow(
                     OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(20.dp))
                 }
             }
+            // Fixed-width number strip, so names stay aligned whatever the digit count (see LiveScreen).
+            if (showNumber) {
+                tv.own.owntv.ui.components.ChannelNumberColumn(
+                    number = channel.number,
+                    color = colors.onSurfaceVariant,
+                )
+            }
             // Name + (optional) current programme subtitle, shown only when guide data exists.
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    channel.number?.let { "$it  ${channel.name}" } ?: channel.name,
+                    channel.name,
                     style = MaterialTheme.typography.bodyMedium,
                     color = when {
                         isCurrent -> colors.primary

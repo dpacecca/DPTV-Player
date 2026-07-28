@@ -20,11 +20,17 @@
   playlist genuinely uses one number for several visible channels, the one from the list you opened wins;
   if that's still not decisive you get **"Multiple channels"** rather than a guess.
 - **CH+/− keeps working right after a numeric jump**, even when you land far outside the list you opened.
-- Channel numbers are now shown in more places so you can learn the ones you use: the **channel-list
-  overlay** lists them before the channel name, and the player's channel card shows **#number** under the
-  name on every channel.
+- Channel numbers are now shown wherever you'd look for one, so you can learn the ones you use: the
+  **Live TV channel list** and the **channel-list overlay** show the number in a fixed-width column ahead
+  of the name — so every name still lines up whether the number is 7 or 101, and channels without a
+  number keep their place in the column — the **full-screen top bar** shows it before the channel name,
+  and the player's channel card shows **#number** under the name.
 - Numeric tuning is only active on a live channel in full screen — during **catch-up or timeshift** the
   number keys are left alone.
+- All of it is governed by one setting, **"Channel numbers"** (on by default) — in **Settings → Video
+  Player → Live TV**, as a **quick-toggle chip** at the top of Settings, and in settings search. Off hides
+  every number and ignores the number keys during playback; your playlist's numbers are untouched, so
+  turning it back on restores them immediately.
 
 ### 💾 A proper backup file — `.own`, with your wallpaper inside and real encryption
 
@@ -240,9 +246,12 @@
   on an item that played fine on the next try. The handoff now waits for the new surface.
 - **The resolution badge no longer under-reports wide-format streams.** The stream-info overlay worked out
   the quality label from the picture **height** alone, so a channel broadcasting a wide 1920×800 picture was
-  labelled from its short edge and read **720p** even though it's a 1080p-class stream. The label is now
-  chosen by **total pixel count** against the standard resolutions (4K / 1440p / 1080p / 720p / 480p), so
-  cinema-format and letterboxed channels report the quality they actually deliver.
+  labelled from its short edge and read **720p** even though it's a 1080p-class stream. A cinema-format
+  picture is only cropped top and bottom, so the **width** survives it: the label is now taken from whichever
+  of the width and the height implies the higher class, and cinema-format and letterboxed channels report the
+  quality they actually deliver. Both playback engines use the same rule, so a channel can no longer show one
+  quality full screen and another in the preview pane, and anything below 480p still reports its **true**
+  height rather than being rounded up.
 
 ### 📺 Live TV
 

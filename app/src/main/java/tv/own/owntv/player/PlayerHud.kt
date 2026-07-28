@@ -260,6 +260,10 @@ fun PlayerHud(
             onTuneToNumber?.invoke(num)
         } finally {
             lookupInFlight = false
+            // A KeyUp can be lost when focus or the window changes mid-entry (dialog, PiP, app switch),
+            // which would strand that digit in the held set and make the key dead until the next KeyUp.
+            // A completed submission ends the entry, so no held state can legitimately survive it.
+            heldDigitKeys.clear()
         }
         tuneOsd = when (result) {
             is DirectTuneResult.Found -> TuneOsd.Tuned(result.channel)
@@ -338,6 +342,10 @@ fun PlayerHud(
     Box(
         modifier = modifier.fillMaxSize().onPreviewKeyEvent { e ->
             // ---- Direct-tune digit capture (before the existing KeyDown guard) ----
+            // Number keys are consumed globally here, HUD visible or not: on a TV remote a digit press
+            // during live playback can only mean "tune to this channel", and swallowing both KeyDown and
+            // KeyUp keeps a half-typed number from leaking into whatever else is focused underneath.
+            // onTuneToNumber is null outside fullscreen live (see OwnTVShell), so nothing else is affected.
             if (onTuneToNumber != null && !inert && dialog == HudDialog.NONE) {
                 val digit = keyToDigit(e.key)
                 if (digit != null) {
@@ -626,7 +634,22 @@ private fun TopBar(
             if (isLive) {
                 chipRow()
                 Spacer(Modifier.height(2.dp))
-                Text(meta.title ?: "", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // Channel number ahead of the name — this is where you look to learn the number of a
+                // channel you arrived at by zapping. meta.subtitle carries it ("#123") only while the
+                // "Channel numbers" setting is on, so an off setting leaves the name alone.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    meta.subtitle?.takeIf { it.isNotBlank() }?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.45f),
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                        )
+                        Spacer(Modifier.width(10.dp))
+                    }
+                    Text(meta.title ?: "", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             } else {
                 meta.subtitle?.takeIf { it.isNotBlank() }?.let {
                     Text(it, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.45f), maxLines = 1, overflow = TextOverflow.Ellipsis)

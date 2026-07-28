@@ -101,6 +101,7 @@ fun LiveScreen(
     val selectedKey by vm.selectedKey.collectAsStateWithLifecycle()
     val count by vm.count.collectAsStateWithLifecycle()
     val favoriteIds by vm.favoriteIds.collectAsStateWithLifecycle()
+    val showChannelNumbers by vm.showChannelNumbers.collectAsStateWithLifecycle()
     val externalPlayerOn by vm.externalPlayerOn.collectAsStateWithLifecycle()
     val catchupPlayer by vm.catchupPlayer.collectAsStateWithLifecycle()
     val previewChannel by vm.previewChannel.collectAsStateWithLifecycle()
@@ -407,6 +408,7 @@ fun LiveScreen(
                                 channel = channel,
                                 isFavorite = favoriteIds.contains(channel.id),
                                 nowTitle = nowPlaying[channel.id],
+                                showNumber = showChannelNumbers,
                                 modifier = Modifier.gridFocusTarget(
                                     itemId = channel.id, index = index,
                                     contextId = contextChannelId, contextFocus = contextFocus,
@@ -532,6 +534,7 @@ private fun ChannelRow(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
     nowTitle: String? = null,
+    showNumber: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -559,6 +562,14 @@ private fun ChannelRow(
                 } else {
                     OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(24.dp))
                 }
+            }
+            // Provider channel number, in a fixed-width strip so every name below starts at the same x
+            // however many digits the number has. Hidden entirely when the setting is off.
+            if (showNumber) {
+                tv.own.owntv.ui.components.ChannelNumberColumn(
+                    number = channel.number,
+                    color = colors.onSurfaceVariant,
+                )
             }
             // Name + (optional) current programme. The subtitle is rendered only when guide data exists,
             // so channels without EPG look exactly as before — single line.

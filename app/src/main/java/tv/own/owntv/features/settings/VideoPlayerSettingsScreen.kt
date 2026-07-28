@@ -92,6 +92,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
     val vodExo by vm.vodPreferExo.collectAsStateWithLifecycle()
     val measuredStats by vm.measuredStreamStats.collectAsStateWithLifecycle()
+    val directTune by vm.directTune.collectAsStateWithLifecycle()
     val externalLive by vm.externalPlayerLive.collectAsStateWithLifecycle()
     val externalMovies by vm.externalPlayerMovies.collectAsStateWithLifecycle()
     val externalSeries by vm.externalPlayerSeries.collectAsStateWithLifecycle()
@@ -290,6 +291,16 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_LATENCY)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_LATENCY },
+        )
+        Row2(
+            icon = OwnTVIcon.LIVE_TV, title = "Channel numbers",
+            desc = "Show your provider's channel number beside the name in the Live TV list, the " +
+                "channel-list overlay and the player — and type a number on the remote during " +
+                "full-screen playback to jump straight to that channel (OK tunes at once, Back cancels). " +
+                "Off hides every number and ignores the number keys; nothing is lost, and turning it " +
+                "back on restores them.",
+            chip = if (directTune) "On" else "Off", primaryChip = directTune,
+            onClick = { vm.setDirectTune(!directTune) },
         )
 
         Divider()

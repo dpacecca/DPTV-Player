@@ -212,10 +212,14 @@ or **narrow the whole app to just one**.
   - **Hidden channels and categories are skipped** and renamed channels show your name. If a playlist uses
     one number for several visible channels you'll see **"Multiple channels"** instead of a guess.
   - **CH+ / CH−** keeps working straight after a numeric jump, even when the channel is far outside the
-    list you opened. Channel numbers are also listed in the **channel‑list overlay** and under the name on
-    the player's channel card, so you can learn the ones you use.
+    list you opened. Numbers are shown in the **Live TV channel list** and the **channel‑list overlay** (in
+    a column ahead of the name), in the **full‑screen top bar** before the channel name, and on the player's
+    channel card — so you can learn the ones you use.
   - Number keys are only captured on a **live channel in full screen** — during **catch‑up or timeshift**
     they're left alone.
+  - **"Channel numbers"** (on by default) controls all of this — in **Settings → Video Player → Live TV**,
+    or as a **quick‑toggle chip** at the top of Settings. Off hides every number and ignores the number
+    keys; nothing is lost, and turning it back on restores them.
 - 🔧 **Compatibility mode (two playback engines)**: live channels play on the fast **ExoPlayer** engine by
   default. If a channel shows **UHD artifacts**, won't open, or stutters, bring up the controls and press the
   **engine toggle (the ⇄ MPV/EXO pill)** — this **pins that channel to the mpv engine**. The pill always shows
