@@ -202,6 +202,20 @@ or **narrow the whole app to just one**.
 - ⓘ **Stream info** is the right‑most button on the control bar; **Back** exits full screen (there's no
   separate exit button).
 - **CH+ / CH−** (or Up/Down on the channel‑list overlay) zap through the current category.
+- 🔢 **Type a channel number to tune**: in full screen, just **key in the number** (number row or numpad)
+  and OwnTV switches to that channel. The digits show top‑left with a **bar that drains over two seconds**
+  before it submits — press **OK** to go immediately, **Back** to cancel, or keep typing (five digits submit
+  on their own). When it resolves, the same card turns into the **channel card** (logo · name · number) and
+  holds until the channel is on screen; if nothing matches you get **"Channel not found"**.
+  - The number is your **provider's channel number**, looked up in the **playlist you're watching**. Only
+    if that playlist has no such channel are your other active Live playlists searched.
+  - **Hidden channels and categories are skipped** and renamed channels show your name. If a playlist uses
+    one number for several visible channels you'll see **"Multiple channels"** instead of a guess.
+  - **CH+ / CH−** keeps working straight after a numeric jump, even when the channel is far outside the
+    list you opened. Channel numbers are also listed in the **channel‑list overlay** and under the name on
+    the player's channel card, so you can learn the ones you use.
+  - Number keys are only captured on a **live channel in full screen** — during **catch‑up or timeshift**
+    they're left alone.
 - 🔧 **Compatibility mode (two playback engines)**: live channels play on the fast **ExoPlayer** engine by
   default. If a channel shows **UHD artifacts**, won't open, or stutters, bring up the controls and press the
   **engine toggle (the ⇄ MPV/EXO pill)** — this **pins that channel to the mpv engine**. The pill always shows
