@@ -21,6 +21,7 @@
 - **🖼️ Guide channel logos — take logos from your XMLTV feed**
 - **↕️ Span move — reorder a whole block of categories at once**
 - **📺 Live TV full screen — redesigned top bar, and a History channel list**
+- **🗂️ Category browser in the player — switch Live TV category without leaving full screen** (community PR #95 by @cotol1985)
 - **📼 Catch-up from Live TV, and catch-up in the player of your choice**
 - **▶️ External player — Live TV support, and a default per section**
 - **🛡️ Database recovery screen — Try again or reset, instead of silent data loss**

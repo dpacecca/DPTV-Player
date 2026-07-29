@@ -196,7 +196,12 @@ or **narrow the whole app to just one**.
 - **Left key → channel list**: with the on‑screen controls hidden, press **Left** to pop up a **channel
   list overlay** for the **playing channel's own category** (its name is the heading) — scroll and **OK**
   to switch channels without leaving full‑screen. Each row also shows the **current programme** (small
-  line) so you can pick by what's on. Press **Left** again, or **Back**, to close it.
+  line) so you can pick by what's on. Press **Back** to close it.
+- 🗂️ **Left again → category browser**: from that channel list, press **Left** a second time for a list of
+  **every Live TV category** (hidden ones left out, renames and your manual order kept). **OK** reloads the
+  channel list with that category's channels — the stream keeps playing — and **CH+/−** then surfs the
+  category you picked. Your current category is highlighted and focused first; **Back** or **Left** returns
+  to the channel list unchanged.
 - **Right key → History list**: press **Right** with the controls hidden for the **last 30 channels you
   watched**, so you can hop back without leaving full screen. Press **Right** again, or **Back**, to close.
 - ⓘ **Stream info** is the right‑most button on the control bar; **Back** exits full screen (there's no

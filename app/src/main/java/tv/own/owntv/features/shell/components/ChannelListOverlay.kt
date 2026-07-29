@@ -57,6 +57,7 @@ fun ChannelListOverlay(
     title: String = "Channels",
     alignEnd: Boolean = false,
     showNumbers: Boolean = true,
+    onOpenCategories: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -81,7 +82,12 @@ fun ChannelListOverlay(
                 .width(380.dp)
                 .background(Color.Black.copy(alpha = 0.82f))
                 .onPreviewKeyEvent { e ->
-                    if (e.type == KeyEventType.KeyDown && e.key == dismissKey) { onDismiss(); true } else false
+                    if (e.type == KeyEventType.KeyDown && e.key == dismissKey) {
+                        // Left on the channel panel opens the category browser when one is wired up,
+                        // instead of closing. Back (BackHandler) always closes.
+                        if (!alignEnd && onOpenCategories != null) onOpenCategories() else onDismiss()
+                        true
+                    } else false
                 }
                 .padding(vertical = 18.dp),
         ) {
