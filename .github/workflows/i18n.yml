@@ -52,13 +52,13 @@ jobs:
             BASE_SHA="$(git merge-base HEAD "origin/${GITHUB_BASE_REF}")"
             if git cat-file -e "${BASE_SHA}:tools/i18n/hardcoded_baseline.txt" 2>/dev/null; then
               git show "${BASE_SHA}:tools/i18n/hardcoded_baseline.txt" > /tmp/hardcoded_baseline.base.txt
+              python3 tools/i18n/check_hardcoded_strings.py verify --base /tmp/hardcoded_baseline.base.txt
             else
-              # Bootstrap: the PR that introduces the baseline file compares against an empty base
-              # (every literal is "new" and must be in the committed baseline). Once the file lands on
-              # the base branch, every subsequent PR takes the real merge-base path above.
-              : > /tmp/hardcoded_baseline.base.txt
+              # Bootstrap: the PR that introduces the baseline file has no merge-base baseline to
+              # compare against, so --bootstrap skips the regression leg. The other two legs still
+              # apply: the committed baseline must exactly match the current scan.
+              python3 tools/i18n/check_hardcoded_strings.py verify --bootstrap
             fi
-            python3 tools/i18n/check_hardcoded_strings.py verify --base /tmp/hardcoded_baseline.base.txt
           else
             # Non-PR trigger (workflow_dispatch): compare against the current committed baseline only.
             cp tools/i18n/hardcoded_baseline.txt /tmp/hardcoded_baseline.base.txt
@@ -76,6 +76,8 @@ jobs:
         run: python3 tools/i18n/validate_strings.py
       - name: SupportedLocales.kt freshness
         run: python3 tools/i18n/gen_supported_locales.py check
+      - name: Python i18n tool regression tests
+        run: python3 tools/i18n/test_i18n_tools.py
 
   pseudo:
     # Builds the debug + release standard APKs and inspects their resource tables. Heavier than the
