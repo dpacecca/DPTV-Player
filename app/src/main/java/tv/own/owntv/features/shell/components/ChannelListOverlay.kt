@@ -83,8 +83,8 @@ fun ChannelListOverlay(
                 .background(Color.Black.copy(alpha = 0.82f))
                 .onPreviewKeyEvent { e ->
                     if (e.type == KeyEventType.KeyDown && e.key == dismissKey) {
-                        // Left en el panel de canales: si hay navegador de categorías,
-                        // ábrelo en vez de cerrar. Back (BackHandler) siempre cierra.
+                        // Left on the channel panel opens the category browser when one is wired up,
+                        // instead of closing. Back (BackHandler) always closes.
                         if (!alignEnd && onOpenCategories != null) onOpenCategories() else onDismiss()
                         true
                     } else false

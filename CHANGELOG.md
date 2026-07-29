@@ -155,6 +155,19 @@
   instead of a star, which on a poster reads as a rating. The star is still used for ratings and for
   selection ticks.
 
+### 🗂️ Category browser in the player — switch Live TV category without leaving full screen
+
+- **Press ◀ a second time** inside the full-screen channel list and a **category browser** slides in over
+  the picture, listing every Live TV category. Pick one with **OK** and the channel list reloads with that
+  category's channels — the stream you're watching keeps playing throughout.
+- The category you're currently in is **highlighted and focused first**, so a second Left followed by OK
+  puts you back where you were. **Back** or **◀** returns to the channel list without changing anything.
+- The list respects your customizations: **hidden categories are left out, renames are shown, and your
+  manual order is kept** — the same categories you see in the Live TV rail.
+- After you switch, **CH+/− follows the new category**, so channel surfing continues in whatever you just
+  browsed to.
+- Community contribution — PR #95 by @cotol1985.
+
 ### 📼 Catch-up from Live TV, and catch-up in the player of your choice
 
 - **The Live TV catch-up picker now opens the same programme popup the Guide does.** Long-pressing a

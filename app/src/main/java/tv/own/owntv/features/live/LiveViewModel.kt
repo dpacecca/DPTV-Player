@@ -68,9 +68,6 @@ import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.format.formatSystemTime
 
-/** Nivel del overlay de canales en el player: lista de canales o lista de categorías. */
-enum class ChannelOverlayLevel { CHANNELS, CATEGORIES }
-
 /** Layer-2 rail selection for Live TV. */
 sealed interface LiveKey {
     data object Favorites : LiveKey
@@ -566,9 +563,15 @@ class LiveViewModel(
             val pid = currentProfileId() ?: return@launch
             val ctxKey = folderContextKeys.value[categoryId] ?: ""
             val list = channelDao.snapshotByCategoryManual(categoryId, pid, ctxKey, ZAP_LIST_LIMIT)
+            // An empty category would leave the user on a blank overlay with nothing focusable, so
+            // keep the browser open and let them pick another one instead.
+            if (list.isEmpty()) return@launch
             zapCategoryId = categoryId
             zapArmed = true
             _zapChannels.value = list
+            // CH+/- and the channel-list button read this; without it they keep acting on the
+            // previously loaded category.
+            _canZap.value = list.size > 1
             _zapListTitle.value = categoryDao.getById(categoryId)?.name ?: "Channels"
             _showCategoryBrowser.value = false
         }

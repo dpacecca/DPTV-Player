@@ -761,31 +761,32 @@ fun OwnTVShell(
                 }
                 tv.own.owntv.ui.components.InAppToast(localSubToast)
                 // Left — the playing channel's own provider category.
-                    if (showChannelList && isLiveChannel) {
-                        if (showCategoryBrowser) {
-                            // Segundo Left: navegador de categorías (todas las de Live TV).
-                            tv.own.owntv.features.shell.components.CategoryBrowserOverlay(
-                                categories = browserCategories,
-                                currentCategoryId = previewChannel?.categoryId,
-                                onSelect = { catId -> liveVm.loadChannelsForCategory(catId) },
-                                onDismiss = { liveVm.hideCategoryBrowser() },
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        } else if (zapChannels.size > 1) {
-                            // Primer Left: lista de canales de la categoría actual.
-                            tv.own.owntv.features.shell.components.ChannelListOverlay(
-                                channels = zapChannels,
-                                currentId = previewChannel?.id,
-                                nowPlaying = overlayNowPlaying,
-                                title = zapListTitle,
-                                showNumbers = directTuneEnabled,
-                                onSelect = { liveVm.ensurePlaying(it); showChannelList = false },
-                                onDismiss = { showChannelList = false },
-                                onOpenCategories = { liveVm.showCategories() },
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
+                if (showChannelList && isLiveChannel) {
+                    if (showCategoryBrowser) {
+                        // Second Left — every Live TV category.
+                        tv.own.owntv.features.shell.components.CategoryBrowserOverlay(
+                            categories = browserCategories,
+                            currentCategoryId = previewChannel?.categoryId,
+                            onSelect = { catId -> liveVm.loadChannelsForCategory(catId) },
+                            onDismiss = { liveVm.hideCategoryBrowser() },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else if (zapChannels.isNotEmpty()) {
+                        // First Left — the channels of the current category. A browsed-to category may
+                        // hold a single channel, so this renders for any non-empty list.
+                        tv.own.owntv.features.shell.components.ChannelListOverlay(
+                            channels = zapChannels,
+                            currentId = previewChannel?.id,
+                            nowPlaying = overlayNowPlaying,
+                            title = zapListTitle,
+                            showNumbers = directTuneEnabled,
+                            onSelect = { liveVm.ensurePlaying(it); showChannelList = false },
+                            onDismiss = { showChannelList = false },
+                            onOpenCategories = { liveVm.showCategories() },
+                            modifier = Modifier.fillMaxSize(),
+                        )
                     }
+                }
                 // Right — recently watched, to hop straight back to the previous channel.
                 if (showHistoryList && isLiveChannel && historyChannels.isNotEmpty()) {
                     tv.own.owntv.features.shell.components.ChannelListOverlay(
