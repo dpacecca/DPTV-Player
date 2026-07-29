@@ -60,6 +60,7 @@
 - **Live preview played sound on surround channels with preview audio off**
 - **The Preview audio setting did not apply to a preview already playing**
 - **Resolution badge under-reported wide-format streams (1920×800 read as 720p)**
+- **CH+ and D-pad Up went to the previous channel instead of the next in full screen (#84)**
 
 ## v4.1.4 — 2026-07-24
 

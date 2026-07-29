@@ -273,6 +273,13 @@
 - **A live channel opened from the Guide now appears in History.** Tuning a channel from the guide grid
   (or *Watch channel* in a programme popup) is recorded straight away, rather than going through the
   delay that exists to keep rapid channel-surfing out of your history.
+- **CH+ and D-pad Up now go to the next channel in full screen, not the previous one (#84).** Channel
+  surfing ran backwards: CH+ moved *down* the list and CH− moved up, so on the first channel CH+ jumped
+  to the very last one instead of to channel 2. Every surfing key now points the same way — **CH+,
+  D-pad Up and Next all go to the next channel; CH−, D-pad Down and Previous go to the previous one** —
+  matching how a set-top box and every other TV app behave. Wrapping around is unchanged and still
+  intended: going down from the first channel lands on the last, and up from the last returns to the
+  first.
 
 ### 📅 Guide & series
 

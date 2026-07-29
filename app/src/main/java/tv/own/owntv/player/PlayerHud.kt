@@ -386,10 +386,16 @@ fun PlayerHud(
                 // Channel surfing: dedicated CH+/CH- and media prev/next keys always zap. D-pad Up/Down
                 // zap ONLY while the HUD is hidden (when it's visible, Up/Down navigate the controls) —
                 // this is the only way to change channels on remotes without CH keys (e.g. Fire TV).
-                canZap && (e.key == Key.ChannelUp || e.key == Key.MediaPrevious) -> { zap(-1); true }
-                canZap && (e.key == Key.ChannelDown || e.key == Key.MediaNext) -> { zap(1); true }
-                canZap && !controlsVisible && e.key == Key.DirectionUp -> { zap(-1); true }
-                canZap && !controlsVisible && e.key == Key.DirectionDown -> { zap(1); true }
+                //
+                // Direction is channel-number order, not list-position order: "up" (CH+, D-pad Up) is
+                // always the NEXT channel — further down an ascending list, delta +1 — matching the
+                // de facto TV convention (Live Channels, YouTube TV, Pluto TV). All of these keys move
+                // the same way; there is deliberately no split between CH+ and D-pad Up. Wrapping is
+                // intended: CH-/Down from the first channel lands on the last, and vice versa.
+                canZap && (e.key == Key.ChannelUp || e.key == Key.MediaNext) -> { zap(1); true }
+                canZap && (e.key == Key.ChannelDown || e.key == Key.MediaPrevious) -> { zap(-1); true }
+                canZap && !controlsVisible && e.key == Key.DirectionUp -> { zap(1); true }
+                canZap && !controlsVisible && e.key == Key.DirectionDown -> { zap(-1); true }
                 // With the HUD hidden, Left opens this channel's category list and Right the watch
                 // history — the two in-player channel lists (live only).
                 onOpenChannelList != null && !controlsVisible && e.key == Key.DirectionLeft -> { onOpenChannelList(); true }

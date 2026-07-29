@@ -201,7 +201,10 @@ or **narrow the whole app to just one**.
   watched**, so you can hop back without leaving full screen. Press **Right** again, or **Back**, to close.
 - ⓘ **Stream info** is the right‑most button on the control bar; **Back** exits full screen (there's no
   separate exit button).
-- **CH+ / CH−** (or Up/Down on the channel‑list overlay) zap through the current category.
+- **CH+ / CH−** (or Up/Down on the channel‑list overlay) zap through the current category. **CH+, D‑pad
+  Up and Next all move to the next channel**; **CH−, D‑pad Down and Previous** to the previous one. The
+  list wraps, so CH− on the first channel lands on the last, and CH+ on the last returns to the first.
+  D‑pad Up/Down zap only while the controls are hidden — with the control bar up they navigate it.
 - 🔢 **Type a channel number to tune**: in full screen, just **key in the number** (number row or numpad)
   and OwnTV switches to that channel. The digits show top‑left with a **bar that drains over two seconds**
   before it submits — press **OK** to go immediately, **Back** to cancel, or keep typing (five digits submit
