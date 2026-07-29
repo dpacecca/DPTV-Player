@@ -490,6 +490,14 @@ class SeriesViewModel(
         }
     }
 
+    /** Episode/season list order (visual only; playback always runs 1,2,3…). Global setting. */
+    val episodeOrder: StateFlow<SettingsRepository.EpisodeOrder> = settings.episodeOrder
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.EpisodeOrder.DEFAULT)
+
+    fun cycleEpisodeOrder() {
+        viewModelScope.launch { settings.setEpisodeOrder(episodeOrder.value.next()) }
+    }
+
     fun selectSeason(season: Int) { _selectedSeason.value = season }
 
     // --- Episode enrichment (U3): the focused episode's TMDB still/plot/rating for the right detail pane ---
