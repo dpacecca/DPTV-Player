@@ -349,6 +349,14 @@
   mode, choosing a second image of the same file type reused the same filename, so nothing detected a
   change and the previous picture stayed on screen. Each pick now lands under its own name and appears
   immediately; the old file is still cleaned up, so only one background is ever kept.
+- **Fixed: the + / − buttons became unreachable once a setting hit its maximum (#88).** In **Mini-player →
+  Size**, setting the size to its 50% maximum left the picker with nothing selectable on the next visit —
+  the D-pad did nothing and only Back got you out, so the size could never be turned back down with the
+  remote. The dialog always tried to select the **+** button, which is disabled at the top of the range
+  and so cannot be selected, and focus is deliberately kept inside the dialog. It now selects whichever
+  button is usable, and hands over to the other one if the one you are on runs out of range mid-adjust.
+  The same dialog is used by **A/V sync** and the **custom live buffer**, which were stuck the same way at
+  their maximums.
 
 ### Internal
 

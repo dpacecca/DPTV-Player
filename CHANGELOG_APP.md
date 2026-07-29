@@ -33,6 +33,7 @@
 ### 🐛 Fixes
 
 - **Switching category kept the previous category's scroll position**
+- **The + / − buttons became unreachable once a setting hit its maximum (#88)**
 - **Choosing ExoPlayer for a channel that had fallen back to mpv did not stick**
 - **Auto frame rate did nothing on Android 10 and older devices (Fire OS 7)**
 - **A schema problem could wipe your whole library**

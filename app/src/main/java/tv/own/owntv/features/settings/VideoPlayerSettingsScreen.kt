@@ -688,8 +688,17 @@ internal fun StepperDialog(
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
-    val fr = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
+    val frPlus = remember { FocusRequester() }
+    val frMinus = remember { FocusRequester() }
+    val plusEnabled = value < max
+    val minusEnabled = value > min
+    // "+" is the natural landing spot, but at [max] it is disabled and so cannot take focus. Focus is
+    // trapped inside this dialog, so silently failing to focus anything left the D-pad dead with only
+    // Back working — the reported "+/- unreachable" at the top of the range. Land on whichever stepper
+    // is usable, and hand focus over if the one holding it becomes disabled mid-adjustment.
+    LaunchedEffect(Unit) { runCatching { (if (plusEnabled) frPlus else frMinus).requestFocus() } }
+    LaunchedEffect(plusEnabled) { if (!plusEnabled && minusEnabled) runCatching { frMinus.requestFocus() } }
+    LaunchedEffect(minusEnabled) { if (!minusEnabled && plusEnabled) runCatching { frPlus.requestFocus() } }
     BackHandler { onDismiss() }
     tv.own.owntv.ui.theme.PopupFontTheme {
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
@@ -700,9 +709,9 @@ internal fun StepperDialog(
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StepBtn("–", enabled = value > min) { onSet((value - step).coerceAtLeast(min)) }
+                StepBtn("–", enabled = minusEnabled, modifier = Modifier.focusRequester(frMinus)) { onSet((value - step).coerceAtLeast(min)) }
                 Text(format(value), style = MaterialTheme.typography.titleMedium, color = colors.primary, modifier = Modifier.width(90.dp), textAlign = TextAlign.Center)
-                StepBtn("+", enabled = value < max, modifier = Modifier.focusRequester(fr)) { onSet((value + step).coerceAtMost(max)) }
+                StepBtn("+", enabled = plusEnabled, modifier = Modifier.focusRequester(frPlus)) { onSet((value + step).coerceAtMost(max)) }
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
