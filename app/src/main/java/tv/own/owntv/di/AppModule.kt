@@ -5,6 +5,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 import tv.own.owntv.core.companion.CompanionController
+import tv.own.owntv.core.i18n.LocaleStore
 import tv.own.owntv.features.customize.CustomizeItemsViewModel
 import tv.own.owntv.features.customize.CustomizeViewModel
 import tv.own.owntv.features.downloads.DownloadsViewModel
@@ -12,6 +13,7 @@ import tv.own.owntv.features.epg.EpgViewModel
 import tv.own.owntv.features.home.HomeViewModel
 import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MovieViewModel
+import tv.own.owntv.features.profiles.ProfileGateSessionViewModel
 import tv.own.owntv.features.profiles.ProfilesViewModel
 import tv.own.owntv.features.search.SearchViewModel
 import tv.own.owntv.features.series.SeriesViewModel
@@ -37,7 +39,11 @@ import tv.own.owntv.features.subtitles.SubtitleSearchViewModel
  * reordering is safe and a missing binding fails immediately, naming the type.
  */
 val appModule = module {
-    single { SettingsRepository(androidContext()) }
+    // The single locale authority (SharedPreferences-backed; see LocaleStore). Registered first so the
+    // SettingsRepository binding below resolves it. The same instance observes the in-process StateFlow
+    // for the picker and the named non-Compose renderers.
+    single { LocaleStore.from(androidContext()) }
+    single { SettingsRepository(androidContext(), get()) }
     // Remote (companion) add-source LAN server — one shared instance for Setup + Settings.
     single { CompanionController(androidContext()) }
 
@@ -50,6 +56,9 @@ val appModule = module {
     viewModelOf(::SeriesViewModel)
     viewModelOf(::SearchViewModel)
     viewModelOf(::ProfilesViewModel)
+    // Activity-scoped session state for the profile gate (configuration-only retention, no saved
+    // state — see ProfileGateSessionViewModel).
+    viewModelOf(::ProfileGateSessionViewModel)
     // 23 constructor parameters — one past the highest arity Koin's `*Of` DSL generates, so this one
     // binding stays explicit. Named arguments give it the same guarantee viewModelOf gives the rest:
     // reordering the constructor is safe, and adding a parameter is a compile error here, not a

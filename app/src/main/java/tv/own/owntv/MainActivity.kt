@@ -41,6 +41,7 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import tv.own.owntv.core.launcher.LauncherDeepLink
 import tv.own.owntv.features.profiles.ProfileGate
+import tv.own.owntv.features.profiles.ProfileGateSessionViewModel
 import tv.own.owntv.features.profiles.ProfilesViewModel
 import tv.own.owntv.features.setup.Onboarding
 import tv.own.owntv.features.shell.OwnTVShell
@@ -92,7 +93,20 @@ class MainActivity : ComponentActivity() {
     private val heroPreviewEngine: tv.own.owntv.player.HeroPreviewEngine by inject()
     // Activity-scoped: the same instance Compose retrieves via koinViewModel() inside setContent.
     private val shellViewModel: ShellViewModel by viewModel()
+    // The sole locale authority (SharedPreferences-backed; see docs/internationalization.md 0b).
+    private val localeStore: tv.own.owntv.core.i18n.LocaleStore by inject()
     private var pendingDeepLink by mutableStateOf<LauncherDeepLink?>(null)
+
+    /**
+     * Wrap the Activity base with the selected locale so its own `Resources` resolve correctly —
+     * Application wrapping alone leaves the Activity wrong, because
+     * `ActivityThread.createBaseContextForActivity` never derives from the Application object
+     * (see docs/internationalization.md 0b, "Both Application and Activity must wrap").
+     */
+    override fun attachBaseContext(newBase: android.content.Context) {
+        val tag = tv.own.owntv.core.i18n.LocaleStore.from(newBase).readBlocking()
+        super.attachBaseContext(tv.own.owntv.core.i18n.AppLocale.wrap(newBase, tag))
+    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -214,29 +228,32 @@ class MainActivity : ComponentActivity() {
 
             val profilesVm: ProfilesViewModel = koinViewModel()
             val profiles by profilesVm.profiles.collectAsStateWithLifecycle()
-            var gatePassed by remember { mutableStateOf(false) }
-            var addingProfile by remember { mutableStateOf(false) }
-            // A backup restore deletes-then-reinserts profiles, so the list is briefly EMPTY while
-            // the shell is showing — without this, the shell unmounts and remounts, dumping the user
-            // out of Settings → Backup & Restore mid-restore. Only the cold start waits for the load.
-            var everHadProfiles by remember { mutableStateOf(false) }
-            LaunchedEffect(profiles) { if (profiles.isNotEmpty()) everHadProfiles = true }
-            val shouldShowProfileGate = profiles.size > 1 || profiles.singleOrNull()?.pinHash != null
-            // Set by the sidebar's profile-avatar single-click so the "Who's watching?" gate opens even for
-            // a single unpinned profile — otherwise switch-profile is a silent no-op with just one profile.
-            var switchProfileRequested by remember { mutableStateOf(false) }
-            // Back from a user-requested switch returns to the shell (the cold-start gate exits the app).
-            BackHandler(enabled = switchProfileRequested && !gatePassed && !addingProfile) {
-                switchProfileRequested = false
-                gatePassed = true
-            }
-
+            // Activity-scoped gate/session state: configuration-only retention through the Activity's
+            // ViewModelStore. Survives recreation (font scale, dark mode, a script-family language
+            // switch) but is cleared on process death — an authentication result must never be restored
+            // after a kill-and-restore, so there is deliberately no SavedStateHandle / rememberSaveable
+            // (see docs/internationalization.md, "The profile gate: configuration-only retention").
+            val gateSession: ProfileGateSessionViewModel = koinViewModel()
+            val gatePassed = gateSession.gatePassed
+            val addingProfile = gateSession.addingProfile
+            val switchProfileRequested = gateSession.switchProfileRequested
+            // everHadProfiles is *derived* from the persisted active-profile id, not remembered: an id
+            // `>= 0` means a profile has existed in the store, so a mid-session backup restore that
+            // briefly empties `profiles` must not blank the screen back to "loading". Observed, not
+            // remembered, per the audit table in docs/internationalization.md (its likely home is
+            // "derive from the profiles repository").
             // ST3 — dismiss the splash the moment a real destination exists: onboarding, the profile
             // gate or the shell. Mirrors the two blank `when` branches below exactly; `everHadProfiles`
             // keeps a mid-session restore (which briefly empties `profiles`) out of the condition.
             val loadedProfileId = activeProfileId
+            val everHadProfiles = loadedProfileId != null && loadedProfileId >= 0L
             LaunchedEffect(loadedProfileId != null) {
                 if (loadedProfileId != null) Perf.stamp("profile-id-loaded")
+            }
+            val shouldShowProfileGate = profiles.size > 1 || profiles.singleOrNull()?.pinHash != null
+            // Back from a user-requested switch returns to the shell (the cold-start gate exits the app).
+            BackHandler(enabled = switchProfileRequested && !gatePassed && !addingProfile) {
+                gateSession.cancelSwitchProfileRequest()
             }
             LaunchedEffect(profiles.isNotEmpty()) {
                 if (profiles.isNotEmpty()) Perf.stamp("profiles-loaded")
@@ -286,6 +303,11 @@ class MainActivity : ComponentActivity() {
                     LocalGlass provides effectiveGlass,
                     LocalBlurredBackdrop provides blurred,
                 ) {
+                    // Wrap the shell in the locale locals (LocalResources/LocalContext/
+                    // LocalConfiguration/LocalLayoutDirection) for the currently selected locale, and
+                    // trigger the single documented Activity.recreate() across a script-family switch.
+                    // Same-script switches apply instantly here. See docs/internationalization.md 0b.
+                    tv.own.owntv.core.i18n.LocalizedContent(localeStore) {
                     Box(
                         modifier = Modifier.fillMaxSize()
                             // Solid base color first (fallback if no image / image fails to load).
@@ -303,14 +325,14 @@ class MainActivity : ComponentActivity() {
                             // Adding a profile from the gate → onboard the new profile.
                             addingProfile -> Onboarding(
                                 firstRun = false,
-                                onDone = { addingProfile = false; gatePassed = true },
-                                onCancel = { addingProfile = false },
+                                onDone = { gateSession.completeAddingProfile() },
+                                onCancel = { gateSession.cancelAddingProfile() },
                                 modifier = Modifier.fillMaxSize(),
                             )
                             // First run (no profile yet) → full onboarding.
                             profile < 0L -> Onboarding(
                                 firstRun = true,
-                                onDone = { gatePassed = true },
+                                onDone = { gateSession.markGatePassed() },
                                 onCancel = {},
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -320,8 +342,8 @@ class MainActivity : ComponentActivity() {
                             // Also opens when the sidebar avatar is single-clicked (switchProfileRequested),
                             // which is the only way to switch when there's a single unpinned profile.
                             (shouldShowProfileGate || switchProfileRequested) && !gatePassed -> ProfileGate(
-                                onEnter = { gatePassed = true; switchProfileRequested = false },
-                                onAddProfile = { addingProfile = true; switchProfileRequested = false },
+                                onEnter = { gateSession.markGatePassed() },
+                                onAddProfile = { gateSession.startAddingProfile() },
                                 modifier = Modifier.fillMaxSize(),
                             )
                             else -> OwnTVShell(
@@ -347,16 +369,17 @@ class MainActivity : ComponentActivity() {
                                 onExitApp = { finish() },
                                 onSwitchProfile = {
                                     // Stop playback and return to the "Who's watching?" gate — no app restart.
-                                    player.onAppBackgrounded(); player.discardBackgroundRestore(); previewEngine.stop(); previewEngine.discardBackgroundRestore(); heroPreviewEngine.stop(); gatePassed = false
+                                    player.onAppBackgrounded(); player.discardBackgroundRestore(); previewEngine.stop(); previewEngine.discardBackgroundRestore(); heroPreviewEngine.stop()
                                     // Force the gate open even with a single unpinned profile (cold-start gate would
-                                    // skip it). Clearing gatePassed above alone is a silent no-op in that case.
-                                    switchProfileRequested = true
+                                    // skip it). requestSwitchProfile() drops gatePassed AND raises the request.
+                                    gateSession.requestSwitchProfile()
                                 },
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
                         } // end foreground Box (above the background layer)
                     }
+                    } // end LocalizedContent
                 }
             }
         }

@@ -1,5 +1,19 @@
 import java.util.Properties
 
+// Packaged locale qualifiers are read from tools/i18n/locales.json entries where packaged = true.
+// The build consumes the ``resourceQualifier`` field specifically (NOT languageTag, NOT weblateCode): a
+// runtime BCP-47 tag fed straight into localeFilters is the bug this schema exists to prevent.
+// Parsing uses groovy.json.JsonSlurper, available on every Gradle build script classpath.
+val localesCatalogueFile = rootProject.file("tools/i18n/locales.json")
+@Suppress("UNCHECKED_CAST")
+val packagedLocaleQualifiers: Set<String> = run {
+    if (!localesCatalogueFile.isFile) return@run emptySet()
+    val raw = groovy.json.JsonSlurper().parseText(localesCatalogueFile.readText()) as List<Map<String, Any>>
+    raw.mapNotNull { entry ->
+        if ((entry["packaged"] as? Boolean) == true) entry["resourceQualifier"] as? String else null
+    }.toSet()
+}
+
 plugins {
     alias(libs.plugins.android.application)
     // Kotlin is provided by AGP 9's built-in Kotlin support. KSP 2.3.6+ is compatible with it.
@@ -100,6 +114,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Pseudolocales (en-XA / ar-XB) are generated for the debug BuildType, NOT androidResources.
+            // They are the Phase 3g QA sweep instrument; localeFilters below would otherwise strip them,
+            // so the debug-only qualifiers are added back via the per-variant API in the androidComponents
+            // block at the bottom of this file (see docs/internationalization.md 0b, "Pseudolocales must
+            // survive the filter").
+            isPseudoLocalesEnabled = true
+        }
         release {
             optimization {
                 enable = true
@@ -116,6 +138,17 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    androidResources {
+        // Packages only the catalogue entries marked packaged = true. Strips library locale folders
+        // that the app does not officially support: appcompat 1.7.1 alone contributes ~85 locale folders
+        // to the APK today, and without this filter they all ship. Standalone filters cannot strip
+        // locales once packaged (shrinkResources removes unreferenced resources, never locales). The
+        // debug-only pseudolocale qualifiers (`en-rXA`, `ar-rXB`) are added back for debug variants via
+        // the androidComponents variant API below; release deliberately ships neither.
+        // Equivalent to `localeFilters += ...` but avoids confusion with the SetProperty variant form.
+        localeFilters.addAll(packagedLocaleQualifiers)
     }
 
     lint {
@@ -141,6 +174,18 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+// Re-add the debug-only pseudolocale qualifiers that the shared `localeFilters` set above would
+// otherwise strip. This is the per-variant SetProperty form of localeFilters (the androidResources
+// block sets the MutableSet extension form, which applies to all variants equally and so cannot keep
+// pseudolocales out of release). Release variants ship neither pseudolocale. Verified syntax against
+// the AGP 9.2.1 variant API (ApplicationAndroidComponentsExtension.onVariants +
+// ApplicationAndroidResources.localeFilters: SetProperty<String>); re-verify before deviating.
+androidComponents {
+    onVariants(selector().withBuildType("debug")) { variant ->
+        variant.androidResources.localeFilters.addAll("en-rXA", "ar-rXB")
     }
 }
 

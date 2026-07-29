@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -76,12 +77,18 @@ fun OwnTVButton(
             if (icon != null) {
                 OwnTVIcon(icon = icon, tint = contentColor, filled = true, modifier = Modifier.size(if (compact) 14.dp else 20.dp))
             }
+            // Long labels (German / Finnish / Russian) must ellipsize, not hard-clip. The previous
+            // `softWrap = false` with no `overflow` sliced the text mid-glyph on almost every translated
+            // button. `weight(1f, fill = false)` lets a short label stay content-sized while a long one
+            // is constrained to the remaining row width and ellipsizes. (See docs/internationalization.md
+            // Phase 0a.)
             Text(
                 text = label,
                 style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
                 color = contentColor,
                 maxLines = 1,
-                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
             )
         }
     }

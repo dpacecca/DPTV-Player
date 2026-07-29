@@ -1,6 +1,8 @@
 package tv.own.owntv
 
 import android.app.Application
+import android.content.Context
+import android.content.res.Configuration
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -34,6 +36,34 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
         get() = androidx.work.Configuration.Builder()
             .setWorkerFactory(tv.own.owntv.core.sync.work.KoinWorkerFactory())
             .build()
+
+    /**
+     * Wrap the Application base with the selected locale and apply it to the process locale
+     * defaults BEFORE the rest of the process starts. The selected tag is read synchronously from
+     * the SharedPreferences-backed LocaleStore (DataStore is async and cannot be read here).
+     *
+     * Application wrapping is retained on a verified platform ground (see docs/internationalization.md
+     * 0b): Android's ConfigurationController resets Locale.getDefault() to the device locale on every
+     * system configuration change unless the Application context carries our locale. Koin singletons
+     * and Workers no longer resolve strings here under v2, but java.text / java.time / String.format /
+     * every Locale.getDefault() reader still depend on it.
+     */
+    override fun attachBaseContext(base: Context) {
+        val tag = tv.own.owntv.core.i18n.LocaleStore.from(base).readBlocking()
+        tv.own.owntv.core.i18n.AppLocale.applyGlobally(tag, base)
+        super.attachBaseContext(tv.own.owntv.core.i18n.AppLocale.wrap(base, tag))
+    }
+
+    /**
+     * Re-apply the selected locale after the framework's process-level reset. "System default" (`""`)
+     * resolves the *new* device locale list, so a device-locale change while following system applies on
+     * the next callback rather than freezing the startup locale.
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val tag = tv.own.owntv.core.i18n.LocaleStore.from(this).readBlocking()
+        tv.own.owntv.core.i18n.AppLocale.applyGlobally(tag, this)
+    }
 
     override fun onCreate() {
         Perf.begin() // zero-point for the OwnTVPerf startup timeline (adb logcat -s OwnTVPerf)
