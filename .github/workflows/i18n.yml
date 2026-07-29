@@ -50,7 +50,14 @@ jobs:
           set -euo pipefail
           if [ "$EVENT_NAME" = "pull_request" ]; then
             BASE_SHA="$(git merge-base HEAD "origin/${GITHUB_BASE_REF}")"
-            git show "${BASE_SHA}:tools/i18n/hardcoded_baseline.txt" > /tmp/hardcoded_baseline.base.txt
+            if git cat-file -e "${BASE_SHA}:tools/i18n/hardcoded_baseline.txt" 2>/dev/null; then
+              git show "${BASE_SHA}:tools/i18n/hardcoded_baseline.txt" > /tmp/hardcoded_baseline.base.txt
+            else
+              # Bootstrap: the PR that introduces the baseline file compares against an empty base
+              # (every literal is "new" and must be in the committed baseline). Once the file lands on
+              # the base branch, every subsequent PR takes the real merge-base path above.
+              : > /tmp/hardcoded_baseline.base.txt
+            fi
             python3 tools/i18n/check_hardcoded_strings.py verify --base /tmp/hardcoded_baseline.base.txt
           else
             # Non-PR trigger (workflow_dispatch): compare against the current committed baseline only.
@@ -67,6 +74,8 @@ jobs:
           python-version: '3.12'
       - name: Validate strings and locales.json
         run: python3 tools/i18n/validate_strings.py
+      - name: SupportedLocales.kt freshness
+        run: python3 tools/i18n/gen_supported_locales.py check
 
   pseudo:
     # Builds the debug + release standard APKs and inspects their resource tables. Heavier than the

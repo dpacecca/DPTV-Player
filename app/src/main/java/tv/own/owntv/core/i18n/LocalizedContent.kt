@@ -87,10 +87,13 @@ private fun findActivity(context: Context?): Activity? {
 }
 
 /**
- * Same script family? Compares ISO 15924 scripts. `Locale.forLanguageTag("ar").script` is empty (a
- * language alone defines no script), so the script is taken from `SupportedLocales` (which carries
+ * Same script family? Compares ISO 15924 scripts. `Locale.forLanguageTag("ar").script` is empty
+ * (a language alone defines no script), so the script is taken from `SupportedLocales` (which carries
  * the explicit `script` field from `locales.json`). The empty (system-default) tag resolves to the
- * device locale's script.
+ * device locale's script. For tags NOT in the catalogue (e.g. system `de-DE`, `ar-EG`, `zh-CN`),
+ * `Locale.addLikelySubtags` is applied first so a language-only or language-region tag reports its
+ * likely script instead of an empty one — otherwise every "System default → custom locale" transition
+ * on a common system tag would unnecessarily recreate the Activity.
  */
 private fun sameScriptFamily(a: String, b: String): Boolean = scriptForTag(a) == scriptForTag(b)
 
@@ -100,8 +103,21 @@ private fun scriptForTag(tag: String): String {
         val list = android.content.res.Resources.getSystem().configuration.locales
         val device = if (list.isEmpty) null else list[0]
         val deviceTag = device?.toLanguageTag() ?: ""
-        return SupportedLocales.scriptForTag(deviceTag) ?: device?.script ?: ""
+        return SupportedLocales.scriptForTag(deviceTag) ?: likelyScript(deviceTag)
     }
-    return SupportedLocales.scriptForTag(trimmed)
-        ?: java.util.Locale.forLanguageTag(trimmed).script
+    return SupportedLocales.scriptForTag(trimmed) ?: likelyScript(trimmed)
+}
+
+/**
+ * The ISO 15924 script for an arbitrary BCP-47 tag via ICU likely-subtags, which fills in the
+ * likely script (Arab for ar, Hans for zh, Cyrl for ru, Latn for de/fr/…). Returns "" when the tag
+ * cannot be resolved, so an unknown script never equals a known one falsely. Uses
+ * `android.icu.util.ULocale.addLikelySubtags`, available since API 21 (minSdk 26 here).
+ */
+private fun likelyScript(tag: String): String {
+    if (tag.isBlank()) return ""
+    return runCatching {
+        val u = android.icu.util.ULocale.forLanguageTag(tag)
+        android.icu.util.ULocale.addLikelySubtags(u).script
+    }.getOrDefault("")
 }
