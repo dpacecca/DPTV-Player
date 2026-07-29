@@ -955,7 +955,7 @@ git show \
   > /tmp/hardcoded_baseline.base.txt
 ```
 
-The checker compares that base file against the working-tree baseline.
+The checker compares that base file against the working-tree baseline. If the literal scanner's extraction semantics change, the generated baseline carries an explicit `scanner-version` marker and the reviewed `tools/i18n/baseline_migration.json` must pin the old/new versions; the introducing PR runs exact bootstrap verification once, and subsequent PRs return to the merge-base ratchet. This prevents scanner artifacts from being reported as code regressions without creating a permanent bypass.
 
 If the workflow also runs on protected-branch pushes, define the non-PR comparison source **explicitly** (for example, the previous release tag, or the commit the branch protection last verified). Do not let it silently fall back to `HEAD^`, which reintroduces the bug this section fixes.
 

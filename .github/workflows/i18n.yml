@@ -52,7 +52,33 @@ jobs:
             BASE_SHA="$(git merge-base HEAD "origin/${GITHUB_BASE_REF}")"
             if git cat-file -e "${BASE_SHA}:tools/i18n/hardcoded_baseline.txt" 2>/dev/null; then
               git show "${BASE_SHA}:tools/i18n/hardcoded_baseline.txt" > /tmp/hardcoded_baseline.base.txt
-              python3 tools/i18n/check_hardcoded_strings.py verify --base /tmp/hardcoded_baseline.base.txt
+              # A scanner-version change is an explicit one-time migration: the old baseline was
+              # produced by different extraction semantics, so comparing its keys would report
+              # scanner artifacts as code regressions. The committed baseline must still exactly
+              # match the new scan. Once this version marker is on the base branch, normal PRs use
+              # the merge-base ratchet again.
+              CURRENT_SCANNER_VERSION="$(sed -n 's/^# scanner-version: //p' tools/i18n/hardcoded_baseline.txt | head -1)"
+              BASE_SCANNER_VERSION="$(sed -n 's/^# scanner-version: //p' /tmp/hardcoded_baseline.base.txt | head -1)"
+              if [ -n "$CURRENT_SCANNER_VERSION" ] && [ "$CURRENT_SCANNER_VERSION" = "$BASE_SCANNER_VERSION" ]; then
+                python3 tools/i18n/check_hardcoded_strings.py verify --base /tmp/hardcoded_baseline.base.txt
+              else
+                echo "Scanner migration ${BASE_SCANNER_VERSION:-<unversioned>} -> ${CURRENT_SCANNER_VERSION:-<unversioned>} requested."
+                test -f tools/i18n/baseline_migration.json
+                python3 - "$BASE_SCANNER_VERSION" "$CURRENT_SCANNER_VERSION" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          base = int(sys.argv[1] or 1)  # unversioned baselines are scanner v1
+          current = int(sys.argv[2])
+          migration = json.loads(Path("tools/i18n/baseline_migration.json").read_text())
+          if migration.get("fromScannerVersion") != base or migration.get("toScannerVersion") != current:
+              raise SystemExit("baseline_migration.json does not match the base/current scanner versions")
+          PY
+                # Exact bootstrap still runs the over- and stale-baseline legs; only the
+                # incomparable merge-base regression leg is skipped for this explicit migration.
+                python3 tools/i18n/check_hardcoded_strings.py verify --bootstrap
+              fi
             else
               # Bootstrap: the PR that introduces the baseline file has no merge-base baseline to
               # compare against, so --bootstrap skips the regression leg. The other two legs still
@@ -72,8 +98,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Validate strings and locales.json
-        run: python3 tools/i18n/validate_strings.py
+      - name: Validate strings and locales.json (release policy)
+        run: python3 tools/i18n/validate_strings.py --release
       - name: SupportedLocales.kt freshness
         run: python3 tools/i18n/gen_supported_locales.py check
       - name: Python i18n tool regression tests
