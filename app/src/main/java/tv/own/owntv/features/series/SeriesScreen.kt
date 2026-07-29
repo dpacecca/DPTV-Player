@@ -885,6 +885,7 @@ private fun EpisodeView(
     val episodeProgress by vm.episodeProgress.collectAsStateWithLifecycle()
     val completedIds by vm.completedEpisodeIds.collectAsStateWithLifecycle()
     val hideWatched by vm.hideWatched.collectAsStateWithLifecycle()
+    val episodeOrder by vm.episodeOrder.collectAsStateWithLifecycle()
     val nextUpId by vm.nextUpEpisodeId.collectAsStateWithLifecycle()
     val epListState = androidx.compose.foundation.lazy.rememberLazyListState()
     // Season selector rail state — long-running shows can have more seasons than fit on one line
@@ -908,8 +909,10 @@ private fun EpisodeView(
     BackHandler { vm.closeSeries() }
 
     val seasons = episodes.map { it.seasonNumber }.distinct().sorted()
+        .let { if (episodeOrder.descending) it.sortedDescending() else it.sorted() }
     val activeSeason = if (seasons.contains(selectedSeason)) selectedSeason else seasons.firstOrNull() ?: 1
     val seasonEpisodes = episodes.filter { it.seasonNumber == activeSeason }
+        .let { if (episodeOrder.descending) it.sortedByDescending { ep -> ep.episodeNumber } else it }
     // "Hide watched" filter — drops episodes watched to ≥95%. Focus-index math below uses this list so a
     // filtered-out last-watched episode falls back to the first visible one instead of losing focus.
     val visibleEpisodes = remember(seasonEpisodes, hideWatched, completedIds) {
@@ -1009,6 +1012,13 @@ private fun EpisodeView(
                     style = OwnTVButtonStyle.SECONDARY,
                 )
             }
+            // Episode/season list order (visual only — playback always runs 1,2,3…). Cycles the
+            // four season/episode ascending/descending combinations; persisted globally.
+            OwnTVButton(
+                label = episodeOrder.label,
+                onClick = { vm.cycleEpisodeOrder() },
+                style = OwnTVButtonStyle.SECONDARY,
+            )
         }
         Spacer(Modifier.height(16.dp))
 
