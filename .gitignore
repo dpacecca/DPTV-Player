@@ -30,9 +30,8 @@ signing.properties
 # Internal planning documents — kept local, never committed
 future-plan/
 
-AUDITFIX.md
 
 # JVM crash dumps from a Gradle daemon (never worth committing)
 hs_err_pid*.log
 replay_pid*.log
-audit_fix_progress.md
+
