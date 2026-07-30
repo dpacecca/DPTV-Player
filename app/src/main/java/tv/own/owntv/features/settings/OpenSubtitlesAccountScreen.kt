@@ -27,6 +27,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
@@ -136,7 +137,7 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
                     val total = session.allowedDownloads
                     InfoRow(
                         stringResource(R.string.phase1_subtitles_downloads),
-                        if (total != null) stringResource(R.string.phase1_subtitles_remaining, remaining, total) else stringResource(R.string.phase1_subtitles_remaining_short, remaining),
+                        if (total != null) pluralStringResource(R.plurals.phase1_subtitles_remaining, remaining, remaining, total) else pluralStringResource(R.plurals.phase1_subtitles_remaining_short, remaining, remaining),
                     )
                 }
                 session.resetTime?.let { InfoRow(stringResource(R.string.phase1_subtitles_resets), stringResource(R.string.phase1_subtitles_in, it)) }

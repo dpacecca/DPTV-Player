@@ -36,6 +36,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
@@ -291,19 +292,39 @@ private fun EpgRow(
             }
             Text(source.url, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
             Spacer(Modifier.height(4.dp))
-            val catchupNote = count?.third?.takeIf { it > 0 }?.let { stringResource(R.string.phase1_epg_sources_catchup, it) } ?: ""
+            val catchupNote = count?.third?.takeIf { it > 0 }?.let {
+                pluralStringResource(R.plurals.phase1_epg_sources_catchup, it, it)
+            }
             val status = when {
                 activeSync != null -> when {
-                    activeSync.programmes > 0 -> stringResource(R.string.phase1_epg_sources_status_count, activeSync.channels, activeSync.programmes, "")
-                    activeSync.channels > 0 -> stringResource(R.string.phase1_epg_sources_status_count_channels, activeSync.channels)
+                    activeSync.programmes > 0 -> stringResource(
+                        R.string.phase1_epg_sources_status_count,
+                        pluralStringResource(R.plurals.phase1_epg_sources_status_count_channels, activeSync.channels, activeSync.channels),
+                        pluralStringResource(R.plurals.phase1_epg_sources_status_count_programmes, activeSync.programmes, activeSync.programmes),
+                    )
+                    activeSync.channels > 0 -> pluralStringResource(
+                        R.plurals.phase1_epg_sources_status_count_channels,
+                        activeSync.channels,
+                        activeSync.channels,
+                    )
                     else -> stringResource(R.string.phase1_epg_sources_connecting)
                 }
                 source.lastError != null -> stringResource(
                     R.string.phase1_epg_sources_error,
                     classifySyncFailure(source.lastError, online = true).displayText(),
                 )
-                count != null && count!!.second > 0 -> stringResource(R.string.phase1_epg_sources_status_count, count!!.first, count!!.second, catchupNote)
-                source.lastSyncAt != null -> stringResource(R.string.phase1_epg_sources_status_synced, catchupNote)
+                count != null && count!!.second > 0 -> {
+                    val counts = stringResource(
+                        R.string.phase1_epg_sources_status_count,
+                        pluralStringResource(R.plurals.phase1_epg_sources_status_count_channels, count!!.first, count!!.first),
+                        pluralStringResource(R.plurals.phase1_epg_sources_status_count_programmes, count!!.second, count!!.second),
+                    )
+                    if (catchupNote != null) stringResource(R.string.phase1_epg_sources_status_count_with_catchup, counts, catchupNote)
+                    else counts
+                }
+                source.lastSyncAt != null -> catchupNote?.let {
+                    stringResource(R.string.phase1_epg_sources_status_synced_with_catchup, it)
+                } ?: stringResource(R.string.phase1_epg_sources_status_synced)
                 else -> stringResource(R.string.phase1_epg_sources_not_synced)
             }
             Text(status, style = MaterialTheme.typography.labelMedium, color = if (source.lastError != null && activeSync == null) Color(0xFFEF4444) else colors.primary)

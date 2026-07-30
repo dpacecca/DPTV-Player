@@ -41,7 +41,7 @@ fun LocalizedContent(
     localeStore: LocaleStore,
     content: @Composable () -> Unit,
 ) {
-    val appContext = LocalContext.current
+    val hostContext = LocalContext.current
     val tag by localeStore.currentTag.collectAsStateWithLifecycle()
 
     // The locale already applied to this Activity's base context (set by attachBaseContext). On a
@@ -53,12 +53,19 @@ fun LocalizedContent(
     LaunchedEffect(tag) {
         val current = tag
         if (current != baseContextTag && !sameScriptFamily(current, baseContextTag)) {
-            findActivity(appContext)?.recreate()
+            findActivity(hostContext)?.recreate()
         }
     }
 
-    val wrapped = remember(tag) { AppLocale.wrap(appContext, tag) }
-    val layoutDirection = remember(tag) {
+    // AppLocale.wrap() is correct for attachBaseContext, but its ContextImpl result is not a safe
+    // Compose LocalContext: it loses the Activity wrapper. Keep the Activity as the base while
+    // delegating resources/assets to the localized configuration context.
+    // Include the host locale list in the key as well as the selected tag. The manifest currently
+    // recreates the Activity for configuration changes, but this keeps the wrapper correct if a
+    // future configChanges declaration allows the host Activity to survive a device-locale change.
+    val hostLocaleKey = LocalConfiguration.current.locales.toLanguageTags()
+    val wrapped = remember(hostContext, tag, hostLocaleKey) { AppLocale.wrapForCompose(hostContext, tag) }
+    val layoutDirection = remember(tag, hostLocaleKey) {
         if (wrapped.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
             LayoutDirection.Rtl
         } else {
@@ -95,9 +102,9 @@ private fun findActivity(context: Context?): Activity? {
  * likely script instead of an empty one — otherwise every "System default → custom locale" transition
  * on a common system tag would unnecessarily recreate the Activity.
  */
-private fun sameScriptFamily(a: String, b: String): Boolean = scriptForTag(a) == scriptForTag(b)
+internal fun sameScriptFamily(a: String, b: String): Boolean = scriptForTag(a) == scriptForTag(b)
 
-private fun scriptForTag(tag: String): String {
+internal fun scriptForTag(tag: String): String {
     val trimmed = tag.trim()
     if (trimmed.isEmpty()) {
         val list = android.content.res.Resources.getSystem().configuration.locales

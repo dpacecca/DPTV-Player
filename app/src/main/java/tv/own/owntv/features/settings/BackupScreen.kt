@@ -165,17 +165,24 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             }
             is BackupViewModel.State.Done -> when (s.kind) {
                 DoneKind.EXPORTED -> Text(
-                    stringResource(R.string.phase1_backup_saved_to, s.path.orEmpty(), if (s.passwordsOmitted) stringResource(R.string.phase1_backup_passwords_omitted) else ""),
+                    if (s.passwordsOmitted) {
+                        stringResource(R.string.phase1_backup_saved_to_without_passwords, s.path.orEmpty())
+                    } else {
+                        stringResource(R.string.phase1_backup_saved_to, s.path.orEmpty())
+                    },
                     style = MaterialTheme.typography.bodyLarge, color = colors.primary,
                 )
                 DoneKind.RESTORED -> Column {
-                    Text(stringResource(R.string.phase1_backup_restored, s.items), style = MaterialTheme.typography.bodyLarge, color = colors.primary)
+                    Text(pluralStringResource(R.plurals.phase1_backup_restored, s.items, s.items), style = MaterialTheme.typography.bodyLarge, color = colors.primary)
                     Text(stringResource(R.string.phase1_backup_restore_resync), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     if (s.passwordsOmitted) {
                         Text(stringResource(R.string.phase1_backup_restore_password_note), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     }
                     if (s.skippedSources > 0) {
                         Text(pluralStringResource(R.plurals.phase1_backup_skipped_sources, s.skippedSources, s.skippedSources), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    }
+                    if (s.invalidLocale) {
+                        Text(stringResource(R.string.phase1_backup_invalid_locale), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     }
                 }
             }
@@ -453,7 +460,11 @@ private fun ProfilePickerDialog(
             profiles.forEachIndexed { i, p ->
                 val locked = p.pinHash != null && p.id != activeId
                 CheckRow(
-                    label = p.name + (if (p.id == activeId) stringResource(R.string.phase1_backup_current) else ""),
+                    label = if (p.id == activeId) {
+                        stringResource(R.string.phase1_backup_profile_current, p.name)
+                    } else {
+                        p.name
+                    },
                     desc = when {
                         locked -> stringResource(R.string.phase1_backup_pin_locked)
                         p.isKids -> stringResource(R.string.phase1_backup_kids_profile)

@@ -164,7 +164,7 @@ The old 111-locale projection is obsolete after the decision to support 21 langu
 
 > Consequence to accept: strings added in future releases appear in English until translations land. Android's resource fallback handles this gracefully during development; the generated coverage report makes it visible; the 21 supported languages are release-gated before a localized release.
 
-**6. Source English is en-US, with a small `values-en-rGB` override.** Today's source mixes `Favorites`/`Favourite Channels` and `Add source`/`Add Source`. Canonical `values/` becomes en-US (the form every MT model and translation tool expects); `values-en-rGB` carries ~15 overrides so UK/AU/IN users keep `Favourites`, `Colour`, `Catalogue`. English is a Tier 1 target in its own right (Phase 4d), but British English is not a separate Tier 1 target unless the product later exposes it explicitly.
+**6. Source English is en-US, with a reviewed `values-en-rGB` override.** Canonical `values/` is normalized to en-US spelling; `values-en-rGB` contains the explicit British regional overrides for favourites, colour, catalogue and programme wording. The regional file is packaged but is not a separate Tier 1 translation target. English is a Tier 1 target in its own right (Phase 4d), while British English remains a regional source override unless the product later exposes it explicitly.
 
 **7. One SharedPreferences-backed `LocaleStore`, because the locale is bootstrap-critical.** The selected locale must be readable *synchronously* inside `Application.attachBaseContext` and `Activity.attachBaseContext`. DataStore is asynchronous and cannot be read cleanly from those hooks without blocking a lifecycle callback or redesigning startup around a delayed bootstrap plus a possible recreation. Removing the API 33 reconcile removed the *reconciliation* complexity, not the *cold-start* requirement. So this one setting lives in SharedPreferences, alone, with no DataStore key and no mirror. Full treatment in 0b.
 
@@ -582,14 +582,14 @@ This works because `ViewModel` instances survive configuration-driven recreation
 
 > `gatePassed` is configuration-retained session state, not saveable state. It survives Activity recreation but resets after process death.
 
-**Audit the neighbouring flags separately; do not give them all the same lifetime.** `MainActivity.kt` holds at least `addingProfile`, `switchProfileRequested` and `everHadProfiles` in the same composable (`:229`, `:306`, `:313`, `:322-323`, `:350` ⟨verify⟩). Classify each on its own merits:
+**Audit the neighbouring flags separately; do not give them all the same lifetime.** `MainActivity.kt` holds `addingProfile` and `switchProfileRequested` beside the observed `ProfileLoadState`/active-profile streams. Classify each on its own merits:
 
 | Flag | Question to answer | Likely home |
 |---|---|---|
 | `gatePassed` | Is it an authentication result? Yes. | Activity-scoped ViewModel, no saved state |
 | `addingProfile` | Is it in-flight UI navigation the user would expect to survive a rotation but not a kill? | Same ViewModel, no saved state |
 | `switchProfileRequested` | Same question, plus: does it pair with `gatePassed` such that restoring one without the other is incoherent? | Same ViewModel, no saved state |
-| `everHadProfiles` | Is it derived from persisted data? If yes, it should be observed, not remembered at all. | Derive from the profiles repository |
+| `profileState` / active profile id | Can either asynchronous source prove that the active profile is safe? No; Room must be `Loaded`, and the loaded list must contain the active id. | Pure `shellMayCompose` policy over both observed values |
 
 Do not batch-convert. Each flag gets its own decision recorded in the PR.
 
@@ -646,19 +646,23 @@ SharedPreferences LocaleStore
 ```kotlin
 class LocaleStore(
     private val preferences: SharedPreferences,
+    private val applicationContext: Context?, // null for the attachBaseContext read-only instance
 ) {
     private val _currentTag = MutableStateFlow(readBlocking())
 
-    val currentTag: StateFlow<String> =
-        _currentTag.asStateFlow()
+    val currentTag: StateFlow<String> = _currentTag.asStateFlow()
 
     fun readBlocking(): String =
-        preferences.getString(KEY_UI_LANGUAGE, "").orEmpty()
+        SupportedLocales.canonicalTag(
+            runCatching { preferences.getString(KEY_UI_LANGUAGE, "") }.getOrNull(),
+        ) ?: AppLocale.SYSTEM_DEFAULT_TAG
 
     suspend fun set(tag: String) {
+        val canonical = SupportedLocales.canonicalTag(tag)
+            ?: error("Unsupported application locale: ${tag.trim()}")
         val committed = withContext(Dispatchers.IO) {
             preferences.edit()
-                .putString(KEY_UI_LANGUAGE, tag)
+                .putString(KEY_UI_LANGUAGE, canonical)
                 .commit()
         }
 
@@ -666,7 +670,10 @@ class LocaleStore(
             "Failed to persist application locale"
         }
 
-        _currentTag.value = tag
+        _currentTag.value = canonical
+        // The Koin singleton has the Application; the attachBaseContext instance intentionally does
+        // not. This updates Locale.getDefault()/LocaleList immediately after an in-session write.
+        applicationContext?.let { AppLocale.applyGlobally(canonical) }
     }
 }
 ```
@@ -706,7 +713,7 @@ This distinction matters after a custom locale has already wrapped the Applicati
 `SettingsRepository.exportSettings():1126` ⟨verify⟩ serialises an explicit `backupStringKeys` whitelist (`:1085` ⟨verify⟩). With the locale living in `LocaleStore` rather than DataStore, the backup format still needs the field, but the mechanism changes:
 
 1. Include the UI language in the exported payload, read from `LocaleStore.currentTag`. If the existing `backupStringKeys` whitelist is DataStore-keyed, add the locale as an explicit, separately-serialised field rather than pretending it is a DataStore key.
-2. `importSettings():1137` ⟨verify⟩ calls `localeStore.set(tag)` and **awaits it** before reporting import success.
+2. `importSettings()` validates the optional tag and returns a pending canonical value; `BackupManager` applies it through `LocaleStore.set(tag)` **after every database/DataStore restore operation and restore-marker cleanup** and before reporting import success. This prevents a script-family recreation from interrupting an in-flight restore.
 
 Everything v1 said about the mirror race (`importSettings` bypassing the mirror, the `OwnTVApp.onCreate` repair collector, the force-stop window) is deleted. There is no mirror, so there is no window and no collector. This is the single largest complexity reduction in v2.
 
@@ -1034,7 +1041,7 @@ This is where the canonical/display split lands: `ChannelGenre.label` stays the 
 
 ### Batch 8. `features/downloads` / `subtitles` / `profiles` / `customize` / `update`
 
-Plus `core/subtitles/` and `core/download/DownloadNotifications.kt`. Categories 1, 2, 3 and 8. The download notification channel name is localized. Do not return early merely because the channel already exists: call `createNotificationChannel` with the current localized name whenever the notification renderer runs, allowing Android to update the existing channel's visible name without a locale observer.
+Plus `core/subtitles/` and `core/download/DownloadNotifications.kt`. Categories 1, 2, 3 and 8. The download notification channel name is localized. The renderer caches the last effective locale/name key process-wide, calls `createNotificationChannel` on the first notification and after a locale change, and lets Android update the existing channel's visible name without a locale observer.
 
 ### Batch 9. `core/sync/` text builders
 
@@ -1427,6 +1434,19 @@ while `locales.json` already contains the other 20 supported entries with `packa
 Automated validation covers **every** Tier 1 locale. A complete manual walkthrough is not required for every locale on every pull request, but release smoke testing must include the representative matrix plus targeted checks for the remaining Tier 1 targets.
 
 **4e. Docs.** `docs/i18n.md` covering: how to add a string, naming conventions, placeholder and plural rules, the comparison-key rule (quoted verbatim at the top), the `ErrorMessages` English-needle caveat, the "never persist a translation or a resource ID" rule, and where the localisation boundary sits. Plus a `CONTRIBUTING.md` section pointing translators at Weblate.
+
+### Phase 1 review hardening shipped with the extraction
+
+The Phase 1 implementation also pins the lifecycle and presentation invariants that are easy to document incorrectly:
+
+- profile launch state distinguishes Room `Loading` from `Loaded(empty)`, and the shell requires a loaded profile matching the persisted active id plus a completed PIN decision;
+- Compose receives a localized resource context whose base still unwraps to the host Activity, preserving themes, WebView/window services, display-mode matching and Activity launches;
+- locale restore accepts only canonical catalogue tags, reports invalid optional backup values, applies a valid locale only after restore marker cleanup, and updates process `Locale` defaults through the singleton `LocaleStore`;
+- every counted message uses Android `<plurals>` (with `PluralsCandidate` fatal in lint), while compact sync values remain display-only and raw quantities drive plural selection;
+- player toasts, rewind metadata, stream diagnostics, playback history, update failures and companion HTML remain semantic until their current-locale renderer; HTML declares effective `lang` and `dir`;
+- the source tree is en-US, the reviewed en-GB overrides are explicit, the generated catalogue is fresh, and the filtered APK baseline is recorded in [`docs/i18n-apk-size-baseline.md`](./i18n-apk-size-baseline.md).
+
+These are covered by JVM/i18n regression tests and Android-test compilation/instrumentation fixtures; no review claim relies solely on a comment or a successful happy-path build.
 
 ---
 

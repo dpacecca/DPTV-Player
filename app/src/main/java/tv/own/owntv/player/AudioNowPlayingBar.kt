@@ -201,8 +201,8 @@ fun AudioNowPlayingBar(
                             color = colors.onSurfaceVariant,
                             maxLines = 1,
                         )
-                        meta.subtitle != null -> Text(
-                            meta.subtitle ?: "",
+                        meta.localizedSubtitle() != null -> Text(
+                            meta.localizedSubtitle() ?: "",
                             style = MaterialTheme.typography.labelSmall.copy(fontFamily = PopupFontFamily),
                             color = colors.onSurfaceVariant,
                             maxLines = 1,

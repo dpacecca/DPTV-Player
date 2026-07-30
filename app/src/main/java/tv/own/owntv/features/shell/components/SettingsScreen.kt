@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -94,6 +95,7 @@ import tv.own.owntv.ui.theme.GlassConfig
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.player.displayText
 import tv.own.owntv.ui.theme.ThemeMode
 import tv.own.owntv.ui.theme.UiZoom
 import kotlin.math.roundToInt
@@ -527,7 +529,7 @@ fun SettingsScreen(
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.EPG,
             title = stringResource(R.string.settings_catchup),
-            desc = if (catchupChannels > 0) stringResource(R.string.settings_catchup_supported, catchupChannels)
+            desc = if (catchupChannels > 0) pluralStringResource(R.plurals.settings_catchup_supported, catchupChannels, catchupChannels)
                 else stringResource(R.string.settings_catchup_unavailable),
             chip = when (catchupTz) {
                 SettingsRepository.CatchupTimezone.DEVICE -> stringResource(R.string.settings_catchup_timezone_device)
@@ -1072,6 +1074,13 @@ private fun AboutDialog(onDismiss: () -> Unit) {
  * who can't pull logcat can read/report what happened after dismissing the error screen.
  */
 @Composable
+private fun String.playbackDisplayName(): String = when (trim().lowercase(java.util.Locale.ROOT)) {
+    "mpv" -> stringResource(R.string.settings_player_mpv)
+    "exoplayer", "exo" -> stringResource(R.string.settings_player_exoplayer)
+    else -> this
+}
+
+@Composable
 private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -1108,16 +1117,24 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                     ) {
                         Text(
-                            stringResource(R.string.settings_playback_entry, timeFmt.format(java.util.Date(e.atMs)), e.engine, stringResource(if (e.live) R.string.settings_live else R.string.settings_vod)),
+                            stringResource(
+                                R.string.settings_playback_entry,
+                                timeFmt.format(java.util.Date(e.atMs)),
+                                e.engine.playbackDisplayName(),
+                                stringResource(if (e.live) R.string.settings_live else R.string.settings_vod),
+                            ),
                             style = MaterialTheme.typography.labelMedium, color = colors.primary,
                         )
                         e.reason?.let {
                             Spacer(Modifier.height(2.dp))
                             Text(it.displayText(), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
                         }
-                        e.spec?.let {
+                        e.mediaSpec()?.let { spec ->
                             Spacer(Modifier.height(2.dp))
-                            Text(it, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                            Text(spec.displayText(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                        } ?: e.spec?.let { legacySpec ->
+                            Spacer(Modifier.height(2.dp))
+                            Text(legacySpec, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                         }
                         e.raw?.let {
                             Spacer(Modifier.height(2.dp))
@@ -1430,7 +1447,7 @@ private fun GlassEffectDialog(
                 Spacer(Modifier.height(16.dp))
                 OwnTVButton(
                     if (scope == ALL_GLASS_SURFACES) stringResource(R.string.settings_surface_count_all)
-                    else stringResource(R.string.settings_surface_count, scope.size, ALL_GLASS_SURFACES.size),
+                    else pluralStringResource(R.plurals.settings_surface_count, scope.size, scope.size, ALL_GLASS_SURFACES.size),
                     onClick = { showSurfaces = true },
                     style = OwnTVButtonStyle.SECONDARY,
                     modifier = Modifier.fillMaxWidth(),

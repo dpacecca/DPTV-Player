@@ -50,7 +50,7 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
      */
     override fun attachBaseContext(base: Context) {
         val tag = tv.own.owntv.core.i18n.LocaleStore.from(base).readBlocking()
-        tv.own.owntv.core.i18n.AppLocale.applyGlobally(tag, base)
+        tv.own.owntv.core.i18n.AppLocale.applyGlobally(tag)
         super.attachBaseContext(tv.own.owntv.core.i18n.AppLocale.wrap(base, tag))
     }
 
@@ -62,7 +62,7 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         val tag = tv.own.owntv.core.i18n.LocaleStore.from(this).readBlocking()
-        tv.own.owntv.core.i18n.AppLocale.applyGlobally(tag, this)
+        tv.own.owntv.core.i18n.AppLocale.applyGlobally(tag)
     }
 
     override fun onCreate() {

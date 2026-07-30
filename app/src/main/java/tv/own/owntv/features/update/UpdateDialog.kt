@@ -135,9 +135,7 @@ fun UpdateDialog(onDismiss: () -> Unit, checkOnOpen: Boolean = false) {
                 }
                 is UpdateManager.State.Failed -> {
                     Text(
-                        stringResource(
-                            if (s.kind == UpdateManager.State.FailureKind.CHECK) R.string.phase1_update_failed_check else R.string.phase1_update_failed_download,
-                        ),
+                        updateFailureText(s.failure),
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                     )
@@ -145,7 +143,7 @@ fun UpdateDialog(onDismiss: () -> Unit, checkOnOpen: Boolean = false) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                         Spacer(Modifier.weight(1f))
-                        OwnTVButton(stringResource(R.string.phase1_update_try_again), onClick = { manager.check() }, modifier = Modifier.focusRequester(focus))
+                        OwnTVButton(stringResource(R.string.phase1_update_try_again), onClick = { manager.retry() }, modifier = Modifier.focusRequester(focus))
                     }
                 }
             }

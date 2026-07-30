@@ -79,7 +79,7 @@ fun UpdateStatusToast(onDone: () -> Unit, onViewChangelog: () -> Unit, modifier:
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
             )
             is UpdateManager.State.Failed -> Text(
-                stringResource(R.string.phase1_update_failed_check),
+                updateFailureText(s.failure),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
             )
             is UpdateManager.State.Available -> {

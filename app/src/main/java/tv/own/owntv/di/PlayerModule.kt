@@ -12,8 +12,8 @@ val playerModule = module {
     single { tv.own.owntv.player.PlayerDiagnostics() }
     // Per-item VOD engine pins made with the player's gear toggle (VOD counterpart of ForceMpvStore).
     single { tv.own.owntv.core.player.VodEngineStore(androidContext()) }
-    // context, settings, connectivity, okHttpClient (ExoPlayer image-sub handoff), diagnostics, proxyHolder, vodEngineStore
-    single { OwnTVPlayer(androidContext(), get(), get(), get(), get(), get(), get()) }
+    // context, settings, connectivity, okHttpClient (ExoPlayer image-sub handoff), diagnostics, proxyHolder, vodEngineStore, localeStore
+    single { OwnTVPlayer(androidContext(), get(), get(), get(), get(), get(), get(), get()) }
     // ExoPlayer engine for the fast Live preview pane (mpv stays the full/fullscreen player).
     // context, okHttpClient, diagnostics, settings, connectivity (auto-resume when the network returns)
     single { LivePreviewEngine(androidContext(), get(), get(), get(), get()) }

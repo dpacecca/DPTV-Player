@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tv.own.owntv.core.database.dao.ProfileDao
@@ -30,7 +31,17 @@ class ProfilesViewModel(
     // Eagerly on purpose: MainActivity's splash gate blocks the first frame on this list, so the
     // query has to start when the ViewModel is built, not on first collection inside composition.
     // Measured: WhileSubscribed here cost ~1.3s of cold start.
-    val profiles: StateFlow<List<ProfileEntity>> = profileDao.observeAll()
+    //
+    // Loading is deliberately distinct from Loaded(emptyList()). An empty list can mean either a
+    // fresh install or a restore/recovery window; treating both as the same value let MainActivity
+    // enter the shell while Room was still deciding whether the active profile was PIN-locked.
+    val profileState: StateFlow<ProfileLoadState> = profileDao.observeAll()
+        .map<List<ProfileEntity>, ProfileLoadState> { ProfileLoadState.Loaded(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ProfileLoadState.Loading)
+
+    /** Compatibility projection for feature screens that only render an already-loaded list. */
+    val profiles: StateFlow<List<ProfileEntity>> = profileState
+        .map { (it as? ProfileLoadState.Loaded)?.profiles.orEmpty() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** Make [profile] active (routes the app into the shell) once the preference write commits. */
@@ -103,6 +114,30 @@ class ProfilesViewModel(
             }
         }
     }
+}
+
+/** Room has not emitted yet versus a completed query, including a legitimately empty result. */
+sealed interface ProfileLoadState {
+    data object Loading : ProfileLoadState
+    data class Loaded(val profiles: List<ProfileEntity>) : ProfileLoadState
+}
+
+/**
+ * The shell may only be composed after both sources of the launch decision are known. This small
+ * policy is kept pure so the cold-start PIN invariant can be tested without a Compose test harness:
+ * a persisted active id arriving before Room's locked profile must never be enough to enter the
+ * shell, and a loaded empty result must never be treated as permission to enter it.
+ */
+internal fun shellMayCompose(
+    profileState: ProfileLoadState,
+    activeProfileId: Long?,
+    gatePassed: Boolean,
+    gateRequired: Boolean,
+): Boolean {
+    val loaded = profileState as? ProfileLoadState.Loaded ?: return false
+    val active = activeProfileId ?: return false
+    if (active < 0L || loaded.profiles.none { it.id == active }) return false
+    return !gateRequired || gatePassed
 }
 
 /** Links all currently-known sources to a freshly created profile (helper kept off the entity API). */

@@ -123,6 +123,7 @@ class SetupViewModel(
             val restoredItems: Int? = null,
             val passwordsOmitted: Boolean = false,
             val skippedSources: Int = 0,
+            val invalidLocale: Boolean = false,
         ) : ImportState
         data class Failed(val failure: SetupFailure) : ImportState
         /** Encrypted backup needs the backup password before restoring; [retry] after a wrong attempt.
@@ -408,6 +409,7 @@ class SetupViewModel(
                     restoredItems = summary.items,
                     passwordsOmitted = password.isNullOrBlank(),
                     skippedSources = summary.skippedSources,
+                    invalidLocale = summary.invalidLocale,
                 )
                 onDone()
             },

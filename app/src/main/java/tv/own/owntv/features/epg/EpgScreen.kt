@@ -124,7 +124,12 @@ private fun epgStatsText(stats: EpgStats): String {
         stringResource(R.string.phase1_epg_no_catchup_channels)
     }
     return if (stats.programmes > 0) {
-        stringResource(R.string.phase1_epg_stats_loaded, stats.guideChannels, stats.programmes, catchup)
+        stringResource(
+            R.string.phase1_epg_stats_loaded,
+            pluralStringResource(R.plurals.phase1_epg_stats_channels, stats.guideChannels, stats.guideChannels),
+            pluralStringResource(R.plurals.phase1_epg_stats_programmes, stats.programmes, stats.programmes),
+            catchup,
+        )
     } else if (stats.catchupChannels > 0) {
         pluralStringResource(
             R.plurals.phase1_epg_stats_catchup_available,
@@ -145,11 +150,10 @@ private fun epgMatchSummaryText(summary: EpgMatchSummary): String = when (summar
     EpgMatchSummary.AllMatched -> stringResource(R.string.phase1_epg_all_matched)
     is EpgMatchSummary.NoMatch -> stringResource(R.string.phase1_epg_no_match, summary.channelName)
     is EpgMatchSummary.AutoMatched -> if (summary.review > 0) {
-        pluralStringResource(
-            R.plurals.phase1_epg_auto_matched,
-            summary.applied,
-            summary.applied,
-            summary.review,
+        stringResource(
+            R.string.phase1_epg_auto_matched,
+            pluralStringResource(R.plurals.phase1_epg_auto_matched_applied, summary.applied, summary.applied),
+            pluralStringResource(R.plurals.phase1_epg_auto_matched_review, summary.review, summary.review),
         )
     } else {
         pluralStringResource(

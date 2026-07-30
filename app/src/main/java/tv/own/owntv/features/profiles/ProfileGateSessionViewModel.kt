@@ -26,10 +26,8 @@ import androidx.lifecycle.ViewModel
  * neighbouring in-session navigation flags (`addingProfile`, `switchProfileRequested`) share that
  * lifetime because they are transient UI navigation the user expects to survive a rotation but not a
  * kill; they were audited individually rather than batch-converted (see the table in the same
- * section of the plan).
- *
- * `everHadProfiles` is **not** hosted here: it is derived from the persisted active-profile id (an
- * id `>= 0` means a profile has existed in the store), so it is observed, not remembered.
+ * section of the plan). The active profile's existence and membership are observed from the Room
+ * list and persisted active id in `MainActivity`, never remembered as launch permission.
  */
 class ProfileGateSessionViewModel : ViewModel() {
 

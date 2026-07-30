@@ -18,6 +18,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -59,28 +61,16 @@ fun StreamInfoOverlay(player: PlaybackEngine, modifier: Modifier = Modifier) {
             fontWeight = FontWeight.Bold,
         )
         Spacer(Modifier.width(2.dp))
-        rows.forEach { (label, value) ->
+        rows.forEach { row ->
             Row(modifier = Modifier.padding(top = 5.dp)) {
                 Text(
-                    stringResource(
-                        when (label) {
-                            "Engine" -> R.string.player_stream_engine
-                            "Source" -> R.string.player_stream_source
-                            "Video" -> R.string.player_stream_video
-                            "HDR" -> R.string.player_stream_hdr
-                            "Bitrate" -> R.string.player_stream_bitrate
-                            "Decoder" -> R.string.player_stream_decoder
-                            "Audio" -> R.string.player_stream_audio
-                            "Buffer" -> R.string.player_stream_buffer
-                            else -> R.string.player_stream_engine
-                        },
-                    ),
+                    stringResource(row.label.resourceId),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                     modifier = Modifier.width(86.dp),
                 )
                 Text(
-                    value,
+                    row.value.displayText(),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White,
                     fontFamily = FontFamily.Monospace,
@@ -88,4 +78,90 @@ fun StreamInfoOverlay(player: PlaybackEngine, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+private val StreamInfoLabel.resourceId: Int
+    get() = when (this) {
+        StreamInfoLabel.ENGINE -> R.string.player_stream_engine
+        StreamInfoLabel.FORMAT -> R.string.player_stream_format
+        StreamInfoLabel.SOURCE -> R.string.player_stream_source
+        StreamInfoLabel.VIDEO -> R.string.player_stream_video
+        StreamInfoLabel.HDR -> R.string.player_stream_hdr
+        StreamInfoLabel.BITRATE -> R.string.player_stream_bitrate
+        StreamInfoLabel.DECODER -> R.string.player_stream_decoder
+        StreamInfoLabel.AUDIO -> R.string.player_stream_audio
+        StreamInfoLabel.BUFFER -> R.string.player_stream_buffer
+    }
+
+@Composable
+private fun StreamInfoValue.displayText(): String {
+    val configuration = LocalConfiguration.current
+    val locale = configuration.locales[0] ?: java.util.Locale.US
+    fun number(value: Double): String = java.text.NumberFormat.getNumberInstance(locale).apply {
+        maximumFractionDigits = 1
+        minimumFractionDigits = 0
+    }.format(value)
+    return when (this) {
+        is StreamInfoValue.Engine -> when (engine) {
+            StreamEngine.MPV -> stringResource(R.string.settings_player_mpv)
+            StreamEngine.EXOPLAYER -> when (mode) {
+                StreamEngineMode.PREFERRED -> stringResource(R.string.player_stream_engine_exo_preferred)
+                StreamEngineMode.FALLBACK -> stringResource(R.string.player_stream_engine_exo_fallback)
+                StreamEngineMode.IMAGE_SUBTITLE_HANDOFF -> stringResource(R.string.player_stream_engine_exo_image_subtitle)
+                StreamEngineMode.NORMAL -> stringResource(R.string.settings_player_exoplayer)
+            }
+        }
+        is StreamInfoValue.Format -> name
+        is StreamInfoValue.Source -> url
+        is StreamInfoValue.Video -> listOfNotNull(
+            codec,
+            if (width != null && height != null) "${width}×${height}" else null,
+            fps?.let { stringResource(R.string.player_stream_fps, it) },
+            bitDepth?.let { stringResource(R.string.player_stream_bit_depth, it) },
+        ).joinToString(stringResource(R.string.player_metadata_separator))
+        is StreamInfoValue.Hdr -> when (mode) {
+            StreamHdrMode.HDR10_PQ -> stringResource(R.string.player_stream_hdr10_pq)
+            StreamHdrMode.HLG -> stringResource(R.string.player_stream_hlg)
+            StreamHdrMode.SDR -> stringResource(R.string.player_stream_sdr)
+        }
+        is StreamInfoValue.Bitrate -> stringResource(R.string.player_stream_mbps, number(bitsPerSecond / 1_000_000.0))
+        is StreamInfoValue.Decoder -> buildList {
+            when (kind) {
+                DecoderKind.HARDWARE -> {
+                    name?.takeIf { it.isNotBlank() }?.let(::add)
+                    add(stringResource(R.string.player_decoder_hardware))
+                }
+                DecoderKind.SOFTWARE -> {
+                    name?.takeIf { it.isNotBlank() }?.let(::add)
+                    add(stringResource(R.string.player_decoder_software))
+                }
+                DecoderKind.NAMED -> {
+                    name?.takeIf { it.isNotBlank() }?.let(::add)
+                    if (hardware) add(stringResource(R.string.player_decoder_hardware))
+                }
+            }
+            if (direct) add(stringResource(R.string.player_decoder_direct))
+        }.joinToString(stringResource(R.string.player_metadata_separator))
+        is StreamInfoValue.Audio -> listOfNotNull(
+            codec,
+            channelLabel(channelCount),
+            sampleRateHz?.let { stringResource(R.string.player_stream_khz, number(it / 1000.0)) },
+            bitsPerSecond?.takeIf { it > 0 }?.let { stringResource(R.string.player_stream_kbps, number(it / 1000.0)) },
+        ).joinToString(stringResource(R.string.player_metadata_separator))
+        is StreamInfoValue.Buffer -> listOfNotNull(
+            bufferedMs?.let { stringResource(R.string.player_stream_seconds, number(it / 1000.0)) },
+            droppedFrames?.let { pluralStringResource(R.plurals.player_stream_dropped_frames, it.toInt(), it) },
+        ).joinToString(stringResource(R.string.player_metadata_separator))
+        is StreamInfoValue.Raw -> text
+    }
+}
+
+@Composable
+private fun channelLabel(count: Int?): String? = when (count) {
+    null -> null
+    1 -> stringResource(R.string.player_audio_mono)
+    2 -> stringResource(R.string.player_audio_stereo)
+    6 -> "5.1"
+    8 -> "7.1"
+    else -> pluralStringResource(R.plurals.player_audio_channels, count, count)
 }

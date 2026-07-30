@@ -3,7 +3,6 @@
 package tv.own.owntv.features.live
 
 import tv.own.owntv.core.epg.displayLogoUrl
-import android.content.Context
 import androidx.compose.runtime.Immutable
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -73,7 +72,6 @@ import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
-import tv.own.owntv.ui.format.formatSystemTime
 
 /** Layer-2 rail selection for Live TV. */
 sealed interface LiveKey {
@@ -121,7 +119,6 @@ data class EpgNowNext(
 )
 
 class LiveViewModel(
-    private val appContext: Context,
     private val channelDao: ChannelDao,
     private val categoryDao: CategoryDao,
     private val favoriteDao: FavoriteDao,
@@ -1502,11 +1499,11 @@ class LiveViewModel(
                 buildLiveTimeshiftUrl(ch, source, startMs, offsetSec, tz)?.let { it to source.userAgent }
             } ?: return@launch
             if (_timeshiftOffsetSec.value == null) return@launch // user jumped back to live meanwhile
-            // Show the clock time being watched (handy for the user; no credentials in logs).
-            val localLabel = formatSystemTime(appContext, startMs)
+            // Keep the rewind instant semantic. The player HUD formats it with the current
+            // localized context, so an in-session locale switch updates an already-visible subtitle.
             _previewChannel.value = ch
             clearLiveOnExo() // archive plays as a VOD-style mpv stream, not the live ExoPlayer channel
-            player.play(url, title = ch.name, subtitle = appContext.getString(tv.own.owntv.R.string.content_rewind_at, localLabel), logoUrl = ch.displayLogoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
+            player.play(url, title = ch.name, logoUrl = ch.displayLogoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa, rewindStartMs = startMs)
             timeshiftStartWall = startMs
             startOffsetTick()
         }

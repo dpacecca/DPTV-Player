@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.widthIn
@@ -31,6 +32,7 @@ import tv.own.owntv.core.sync.SyncResult
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import tv.own.owntv.ui.components.OwnTVSpinner
+import tv.own.owntv.ui.components.compactCount
 import tv.own.owntv.ui.components.displayText
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -188,9 +190,10 @@ private fun SyncLine.text(): String = when (this) {
         else stringResource(R.string.sync_status_catalog_with_counts, sync.sourceName, countsText)
     }
     is SyncLine.Epg -> {
+        val context = LocalContext.current
         val countParts = buildList {
-            if (sync.channels > 0) add(pluralStringResource(R.plurals.sync_count_channels, sync.channels, sync.channels))
-            if (sync.programmes > 0) add(pluralStringResource(R.plurals.sync_count_epg, sync.programmes, sync.programmes))
+            if (sync.channels > 0) add(pluralStringResource(R.plurals.sync_count_channels, sync.channels, compactCount(context, sync.channels)))
+            if (sync.programmes > 0) add(pluralStringResource(R.plurals.sync_count_epg, sync.programmes, compactCount(context, sync.programmes)))
         }
         val countsText = countParts.joinToString(stringResource(R.string.sync_counts_separator))
         if (countsText.isBlank()) stringResource(R.string.sync_status_epg, sync.sourceName)

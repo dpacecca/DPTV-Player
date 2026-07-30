@@ -87,7 +87,7 @@ private val SPEEDS = listOf(0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0)
 private val TEAL = Color(0xFF52DBC8)
 
 @Composable
-private fun MediaSpec.displayText(): String {
+internal fun MediaSpec.displayText(): String {
     val decoderText = decoder?.let {
         when (it) {
             is DecoderSpec.Hardware -> buildList {
@@ -99,7 +99,13 @@ private fun MediaSpec.displayText(): String {
                 if (it.gpu) add(stringResource(R.string.player_decoder_gpu))
             }.joinToString(stringResource(R.string.player_metadata_separator))
             is DecoderSpec.Named -> buildList {
-                add(it.value)
+                add(
+                    when (it.value.lowercase()) {
+                        "exoplayer" -> stringResource(R.string.settings_player_exoplayer)
+                        "mpv" -> stringResource(R.string.settings_player_mpv)
+                        else -> it.value
+                    },
+                )
                 if (it.hardware) add(stringResource(R.string.player_decoder_hardware))
                 if (it.direct) add(stringResource(R.string.player_decoder_direct))
             }.joinToString(stringResource(R.string.player_metadata_separator))
@@ -127,7 +133,7 @@ private fun PlaybackFailure.displayText(): String = when (this) {
     PlaybackFailure.BothEnginesExoFirst -> stringResource(R.string.player_error_both_engines_exo_first)
     is PlaybackFailure.BothEnginesMpvFirst -> stringResource(
         R.string.player_error_both_engines_mpv_first,
-        exoError.technicalArgument(),
+        exoError.displayText(),
     )
     is PlaybackFailure.ExoDecode -> stringResource(R.string.player_error_exo_decode, code)
     is PlaybackFailure.ExoPlay -> stringResource(R.string.player_error_exo_play, code)
@@ -137,14 +143,9 @@ private fun PlaybackFailure.displayText(): String = when (this) {
         R.string.player_error_stream_unavailable,
         if (customUserAgentHint) stringResource(R.string.player_error_custom_user_agent) else "",
     )
+    PlaybackFailure.MpvOpenDecode -> stringResource(R.string.player_error_mpv_open_decode)
+    PlaybackFailure.MpvStreamNeverStarted -> stringResource(R.string.player_error_mpv_stream_never_started)
     is PlaybackFailure.Raw -> message
-}
-
-private fun PlaybackFailure.technicalArgument(): String = when (this) {
-    is PlaybackFailure.ExoDecode -> code
-    is PlaybackFailure.ExoPlay -> code
-    is PlaybackFailure.Raw -> message
-    else -> this::class.simpleName.orEmpty()
 }
 
 private const val DIRECT_TUNE_TIMEOUT_MS = 2_000L
@@ -683,11 +684,12 @@ private fun TopBar(
     val displayTitle = meta.title?.takeIf { it.isNotBlank() }
         ?: meta.episodeNumber?.let { stringResource(R.string.player_episode_number, it) }
         ?: ""
+    val localizedSubtitle = meta.localizedSubtitle()
     val vodSubtitle = if (isLive) {
         meta.subtitle
     } else {
         buildList {
-            meta.subtitle?.takeIf { it.isNotBlank() }?.let(::add)
+            localizedSubtitle?.takeIf { it.isNotBlank() }?.let(::add)
             meta.seasonNumber?.let { add(stringResource(R.string.player_season_number, it)) }
         }.joinToString(stringResource(R.string.content_metadata_separator)).ifBlank { null }
     }
@@ -810,7 +812,7 @@ private fun ChannelCard(player: PlaybackEngine, modifier: Modifier = Modifier) {
     val displayTitle = meta.title?.takeIf { it.isNotBlank() }
         ?: meta.episodeNumber?.let { stringResource(R.string.player_episode_number, it) }
         ?: ""
-    ChannelOsdCard(title = displayTitle, subtitle = meta.subtitle, logoUrl = meta.logoUrl, modifier = modifier)
+    ChannelOsdCard(title = displayTitle, subtitle = meta.localizedSubtitle(), logoUrl = meta.logoUrl, modifier = modifier)
 }
 
 /** Direct-tune entry OSD: the number as it's typed, on the same surface (position, radius, scrim) the

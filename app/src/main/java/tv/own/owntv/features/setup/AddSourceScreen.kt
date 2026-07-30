@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -334,7 +335,7 @@ fun AddSourceScreen(
                             is StalkerTestUi.Ok -> {
                                 Spacer(Modifier.height(6.dp))
                                 Text(
-                                    stringResource(R.string.setup_stalker_test_connected, stalkerTest.endpoint, stalkerTest.profileFields),
+                                    pluralStringResource(R.plurals.setup_stalker_test_connected, stalkerTest.profileFields, stalkerTest.endpoint, stalkerTest.profileFields),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = colors.primary,
                                 )

@@ -84,7 +84,7 @@ fun SubtitleSearchScreen(
                 quotaNote?.let { quota ->
                     Text(
                         if (quota.reset != null) {
-                            stringResource(tv.own.owntv.R.string.phase1_subtitles_remaining_reset, quota.remaining, quota.reset)
+                            pluralStringResource(tv.own.owntv.R.plurals.phase1_subtitles_remaining_reset, quota.remaining, quota.remaining, quota.reset)
                         } else if (quota.remaining == 1) {
                             pluralStringResource(tv.own.owntv.R.plurals.phase1_subtitles_remaining_count, quota.remaining, quota.remaining)
                         } else {
@@ -200,7 +200,7 @@ private fun ResultsList(
                                 if (r.fromTrusted) add(stringResource(tv.own.owntv.R.string.phase1_subtitles_trusted))
                                 if (r.hearingImpaired) add(stringResource(tv.own.owntv.R.string.phase1_subtitles_sdh))
                                 if (r.aiTranslated) add(stringResource(tv.own.owntv.R.string.phase1_subtitles_ai))
-                                if (r.downloads > 0) add(stringResource(tv.own.owntv.R.string.phase1_subtitles_download_count, r.downloads))
+                                if (r.downloads > 0) add(pluralStringResource(tv.own.owntv.R.plurals.phase1_subtitles_download_count, r.downloads, r.downloads))
                             }
                             if (tags.isNotEmpty()) {
                                 Text(tags.joinToString(stringResource(tv.own.owntv.R.string.phase1_subtitles_tags_separator)), style = MaterialTheme.typography.labelSmall, color = colors.primary)

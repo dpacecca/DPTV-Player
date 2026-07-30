@@ -155,6 +155,9 @@ android {
         // CI gates on this (see .github/workflows/android.yml), so an error must mean something.
         abortOnError = true
         warningsAsErrors = false
+        // A counted sentence must use Android plural resources; keep this invariant fatal so a new
+        // extraction cannot reintroduce English-only quantity wording.
+        fatal += "PluralsCandidate"
         checkDependencies = false
         // Media3's player API surface is almost entirely @UnstableApi; this app is built on it, so
         // the check fires ~90 times across the player, Home and Live code and carries no signal.
@@ -163,6 +166,9 @@ android {
         // local.properties is developer-local and never committed (its Windows SDK path can't be
         // escaped without breaking the local tooling that writes it). CI has no such file at all.
         disable += "PropertyEscape"
+        // en-rGB is an intentional partial regional override of the canonical en-US source; its
+        // omitted keys fall back to values/ and must not make every default string a lint error.
+        disable += "MissingTranslation"
         // Reports are what a failed CI run is inspected from.
         htmlReport = true
         xmlReport = true

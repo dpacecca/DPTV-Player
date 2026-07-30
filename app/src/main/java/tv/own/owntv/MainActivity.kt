@@ -82,8 +82,9 @@ class MainActivity : ComponentActivity() {
     /**
      * ST3: false while the app has no destination to draw yet (active profile id unknown, or the
      * profile query has not returned on a cold start) — exactly the two `when` branches that used to
-     * render a blank window. Latched true and never cleared, so the mid-session empty-profile window
-     * a backup restore creates (see `everHadProfiles` below) can't bring the splash back.
+     * render a blank window. Latched true and never cleared, so a mid-session empty-profile window
+     * during backup restore cannot bring the splash back; the foreground gate still refuses to
+     * compose the shell until the loaded list and active-id check are valid.
      */
     @Volatile
     private var contentReady = false
@@ -227,7 +228,9 @@ class MainActivity : ComponentActivity() {
             val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
 
             val profilesVm: ProfilesViewModel = koinViewModel()
-            val profiles by profilesVm.profiles.collectAsStateWithLifecycle()
+            val profileState by profilesVm.profileState.collectAsStateWithLifecycle()
+            val profiles = (profileState as? tv.own.owntv.features.profiles.ProfileLoadState.Loaded)?.profiles.orEmpty()
+            val profilesLoaded = profileState is tv.own.owntv.features.profiles.ProfileLoadState.Loaded
             // Activity-scoped gate/session state: configuration-only retention through the Activity's
             // ViewModelStore. Survives recreation (font scale, dark mode, a script-family language
             // switch) but is cleared on process death — an authentication result must never be restored
@@ -237,29 +240,35 @@ class MainActivity : ComponentActivity() {
             val gatePassed = gateSession.gatePassed
             val addingProfile = gateSession.addingProfile
             val switchProfileRequested = gateSession.switchProfileRequested
-            // everHadProfiles is *derived* from the persisted active-profile id, not remembered: an id
-            // `>= 0` means a profile has existed in the store, so a mid-session backup restore that
-            // briefly empties `profiles` must not blank the screen back to "loading". Observed, not
-            // remembered, per the audit table in docs/internationalization.md (its likely home is
-            // "derive from the profiles repository").
-            // ST3 — dismiss the splash the moment a real destination exists: onboarding, the profile
-            // gate or the shell. Mirrors the two blank `when` branches below exactly; `everHadProfiles`
-            // keeps a mid-session restore (which briefly empties `profiles`) out of the condition.
+            // The active id and the Room list are separate asynchronous streams. Neither one is a
+            // launch decision by itself: an id >= 0 can point at a locked profile that Room has not
+            // emitted yet, and a loaded empty list can be a restore/recovery window. The shell stays
+            // out of the composition until the list is Loaded and the gate decision is complete.
             val loadedProfileId = activeProfileId
-            val everHadProfiles = loadedProfileId != null && loadedProfileId >= 0L
+            val activeProfileKnown = loadedProfileId != null &&
+                (loadedProfileId < 0L || profiles.any { it.id == loadedProfileId })
             LaunchedEffect(loadedProfileId != null) {
                 if (loadedProfileId != null) Perf.stamp("profile-id-loaded")
             }
-            val shouldShowProfileGate = profiles.size > 1 || profiles.singleOrNull()?.pinHash != null
+            val shouldShowProfileGate = profilesLoaded && (profiles.size > 1 || profiles.singleOrNull()?.pinHash != null)
+            // Keep the pure launch policy in the actual composition path as well as in its unit
+            // tests. The policy checks the Room list, active-id membership, and authentication as
+            // one decision; a future branch must not accidentally make the shell depend on only
+            // one of the asynchronous inputs again.
+            val shellReady = tv.own.owntv.features.profiles.shellMayCompose(
+                profileState = profileState,
+                activeProfileId = loadedProfileId,
+                gatePassed = gatePassed,
+                gateRequired = shouldShowProfileGate || switchProfileRequested,
+            )
             // Back from a user-requested switch returns to the shell (the cold-start gate exits the app).
             BackHandler(enabled = switchProfileRequested && !gatePassed && !addingProfile) {
                 gateSession.cancelSwitchProfileRequest()
             }
-            LaunchedEffect(profiles.isNotEmpty()) {
-                if (profiles.isNotEmpty()) Perf.stamp("profiles-loaded")
+            LaunchedEffect(profilesLoaded) {
+                if (profilesLoaded) Perf.stamp("profiles-loaded")
             }
-            val destinationReady = loadedProfileId != null &&
-                (loadedProfileId < 0L || profiles.isNotEmpty() || everHadProfiles)
+            val destinationReady = loadedProfileId != null && profilesLoaded
             LaunchedEffect(destinationReady) {
                 if (destinationReady && !contentReady) {
                     contentReady = true
@@ -321,7 +330,7 @@ class MainActivity : ComponentActivity() {
                         Box(modifier = Modifier.fillMaxSize()) {
                         val profile = activeProfileId
                         when {
-                            profile == null -> Unit // loading
+                            profile == null || !profilesLoaded -> Unit // active id / Room list loading
                             // Adding a profile from the gate → onboard the new profile.
                             addingProfile -> Onboarding(
                                 firstRun = false,
@@ -336,8 +345,15 @@ class MainActivity : ComponentActivity() {
                                 onCancel = {},
                                 modifier = Modifier.fillMaxSize(),
                             )
-                            // Profiles still loading (≥0 means at least one exists) — avoid a gate/shell flicker.
-                            profiles.isEmpty() && !everHadProfiles -> Unit
+                            // A loaded list that does not contain the persisted active id is also
+                            // recovery/onboarding, never permission to enter OwnTVShell. This covers
+                            // both an empty restore window and a stale id left by an interrupted restore.
+                            !activeProfileKnown -> Onboarding(
+                                firstRun = false,
+                                onDone = { gateSession.markGatePassed() },
+                                onCancel = {},
+                                modifier = Modifier.fillMaxSize(),
+                            )
                             // Run 2+ (or a single locked profile): "Who's watching?" — choose a profile or add one.
                             // Also opens when the sidebar avatar is single-clicked (switchProfileRequested),
                             // which is the only way to switch when there's a single unpinned profile.
@@ -346,7 +362,7 @@ class MainActivity : ComponentActivity() {
                                 onAddProfile = { gateSession.startAddingProfile() },
                                 modifier = Modifier.fillMaxSize(),
                             )
-                            else -> OwnTVShell(
+                            shellReady -> OwnTVShell(
                                 selectedSection = selectedSection,
                                 visibleSections = visibleSections,
                                 onSelectSection = viewModel::selectSection,
@@ -376,6 +392,10 @@ class MainActivity : ComponentActivity() {
                                 },
                                 modifier = Modifier.fillMaxSize(),
                             )
+                            // No unexpected combination of asynchronous state may fall through to
+                            // the shell. The known loading/onboarding/gate cases are above; a blank
+                            // frame is safer than rendering protected content if a new state is added.
+                            else -> Unit
                         }
                         } // end foreground Box (above the background layer)
                     }
