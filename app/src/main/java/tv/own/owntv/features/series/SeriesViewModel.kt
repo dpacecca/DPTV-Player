@@ -43,6 +43,7 @@ import tv.own.owntv.core.database.dao.HistoryDao
 import tv.own.owntv.core.database.dao.ProgressDao
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SeriesDao
+import tv.own.owntv.core.database.dao.SeriesSortOrderDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.DownloadEntity
@@ -84,6 +85,7 @@ class SeriesViewModel(
     private val downloadManager: DownloadManager,
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val contentOrderDao: ContentOrderDao,
+    private val seriesSortOrderDao: SeriesSortOrderDao,
     private val metadata: tv.own.owntv.core.metadata.MetadataRepository,
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
@@ -490,12 +492,33 @@ class SeriesViewModel(
         }
     }
 
-    /** Episode/season list order (visual only; playback always runs 1,2,3…). Global setting. */
-    val episodeOrder: StateFlow<SettingsRepository.EpisodeOrder> = settings.episodeOrder
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.EpisodeOrder.DEFAULT)
+    /**
+     * Season/episode order for the OPEN series (the "Sorting" popup). Per profile and per series,
+     * backed by [SeriesSortOrderDao]; a show the user never changed reports [SeriesOrder.DEFAULT].
+     *
+     * PRESENTATION ONLY — playback (autoplay next episode) always runs in episode-number order.
+     */
+    data class SeriesOrder(val seasonsDescending: Boolean = false, val episodesDescending: Boolean = false) {
+        companion object { val DEFAULT = SeriesOrder() }
+    }
 
-    fun cycleEpisodeOrder() {
-        viewModelScope.launch { settings.setEpisodeOrder(episodeOrder.value.next()) }
+    val seriesOrder: StateFlow<SeriesOrder> = combine(ctx, _openedSeries) { c, s -> c.profileId to s }
+        .flatMapLatest { (profileId, show) ->
+            if (show == null || profileId < 0) flowOf(SeriesOrder.DEFAULT)
+            else seriesSortOrderDao.observe(profileId, show.id).map { row ->
+                if (row == null) SeriesOrder.DEFAULT
+                else SeriesOrder(row.seasonsDescending, row.episodesDescending)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SeriesOrder.DEFAULT)
+
+    /** Applied immediately from the popup; writes one upserted row for the open series. */
+    fun setSeriesOrder(seasonsDescending: Boolean, episodesDescending: Boolean) {
+        val show = _openedSeries.value ?: return
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            seriesSortOrderDao.setOrder(pid, show.id, seasonsDescending, episodesDescending)
+        }
     }
 
     fun selectSeason(season: Int) { _selectedSeason.value = season }

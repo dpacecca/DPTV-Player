@@ -321,6 +321,10 @@ or **narrow the whole app to just one**.
   **Play** for the episode to continue with — the one you're mid‑way through, or the next after the last
   finished one (resume time shown when in progress).
 - 🙈 **Hide watched** (Series, header button): filters the episode list to what's left to watch.
+- ↕️ **Sorting** (Series, header button): opens a popup with two rows — **Seasons** and **Episodes** — each
+  switching between **Oldest first** and **Newest first**. The choice is saved **per show and per profile**,
+  so a daily-news series can stay newest-first while everything else stays in normal order. It only changes
+  the display order; nothing about watched state or playback changes.
 - ✏️ **Mark as watched / unwatched** (Series): long‑press an episode → **Mark as watched** (or **Mark as
   unwatched** if already watched) to correct the auto‑detected state without playing it. Marking watched
   restarts the episode from the beginning next time you press Play.
@@ -380,7 +384,9 @@ or **narrow the whole app to just one**.
 - **Series & episodes:** open a series to see the episode list with a detail pane on the right — focus an
   episode to see its TMDB still, plot and rating. Episode rows: **single-press plays**, **long-press** for
   Download / TMDB Details.
-- **Sorting:** the sort chip cycles **Provider → A–Z → Rating**. Rating shows the highest-rated titles first.
+- **Sorting:** the sort chip cycles **Provider → A–Z → Rating → Date added**. Rating shows the highest-rated
+  titles first. **Date added** shows the newest titles first, using the date your provider stamped on each
+  movie/series; titles with no date fall to the bottom in playlist order.
   **A–Z also sorts the category folders** (in Live TV too) — categories you manually reordered in
   **Settings → Customize** stay pinned at the top; the rest sort alphabetically below them.
 - **Refetch TMDB details:** long-press a movie, series, or episode → **Refetch TMDB details** forces a fresh

@@ -13,6 +13,8 @@
 
 ### ✨ New features
 
+- **🆕 Date added — sort Movies and Series by what arrived most recently** (community PR #94 by @cotol1985)
+- **↕️ Series sorting — season and episode order, set per show** (community PR #94 by @cotol1985)
 - **📺 Channel numbers — type a number on the remote to tune in Live TV**
 - **💾 A proper backup file — `.own`, with your wallpaper inside and real encryption**
 - **🗂️ Browsing & lists — decide what Live TV, Movies and Series come back to**

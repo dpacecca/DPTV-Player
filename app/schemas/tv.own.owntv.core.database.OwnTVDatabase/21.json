@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 21,
-    "identityHash": "1c06781391e4cd0147020229c931f1ba",
+    "identityHash": "7268b76feb05d5c353d7e95401629f33",
     "entities": [
       {
         "tableName": "profiles",
@@ -724,6 +724,28 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_movies_categoryId_rating_name` ON `${TABLE_NAME}` (`categoryId`, `rating`, `name`)"
+          },
+          {
+            "name": "index_movies_sourceId_addedAt_sortOrder",
+            "unique": false,
+            "columnNames": [
+              "sourceId",
+              "addedAt",
+              "sortOrder"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_movies_sourceId_addedAt_sortOrder` ON `${TABLE_NAME}` (`sourceId`, `addedAt`, `sortOrder`)"
+          },
+          {
+            "name": "index_movies_categoryId_addedAt_sortOrder",
+            "unique": false,
+            "columnNames": [
+              "categoryId",
+              "addedAt",
+              "sortOrder"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_movies_categoryId_addedAt_sortOrder` ON `${TABLE_NAME}` (`categoryId`, `addedAt`, `sortOrder`)"
           }
         ],
         "foreignKeys": [
@@ -941,6 +963,28 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_series_categoryId_rating_name` ON `${TABLE_NAME}` (`categoryId`, `rating`, `name`)"
+          },
+          {
+            "name": "index_series_sourceId_addedAt_sortOrder",
+            "unique": false,
+            "columnNames": [
+              "sourceId",
+              "addedAt",
+              "sortOrder"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_series_sourceId_addedAt_sortOrder` ON `${TABLE_NAME}` (`sourceId`, `addedAt`, `sortOrder`)"
+          },
+          {
+            "name": "index_series_categoryId_addedAt_sortOrder",
+            "unique": false,
+            "columnNames": [
+              "categoryId",
+              "addedAt",
+              "sortOrder"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_series_categoryId_addedAt_sortOrder` ON `${TABLE_NAME}` (`categoryId`, `addedAt`, `sortOrder`)"
           }
         ],
         "foreignKeys": [
@@ -2584,7 +2628,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1c06781391e4cd0147020229c931f1ba')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7268b76feb05d5c353d7e95401629f33')"
     ]
   }
 }
