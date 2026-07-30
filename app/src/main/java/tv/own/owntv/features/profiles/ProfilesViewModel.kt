@@ -47,11 +47,11 @@ class ProfilesViewModel(
      * Create a new profile. New profiles inherit the existing sources (single-account, multi-viewer)
      * so they immediately have content; favorites/history stay per-profile.
      */
-    fun create(name: String, avatarId: Int, isKids: Boolean, pin: String?, onCreated: (Long) -> Unit = {}) {
+    fun create(name: String, avatarId: Int, isKids: Boolean, pin: String?, defaultName: String, onCreated: (Long) -> Unit = {}) {
         viewModelScope.launch {
             val id = profileDao.insert(
                 ProfileEntity(
-                    name = name.ifBlank { "Profile" },
+                    name = name.ifBlank { defaultName },
                     avatarColor = 0,
                     avatarId = avatarId,
                     isKids = isKids,

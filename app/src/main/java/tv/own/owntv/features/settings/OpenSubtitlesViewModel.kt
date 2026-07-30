@@ -27,9 +27,11 @@ class OpenSubtitlesViewModel(
     private val _state = MutableStateFlow<UiState>(UiState.SignedOut)
     val state: StateFlow<UiState> = _state.asStateFlow()
 
-    /** One-shot error text for the §14 dialogs; cleared by [dismissError]. */
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
+    enum class ErrorKind { EMPTY_CREDENTIALS, INVALID_CREDENTIALS, NETWORK, REFRESH_NETWORK }
+
+    /** One-shot error category for the §14 dialogs; wording is resolved by the Compose boundary. */
+    private val _error = MutableStateFlow<ErrorKind?>(null)
+    val error: StateFlow<ErrorKind?> = _error.asStateFlow()
 
     init {
         // Show the stored session immediately, then refresh the allowance from the provider.
@@ -51,7 +53,7 @@ class OpenSubtitlesViewModel(
 
     fun signIn(username: String, password: String, staySignedIn: Boolean) {
         if (username.isBlank() || password.isEmpty()) {
-            _error.value = "Enter your OpenSubtitles username and password."
+            _error.value = ErrorKind.EMPTY_CREDENTIALS
             return
         }
         viewModelScope.launch {
@@ -62,9 +64,9 @@ class OpenSubtitlesViewModel(
                 .onFailure { e ->
                     _state.value = UiState.SignedOut
                     _error.value = if (e is OpenSubtitlesClient.ApiException && e.code == 401) {
-                        "OpenSubtitles couldn't sign in with those account details."
+                        ErrorKind.INVALID_CREDENTIALS
                     } else {
-                        "Couldn't reach OpenSubtitles. Check your internet connection and try again."
+                        ErrorKind.NETWORK
                     }
                 }
         }
@@ -81,7 +83,7 @@ class OpenSubtitlesViewModel(
                 }
                 .onFailure {
                     android.util.Log.w("OpenSubtitles", "manual refresh failed: ${it.message}")
-                    _error.value = "Couldn't refresh from OpenSubtitles. Check your internet connection."
+                    _error.value = ErrorKind.REFRESH_NETWORK
                 }
         }
     }

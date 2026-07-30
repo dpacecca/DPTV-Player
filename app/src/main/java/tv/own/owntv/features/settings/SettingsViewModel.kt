@@ -33,10 +33,11 @@ import tv.own.owntv.core.sync.SyncContentTypes
 import tv.own.owntv.core.sync.SyncResult
 import tv.own.owntv.core.sync.SyncCounts
 import tv.own.owntv.core.sync.SyncScopeChoice
-import tv.own.owntv.core.sync.withRemainderNote
+import tv.own.owntv.core.sync.SyncWarning
+import tv.own.owntv.core.util.FriendlySyncFailure
+import tv.own.owntv.core.util.classifySyncFailure
 import tv.own.owntv.core.sync.work.CatalogSyncState
 import tv.own.owntv.core.sync.work.CatalogSyncScheduler
-import tv.own.owntv.core.util.friendlySyncError
 import tv.own.owntv.core.util.throttleLatest
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
@@ -162,9 +163,12 @@ class SettingsViewModel(
     sealed interface ImportState {
         data object Idle : ImportState
         data object Running : ImportState
-        /** [summary] is the per-type breakdown, e.g. "40K channels · 100K movies · 30K series synced". */
-        data class Success(val summary: String) : ImportState
-        data class Failed(val message: String) : ImportState
+        data class Success(
+            val counts: SyncCounts,
+            val warnings: List<SyncWarning> = emptyList(),
+            val remainder: SyncContentTypes = SyncContentTypes(false, false, false),
+        ) : ImportState
+        data class Failed(val failure: FriendlySyncFailure) : ImportState
     }
 
     val sources: StateFlow<List<SourceEntity>> = settings.activeProfileId
@@ -699,7 +703,7 @@ class SettingsViewModel(
             requiresNetwork = true, makeDefault = isDefault,
         ) { pid ->
             sourceRepository.addXtreamSource(
-                pid, name.ifBlank { "My IPTV" }, server.trim(), user.trim(), pass,
+                pid, name.trim(), server.trim(), user.trim(), pass,
                 userAgent.trim().takeIf { it.isNotBlank() },
                 epgUrl.trim().takeIf { it.isNotBlank() },
                 syncLive = enabled.live, syncMovies = enabled.movies, syncSeries = enabled.series,
@@ -713,8 +717,8 @@ class SettingsViewModel(
     sealed interface StalkerTestState {
         data object Idle : StalkerTestState
         data object Testing : StalkerTestState
-        data class Ok(val summary: String) : StalkerTestState
-        data class Failed(val message: String) : StalkerTestState
+        data class Ok(val endpoint: String, val profileFields: Int, val expiry: String?) : StalkerTestState
+        data class Failed(val failure: FriendlySyncFailure) : StalkerTestState
     }
 
     private val _stalkerTest = MutableStateFlow<StalkerTestState>(StalkerTestState.Idle)
@@ -728,14 +732,14 @@ class SettingsViewModel(
     fun testStalker(portalUrl: String, mac: String, userAgent: String = "") {
         val canonicalMac = tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(mac)
         if (canonicalMac == null) {
-            _stalkerTest.value = StalkerTestState.Failed("Invalid MAC address — use AA:BB:CC:DD:EE:FF")
+            _stalkerTest.value = StalkerTestState.Failed(FriendlySyncFailure.InvalidMac)
             return
         }
         viewModelScope.launch {
             _stalkerTest.value = StalkerTestState.Testing
             _stalkerTest.value = try {
                 if (!connectivity.isOnlineNow()) {
-                    StalkerTestState.Failed(friendlySyncError(null, online = false))
+                    StalkerTestState.Failed(classifySyncFailure(null, online = false))
                 } else {
                     val session = stalkerAuth.testConnection(
                         tv.own.owntv.core.stalker.StalkerCredentials(
@@ -755,13 +759,12 @@ class SettingsViewModel(
                         )
                         stalkerExpiryOf(info) ?: stalkerExpiryOf(session.profile)
                     }.getOrNull()
-                    val expiryLine = expiry?.let { " · expires $it" } ?: ""
-                    StalkerTestState.Ok("Connected via $endpoint (${session.profile.size} profile fields)$expiryLine")
+                    StalkerTestState.Ok(endpoint, session.profile.size, expiry)
                 }
             } catch (c: CancellationException) {
                 throw c
             } catch (e: Exception) {
-                StalkerTestState.Failed(stalkerErrorMessage(e))
+                StalkerTestState.Failed(stalkerFailure(e))
             }
         }
     }
@@ -786,7 +789,7 @@ class SettingsViewModel(
     ) {
         val canonicalMac = tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(mac)
         if (canonicalMac == null) {
-            _importState.value = ImportState.Failed("Invalid MAC address — use AA:BB:CC:DD:EE:FF")
+            _importState.value = ImportState.Failed(FriendlySyncFailure.InvalidMac)
             return
         }
         val enabled = SyncContentTypes.fromChoices(live, movies, series)
@@ -804,7 +807,7 @@ class SettingsViewModel(
                 ),
             )
             sourceRepository.addStalkerSource(
-                pid, name.ifBlank { "My Portal" }, portalUrl.trim(), canonicalMac,
+                pid, name.trim(), portalUrl.trim(), canonicalMac,
                 userAgent.trim().takeIf { it.isNotBlank() },
                 syncLive = enabled.live, syncMovies = enabled.movies, syncSeries = enabled.series,
             )
@@ -827,10 +830,9 @@ class SettingsViewModel(
     private fun String.looksLikeExpiryValue(): Boolean =
         isNotEmpty() && !equals("null", true) && !startsWith("0000") && this != "0"
 
-    private fun stalkerErrorMessage(e: Exception): String = when {
-        e is tv.own.owntv.core.stalker.StalkerClient.StalkerAuthException ->
-            "Portal refused the login — check the MAC address (and the TV's date & time)."
-        else -> friendlySyncError(e.message, connectivity.isOnlineNow())
+    private fun stalkerFailure(e: Exception): FriendlySyncFailure = when {
+        e is tv.own.owntv.core.stalker.StalkerClient.StalkerAuthException -> FriendlySyncFailure.MacNotAuthorised
+        else -> classifySyncFailure(e.message, connectivity.isOnlineNow())
     }
 
     fun addM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF, isDefault: Boolean = false) = runImport(
@@ -839,7 +841,7 @@ class SettingsViewModel(
         makeDefault = isDefault,
     ) { pid ->
         sourceRepository.addM3uSource(
-            pid, name.ifBlank { "My Playlist" }, url.trim(),
+            pid, name.trim(), url.trim(),
             userAgent.trim().takeIf { it.isNotBlank() },
             epgUrl.trim().takeIf { it.isNotBlank() },
         )
@@ -861,7 +863,7 @@ class SettingsViewModel(
             var source: SourceEntity? = null
             try {
                 if (requiresNetwork && !connectivity.isOnlineNow()) {
-                    _importState.value = ImportState.Failed(friendlySyncError(null, online = false))
+                    _importState.value = ImportState.Failed(classifySyncFailure(null, online = false))
                     return@launch
                 }
                 val pid = profileDao.resolveExistingProfileId(settings.activeProfileId.first()) ?: return@launch
@@ -886,7 +888,9 @@ class SettingsViewModel(
                         if (freshSync && !remainder.hasAny) catalogSyncScheduler.enqueueContentIndexBuild(reason = "fresh_add")
                         _lastFailedSource = null
                         _importState.value = ImportState.Success(
-                            counts.summary(includeEpg = false).withWarnings(r).withRemainderNote(remainder),
+                            counts = counts,
+                            warnings = r.warnings,
+                            remainder = remainder,
                         )
                         // Offer a one-tap EPG sync if this playlist actually has a guide feed.
                         if (epgRepository.guideUrl(syncedSource) != null) {
@@ -897,7 +901,7 @@ class SettingsViewModel(
                     }
                     is SyncResult.Failed -> {
                         cleanupFailedAdd(source)
-                        _importState.value = ImportState.Failed(friendlySyncError(r.message, connectivity.isOnlineNow()))
+                        _importState.value = ImportState.Failed(classifySyncFailure(r.message, connectivity.isOnlineNow()))
                     }
                     SyncResult.Cancelled -> {
                         cleanupFailedAdd(source)
@@ -911,7 +915,7 @@ class SettingsViewModel(
                 throw c
             } catch (e: Exception) {
                 cleanupFailedAdd(source)
-                _importState.value = ImportState.Failed(friendlySyncError(e.message, connectivity.isOnlineNow()))
+                _importState.value = ImportState.Failed(classifySyncFailure(e.message, connectivity.isOnlineNow()))
             }
         }
         importJob = job
@@ -1015,9 +1019,6 @@ class SettingsViewModel(
         }
     }
 
-    private fun String.withWarnings(result: SyncResult.Success): String =
-        listOfNotNull(this, result.warningSummary()).joinToString("\n")
-
     // --- Global proxy (Approach 1 — one app-wide HTTP proxy) ---
 
     val proxyConfig: StateFlow<tv.own.owntv.core.network.ProxyConfig> = settings.proxyConfig
@@ -1031,7 +1032,16 @@ class SettingsViewModel(
         data object Idle : ProxyTestState
         data object Testing : ProxyTestState
         data class Ok(val millis: Long) : ProxyTestState
-        data class Fail(val message: String) : ProxyTestState
+        data class Fail(val failure: ProxyFailure) : ProxyTestState
+    }
+
+    sealed interface ProxyFailure {
+        data object InvalidAddress : ProxyFailure
+        data object HostUnreachable : ProxyFailure
+        data object TimedOut : ProxyFailure
+        data object ConnectionFailed : ProxyFailure
+        data class Http(val code: Int) : ProxyFailure
+        data class Unknown(val rawMessage: String?) : ProxyFailure
     }
 
     private val _proxyTest = MutableStateFlow<ProxyTestState>(ProxyTestState.Idle)
@@ -1043,7 +1053,7 @@ class SettingsViewModel(
         if (_proxyTest.value == ProxyTestState.Testing) return
         val h = host.trim()
         if (h.isBlank() || port !in 1..65535) {
-            _proxyTest.value = ProxyTestState.Fail("Enter a valid host and port (1–65535).")
+            _proxyTest.value = ProxyTestState.Fail(ProxyFailure.InvalidAddress)
             return
         }
         _proxyTest.value = ProxyTestState.Testing
@@ -1076,7 +1086,7 @@ class SettingsViewModel(
                     val start = System.currentTimeMillis()
                     client.newCall(request).execute().use { resp ->
                         if (!resp.isSuccessful && resp.code != 204) {
-                            throw java.io.IOException("Proxy returned HTTP ${resp.code}")
+                            throw ProxyHttpException(resp.code)
                         }
                     }
                     System.currentTimeMillis() - start
@@ -1084,7 +1094,7 @@ class SettingsViewModel(
             }
             _proxyTest.value = result.fold(
                 onSuccess = { ProxyTestState.Ok(it) },
-                onFailure = { ProxyTestState.Fail(friendlyProxyError(it)) },
+                onFailure = { ProxyTestState.Fail(proxyFailure(it)) },
             )
         }
     }
@@ -1208,9 +1218,15 @@ class SettingsViewModel(
     sealed interface MetadataTestState {
         data object Idle : MetadataTestState
         data object Testing : MetadataTestState
-        /** Top match summary, e.g. "Oppenheimer (2023) · tmdb #872585". */
-        data class Ok(val summary: String) : MetadataTestState
-        data class Fail(val message: String) : MetadataTestState
+        data class Ok(val title: String, val year: Int?, val tmdbId: Int) : MetadataTestState
+        data class Fail(val failure: MetadataFailure) : MetadataTestState
+    }
+
+    sealed interface MetadataFailure {
+        data object EmptyTitle : MetadataFailure
+        data object ServerUnavailable : MetadataFailure
+        data class NoMatch(val query: String) : MetadataFailure
+        data class Unknown(val rawMessage: String?) : MetadataFailure
     }
 
     private val _metadataTest = MutableStateFlow<MetadataTestState>(MetadataTestState.Idle)
@@ -1223,7 +1239,7 @@ class SettingsViewModel(
         if (_metadataTest.value == MetadataTestState.Testing) return
         val q = title.trim()
         if (q.isEmpty()) {
-            _metadataTest.value = MetadataTestState.Fail("Enter a title to look up.")
+            _metadataTest.value = MetadataTestState.Fail(MetadataFailure.EmptyTitle)
             return
         }
         _metadataTest.value = MetadataTestState.Testing
@@ -1233,23 +1249,25 @@ class SettingsViewModel(
                 onSuccess = { hits ->
                     val top = hits?.firstOrNull()
                     if (hits == null) {
-                        MetadataTestState.Fail("Couldn't reach the metadata server — check network / key / URL.")
+                        MetadataTestState.Fail(MetadataFailure.ServerUnavailable)
                     } else if (top == null) {
-                        MetadataTestState.Fail("No TMDB match for \"$q\".")
+                        MetadataTestState.Fail(MetadataFailure.NoMatch(q))
                     } else {
-                        val yr = top.year?.let { " ($it)" } ?: ""
-                        MetadataTestState.Ok("${top.title}$yr · tmdb #${top.tmdbId}")
+                        MetadataTestState.Ok(top.title, top.year, top.tmdbId)
                     }
                 },
-                onFailure = { MetadataTestState.Fail(it.message?.takeIf { m -> m.isNotBlank() } ?: "Lookup failed.") },
+                onFailure = { MetadataTestState.Fail(MetadataFailure.Unknown(it.message?.takeIf { m -> m.isNotBlank() })) },
             )
         }
     }
 
-    private fun friendlyProxyError(t: Throwable): String = when (t) {
-        is java.net.UnknownHostException -> "Can't reach the proxy host."
-        is java.net.SocketTimeoutException -> "Connection to the proxy timed out."
-        is java.net.ConnectException -> "Couldn't connect to the proxy (check host/port)."
-        else -> t.message?.takeIf { it.isNotBlank() } ?: "Proxy test failed."
+    private class ProxyHttpException(val code: Int) : java.io.IOException()
+
+    private fun proxyFailure(t: Throwable): ProxyFailure = when (t) {
+        is ProxyHttpException -> ProxyFailure.Http(t.code)
+        is java.net.UnknownHostException -> ProxyFailure.HostUnreachable
+        is java.net.SocketTimeoutException -> ProxyFailure.TimedOut
+        is java.net.ConnectException -> ProxyFailure.ConnectionFailed
+        else -> ProxyFailure.Unknown(t.message?.takeIf { it.isNotBlank() })
     }
 }

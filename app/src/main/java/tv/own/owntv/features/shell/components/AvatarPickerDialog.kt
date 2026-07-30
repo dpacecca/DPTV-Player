@@ -24,10 +24,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVAvatar
 import tv.own.owntv.ui.components.ProfileIcon
@@ -71,7 +73,7 @@ fun AvatarPickerDialog(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Choose your avatar",
+                text = stringResource(R.string.content_avatar_picker_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = colors.onSurface,
                 textAlign = TextAlign.Center,

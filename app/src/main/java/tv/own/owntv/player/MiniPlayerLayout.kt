@@ -1,6 +1,8 @@
 package tv.own.owntv.player
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.Alignment
+import tv.own.owntv.R
 
 /**
  * Size (as a percentage of screen width) and screen corner/edge for the docked mini-player. Both are
@@ -15,7 +17,6 @@ object MiniPlayerSize {
     const val STEP = 5
 
     fun clamp(percent: Int): Int = percent.coerceIn(MIN, MAX)
-    fun label(percent: Int): String = "$percent%"
     fun fraction(percent: Int): Float = clamp(percent) / 100f
 
     /** Next size for the on-the-fly resize button — steps up by [STEP], wrapping [MAX] back to [MIN]. */
@@ -26,13 +27,13 @@ object MiniPlayerSize {
 }
 
 /** The six docking spots for the mini-player. */
-enum class MiniPlayerPosition(val label: String) {
-    TOP_LEFT("Top left"),
-    TOP_CENTER("Top center"),
-    TOP_RIGHT("Top right"),
-    BOTTOM_LEFT("Bottom left"),
-    BOTTOM_CENTER("Bottom center"),
-    BOTTOM_RIGHT("Bottom right");
+enum class MiniPlayerPosition(@StringRes val labelRes: Int) {
+    TOP_LEFT(R.string.player_mini_top_left),
+    TOP_CENTER(R.string.player_mini_top_center),
+    TOP_RIGHT(R.string.player_mini_top_right),
+    BOTTOM_LEFT(R.string.player_mini_bottom_left),
+    BOTTOM_CENTER(R.string.player_mini_bottom_center),
+    BOTTOM_RIGHT(R.string.player_mini_bottom_right);
 
     val alignment: Alignment
         get() = when (this) {

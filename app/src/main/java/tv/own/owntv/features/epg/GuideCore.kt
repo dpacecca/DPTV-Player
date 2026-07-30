@@ -39,11 +39,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -95,10 +97,22 @@ internal fun ProgrammeStripCanvas(
     val timeNowStyle = MaterialTheme.typography.labelSmall.copy(color = colors.onPrimaryContainer)
     val formatTime = rememberSystemTimeFormatter()
     // Time labels built once (string formatting kept out of the per-frame draw loop).
-    val labels = remember(programmes, now, formatTime) {
+    // Resolve the templates through Compose so a live locale change invalidates the labels.
+    val timeRangeTemplate = stringResource(R.string.phase1_epg_time_range)
+    val nowTemplate = stringResource(R.string.phase1_epg_now)
+    val labels = remember(programmes, now, formatTime, timeRangeTemplate, nowTemplate) {
         programmes.map { p ->
-            val t = "${formatTime(p.startMs)} – ${formatTime(p.stopMs)}"
-            if (now in p.startMs until p.stopMs) "NOW · $t" else t
+            val t = String.format(
+                java.util.Locale.ROOT,
+                timeRangeTemplate,
+                formatTime(p.startMs),
+                formatTime(p.stopMs),
+            )
+            if (now in p.startMs until p.stopMs) {
+                String.format(java.util.Locale.ROOT, nowTemplate, t)
+            } else {
+                t
+            }
         }
     }
     // Vertical "now" marker + catch-up glyph — measured once, reused each frame.
@@ -209,7 +223,7 @@ internal fun ProgrammeDetailDialog(
                 Spacer(Modifier.height(6.dp))
                 Text(programme.title, style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall, color = colors.onSurface)
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
-                Text("${formatTime(programme.startMs)} – ${formatTime(programme.stopMs)}", style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
+                Text(stringResource(R.string.phase1_epg_time_range, formatTime(programme.startMs), formatTime(programme.stopMs)), style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
                 if (!description.isNullOrBlank()) {
                     Spacer(Modifier.height(if (compact) 10.dp else 14.dp))
                     Text(description.orEmpty(), style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
@@ -232,20 +246,20 @@ internal fun ProgrammeDetailDialog(
                                 SettingsRepository.CatchupPlayer.EXTERNAL -> onPlayCatchupExternal()
                             }
                         }
-                        OwnTVButton("Watch from start", onClick = startCatchup, icon = OwnTVIcon.PLAY, compact = compact, modifier = Modifier.focusRequester(fr))
-                        OwnTVButton("Watch channel", onClick = onWatch, style = OwnTVButtonStyle.SECONDARY, compact = compact)
+                        OwnTVButton(stringResource(R.string.phase1_epg_watch_start), onClick = startCatchup, icon = OwnTVIcon.PLAY, compact = compact, modifier = Modifier.focusRequester(fr))
+                        OwnTVButton(stringResource(R.string.phase1_epg_watch_channel), onClick = onWatch, style = OwnTVButtonStyle.SECONDARY, compact = compact)
                     } else {
-                        OwnTVButton("Watch channel", onClick = onWatch, icon = OwnTVIcon.PLAY, compact = compact, modifier = Modifier.focusRequester(fr))
+                        OwnTVButton(stringResource(R.string.phase1_epg_watch_channel), onClick = onWatch, icon = OwnTVIcon.PLAY, compact = compact, modifier = Modifier.focusRequester(fr))
                     }
                     // Favourite the channel without leaving the guide; the label flips in place.
                     OwnTVButton(
-                        if (isFavorite) "Unfavourite" else "Favourite",
+                        stringResource(if (isFavorite) R.string.phase1_epg_unfavourite else R.string.phase1_epg_favourite),
                         onClick = onToggleFavorite,
                         style = OwnTVButtonStyle.SECONDARY,
                         icon = OwnTVIcon.FAVORITE,
                         compact = compact,
                     )
-                    OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, compact = compact)
+                    OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, compact = compact)
                 }
             }
         }
@@ -273,18 +287,18 @@ private fun CatchupPlayerChooser(
                 contentAlignment = Alignment.Center,
             ) {
                 Column(Modifier.dialogPanel(width = 340.dp, corner = 16.dp, padding = 18.dp, scroll = false)) {
-                    Text("Play catch-up in", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                    Text(stringResource(R.string.settings_catchup_player), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Set a permanent choice in Settings › Catch-up.",
+                        stringResource(R.string.phase1_epg_player_choice_description),
                         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(14.dp))
-                    OwnTVButton("OwnTV player", onClick = onInternal, icon = OwnTVIcon.PLAY, compact = true, modifier = Modifier.fillMaxWidth().focusRequester(fr))
+                    OwnTVButton(stringResource(R.string.phase1_epg_own_player), onClick = onInternal, icon = OwnTVIcon.PLAY, compact = true, modifier = Modifier.fillMaxWidth().focusRequester(fr))
                     Spacer(Modifier.height(8.dp))
-                    OwnTVButton("External player", onClick = onExternal, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
+                    OwnTVButton(stringResource(R.string.phase1_epg_external_player), onClick = onExternal, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(8.dp))
-                    OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
+                    OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
                 }
             }
         }

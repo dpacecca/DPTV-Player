@@ -16,7 +16,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.theme.AccentCyan
 import tv.own.owntv.ui.theme.OwnTVTheme
 
@@ -32,6 +34,8 @@ fun BrandLockup(
     textSize: Int = 26,
 ) {
     val colors = OwnTVTheme.colors
+    val own = stringResource(R.string.brand_own)
+    val tv = stringResource(R.string.brand_tv)
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -59,10 +63,10 @@ fun BrandLockup(
         Text(
             text = buildAnnotatedString {
                 withStyle(androidx.compose.ui.text.SpanStyle(color = colors.textPrimary, fontWeight = FontWeight.Bold)) {
-                    append("Own")
+                    append(own)
                 }
                 withStyle(androidx.compose.ui.text.SpanStyle(color = AccentCyan, fontWeight = FontWeight.Bold)) {
-                    append("TV")
+                    append(tv)
                 }
             },
             fontSize = textSize.sp,

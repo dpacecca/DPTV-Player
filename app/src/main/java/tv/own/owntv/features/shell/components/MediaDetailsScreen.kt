@@ -33,6 +33,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -45,6 +46,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -172,19 +174,19 @@ fun MediaDetailsScreen(details: MediaDetailsUi, onExit: () -> Unit, modifier: Mo
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 if (!details.plot.isNullOrBlank()) {
                     Column {
-                        Text("Overview", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                        Text(stringResource(R.string.content_media_overview), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                         Spacer(Modifier.height(6.dp))
                         Text(details.plot, style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
                     }
                 }
                 if (details.cast.isNotEmpty()) {
                     Column {
-                        Text("Cast", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                        Text(stringResource(R.string.content_media_cast), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                         Spacer(Modifier.height(6.dp))
                         Text(details.cast.joinToString(", "), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     }
                 }
-                Text("Press Back to close", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+                Text(stringResource(R.string.content_media_press_back), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
             }
         }
     }

@@ -37,6 +37,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.tv.material3.MaterialTheme
@@ -45,6 +46,7 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstan
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import tv.own.owntv.R
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -173,7 +175,7 @@ fun TrailerPlayerScreen(videoKey: String, onExit: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
                 OwnTVButton(
-                    "Exit",
+                    stringResource(R.string.player_trailer_exit),
                     onClick = onExit,
                     style = OwnTVButtonStyle.SECONDARY,
                     modifier = Modifier.focusRequester(exitFocus),
@@ -195,7 +197,7 @@ fun TrailerPlayerScreen(videoKey: String, onExit: () -> Unit) {
                     )
                 }
                 Text(
-                    text = "${formatSec(currentSec)} / ${formatSec(durationSec)}",
+                    text = stringResource(R.string.player_trailer_progress, formatSec(currentSec), formatSec(durationSec)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White,
                     modifier = Modifier.width(120.dp),
@@ -213,9 +215,10 @@ private fun openInYouTube(context: Context, videoKey: String) {
         .recoverCatching { context.startActivity(web) }
 }
 
+@Composable
 private fun formatSec(s: Float): String {
     val total = s.toInt().coerceAtLeast(0)
     val m = total / 60
     val sec = total % 60
-    return "%d:%02d".format(m, sec)
+    return stringResource(R.string.common_timestamp_minutes, m, sec)
 }

@@ -106,7 +106,7 @@ fun parseLiveKey(s: String): LiveKey? = when {
 
 /** A rail entry. Favorites/History carry an [icon] rendered inline before the title. */
 @Immutable
-data class LiveRailItem(val key: LiveKey, val title: String, val icon: OwnTVIcon? = null)
+data class LiveRailItem(val key: LiveKey, val title: String? = null, val icon: OwnTVIcon? = null)
 
 /** Now-playing + up-next EPG for the focused channel (null entries when the guide is unavailable). */
 @Immutable
@@ -615,8 +615,8 @@ class LiveViewModel(
     private val _zapChannels = MutableStateFlow<List<ChannelEntity>>(emptyList())
     val zapChannels: StateFlow<List<ChannelEntity>> = _zapChannels.asStateFlow()
     /** Heading for the left overlay — the name of the active playback browse context. */
-    private val _zapListTitle = MutableStateFlow("Channels")
-    val zapListTitle: StateFlow<String> = _zapListTitle.asStateFlow()
+    private val _zapListTitle = MutableStateFlow<String?>(null)
+    val zapListTitle: StateFlow<String?> = _zapListTitle.asStateFlow()
     /** Provider category selected in the in-player browser, or null for a synthetic/caller-owned rail. */
     private var zapCategoryId: Long? = null
     private var zapArmed = false
@@ -655,7 +655,7 @@ class LiveViewModel(
             // CH+/- and the channel-list button read this; without it they keep acting on the
             // previously loaded category.
             _canZap.value = list.size > 1
-            _zapListTitle.value = categoryDao.getById(categoryId)?.name ?: "Channels"
+            _zapListTitle.value = categoryDao.getById(categoryId)?.name
             _showCategoryBrowser.value = false
         }
     }
@@ -688,7 +688,7 @@ class LiveViewModel(
             zapList = list
             _zapChannels.value = list
             _canZap.value = list.size > 1
-            _zapListTitle.value = (catId?.let { categoryDao.getById(it)?.name })?.takeIf { it.isNotBlank() } ?: "All Channels"
+            _zapListTitle.value = (catId?.let { categoryDao.getById(it)?.name })?.takeIf { it.isNotBlank() }
         }
     }
 
@@ -790,7 +790,7 @@ class LiveViewModel(
         val key = _selected.value
         zapCategoryId = (key as? LiveKey.Folder)?.id
         zapArmed = true
-        _zapListTitle.value = railItems.value.firstOrNull { it.key == key }?.title ?: "Channels"
+        _zapListTitle.value = railItems.value.firstOrNull { it.key == key }?.title
         ensurePlaying(channel)
     }
 
@@ -1263,7 +1263,7 @@ class LiveViewModel(
             _canZap.value = zapChannels.size > 1
             zapCategoryId = null
             zapArmed = true
-            _zapListTitle.value = "Channels"
+            _zapListTitle.value = null
         }
         ensurePlaying(channel)
         return true
@@ -1426,7 +1426,7 @@ class LiveViewModel(
         viewModelScope.launch {
             val url = catchupUrl(ch, programme) ?: return@launch
             Log.i(ENGINE_TAG, "catch-up external '${ch.name}' prog='${programme.title}'")
-            externalPlayerLauncher.launch(url, "${ch.name} · ${programme.title}")
+            externalPlayerLauncher.launch(url, ch.name, programme.title)
             recordLiveHistory(ch, immediate = true)
         }
     }
@@ -1506,7 +1506,7 @@ class LiveViewModel(
             val localLabel = formatSystemTime(appContext, startMs)
             _previewChannel.value = ch
             clearLiveOnExo() // archive plays as a VOD-style mpv stream, not the live ExoPlayer channel
-            player.play(url, title = ch.name, subtitle = "Rewind · $localLabel", logoUrl = ch.displayLogoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
+            player.play(url, title = ch.name, subtitle = appContext.getString(tv.own.owntv.R.string.content_rewind_at, localLabel), logoUrl = ch.displayLogoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
             timeshiftStartWall = startMs
             startOffsetTick()
         }
@@ -1773,9 +1773,9 @@ class LiveViewModel(
         const val ZAP_LIST_LIMIT = 2_000
         const val HISTORY_LIST_LIMIT = 30
         val defaultRail = listOf(
-            LiveRailItem(LiveKey.Favorites, "Favorites", OwnTVIcon.FAVORITE),
-            LiveRailItem(LiveKey.History, "History", OwnTVIcon.HISTORY),
-            LiveRailItem(LiveKey.All, "All Channels"),
+            LiveRailItem(LiveKey.Favorites, icon = OwnTVIcon.FAVORITE),
+            LiveRailItem(LiveKey.History, icon = OwnTVIcon.HISTORY),
+            LiveRailItem(LiveKey.All),
         )
         const val CATCHUP_LOOKBACK_CAP_MS = 48L * 60 * 60 * 1000 // bounded by the EPG we retain (~2 days)
         const val ZAP_WINDOW_HALF = 50 // channels loaded on each side of the tuned channel for CH+/-

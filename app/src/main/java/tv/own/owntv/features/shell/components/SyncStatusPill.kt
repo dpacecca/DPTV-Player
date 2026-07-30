@@ -9,7 +9,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.widthIn
@@ -26,9 +25,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
+import tv.own.owntv.R
 import tv.own.owntv.core.sync.SyncProgressCounts
 import tv.own.owntv.core.sync.SyncResult
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import tv.own.owntv.ui.components.OwnTVSpinner
+import tv.own.owntv.ui.components.displayText
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.glass
@@ -89,9 +92,9 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
 
     // Catalog syncs first (they're the slower, more interesting ones), then guides, in a stable
     // order so a row doesn't jump around as progress updates arrive.
-    val rows = buildList {
-        activeCatalog.values.sortedBy { it.sourceId }.forEach { add(catalogLine(it)) }
-        activeEpg.values.sortedBy { it.sourceId }.forEach { add(epgLine(it)) }
+    val rows = buildList<SyncLine> {
+        activeCatalog.values.sortedBy { it.sourceId }.forEach { add(SyncLine.Catalog(it)) }
+        activeEpg.values.sortedBy { it.sourceId }.forEach { add(SyncLine.Epg(it)) }
     }
     val shown = rows.take(MAX_ROWS)
     val hidden = rows.size - shown.size
@@ -127,7 +130,7 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
             ) {
                 OwnTVSpinner(sizeDp = 14)
                 Text(
-                    line,
+                    line.text(),
                     style = MaterialTheme.typography.labelMedium,
                     color = colors.onSurfaceVariant,
                     maxLines = 1,
@@ -137,7 +140,7 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
         }
         if (hidden > 0) {
             Text(
-                "+$hidden more syncing",
+                pluralStringResource(R.plurals.sync_status_more, hidden, hidden),
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.onSurfaceVariant,
                 maxLines = 1,
@@ -156,73 +159,67 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
 }
 
 /**
- * "Syncing Test · 11,527 channels · 64,366 movies · 21,440 series" — the same per-type breakdown
- * Settings → Manage Sources shows, via the shared [SyncProgressCounts.label]. A flat "N items" hid
- * which part of the catalog was actually moving.
- *
  * The `|| count > 0` on each active flag mirrors ManageSourcesScreen: the syncer clears a phase's
  * active flag when it moves on, and without this a finished phase's count would vanish from the line
  * mid-sync. Counts are cumulative, so a type that never runs (M3U movies/series) stays at 0 and is
  * left out.
  */
-private fun catalogLine(sync: SyncActivityTracker.ActiveSync): String = buildString {
-    append("Syncing ")
-    append(sync.sourceName)
-    val stage = sync.stage
-    if (stage != null) {
-        val counts = SyncProgressCounts(
-            live = stage.liveProcessed,
-            movies = stage.moviesProcessed,
-            series = stage.seriesProcessed,
-            liveActive = stage.liveActive || stage.liveProcessed > 0,
-            moviesActive = stage.moviesActive || stage.moviesProcessed > 0,
-            seriesActive = stage.seriesActive || stage.seriesProcessed > 0,
-        )
-        if (counts.hasItems) append(" · ").append(counts.label())
-    }
+private sealed interface SyncLine {
+    data class Catalog(val sync: SyncActivityTracker.ActiveSync) : SyncLine
+    data class Epg(val sync: EpgActivityTracker.ActiveEpgSync) : SyncLine
 }
 
-/** "Updating guide · Main EPG · 4,550 channels · 220,143 programmes" — matches the EPG Sources screen. */
-private fun epgLine(sync: EpgActivityTracker.ActiveEpgSync): String = buildString {
-    append("Updating guide · ")
-    append(sync.sourceName)
-    if (sync.channels > 0) append(" · ").append(sync.channels.formatted()).append(" channels")
-    if (sync.programmes > 0) append(" · ").append(sync.programmes.formatted()).append(" programmes")
-}
-
-private fun completedLine(completed: SyncActivityTracker.CompletedSync): AnnotatedString =
-    androidx.compose.ui.text.buildAnnotatedString {
-        val boldStyle = androidx.compose.ui.text.SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-        when (val res = completed.result) {
-            is SyncResult.Success -> {
-                pushStyle(boldStyle)
-                append("Sync complete")
-                pop()
-                append(" · ")
-                append(completed.sourceName)
-                append(" · ")
-                append(res.categoryChangeSummary())
-            }
-            is SyncResult.Failed -> {
-                pushStyle(boldStyle)
-                append("Sync failed")
-                pop()
-                append(" · ")
-                append(completed.sourceName)
-                append(": ")
-                append(res.message)
-            }
-            SyncResult.Cancelled -> {
-                pushStyle(boldStyle)
-                append("Sync cancelled")
-                pop()
-                append(" · ")
-                append(completed.sourceName)
-            }
+@Composable
+private fun SyncLine.text(): String = when (this) {
+    is SyncLine.Catalog -> {
+        val stage = sync.stage
+        val counts = stage?.let {
+            SyncProgressCounts(
+                live = it.liveProcessed,
+                movies = it.moviesProcessed,
+                series = it.seriesProcessed,
+                liveActive = it.liveActive || it.liveProcessed > 0,
+                moviesActive = it.moviesActive || it.moviesProcessed > 0,
+                seriesActive = it.seriesActive || it.seriesProcessed > 0,
+            )
         }
+        val countsText = counts?.displayText().orEmpty()
+        if (countsText.isBlank()) stringResource(R.string.sync_status_catalog, sync.sourceName)
+        else stringResource(R.string.sync_status_catalog_with_counts, sync.sourceName, countsText)
     }
+    is SyncLine.Epg -> {
+        val countParts = buildList {
+            if (sync.channels > 0) add(pluralStringResource(R.plurals.sync_count_channels, sync.channels, sync.channels))
+            if (sync.programmes > 0) add(pluralStringResource(R.plurals.sync_count_epg, sync.programmes, sync.programmes))
+        }
+        val countsText = countParts.joinToString(stringResource(R.string.sync_counts_separator))
+        if (countsText.isBlank()) stringResource(R.string.sync_status_epg, sync.sourceName)
+        else stringResource(R.string.sync_status_epg_with_counts, sync.sourceName, countsText)
+    }
+}
 
-private fun Int.formatted(): String = String.format(java.util.Locale.getDefault(), "%,d", this)
+@Composable
+private fun completedLine(completed: SyncActivityTracker.CompletedSync): String = when (val result = completed.result) {
+    is SyncResult.Success -> {
+        val changes = buildList {
+            if (result.categoriesAdded > 0) {
+                add(pluralStringResource(R.plurals.sync_categories_added, result.categoriesAdded, result.categoriesAdded))
+            }
+            if (result.categoriesRemoved > 0) {
+                add(pluralStringResource(R.plurals.sync_categories_removed, result.categoriesRemoved, result.categoriesRemoved))
+            }
+        }.joinToString(stringResource(R.string.sync_counts_separator))
+        if (changes.isBlank()) stringResource(R.string.sync_status_complete, completed.sourceName)
+        else stringResource(R.string.sync_status_complete_with_changes, completed.sourceName, changes)
+    }
+    is SyncResult.Failed -> stringResource(
+        R.string.sync_status_failed,
+        completed.sourceName,
+        result.message.ifBlank { stringResource(R.string.sync_error_generic) },
+    )
+    SyncResult.Cancelled -> stringResource(R.string.sync_status_cancelled, completed.sourceName)
+}
+
 
 /** Beyond this many concurrent syncs the pill summarises the rest, rather than covering the screen. */
 private const val MAX_ROWS = 4

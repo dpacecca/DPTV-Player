@@ -22,11 +22,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.update.UpdateManager
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -70,36 +72,36 @@ fun UpdateStatusToast(onDone: () -> Unit, onViewChangelog: () -> Unit, modifier:
             UpdateManager.State.Idle, UpdateManager.State.Checking -> Row(verticalAlignment = Alignment.CenterVertically) {
                 OwnTVSpinner(sizeDp = 18)
                 Spacer(Modifier.width(10.dp))
-                Text("Checking for updates…", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Text(stringResource(R.string.phase1_update_checking), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             }
             UpdateManager.State.UpToDate -> Text(
-                "You're on the latest version (v${manager.currentVersion}).",
+                stringResource(R.string.phase1_update_latest, manager.currentVersion),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
             )
             is UpdateManager.State.Failed -> Text(
-                "Couldn't check for updates.",
+                stringResource(R.string.phase1_update_failed_check),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
             )
             is UpdateManager.State.Available -> {
                 BackHandler { onDone() } // Back = Later
-                Text("Update available", style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+                Text(stringResource(R.string.phase1_update_available), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "OwnTV v${s.info.version} is ready (you have v${manager.currentVersion}).",
+                    stringResource(R.string.phase1_update_ready, s.info.version, manager.currentVersion),
                     style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     // "What's New" opens the full changelog dialog (same view the manual check uses);
                     // both update paths show the changelog before downloading.
-                    OwnTVButton("What's New", onClick = onViewChangelog, modifier = Modifier.focusRequester(focus))
-                    OwnTVButton("Later", onClick = onDone, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton(stringResource(R.string.phase1_update_whats_new), onClick = onViewChangelog, modifier = Modifier.focusRequester(focus))
+                    OwnTVButton(stringResource(R.string.phase1_update_later), onClick = onDone, style = OwnTVButtonStyle.SECONDARY)
                 }
             }
             is UpdateManager.State.Downloading -> Row(verticalAlignment = Alignment.CenterVertically) {
                 OwnTVSpinner(sizeDp = 18)
                 Spacer(Modifier.width(10.dp))
-                Text("Downloading update… ${s.percent}%", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Text(stringResource(R.string.phase1_update_downloading, s.percent), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             }
         }
     }

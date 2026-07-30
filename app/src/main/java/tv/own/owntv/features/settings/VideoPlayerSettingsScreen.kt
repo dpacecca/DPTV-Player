@@ -48,9 +48,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.features.settings.data.SubtitleStyle
 import tv.own.owntv.player.ZoomMode
 import tv.own.owntv.ui.components.FocusableSurface
+import androidx.compose.ui.res.stringResource
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -61,31 +63,51 @@ import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 
-/** Common languages offered for the audio/subtitle preference (code → display name; "" = no preference). */
-private val LANGUAGES = listOf(
-    "" to "None / Auto",
-    "eng" to "English",
-    "spa" to "Spanish",
-    "fra" to "French",
-    "deu" to "German",
-    "ita" to "Italian",
-    "por" to "Portuguese",
-    "nld" to "Dutch",
-    "rus" to "Russian",
-    "ara" to "Arabic",
-    "hin" to "Hindi",
-    "zho" to "Chinese",
-    "jpn" to "Japanese",
-    "kor" to "Korean",
-    "tur" to "Turkish",
+/** Common language codes offered for the audio/subtitle preference. Display names resolve in Compose. */
+private val LANGUAGE_CODES = listOf("", "eng", "spa", "fra", "deu", "ita", "por", "nld", "rus", "ara", "hin", "zho", "jpn", "kor", "tur")
+private val SUB_SIZES = listOf(0.8f to R.string.settings_subtitle_small, 1.0f to R.string.settings_subtitle_normal, 1.3f to R.string.settings_subtitle_large, 1.6f to R.string.settings_subtitle_extra_large)
+
+@Composable
+private fun langName(code: String): String = stringResource(
+    when (code) {
+        "" -> R.string.settings_none_auto
+        "eng" -> R.string.settings_language_english
+        "spa" -> R.string.settings_language_spanish
+        "fra" -> R.string.settings_language_french
+        "deu" -> R.string.settings_language_german
+        "ita" -> R.string.settings_language_italian
+        "por" -> R.string.settings_language_portuguese
+        "nld" -> R.string.settings_language_dutch
+        "rus" -> R.string.settings_language_russian
+        "ara" -> R.string.settings_language_arabic
+        "hin" -> R.string.settings_language_hindi
+        "zho" -> R.string.settings_language_chinese
+        "jpn" -> R.string.settings_language_japanese
+        "kor" -> R.string.settings_language_korean
+        "tur" -> R.string.settings_language_turkish
+        else -> R.string.settings_none_auto
+    },
 )
 
-// 1.0 is the renderer's own size, so it is the "Default" entry — see SubtitleStyle.SCALE_DEFAULT.
-private val SUB_SIZES = listOf(0.8f to "Small", 1.0f to "Default", 1.3f to "Large", 1.6f to "Extra Large")
-
-private fun langName(code: String) = LANGUAGES.firstOrNull { it.first == code }?.second ?: code.ifBlank { "None / Auto" }
 private fun nearestSubSize(scale: Float) = SUB_SIZES.minByOrNull { kotlin.math.abs(it.first - scale) } ?: SUB_SIZES[1]
-private fun subSizeName(scale: Float) = nearestSubSize(scale).second
+
+@Composable
+private fun subSizeName(scale: Float): String = stringResource(
+    SUB_SIZES.minByOrNull { kotlin.math.abs(it.first - scale) }?.second ?: R.string.settings_subtitle_normal,
+)
+
+private fun resumeModeLabelRes(mode: tv.own.owntv.features.settings.data.SettingsRepository.ResumeMode): Int = when (mode) {
+    tv.own.owntv.features.settings.data.SettingsRepository.ResumeMode.AUTO -> R.string.settings_resume_always
+    tv.own.owntv.features.settings.data.SettingsRepository.ResumeMode.ASK -> R.string.settings_resume_ask
+    tv.own.owntv.features.settings.data.SettingsRepository.ResumeMode.NEVER -> R.string.settings_resume_never
+}
+
+private fun liveLatencyLabelRes(mode: tv.own.owntv.features.settings.data.LiveLatency): Int = when (mode) {
+    tv.own.owntv.features.settings.data.LiveLatency.LOW -> R.string.settings_live_latency_low
+    tv.own.owntv.features.settings.data.LiveLatency.BALANCED -> R.string.settings_live_latency_balanced
+    tv.own.owntv.features.settings.data.LiveLatency.STABLE -> R.string.settings_live_latency_stable
+    tv.own.owntv.features.settings.data.LiveLatency.CUSTOM -> R.string.settings_live_latency_custom
+}
 
 /**
  * Video Player settings — decoder, default aspect/zoom, subtitle size & language, audio sync. Each
@@ -203,141 +225,125 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Header("Video Player", onBack)
+        Header(stringResource(R.string.settings_video_player_title), onBack)
         Spacer(Modifier.height(8.dp))
 
-        GroupLabel("Decoding")
+        GroupLabel(stringResource(R.string.settings_decoding))
         Row2(
-            icon = OwnTVIcon.VIDEO, title = "Hardware decoding",
-            desc = "Use the TV's hardware decoder. Turn off if some streams stutter or show artifacts.",
-            chip = if (hw) "On" else "Off", primaryChip = hw,
+            icon = OwnTVIcon.VIDEO, title = stringResource(R.string.settings_hardware_decoding),
+            desc = stringResource(R.string.settings_hardware_decoding_description),
+            chip = if (hw) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = hw,
             modifier = Modifier.focusRequester(firstFocus),
             onClick = { vm.setHwDecoding(!hw) },
         )
         Row2(
-            icon = OwnTVIcon.PLAY, title = "Movies & Series player",
-            desc = "mpv (recommended) has the widest format support — DTS/TrueHD audio, unusual files — " +
-                "plus the A/V sync fix. Switch to ExoPlayer only if movies or episodes fail to start: " +
-                "it plays some streams mpv can't on certain TVs, but can't decode DTS/TrueHD audio and " +
-                "has no A/V sync fix. Whichever you pick, the other is tried automatically if it fails.",
-            chip = if (vodExo) "ExoPlayer" else "mpv", primaryChip = !vodExo,
+            icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_movies_series_player),
+            desc = stringResource(R.string.settings_movies_player_description),
+            chip = stringResource(if (vodExo) R.string.settings_player_exoplayer else R.string.settings_player_mpv), primaryChip = !vodExo,
             onClick = { vm.setVodPreferExo(!vodExo) },
         )
         Row2(
-            icon = OwnTVIcon.PLAY, title = "External player",
-            desc = "Open streams in an external app (VLC, MX Player) instead of the built-in player, " +
-                "chosen per section. Useful for streams this app can't decode, or if you prefer another " +
-                "player. Resume position and prev/next are unavailable while playing externally; streams " +
-                "needing a custom User-Agent or referer may not play.",
+            icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_external_player),
+            desc = stringResource(R.string.settings_external_player_row_description),
             chip = externalPlayerChip(externalLive, externalMovies, externalSeries), chevron = true,
             primaryChip = externalLive || externalMovies || externalSeries,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.EXTERNAL_PLAYER)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.EXTERNAL_PLAYER },
         )
         Row2(
-            icon = OwnTVIcon.ASPECT, title = "Default zoom",
-            desc = "Aspect/zoom applied when playback starts.",
-            chip = zoomMode.label, chevron = true,
+            icon = OwnTVIcon.ASPECT, title = stringResource(R.string.settings_default_zoom),
+            desc = stringResource(R.string.settings_default_zoom_description),
+            chip = stringResource(zoomMode.labelRes), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.ZOOM)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.ZOOM },
         )
         Row2(
-            icon = OwnTVIcon.PLAY, title = "Resume playback",
-            desc = "What to do when a movie or episode has a saved position.",
-            chip = resumeMode.label, chevron = true,
+            icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_resume_playback),
+            desc = stringResource(R.string.settings_resume_playback_description),
+            chip = stringResource(resumeModeLabelRes(resumeMode)), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.RESUME)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.RESUME },
         )
 
         Divider()
-        GroupLabel("Subtitles")
+        GroupLabel(stringResource(R.string.settings_subtitles))
         Row2(
-            icon = OwnTVIcon.SUBTITLE, title = "Subtitle appearance",
-            desc = "Size, text color, on-screen position and background transparency. While off, " +
-                "subtitles keep their stock look — including the styling broadcasters embed in Live TV " +
-                "subtitles.",
-            chip = if (subStyleOn) "On" else "Off", primaryChip = subStyleOn, chevron = true,
+            icon = OwnTVIcon.SUBTITLE, title = stringResource(R.string.settings_subtitle_appearance),
+            desc = stringResource(R.string.settings_subtitle_appearance_description),
+            chip = stringResource(if (subStyleOn) R.string.common_on else R.string.common_off), primaryChip = subStyleOn, chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SUB_STYLE)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.SUB_STYLE },
         )
         Row2(
-            icon = OwnTVIcon.SUBTITLE, title = "Preferred subtitle language",
-            desc = "Auto-select this subtitle track when available.",
+            icon = OwnTVIcon.SUBTITLE, title = stringResource(R.string.settings_preferred_subtitle_language),
+            desc = stringResource(R.string.settings_preferred_language_description),
             chip = langName(subLang), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SUB_LANG)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.SUB_LANG },
         )
         Row2(
-            icon = OwnTVIcon.SUBTITLE, title = "OpenSubtitles",
-            desc = "Sign in to search and download subtitles, and manage downloaded subtitles. " +
-                "Per profile; a free opensubtitles.com account is required.",
+            icon = OwnTVIcon.SUBTITLE, title = stringResource(R.string.settings_open_subtitles),
+            desc = stringResource(R.string.settings_open_subtitles_description),
             chevron = true,
             modifier = Modifier.focusRequester(openSubRowFocus),
             onClick = { showOpenSubAccount = true },
         )
 
         Divider()
-        GroupLabel("Audio")
+        GroupLabel(stringResource(R.string.settings_audio))
         Row2(
-            icon = OwnTVIcon.AUDIO, title = "Preferred audio language",
-            desc = "Auto-select this audio track when available.",
+            icon = OwnTVIcon.AUDIO, title = stringResource(R.string.settings_preferred_audio_language),
+            desc = stringResource(R.string.settings_preferred_language_description),
             chip = langName(audioLang), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.AUDIO_LANG)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.AUDIO_LANG },
         )
         Row2(
-            icon = OwnTVIcon.AUDIO, title = "Audio sync",
-            desc = "Shift audio earlier or later to match the video.",
-            chip = "%+d ms".format(audioDelay), chevron = true,
+            icon = OwnTVIcon.AUDIO, title = stringResource(R.string.settings_audio_sync),
+            desc = stringResource(R.string.settings_audio_sync_description),
+            chip = stringResource(R.string.settings_audio_delay_value, audioDelay), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.AUDIO_SYNC)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.AUDIO_SYNC },
         )
 
         Divider()
-        GroupLabel("Live TV")
+        GroupLabel(stringResource(R.string.settings_live_tv))
         Row2(
-            icon = OwnTVIcon.LIVE_TV, title = "Live latency",
-            desc = "How close to the live broadcast to play. Lower means closer to live but a smaller " +
-                "buffer, so weak streams may stutter or reconnect more. Applies to the next channel you open.",
-            chip = if (liveLatency == tv.own.owntv.features.settings.data.LiveLatency.CUSTOM) "${liveCustomSecs}s" else liveLatency.label,
+            icon = OwnTVIcon.LIVE_TV, title = stringResource(R.string.settings_live_latency),
+            desc = stringResource(R.string.settings_live_latency_description),
+            chip = if (liveLatency == tv.own.owntv.features.settings.data.LiveLatency.CUSTOM) stringResource(R.string.settings_live_buffer_seconds, liveCustomSecs) else stringResource(liveLatencyLabelRes(liveLatency)),
             chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_LATENCY)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_LATENCY },
         )
         Row2(
-            icon = OwnTVIcon.LIVE_TV, title = "Channel numbers",
-            desc = "Show your provider's channel number beside the name in the Live TV list, the " +
-                "channel-list overlay and the player — and type a number on the remote during " +
-                "full-screen playback to jump straight to that channel (OK tunes at once, Back cancels). " +
-                "Off hides every number and ignores the number keys; nothing is lost, and turning it " +
-                "back on restores them.",
-            chip = if (directTune) "On" else "Off", primaryChip = directTune,
+            icon = OwnTVIcon.LIVE_TV, title = stringResource(R.string.settings_channel_numbers),
+            desc = stringResource(R.string.settings_channel_numbers_description),
+            chip = if (directTune) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = directTune,
             onClick = { vm.setDirectTune(!directTune) },
         )
 
         Divider()
-        GroupLabel("Diagnostics")
+        GroupLabel(stringResource(R.string.settings_diagnostics))
         Row2(
-            icon = OwnTVIcon.VIDEO, title = "Measured stream stats",
-            desc = "Show live fps, bitrate and dropped frames in the stream-info overlay (measured while " +
-                "the overlay is open, for streams that don't declare these values). Turn off only if a " +
-                "low-end TV stutters — it never affects the actual video, only the diagnostic numbers.",
-            chip = if (measuredStats) "On" else "Off", primaryChip = measuredStats,
+            icon = OwnTVIcon.VIDEO, title = stringResource(R.string.settings_measured_stats),
+            desc = stringResource(R.string.settings_measured_stats_description),
+            chip = if (measuredStats) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = measuredStats,
             onClick = { vm.setMeasuredStreamStats(!measuredStats) },
         )
     }
 
     when (dialog) {
         Dialog.ZOOM -> PickerDialog(
-            title = "Default zoom",
-            options = ZoomMode.entries.map { it.name to it.label },
+            title = stringResource(R.string.settings_default_zoom),
+            options = ZoomMode.entries.map { it.name to stringResource(it.labelRes) },
             selected = zoomMode.name,
             onSelect = { vm.setDefaultZoom(it); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.RESUME -> PickerDialog(
-            title = "Resume playback",
-            options = tv.own.owntv.features.settings.data.SettingsRepository.ResumeMode.entries.map { it.name to it.label },
+            title = stringResource(R.string.settings_resume_playback),
+            options = tv.own.owntv.features.settings.data.SettingsRepository.ResumeMode.entries.map { it.name to stringResource(resumeModeLabelRes(it)) },
             selected = resumeMode.name,
             onSelect = { vm.setResumeMode(it); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
@@ -356,30 +362,30 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.SUB_LANG -> PickerDialog(
-            title = "Subtitle language",
-            options = LANGUAGES,
+            title = stringResource(R.string.settings_preferred_subtitle_language),
+            options = LANGUAGE_CODES.map { it to langName(it) },
             selected = subLang,
             onSelect = { vm.setPreferredSubLang(it); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.AUDIO_LANG -> PickerDialog(
-            title = "Audio language",
-            options = LANGUAGES,
+            title = stringResource(R.string.settings_preferred_audio_language),
+            options = LANGUAGE_CODES.map { it to langName(it) },
             selected = audioLang,
             onSelect = { vm.setPreferredAudioLang(it); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.AUDIO_SYNC -> StepperDialog(
-            title = "Audio sync",
+            title = stringResource(R.string.settings_audio_sync),
             value = audioDelay, step = 50, min = -2000, max = 2000,
-            format = { "%+d ms".format(it) },
+            format = { stringResource(R.string.settings_audio_delay, it) },
             onSet = { vm.setAudioDelayMs(it) },
             onReset = { vm.setAudioDelayMs(0) },
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.LIVE_LATENCY -> PickerDialog(
-            title = "Live latency",
-            options = tv.own.owntv.features.settings.data.LiveLatency.entries.map { it.name to it.label },
+            title = stringResource(R.string.settings_live_latency),
+            options = tv.own.owntv.features.settings.data.LiveLatency.entries.map { it.name to stringResource(liveLatencyLabelRes(it)) },
             selected = liveLatency.name,
             onSelect = { name ->
                 val mode = tv.own.owntv.features.settings.data.LiveLatency.fromName(name)
@@ -399,12 +405,12 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.LIVE_CUSTOM -> StepperDialog(
-            title = "Custom live buffer",
+            title = stringResource(R.string.settings_custom_live_buffer),
             value = liveCustomSecs,
             step = 1,
             min = tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_MIN,
             max = tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_MAX,
-            format = { "${it}s" },
+            format = { stringResource(R.string.settings_live_buffer_seconds, it) },
             onSet = { vm.setLiveLatencyCustomSecs(it) },
             onReset = { vm.setLiveLatencyCustomSecs(tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_DEFAULT) },
             onDismiss = {
@@ -443,19 +449,17 @@ private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit
         contentAlignment = Alignment.Center,
     ) {
         Column(modifier = Modifier.dialogPanel(width = 500.dp, padding = 28.dp)) {
-            Text("⚠️ Low latency", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.settings_low_latency_warning), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(12.dp))
             Text(
-                "Playing closer to the live broadcast leaves a smaller buffer. On slower connections or " +
-                    "unstable streams this can cause more buffering, stutter, or reconnects.\n\n" +
-                    "Choose Balanced if a channel becomes unreliable.",
+                stringResource(R.string.settings_low_latency_warning_description),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(20.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton("Cancel", onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.common_cancel), onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
-                OwnTVButton("I understand", onClick = onConfirm, modifier = Modifier.focusRequester(firstFocus))
+                OwnTVButton(stringResource(R.string.settings_low_latency_understand), onClick = onConfirm, modifier = Modifier.focusRequester(firstFocus))
             }
         }
     }
@@ -464,15 +468,16 @@ private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit
 private enum class Dialog { NONE, ZOOM, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, EXTERNAL_PLAYER }
 
 /** Row chip for the External player row: "Off", "On" (all three), or the sections that are on. */
+@Composable
 private fun externalPlayerChip(live: Boolean, movies: Boolean, series: Boolean): String {
     val on = buildList {
-        if (live) add("Live TV")
-        if (movies) add("Movies")
-        if (series) add("Series")
+        if (live) add(stringResource(R.string.common_nav_live_tv))
+        if (movies) add(stringResource(R.string.common_nav_movies))
+        if (series) add(stringResource(R.string.common_nav_series))
     }
     return when (on.size) {
-        0 -> "Off"
-        3 -> "On"
+        0 -> stringResource(R.string.common_off)
+        3 -> stringResource(R.string.common_on)
         else -> on.joinToString(", ")
     }
 }
@@ -601,7 +606,7 @@ internal fun PickerDialog(
                 tv.own.owntv.ui.components.SearchBar(
                     query = query,
                     onQueryChange = { query = it },
-                    placeholder = "Search…",
+                    placeholder = stringResource(R.string.common_search_hint),
                     modifier = Modifier.fillMaxWidth().focusRequester(searchFr),
                     surface = GlassSurface.DIALOGS,
                 )
@@ -630,7 +635,7 @@ internal fun PickerDialog(
             }
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
             }
                 }
             }
@@ -657,17 +662,17 @@ private fun ExternalPlayerDialog(
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
     BackHandler { onDismiss() }
     val rows = listOf(
-        Triple(tv.own.owntv.features.settings.data.SettingsRepository.ExternalPlayerSection.LIVE_TV, "Live TV", live),
-        Triple(tv.own.owntv.features.settings.data.SettingsRepository.ExternalPlayerSection.MOVIES, "Movies", movies),
-        Triple(tv.own.owntv.features.settings.data.SettingsRepository.ExternalPlayerSection.SERIES, "Series", series),
+        Triple(tv.own.owntv.features.settings.data.SettingsRepository.ExternalPlayerSection.LIVE_TV, stringResource(R.string.common_nav_live_tv), live),
+        Triple(tv.own.owntv.features.settings.data.SettingsRepository.ExternalPlayerSection.MOVIES, stringResource(R.string.common_nav_movies), movies),
+        Triple(tv.own.owntv.features.settings.data.SettingsRepository.ExternalPlayerSection.SERIES, stringResource(R.string.common_nav_series), series),
     )
     tv.own.owntv.ui.theme.PopupFontTheme {
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
             Column(modifier = Modifier.dialogPanel(width = 300.dp, corner = 16.dp, padding = 14.dp, scroll = false)) {
-                Text("External player", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(stringResource(R.string.settings_external_player), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Pick which sections open in an external app.",
+                    stringResource(R.string.settings_external_player_description),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(10.dp))
@@ -683,7 +688,7 @@ private fun ExternalPlayerDialog(
                         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(label, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, modifier = Modifier.weight(1f))
                             Text(
-                                if (enabled) "On" else "Off",
+                                if (enabled) stringResource(R.string.common_on) else stringResource(R.string.common_off),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (enabled) colors.primary else colors.onSurfaceVariant,
                             )
@@ -692,7 +697,7 @@ private fun ExternalPlayerDialog(
                 }
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                 }
             }
         }
@@ -707,7 +712,7 @@ internal fun StepperDialog(
     step: Int,
     min: Int,
     max: Int,
-    format: (Int) -> String,
+    format: @Composable (Int) -> String,
     onSet: (Int) -> Unit,
     onReset: () -> Unit,
     onDismiss: () -> Unit,
@@ -740,9 +745,9 @@ internal fun StepperDialog(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OwnTVButton("Reset", onClick = onReset, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.common_reset), onClick = onReset, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
-                OwnTVButton("Done", onClick = onDismiss)
+                OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
             }
         }
     }
@@ -818,8 +823,8 @@ private fun SubtitleAppearanceDialog(
         val close = { child = SubDialog.NONE }
         when (child) {
             SubDialog.SIZE -> PickerDialog(
-                title = "Subtitle size",
-                options = SUB_SIZES.map { it.first.toString() to it.second },
+                title = stringResource(R.string.settings_subtitle_size),
+                options = SUB_SIZES.map { it.first.toString() to stringResource(it.second) },
                 selected = nearestSubSize(scale).first.toString(),
                 onSelect = { onScale(it.toFloat()); close() },
                 onDismiss = close,

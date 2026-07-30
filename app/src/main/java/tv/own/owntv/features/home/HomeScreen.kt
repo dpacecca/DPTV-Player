@@ -53,6 +53,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
@@ -71,6 +73,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.launcher.LauncherContinuationItem
 import tv.own.owntv.core.launcher.LauncherWatchNextType
@@ -307,7 +310,7 @@ fun HomeScreen(
 
                 HomeRow.RECENT_CHANNELS -> if (state.recentLive.isNotEmpty()) {
                     HomeLiveRow(
-                        title = row.title,
+                        title = row.displayTitle(),
                         mode = state.config.recentLiveMode,
                         channels = state.recentLive,
                         guide = state.recentGuide,
@@ -321,7 +324,7 @@ fun HomeScreen(
 
                 HomeRow.FAVORITE_CHANNELS -> if (state.favoriteLive.isNotEmpty()) {
                     HomeLiveRow(
-                        title = row.title,
+                        title = row.displayTitle(),
                         mode = state.config.favoriteLiveMode,
                         channels = state.favoriteLive,
                         guide = state.favoriteGuide,
@@ -335,7 +338,7 @@ fun HomeScreen(
 
                 HomeRow.CONTINUE_MOVIES -> if (state.continueMovies.isNotEmpty()) {
                     ContinueWatchingRow(
-                        title = row.title,
+                        title = row.displayTitle(),
                         items = state.continueMovies,
                         onItemClick = { onPlayMovie(it.sourceItemId, it.positionMs) },
                         onFocus = onNonHeroFocused,
@@ -345,7 +348,7 @@ fun HomeScreen(
 
                 HomeRow.CONTINUE_SERIES -> if (state.continueSeries.isNotEmpty()) {
                     ContinueWatchingRow(
-                        title = row.title,
+                        title = row.displayTitle(),
                         items = state.continueSeries,
                         posterOverrides = state.continuationArtwork,
                         landscapeTiles = true,
@@ -443,7 +446,6 @@ private fun HeroRowSection(
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
-    val context = LocalContext.current
     val density = LocalDensity.current
     val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
     val approxRowWidth = screenWidthDp - Dimens.SidebarWidthCollapsed - Dimens.HomeRowPaddingH
@@ -495,7 +497,7 @@ private fun HeroRowSection(
 
     Column(modifier = modifier) {
         Text(
-            text = "Keep Watching".uppercase(),
+            text = stringResource(R.string.home_keep_watching).uppercase(),
             style = MaterialTheme.typography.titleSmall,
             color = colors.primary,
             fontWeight = FontWeight.Bold,
@@ -866,7 +868,7 @@ private fun HeroRowSection(
                                     expandedItem.item.subtitle ?: expandedItem.movie.year?.toString().orEmpty()
                                 is HeroItem.SeriesHero ->
                                     expandedItem.item.subtitle.orEmpty()
-                                is HeroItem.LiveHero -> "Recently watched live"
+                                is HeroItem.LiveHero -> stringResource(R.string.home_recent_live)
                             }
                             if (subtitle.isNotBlank()) {
                                 Spacer(Modifier.height(4.dp))
@@ -879,7 +881,7 @@ private fun HeroRowSection(
                                 )
                             }
 
-                            val statText = heroStatLabel(context, expandedItem, System.currentTimeMillis())
+                            val statText = heroStatLabel(expandedItem, System.currentTimeMillis())
                             if (statText != null) {
                                 Spacer(Modifier.height(4.dp))
                                 Text(
@@ -906,9 +908,9 @@ private fun HeroRowSection(
                             Spacer(Modifier.height(10.dp))
                             OwnTVButton(
                                 label = when (expandedItem.watchNextType) {
-                                    LauncherWatchNextType.NEXT -> "Play Next"
+                                    LauncherWatchNextType.NEXT -> stringResource(R.string.home_play_next)
                                     LauncherWatchNextType.CONTINUE ->
-                                        if (expandedItem is HeroItem.LiveHero) "Tune In" else "Resume"
+                                        if (expandedItem is HeroItem.LiveHero) stringResource(R.string.home_tune_in) else stringResource(R.string.home_resume)
                                 },
                                 onClick = { onPlay(expandedItem) },
                                 modifier = Modifier.focusProperties { canFocus = false },
@@ -951,13 +953,15 @@ private fun HeroRowSection(
     }
 }
 
-private fun heroStatLabel(context: Context, item: HeroItem, nowMs: Long): String? =
+@Composable
+private fun heroStatLabel(item: HeroItem, nowMs: Long): String? =
     when (item) {
         is HeroItem.MovieHero,
-        is HeroItem.SeriesHero -> finishByLabel(context, item.positionMs, item.durationMs, nowMs)
+        is HeroItem.SeriesHero -> finishByLabel(LocalContext.current, item.positionMs, item.durationMs, nowMs)
         is HeroItem.LiveHero -> relativeLastWatchedLabel(item.lastEngagementAt, nowMs)
     }
 
+@Composable
 private fun finishByLabel(context: Context, positionMs: Long, durationMs: Long, nowMs: Long): String? {
     if (durationMs <= 0) return null
 
@@ -967,7 +971,7 @@ private fun finishByLabel(context: Context, positionMs: Long, durationMs: Long, 
 
     val finishMs = roundUpToNextQuarterHour(nowMs + remainingMs)
     val time = formatSystemTime(context, finishMs)
-    return "Finish by $time"
+    return stringResource(R.string.home_finish_by, time)
 }
 
 private fun roundUpToNextQuarterHour(ms: Long): Long {
@@ -991,22 +995,23 @@ private fun roundUpToNextQuarterHour(ms: Long): Long {
     return calendar.timeInMillis
 }
 
+@Composable
 private fun relativeLastWatchedLabel(lastEngagementAt: Long, nowMs: Long): String {
     val elapsedMs = nowMs - lastEngagementAt
-    if (elapsedMs < 60_000L) return "Last watched just now"
+    if (elapsedMs < 60_000L) return stringResource(R.string.home_last_watched_now)
 
     val elapsedMinutes = elapsedMs / 60_000L
     if (elapsedMinutes < 60L) {
-        return "Last watched ${elapsedMinutes} ${if (elapsedMinutes == 1L) "minute" else "minutes"} ago"
+        return pluralStringResource(R.plurals.home_last_watched_minutes, elapsedMinutes.toInt(), elapsedMinutes.toInt())
     }
 
     val elapsedHours = elapsedMinutes / 60L
     if (elapsedHours < 24L) {
-        return "Last watched ${elapsedHours} ${if (elapsedHours == 1L) "hour" else "hours"} ago"
+        return pluralStringResource(R.plurals.home_last_watched_hours, elapsedHours.toInt(), elapsedHours.toInt())
     }
 
     val elapsedDays = elapsedHours / 24L
-    return "Last watched ${elapsedDays} ${if (elapsedDays == 1L) "day" else "days"} ago"
+    return pluralStringResource(R.plurals.home_last_watched_days, elapsedDays.toInt(), elapsedDays.toInt())
 }
 
 @Composable
@@ -1101,13 +1106,14 @@ private fun continuationProgress(item: LauncherContinuationItem): Float? =
         null
     }
 
+@Composable
 private fun seasonEpisodeChip(item: LauncherContinuationItem): String? {
     val season = item.seasonNumber?.takeIf { it > 0 }
     val episode = item.episodeNumber?.takeIf { it > 0 }
     return when {
-        season != null && episode != null -> "S%02d E%02d".format(season, episode)
-        season != null -> "S%02d".format(season)
-        episode != null -> "E%02d".format(episode)
+        season != null && episode != null -> stringResource(R.string.home_season_episode, season, episode)
+        season != null -> stringResource(R.string.home_season, season)
+        episode != null -> stringResource(R.string.home_episode, episode)
         else -> null
     }
 }
@@ -1225,7 +1231,7 @@ private fun HeroFallbackPane(
             BrandLockup(markSize = 72, textSize = 42)
             Spacer(Modifier.height(14.dp))
             Text(
-                text = "Nothing to preview yet.",
+                text = stringResource(R.string.home_no_preview),
                 style = MaterialTheme.typography.bodyLarge,
                 color = colors.onSurfaceVariant,
                 maxLines = 3,
@@ -1233,7 +1239,7 @@ private fun HeroFallbackPane(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Your continue-watching items will appear here once playback history is available.",
+                text = stringResource(R.string.home_continue_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
                 maxLines = 3,
@@ -1258,14 +1264,14 @@ private fun EmptyHomeState(
             BrandLockup(markSize = 84, textSize = 48)
             Spacer(Modifier.height(16.dp))
             Text(
-                text = "Start watching to see your activity here.",
+                text = stringResource(R.string.home_start_watching),
                 style = MaterialTheme.typography.titleLarge,
                 color = colors.onSurface,
                 maxLines = 1,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Continue watching will show up on Home once you have playback history.",
+                text = stringResource(R.string.home_continue_empty),
                 style = MaterialTheme.typography.bodyLarge,
                 color = colors.onSurfaceVariant,
                 maxLines = 2,
@@ -1290,14 +1296,14 @@ private fun AllRowsHiddenState(
             BrandLockup(markSize = 84, textSize = 48)
             Spacer(Modifier.height(16.dp))
             Text(
-                text = "All Home rows are hidden.",
+                text = stringResource(R.string.home_no_rows),
                 style = MaterialTheme.typography.titleLarge,
                 color = colors.onSurface,
                 maxLines = 1,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Turn rows back on in Settings → Home screen.",
+                text = stringResource(R.string.home_enable_rows),
                 style = MaterialTheme.typography.bodyLarge,
                 color = colors.onSurfaceVariant,
                 maxLines = 2,

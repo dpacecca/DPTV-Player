@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +38,7 @@ import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.database.dao.ChannelSearchResult
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.MovieEntity
@@ -51,6 +53,15 @@ import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /** One row in the flattened results list — drives both the list rows and the detail pane. */
+@Composable
+private fun SearchIntent.displayLabel(): String = stringResource(
+    when (this) {
+        SearchIntent.CONTINUE -> R.string.search_continue
+        SearchIntent.UNWATCHED -> R.string.search_unwatched
+        SearchIntent.CHANNELS -> R.string.search_channels
+    },
+)
+
 private sealed interface SearchItem {
     data class ChannelItem(val row: ChannelSearchResult) : SearchItem
     data class MovieItem(val movie: MovieEntity) : SearchItem
@@ -99,12 +110,12 @@ fun SearchScreen(
             .onFocusChanged { if (it.hasFocus) onChildFocused() }
             .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
     ) {
-        Text("Search", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+        Text(stringResource(R.string.search_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
         Spacer(Modifier.height(14.dp))
         SearchBar(
             query = query,
             onQueryChange = vm::setQuery,
-            placeholder = "Search channels, movies & series…",
+            placeholder = stringResource(R.string.search_hint),
             modifier = Modifier.fillMaxWidth().focusRequester(searchFocus),
         )
         Spacer(Modifier.height(20.dp))
@@ -118,16 +129,16 @@ fun SearchScreen(
                     onIntent = { vm.setIntent(it) },
                 )
             searching && query.trim().length < 2 ->
-                CenterHint("Type at least 2 characters to search across everything.")
+                CenterHint(stringResource(R.string.search_minimum_query))
             shown.isEmpty ->
                 CenterHint(
-                    if (searching) "No results for “${query.trim()}”."
-                    else "Nothing in ${intent?.label ?: "this list"} yet.",
+                    if (searching) stringResource(R.string.search_no_results, query.trim())
+                    else stringResource(R.string.search_nothing_in_list, intent?.displayLabel() ?: stringResource(R.string.search_title)),
                 )
             else -> ResultsWithDetail(
                 results = shown,
                 favoriteIds = favoriteIds,
-                heading = if (searching) null else intent?.label,
+                heading = if (searching) null else intent?.displayLabel(),
                 // When a curated intent is chosen its chip disappears, so pull focus onto the first
                 // result row (otherwise focus falls back to the sidebar). While typing, leave focus
                 // in the search field so the keyboard keeps working.
@@ -154,18 +165,18 @@ private fun LauncherEmptyState(
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         // Intent launcher chips
-        SectionLabel("Jump to")
+        SectionLabel(stringResource(R.string.search_jump_to))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SearchIntent.entries.forEach { i ->
-                PillChip(label = i.label, tonal = true) { onIntent(i) }
+                PillChip(label = i.displayLabel(), tonal = true) { onIntent(i) }
             }
         }
 
         // Recent searches
         if (recent.isNotEmpty()) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SectionLabel("Recent searches")
-                PillChip(label = "Clear", tonal = false, onClick = onClearRecent)
+                SectionLabel(stringResource(R.string.search_recent))
+                PillChip(label = stringResource(R.string.search_clear), tonal = false, onClick = onClearRecent)
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 recent.chunked(4).forEach { rowTerms ->
@@ -178,7 +189,7 @@ private fun LauncherEmptyState(
             }
         } else {
             Text(
-                "Your recent searches will show here.",
+                stringResource(R.string.search_recent_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
             )
@@ -242,7 +253,7 @@ private fun ResultsWithDetail(
                             thumbUrl = item.movie.posterUrl,
                             fallbackIcon = OwnTVIcon.MOVIES,
                             title = item.movie.name,
-                            subtitle = metaLine(item.movie.year, item.movie.rating, "Movie"),
+                            subtitle = metaLine(item.movie.year, item.movie.rating, stringResource(R.string.search_movie)),
                             isFavorite = false,
                             focusRequester = if (item == firstItem) firstRowFocus else null,
                             onFocused = { selected = item },
@@ -255,7 +266,7 @@ private fun ResultsWithDetail(
                             thumbUrl = item.series.posterUrl,
                             fallbackIcon = OwnTVIcon.SERIES,
                             title = item.series.name,
-                            subtitle = metaLine(item.series.year, item.series.rating, "Series"),
+                            subtitle = metaLine(item.series.year, item.series.rating, stringResource(R.string.search_series)),
                             isFavorite = false,
                             focusRequester = if (item == firstItem) firstRowFocus else null,
                             onFocused = { selected = item },
@@ -301,17 +312,17 @@ private fun DetailPane(
         is SearchItem.ChannelItem -> {
             posterUrl = item.row.channel.displayLogoUrl; icon = OwnTVIcon.LIVE_TV
             title = item.row.channel.name; subtitle = channelDetail(item.row); plot = null
-            actionLabel = "Watch live"; action = { onPlayChannel(item.row.channel) }
+            actionLabel = stringResource(R.string.search_watch_live); action = { onPlayChannel(item.row.channel) }
         }
         is SearchItem.MovieItem -> {
             posterUrl = item.movie.posterUrl; icon = OwnTVIcon.MOVIES
-            title = item.movie.name; subtitle = metaLine(item.movie.year, item.movie.rating, "Movie"); plot = item.movie.plot
-            actionLabel = "Play"; action = { onPlayMovie(item.movie) }
+            title = item.movie.name; subtitle = metaLine(item.movie.year, item.movie.rating, stringResource(R.string.search_movie)); plot = item.movie.plot
+            actionLabel = stringResource(R.string.search_play); action = { onPlayMovie(item.movie) }
         }
         is SearchItem.SeriesItem -> {
             posterUrl = item.series.posterUrl; icon = OwnTVIcon.SERIES
-            title = item.series.name; subtitle = metaLine(item.series.year, item.series.rating, "Series"); plot = item.series.plot
-            actionLabel = "Open series"; action = { onOpenSeries(item.series) }
+            title = item.series.name; subtitle = metaLine(item.series.year, item.series.rating, stringResource(R.string.search_series)); plot = item.series.plot
+            actionLabel = stringResource(R.string.search_open_series); action = { onOpenSeries(item.series) }
         }
     }
 
@@ -484,9 +495,14 @@ private fun CenterHint(text: String) {
 }
 
 /** "category · #number" so near-identical feeds stay distinguishable. */
+@Composable
 private fun channelDetail(row: ChannelSearchResult): String? =
-    listOfNotNull(row.categoryName?.takeIf { it.isNotBlank() }, row.channel.number?.let { "#$it" })
-        .joinToString(" · ").takeIf { it.isNotBlank() }
+    listOfNotNull(
+        row.categoryName?.takeIf { it.isNotBlank() },
+        row.channel.number?.let { stringResource(R.string.search_channel_number, it) },
+    ).joinToString(stringResource(R.string.content_genres_separator)).takeIf { it.isNotBlank() }
 
+@Composable
 private fun metaLine(year: Int?, rating: Double?, type: String): String =
-    listOfNotNull(type, year?.toString(), rating?.let { "★ %.1f".format(it) }).joinToString(" · ")
+    listOfNotNull(type, year?.toString(), rating?.let { stringResource(R.string.content_rating, it) })
+        .joinToString(stringResource(R.string.content_genres_separator))

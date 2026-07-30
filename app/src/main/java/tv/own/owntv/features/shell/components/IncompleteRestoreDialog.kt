@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.trapAllFocusExit
@@ -68,16 +69,17 @@ fun IncompleteRestoreDialog(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "A restore didn't finish",
+                text = androidx.compose.ui.res.stringResource(R.string.content_restore_incomplete_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = colors.textPrimary,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "The app closed while restoring $description, so some of it may be missing. " +
-                    "Nothing was deleted — run the same restore again from Settings → Backup & Restore " +
-                    "to fill in the rest.",
+                text = androidx.compose.ui.res.stringResource(
+                    R.string.content_restore_incomplete_message,
+                    description,
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.textSecondary,
                 textAlign = TextAlign.Center,
@@ -85,7 +87,7 @@ fun IncompleteRestoreDialog(
             Spacer(Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 OwnTVButton(
-                    label = "OK",
+                    label = androidx.compose.ui.res.stringResource(R.string.common_ok),
                     onClick = onDismiss,
                     style = OwnTVButtonStyle.PRIMARY,
                     modifier = Modifier.focusRequester(okFocus),

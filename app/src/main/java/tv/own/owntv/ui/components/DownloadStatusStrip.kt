@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -22,18 +24,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.DownloadEntity
 import tv.own.owntv.core.model.DownloadStatus
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /** Display-only download state for the poster-panel strip (no actions — mirrors the Downloads screen). */
 @Immutable
+enum class DownloadStripKind { DOWNLOADING, QUEUED, PAUSED, FAILED }
+
+@Immutable
 data class DownloadStripState(
-    val label: String,
+    val kind: DownloadStripKind,
+    val count: Int,
     /** 0f..1f when a size is known; null = indeterminate (queued / unknown total). */
     val progress: Float?,
-    val isError: Boolean = false,
-)
+) {
+    val isError: Boolean get() = kind == DownloadStripKind.FAILED
+}
 
 /**
  * Builds a strip state from the download rows that belong to one item (a single movie/episode, or all
@@ -52,17 +60,14 @@ fun downloadStripFor(rows: List<DownloadEntity>): DownloadStripState? {
     val downloaded = active.sumOf { it.downloadedBytes }
     val total = active.sumOf { it.totalBytes }
     val fraction = if (total > 0) (downloaded.toFloat() / total).coerceIn(0f, 1f) else null
-    val many = active.size > 1
-    val suffix = if (many) " ${active.size} items" else ""
-
     return when {
-        running.isNotEmpty() -> DownloadStripState("Downloading$suffix", fraction)
-        queued.isNotEmpty() && paused.isEmpty() && failed.isEmpty() -> DownloadStripState("Queued$suffix", null)
-        paused.isNotEmpty() && running.isEmpty() && failed.isEmpty() -> DownloadStripState("Paused$suffix", fraction)
+        running.isNotEmpty() -> DownloadStripState(DownloadStripKind.DOWNLOADING, active.size, fraction)
+        queued.isNotEmpty() && paused.isEmpty() && failed.isEmpty() -> DownloadStripState(DownloadStripKind.QUEUED, active.size, null)
+        paused.isNotEmpty() && running.isEmpty() && failed.isEmpty() -> DownloadStripState(DownloadStripKind.PAUSED, active.size, fraction)
         failed.isNotEmpty() && running.isEmpty() && queued.isEmpty() && paused.isEmpty() ->
-            DownloadStripState(if (many) "${failed.size} downloads failed" else "Download failed", null, isError = true)
+            DownloadStripState(DownloadStripKind.FAILED, failed.size, null)
         // Mixed states (some queued/paused/failed together) → report the in-progress framing.
-        else -> DownloadStripState("Downloading$suffix", fraction)
+        else -> DownloadStripState(DownloadStripKind.DOWNLOADING, active.size, fraction)
     }
 }
 
@@ -71,6 +76,12 @@ fun downloadStripFor(rows: List<DownloadEntity>): DownloadStripState? {
 fun DownloadStatusStrip(state: DownloadStripState, modifier: Modifier = Modifier) {
     val colors = OwnTVTheme.colors
     val accent = if (state.isError) Color(0xFFEF4444) else colors.primary
+    val label = when (state.kind) {
+        DownloadStripKind.DOWNLOADING -> pluralStringResource(R.plurals.content_downloading_items, state.count, state.count)
+        DownloadStripKind.QUEUED -> pluralStringResource(R.plurals.content_queued_items, state.count, state.count)
+        DownloadStripKind.PAUSED -> pluralStringResource(R.plurals.content_paused_items, state.count, state.count)
+        DownloadStripKind.FAILED -> pluralStringResource(R.plurals.content_downloads_failed, state.count, state.count)
+    }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -81,10 +92,10 @@ fun DownloadStatusStrip(state: DownloadStripState, modifier: Modifier = Modifier
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OwnTVIcon(OwnTVIcon.DOWNLOADS, tint = accent, modifier = Modifier.size(16.dp))
-            Text(state.label, style = MaterialTheme.typography.labelLarge, color = accent, fontWeight = FontWeight.SemiBold)
+            Text(label, style = MaterialTheme.typography.labelLarge, color = accent, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.weight(1f))
             state.progress?.let {
-                Text("${(it * 100).toInt()}%", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.content_progress_percent, (it * 100).toInt()), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             }
         }
         if (!state.isError) {

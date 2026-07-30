@@ -31,18 +31,26 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.sync.SyncCounts
 import tv.own.owntv.core.sync.SyncProgressCounts
 import tv.own.owntv.core.sync.importProgressDisplay
-import tv.own.owntv.core.sync.resyncBadgeText
-import tv.own.owntv.core.sync.syncProgressCountsLabel
+import tv.own.owntv.core.sync.resyncProgressPercent
 import tv.own.owntv.core.sync.work.CatalogSyncState
+import tv.own.owntv.ui.components.breakdownText
+import tv.own.owntv.ui.components.summaryText
+import tv.own.owntv.ui.components.displayText
+import tv.own.owntv.ui.components.detailText
+import tv.own.owntv.ui.components.primaryText
+import tv.own.owntv.ui.components.remainderText
+import tv.own.owntv.ui.components.warningText
 import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.features.setup.AddSourceChooserScreen
 import tv.own.owntv.features.setup.AddSourceScreen
@@ -69,6 +77,9 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val deletingIds by vm.deletingSourceIds.collectAsStateWithLifecycle()
     val epgSync by vm.epgSync.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
+    val defaultIptvName = stringResource(R.string.setup_default_iptv)
+    val defaultPlaylistName = stringResource(R.string.setup_name_default_playlist)
+    val defaultPortalName = stringResource(R.string.setup_default_portal)
 
     var showAdd by remember { mutableStateOf(false) }
     // Within "Add source": null = the Remote|Manual chooser, else the chosen path.
@@ -143,8 +154,8 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val stalkerTestUi = when (val t = stalkerTest) {
         SettingsViewModel.StalkerTestState.Idle -> StalkerTestUi.Idle
         SettingsViewModel.StalkerTestState.Testing -> StalkerTestUi.Testing
-        is SettingsViewModel.StalkerTestState.Ok -> StalkerTestUi.Ok(t.summary)
-        is SettingsViewModel.StalkerTestState.Failed -> StalkerTestUi.Failed(t.message)
+        is SettingsViewModel.StalkerTestState.Ok -> StalkerTestUi.Ok(t.endpoint, t.profileFields, t.expiry)
+        is SettingsViewModel.StalkerTestState.Failed -> StalkerTestUi.Failed(t.failure)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -201,12 +212,12 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     )
                     AddMode.MANUAL -> AddSourceScreen(
                         onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault, preferHls ->
-                            vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault, preferHls)
+                            vm.addXtream(n.ifBlank { defaultIptvName }, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault, preferHls)
                         },
-                        onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.addM3u(n, url, ua, epg, autoRefresh, isDefault) },
+                        onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.addM3u(n.ifBlank { defaultPlaylistName }, url, ua, epg, autoRefresh, isDefault) },
                         onStartStalker = { n, url, mac, ua, autoRefresh, isDefault, live, movies, series ->
                             vm.resetStalkerTest()
-                            vm.addStalker(n, url, mac, ua, autoRefresh, isDefault, live, movies, series)
+                            vm.addStalker(n.ifBlank { defaultPortalName }, url, mac, ua, autoRefresh, isDefault, live, movies, series)
                         },
                         onTestStalker = { url, mac, ua -> vm.testStalker(url, mac, ua) },
                         stalkerTest = stalkerTestUi,
@@ -225,41 +236,49 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     OwnTVSpinner(sizeDp = 56)
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        display?.title ?: "Importing catalog…",
+                        stringResource(R.string.phase1_sources_importing),
                         style = MaterialTheme.typography.titleMedium,
                         color = colors.onSurface,
                     )
                     Spacer(Modifier.height(6.dp))
-                    Text(display?.primaryText ?: "Preparing catalog", style = MaterialTheme.typography.headlineSmall, color = colors.primary)
+                    Text(display?.primaryText() ?: stringResource(R.string.phase1_sources_preparing), style = MaterialTheme.typography.headlineSmall, color = colors.primary)
                     Spacer(Modifier.height(4.dp))
-                    Text(display?.detail ?: "Preparing catalog", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Text(display?.detailText() ?: stringResource(R.string.phase1_sources_preparing), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     Spacer(Modifier.height(20.dp))
-                    OwnTVButton("Cancel", onClick = { showAdd = false; vm.cancelImport() }, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton(stringResource(R.string.common_cancel), onClick = { showAdd = false; vm.cancelImport() }, style = OwnTVButtonStyle.SECONDARY)
                 }
                 is SettingsViewModel.ImportState.Success -> {
                     // Semi-auto EPG: ask → sync (with a live count, like the import) → done, before returning.
                     if (epgSync !is EpgSyncUi.Hidden) {
                         EpgSyncDialog(state = epgSync, onSync = vm::syncPendingEpg, onDismiss = vm::dismissPendingEpg)
-                    } else if (s.summary.contains("Imported with warnings:")) {
+                    } else if (s.warnings.isNotEmpty() || s.remainder.hasAny) {
                         CenterStatus {
-                            Text("Import complete", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                            Text(stringResource(R.string.phase1_sources_import_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                             Spacer(Modifier.height(8.dp))
-                            Text(s.summary, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                            Text(s.counts.summaryText(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                            s.warnings.warningText()?.let { warning ->
+                                Spacer(Modifier.height(4.dp))
+                                Text(warning, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                            }
+                            s.remainder.remainderText()?.let { remainder ->
+                                Spacer(Modifier.height(4.dp))
+                                Text(remainder, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                            }
                             Spacer(Modifier.height(20.dp))
-                            OwnTVButton("Done", onClick = { showAdd = false; vm.resetImport() })
+                            OwnTVButton(stringResource(R.string.common_done), onClick = { showAdd = false; vm.resetImport() })
                         }
                     } else {
                         LaunchedEffect(Unit) { showAdd = false; vm.resetImport() }
                     }
                 }
                 is SettingsViewModel.ImportState.Failed -> CenterStatus {
-                    Text("Import failed", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Text(stringResource(R.string.phase1_sources_import_failed), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     Spacer(Modifier.height(8.dp))
-                    Text(s.message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Text(s.failure.displayText(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     Spacer(Modifier.height(20.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OwnTVButton("Back", onClick = { showAdd = false; vm.resetImport() }, style = OwnTVButtonStyle.SECONDARY)
-                        OwnTVButton("Try again", onClick = { vm.resetImport() }, modifier = Modifier.focusRequester(errorFocus))
+                        OwnTVButton(stringResource(R.string.common_back), onClick = { showAdd = false; vm.resetImport() }, style = OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton(stringResource(R.string.phase1_sources_try_again), onClick = { vm.resetImport() }, modifier = Modifier.focusRequester(errorFocus))
                     }
                 }
             }
@@ -286,17 +305,17 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     .padding(horizontal = 40.dp, vertical = 28.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Sources", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+                    Text(stringResource(R.string.phase1_sources_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
                     Spacer(Modifier.weight(1f))
-                    OwnTVButton("Add Source", onClick = { showAdd = true }, icon = tv.own.owntv.ui.components.OwnTVIcon.ADD, modifier = Modifier.focusRequester(addFocus))
+                    OwnTVButton(stringResource(R.string.phase1_sources_add), onClick = { showAdd = true }, icon = tv.own.owntv.ui.components.OwnTVIcon.ADD, modifier = Modifier.focusRequester(addFocus))
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("Sources are shared across all profiles.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Text(stringResource(R.string.phase1_sources_description), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Spacer(Modifier.height(20.dp))
 
                 if (sources.isEmpty()) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No sources yet. Add an M3U or Xtream source.", color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.phase1_sources_empty), color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
                     }
                 } else {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -344,14 +363,26 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         confirmDelete?.let { src ->
             ConfirmDialog(
-                title = "Delete “${src.name}”?",
-                message = "This removes the source and all its channels, movies and series from every profile.",
+                title = stringResource(R.string.phase1_sources_delete_title, src.name),
+                message = stringResource(R.string.phase1_sources_delete_message),
                 onConfirm = { vm.delete(src); confirmDelete = null },
                 onDismiss = { confirmDelete = null },
             )
         }
     }
 }
+
+@Composable
+private fun playlistAutoRefreshLabel(mode: PlaylistAutoRefresh): String = stringResource(
+    when (mode) {
+        PlaylistAutoRefresh.OFF -> R.string.phase1_sources_refresh_off
+        PlaylistAutoRefresh.STARTUP -> R.string.phase1_sources_refresh_startup
+        PlaylistAutoRefresh.HOURS_6 -> R.string.phase1_sources_refresh_6h
+        PlaylistAutoRefresh.HOURS_12 -> R.string.phase1_sources_refresh_12h
+        PlaylistAutoRefresh.HOURS_24 -> R.string.phase1_sources_refresh_24h
+        PlaylistAutoRefresh.HOURS_48 -> R.string.phase1_sources_refresh_48h
+    },
+)
 
 @Composable
 private fun SourceRow(
@@ -370,7 +401,7 @@ private fun SourceRow(
 ) {
     val colors = OwnTVTheme.colors
     val activeSync = syncState as? CatalogSyncState.Syncing
-    val activeCountsLabel = activeSync?.countsLabel(source.type, counts)
+    val activeCounts = activeSync?.countsLabel(source.type, counts)
     Row(
         modifier = rowModifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -381,7 +412,7 @@ private fun SourceRow(
                 if (isDefault) {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "DEFAULT",
+                        stringResource(R.string.phase1_sources_default),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onPrimaryContainer,
                         modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
@@ -390,7 +421,7 @@ private fun SourceRow(
                 if (isDeleting) {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "DELETING…",
+                        stringResource(R.string.phase1_sources_deleting),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onPrimaryContainer,
                         modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
@@ -399,26 +430,33 @@ private fun SourceRow(
                 activeSync?.let {
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        resyncBadgeText(it.baseItemCount, it.totalProcessed),
+                        resyncProgressPercent(it.baseItemCount, it.totalProcessed)?.let { percent -> stringResource(R.string.sync_progress_percent, percent) }
+                            ?: stringResource(R.string.sync_progress_syncing),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onPrimaryContainer,
                         modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
                     )
                 }
             }
-            Text(
-                buildString {
-                    append(when (source.type) { SourceType.XTREAM -> "Xtream • ${source.url}"; SourceType.M3U -> "M3U • ${source.url}"; SourceType.STALKER -> "Stalker • ${source.url}"; SourceType.LOCAL_BACKUP -> "Backup" })
-                    if (autoRefresh != PlaylistAutoRefresh.OFF) append("  •  ⟳ ${autoRefresh.label}")
-                    // Subscription expiry (Phase F): Xtream user_info.exp_date / Stalker account_info.
-                    if (!expiry.isNullOrBlank()) append("  •  Expires $expiry")
-                    val visibleCounts = if (activeSync == null) counts?.breakdown else activeCountsLabel
-                    if (!visibleCounts.isNullOrBlank()) {
-                        append("  •  $visibleCounts")
-                    } else if (activeSync != null) {
-                        append("  •  Preparing catalog")
-                    }
+            val sourceTypeText = stringResource(
+                when (source.type) {
+                    SourceType.XTREAM -> R.string.phase1_sources_type_xtream
+                    SourceType.M3U -> R.string.phase1_sources_type_m3u
+                    SourceType.STALKER -> R.string.phase1_sources_type_stalker
+                    SourceType.LOCAL_BACKUP -> R.string.phase1_sources_backup
                 },
+                source.url,
+            )
+            val visibleCounts = if (activeSync == null) counts?.breakdownText() else activeCounts?.displayText()
+            val details = buildList {
+                add(sourceTypeText)
+                if (autoRefresh != PlaylistAutoRefresh.OFF) add(stringResource(R.string.phase1_sources_auto_refresh, playlistAutoRefreshLabel(autoRefresh)))
+                if (!expiry.isNullOrBlank()) add(stringResource(R.string.phase1_sources_expiry, expiry))
+                if (!visibleCounts.isNullOrBlank()) add(visibleCounts)
+                else if (activeSync != null) add(stringResource(R.string.phase1_sources_preparing_detail))
+            }
+            Text(
+                details.joinToString(stringResource(R.string.phase1_sources_details_separator)),
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1,
             )
         }
@@ -429,26 +467,26 @@ private fun SourceRow(
             // deleted again mid-delete.
             OwnTVSpinner(sizeDp = 22)
             Spacer(Modifier.width(10.dp))
-            Text("Removing…", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            Text(stringResource(R.string.phase1_sources_removing_detail), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         } else {
-            OwnTVButton("Edit", onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
+            OwnTVButton(stringResource(R.string.phase1_sources_edit), onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
             Spacer(Modifier.width(10.dp))
             // One stable button whose label/action flips with syncState. Keeping the SAME composable
             // in the tree (instead of an if/else that disposes "Re-sync" and composes "Cancel") means
             // the focusable node is never removed, so D-pad focus survives the swap instead of escaping
             // the row — that swap was the re-sync focus loss.
             OwnTVButton(
-                label = if (syncState.isActive) "Cancel" else "Re-sync",
+                label = stringResource(if (syncState.isActive) R.string.phase1_sources_cancel else R.string.phase1_sources_resync),
                 onClick = if (syncState.isActive) onCancelSync else onResync,
                 style = OwnTVButtonStyle.SECONDARY,
             )
             Spacer(Modifier.width(10.dp))
-            OwnTVButton("Delete", onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
+            OwnTVButton(stringResource(R.string.phase1_sources_delete), onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
         }
     }
 }
 
-private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType, stored: SyncCounts?): String? {
+private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType, stored: SyncCounts?): tv.own.owntv.core.sync.SyncProgressCounts? {
     fun visibleCount(active: Boolean, processed: Int, storedCount: Int): Int =
         if (active) processed else storedCount
 
@@ -490,7 +528,7 @@ private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType, stored:
             seriesActive = seriesActive || series > 0,
         )
     }
-    return syncProgressCountsLabel(counts)
+    return counts.takeIf { it.hasItems }
 }
 
 @Composable
@@ -513,9 +551,9 @@ internal fun ConfirmDialog(title: String, message: String, onConfirm: () -> Unit
             Text(message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             Spacer(Modifier.height(22.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(focus))
+                OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(focus))
                 Spacer(Modifier.weight(1f))
-                OwnTVButton("Delete", onClick = onConfirm)
+                OwnTVButton(stringResource(R.string.common_delete), onClick = onConfirm)
             }
         }
     }
@@ -546,26 +584,23 @@ private fun ResyncChoiceDialog(
     BackHandler { onDismiss() }
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
         Column(Modifier.dialogPanel(width = 520.dp, padding = 28.dp)) {
-            Text("Resync “$sourceName”", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.phase1_sources_resync_title_full, sourceName), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(10.dp))
             Text(
-                "Resync now fetches the latest catalog and keeps everything already saved.\n\n" +
-                    "Resync and remove missing titles does the same, but also allows removing titles the " +
-                    "provider no longer lists. Your favorites, history and resume positions for titles " +
-                    "that are still listed are kept.",
+                stringResource(R.string.phase1_sources_resync_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(22.dp))
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OwnTVButton("Resync now", onClick = onNormal, modifier = Modifier.fillMaxWidth().focusRequester(focus))
+                OwnTVButton(stringResource(R.string.phase1_sources_resync_now_full), onClick = onNormal, modifier = Modifier.fillMaxWidth().focusRequester(focus))
                 OwnTVButton(
-                    "Resync and remove missing titles",
+                    stringResource(R.string.phase1_sources_resync_remove_full),
                     onClick = onClean,
                     style = OwnTVButtonStyle.SECONDARY,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             }
         }
     }

@@ -31,11 +31,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
+import tv.own.owntv.R
 import tv.own.owntv.core.weather.WeatherInfo
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -136,7 +138,7 @@ private fun SearchPill(onClick: () -> Unit, visible: Boolean) {
         val fg = if (focused) colors.onPrimaryContainer else colors.onSurfaceVariant
         Row(Modifier.padding(horizontal = 14.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OwnTVIcon(icon = OwnTVIcon.SEARCH, tint = fg, modifier = Modifier.size(16.dp))
-            Text("Search", style = MaterialTheme.typography.labelLarge, color = fg)
+            Text(stringResource(R.string.common_search), style = MaterialTheme.typography.labelLarge, color = fg)
         }
     }
 }
@@ -224,13 +226,17 @@ private fun PlaylistChip(label: String, interactive: Boolean = false, onClick: (
 @Composable
 private fun WeatherChip(info: WeatherInfo, fahrenheit: Boolean) {
     val colors = OwnTVTheme.colors
-    val temp = if (fahrenheit) "${(info.temperatureC * 9 / 5 + 32).toInt()}°F" else "${info.temperatureC.toInt()}°C"
-    val location = if (info.city.isNotBlank()) " · ${info.city}" else ""
+    val temp = if (fahrenheit) {
+        stringResource(R.string.common_weather_fahrenheit, (info.temperatureC * 9 / 5 + 32).toInt())
+    } else {
+        stringResource(R.string.common_weather_celsius, info.temperatureC.toInt())
+    }
+    val location = if (info.city.isNotBlank()) stringResource(R.string.common_weather_city, temp, info.city) else temp
     val shape = RoundedCornerShape(TopBarChipCorner)
     Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.surfaceContainer.copy(alpha = 0.6f), shape, frostScale = TopBarFrost).topBarGlassRim(shape).padding(horizontal = 14.dp, vertical = 7.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             WeatherConditionIcon(info = info, Modifier.size(16.dp))
-            Text("$temp$location", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(location, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold, maxLines = 1)
         }
     }
 }

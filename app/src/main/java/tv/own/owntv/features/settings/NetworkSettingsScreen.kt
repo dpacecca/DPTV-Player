@@ -30,6 +30,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import androidx.compose.ui.res.stringResource
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -85,15 +87,15 @@ fun NetworkSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Header("Proxy", onBack)
+        Header(stringResource(R.string.common_proxy), onBack)
         Spacer(Modifier.height(8.dp))
 
-        GroupLabel("HTTP Proxy")
+        GroupLabel(stringResource(R.string.settings_http_proxy))
         Row2(
             icon = OwnTVIcon.SHARE,
-            title = "Use proxy",
-            desc = "Send all OwnTV traffic and playback through an HTTP proxy.",
-            chip = if (enabled) "On" else "Off", primaryChip = enabled,
+            title = stringResource(R.string.settings_use_proxy),
+            desc = stringResource(R.string.settings_proxy_description),
+            chip = if (enabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = enabled,
             modifier = Modifier.focusRequester(firstFocus),
             onClick = { enabled = !enabled; save() },
         )
@@ -102,16 +104,16 @@ fun NetworkSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         OwnTVTextField(
             value = host,
             onValueChange = { host = it },
-            label = "Host",
-            placeholder = "proxy.example.com",
+            label = stringResource(R.string.settings_host),
+            placeholder = stringResource(R.string.settings_proxy_host_hint),
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(12.dp))
         OwnTVTextField(
             value = port,
             onValueChange = { port = it.filter { c -> c.isDigit() }.take(5) },
-            label = "Port",
-            placeholder = "8080",
+            label = stringResource(R.string.settings_port),
+            placeholder = stringResource(R.string.settings_proxy_port_hint),
             keyboardType = KeyboardType.Number,
             modifier = Modifier.width(220.dp),
         )
@@ -119,7 +121,7 @@ fun NetworkSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         OwnTVTextField(
             value = user,
             onValueChange = { user = it },
-            label = "Username (optional)",
+            label = stringResource(R.string.settings_username_optional),
             placeholder = "",
             modifier = Modifier.fillMaxWidth(),
         )
@@ -127,7 +129,7 @@ fun NetworkSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         OwnTVTextField(
             value = pass,
             onValueChange = { pass = it },
-            label = "Password (optional)",
+            label = stringResource(R.string.settings_password_optional),
             placeholder = "",
             isPassword = true,
             modifier = Modifier.fillMaxWidth(),
@@ -135,9 +137,9 @@ fun NetworkSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         Spacer(Modifier.height(20.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            OwnTVButton("Save", onClick = { save() })
+            OwnTVButton(stringResource(R.string.common_save), onClick = { save() })
             OwnTVButton(
-                label = if (testState is SettingsViewModel.ProxyTestState.Testing) "Testing…" else "Test proxy",
+                label = if (testState is SettingsViewModel.ProxyTestState.Testing) stringResource(R.string.settings_testing) else stringResource(R.string.settings_test_proxy),
                 onClick = { vm.testProxy(host, portInt, user, pass) },
                 style = OwnTVButtonStyle.SECONDARY,
             )
@@ -146,13 +148,13 @@ fun NetworkSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         Spacer(Modifier.height(20.dp))
         Text(
-            "Your proxy provider can see which servers you connect to, and the contents of any non-HTTPS traffic.",
+            stringResource(R.string.settings_proxy_privacy),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "HTTP proxy only for now — SOCKS and per-playlist proxies aren't supported yet.",
+            stringResource(R.string.settings_proxy_limitations),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )
@@ -162,12 +164,19 @@ fun NetworkSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 private fun ProxyTestLabel(state: SettingsViewModel.ProxyTestState) {
     val colors = OwnTVTheme.colors
-    val (text, color) = when (state) {
-        is SettingsViewModel.ProxyTestState.Ok -> "Connected ✓ (${state.millis} ms)" to colors.primary
-        is SettingsViewModel.ProxyTestState.Fail -> state.message to androidx.compose.ui.graphics.Color(0xFFEF4444)
-        else -> null to colors.onSurfaceVariant
+    val text = when (state) {
+        is SettingsViewModel.ProxyTestState.Ok -> stringResource(R.string.settings_proxy_connected, state.millis)
+        is SettingsViewModel.ProxyTestState.Fail -> when (val failure = state.failure) {
+            SettingsViewModel.ProxyFailure.InvalidAddress -> stringResource(R.string.settings_proxy_invalid_address)
+            SettingsViewModel.ProxyFailure.HostUnreachable -> stringResource(R.string.settings_proxy_host_unreachable)
+            SettingsViewModel.ProxyFailure.TimedOut -> stringResource(R.string.settings_proxy_timed_out)
+            SettingsViewModel.ProxyFailure.ConnectionFailed -> stringResource(R.string.settings_proxy_connection_failed)
+            is SettingsViewModel.ProxyFailure.Http -> stringResource(R.string.settings_proxy_http, failure.code)
+            is SettingsViewModel.ProxyFailure.Unknown -> failure.rawMessage ?: stringResource(R.string.settings_proxy_failed)
+        }
+        else -> null
     }
     if (text != null) {
-        Text(text, style = MaterialTheme.typography.bodyMedium, color = color)
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = if (state is SettingsViewModel.ProxyTestState.Ok) colors.primary else androidx.compose.ui.graphics.Color(0xFFEF4444))
     }
 }

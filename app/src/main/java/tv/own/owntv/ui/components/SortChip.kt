@@ -10,10 +10,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.features.settings.data.SettingsRepository.SortMode
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -27,9 +29,10 @@ fun SortChip(
     mode: SortMode,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
-    playlistLabel: String = "Playlist",
+    playlistLabel: String? = null,
 ) {
     val colors = OwnTVTheme.colors
+    val resolvedPlaylistLabel = playlistLabel ?: stringResource(R.string.settings_sort_playlist)
     FocusableSurface(
         onClick = onToggle,
         // Same height + pill shape as SearchBar so the two read as one row of controls.
@@ -53,10 +56,10 @@ fun SortChip(
             Spacer(Modifier.width(8.dp))
             Text(
                 text = when (mode) {
-                    SortMode.PLAYLIST -> playlistLabel
-                    SortMode.ALPHA -> "A–Z"
-                    SortMode.RATING -> "Rating"
-                    SortMode.DATE_ADDED -> "Date added"
+                    SortMode.PLAYLIST -> resolvedPlaylistLabel
+                    SortMode.ALPHA -> stringResource(R.string.settings_sort_alpha)
+                    SortMode.RATING -> stringResource(R.string.settings_sort_rating)
+                    SortMode.DATE_ADDED -> stringResource(R.string.settings_sort_date_added)
                 },
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,

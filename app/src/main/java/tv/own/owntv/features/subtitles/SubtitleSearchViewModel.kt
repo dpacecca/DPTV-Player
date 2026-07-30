@@ -27,7 +27,7 @@ class SubtitleSearchViewModel(
         val fileId: Long,
         val language: String?,
         val languageName: String?,
-        val releaseName: String,
+        val releaseName: String?,
         val hearingImpaired: Boolean,
         val aiTranslated: Boolean,
         val fromTrusted: Boolean,
@@ -40,7 +40,8 @@ class SubtitleSearchViewModel(
         data object Loading : UiState
         data class Results(val results: List<Result>, val showingAllLanguages: Boolean) : UiState
         data object Empty : UiState
-        data class Error(val message: String) : UiState
+        enum class ErrorKind { LIMIT_REACHED, NETWORK }
+        data class Error(val kind: ErrorKind) : UiState
     }
 
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
@@ -58,9 +59,11 @@ class SubtitleSearchViewModel(
     private val _applied = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val applied: SharedFlow<Unit> = _applied.asSharedFlow()
 
-    /** Transient allowance line from the last download ("3 downloads remaining today"), or null. */
-    private val _quotaNote = MutableStateFlow<String?>(null)
-    val quotaNote: StateFlow<String?> = _quotaNote.asStateFlow()
+    data class QuotaNote(val remaining: Int, val reset: String?)
+
+    /** Transient allowance data from the last download, or null. */
+    private val _quotaNote = MutableStateFlow<QuotaNote?>(null)
+    val quotaNote: StateFlow<QuotaNote?> = _quotaNote.asStateFlow()
 
     private var preferred: List<String> = emptyList()
 
@@ -109,12 +112,7 @@ class SubtitleSearchViewModel(
                     releaseName = result.releaseName,
                     hearingImpaired = result.hearingImpaired,
                     onQuota = { remaining, reset ->
-                        _quotaNote.value = remaining?.let {
-                            buildString {
-                                append("$it downloads remaining today")
-                                reset?.let { r -> append(" · resets in $r") }
-                            }
-                        }
+                        _quotaNote.value = remaining?.let { QuotaNote(it, reset) }
                     },
                 )
             }.onSuccess {
@@ -156,7 +154,7 @@ class SubtitleSearchViewModel(
                     languageName = lang?.let(::languageDisplayName),
                     releaseName = attrs.optString("release").takeIf { it.isNotBlank() }
                         ?: attrs.optJSONObject("feature_details")?.optString("movie_name").orEmpty()
-                            .ifBlank { "Subtitle" },
+                            .ifBlank { null },
                     hearingImpaired = attrs.optBoolean("hearing_impaired"),
                     aiTranslated = attrs.optBoolean("ai_translated") || attrs.optBoolean("machine_translated"),
                     fromTrusted = attrs.optBoolean("from_trusted"),
@@ -172,12 +170,8 @@ class SubtitleSearchViewModel(
 
     /** §14 mapping. 401 here means the one-shot silent re-login already failed → sign in via Settings. */
     private fun errorState(e: Throwable): UiState = when {
-        e is OpenSubtitlesClient.ApiException && e.code == 406 -> UiState.Error(
-            "Your OpenSubtitles download limit has been reached. Embedded subtitles and local subtitle files are still available.",
-        )
+        e is OpenSubtitlesClient.ApiException && e.code == 406 -> UiState.Error(UiState.ErrorKind.LIMIT_REACHED)
         e is OpenSubtitlesClient.ApiException && e.code == 401 -> UiState.SignedOut(sessionExpired = true)
-        else -> UiState.Error(
-            "Couldn't reach OpenSubtitles. Check your internet connection and try again.",
-        )
+        else -> UiState.Error(UiState.ErrorKind.NETWORK)
     }
 }

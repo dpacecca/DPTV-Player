@@ -48,9 +48,11 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -194,7 +196,7 @@ fun AudioNowPlayingBar(
                         // the fullscreen HUD; it only falls back to `meta.subtitle` below when there's
                         // no time to show, e.g. before duration is known.)
                         hasTime -> Text(
-                            "${fmtTime(position)} / ${fmtTime(duration)}",
+                            stringResource(R.string.player_time_progress, fmtTime(position), fmtTime(duration)),
                             style = MaterialTheme.typography.labelSmall.copy(fontFamily = PopupFontFamily),
                             color = colors.onSurfaceVariant,
                             maxLines = 1,
@@ -260,7 +262,7 @@ private fun LiveRow(dotColor: Color) {
     )
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
         Box(Modifier.size(6.dp).clip(CircleShape).background(dotColor).alpha(a))
-        Text("LIVE", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.player_live), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -328,8 +330,12 @@ private fun AudioBtn(
     }
 }
 
-private fun fmtTime(ms: Long, sign: String = ""): String {
+@Composable
+private fun fmtTime(ms: Long): String {
     val total = (ms / 1000).coerceAtLeast(0)
-    val h = total / 3600; val m = (total % 3600) / 60; val s = total % 60
-    return if (h > 0) "%s%d:%02d:%02d".format(sign, h, m, s) else "%s%d:%02d".format(sign, m, s)
+    val h = total / 3600
+    val m = (total % 3600) / 60
+    val s = total % 60
+    return if (h > 0) stringResource(R.string.player_track_hours, h, m, s)
+    else stringResource(R.string.player_track_seconds, m, s)
 }

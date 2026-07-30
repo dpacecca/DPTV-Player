@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.EmptyState
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
@@ -42,7 +44,7 @@ fun ContentPane(
             .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
     ) {
         Text(
-            text = "$sectionTitle / $categoryName",
+            text = stringResource(R.string.content_section_category, sectionTitle, categoryName),
             style = MaterialTheme.typography.headlineLarge,
             color = colors.textPrimary,
         )
@@ -60,9 +62,9 @@ fun ContentPane(
         ) {
             EmptyState(
                 icon = emptyIcon,
-                title = "Nothing here yet",
+                title = stringResource(R.string.content_nothing_here),
                 message = emptyMessage,
-                actionLabel = "Add a source",
+                actionLabel = stringResource(R.string.content_add_source),
                 onAction = onAddSource,
             )
         }

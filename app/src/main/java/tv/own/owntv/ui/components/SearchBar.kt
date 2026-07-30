@@ -41,10 +41,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -67,10 +69,11 @@ fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Search…",
+    placeholder: String? = null,
     surface: GlassSurface? = GlassSurface.CARDS,
 ) {
     val colors = OwnTVTheme.colors
+    val resolvedPlaceholder = placeholder ?: stringResource(R.string.common_search_hint)
     val interaction = remember { MutableInteractionSource() }
     val pillFocused by interaction.collectIsFocusedAsState()
     var editing by remember { mutableStateOf(false) }
@@ -143,7 +146,7 @@ fun SearchBar(
             Spacer(Modifier.width(10.dp))
             Box(modifier = Modifier.weight(1f)) {
                 if (query.isEmpty()) {
-                    Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(resolvedPlaceholder, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 BasicTextField(
                     value = query,

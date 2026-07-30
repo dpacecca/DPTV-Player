@@ -23,11 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.metadata.MetadataConfig
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -44,53 +46,58 @@ import tv.own.owntv.ui.theme.OwnTVTheme
  * Distinct from VideoPlayerSettingsScreen's LANGUAGES list, which uses 3-letter codes for audio/subtitle
  * track matching — TMDB only accepts 2-letter tags.
  */
-private val TMDB_LANGUAGES = listOf(
-    "" to "Default (English)",
-    MetadataConfig.LANGUAGE_AUTO to "Device language",
-    "ar" to "Arabic",
-    "bg" to "Bulgarian",
-    "zh" to "Chinese",
-    "hr" to "Croatian",
-    "cs" to "Czech",
-    "da" to "Danish",
-    "nl" to "Dutch",
-    "en" to "English",
-    "et" to "Estonian",
-    "fi" to "Finnish",
-    "fr" to "French",
-    "de" to "German",
-    "el" to "Greek",
-    "he" to "Hebrew",
-    "hi" to "Hindi",
-    "hu" to "Hungarian",
-    "id" to "Indonesian",
-    "it" to "Italian",
-    "ja" to "Japanese",
-    "ko" to "Korean",
-    "lv" to "Latvian",
-    "lt" to "Lithuanian",
-    "ms" to "Malay",
-    "no" to "Norwegian",
-    "fa" to "Persian",
-    "pl" to "Polish",
-    "pt-BR" to "Portuguese (Brazil)",
-    "pt-PT" to "Portuguese (Portugal)",
-    "ro" to "Romanian",
-    "ru" to "Russian",
-    "sr" to "Serbian",
-    "sk" to "Slovak",
-    "sl" to "Slovenian",
-    "es" to "Spanish",
-    "es-MX" to "Spanish (Latin America)",
-    "sv" to "Swedish",
-    "th" to "Thai",
-    "tr" to "Turkish",
-    "uk" to "Ukrainian",
-    "vi" to "Vietnamese",
+private val TMDB_LANGUAGE_CODES = listOf(
+    "", MetadataConfig.LANGUAGE_AUTO, "ar", "bg", "zh", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "he", "hi", "hu", "id", "it", "ja", "ko", "lv", "lt", "ms", "no", "fa", "pl", "pt-BR", "pt-PT", "ro", "ru", "sr", "sk", "sl", "es", "es-MX", "sv", "th", "tr", "uk", "vi",
 )
 
-private fun tmdbLangName(code: String) =
-    TMDB_LANGUAGES.firstOrNull { it.first == code }?.second ?: code.ifBlank { "Default (English)" }
+@Composable
+private fun tmdbLangName(code: String): String = stringResource(
+    when (code) {
+        "" -> R.string.settings_language_default
+        MetadataConfig.LANGUAGE_AUTO -> R.string.settings_language_device
+        "ar" -> R.string.settings_language_arabic
+        "bg" -> R.string.settings_language_bulgarian
+        "zh" -> R.string.settings_language_chinese
+        "hr" -> R.string.settings_language_croatian
+        "cs" -> R.string.settings_language_czech
+        "da" -> R.string.settings_language_danish
+        "nl" -> R.string.settings_language_dutch
+        "en" -> R.string.settings_language_english
+        "et" -> R.string.settings_language_estonian
+        "fi" -> R.string.settings_language_finnish
+        "fr" -> R.string.settings_language_french
+        "de" -> R.string.settings_language_german
+        "el" -> R.string.settings_language_greek
+        "he" -> R.string.settings_language_hebrew
+        "hi" -> R.string.settings_language_hindi
+        "hu" -> R.string.settings_language_hungarian
+        "id" -> R.string.settings_language_indonesian
+        "it" -> R.string.settings_language_italian
+        "ja" -> R.string.settings_language_japanese
+        "ko" -> R.string.settings_language_korean
+        "lv" -> R.string.settings_language_latvian
+        "lt" -> R.string.settings_language_lithuanian
+        "ms" -> R.string.settings_language_malay
+        "no" -> R.string.settings_language_norwegian
+        "fa" -> R.string.settings_language_persian
+        "pl" -> R.string.settings_language_polish
+        "pt-BR" -> R.string.settings_language_portuguese_brazil
+        "pt-PT" -> R.string.settings_language_portuguese_portugal
+        "ro" -> R.string.settings_language_romanian
+        "ru" -> R.string.settings_language_russian
+        "sr" -> R.string.settings_language_serbian
+        "sk" -> R.string.settings_language_slovak
+        "sl" -> R.string.settings_language_slovenian
+        "es" -> R.string.settings_language_spanish
+        "es-MX" -> R.string.settings_language_spanish_latam
+        "sv" -> R.string.settings_language_swedish
+        "th" -> R.string.settings_language_thai
+        "tr" -> R.string.settings_language_turkish
+        "uk" -> R.string.settings_language_ukrainian
+        "vi" -> R.string.settings_language_vietnamese
+        else -> R.string.settings_language_default
+    },
+)
 
 /**
  * Settings → Metadata (TMDB). Phase M1 of the enrichment plan: the master toggle and the two advanced
@@ -99,6 +106,18 @@ private fun tmdbLangName(code: String) =
  *
  * Precedence (plan §4): self-host URL > own key > the default caching Worker (zero setup).
  */
+private fun metadataModeLabelRes(mode: tv.own.owntv.core.metadata.MetadataMode): Int = when (mode) {
+    tv.own.owntv.core.metadata.MetadataMode.PROVIDER -> R.string.settings_metadata_provider_only
+    tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB -> R.string.settings_metadata_provider_plus_tmdb
+    tv.own.owntv.core.metadata.MetadataMode.TMDB_ONLY -> R.string.settings_metadata_tmdb_only
+}
+
+private fun metadataTierLabelRes(tier: tv.own.owntv.core.metadata.MetadataConfig.Tier): Int = when (tier) {
+    tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER -> R.string.settings_tier_default
+    tv.own.owntv.core.metadata.MetadataConfig.Tier.OWN_KEY -> R.string.settings_tier_key
+    tv.own.owntv.core.metadata.MetadataConfig.Tier.SELF_HOST -> R.string.settings_tier_self_host
+}
+
 @Composable
 fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val colors = OwnTVTheme.colors
@@ -118,7 +137,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var seeded by remember { mutableStateOf(false) }
     var key by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
-    var testTitle by remember { mutableStateOf("Oppenheimer") }
+    val defaultTestTitle = stringResource(R.string.phase1_metadata_test_title)
+    var testTitle by remember(defaultTestTitle) { mutableStateOf(defaultTestTitle) }
     // Advanced options are hidden by default. Auto-expand if the user already has a key/URL saved, so the
     // fields aren't silently hidden when they're actually in use.
     var showAdvanced by remember { mutableStateOf(false) }
@@ -149,12 +169,12 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Header("Metadata (TMDB)", onBack)
+        Header(stringResource(R.string.settings_metadata), onBack)
         Spacer(Modifier.height(8.dp))
 
-        GroupLabel("Metadata source")
+        GroupLabel(stringResource(R.string.settings_metadata_source))
         Text(
-            "Choose where Movies & Series details come from.",
+            stringResource(R.string.settings_metadata_source_description),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )
@@ -163,13 +183,13 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             val selected = m == mode
             Row2(
                 icon = if (m == tv.own.owntv.core.metadata.MetadataMode.PROVIDER) OwnTVIcon.PLAYLIST else OwnTVIcon.VIDEO,
-                title = m.label,
+                title = stringResource(metadataModeLabelRes(m)),
                 desc = when (m) {
-                    tv.own.owntv.core.metadata.MetadataMode.PROVIDER -> "Use only what your playlist provides. No TMDB lookups."
-                    tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB -> "Your playlist's info wins; TMDB fills the gaps and adds cast, genres & backdrops."
-                    tv.own.owntv.core.metadata.MetadataMode.TMDB_ONLY -> "Prefer TMDB for every field; fall back to your playlist only when TMDB has nothing."
+                    tv.own.owntv.core.metadata.MetadataMode.PROVIDER -> stringResource(R.string.settings_metadata_provider_description)
+                    tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB -> stringResource(R.string.settings_metadata_provider_tmdb_description)
+                    tv.own.owntv.core.metadata.MetadataMode.TMDB_ONLY -> stringResource(R.string.settings_metadata_tmdb_only_description)
                 },
-                chip = if (selected) "Selected" else null, primaryChip = selected,
+                chip = if (selected) stringResource(R.string.settings_selected) else null, primaryChip = selected,
                 modifier = if (i == 0) Modifier.focusRequester(firstFocus) else Modifier,
                 onClick = { vm.setMetadataMode(m); vm.resetMetadataTest() },
             )
@@ -179,7 +199,7 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         if (mode.enrich) {
         Spacer(Modifier.height(10.dp))
         Text(
-            "Active TMDB source: ${tier.label}",
+            stringResource(R.string.settings_active_tmdb_source, stringResource(metadataTierLabelRes(tier))),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.primary,
         )
@@ -187,9 +207,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(16.dp))
         Row2(
             icon = OwnTVIcon.SUBTITLE,
-            title = "Metadata language",
-            desc = "Language for plots, genres & titles from TMDB. Fields TMDB hasn't translated stay " +
-                "in English. Changing this clears the cached details so they refetch.",
+            title = stringResource(R.string.settings_metadata_language),
+            desc = stringResource(R.string.settings_metadata_language_description),
             chip = tmdbLangName(language), chevron = true,
             modifier = Modifier.focusRequester(langRowFocus),
             onClick = { showLangPicker = true },
@@ -198,17 +217,15 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(16.dp))
         Row2(
             icon = OwnTVIcon.SETTINGS,
-            title = "Advanced options",
-            desc = "Use your own TMDB API key or a self-hosted server instead of the shared default.",
-            chip = if (showAdvanced) "On" else "Off", primaryChip = showAdvanced,
+            title = stringResource(R.string.settings_advanced_options),
+            desc = stringResource(R.string.settings_advanced_metadata_description),
+            chip = if (showAdvanced) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = showAdvanced,
             onClick = { showAdvanced = !showAdvanced },
         )
         if (showAdvanced) {
             Spacer(Modifier.height(12.dp))
             Text(
-                "Leave both blank to use the built-in shared server (no setup). Enter your own TMDB API key " +
-                    "to call TMDB directly, or a self-hosted server URL to use your own proxy/mirror. A URL " +
-                    "takes priority over a key.",
+                stringResource(R.string.settings_metadata_server_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )
@@ -216,20 +233,20 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             OwnTVTextField(
                 value = key,
                 onValueChange = { key = it },
-                label = "TMDB API key (v3)",
-                placeholder = "optional",
+                label = stringResource(R.string.settings_tmdb_api_key),
+                placeholder = stringResource(R.string.phase1_metadata_optional),
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
             OwnTVTextField(
                 value = url,
                 onValueChange = { url = it },
-                label = "Self-host server URL",
+                label = stringResource(R.string.settings_self_host_url),
                 placeholder = "https://your-worker.example.workers.dev",
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(16.dp))
-            OwnTVButton("Save", onClick = {
+            OwnTVButton(stringResource(R.string.common_save), onClick = {
                 vm.setTmdbApiKey(key)
                 vm.setMetadataServerUrl(url)
                 vm.resetMetadataTest()
@@ -237,18 +254,18 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         }
 
         Spacer(Modifier.height(20.dp))
-        GroupLabel("Test")
+        GroupLabel(stringResource(R.string.settings_test))
         OwnTVTextField(
             value = testTitle,
             onValueChange = { testTitle = it },
-            label = "Look up a movie title",
-            placeholder = "Oppenheimer",
+            label = stringResource(R.string.settings_lookup_movie),
+            placeholder = stringResource(R.string.phase1_metadata_test_title),
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             OwnTVButton(
-                label = if (testState is SettingsViewModel.MetadataTestState.Testing) "Looking up…" else "Test lookup",
+                label = if (testState is SettingsViewModel.MetadataTestState.Testing) stringResource(R.string.settings_looking_up) else stringResource(R.string.settings_test_lookup),
                 onClick = { vm.testMetadataLookup(testTitle) },
                 style = OwnTVButtonStyle.SECONDARY,
             )
@@ -260,11 +277,11 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         // TMDB attribution (plan §8) — logo + line, required by TMDB's API terms.
         androidx.compose.foundation.Image(
             painter = androidx.compose.ui.res.painterResource(tv.own.owntv.R.drawable.ic_tmdb_logo),
-            contentDescription = "TMDB",
+            contentDescription = stringResource(R.string.settings_metadata),
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "This product uses the TMDB API but is not endorsed or certified by TMDB.",
+            stringResource(R.string.settings_tmdb_attribution),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )
@@ -273,8 +290,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     if (showLangPicker) {
         // searchable: the list is long enough that D-pad scrolling to e.g. Ukrainian is tedious.
         PickerDialog(
-            title = "Metadata language",
-            options = TMDB_LANGUAGES,
+            title = stringResource(R.string.settings_metadata_language),
+            options = TMDB_LANGUAGE_CODES.map { it to tmdbLangName(it) },
             selected = language,
             searchable = true,
             onSelect = {
@@ -302,8 +319,18 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 private fun MetadataTestLabel(state: SettingsViewModel.MetadataTestState) {
     val colors = OwnTVTheme.colors
     val (text, color) = when (state) {
-        is SettingsViewModel.MetadataTestState.Ok -> "Match: ${state.summary}" to colors.primary
-        is SettingsViewModel.MetadataTestState.Fail -> state.message to androidx.compose.ui.graphics.Color(0xFFEF4444)
+        is SettingsViewModel.MetadataTestState.Ok -> stringResource(
+            R.string.settings_metadata_match_result,
+            state.title,
+            state.year?.let { stringResource(R.string.settings_metadata_year, it) } ?: "",
+            state.tmdbId,
+        ) to colors.primary
+        is SettingsViewModel.MetadataTestState.Fail -> when (val failure = state.failure) {
+            SettingsViewModel.MetadataFailure.EmptyTitle -> stringResource(R.string.settings_metadata_empty_title)
+            SettingsViewModel.MetadataFailure.ServerUnavailable -> stringResource(R.string.settings_metadata_server_unavailable)
+            is SettingsViewModel.MetadataFailure.NoMatch -> stringResource(R.string.settings_metadata_no_match, failure.query)
+            is SettingsViewModel.MetadataFailure.Unknown -> failure.rawMessage ?: stringResource(R.string.settings_metadata_lookup_failed)
+        } to androidx.compose.ui.graphics.Color(0xFFEF4444)
         else -> null to colors.onSurfaceVariant
     }
     if (text != null) {

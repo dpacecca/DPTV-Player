@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
+import tv.own.owntv.R
 import tv.own.owntv.core.parser.XtEpgEntry
 import tv.own.owntv.features.live.EpgNowNext
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
@@ -55,7 +57,7 @@ fun LiveEpgCard(epg: EpgNowNext?, modifier: Modifier = Modifier) {
     ) {
         epg.now?.let { entry ->
             Column(Modifier.widthIn(max = 300.dp)) {
-                SlotLabel("Now", colors.primary)
+                SlotLabel(stringResource(R.string.content_live_now), colors.primary)
                 Text(
                     entry.title,
                     style = MaterialTheme.typography.titleSmall,
@@ -66,9 +68,18 @@ fun LiveEpgCard(epg: EpgNowNext?, modifier: Modifier = Modifier) {
                 )
                 val remaining = ((entry.stopMs - nowMs) / 60_000L).toInt()
                 Text(
-                    buildString {
-                        append("${formatTime(entry.startMs)} – ${formatTime(entry.stopMs)}")
-                        if (remaining in 1..600) append(" · $remaining min left")
+                    if (remaining in 1..600) {
+                        stringResource(
+                            R.string.content_live_time_remaining,
+                            formatTime(entry.stopMs),
+                            remaining,
+                        )
+                    } else {
+                        stringResource(
+                            R.string.content_live_time_range,
+                            formatTime(entry.startMs),
+                            formatTime(entry.stopMs),
+                        )
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.5f),
@@ -96,7 +107,7 @@ fun LiveEpgCard(epg: EpgNowNext?, modifier: Modifier = Modifier) {
         }
         epg.next?.let { entry ->
             Column(Modifier.widthIn(max = 240.dp)) {
-                SlotLabel("Next", Color.White.copy(alpha = 0.45f))
+                SlotLabel(stringResource(R.string.content_live_next), Color.White.copy(alpha = 0.45f))
                 Text(
                     entry.title,
                     style = MaterialTheme.typography.bodyMedium,
@@ -105,7 +116,11 @@ fun LiveEpgCard(epg: EpgNowNext?, modifier: Modifier = Modifier) {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    "${formatTime(entry.startMs)} – ${formatTime(entry.stopMs)}",
+                    stringResource(
+                        R.string.content_live_time_range,
+                        formatTime(entry.startMs),
+                        formatTime(entry.stopMs),
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.4f),
                     maxLines = 1,

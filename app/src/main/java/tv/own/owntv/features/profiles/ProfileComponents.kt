@@ -33,10 +33,12 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ProfileEntity
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.dialogPanel
@@ -94,8 +96,8 @@ private fun PinDialogBody(title: String, onSubmit: (String) -> Unit, onDismiss: 
         OwnTVTextField(
             value = pin,
             onValueChange = { if (it.length <= 6 && it.all(Char::isDigit)) pin = it },
-            label = "PIN",
-            placeholder = "····",
+            label = stringResource(R.string.profiles_pin),
+            placeholder = stringResource(R.string.profiles_pin_placeholder),
             keyboardType = KeyboardType.NumberPassword,
             isPassword = true,
             modifier = Modifier.fillMaxWidth().focusRequester(focus),
@@ -107,12 +109,12 @@ private fun PinDialogBody(title: String, onSubmit: (String) -> Unit, onDismiss: 
         val okFocus = remember { FocusRequester() }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OwnTVButton(
-                "Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY,
+                stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY,
                 modifier = Modifier.focusRequester(cancelFocus).focusProperties { right = okFocus },
             )
             Spacer(Modifier.weight(1f))
             OwnTVButton(
-                "OK", onClick = { onSubmit(pin) }, enabled = pin.length >= 4,
+                stringResource(R.string.common_ok), onClick = { onSubmit(pin) }, enabled = pin.length >= 4,
                 modifier = Modifier.focusRequester(okFocus).focusProperties { left = cancelFocus },
             )
         }
@@ -145,19 +147,19 @@ internal fun ProfileEditorDialog(
     val nameTaken = name.trim().isNotEmpty() && name.trim().lowercase() in takenNames
 
     ProfileScrim(onDismiss) {
-        Text(if (initial == null) "New profile" else "Edit profile", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Text(stringResource(if (initial == null) R.string.profiles_new else R.string.profiles_edit), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
         Spacer(Modifier.height(16.dp))
-        OwnTVTextField(name, { name = it }, label = "Name", placeholder = "e.g. Alex", modifier = Modifier.fillMaxWidth().focusRequester(focus))
+        OwnTVTextField(name, { name = it }, label = stringResource(R.string.profiles_name), placeholder = stringResource(R.string.profiles_name_hint), modifier = Modifier.fillMaxWidth().focusRequester(focus))
         if (nameTaken) {
             Spacer(Modifier.height(6.dp))
             Text(
-                "This name is already taken — please choose another name.",
+                stringResource(R.string.profiles_name_taken),
                 style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444),
             )
         }
         Spacer(Modifier.height(16.dp))
 
-        Text("AVATAR", style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
+        Text(stringResource(R.string.profiles_avatar), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant)
         Spacer(Modifier.height(8.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items((-1 until OwnTVAvatars.COUNT).toList()) { id -> // Phase 7 — includes "no avatar" (-1)
@@ -176,18 +178,18 @@ internal fun ProfileEditorDialog(
         }
         Spacer(Modifier.height(16.dp))
 
-        ToggleRow(label = "Kids profile", desc = "Simplified, safe browsing", checked = isKids) { isKids = it }
+        ToggleRow(label = stringResource(R.string.profiles_kids), desc = stringResource(R.string.profiles_kids_description), checked = isKids) { isKids = it }
         Spacer(Modifier.height(12.dp))
         if (initial?.pinHash != null) {
-            ToggleRow(label = "Remove PIN lock", desc = "This profile opens without a PIN", checked = removePin) { removePin = it }
+            ToggleRow(label = stringResource(R.string.profiles_remove_pin), desc = stringResource(R.string.profiles_no_pin), checked = removePin) { removePin = it }
             Spacer(Modifier.height(12.dp))
         }
         if (!removePin) {
             OwnTVTextField(
                 value = pin,
                 onValueChange = { if (it.length <= 6 && it.all(Char::isDigit)) pin = it },
-                label = if (initial?.pinHash != null) "Change PIN (blank = keep)" else "PIN (optional)",
-                placeholder = "4–6 digits",
+                label = if (initial?.pinHash != null) stringResource(R.string.profiles_change_pin) else stringResource(R.string.profiles_optional_pin),
+                placeholder = stringResource(R.string.profiles_pin_digits),
                 keyboardType = KeyboardType.NumberPassword,
                 isPassword = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -196,10 +198,10 @@ internal fun ProfileEditorDialog(
 
         Spacer(Modifier.height(22.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+            OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
             Spacer(Modifier.weight(1f))
             OwnTVButton(
-                label = if (initial == null) "Create" else "Save",
+                label = stringResource(if (initial == null) R.string.profiles_create else R.string.profiles_save),
                 onClick = { onConfirm(name, avatarId, isKids, if (removePin) "" else pin.takeIf { it.isNotBlank() }) },
                 enabled = name.isNotBlank() && !nameTaken && (removePin || pin.isEmpty() || pin.length >= 4),
             )

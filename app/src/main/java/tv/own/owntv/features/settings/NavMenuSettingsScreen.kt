@@ -28,12 +28,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
+import tv.own.owntv.R
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.shell.MainSection
 import tv.own.owntv.ui.components.FocusableSurface
@@ -75,10 +77,10 @@ fun NavMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Header(title = "Sidebar Menu Customization", onBack = onBack)
+        Header(title = stringResource(R.string.settings_sidebar_customization), onBack = onBack)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Choose which icons appear in the side menu, or let them adapt to your playlist.",
+            stringResource(R.string.settings_sidebar_description),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
         )
@@ -86,14 +88,14 @@ fun NavMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         Row2(
             icon = OwnTVIcon.THEME,
-            title = "Behavior",
+            title = stringResource(R.string.settings_behavior),
             desc = when (mode) {
                 SettingsRepository.NavMenuMode.DYNAMIC ->
-                    "Dynamic — icons adapt to what your active playlist provides. Home & Settings always show."
+                    stringResource(R.string.settings_nav_dynamic_description)
                 SettingsRepository.NavMenuMode.STATIC ->
-                    "Static — manually choose which icons appear below."
+                    stringResource(R.string.settings_nav_static_description)
             },
-            chip = mode.label,
+            chip = stringResource(if (mode == SettingsRepository.NavMenuMode.DYNAMIC) R.string.settings_dynamic else R.string.settings_static),
             primaryChip = mode == SettingsRepository.NavMenuMode.DYNAMIC,
             chevron = true,
             onClick = { showModePicker = true },
@@ -104,7 +106,7 @@ fun NavMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         // the icons are decided by the playlist's content, so the list is hidden entirely.
         if (mode == SettingsRepository.NavMenuMode.STATIC) {
             Spacer(Modifier.height(10.dp))
-            GroupLabel("Icons")
+            GroupLabel(stringResource(R.string.settings_icons))
             MainSection.browseOrder.forEach { section ->
                 NavMenuRow(
                     section = section,
@@ -117,10 +119,10 @@ fun NavMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     if (showModePicker) {
         PickerDialog(
-            title = "Nav menu behavior",
+            title = stringResource(R.string.settings_nav_behavior),
             options = listOf(
-                SettingsRepository.NavMenuMode.STATIC.name to SettingsRepository.NavMenuMode.STATIC.label,
-                SettingsRepository.NavMenuMode.DYNAMIC.name to SettingsRepository.NavMenuMode.DYNAMIC.label,
+                SettingsRepository.NavMenuMode.STATIC.name to stringResource(R.string.settings_static),
+                SettingsRepository.NavMenuMode.DYNAMIC.name to stringResource(R.string.settings_dynamic),
             ),
             selected = mode.name,
             onSelect = { value ->
@@ -167,9 +169,9 @@ private fun NavMenuRow(
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(section.label, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(stringResource(section.labelRes), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Text(
-                    if (shown) "Shown in the side menu" else "Hidden from the side menu",
+                    if (shown) stringResource(R.string.settings_shown_in_menu) else stringResource(R.string.settings_hidden_from_menu),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
@@ -177,7 +179,7 @@ private fun NavMenuRow(
             val bg = if (shown) colors.primaryContainer else colors.secondaryContainer
             val fg = if (shown) colors.onPrimaryContainer else colors.onSecondaryContainer
             Text(
-                if (shown) "Shown" else "Hidden",
+                if (shown) stringResource(R.string.settings_shown) else stringResource(R.string.settings_hidden),
                 style = MaterialTheme.typography.labelMedium,
                 color = fg,
                 fontWeight = FontWeight.SemiBold,

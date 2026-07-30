@@ -18,12 +18,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
+import tv.own.owntv.R
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -51,7 +53,7 @@ fun StreamInfoOverlay(player: PlaybackEngine, modifier: Modifier = Modifier) {
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         Text(
-            "Stream info",
+            stringResource(R.string.player_stream_info),
             style = MaterialTheme.typography.labelMedium,
             color = colors.primary,
             fontWeight = FontWeight.Bold,
@@ -60,7 +62,19 @@ fun StreamInfoOverlay(player: PlaybackEngine, modifier: Modifier = Modifier) {
         rows.forEach { (label, value) ->
             Row(modifier = Modifier.padding(top = 5.dp)) {
                 Text(
-                    label,
+                    stringResource(
+                        when (label) {
+                            "Engine" -> R.string.player_stream_engine
+                            "Source" -> R.string.player_stream_source
+                            "Video" -> R.string.player_stream_video
+                            "HDR" -> R.string.player_stream_hdr
+                            "Bitrate" -> R.string.player_stream_bitrate
+                            "Decoder" -> R.string.player_stream_decoder
+                            "Audio" -> R.string.player_stream_audio
+                            "Buffer" -> R.string.player_stream_buffer
+                            else -> R.string.player_stream_engine
+                        },
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                     modifier = Modifier.width(86.dp),

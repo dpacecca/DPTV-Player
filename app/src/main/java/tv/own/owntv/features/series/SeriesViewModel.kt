@@ -714,9 +714,10 @@ class SeriesViewModel(
         _lastPlayedEpisodeId.value = episode.id
         viewModelScope.launch {
             val pid = currentProfileId()
+            val show = seriesDao.getSeriesById(episode.seriesId) ?: return@launch
             Log.d(TAG, "playEpisodeExternal episodeId=${episode.id}")
             val url = resolvedEpisodeUrlOrNull(episode) ?: return@launch
-            externalPlayerLauncher.launch(url, episode.name)
+            externalPlayerLauncher.launch(url, episode.name.takeIf { it.isNotBlank() }, show.name)
             if (pid != null) {
                 runCatching {
                     historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.EPISODE, itemId = episode.id))
@@ -748,7 +749,7 @@ class SeriesViewModel(
             if (settings.externalPlayerSeries.first()) {
                 Log.d(TAG, "playEpisodeQueue seriesId=${show.id} episodeId=${episode.id} -> external player")
                 val url = resolvedEpisodeUrlOrNull(episode) ?: return@launch
-                externalPlayerLauncher.launch(url, episode.name)
+                externalPlayerLauncher.launch(url, episode.name.takeIf { it.isNotBlank() }, show.name)
                 if (pid != null) {
                     runCatching {
                         historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.EPISODE, itemId = episode.id))
@@ -772,8 +773,10 @@ class SeriesViewModel(
                     PlaylistItem(
                         url = ep.streamUrl,
                         meta = MediaMeta(
-                            title = ep.name,
-                            subtitle = listOfNotNull(show.name, "Season ${ep.seasonNumber}").joinToString(" · "),
+                            title = ep.name.takeIf { it.isNotBlank() },
+                            subtitle = show.name,
+                            seasonNumber = ep.seasonNumber,
+                            episodeNumber = ep.episodeNumber,
                             // P6 — engine pins key on this, not on the URL: for Stalker the queue's
                             // stored URL is the shared season cmd and the played URL is minted per item.
                             contentKey = tv.own.owntv.core.player.enginePinKey(show.sourceId, "EPISODE", ep.remoteId),
@@ -842,11 +845,11 @@ class SeriesViewModel(
                 profileId = pid,
                 mediaType = MediaType.EPISODE,
                 itemId = episode.id,
-                title = episode.name,
+                title = episode.name.takeIf { it.isNotBlank() } ?: show?.name.orEmpty(),
                 posterUrl = show?.posterUrl,
                 streamUrl = episode.streamUrl,
                 relativeDir = "Series/$showDir/Season ${episode.seasonNumber}",
-                fileName = "${StorageAccess.sanitize(episode.name)}.$ext",
+                fileName = "${StorageAccess.sanitize(episode.name.ifBlank { "episode-${episode.episodeNumber}" })}.$ext",
             )
         }
     }
@@ -861,11 +864,11 @@ class SeriesViewModel(
                     profileId = pid,
                     mediaType = MediaType.EPISODE,
                     itemId = ep.id,
-                    title = ep.name,
+                    title = ep.name.takeIf { it.isNotBlank() } ?: series.name,
                     posterUrl = series.posterUrl,
                     streamUrl = ep.streamUrl,
                     relativeDir = "Series/$showDir/Season ${ep.seasonNumber}",
-                    fileName = "${StorageAccess.sanitize(ep.name)}.$ext",
+                    fileName = "${StorageAccess.sanitize(ep.name.ifBlank { "episode-${ep.episodeNumber}" })}.$ext",
                 )
             }
         }
@@ -1037,9 +1040,9 @@ class SeriesViewModel(
     private companion object {
         const val TAG = "OwnTVHome"
         val defaultRail = listOf(
-            LiveRailItem(LiveKey.Favorites, "Favorites", OwnTVIcon.FAVORITE),
-            LiveRailItem(LiveKey.History, "History", OwnTVIcon.HISTORY),
-            LiveRailItem(LiveKey.All, "All Series"),
+            LiveRailItem(LiveKey.Favorites, icon = OwnTVIcon.FAVORITE),
+            LiveRailItem(LiveKey.History, icon = OwnTVIcon.HISTORY),
+            LiveRailItem(LiveKey.All),
         )
     }
 }

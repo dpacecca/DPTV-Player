@@ -14,8 +14,8 @@ class DeleteSubtitlesViewModel(
     private val controller: SubtitleController,
 ) : ViewModel() {
 
-    enum class Section(val mediaType: String, val label: String) {
-        MOVIES("MOVIE", "Movies"), SERIES("SERIES", "Series")
+    enum class Section(val mediaType: String) {
+        MOVIES("MOVIE"), SERIES("SERIES")
     }
 
     private val _section = MutableStateFlow(Section.MOVIES)

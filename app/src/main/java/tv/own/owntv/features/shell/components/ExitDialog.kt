@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.trapAllFocusExit
@@ -63,14 +64,14 @@ fun ExitDialog(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Exit OwnTV?",
+                text = androidx.compose.ui.res.stringResource(R.string.content_exit_owntv),
                 style = MaterialTheme.typography.titleLarge,
                 color = colors.textPrimary,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Are you sure you want to close the app?",
+                text = androidx.compose.ui.res.stringResource(R.string.content_exit_confirmation),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.textSecondary,
                 textAlign = TextAlign.Center,
@@ -78,13 +79,13 @@ fun ExitDialog(
             Spacer(Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 OwnTVButton(
-                    label = "Cancel",
+                    label = androidx.compose.ui.res.stringResource(R.string.common_cancel),
                     onClick = onDismiss,
                     style = OwnTVButtonStyle.SECONDARY,
                     modifier = Modifier.focusRequester(cancelFocus),
                 )
                 OwnTVButton(
-                    label = "Exit",
+                    label = androidx.compose.ui.res.stringResource(R.string.common_exit),
                     onClick = onConfirm,
                     style = OwnTVButtonStyle.PRIMARY,
                 )

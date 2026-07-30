@@ -40,6 +40,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,8 +68,10 @@ import tv.own.owntv.ui.theme.glass
  */
 @Immutable
 data class RailCategory(
+    /** Stable provider/category key. Synthetic rows keep their English key here for filtering and state. */
     val fullName: String,
     val icon: OwnTVIcon? = null,
+    @androidx.annotation.StringRes val labelRes: Int? = null,
     // Whether to show the genre hint dot. False for synthetic aggregates ("All Channels/Movies/Series")
     // that combine every provider category — those aren't a real provider genre, so no dot.
     val showGenreDot: Boolean = true,
@@ -172,7 +175,7 @@ fun CategoryRail(
                     SearchBar(
                         query = query,
                         onQueryChange = { query = it },
-                        placeholder = "Search categories…",
+                        placeholder = stringResource(tv.own.owntv.R.string.content_search_categories),
                         modifier = Modifier
                             .focusRequester(searchFocus)
                             .fillMaxWidth()
@@ -195,7 +198,7 @@ fun CategoryRail(
             if (hasFocus && visible.isEmpty()) {
                 item {
                     Text(
-                        "No categories match",
+                        stringResource(tv.own.owntv.R.string.content_no_categories_match),
                         color = colors.textSecondary,
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(12.dp),
@@ -276,7 +279,7 @@ private fun RailPill(
             }
             if (expanded) {
                 Text(
-                    text = category.fullName,
+                    text = category.labelRes?.let { stringResource(it) } ?: category.fullName,
                     color = ladder.content,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = if (focused) FontWeight.Bold else FontWeight.Medium,

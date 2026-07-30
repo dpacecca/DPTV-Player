@@ -35,11 +35,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.DownloadEntity
 import tv.own.owntv.core.model.DownloadStatus
 import tv.own.owntv.ui.components.OwnTVButton
@@ -131,9 +133,9 @@ fun DownloadsScreen(
             .onFocusChanged { if (it.hasFocus) onChildFocused() }
             .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
     ) {
-        Text("Downloads", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+        Text(stringResource(R.string.phase1_downloads_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
         Spacer(Modifier.height(6.dp))
-        Text("Movies & episodes saved for offline playback.", style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
+        Text(stringResource(R.string.phase1_downloads_description), style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
         Spacer(Modifier.height(18.dp))
 
         storage?.let {
@@ -143,13 +145,13 @@ fun DownloadsScreen(
 
         if (downloads.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No downloads yet. Open a movie or episode and press Download.", color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.phase1_downloads_empty), color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
             }
         } else {
             LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.focusGroup()) {
                 itemsIndexed(rows, key = { _, r -> r.key }) { index, r ->
                     when (r) {
-                        is DownloadListRow.Header -> SectionHeader(r.label, r.count)
+                        is DownloadListRow.Header -> SectionHeader(r.group, r.count)
                         is DownloadListRow.Item -> {
                             val d = r.download
                             DownloadRow(
@@ -178,10 +180,17 @@ fun DownloadsScreen(
 }
 
 /** A display row in the grouped Downloads list: either a section header or a download. */
+private enum class DownloadGroup(val labelRes: Int) {
+    ACTIVE(R.string.phase1_downloads_active),
+    WAITING(R.string.phase1_downloads_waiting),
+    COMPLETED(R.string.phase1_downloads_completed_group),
+    FAILED(R.string.phase1_downloads_failed_group),
+}
+
 private sealed interface DownloadListRow {
     val key: String
-    data class Header(val label: String, val count: Int) : DownloadListRow {
-        override val key get() = "hdr_$label"
+    data class Header(val group: DownloadGroup, val count: Int) : DownloadListRow {
+        override val key get() = "hdr_$group"
     }
     data class Item(val download: DownloadEntity) : DownloadListRow {
         override val key get() = "d_${download.id}"
@@ -195,9 +204,9 @@ private fun buildDownloadRows(downloads: List<DownloadEntity>): List<DownloadLis
     val completed = downloads.filter { it.status == DownloadStatus.COMPLETED }
     val failed = downloads.filter { it.status == DownloadStatus.FAILED }
     return buildList {
-        listOf("Active" to active, "Waiting" to waiting, "Completed" to completed, "Failed" to failed).forEach { (label, list) ->
+        listOf(DownloadGroup.ACTIVE to active, DownloadGroup.WAITING to waiting, DownloadGroup.COMPLETED to completed, DownloadGroup.FAILED to failed).forEach { (group, list) ->
             if (list.isNotEmpty()) {
-                add(DownloadListRow.Header(label, list.size))
+                add(DownloadListRow.Header(group, list.size))
                 list.forEach { add(DownloadListRow.Item(it)) }
             }
         }
@@ -205,10 +214,10 @@ private fun buildDownloadRows(downloads: List<DownloadEntity>): List<DownloadLis
 }
 
 @Composable
-private fun SectionHeader(label: String, count: Int) {
+private fun SectionHeader(group: DownloadGroup, count: Int) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
-        Text(label.uppercase(), style = MaterialTheme.typography.titleSmall, color = OwnTVTheme.colors.primary, fontWeight = FontWeight.Bold)
-        Text("$count", style = MaterialTheme.typography.labelMedium, color = OwnTVTheme.colors.onSurfaceVariant)
+        Text(stringResource(group.labelRes).uppercase(), style = MaterialTheme.typography.titleSmall, color = OwnTVTheme.colors.primary, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.phase1_downloads_count, count), style = MaterialTheme.typography.labelMedium, color = OwnTVTheme.colors.onSurfaceVariant)
     }
 }
 
@@ -217,9 +226,9 @@ private fun StorageBar(info: tv.own.owntv.core.download.DownloadStorageInfo) {
     val colors = OwnTVTheme.colors
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Storage", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.phase1_downloads_storage), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.weight(1f))
-            Text("${gb(info.freeBytes)} free of ${gb(info.totalBytes)}", style = MaterialTheme.typography.labelLarge, color = colors.primary, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.phase1_downloads_storage_free, storageSize(info.freeBytes, stringResource(R.string.phase1_downloads_unknown_size)), storageSize(info.totalBytes, stringResource(R.string.phase1_downloads_unknown_size))), style = MaterialTheme.typography.labelLarge, color = colors.primary, fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(6.dp))
         Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(colors.surfaceContainerLowest)) {
@@ -228,7 +237,11 @@ private fun StorageBar(info: tv.own.owntv.core.download.DownloadStorageInfo) {
     }
 }
 
-private fun gb(bytes: Long): String = if (bytes <= 0) "—" else "%.1f GB".format(bytes / 1_073_741_824.0)
+private fun storageSize(bytes: Long, unknown: String): String =
+    if (bytes <= 0) unknown else java.text.NumberFormat.getNumberInstance().apply {
+        minimumFractionDigits = 1
+        maximumFractionDigits = 1
+    }.format(bytes / 1_073_741_824.0)
 
 @Composable
 private fun DownloadRow(
@@ -248,7 +261,7 @@ private fun DownloadRow(
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(download.title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            folderCrumb(download.filePath)?.let {
+            folderCrumb(download.filePath, stringResource(R.string.phase1_downloads_folder_separator))?.let {
                 Text(it, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Spacer(Modifier.height(6.dp))
@@ -257,34 +270,34 @@ private fun DownloadRow(
         Spacer(Modifier.width(12.dp))
         when (download.status) {
             DownloadStatus.COMPLETED -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OwnTVButton("Play", onClick = onPlay, icon = OwnTVIcon.PLAY, modifier = focusModifier)
+                OwnTVButton(stringResource(R.string.phase1_downloads_play), onClick = onPlay, icon = OwnTVIcon.PLAY, modifier = focusModifier)
                 // Phase B: one-off external playback, independent of the global "External player" toggle.
-                OwnTVButton("External", onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.phase1_downloads_external), onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY)
             }
-            DownloadStatus.FAILED -> OwnTVButton("Retry", onClick = onRetry, style = OwnTVButtonStyle.SECONDARY, modifier = focusModifier)
-            DownloadStatus.PAUSED -> OwnTVButton("Resume", onClick = onResume, style = OwnTVButtonStyle.SECONDARY, modifier = focusModifier)
-            DownloadStatus.RUNNING, DownloadStatus.QUEUED -> OwnTVButton("Pause", onClick = onPause, style = OwnTVButtonStyle.SECONDARY, modifier = focusModifier)
+            DownloadStatus.FAILED -> OwnTVButton(stringResource(R.string.common_retry), onClick = onRetry, style = OwnTVButtonStyle.SECONDARY, modifier = focusModifier)
+            DownloadStatus.PAUSED -> OwnTVButton(stringResource(R.string.common_resume), onClick = onResume, style = OwnTVButtonStyle.SECONDARY, modifier = focusModifier)
+            DownloadStatus.RUNNING, DownloadStatus.QUEUED -> OwnTVButton(stringResource(R.string.phase1_downloads_pause), onClick = onPause, style = OwnTVButtonStyle.SECONDARY, modifier = focusModifier)
         }
         Spacer(Modifier.width(10.dp))
-        OwnTVButton("Delete", onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
+        OwnTVButton(stringResource(R.string.common_delete), onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
     }
 }
 
 /** Shows the folder path of a download, e.g. "Series › Game of Thrones › Season 6". */
-private fun folderCrumb(filePath: String?): String? {
+private fun folderCrumb(filePath: String?, separator: String): String? {
     val parts = filePath?.substringBeforeLast('/')?.split('/')?.filter { it.isNotBlank() } ?: return null
     val idx = parts.indexOfLast { it == "Movies" || it == "Series" }
     val rel = if (idx >= 0) parts.subList(idx, parts.size) else parts.takeLast(3)
-    return rel.joinToString(" › ").ifBlank { null }
+    return rel.joinToString(separator).ifBlank { null }
 }
 
 @Composable
 private fun StatusLine(d: DownloadEntity) {
     val colors = OwnTVTheme.colors
     when (d.status) {
-        DownloadStatus.COMPLETED -> Text("Downloaded · ${mb(d.totalBytes)}", style = MaterialTheme.typography.bodySmall, color = colors.primary, fontWeight = FontWeight.SemiBold)
-        DownloadStatus.FAILED -> Text("Download failed — couldn't reach the source. Tap Retry.", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
-        DownloadStatus.QUEUED -> Text("Queued…", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        DownloadStatus.COMPLETED -> Text(stringResource(R.string.phase1_downloads_completed, sizeMb(d.totalBytes, stringResource(R.string.phase1_downloads_unknown_size))), style = MaterialTheme.typography.bodySmall, color = colors.primary, fontWeight = FontWeight.SemiBold)
+        DownloadStatus.FAILED -> Text(stringResource(R.string.phase1_downloads_failed), style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
+        DownloadStatus.QUEUED -> Text(stringResource(R.string.phase1_downloads_queued), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         else -> { // RUNNING / PAUSED
             val frac = if (d.totalBytes > 0) (d.downloadedBytes.toFloat() / d.totalBytes).coerceIn(0f, 1f) else 0f
             Column {
@@ -293,7 +306,8 @@ private fun StatusLine(d: DownloadEntity) {
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    if (d.totalBytes > 0) "${(frac * 100).toInt()}% · ${mb(d.downloadedBytes)} / ${mb(d.totalBytes)}" else "Downloading… ${mb(d.downloadedBytes)}",
+                    if (d.totalBytes > 0) stringResource(R.string.phase1_downloads_progress, (frac * 100).toInt(), sizeMb(d.downloadedBytes, stringResource(R.string.phase1_downloads_unknown_size)), sizeMb(d.totalBytes, stringResource(R.string.phase1_downloads_unknown_size)))
+                    else stringResource(R.string.phase1_downloads_progress_unknown, sizeMb(d.downloadedBytes, stringResource(R.string.phase1_downloads_unknown_size))),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                 )
             }
@@ -301,4 +315,8 @@ private fun StatusLine(d: DownloadEntity) {
     }
 }
 
-private fun mb(bytes: Long): String = if (bytes <= 0) "—" else "%.1f MB".format(bytes / 1_048_576.0)
+private fun sizeMb(bytes: Long, unknown: String): String =
+    if (bytes <= 0) unknown else java.text.NumberFormat.getNumberInstance().apply {
+        minimumFractionDigits = 1
+        maximumFractionDigits = 1
+    }.format(bytes / 1_048_576.0)

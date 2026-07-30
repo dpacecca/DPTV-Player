@@ -20,11 +20,13 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -89,7 +91,7 @@ fun PosterCard(
                     ) {
                         OwnTVIcon(OwnTVIcon.STAR, tint = colors.accent, filled = true, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.size(4.dp))
-                        Text(formatRating(rating), style = MaterialTheme.typography.labelMedium, color = Color.White)
+                        Text(stringResource(R.string.common_rating, rating), style = MaterialTheme.typography.labelMedium, color = Color.White)
                     }
                 }
 
@@ -150,5 +152,3 @@ fun PosterCard(
         }
     }
 }
-
-private fun formatRating(rating: Double): String = "%.1f".format(rating)

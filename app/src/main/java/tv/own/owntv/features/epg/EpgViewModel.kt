@@ -47,9 +47,31 @@ import tv.own.owntv.core.repository.EpgRepository
 import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.core.repository.activeSourceIds
-import tv.own.owntv.core.util.friendlySyncError
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
+
+sealed interface EpgMessage {
+    data object CreateProfile : EpgMessage
+    data object AddPlaylist : EpgMessage
+    data class NoChannelsForQuery(val query: String) : EpgMessage
+    data object MismatchedIds : EpgMessage
+}
+
+data class EpgStats(
+    val guideChannels: Int,
+    val programmes: Int,
+    val catchupChannels: Int,
+)
+
+sealed interface EpgMatchSummary {
+    data object CatchupUnavailable : EpgMatchSummary
+    data object MatchedNoProgrammes : EpgMatchSummary
+    data object AddPlaylist : EpgMatchSummary
+    data object NoData : EpgMatchSummary
+    data class AutoMatched(val applied: Int, val review: Int) : EpgMatchSummary
+    data object AllMatched : EpgMatchSummary
+    data class NoMatch(val channelName: String) : EpgMatchSummary
+}
 
 data class EpgUiState(
     /** All channels with guide data in the window; each row loads its own programmes lazily. */
@@ -59,12 +81,12 @@ data class EpgUiState(
     val now: Long = 0,
     val loading: Boolean = true,
     val refreshing: Boolean = false,
-    val message: String? = null,
+    val message: EpgMessage? = null,
     val isError: Boolean = false,
     /** False when the user hasn't added any EPG source yet → the screen shows an "Add EPG" prompt. */
     val hasEpgSources: Boolean = true,
-    /** "N channels · M programmes" once a guide is stored — the visible proof the EPG feed works. */
-    val stats: String? = null,
+    /** Guide counts once data is stored — rendered with the active locale by the screen. */
+    val stats: EpgStats? = null,
     /** How many of the profile's channels advertise catch-up — 0 hides the Catch-up sort option. */
     val catchupCount: Int = 0,
     /** How many of the profile's channels are favourited — 0 hides the Favorites sort option. */
@@ -302,7 +324,7 @@ class EpgViewModel(
         viewModelScope.launch {
             val url = withContext(kotlinx.coroutines.Dispatchers.IO) { catchupUrlFor(channel, programme) }
             if (url == null) {
-                _matchSummary.value = "Catch-up isn't available for this channel."
+                _matchSummary.value = EpgMatchSummary.CatchupUnavailable
                 return@launch
             }
             val sourceUa = sourceDao.getById(channel.sourceId)?.userAgent
@@ -323,10 +345,10 @@ class EpgViewModel(
         viewModelScope.launch {
             val url = withContext(kotlinx.coroutines.Dispatchers.IO) { catchupUrlFor(channel, programme) }
             if (url == null) {
-                _matchSummary.value = "Catch-up isn't available for this channel."
+                _matchSummary.value = EpgMatchSummary.CatchupUnavailable
                 return@launch
             }
-            externalPlayerLauncher.launch(url, "${channel.name} · ${programme.title}")
+            externalPlayerLauncher.launch(url, channel.name, programme.title)
         }
     }
 
@@ -403,7 +425,7 @@ class EpgViewModel(
             if (ids.size == 1) {
                 val upcoming = runCatching { epgDao.countUpcomingForChannel(ids.first(), System.currentTimeMillis()) }.getOrDefault(1)
                 if (upcoming == 0) {
-                    _matchSummary.value = "Matched — but this guide channel has no current programmes in the EPG feed yet."
+                    _matchSummary.value = EpgMatchSummary.MatchedNoProgrammes
                 }
             }
         }
@@ -434,8 +456,8 @@ class EpgViewModel(
     val review: StateFlow<List<EpgMatchSuggestion>> = _review.asStateFlow()
 
     /** One-line outcome of the last auto-match run, shown as a transient banner. */
-    private val _matchSummary = MutableStateFlow<String?>(null)
-    val matchSummary: StateFlow<String?> = _matchSummary.asStateFlow()
+    private val _matchSummary = MutableStateFlow<EpgMatchSummary?>(null)
+    val matchSummary: StateFlow<EpgMatchSummary?> = _matchSummary.asStateFlow()
 
     /**
      * Scan every channel that has no working guide (no manual match and its tvg-id isn't in the EPG
@@ -448,12 +470,12 @@ class EpgViewModel(
             try {
                 val pid = settings.activeProfileId.first()
                 val playlistIds = if (pid < 0) emptyList() else sourceRepository.observeSources(pid).first().map { it.id }
-                if (playlistIds.isEmpty()) { _matchSummary.value = "Add a playlist first."; return@launch }
+                if (playlistIds.isEmpty()) { _matchSummary.value = EpgMatchSummary.AddPlaylist; return@launch }
                 val ids = playlistIds + epgSourceStore.getAll().map { it.id }
                 val cust = customize.observe(pid, MediaType.LIVE).first()
 
                 val candidates = epgDao.listEpgChannels(ids, "", MAX_EPG_CANDIDATES)
-                if (candidates.isEmpty()) { _matchSummary.value = "No EPG data to match against yet."; return@launch }
+                if (candidates.isEmpty()) { _matchSummary.value = EpgMatchSummary.NoData; return@launch }
                 val knownIds = candidates.mapTo(HashSet()) { it.epgChannelId.trim().lowercase() }
 
                 val (applied, review, appliedIds) = withContext(kotlinx.coroutines.Dispatchers.Default) {
@@ -483,10 +505,10 @@ class EpgViewModel(
                 }
 
                 _review.value = review
-                _matchSummary.value = buildString {
-                    append("Auto-matched $applied channel${if (applied == 1) "" else "s"}.")
-                    if (review.isNotEmpty()) append(" ${review.size} need review.")
-                    if (applied == 0 && review.isEmpty()) { setLength(0); append("Everything's already matched.") }
+                _matchSummary.value = if (applied == 0 && review.isEmpty()) {
+                    EpgMatchSummary.AllMatched
+                } else {
+                    EpgMatchSummary.AutoMatched(applied, review.size)
                 }
                 if (applied > 0) fillMatchedInBackground(appliedIds) // off the spinner — fills in shortly after
             } finally {
@@ -509,7 +531,7 @@ class EpgViewModel(
                 val playlistIds = if (pid < 0) emptyList() else sourceRepository.observeSources(pid).first().map { it.id }
                 val ids = playlistIds + epgSourceStore.getAll().map { it.id }
                 val candidates = epgDao.listEpgChannels(ids, "", MAX_EPG_CANDIDATES)
-                if (candidates.isEmpty()) { _matchSummary.value = "No EPG data to match against yet."; return@launch }
+                if (candidates.isEmpty()) { _matchSummary.value = EpgMatchSummary.NoData; return@launch }
                 val best = withContext(kotlinx.coroutines.Dispatchers.Default) {
                     val prepared = tv.own.owntv.core.epg.EpgMatcher.prepare(
                         candidates.map { tv.own.owntv.core.epg.EpgMatcher.Candidate(it.epgChannelId, it.displayName) },
@@ -517,7 +539,7 @@ class EpgViewModel(
                     tv.own.owntv.core.epg.EpgMatcher.bestEpgMatchPrepared(channel.name, prepared)
                 }
                 if (best == null) {
-                    _matchSummary.value = "No EPG match found for “${channel.name}” — try picking manually."
+                    _matchSummary.value = EpgMatchSummary.NoMatch(channel.name)
                 } else {
                     // Show it in the review dialog (accept/skip) instead of applying silently. acceptSuggestion
                     // persists the match + fills the guide; dismissSuggestion just drops it.
@@ -584,7 +606,7 @@ class EpgViewModel(
             if (pid == null) {
                 _state.value = EpgUiState(
                     loading = false,
-                    message = "Create a profile to see the guide.",
+                    message = EpgMessage.CreateProfile,
                     hasEpgSources = epgSourceStore.getAll().isNotEmpty(),
                 )
                 return@launch
@@ -596,7 +618,7 @@ class EpgViewModel(
             val ids = playlistIds + epgIds
 
             if (playlistIds.isEmpty()) {
-                _state.value = EpgUiState(loading = false, message = "Add a playlist to see the guide.")
+                _state.value = EpgUiState(loading = false, message = EpgMessage.AddPlaylist)
                 return@launch
             }
 
@@ -697,21 +719,16 @@ class EpgViewModel(
             val hasEpg = epgIds.isNotEmpty()
             val message = when {
                 stored == 0 -> null // handled by the "No EPG added" prompt (hasEpgSources=false)
-                channels.isEmpty() && q.isNotBlank() -> "No guide channels found for “$q”."
-                channels.isEmpty() ->
-                    "Guide data is stored, but its channel ids don't match your channels' EPG ids — " +
-                        "this EPG feed may belong to a different provider lineup."
+                channels.isEmpty() && q.isNotBlank() -> EpgMessage.NoChannelsForQuery(q)
+                channels.isEmpty() -> EpgMessage.MismatchedIds
                 else -> null
             }
-            val catchupNote = if (catchupCount > 0) "$catchupCount with catch-up" else "no catch-up channels"
-            val stats = if (stored > 0) {
-                val guideChannels = epgDao.countGuideChannels(ids)
-                "Guide loaded: $guideChannels channels · $stored programmes · $catchupNote"
-            } else if (catchupCount > 0) {
-                "Catch-up available on $catchupCount channels"
-            } else {
-                "No catch-up channels available"
-            }
+            val guideChannels = if (stored > 0) epgDao.countGuideChannels(ids) else 0
+            val stats = EpgStats(
+                guideChannels = guideChannels,
+                programmes = stored,
+                catchupChannels = catchupCount,
+            )
 
             _state.value = EpgUiState(
                 channels = channels, windowStart = windowStart, windowEnd = windowEnd, now = now,

@@ -44,7 +44,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -60,6 +62,7 @@ import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.features.customize.CustomizeScreen
 import tv.own.owntv.features.settings.HomeSettingsScreen
 import tv.own.owntv.features.settings.data.SettingsRepository
@@ -78,6 +81,7 @@ import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.displayText
 import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.StorageBrowser
@@ -292,7 +296,7 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
-            text = "Settings",
+            text = stringResource(R.string.settings_title),
             style = MaterialTheme.typography.headlineLarge,
             color = colors.onSurface,
         )
@@ -309,12 +313,12 @@ fun SettingsScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            QuickToggleChip("Live preview", livePreview, OwnTVIcon.LIVE_TV) { settingsVm.setLivePreviewEnabled(!livePreview) }
-            QuickToggleChip("Preview sound", previewAudio, OwnTVIcon.AUDIO) { settingsVm.setLivePreviewAudio(!previewAudio) }
-            QuickToggleChip("Channel numbers", channelNumbers, OwnTVIcon.LIVE_TV) { settingsVm.setDirectTune(!channelNumbers) }
-            QuickToggleChip("HDR", hdr, OwnTVIcon.VIDEO) { settingsVm.setHdrEnabled(!hdr) }
-            QuickToggleChip("Auto-play", autoPlayNext, OwnTVIcon.SKIP_NEXT) { settingsVm.setAutoPlayNext(!autoPlayNext) }
-            QuickToggleChip("Check for update", updateCheckOnStart, OwnTVIcon.DOWNLOADS) { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) }
+            QuickToggleChip(stringResource(R.string.settings_quick_live_preview), livePreview, OwnTVIcon.LIVE_TV) { settingsVm.setLivePreviewEnabled(!livePreview) }
+            QuickToggleChip(stringResource(R.string.settings_quick_preview_sound), previewAudio, OwnTVIcon.AUDIO) { settingsVm.setLivePreviewAudio(!previewAudio) }
+            QuickToggleChip(stringResource(R.string.settings_quick_channel_numbers), channelNumbers, OwnTVIcon.LIVE_TV) { settingsVm.setDirectTune(!channelNumbers) }
+            QuickToggleChip(stringResource(R.string.settings_quick_hdr), hdr, OwnTVIcon.VIDEO) { settingsVm.setHdrEnabled(!hdr) }
+            QuickToggleChip(stringResource(R.string.settings_quick_autoplay), autoPlayNext, OwnTVIcon.SKIP_NEXT) { settingsVm.setAutoPlayNext(!autoPlayNext) }
+            QuickToggleChip(stringResource(R.string.settings_quick_check_update), updateCheckOnStart, OwnTVIcon.DOWNLOADS) { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) }
         }
         Spacer(Modifier.height(8.dp))
 
@@ -322,8 +326,8 @@ fun SettingsScreen(
         OwnTVTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            label = "Search settings",
-            placeholder = "Search settings…",
+            label = stringResource(R.string.settings_search_label),
+            placeholder = stringResource(R.string.settings_search_hint),
             focusRequester = searchFieldFocus,
             modifier = Modifier
                 .fillMaxWidth()
@@ -332,100 +336,100 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
 
         if (searchQuery.isBlank()) {
-        GroupLabel("Profile")
+        GroupLabel(stringResource(R.string.settings_profile_group))
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.PERSON,
-            title = "Profiles", desc = "Manage viewers, kids mode & PIN locks",
+            title = stringResource(R.string.profiles_title), desc = stringResource(R.string.settings_profiles_description),
             onClick = { open(SettingsTab.PROFILES) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.PROFILES)),
         )
         SectionDivider()
-        GroupLabel("Content")
+        GroupLabel(stringResource(R.string.settings_content_group))
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.PLAYLIST,
-            title = "Playlists", desc = "Add, re-sync or remove M3U / Xtream playlists",
+            title = stringResource(R.string.settings_playlists), desc = stringResource(R.string.settings_playlists_description),
             onClick = { open(SettingsTab.SOURCES) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.SOURCES)),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.EPG,
-            title = "EPG Sources", desc = "Add XMLTV guide feeds for the TV Guide",
+            title = stringResource(R.string.settings_epg_sources), desc = stringResource(R.string.settings_epg_sources_description),
             onClick = { open(SettingsTab.EPG) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.EPG)),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.SORT,
-            title = "Customize Categories & Items", desc = "Hide & unhide items, rename & reorder categories",
+            title = stringResource(R.string.settings_customize), desc = stringResource(R.string.settings_customize_description),
             onClick = { open(SettingsTab.CUSTOMIZE) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.CUSTOMIZE)),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.MENU,
-            title = "Sidebar Menu Customization", desc = "Auto-adapt side icons to your playlist, or hide specific ones",
-            chip = navMenuMode.label,
+            title = stringResource(R.string.settings_sidebar_customization), desc = stringResource(R.string.settings_sidebar_description_root),
+            chip = navModeLabel(navMenuMode),
             chipTone = if (navMenuMode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { open(SettingsTab.NAV_MENU) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.NAV_MENU)),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.PLAYLIST,
-            title = "CH+- Key Paging", desc = "Skip up/down in the category & item lists with the CH+ / CH− keys",
-            chip = if (chNavEnabled) "On" else "Off",
+            title = stringResource(R.string.settings_ch_paging), desc = stringResource(R.string.settings_ch_paging_description),
+            chip = if (chNavEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { open(SettingsTab.CH_NAV) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.CH_NAV)),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.PLAYLIST,
-            title = "Browsing & lists", desc = "Remember the last category and the last item in Live TV, Movies & Series",
+            title = stringResource(R.string.settings_browsing_lists), desc = stringResource(R.string.settings_browsing_description),
             onClick = { savedScroll = scrollState.value; dialogReturn = browsingRowFocus; showBrowsing = true }, showChevron = true,
             modifier = Modifier.focusRequester(browsingRowFocus),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HOME,
-            title = "Home screen", desc = "Choose, reorder & filter the rows on Home",
+            title = stringResource(R.string.settings_home_root), desc = stringResource(R.string.settings_home_root_description),
             onClick = { open(SettingsTab.HOME) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.HOME)),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.VIDEO,
-            title = "Metadata (TMDB)", desc = "Posters, plots, cast & ratings for Movies and Series",
+            title = stringResource(R.string.settings_metadata), desc = stringResource(R.string.settings_metadata_root_description),
             onClick = { open(SettingsTab.METADATA) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.METADATA)),
         )
         SettingsRow(
             tone = TileTone.TERTIARY, icon = OwnTVIcon.DOWNLOADS,
-            title = "Download folder",
-            chip = downloadRoot.ifBlank { "App storage" }.let { java.io.File(it).name.ifBlank { it } },
+            title = stringResource(R.string.settings_download_folder),
+            chip = downloadRoot.ifBlank { stringResource(R.string.settings_app_storage) }.let { java.io.File(it).name.ifBlank { it } },
             chipTone = TileTone.TERTIARY,
             onClick = { savedScroll = scrollState.value; dialogReturn = folderRowFocus; showFolderPicker = true }, showChevron = true,
             modifier = Modifier.focusRequester(folderRowFocus),
         )
         SettingsRow(
             tone = TileTone.TERTIARY, icon = OwnTVIcon.DOWNLOADS,
-            title = "Backup & Restore", desc = "Export or restore profiles & sources",
+            title = stringResource(R.string.settings_backup_restore), desc = stringResource(R.string.settings_backup_restore_description),
             onClick = { open(SettingsTab.BACKUP) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.BACKUP)),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HISTORY,
-            title = "Clear watch history", desc = "Remove this profile's recently-watched & continue rows",
+            title = stringResource(R.string.settings_clear_history), desc = stringResource(R.string.settings_clear_history_description),
             onClick = { savedScroll = scrollState.value; dialogReturn = clearHistoryRowFocus; showClearHistory = true }, showChevron = true,
             modifier = Modifier.focusRequester(clearHistoryRowFocus),
         )
         SectionDivider()
-        GroupLabel("Appearance")
+        GroupLabel(stringResource(R.string.settings_appearance_group))
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.THEME,
-            title = "Theme", desc = "Light, dark or follow the system",
+            title = stringResource(R.string.settings_theme), desc = stringResource(R.string.settings_theme_description),
             chip = themeLabel(themeMode), chipTone = TileTone.PRIMARY,
             onClick = { savedScroll = scrollState.value; dialogReturn = themeRowFocus; showTheme = true }, showChevron = true,
             modifier = Modifier.focusRequester(themeRowFocus),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.PALETTE,
-            title = "Accent color", desc = "Tint the interface — presets, palette or hex code",
-            chip = if (customAccent.isNotBlank()) customAccent.uppercase() else accent.label,
+            title = stringResource(R.string.settings_accent), desc = stringResource(R.string.settings_accent_description),
+            chip = if (customAccent.isNotBlank()) customAccent.uppercase() else stringResource(accent.labelRes),
             chipTone = TileTone.SECONDARY,
             onClick = { savedScroll = scrollState.value; dialogReturn = accentRowFocus; showAccent = true }, showChevron = true,
             modifier = Modifier.focusRequester(accentRowFocus),
@@ -435,98 +439,98 @@ fun SettingsScreen(
         val glassOn = glassConfig.enabled
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.THEME,
-            title = "Glass Effect", desc = "Translucent frosted panels, background image and transparency",
-            chip = if (glassOn) "On" else "Off",
+            title = stringResource(R.string.settings_glass_effect), desc = stringResource(R.string.settings_glass_description),
+            chip = if (glassOn) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { savedScroll = scrollState.value; dialogReturn = glassEffectRowFocus; showGlassEffect = true }, showChevron = true,
             modifier = Modifier.focusRequester(glassEffectRowFocus),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.ZOOM,
-            title = "UI Zoom", desc = "Scale the whole interface",
-            chip = UiZoom.label(uiZoomPercent), chipTone = TileTone.SECONDARY,
+            title = stringResource(R.string.settings_ui_zoom), desc = stringResource(R.string.settings_ui_zoom_description),
+            chip = stringResource(R.string.common_percent, uiZoomPercent), chipTone = TileTone.SECONDARY,
             onClick = { savedScroll = scrollState.value; dialogReturn = zoomRowFocus; showZoom = true }, showChevron = true,
             modifier = Modifier.focusRequester(zoomRowFocus),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.THEME,
-            title = "Animations", desc = "Turn interface motion on or off — Off feels snappier on lower-end TV boxes",
-            chip = animationLevel.label, chipTone = TileTone.SECONDARY,
+            title = stringResource(R.string.settings_animations), desc = stringResource(R.string.settings_animations_description),
+            chip = stringResource(animationLevel.labelRes), chipTone = TileTone.SECONDARY,
             onClick = { savedScroll = scrollState.value; dialogReturn = animationsRowFocus; showAnimations = true }, showChevron = true,
             modifier = Modifier.focusRequester(animationsRowFocus),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.EPG,
-            title = "Weather",
-            desc = "Top-bar weather chip: show or hide, custom location, and Celsius / Fahrenheit.",
-            chip = if (weatherEnabled) "On" else "Off",
+            title = stringResource(R.string.settings_weather),
+            desc = stringResource(R.string.settings_weather_description_root),
+            chip = if (weatherEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { open(SettingsTab.WEATHER) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.WEATHER)),
         )
 
         SectionDivider()
-        GroupLabel("Playback")
+        GroupLabel(stringResource(R.string.settings_playback_group))
         SettingsRow(
             tone = TileTone.TERTIARY, icon = OwnTVIcon.LIVE_TV,
-            title = "Live preview", desc = "Auto-play a channel when you focus it",
-            chip = if (livePreview) "On" else "Off",
+            title = stringResource(R.string.settings_quick_live_preview), desc = stringResource(R.string.settings_live_preview_description),
+            chip = if (livePreview) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setLivePreviewEnabled(!livePreview) },
         )
         if (livePreview) {
             SettingsRow(
                 tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
-                title = "Preview audio", desc = "Play sound in the Live preview",
-                chip = if (previewAudio) "On" else "Off",
+                title = stringResource(R.string.settings_preview_audio), desc = stringResource(R.string.settings_preview_audio_description),
+                chip = if (previewAudio) stringResource(R.string.common_on) else stringResource(R.string.common_off),
                 chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY,
                 onClick = { settingsVm.setLivePreviewAudio(!previewAudio) },
             )
         }
         SettingsRow(
             tone = TileTone.TERTIARY, icon = OwnTVIcon.PIP,
-            title = "Mini-player", desc = "Size and position of the docked mini-player",
+            title = stringResource(R.string.settings_mini_player_root), desc = stringResource(R.string.settings_mini_player_root_description),
             onClick = { open(SettingsTab.MINI_PLAYER) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.MINI_PLAYER)),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.VIDEO,
-            title = "HDR", desc = "Use HDR output when the video & TV support it",
-            chip = if (hdr) "On" else "Off",
+            title = stringResource(R.string.settings_quick_hdr), desc = stringResource(R.string.settings_hdr_description),
+            chip = if (hdr) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setHdrEnabled(!hdr) },
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.VIDEO,
-            title = "Auto frame rate",
-            desc = "Match the TV's refresh rate to the video (24/25/50/60 fps) in full screen, for Live TV and VOD, and restore it on exit. Turn off if your TV or receiver re-handshakes HDMI noisily on every channel change.",
-            chip = if (autoFrameRate) "On" else "Off",
+            title = stringResource(R.string.settings_auto_frame_rate),
+            desc = stringResource(R.string.settings_auto_frame_rate_description),
+            chip = if (autoFrameRate) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setAutoFrameRate(!autoFrameRate) },
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
-            title = "Surround sound",
-            desc = "Decode Dolby/DTS to surround (5.1/7.1) for a real 5.1/7.1 receiver. Leave OFF for TV speakers or a stereo soundbar — multichannel can lag audio behind video on some TVs/soundbars. If it drifts, nudge the player's Audio menu → A/V sync.",
-            chip = if (surroundSound) "On" else "Off",
+            title = stringResource(R.string.settings_surround_sound),
+            desc = stringResource(R.string.settings_surround_description),
+            chip = if (surroundSound) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             chipTone = if (surroundSound) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setSurroundSound(!surroundSound) },
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.SKIP_NEXT,
-            title = "Auto-play next episode",
-            desc = "When an episode ends, automatically start the next one — and roll into the next season.",
-            chip = if (autoPlayNext) "On" else "Off",
+            title = stringResource(R.string.settings_autoplay_next),
+            desc = stringResource(R.string.settings_autoplay_next_description),
+            chip = if (autoPlayNext) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setAutoPlayNext(!autoPlayNext) },
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.EPG,
-            title = "Catch-up",
-            desc = if (catchupChannels > 0) "$catchupChannels channels support catch-up · timezone and player for archive playback"
-                else "No catch-up channels available on this playlist",
+            title = stringResource(R.string.settings_catchup),
+            desc = if (catchupChannels > 0) stringResource(R.string.settings_catchup_supported, catchupChannels)
+                else stringResource(R.string.settings_catchup_unavailable),
             chip = when (catchupTz) {
-                SettingsRepository.CatchupTimezone.DEVICE -> "Device"
+                SettingsRepository.CatchupTimezone.DEVICE -> stringResource(R.string.settings_catchup_timezone_device)
                 SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
             },
             chipTone = TileTone.PRIMARY,
@@ -535,22 +539,22 @@ fun SettingsScreen(
         )
         SettingsRow(
             tone = TileTone.TERTIARY, icon = OwnTVIcon.VIDEO,
-            title = "Video Player Settings", desc = "Decoder, subtitles, sync",
+            title = stringResource(R.string.settings_video_player), desc = stringResource(R.string.settings_video_player_description),
             onClick = { open(SettingsTab.VIDEO) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.VIDEO)),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HISTORY,
-            title = "Playback error log", desc = "The last playback failures — details to read or report",
+            title = stringResource(R.string.settings_playback_error_log), desc = stringResource(R.string.settings_playback_error_description),
             onClick = { savedScroll = scrollState.value; dialogReturn = errorLogRowFocus; showErrorLog = true }, showChevron = true,
             modifier = Modifier.focusRequester(errorLogRowFocus),
         )
 
         SectionDivider()
-        GroupLabel("Network")
+        GroupLabel(stringResource(R.string.settings_network_group))
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.SHARE,
-            title = "Proxy", desc = "Route all traffic & playback through an HTTP proxy",
+            title = stringResource(R.string.common_proxy), desc = stringResource(R.string.settings_proxy_description),
             onClick = { open(SettingsTab.NETWORK) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.NETWORK)),
         )
@@ -562,31 +566,31 @@ fun SettingsScreen(
         )
 
         SectionDivider()
-        GroupLabel("App")
+        GroupLabel(stringResource(R.string.settings_app_group))
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HOME,
-            title = "App startup", desc = "What OwnTV opens when it starts",
-            chip = startupMode.label, chipTone = TileTone.PRIMARY,
+            title = stringResource(R.string.settings_app_startup), desc = stringResource(R.string.settings_app_startup_description),
+            chip = startupLabel(startupMode), chipTone = TileTone.PRIMARY,
             onClick = { savedScroll = scrollState.value; dialogReturn = startupRowFocus; showStartup = true }, showChevron = true,
             modifier = Modifier.focusRequester(startupRowFocus),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.DOWNLOADS,
-            title = "Check for updates", desc = "Get the latest version from GitHub Releases",
+            title = stringResource(R.string.settings_check_updates), desc = stringResource(R.string.settings_check_updates_description),
             chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}",
             onClick = { savedScroll = scrollState.value; dialogReturn = updateRowFocus; showUpdate = true }, showChevron = true,
             modifier = Modifier.focusRequester(updateRowFocus),
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HISTORY,
-            title = "Check updates on startup", desc = "Look for a new version when the app opens",
-            chip = if (updateCheckOnStart) "On" else "Off",
+            title = stringResource(R.string.settings_update_startup), desc = stringResource(R.string.settings_update_startup_description),
+            chip = if (updateCheckOnStart) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.MENU,
-            title = "About", desc = "Version, license & project info",
+            title = stringResource(R.string.settings_about), desc = stringResource(R.string.settings_about_description),
             onClick = { savedScroll = scrollState.value; dialogReturn = aboutRowFocus; showAbout = true }, showChevron = true,
             modifier = Modifier.focusRequester(aboutRowFocus),
         )
@@ -596,71 +600,71 @@ fun SettingsScreen(
             // isn't composed while searching). Toggle entries keep the results visible so the chip
             // updates live.
             val entries = listOf(
-                SettingsSearchEntry("Profile", "Profiles", "viewers kids mode pin lock account", OwnTVIcon.PERSON, TileTone.SECONDARY) { open(SettingsTab.PROFILES) },
-                SettingsSearchEntry("Content", "Playlists", "m3u xtream source sync add remove", OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { open(SettingsTab.SOURCES) },
-                SettingsSearchEntry("Content", "EPG Sources", "xmltv guide feed program", OwnTVIcon.EPG, TileTone.PRIMARY) { open(SettingsTab.EPG) },
-                SettingsSearchEntry("Content", "Guide channel logos", "channel logo icon xmltv guide picon playlist", OwnTVIcon.EPG, TileTone.SECONDARY) { open(SettingsTab.EPG) },
-                SettingsSearchEntry("Content", "Customize Categories & Items", "hide unhide rename reorder categories", OwnTVIcon.SORT, TileTone.PRIMARY) { open(SettingsTab.CUSTOMIZE) },
-                SettingsSearchEntry("Content", "Sidebar Menu Customization", "side rail icons dynamic static hide show adapt playlist", OwnTVIcon.MENU, TileTone.PRIMARY,
-                    chip = navMenuMode.label, chipTone = if (navMenuMode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },
-                SettingsSearchEntry("Content", "CH+- Key Paging", "channel up down skip page list category channel", OwnTVIcon.PLAYLIST, TileTone.PRIMARY,
-                    chip = if (chNavEnabled) "On" else "Off", chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
-                SettingsSearchEntry("Content", "Browsing & lists", "remember position scroll category last item live movies series reset top", OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { savedScroll = scrollState.value; dialogReturn = browsingRowFocus; showBrowsing = true },
-                SettingsSearchEntry("Content", "Home screen", "rows hero reorder filter", OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
-                SettingsSearchEntry("Content", "Metadata (TMDB)", "posters plots cast ratings", OwnTVIcon.VIDEO, TileTone.PRIMARY) { open(SettingsTab.METADATA) },
-                SettingsSearchEntry("Content", "Download folder", "storage path directory", OwnTVIcon.DOWNLOADS, TileTone.TERTIARY,
-                    chip = downloadRoot.ifBlank { "App storage" }.let { java.io.File(it).name.ifBlank { it } }, chipTone = TileTone.TERTIARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showFolderPicker = true },
-                SettingsSearchEntry("Content", "Backup & Restore", "export import profiles sources", OwnTVIcon.DOWNLOADS, TileTone.TERTIARY) { open(SettingsTab.BACKUP) },
-                SettingsSearchEntry("Content", "Clear watch history", "recently watched continue remove", OwnTVIcon.HISTORY, TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showClearHistory = true },
-                SettingsSearchEntry("Appearance", "Theme", "light dark system", OwnTVIcon.THEME, TileTone.PRIMARY,
+                SettingsSearchEntry(stringResource(R.string.settings_group_profile), stringResource(R.string.profiles_title), stringResource(R.string.settings_search_keywords_profiles), OwnTVIcon.PERSON, TileTone.SECONDARY) { open(SettingsTab.PROFILES) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_playlists), stringResource(R.string.settings_search_keywords_playlists), OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { open(SettingsTab.SOURCES) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_epg_sources), stringResource(R.string.settings_search_keywords_epg), OwnTVIcon.EPG, TileTone.PRIMARY) { open(SettingsTab.EPG) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_search_guide_logos), stringResource(R.string.settings_search_keywords_logos), OwnTVIcon.EPG, TileTone.SECONDARY) { open(SettingsTab.EPG) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_customize), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.SORT, TileTone.PRIMARY) { open(SettingsTab.CUSTOMIZE) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_sidebar_customization), stringResource(R.string.settings_search_keywords_sidebar), OwnTVIcon.MENU, TileTone.PRIMARY,
+                    chip = navModeLabel(navMenuMode), chipTone = if (navMenuMode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_ch_paging), stringResource(R.string.settings_search_keywords_ch), OwnTVIcon.PLAYLIST, TileTone.PRIMARY,
+                    chip = if (chNavEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_browsing_lists), stringResource(R.string.settings_search_keywords_browsing), OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { savedScroll = scrollState.value; dialogReturn = browsingRowFocus; showBrowsing = true },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_home_root), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_metadata), stringResource(R.string.settings_search_keywords_metadata), OwnTVIcon.VIDEO, TileTone.PRIMARY) { open(SettingsTab.METADATA) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_download_folder), stringResource(R.string.settings_search_keywords_download), OwnTVIcon.DOWNLOADS, TileTone.TERTIARY,
+                    chip = downloadRoot.ifBlank { stringResource(R.string.settings_app_storage) }.let { java.io.File(it).name.ifBlank { it } }, chipTone = TileTone.TERTIARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showFolderPicker = true },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_backup_restore), stringResource(R.string.settings_search_keywords_backup), OwnTVIcon.DOWNLOADS, TileTone.TERTIARY) { open(SettingsTab.BACKUP) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_clear_history), stringResource(R.string.settings_search_keywords_history), OwnTVIcon.HISTORY, TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showClearHistory = true },
+                SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_theme), stringResource(R.string.settings_search_keywords_theme), OwnTVIcon.THEME, TileTone.PRIMARY,
                     chip = themeLabel(themeMode)) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showTheme = true },
-                SettingsSearchEntry("Appearance", "Accent color", "tint palette hex preset", OwnTVIcon.PALETTE, TileTone.SECONDARY,
-                    chip = if (customAccent.isNotBlank()) customAccent.uppercase() else accent.label, chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAccent = true },
-                SettingsSearchEntry("Appearance", "UI Zoom", "scale interface size", OwnTVIcon.ZOOM, TileTone.SECONDARY,
-                    chip = UiZoom.label(uiZoomPercent), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showZoom = true },
-                SettingsSearchEntry("Appearance", "Animations", "motion snappier performance", OwnTVIcon.THEME, TileTone.SECONDARY,
-                    chip = animationLevel.label, chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAnimations = true },
-                SettingsSearchEntry("Appearance", "Weather", "top bar chip location celsius fahrenheit", OwnTVIcon.EPG, TileTone.SECONDARY,
-                    chip = if (weatherEnabled) "On" else "Off", chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.WEATHER) },
-                SettingsSearchEntry("Playback", "Live preview", "auto play focus channel", OwnTVIcon.LIVE_TV, TileTone.TERTIARY,
-                    chip = if (livePreview) "On" else "Off", chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewEnabled(!livePreview) },
-                SettingsSearchEntry("Playback", "Preview audio", "sound live preview", OwnTVIcon.AUDIO, TileTone.SECONDARY,
-                    chip = if (previewAudio) "On" else "Off", chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewAudio(!previewAudio) },
-                SettingsSearchEntry("Playback", "Channel numbers", "channel number direct tune type digits keypad numeric zap lcn", OwnTVIcon.LIVE_TV, TileTone.PRIMARY,
-                    chip = if (channelNumbers) "On" else "Off", chipTone = if (channelNumbers) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setDirectTune(!channelNumbers) },
-                SettingsSearchEntry("Playback", "Mini-player", "docked pip miniplayer size position scale percent corner move", OwnTVIcon.PIP, TileTone.TERTIARY) { open(SettingsTab.MINI_PLAYER) },
-                SettingsSearchEntry("Playback", "HDR", "high dynamic range output", OwnTVIcon.VIDEO, TileTone.PRIMARY,
-                    chip = if (hdr) "On" else "Off", chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setHdrEnabled(!hdr) },
-                SettingsSearchEntry("Playback", "Auto frame rate", "afr refresh rate hz judder 24fps 25fps 50hz 60hz display mode match", OwnTVIcon.VIDEO, TileTone.PRIMARY,
-                    chip = if (autoFrameRate) "On" else "Off", chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoFrameRate(!autoFrameRate) },
-                SettingsSearchEntry("Playback", "Surround sound", "dolby dts 5.1 7.1 receiver audio", OwnTVIcon.AUDIO, TileTone.SECONDARY,
-                    chip = if (surroundSound) "On" else "Off", chipTone = if (surroundSound) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setSurroundSound(!surroundSound) },
-                SettingsSearchEntry("Playback", "Auto-play next episode", "autoplay series season", OwnTVIcon.SKIP_NEXT, TileTone.SECONDARY,
-                    chip = if (autoPlayNext) "On" else "Off", chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoPlayNext(!autoPlayNext) },
-                SettingsSearchEntry("Playback", "Catch-up", "archive timezone offset catchup external player vlc mx", OwnTVIcon.EPG, TileTone.SECONDARY,
+                SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_accent), stringResource(R.string.settings_search_keywords_accent), OwnTVIcon.PALETTE, TileTone.SECONDARY,
+                    chip = if (customAccent.isNotBlank()) customAccent.uppercase() else stringResource(accent.labelRes), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAccent = true },
+                SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ui_zoom), stringResource(R.string.settings_search_keywords_zoom), OwnTVIcon.ZOOM, TileTone.SECONDARY,
+                    chip = stringResource(R.string.common_percent, uiZoomPercent), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showZoom = true },
+                SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_animations), stringResource(R.string.settings_search_keywords_animation), OwnTVIcon.THEME, TileTone.SECONDARY,
+                    chip = stringResource(animationLevel.labelRes), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAnimations = true },
+                SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_weather), stringResource(R.string.settings_search_keywords_weather), OwnTVIcon.EPG, TileTone.SECONDARY,
+                    chip = if (weatherEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.WEATHER) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_quick_live_preview), stringResource(R.string.settings_search_keywords_live_preview), OwnTVIcon.LIVE_TV, TileTone.TERTIARY,
+                    chip = if (livePreview) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewEnabled(!livePreview) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_preview_audio), stringResource(R.string.settings_search_keywords_sound), OwnTVIcon.AUDIO, TileTone.SECONDARY,
+                    chip = if (previewAudio) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewAudio(!previewAudio) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_quick_channel_numbers), stringResource(R.string.settings_search_keywords_channel_numbers), OwnTVIcon.LIVE_TV, TileTone.PRIMARY,
+                    chip = if (channelNumbers) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (channelNumbers) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setDirectTune(!channelNumbers) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_mini_player_root), stringResource(R.string.settings_search_keywords_mini), OwnTVIcon.PIP, TileTone.TERTIARY) { open(SettingsTab.MINI_PLAYER) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_quick_hdr), stringResource(R.string.settings_search_keywords_hdr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
+                    chip = if (hdr) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setHdrEnabled(!hdr) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_auto_frame_rate), stringResource(R.string.settings_search_keywords_afr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
+                    chip = if (autoFrameRate) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoFrameRate(!autoFrameRate) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_surround_sound), stringResource(R.string.settings_search_keywords_surround), OwnTVIcon.AUDIO, TileTone.SECONDARY,
+                    chip = if (surroundSound) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (surroundSound) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setSurroundSound(!surroundSound) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_autoplay_next), stringResource(R.string.settings_search_keywords_autoplay), OwnTVIcon.SKIP_NEXT, TileTone.SECONDARY,
+                    chip = if (autoPlayNext) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoPlayNext(!autoPlayNext) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_catchup), stringResource(R.string.settings_search_keywords_catchup), OwnTVIcon.EPG, TileTone.SECONDARY,
                     chip = when (catchupTz) {
-                        SettingsRepository.CatchupTimezone.DEVICE -> "Device"
+                        SettingsRepository.CatchupTimezone.DEVICE -> stringResource(R.string.settings_device)
                         SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
                     }) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showCatchupTime = true },
-                SettingsSearchEntry("Playback", "Video Player Settings", "decoder subtitles sync", OwnTVIcon.VIDEO, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-                SettingsSearchEntry("Playback", "Subtitle appearance", "subtitle size color colour position transparency background opacity", OwnTVIcon.SUBTITLE, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-                SettingsSearchEntry("Playback", "Live latency", "live buffer latency delay low latency seconds close to live edge", OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-                SettingsSearchEntry("Playback", "Playback error log", "error crash failure diagnostics report", OwnTVIcon.HISTORY, TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showErrorLog = true },
-                SettingsSearchEntry("Network", "Proxy", "http traffic route", OwnTVIcon.SHARE, TileTone.SECONDARY) { open(SettingsTab.NETWORK) },
-                SettingsSearchEntry("Network", "DNS", "domain lookup resolver doh dns-over-https", OwnTVIcon.SEARCH, TileTone.SECONDARY) { open(SettingsTab.DNS) },
-                SettingsSearchEntry("App", "App startup", "launch open landing", OwnTVIcon.HOME, TileTone.SECONDARY,
-                    chip = startupMode.label) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showStartup = true },
-                SettingsSearchEntry("App", "Check for updates", "github release version", OwnTVIcon.DOWNLOADS, TileTone.PRIMARY,
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_video_player), stringResource(R.string.settings_search_keywords_video), OwnTVIcon.VIDEO, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_subtitle_appearance), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_live_latency), stringResource(R.string.settings_search_keywords_latency), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_playback_error_log), stringResource(R.string.settings_search_keywords_errors), OwnTVIcon.HISTORY, TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showErrorLog = true },
+                SettingsSearchEntry(stringResource(R.string.settings_group_network), stringResource(R.string.common_proxy), stringResource(R.string.settings_search_keywords_proxy), OwnTVIcon.SHARE, TileTone.SECONDARY) { open(SettingsTab.NETWORK) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_network), stringResource(R.string.settings_dns), stringResource(R.string.settings_search_keywords_dns), OwnTVIcon.SEARCH, TileTone.SECONDARY) { open(SettingsTab.DNS) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_app_startup), stringResource(R.string.settings_search_keywords_startup), OwnTVIcon.HOME, TileTone.SECONDARY,
+                    chip = startupLabel(startupMode)) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showStartup = true },
+                SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_check_updates), stringResource(R.string.settings_search_keywords_updates), OwnTVIcon.DOWNLOADS, TileTone.PRIMARY,
                     chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}") { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showUpdate = true },
-                SettingsSearchEntry("App", "Check updates on startup", "auto update new version", OwnTVIcon.HISTORY, TileTone.SECONDARY,
-                    chip = if (updateCheckOnStart) "On" else "Off", chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
-                SettingsSearchEntry("App", "About", "version license project info", OwnTVIcon.MENU, TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAbout = true },
+                SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_update_startup), stringResource(R.string.settings_search_keywords_update_auto), OwnTVIcon.HISTORY, TileTone.SECONDARY,
+                    chip = if (updateCheckOnStart) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
+                SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_about), stringResource(R.string.settings_search_keywords_about), OwnTVIcon.MENU, TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAbout = true },
             )
             val tokens = searchQuery.trim().lowercase().split(" ").filter { it.isNotBlank() }
             val results = entries.filter { e -> tokens.all { t -> e.haystack.contains(t) } }
             if (results.isEmpty()) {
                 Text(
-                    text = "No settings match “${searchQuery.trim()}”",
+                    text = stringResource(R.string.settings_no_settings_match, searchQuery.trim()),
                     style = MaterialTheme.typography.bodyLarge,
                     color = colors.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp),
@@ -669,7 +673,7 @@ fun SettingsScreen(
                 results.forEach { e ->
                     SettingsRow(
                         tone = e.tone, icon = e.icon,
-                        title = "${e.group} › ${e.title}",
+                        title = stringResource(R.string.settings_breadcrumb, e.group, e.title),
                         chip = e.chip, chipTone = e.chipTone,
                         showChevron = e.showChevron,
                         onClick = e.onClick,
@@ -705,7 +709,7 @@ fun SettingsScreen(
     }
     if (showTheme) {
         tv.own.owntv.features.settings.PickerDialog(
-            title = "Theme",
+            title = stringResource(R.string.settings_theme_dialog),
             options = ThemeMode.entries.map { it.name to themeLabel(it) },
             selected = themeMode.name,
             onSelect = { settingsVm.setThemeMode(ThemeMode.valueOf(it)); showTheme = false },
@@ -714,8 +718,8 @@ fun SettingsScreen(
     }
     if (showStartup) {
         tv.own.owntv.features.settings.PickerDialog(
-            title = "App startup",
-            options = tv.own.owntv.features.settings.data.StartupMode.entries.map { it.name to it.label },
+            title = stringResource(R.string.settings_app_startup_dialog),
+            options = tv.own.owntv.features.settings.data.StartupMode.entries.map { it.name to startupLabel(it) },
             selected = startupMode.name,
             onSelect = { settingsVm.setStartupMode(tv.own.owntv.features.settings.data.StartupMode.valueOf(it)); showStartup = false },
             onDismiss = { showStartup = false },
@@ -723,8 +727,8 @@ fun SettingsScreen(
     }
     if (showAnimations) {
         tv.own.owntv.features.settings.PickerDialog(
-            title = "Animations",
-            options = tv.own.owntv.ui.theme.AnimationLevel.entries.map { it.name to it.label },
+            title = stringResource(R.string.settings_animations_dialog),
+            options = tv.own.owntv.ui.theme.AnimationLevel.entries.map { it.name to stringResource(it.labelRes) },
             selected = animationLevel.name,
             onSelect = { settingsVm.setAnimationLevel(tv.own.owntv.ui.theme.AnimationLevel.valueOf(it)); showAnimations = false },
             onDismiss = { showAnimations = false },
@@ -779,7 +783,7 @@ fun SettingsScreen(
     }
     if (showFolderPicker) {
         StorageBrowser(
-            title = "Choose the download folder",
+            title = stringResource(R.string.settings_download_folder_title),
             mode = BrowseMode.FOLDER,
             onPick = { settingsVm.setDownloadRoot(it.absolutePath); showFolderPicker = false },
             onDismiss = { showFolderPicker = false },
@@ -820,7 +824,7 @@ fun SettingsScreen(
     if (showBgPicker) {
         val context = LocalContext.current
         StorageBrowser(
-            title = "Pick a background image",
+            title = stringResource(R.string.settings_pick_background_title),
             mode = BrowseMode.FILE,
             fileExtensions = setOf("png", "jpg", "jpeg", "webp", "bmp"),
             onPick = { file ->
@@ -839,11 +843,28 @@ fun SettingsScreen(
     }
 }
 
-private fun themeLabel(mode: ThemeMode) = when (mode) {
-    ThemeMode.DARK -> "Dark"
-    ThemeMode.LIGHT -> "Light"
-    ThemeMode.SYSTEM -> "System"
-}
+@Composable
+private fun themeLabel(mode: ThemeMode): String = stringResource(
+    when (mode) {
+        ThemeMode.DARK -> R.string.settings_theme_dark
+        ThemeMode.LIGHT -> R.string.settings_theme_light
+        ThemeMode.SYSTEM -> R.string.settings_theme_system
+    },
+)
+
+@Composable
+private fun startupLabel(mode: tv.own.owntv.features.settings.data.StartupMode): String = stringResource(
+    when (mode) {
+        tv.own.owntv.features.settings.data.StartupMode.HOME -> R.string.settings_startup_home
+        tv.own.owntv.features.settings.data.StartupMode.LAST_CHANNEL -> R.string.settings_startup_last_channel
+        tv.own.owntv.features.settings.data.StartupMode.FAVORITES -> R.string.settings_startup_favorites
+    },
+)
+
+@Composable
+private fun navModeLabel(mode: tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode): String = stringResource(
+    if (mode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) R.string.settings_dynamic else R.string.settings_static,
+)
 
 /** The six quick presets shown at the top of the accent picker. */
 private val AccentPresetChoices: List<tv.own.owntv.ui.theme.AccentColor> =
@@ -898,10 +919,10 @@ private fun AccentPaletteDialog(
             // whole panel above the on-screen keyboard so the hex field stays visible.
             modifier = Modifier.dialogPanel(width = 640.dp, padding = 28.dp),
         ) {
-            Text("Accent color", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.settings_accent_dialog), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(16.dp))
 
-            Text("Presets", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+            Text(stringResource(R.string.settings_presets), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AccentPresetChoices.forEachIndexed { i, ac ->
@@ -916,7 +937,7 @@ private fun AccentPaletteDialog(
             }
 
             Spacer(Modifier.height(20.dp))
-            Text("Hex code", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+            Text(stringResource(R.string.settings_hex_code), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
             // Kept above the picker on purpose: the on-screen keyboard covers the lower half of the
             // screen, so the hex field must sit high enough to stay visible while the user types.
@@ -925,11 +946,11 @@ private fun AccentPaletteDialog(
                 tv.own.owntv.ui.components.OwnTVTextField(
                     value = hexInput,
                     onValueChange = { hexInput = it.take(6); hexError = false },
-                    label = "Hex",
+                    label = stringResource(R.string.settings_hex),
                     placeholder = "52DBC8",
                     modifier = Modifier.width(200.dp),
                 )
-                OwnTVButton("Apply", onClick = {
+                OwnTVButton(stringResource(R.string.settings_apply), onClick = {
                     val parsed = tv.own.owntv.ui.theme.parseAccentHex(hexInput)
                     if (parsed != null) {
                         onPickCustom("#" + hexInput.trim().removePrefix("#").uppercase())
@@ -941,13 +962,13 @@ private fun AccentPaletteDialog(
             }
             if (hexError) {
                 Spacer(Modifier.height(8.dp))
-                Text("Enter 6 hex digits, e.g. 52DBC8", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
+                Text(stringResource(R.string.settings_hex_error), style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
             }
 
             Spacer(Modifier.height(20.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(Modifier.weight(1f)) {
-                    Text("Color picker", style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                    Text(stringResource(R.string.settings_color_picker), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
                     Spacer(Modifier.height(10.dp))
                     // Hue bar: OK to enter, ◀ ▶ to shift the hue, OK/Back to exit.
                     tv.own.owntv.ui.components.HueBar(hue = hue) { h -> hue = h; syncHexFromPicker(); hexError = false }
@@ -969,9 +990,9 @@ private fun AccentPaletteDialog(
 
             Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
-                OwnTVButton("Use this color", onClick = { onPickCustom(pickedHex); onDismiss() })
+                OwnTVButton(stringResource(R.string.settings_use_color), onClick = { onPickCustom(pickedHex); onDismiss() })
             }
         }
     }
@@ -999,17 +1020,16 @@ private fun AboutDialog(onDismiss: () -> Unit) {
         ) {
             BrandLockup(markSize = 48, textSize = 30)
             Spacer(Modifier.height(6.dp))
-            Text("Version ${tv.own.owntv.BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.titleMedium, color = colors.primary)
+            Text(stringResource(R.string.settings_about_version, tv.own.owntv.BuildConfig.VERSION_NAME), style = MaterialTheme.typography.titleMedium, color = colors.primary)
             Spacer(Modifier.height(14.dp))
             Text(
-                "Your own IPTV player for Android TV — a free, open-source, player-only app. " +
-                    "It provides no channels or content; you bring your own legally accessible sources.",
+                stringResource(R.string.settings_about_description_full),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(14.dp))
-            Text("© 2026 Ashiq Hasan · GPLv3 License", style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
+            Text(stringResource(R.string.settings_about_license), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
             Spacer(Modifier.height(4.dp))
             Text(GITHUB_REPO, style = MaterialTheme.typography.bodyMedium, color = colors.primary)
             Spacer(Modifier.height(16.dp))
@@ -1017,31 +1037,31 @@ private fun AboutDialog(onDismiss: () -> Unit) {
             // join from their phone — no TV browser needed.
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Column(Modifier.weight(1f)) {
-                    Text("Join us on Telegram", style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+                    Text(stringResource(R.string.settings_join_telegram), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
                     Spacer(Modifier.height(2.dp))
                     Text(TELEGRAM_LINK, style = MaterialTheme.typography.bodyMedium, color = colors.primary)
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "Scan the QR to join from your phone, or open the link above.",
+                        stringResource(R.string.settings_telegram_scan),
                         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                     )
                 }
                 Box(Modifier.clip(RoundedCornerShape(10.dp)).background(Color.White).padding(6.dp)) {
                     Image(
                         painter = androidx.compose.ui.res.painterResource(tv.own.owntv.R.drawable.telegram_qr),
-                        contentDescription = "Telegram group QR code",
+                        contentDescription = stringResource(R.string.settings_telegram_qr),
                         modifier = Modifier.size(120.dp),
                     )
                 }
             }
             Spacer(Modifier.height(16.dp))
             Text(
-                "Contributions, bug reports & stars are welcome on GitHub.",
+                stringResource(R.string.settings_contributions),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(20.dp))
-            OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.focusRequester(focus))
+            OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, modifier = Modifier.focusRequester(focus))
         }
     }
 }
@@ -1064,35 +1084,36 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(entries) { if (entries != null) runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
-    val timeFmt = remember { java.text.SimpleDateFormat("d MMM HH:mm", java.util.Locale.getDefault()) }
+    val locale = LocalConfiguration.current.locales[0]
+    val timeFmt = remember(locale) { java.text.SimpleDateFormat("d MMM HH:mm", locale) }
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(modifier = Modifier.dialogPanel(width = 640.dp, padding = 28.dp)) {
-            Text("Playback error log", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.settings_playback_error_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
-                "The most recent playback failures (newest first). Include these details when reporting a problem.",
+                stringResource(R.string.settings_playback_error_description_full),
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(14.dp))
             val list = entries
             when {
-                list == null -> Text("Loading…", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                list.isEmpty() -> Text("No playback errors recorded.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                list == null -> Text(stringResource(R.string.settings_loading), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                list.isEmpty() -> Text(stringResource(R.string.settings_no_playback_errors), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 else -> list.forEach { e ->
                     Column(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surface)
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                     ) {
                         Text(
-                            "${timeFmt.format(java.util.Date(e.atMs))}  ·  ${e.engine}  ·  ${if (e.live) "Live" else "VOD"}",
+                            stringResource(R.string.settings_playback_entry, timeFmt.format(java.util.Date(e.atMs)), e.engine, stringResource(if (e.live) R.string.settings_live else R.string.settings_vod)),
                             style = MaterialTheme.typography.labelMedium, color = colors.primary,
                         )
                         e.reason?.let {
                             Spacer(Modifier.height(2.dp))
-                            Text(it, style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+                            Text(it.displayText(), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
                         }
                         e.spec?.let {
                             Spacer(Modifier.height(2.dp))
@@ -1103,7 +1124,7 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
                             Text(it, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                         }
                         Spacer(Modifier.height(2.dp))
-                        Text("${e.model} · ${e.android}", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                        Text(stringResource(R.string.settings_device_details, e.model, e.android), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
                     }
                     Spacer(Modifier.height(8.dp))
                 }
@@ -1111,16 +1132,24 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (!entries.isNullOrEmpty()) {
-                    OwnTVButton("Clear log", onClick = {
+                    OwnTVButton(stringResource(R.string.settings_clear_log), onClick = {
                         tv.own.owntv.player.PlaybackErrorLog.clear(context)
                         refresh++
                     }, style = OwnTVButtonStyle.SECONDARY)
                 }
                 Spacer(Modifier.weight(1f))
-                OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.focusRequester(focus))
+                OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, modifier = Modifier.focusRequester(focus))
             }
         }
     }
+}
+
+/** Stable, non-display choices for the history picker. */
+private enum class HistoryScope(val type: tv.own.owntv.core.model.MediaType?, val labelRes: Int) {
+    LIVE(tv.own.owntv.core.model.MediaType.LIVE, R.string.settings_history_live),
+    MOVIES(tv.own.owntv.core.model.MediaType.MOVIE, R.string.settings_history_movies),
+    SERIES(tv.own.owntv.core.model.MediaType.SERIES, R.string.settings_history_series),
+    ALL(null, R.string.settings_history_all),
 }
 
 /**
@@ -1133,8 +1162,7 @@ private fun ClearHistoryDialog(
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
-    // null = still choosing a scope; non-null = confirming that scope (type + label; type null = everything).
-    var pending by remember { mutableStateOf<Pair<tv.own.owntv.core.model.MediaType?, String>?>(null) }
+    var pending by remember { mutableStateOf<HistoryScope?>(null) }
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(pending) { runCatching { firstFocus.requestFocus() } }
     BackHandler { if (pending != null) pending = null else onDismiss() }
@@ -1148,30 +1176,30 @@ private fun ClearHistoryDialog(
         ) {
             val p = pending
             if (p == null) {
-                Text("Clear watch history", style = MaterialTheme.typography.titleLarge, color = colors.onSurface, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.settings_clear_history), style = MaterialTheme.typography.titleLarge, color = colors.onSurface, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Choose what to remove for this profile. Playlists, favorites and downloads are not affected.",
+                    stringResource(R.string.settings_choose_history),
                     style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(20.dp))
-                OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth().focusRequester(firstFocus))
+                OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth().focusRequester(firstFocus))
                 Spacer(Modifier.height(10.dp))
-                OwnTVButton("Live TV", onClick = { pending = tv.own.owntv.core.model.MediaType.LIVE to "Live TV" }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                OwnTVButton(stringResource(R.string.settings_history_live), onClick = { pending = HistoryScope.LIVE }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
-                OwnTVButton("Movies", onClick = { pending = tv.own.owntv.core.model.MediaType.MOVIE to "Movies" }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                OwnTVButton(stringResource(R.string.settings_history_movies), onClick = { pending = HistoryScope.MOVIES }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
-                OwnTVButton("Series", onClick = { pending = tv.own.owntv.core.model.MediaType.SERIES to "Series" }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                OwnTVButton(stringResource(R.string.settings_history_series), onClick = { pending = HistoryScope.SERIES }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
-                OwnTVButton("All history", onClick = { pending = (null as tv.own.owntv.core.model.MediaType?) to "all" }, modifier = Modifier.fillMaxWidth())
+                OwnTVButton(stringResource(R.string.settings_all_history), onClick = { pending = HistoryScope.ALL }, modifier = Modifier.fillMaxWidth())
             } else {
-                Text("Clear ${p.second} history?", style = MaterialTheme.typography.titleLarge, color = colors.onSurface, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.settings_clear_history_confirm, stringResource(p.labelRes)), style = MaterialTheme.typography.titleLarge, color = colors.onSurface, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(8.dp))
-                Text("This can't be undone.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.settings_cannot_undo), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(24.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    OwnTVButton("No", onClick = { pending = null }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(firstFocus))
-                    OwnTVButton("Yes, clear", onClick = { onClear(p.first) })
+                    OwnTVButton(stringResource(R.string.settings_no), onClick = { pending = null }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(firstFocus))
+                    OwnTVButton(stringResource(R.string.settings_yes_clear), onClick = { onClear(p.type) })
                 }
             }
         }
@@ -1198,10 +1226,10 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
             modifier = Modifier.dialogPanel(width = 460.dp, padding = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("UI Zoom", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.settings_ui_zoom), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Scale the whole interface (${UiZoom.MIN}%–${UiZoom.MAX}%).",
+                stringResource(R.string.settings_ui_zoom_range, UiZoom.MIN, UiZoom.MAX),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(20.dp))
@@ -1211,26 +1239,26 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
                 // the cursor. The buttons stay focusable at the limits (clamped + dimmed, never disabled)
                 // so focus always lands inside the dialog — a disabled "+" at MAX zoom was leaving focus
                 // stranded outside, trapping the user at high zoom.
-                StepButton("–", dimmed = current <= UiZoom.MIN, modifier = Modifier.focusRequester(firstFocus)) {
+                StepButton(stringResource(R.string.settings_decrease), dimmed = current <= UiZoom.MIN, modifier = Modifier.focusRequester(firstFocus)) {
                     val next = UiZoom.clamp(current - UiZoom.STEP)
                     if (next < UiZoom.LOW_RAM_WARN && !lowZoomAccepted) pendingLowZoom = next else onSet(next)
                 }
                 Text(
-                    UiZoom.label(current),
+                    stringResource(R.string.common_percent, current),
                     style = MaterialTheme.typography.headlineLarge,
                     color = colors.primary,
                     modifier = Modifier.width(120.dp),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
-                StepButton("+", dimmed = current >= UiZoom.MAX) {
+                StepButton(stringResource(R.string.settings_increase), dimmed = current >= UiZoom.MAX) {
                     onSet(UiZoom.clamp(current + UiZoom.STEP))
                 }
             }
             Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton("Reset", onClick = { onSet(UiZoom.DEFAULT) }, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.settings_reset), onClick = { onSet(UiZoom.DEFAULT) }, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
-                OwnTVButton("Done", onClick = onDismiss)
+                OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss)
             }
         }
 
@@ -1252,18 +1280,15 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
                     modifier = Modifier.dialogPanel(width = 460.dp, padding = 28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text("⚠️ Low zoom warning", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Text(stringResource(R.string.settings_low_zoom_warning_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "Zoom below ${UiZoom.LOW_RAM_WARN}% shows many more items on screen at once. " +
-                            "On devices with limited memory (e.g. 2 GB TV sticks) this can make the app " +
-                            "unstable or crash, especially with large playlists and EPG data.\n\n" +
-                            "Press OK to continue, or Back to stay at ${UiZoom.LOW_RAM_WARN}%.",
+                        stringResource(R.string.settings_low_zoom_warning, UiZoom.LOW_RAM_WARN, UiZoom.LOW_RAM_WARN),
                         style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(20.dp))
                     OwnTVButton(
-                        "I understand and accept the risk",
+                        stringResource(R.string.settings_low_zoom_accept),
                         onClick = {
                             lowZoomAccepted = true
                             pendingLowZoom = null
@@ -1334,17 +1359,17 @@ private fun GlassEffectDialog(
             modifier = Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Glass Effect", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.settings_glass_effect_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Translucent frosted panels over a background photo, or over the app's own background.",
+                stringResource(R.string.settings_glass_effect_description),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
             Spacer(Modifier.height(20.dp))
             // Master on/off for the liquid glass (works with or without a background image).
             OwnTVButton(
-                if (glassOn) "Liquid glass: On" else "Liquid glass: Off",
+                if (glassOn) stringResource(R.string.settings_liquid_glass_on) else stringResource(R.string.settings_liquid_glass_off),
                 onClick = onToggleGlass,
                 style = if (glassOn) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
                 icon = OwnTVIcon.THEME,
@@ -1353,7 +1378,7 @@ private fun GlassEffectDialog(
             Spacer(Modifier.height(12.dp))
             // Optional background photo behind everything.
             OwnTVButton(
-                if (bgOn) "Background image: On" else "Background image: Off",
+                if (bgOn) stringResource(R.string.settings_background_on) else stringResource(R.string.settings_background_off),
                 onClick = onOpenBackground,
                 style = OwnTVButtonStyle.SECONDARY,
                 icon = OwnTVIcon.IMAGE,
@@ -1361,51 +1386,51 @@ private fun GlassEffectDialog(
             )
             if (glassOn) {
                 Spacer(Modifier.height(22.dp))
-                Text("Transparency", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(stringResource(R.string.settings_transparency_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "How much shows through the panels ($min%–$max%). Higher is more solid.",
+                    stringResource(R.string.settings_transparency_description, min, max),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    StepButton("–", dimmed = alphaPercent <= min) { onSetAlpha(clamp(alphaPercent - step)) }
+                    StepButton(stringResource(R.string.settings_decrease), dimmed = alphaPercent <= min) { onSetAlpha(clamp(alphaPercent - step)) }
                     Text(
-                        "$alphaPercent%",
+                        stringResource(R.string.settings_surface_transparency, alphaPercent),
                         style = MaterialTheme.typography.headlineLarge,
                         color = colors.primary,
                         modifier = Modifier.width(120.dp),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     )
-                    StepButton("+", dimmed = alphaPercent >= max) { onSetAlpha(clamp(alphaPercent + step)) }
+                    StepButton(stringResource(R.string.settings_increase), dimmed = alphaPercent >= max) { onSetAlpha(clamp(alphaPercent + step)) }
                 }
                 // Backdrop blur — the real "frost" behind the panels (needs a background image; API 31+).
                 Spacer(Modifier.height(20.dp))
-                Text("Blur / Frost", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(stringResource(R.string.settings_blur_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "How frosted the backdrop is ($blurMin%–$blurMax%). Only over a background image." +
-                        if (!bgOn) " Set a background image to enable." else "",
+                    stringResource(if (bgOn) R.string.settings_blur_description_enabled else R.string.settings_blur_description_disabled, blurMin, blurMax),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    StepButton("–", dimmed = blurPercent <= blurMin) { onSetBlur(blurClamp(blurPercent - blurStep)) }
+                    StepButton(stringResource(R.string.settings_decrease), dimmed = blurPercent <= blurMin) { onSetBlur(blurClamp(blurPercent - blurStep)) }
                     Text(
-                        "$blurPercent%",
+                        stringResource(R.string.settings_surface_transparency, blurPercent),
                         style = MaterialTheme.typography.headlineLarge,
                         color = colors.primary,
                         modifier = Modifier.width(120.dp),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     )
-                    StepButton("+", dimmed = blurPercent >= blurMax) { onSetBlur(blurClamp(blurPercent + blurStep)) }
+                    StepButton(stringResource(R.string.settings_increase), dimmed = blurPercent >= blurMax) { onSetBlur(blurClamp(blurPercent + blurStep)) }
                 }
                 // Advanced: choose exactly which surfaces render as glass.
                 Spacer(Modifier.height(16.dp))
                 OwnTVButton(
-                    if (scope == ALL_GLASS_SURFACES) "Surfaces: All" else "Surfaces: ${scope.size} of ${ALL_GLASS_SURFACES.size}",
+                    if (scope == ALL_GLASS_SURFACES) stringResource(R.string.settings_surface_count_all)
+                    else stringResource(R.string.settings_surface_count, scope.size, ALL_GLASS_SURFACES.size),
                     onClick = { showSurfaces = true },
                     style = OwnTVButtonStyle.SECONDARY,
                     modifier = Modifier.fillMaxWidth(),
@@ -1413,9 +1438,9 @@ private fun GlassEffectDialog(
             }
             Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (glassOn) OwnTVButton("Reset", onClick = { onSetAlpha(default); onSetBlur(blurDefault); onSetScope(GlassConfig(ALL_GLASS_SURFACES).toBitmask()) }, style = OwnTVButtonStyle.SECONDARY)
+                if (glassOn) OwnTVButton(stringResource(R.string.settings_reset), onClick = { onSetAlpha(default); onSetBlur(blurDefault); onSetScope(GlassConfig(ALL_GLASS_SURFACES).toBitmask()) }, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
-                OwnTVButton("Done", onClick = onDismiss)
+                OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss)
             }
         }
         }
@@ -1466,10 +1491,10 @@ private fun BrowsingListsDialog(
             modifier = Modifier.dialogPanel(width = 520.dp, padding = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Browsing & lists", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.settings_browsing_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
-                "What Live TV, Movies and Series return to when you come back.",
+                stringResource(R.string.settings_browsing_description_full),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
@@ -1478,36 +1503,35 @@ private fun BrowsingListsDialog(
             // SECONDARY chrome on every row (matching GlassSurfacesDialog): with an accent fill on each
             // "On" row the focused row becomes hard to pick out on a TV. State reads from the ": On/Off"
             // text; focus is carried by the button's own highlight.
-            BrowsingGroupLabel("Remember last category", "Reopen the section on the category you left, not All.")
+            BrowsingGroupLabel(stringResource(R.string.settings_browsing_last_category), stringResource(R.string.settings_browsing_last_category_description))
             OwnTVButton(
-                "Live TV: ${if (catLive) "On" else "Off"}", onClick = onToggleCatLive,
+                stringResource(R.string.settings_section_toggle, stringResource(R.string.settings_history_live), stringResource(if (catLive) R.string.common_on else R.string.common_off)), onClick = onToggleCatLive,
                 style = OwnTVButtonStyle.SECONDARY,
                 modifier = Modifier.fillMaxWidth().focusRequester(firstFocus),
             )
             Spacer(Modifier.height(8.dp))
-            OwnTVButton("Movies: ${if (catMovies) "On" else "Off"}", onClick = onToggleCatMovies,
+            OwnTVButton(stringResource(R.string.settings_section_toggle, stringResource(R.string.settings_history_movies), stringResource(if (catMovies) R.string.common_on else R.string.common_off)), onClick = onToggleCatMovies,
                 style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
-            OwnTVButton("Series: ${if (catSeries) "On" else "Off"}", onClick = onToggleCatSeries,
+            OwnTVButton(stringResource(R.string.settings_section_toggle, stringResource(R.string.settings_history_series), stringResource(if (catSeries) R.string.common_on else R.string.common_off)), onClick = onToggleCatSeries,
                 style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
 
             Spacer(Modifier.height(18.dp))
             BrowsingGroupLabel(
-                "Remember last item",
-                "Each category keeps its own scroll position instead of starting at the top. " +
-                    "Live TV also restores the last focused channel.",
+                stringResource(R.string.settings_browsing_last_item),
+                stringResource(R.string.settings_browsing_last_item_description),
             )
-            OwnTVButton("Live TV: ${if (itemLive) "On" else "Off"}", onClick = onToggleItemLive,
+            OwnTVButton(stringResource(R.string.settings_section_toggle, stringResource(R.string.settings_history_live), stringResource(if (itemLive) R.string.common_on else R.string.common_off)), onClick = onToggleItemLive,
                 style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
-            OwnTVButton("Movies: ${if (itemMovies) "On" else "Off"}", onClick = onToggleItemMovies,
+            OwnTVButton(stringResource(R.string.settings_section_toggle, stringResource(R.string.settings_history_movies), stringResource(if (itemMovies) R.string.common_on else R.string.common_off)), onClick = onToggleItemMovies,
                 style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
-            OwnTVButton("Series: ${if (itemSeries) "On" else "Off"}", onClick = onToggleItemSeries,
+            OwnTVButton(stringResource(R.string.settings_section_toggle, stringResource(R.string.settings_history_series), stringResource(if (itemSeries) R.string.common_on else R.string.common_off)), onClick = onToggleItemSeries,
                 style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
 
             Spacer(Modifier.height(20.dp))
-            OwnTVButton("Done", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss, modifier = Modifier.fillMaxWidth())
         }
         }
     }
@@ -1525,15 +1549,18 @@ private fun BrowsingGroupLabel(title: String, desc: String) {
 }
 
 /** User-facing label for a glassable surface. */
-private fun glassSurfaceLabel(s: GlassSurface): String = when (s) {
-    GlassSurface.PANELS -> "Content panels"
-    GlassSurface.SIDEBAR -> "Sidebar"
-    GlassSurface.PREVIEW -> "Preview panes"
-    GlassSurface.DIALOGS -> "Dialogs & popups"
-    GlassSurface.TOPBAR -> "Top bar"
-    GlassSurface.CARDS -> "Cards"
-    GlassSurface.MINI_PLAYER -> "Mini player"
-}
+@Composable
+private fun glassSurfaceLabel(s: GlassSurface): String = stringResource(
+    when (s) {
+        GlassSurface.PANELS -> R.string.settings_glass_surface_panels
+        GlassSurface.SIDEBAR -> R.string.settings_glass_surface_sidebar
+        GlassSurface.PREVIEW -> R.string.settings_glass_surface_preview
+        GlassSurface.DIALOGS -> R.string.settings_glass_surface_dialogs
+        GlassSurface.TOPBAR -> R.string.settings_glass_surface_topbar
+        GlassSurface.CARDS -> R.string.settings_glass_surface_cards
+        GlassSurface.MINI_PLAYER -> R.string.settings_glass_surface_miniplayer
+    },
+)
 
 /**
  * Advanced per-surface glass scope: one On/Off row per [GlassSurface] plus an "All" master.
@@ -1560,10 +1587,10 @@ private fun GlassSurfacesDialog(
             modifier = Modifier.dialogPanel(width = 440.dp, padding = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Glass surfaces", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.settings_glass_surfaces), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Choose which parts of the app render as glass. Turning every surface off turns glass off.",
+                stringResource(R.string.settings_glass_surfaces_description),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
@@ -1572,7 +1599,7 @@ private fun GlassSurfacesDialog(
             // focused row was indistinguishable on TV. State lives in the ": On/Off" text; focus in the
             // button's own focus highlight.
             OwnTVButton(
-                if (scope == ALL_GLASS_SURFACES) "All surfaces: On" else "All surfaces: Off",
+                if (scope == ALL_GLASS_SURFACES) stringResource(R.string.settings_all_surfaces_on) else stringResource(R.string.settings_all_surfaces_off),
                 onClick = {
                     onSetScope(if (scope == ALL_GLASS_SURFACES) 0 else GlassConfig(ALL_GLASS_SURFACES).toBitmask())
                 },
@@ -1583,7 +1610,7 @@ private fun GlassSurfacesDialog(
             GlassSurface.entries.forEach { s ->
                 val on = s in scope
                 OwnTVButton(
-                    "${glassSurfaceLabel(s)}: ${if (on) "On" else "Off"}",
+                    stringResource(R.string.settings_surface_toggle, glassSurfaceLabel(s), stringResource(if (on) R.string.common_on else R.string.common_off)),
                     onClick = { onSetScope(toggled(s)) },
                     style = OwnTVButtonStyle.SECONDARY,
                     modifier = Modifier.fillMaxWidth(),
@@ -1591,7 +1618,7 @@ private fun GlassSurfacesDialog(
                 Spacer(Modifier.height(8.dp))
             }
             Spacer(Modifier.height(12.dp))
-            OwnTVButton("Done", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss, modifier = Modifier.fillMaxWidth())
         }
         }
     }
@@ -1629,10 +1656,10 @@ private fun CatchupTimeDialog(
             modifier = Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Catch-up", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.settings_catchup), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
-                "How catch-up timestamps are sent. Use your device timezone, or set the offset your provider's server expects.",
+                stringResource(R.string.settings_catchup_description),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
@@ -1640,13 +1667,13 @@ private fun CatchupTimeDialog(
             // Mode toggle: Device / Manual.
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OwnTVButton(
-                    "Device",
+                    stringResource(R.string.settings_catchup_timezone_device),
                     onClick = { onSetMode(SettingsRepository.CatchupTimezone.DEVICE) },
                     style = if (!manual) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
                     modifier = Modifier.focusRequester(firstFocus),
                 )
                 OwnTVButton(
-                    "Manual",
+                    stringResource(R.string.settings_manual),
                     onClick = { onSetMode(SettingsRepository.CatchupTimezone.MANUAL) },
                     style = if (manual) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
                 )
@@ -1654,7 +1681,7 @@ private fun CatchupTimeDialog(
             if (manual) {
                 Spacer(Modifier.height(22.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    StepButton("–", enabled = offsetMinutes > offsetRange.first) { onAdjustOffset(-60) }
+                    StepButton(stringResource(R.string.settings_decrease), enabled = offsetMinutes > offsetRange.first) { onAdjustOffset(-60) }
                     Text(
                         utcOffsetLabel(offsetMinutes),
                         style = MaterialTheme.typography.headlineMedium,
@@ -1662,22 +1689,22 @@ private fun CatchupTimeDialog(
                         modifier = Modifier.width(150.dp),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     )
-                    StepButton("+", enabled = offsetMinutes < offsetRange.last) { onAdjustOffset(60) }
+                    StepButton(stringResource(R.string.settings_increase), enabled = offsetMinutes < offsetRange.last) { onAdjustOffset(60) }
                 }
             }
             // Which player takes an archive programme. Archives are the streams the in-app engines
             // struggle with most, so an external app is a useful fallback — "Ask" puts the choice on
             // the "Watch from start" action itself instead of forcing one answer forever.
             Spacer(Modifier.height(24.dp))
-            Text("Play catch-up in", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Text(stringResource(R.string.settings_catchup_player), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SettingsRepository.CatchupPlayer.entries.forEach { p ->
                     OwnTVButton(
                         when (p) {
-                            SettingsRepository.CatchupPlayer.ASK -> "Always ask"
-                            SettingsRepository.CatchupPlayer.INTERNAL -> "OwnTV player"
-                            SettingsRepository.CatchupPlayer.EXTERNAL -> "External player"
+                            SettingsRepository.CatchupPlayer.ASK -> stringResource(R.string.settings_catchup_player_ask)
+                            SettingsRepository.CatchupPlayer.INTERNAL -> stringResource(R.string.settings_catchup_player_internal)
+                            SettingsRepository.CatchupPlayer.EXTERNAL -> stringResource(R.string.settings_catchup_player_external)
                         },
                         onClick = { onSetPlayer(p) },
                         style = if (player == p) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
@@ -1686,7 +1713,7 @@ private fun CatchupTimeDialog(
                 }
             }
             Spacer(Modifier.height(24.dp))
-            OwnTVButton("Done", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -1800,7 +1827,7 @@ private fun SettingsRow(
 private fun SoonChip() {
     val colors = OwnTVTheme.colors
     Text(
-        text = "SOON",
+        text = stringResource(R.string.settings_soon),
         style = MaterialTheme.typography.labelMedium,
         color = colors.onSurfaceVariant,
         fontWeight = FontWeight.SemiBold,
@@ -1860,7 +1887,7 @@ private fun QuickToggleChip(
             OwnTVIcon(icon = icon, tint = fg, modifier = Modifier.size(18.dp))
             Text(label, style = MaterialTheme.typography.labelLarge, color = fg, fontWeight = FontWeight.SemiBold)
             Text(
-                text = if (on) "On" else "Off",
+                text = if (on) stringResource(R.string.common_on) else stringResource(R.string.common_off),
                 style = MaterialTheme.typography.labelMedium,
                 color = if (on) fg else colors.onSurfaceVariant,
                 fontWeight = FontWeight.SemiBold,

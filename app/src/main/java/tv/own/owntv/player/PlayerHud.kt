@@ -52,6 +52,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -70,10 +71,13 @@ import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
+import tv.own.owntv.ui.components.displayText
+import tv.own.owntv.ui.components.displayLabel
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.LocalActionSurface
@@ -81,6 +85,67 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 
 private val SPEEDS = listOf(0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0)
 private val TEAL = Color(0xFF52DBC8)
+
+@Composable
+private fun MediaSpec.displayText(): String {
+    val decoderText = decoder?.let {
+        when (it) {
+            is DecoderSpec.Hardware -> buildList {
+                add(stringResource(R.string.player_decoder_hardware))
+                if (it.direct) add(stringResource(R.string.player_decoder_direct))
+            }.joinToString(stringResource(R.string.player_metadata_separator))
+            is DecoderSpec.Software -> buildList {
+                add(stringResource(R.string.player_decoder_software))
+                if (it.gpu) add(stringResource(R.string.player_decoder_gpu))
+            }.joinToString(stringResource(R.string.player_metadata_separator))
+            is DecoderSpec.Named -> buildList {
+                add(it.value)
+                if (it.hardware) add(stringResource(R.string.player_decoder_hardware))
+                if (it.direct) add(stringResource(R.string.player_decoder_direct))
+            }.joinToString(stringResource(R.string.player_metadata_separator))
+        }
+    }
+    return listOfNotNull(codec, resolution, decoderText)
+        .joinToString(stringResource(R.string.player_metadata_separator))
+}
+
+@Composable
+private fun PlaybackFailure.displayText(): String = when (this) {
+    PlaybackFailure.Channel -> stringResource(R.string.player_error_channel)
+    PlaybackFailure.LostConnection -> stringResource(R.string.player_error_lost_connection)
+    PlaybackFailure.StreamLink -> stringResource(R.string.player_error_stream_link)
+    PlaybackFailure.NotStreaming -> stringResource(R.string.player_error_not_streaming)
+    PlaybackFailure.AudioNoVideo -> stringResource(R.string.player_error_audio_no_video)
+    PlaybackFailure.FileCorrupt -> stringResource(R.string.player_error_file_corrupt)
+    PlaybackFailure.MultipleVideos -> stringResource(R.string.player_error_multiple_videos)
+    PlaybackFailure.DecoderBusy -> stringResource(R.string.player_error_decoder_busy)
+    PlaybackFailure.NoInternet -> stringResource(R.string.player_error_no_internet)
+    PlaybackFailure.Surround -> stringResource(R.string.player_error_surround)
+    PlaybackFailure.ImageSubtitleAudio -> stringResource(R.string.player_error_image_subtitle_audio)
+    PlaybackFailure.ImageFormat -> stringResource(R.string.player_error_image_format)
+    PlaybackFailure.ImageShow -> stringResource(R.string.player_error_image_show)
+    PlaybackFailure.BothEnginesExoFirst -> stringResource(R.string.player_error_both_engines_exo_first)
+    is PlaybackFailure.BothEnginesMpvFirst -> stringResource(
+        R.string.player_error_both_engines_mpv_first,
+        exoError.technicalArgument(),
+    )
+    is PlaybackFailure.ExoDecode -> stringResource(R.string.player_error_exo_decode, code)
+    is PlaybackFailure.ExoPlay -> stringResource(R.string.player_error_exo_play, code)
+    is PlaybackFailure.HardwareFallback -> stringResource(R.string.player_error_hardware_fallback, resolution)
+    is PlaybackFailure.HardwareDisabled -> stringResource(R.string.player_error_hardware_disabled, resolution)
+    is PlaybackFailure.StreamUnavailable -> stringResource(
+        R.string.player_error_stream_unavailable,
+        if (customUserAgentHint) stringResource(R.string.player_error_custom_user_agent) else "",
+    )
+    is PlaybackFailure.Raw -> message
+}
+
+private fun PlaybackFailure.technicalArgument(): String = when (this) {
+    is PlaybackFailure.ExoDecode -> code
+    is PlaybackFailure.ExoPlay -> code
+    is PlaybackFailure.Raw -> message
+    else -> this::class.simpleName.orEmpty()
+}
 
 private const val DIRECT_TUNE_TIMEOUT_MS = 2_000L
 private const val DIRECT_TUNE_FEEDBACK_MS = 1_500L
@@ -168,6 +233,11 @@ fun PlayerHud(
     val zoomMode by player.zoomMode.collectAsStateWithLifecycle()
     val speed by player.speed.collectAsStateWithLifecycle()
     val isLive = player.isLiveContent
+    val switchedToExo = stringResource(R.string.player_switch_exo)
+    val switchedToMpv = stringResource(R.string.player_switch_mpv)
+    val tuneNotFound = stringResource(R.string.player_channel_not_found)
+    val multipleChannels = stringResource(R.string.player_multiple_channels)
+    val tuneFailed = stringResource(R.string.player_tune_failed)
 
     val nextUpTitle by player.nextUpTitle.collectAsStateWithLifecycle()
 
@@ -208,10 +278,10 @@ fun PlayerHud(
     LaunchedEffect(engineFlash) { if (engineFlash > 0) { delay(1800); engineMsg = null } }
     // Wrap the engine toggles so a click also surfaces the toast naming the engine we're switching TO.
     val toggleCompat: (() -> Unit)? = onToggleCompatMode?.let { cb -> {
-        engineMsg = if (compatMode == true) "Switched to ExoPlayer" else "Switched to MPV"; engineFlash++; cb()
+        engineMsg = if (compatMode == true) switchedToExo else switchedToMpv; engineFlash++; cb()
     } }
     val toggleVod: (() -> Unit)? = onToggleVodEngine?.let { cb -> {
-        engineMsg = if (vodOnExo == true) "Switched to MPV" else "Switched to ExoPlayer"; engineFlash++; cb()
+        engineMsg = if (vodOnExo == true) switchedToMpv else switchedToExo; engineFlash++; cb()
     } }
 
     // ---- Direct tune (channel-number entry) ----
@@ -267,9 +337,9 @@ fun PlayerHud(
         }
         tuneOsd = when (result) {
             is DirectTuneResult.Found -> TuneOsd.Tuned(result.channel)
-            is DirectTuneResult.NotFound -> TuneOsd.Message("$num", "Channel not found")
-            is DirectTuneResult.Ambiguous -> TuneOsd.Message("$num", "Multiple channels")
-            is DirectTuneResult.Failed -> TuneOsd.Message("$num", "Tune failed")
+            is DirectTuneResult.NotFound -> TuneOsd.Message(num.toString(), tuneNotFound)
+            is DirectTuneResult.Ambiguous -> TuneOsd.Message(num.toString(), multipleChannels)
+            is DirectTuneResult.Failed -> TuneOsd.Message(num.toString(), tuneFailed)
             is DirectTuneResult.Cancelled -> null
             null -> null
         }
@@ -434,7 +504,7 @@ fun PlayerHud(
                 // A fresh tune drives the card from the lookup result, not player metadata: the Stalker and
                 // mpv paths publish their metadata after an async resolve, which would show the old channel.
                 if (tuned != null) {
-                    ChannelOsdCard(title = tuned.name, subtitle = tuned.number?.let { "#$it" }, logoUrl = tuned.logoUrl)
+                    ChannelOsdCard(title = tuned.name, subtitle = tuned.number?.let { stringResource(R.string.player_channel_number, it) }, logoUrl = tuned.logoUrl)
                 } else {
                     ChannelCard(player)
                 }
@@ -530,27 +600,29 @@ fun PlayerHud(
         // Status overlay (always shown).
         when {
             error != null -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Playback error", style = MaterialTheme.typography.titleLarge, color = Color.White)
+                Text(stringResource(R.string.player_playback_error), style = MaterialTheme.typography.titleLarge, color = Color.White)
                 Spacer(Modifier.height(8.dp))
-                Text(error ?: "", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+                error?.let {
+                    Text(it.displayText(), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+                }
                 // Structured technical detail so a user can report the real cause without adb/logcat:
                 // plain reason → media spec (codec • resolution • decoder) → raw engine/codec line.
                 errorInfo?.let { info ->
-                    info.reason?.takeIf { it.isNotBlank() }?.let {
+                    info.reason?.let {
                         Spacer(Modifier.height(8.dp))
-                        Text(it, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.92f), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(0.8f))
+                        Text(it.displayText(), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.92f), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(0.8f))
                     }
-                    info.spec?.takeIf { it.isNotBlank() }?.let {
+                    info.spec?.let {
                         Spacer(Modifier.height(4.dp))
-                        Text(it, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.55f), textAlign = TextAlign.Center)
+                        Text(it.displayText(), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.55f), textAlign = TextAlign.Center)
                     }
                     info.raw?.takeIf { it.isNotBlank() }?.let {
                         Spacer(Modifier.height(4.dp))
-                        Text("err: $it", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(0.8f))
+                        Text(stringResource(R.string.player_raw_error, it), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(0.8f))
                     }
                 }
                 Spacer(Modifier.height(18.dp))
-                OwnTVButton("Retry", onClick = { player.retry() }, icon = OwnTVIcon.PLAY, modifier = Modifier.focusRequester(retryFocus))
+                OwnTVButton(stringResource(R.string.common_retry), onClick = { player.retry() }, icon = OwnTVIcon.PLAY, modifier = Modifier.focusRequester(retryFocus))
             }
             buffering -> OwnTVSpinner(modifier = Modifier.align(Alignment.Center), sizeDp = 56)
         }
@@ -566,7 +638,7 @@ fun PlayerHud(
             var audioTracks by remember { mutableStateOf(player.audioTracks()) }
             LaunchedEffect(Unit) { while (audioTracks.isEmpty()) { delay(300); audioTracks = player.audioTracks() } }
             TrackDialog(
-                "Audio Track", audioTracks,
+                stringResource(R.string.player_audio_track), audioTracks,
                 onSelect = { player.selectAudio(it.mpvId); dialog = HudDialog.NONE }, onOff = null,
                 onDismiss = { dialog = HudDialog.NONE },
                 // A/V-sync nudge only for VOD (mpv) — live A/V is the provider's; ExoPlayer has no audio-delay.
@@ -578,7 +650,7 @@ fun PlayerHud(
             var subTracks by remember { mutableStateOf(player.textTracks()) }
             LaunchedEffect(Unit) { while (subTracks.isEmpty()) { delay(300); subTracks = player.textTracks() } }
             TrackDialog(
-                "Subtitles", subTracks,
+                stringResource(R.string.player_subtitles), subTracks,
                 onSelect = { player.selectSubtitle(it.mpvId); dialog = HudDialog.NONE },
                 onOff = { player.disableSubtitles(); dialog = HudDialog.NONE },
                 onDismiss = { dialog = HudDialog.NONE },
@@ -608,13 +680,24 @@ private fun TopBar(
 ) {
     // Reactive meta so the title row updates instantly on a channel zap (the plain vars aren't observed).
     val meta by player.currentMeta.collectAsStateWithLifecycle()
+    val displayTitle = meta.title?.takeIf { it.isNotBlank() }
+        ?: meta.episodeNumber?.let { stringResource(R.string.player_episode_number, it) }
+        ?: ""
+    val vodSubtitle = if (isLive) {
+        meta.subtitle
+    } else {
+        buildList {
+            meta.subtitle?.takeIf { it.isNotBlank() }?.let(::add)
+            meta.seasonNumber?.let { add(stringResource(R.string.player_season_number, it)) }
+        }.joinToString(stringResource(R.string.content_metadata_separator)).ifBlank { null }
+    }
     Row(modifier = modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
         CircleButton(OwnTVIcon.BACK, size = 40, onClick = onBack)
         Spacer(Modifier.width(14.dp))
         // Live: the channel logo sits with the channel NAME (identity), not with the programme — so the
         // whole "which channel am I on" group reads as one unit however wide the TV is.
         if (isLive) {
-            ChannelLogo(meta.logoUrl, meta.title, size = 46)
+            ChannelLogo(meta.logoUrl, displayTitle, size = 46)
             Spacer(Modifier.width(14.dp))
         }
         Column(Modifier.weight(1f)) {
@@ -623,7 +706,7 @@ private fun TopBar(
                     val durMin = (duration / 60000)
                     val parts = buildList {
                         meta.year?.takeIf { it.isNotBlank() }?.let { add(it) }
-                        if (!isLive && durMin > 0) add("$durMin min")
+                        if (!isLive && durMin > 0) add(stringResource(R.string.player_duration_minutes, durMin))
                         addAll(chips) // aspect · resolution · fps · audio
                     }
                     parts.forEachIndexed { i, label ->
@@ -654,13 +737,13 @@ private fun TopBar(
                         )
                         Spacer(Modifier.width(10.dp))
                     }
-                    Text(meta.title ?: "", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(displayTitle, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             } else {
-                meta.subtitle?.takeIf { it.isNotBlank() }?.let {
+                vodSubtitle?.let {
                     Text(it, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.45f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Text(meta.title ?: "", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(displayTitle, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(2.dp))
                 chipRow()
             }
@@ -691,7 +774,7 @@ private fun LiveBadge() {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Box(Modifier.size(6.dp).clip(CircleShape).background(Color.White))
-        Text("LIVE", style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.player_live), style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -724,7 +807,10 @@ private fun ChannelOsdCard(
 private fun ChannelCard(player: PlaybackEngine, modifier: Modifier = Modifier) {
     // Collect the reactive meta so the card refreshes the instant a zap changes the channel.
     val meta by player.currentMeta.collectAsStateWithLifecycle()
-    ChannelOsdCard(title = meta.title ?: "", subtitle = meta.subtitle, logoUrl = meta.logoUrl, modifier = modifier)
+    val displayTitle = meta.title?.takeIf { it.isNotBlank() }
+        ?: meta.episodeNumber?.let { stringResource(R.string.player_episode_number, it) }
+        ?: ""
+    ChannelOsdCard(title = displayTitle, subtitle = meta.subtitle, logoUrl = meta.logoUrl, modifier = modifier)
 }
 
 /** Direct-tune entry OSD: the number as it's typed, on the same surface (position, radius, scrim) the
@@ -759,7 +845,7 @@ private fun ChannelNumberCard(digits: String, error: String? = null, modifier: M
     ) {
         Column(Modifier.padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp)) {
             Text(
-                "CHANNEL",
+                stringResource(R.string.player_channel_label),
                 style = MaterialTheme.typography.labelSmall, color = TEAL, fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp,
             )
@@ -797,7 +883,7 @@ private fun CenterControls(
         if (timeshifting) {
             // Counts down as the archive catches up to the live edge; grows if you pause.
             Text(
-                if (timeshiftOffsetSec <= 1) "● At the live edge" else "● ${mmss(timeshiftOffsetSec)} behind live",
+                if (timeshiftOffsetSec <= 1) stringResource(R.string.player_at_live_edge) else stringResource(R.string.player_behind_live, mmss(timeshiftOffsetSec)),
                 style = MaterialTheme.typography.labelLarge,
                 color = OwnTVTheme.colors.accent,
             )
@@ -823,7 +909,8 @@ private fun CenterControls(
 }
 
 /** mm:ss for a seconds offset (e.g. 150 → "2:30"). */
-private fun mmss(sec: Int): String = "${sec / 60}:${(sec % 60).toString().padStart(2, '0')}"
+@Composable
+private fun mmss(sec: Int): String = stringResource(R.string.player_track_seconds, sec / 60, sec % 60)
 
 // ---------------- Bottom bar ----------------
 
@@ -859,7 +946,7 @@ private fun BottomBar(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().focusGroup()) {
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 CtrlButton(volumeIcon(volume)) { onOpenDialog(HudDialog.VOLUME) }
-                SpeedButton(label = speedLabel, active = speedLabel != "1.0x") { onOpenDialog(HudDialog.SPEED) }
+                SpeedButton(label = speedLabel, active = speedLabel != stringResource(R.string.player_speed_normal_short)) { onOpenDialog(HudDialog.SPEED) }
                 CtrlButton(OwnTVIcon.SUBTITLE, badge = subCount.takeIf { it > 0 }) { onOpenDialog(HudDialog.SUBS) }
                 CtrlButton(OwnTVIcon.AUDIO, badge = audioCount.takeIf { it > 1 }) { onOpenDialog(HudDialog.AUDIO) }
                 // Favorite the current channel/movie/series without leaving the stream (teal heart = on).
@@ -869,12 +956,12 @@ private fun BottomBar(
                 // Live "compatibility mode" (Live TV + channels opened from the Guide): pin this channel
                 // to mpv. The pill shows the active engine and flips on click (teal while pinned to mpv).
                 if (onToggleCompatMode != null) {
-                    EngineToggle(label = if (compatMode == true) "MPV" else "EXO", active = compatMode == true) { onToggleCompatMode() }
+                    EngineToggle(label = stringResource(if (compatMode == true) R.string.player_engine_mpv else R.string.player_engine_exo), active = compatMode == true) { onToggleCompatMode() }
                 }
                 // VOD engine toggle (Movies/Series): flip THIS movie/episode between mpv and ExoPlayer.
                 // The pill shows the active engine (teal while ExoPlayer owns playback).
                 if (onToggleVodEngine != null) {
-                    EngineToggle(label = if (vodOnExo == true) "EXO" else "MPV", active = vodOnExo == true) { onToggleVodEngine() }
+                    EngineToggle(label = stringResource(if (vodOnExo == true) R.string.player_engine_exo else R.string.player_engine_mpv), active = vodOnExo == true) { onToggleVodEngine() }
                 }
                 // Aspect/zoom works in every mode now — direct mode resizes the surface view itself
                 // (see MpvVideoSurface), GL mode scales internally.
@@ -933,7 +1020,12 @@ private fun SpeedButton(label: String, active: Boolean, onClick: () -> Unit) {
     }
 }
 
-private fun formatSpeed(speed: Double): String = if (speed == 1.0) "1.0x" else "${speed}x"
+@Composable
+private fun formatSpeed(speed: Double): String = if (speed == 1.0) {
+    stringResource(R.string.player_speed_normal_short)
+} else {
+    stringResource(R.string.player_speed, speed.toString())
+}
 
 /** Next-episode countdown card: "Next episode in Ns" + title, with Play now / Cancel. Play now advances
  *  immediately; Cancel suppresses the automatic advance for the current item. */
@@ -955,7 +1047,7 @@ private fun NextEpisodeCard(
             .padding(horizontal = 18.dp, vertical = 14.dp),
     ) {
         Text(
-            "Next episode in ${seconds}s",
+            stringResource(R.string.player_next_episode, seconds),
             style = MaterialTheme.typography.labelLarge,
             color = colors.primary,
             fontWeight = FontWeight.Bold,
@@ -971,13 +1063,13 @@ private fun NextEpisodeCard(
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OwnTVButton(
-                "Play now",
+                stringResource(R.string.player_play_now),
                 onClick = onPlayNow,
                 icon = OwnTVIcon.PLAY,
                 modifier = Modifier.focusRequester(playFocus),
             )
             OwnTVButton(
-                "Cancel",
+                stringResource(R.string.common_cancel),
                 onClick = onCancel,
                 icon = OwnTVIcon.CLOSE,
                 style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY,
@@ -1028,7 +1120,7 @@ private fun CtrlButton(icon: OwnTVIcon, badge: Int? = null, active: Boolean = fa
                     Modifier.align(Alignment.TopEnd).size(15.dp).clip(CircleShape).background(TEAL),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("$badge", style = MaterialTheme.typography.labelSmall, color = Color(0xFF003730), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_number_grouped, badge), style = MaterialTheme.typography.labelSmall, color = Color(0xFF003730), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1068,7 +1160,7 @@ private fun SeekBar(positionMs: Long, durationMs: Long, onSeek: (Long) -> Unit) 
                 Box(
                     Modifier.offset(y = (-32).dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp),
                 ) {
-                    Text("-${formatTime((durationMs - positionMs).coerceAtLeast(0))}", style = MaterialTheme.typography.labelMedium, color = Color.White)
+                    Text(stringResource(R.string.player_time_remaining, formatTime((durationMs - positionMs).coerceAtLeast(0))), style = MaterialTheme.typography.labelMedium, color = Color.White)
                 }
             }
         }
@@ -1112,7 +1204,7 @@ private fun LiveTimelineBar(offsetSec: Int, onScrub: (Int) -> Unit) {
             }
             Box(Modifier.fillMaxWidth(frac), contentAlignment = Alignment.CenterEnd) {
                 Box(Modifier.padding(bottom = 30.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
-                    Text(if (offsetSec <= 1) "LIVE" else "-${mmss(offsetSec)}", style = MaterialTheme.typography.labelMedium, color = Color.White)
+                    Text(if (offsetSec <= 1) stringResource(R.string.player_live) else stringResource(R.string.player_live_offset, mmss(offsetSec)), style = MaterialTheme.typography.labelMedium, color = Color.White)
                 }
             }
         }
@@ -1167,12 +1259,12 @@ private fun TrackDialog(
     }
     DialogScaffold(title = title, onDismiss = onDismiss, state = listState) {
         if (tracks.isEmpty() && onOff == null) {
-            item { Text("No tracks available.", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
+            item { Text(stringResource(R.string.player_no_tracks), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
         }
         if (onOff != null) {
             item {
                 if (focusOff) LaunchedEffect(Unit) { androidx.compose.runtime.withFrameNanos {}; runCatching { focus.requestFocus() } }
-                OptionRow(label = "Off", selected = selectedIndex < 0, modifier = if (focusOff) Modifier.focusRequester(focus) else Modifier, onClick = onOff)
+                OptionRow(label = stringResource(R.string.common_off), selected = selectedIndex < 0, modifier = if (focusOff) Modifier.focusRequester(focus) else Modifier, onClick = onOff)
             }
         }
         items(tracks.size) { index ->
@@ -1182,7 +1274,7 @@ private fun TrackDialog(
             OptionRow(
                 // Image-based subs (PGS/VOBSUB/DVB) play via the ExoPlayer handoff on VOD — mark them so
                 // it's clear they're a different kind of track, but they're fully selectable.
-                label = if (!track.image) track.label else "${track.label}  ·  image",
+                label = if (!track.image) track.displayLabel() else stringResource(R.string.player_image_track, track.displayLabel()),
                 selected = track.selected,
                 modifier = if (focusThis) Modifier.focusRequester(focus) else Modifier,
                 onClick = { onSelect(track) },
@@ -1192,30 +1284,30 @@ private fun TrackDialog(
         if (onSearchSubtitles != null || onSelectLocalSubtitle != null) {
             item {
                 Text(
-                    "ADD SUBTITLES",
+                    stringResource(R.string.player_add_subtitles),
                     style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 16.dp, top = 10.dp, bottom = 2.dp),
                 )
             }
             if (onSearchSubtitles != null) {
-                item { OptionRow(label = "Search OpenSubtitles", selected = false, onClick = onSearchSubtitles) }
+                item { OptionRow(label = stringResource(R.string.player_search_subtitles), selected = false, onClick = onSearchSubtitles) }
             }
             if (onSelectLocalSubtitle != null) {
-                item { OptionRow(label = "Select local subtitle file", selected = false, onClick = onSelectLocalSubtitle) }
+                item { OptionRow(label = stringResource(R.string.player_select_local_subtitle), selected = false, onClick = onSelectLocalSubtitle) }
             }
         }
         // ADJUST (subtitles dialog): timing panel for the active subtitle (plan §8).
         if (onSubtitleTiming != null) {
             item {
                 Text(
-                    "ADJUST",
+                    stringResource(R.string.player_adjust),
                     style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 16.dp, top = 10.dp, bottom = 2.dp),
                 )
             }
-            item { OptionRow(label = "Subtitle timing", selected = false, onClick = onSubtitleTiming) }
+            item { OptionRow(label = stringResource(R.string.player_subtitle_timing), selected = false, onClick = onSubtitleTiming) }
         }
         // A/V-sync nudge (audio dialog, VOD only) — fixes a badly-muxed file where audio leads/lags the video.
         if (onAdjustAudioDelay != null) {
@@ -1225,15 +1317,15 @@ private fun TrackDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("A/V sync", style = MaterialTheme.typography.titleSmall, color = colors.onSurface, modifier = Modifier.weight(1f))
-                    StepButton("–", enabled = (audioDelayMs ?: 0) > -5_000) { onAdjustAudioDelay(-50) }
+                    Text(stringResource(R.string.player_av_sync), style = MaterialTheme.typography.titleSmall, color = colors.onSurface, modifier = Modifier.weight(1f))
+                    StepButton(stringResource(R.string.common_minus), enabled = (audioDelayMs ?: 0) > -5_000) { onAdjustAudioDelay(-50) }
                     Text(
                         formatDelay(audioDelayMs ?: 0),
                         style = MaterialTheme.typography.bodyMedium, color = colors.primary,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier.width(78.dp),
                     )
-                    StepButton("+", enabled = (audioDelayMs ?: 0) < 5_000) { onAdjustAudioDelay(50) }
+                    StepButton(stringResource(R.string.common_plus), enabled = (audioDelayMs ?: 0) < 5_000) { onAdjustAudioDelay(50) }
                 }
             }
         }
@@ -1252,10 +1344,11 @@ private suspend fun requestFocusRetrying(focus: FocusRequester) {
     }
 }
 
+@Composable
 private fun formatDelay(ms: Int): String = when {
-    ms == 0 -> "0 ms"
-    ms > 0 -> "+$ms ms"
-    else -> "$ms ms"
+    ms == 0 -> stringResource(R.string.player_delay_zero)
+    ms > 0 -> stringResource(R.string.player_delay_positive, ms)
+    else -> stringResource(R.string.player_delay_negative, ms)
 }
 
 @Composable
@@ -1264,11 +1357,11 @@ private fun SpeedDialog(current: Double, onSelect: (Double) -> Unit, onDismiss: 
     LaunchedEffect(Unit) { requestFocusRetrying(focus) }
     BackHandler { onDismiss() }
     val selectedIndex = SPEEDS.indexOfFirst { kotlin.math.abs(it - current) < 0.01 }.coerceAtLeast(0)
-    DialogScaffold(title = "Playback Speed", onDismiss = onDismiss) {
+    DialogScaffold(title = stringResource(R.string.settings_playback_speed), onDismiss = onDismiss) {
         items(SPEEDS.size) { index ->
             val speed = SPEEDS[index]
             OptionRow(
-                label = if (speed == 1.0) "1.0x (Normal)" else "${speed}x",
+                label = if (speed == 1.0) stringResource(R.string.player_speed_normal) else stringResource(R.string.player_speed, speed.toString()),
                 selected = kotlin.math.abs(speed - current) < 0.01,
                 modifier = if (index == selectedIndex) Modifier.focusRequester(focus) else Modifier,
                 onClick = { onSelect(speed) },
@@ -1284,10 +1377,10 @@ private fun ZoomDialog(current: ZoomMode, onSelect: (ZoomMode) -> Unit, onDismis
     BackHandler { onDismiss() }
     // Land focus on the current mode (not always the first row) so re-opening starts on your selection.
     val selectedIndex = ZoomMode.entries.indexOf(current).coerceAtLeast(0)
-    DialogScaffold(title = "Player Zoom", onDismiss = onDismiss) {
+    DialogScaffold(title = stringResource(R.string.settings_player_zoom), onDismiss = onDismiss) {
         items(ZoomMode.entries.size) { index ->
             val mode = ZoomMode.entries[index]
-            OptionRow(label = mode.label, selected = mode == current, modifier = if (index == selectedIndex) Modifier.focusRequester(focus) else Modifier, onClick = { onSelect(mode) })
+            OptionRow(label = stringResource(mode.labelRes), selected = mode == current, modifier = if (index == selectedIndex) Modifier.focusRequester(focus) else Modifier, onClick = { onSelect(mode) })
         }
     }
 }
@@ -1302,18 +1395,18 @@ private fun VolumeDialog(player: PlaybackEngine, onDismiss: () -> Unit) {
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
             Column(Modifier.dialogPanel(padding = 28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Volume", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Text(stringResource(R.string.player_volume), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(20.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    StepButton("–", enabled = volume > 0, modifier = Modifier.focusRequester(focus)) { player.adjustVolume(-5) }
-                    Text("$volume%", style = MaterialTheme.typography.headlineLarge, color = TEAL, modifier = Modifier.width(120.dp), textAlign = TextAlign.Center)
-                    StepButton("+", enabled = volume < 150) { player.adjustVolume(5) }
+                    StepButton(stringResource(R.string.common_minus), enabled = volume > 0, modifier = Modifier.focusRequester(focus)) { player.adjustVolume(-5) }
+                    Text(stringResource(R.string.player_percent, volume), style = MaterialTheme.typography.headlineLarge, color = TEAL, modifier = Modifier.width(120.dp), textAlign = TextAlign.Center)
+                    StepButton(stringResource(R.string.common_plus), enabled = volume < 150) { player.adjustVolume(5) }
                 }
                 Spacer(Modifier.height(22.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OwnTVButton(if (volume == 0) "Unmute" else "Mute", onClick = { player.toggleMute() }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton(stringResource(if (volume == 0) R.string.player_unmute else R.string.player_mute), onClick = { player.toggleMute() }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
                     Spacer(Modifier.weight(1f))
-                    OwnTVButton("Done", onClick = onDismiss)
+                    OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
                 }
             }
         }
@@ -1335,25 +1428,25 @@ private fun SubtitleTimingDialog(player: PlaybackEngine, onDismiss: () -> Unit) 
         tv.own.owntv.ui.theme.PopupFontTheme {
             Box(Modifier.fillMaxSize().padding(bottom = 56.dp), contentAlignment = Alignment.BottomCenter) {
                 Column(Modifier.dialogPanel(width = 560.dp, padding = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Subtitle timing", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Text(stringResource(R.string.player_subtitle_timing), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     Spacer(Modifier.height(10.dp))
                     Text(formatSubDelay(delay), style = MaterialTheme.typography.headlineLarge, color = TEAL)
                     Spacer(Modifier.height(4.dp))
                     Text(
                         when {
-                            delay > 0 -> "Subtitles shown later"
-                            delay < 0 -> "Subtitles shown earlier"
-                            else -> "No offset"
+                            delay > 0 -> stringResource(R.string.player_subtitles_later)
+                            delay < 0 -> stringResource(R.string.player_subtitles_earlier)
+                            else -> stringResource(R.string.player_no_offset)
                         },
                         style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(18.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OwnTVButton("−0.5 s", onClick = { player.adjustSubtitleDelay(-500) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
-                        OwnTVButton("−0.1 s", onClick = { player.adjustSubtitleDelay(-100) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
-                        OwnTVButton("Reset", onClick = { player.resetSubtitleDelay() }, modifier = Modifier.focusRequester(focus))
-                        OwnTVButton("+0.1 s", onClick = { player.adjustSubtitleDelay(100) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
-                        OwnTVButton("+0.5 s", onClick = { player.adjustSubtitleDelay(500) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton(stringResource(R.string.player_subtitle_delay_negative, 0.5), onClick = { player.adjustSubtitleDelay(-500) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton(stringResource(R.string.player_subtitle_delay_negative, 0.1), onClick = { player.adjustSubtitleDelay(-100) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton(stringResource(R.string.common_reset), onClick = { player.resetSubtitleDelay() }, modifier = Modifier.focusRequester(focus))
+                        OwnTVButton(stringResource(R.string.player_subtitle_delay_positive, 0.1), onClick = { player.adjustSubtitleDelay(100) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton(stringResource(R.string.player_subtitle_delay_positive, 0.5), onClick = { player.adjustSubtitleDelay(500) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
                     }
                 }
             }
@@ -1361,10 +1454,11 @@ private fun SubtitleTimingDialog(player: PlaybackEngine, onDismiss: () -> Unit) 
     }
 }
 
+@Composable
 private fun formatSubDelay(ms: Int): String = when {
-    ms == 0 -> "0.0 s"
-    ms > 0 -> "+%.1f s".format(ms / 1000.0)
-    else -> "−%.1f s".format(-ms / 1000.0)
+    ms == 0 -> stringResource(R.string.player_subtitle_delay_zero)
+    ms > 0 -> stringResource(R.string.player_subtitle_delay_positive, ms / 1000.0)
+    else -> stringResource(R.string.player_subtitle_delay_negative, -ms / 1000.0)
 }
 
 @Composable
@@ -1422,11 +1516,12 @@ private fun OptionRow(label: String, selected: Boolean, modifier: Modifier = Mod
     }
 }
 
+@Composable
 private fun formatTime(ms: Long): String {
-    if (ms <= 0) return "0:00"
-    val totalSec = ms / 1000
+    val totalSec = (ms.coerceAtLeast(0L) / 1000).toInt()
     val h = totalSec / 3600
     val m = (totalSec % 3600) / 60
     val s = totalSec % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
+    return if (h > 0) stringResource(R.string.player_track_hours, h, m, s)
+    else stringResource(R.string.player_track_seconds, m, s)
 }

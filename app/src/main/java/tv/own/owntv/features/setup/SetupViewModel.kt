@@ -21,12 +21,14 @@ import tv.own.owntv.core.network.ConnectivityObserver
 import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.sync.ImportStage
 import tv.own.owntv.core.sync.SyncContentTypes
+import tv.own.owntv.core.sync.SyncCounts
 import tv.own.owntv.core.sync.SyncResult
 import tv.own.owntv.core.sync.SyncScopeChoice
-import tv.own.owntv.core.sync.withRemainderNote
+import tv.own.owntv.core.sync.SyncWarning
 import tv.own.owntv.core.sync.work.CatalogSyncScheduler
+import tv.own.owntv.core.util.FriendlySyncFailure
 import tv.own.owntv.core.util.Pin
-import tv.own.owntv.core.util.friendlySyncError
+import tv.own.owntv.core.util.classifySyncFailure
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.features.settings.data.SettingsRepository
@@ -104,12 +106,25 @@ class SetupViewModel(
         finish(onDone)
     }
 
+    sealed interface SetupFailure {
+        data object InvalidMac : SetupFailure
+        data object BackupRead : SetupFailure
+        data object Restore : SetupFailure
+        data class Sync(val failure: FriendlySyncFailure) : SetupFailure
+    }
+
     sealed interface ImportState {
         data object Idle : ImportState
         data object Running : ImportState
-        /** Per-type breakdown (incl. EPG) shown on the onboarding "All set" screen. */
-        data class Success(val summary: String) : ImportState
-        data class Failed(val message: String) : ImportState
+        data class Success(
+            val counts: SyncCounts? = null,
+            val warnings: List<SyncWarning> = emptyList(),
+            val remainder: SyncContentTypes = SyncContentTypes(false, false, false),
+            val restoredItems: Int? = null,
+            val passwordsOmitted: Boolean = false,
+            val skippedSources: Int = 0,
+        ) : ImportState
+        data class Failed(val failure: SetupFailure) : ImportState
         /** Encrypted backup needs the backup password before restoring; [retry] after a wrong attempt.
          *  [sealed] marks a whole-file-encrypted `.own`, where the password is mandatory — there is
          *  nothing to restore without it, so the wizard hides "Skip". */
@@ -127,14 +142,16 @@ class SetupViewModel(
     val progress: StateFlow<ImportStage?> = _progress.asStateFlow()
 
     private var createdProfileId = -1L
+    private var createdProfileName = ""
     private var importJob: Job? = null
 
     /** Creates the profile (not active yet); the rest of onboarding attaches content to it. */
     fun createProfile(name: String, avatarId: Int, isKids: Boolean, pin: String?, onCreated: (Long) -> Unit = {}) {
         viewModelScope.launch {
+            createdProfileName = name
             createdProfileId = profileDao.insert(
                 ProfileEntity(
-                    name = name.ifBlank { "Profile" },
+                    name = name,
                     avatarColor = 0,
                     avatarId = avatarId,
                     isKids = isKids,
@@ -163,7 +180,7 @@ class SetupViewModel(
         runImport(autoRefresh, priority, enabledScope = enabled, enqueueRemainder = true, requiresNetwork = true) { profileId ->
             sourceRepository.addXtreamSource(
                 profileId = profileId,
-                name = name.ifBlank { "My IPTV" },
+                name = name.trim(),
                 serverUrl = server.trim(),
                 username = username.trim(),
                 password = password,
@@ -191,7 +208,7 @@ class SetupViewModel(
     ) {
         val canonicalMac = tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(mac)
         if (canonicalMac == null) {
-            _state.value = ImportState.Failed("Invalid MAC address — use AA:BB:CC:DD:EE:FF")
+            _state.value = ImportState.Failed(SetupFailure.InvalidMac)
             return
         }
         val enabled = SyncContentTypes.fromChoices(live, movies, series)
@@ -206,7 +223,7 @@ class SetupViewModel(
                 ),
             )
             sourceRepository.addStalkerSource(
-                profileId, name.ifBlank { "My Portal" }, portalUrl.trim(), canonicalMac,
+                profileId, name.trim(), portalUrl.trim(), canonicalMac,
                 userAgent.trim().takeIf { it.isNotBlank() },
                 syncLive = enabled.live, syncMovies = enabled.movies, syncSeries = enabled.series,
             )
@@ -217,7 +234,7 @@ class SetupViewModel(
         runImport(autoRefresh, requiresNetwork = !url.isLocalPlaylistPath()) { profileId ->
             sourceRepository.addM3uSource(
                 profileId = profileId,
-                name = name.ifBlank { "My Playlist" },
+                name = name.trim(),
                 url = url.trim(),
                 userAgent = userAgent.trim().takeIf { it.isNotBlank() },
                 epgUrl = epgUrl.trim().takeIf { it.isNotBlank() },
@@ -239,7 +256,7 @@ class SetupViewModel(
             var source: SourceEntity? = null
             try {
                 if (requiresNetwork && !connectivity.isOnlineNow()) {
-                    _state.value = ImportState.Failed(friendlySyncError(null, online = false))
+                    _state.value = ImportState.Failed(SetupFailure.Sync(classifySyncFailure(null, online = false)))
                     return@launch
                 }
                 val profileId = createdProfileId.takeIf { it > 0 } ?: ensureFallbackProfile()
@@ -260,7 +277,9 @@ class SetupViewModel(
                         if (freshSync && !remainder.hasAny) catalogSyncScheduler.enqueueContentIndexBuild(reason = "fresh_add")
                         lastFailedSource = null
                         _state.value = ImportState.Success(
-                            counts.summary(includeEpg = false).withWarnings(result).withRemainderNote(remainder),
+                            counts = counts,
+                            warnings = result.warnings,
+                            remainder = remainder,
                         )
                         if (!backgroundHandoff && epgRepository.guideUrl(syncedSource) != null) {
                             pendingEpgSource = syncedSource
@@ -270,7 +289,7 @@ class SetupViewModel(
                     }
                     is SyncResult.Failed -> {
                         cleanupFailedAdd(source)
-                        _state.value = ImportState.Failed(friendlySyncError(result.message, connectivity.isOnlineNow()))
+                        _state.value = ImportState.Failed(SetupFailure.Sync(classifySyncFailure(result.message, connectivity.isOnlineNow())))
                     }
                     SyncResult.Cancelled -> {
                         cleanupFailedAdd(source)
@@ -284,7 +303,7 @@ class SetupViewModel(
                 throw c
             } catch (e: Exception) {
                 cleanupFailedAdd(source)
-                _state.value = ImportState.Failed(friendlySyncError(e.message, connectivity.isOnlineNow()))
+                _state.value = ImportState.Failed(SetupFailure.Sync(classifySyncFailure(e.message, connectivity.isOnlineNow())))
             }
         }
         importJob = job
@@ -328,27 +347,27 @@ class SetupViewModel(
                 val sources = sourceDao.getAllOnce().filter { it.id in sourceIds }
                 var total = tv.own.owntv.core.sync.SyncCounts(0, 0, 0, 0)
                 var failure: String? = null
-                val warnings = mutableListOf<String>()
+                val warnings = mutableListOf<SyncWarning>()
                 for (source in sources) {
                     when (val result = sourceRepository.sync(source, onProgress = { _progress.value = it })) {
                         is SyncResult.Success -> {
                             val c = importFinalizer.finalize(source)
                             total = tv.own.owntv.core.sync.SyncCounts(total.channels + c.channels, total.movies + c.movies, total.series + c.series, total.epg + c.epg)
-                            result.warningSummary()?.let { warnings.add(it) }
+                            warnings += result.warnings
                         }
                         is SyncResult.Failed -> failure = result.message
                         SyncResult.Cancelled -> {}
                     }
                 }
                 runCatching { launcherIntegrationRepository.refreshProfile(pid) }
-                val summary = listOf(total.summary(includeEpg = true), *warnings.toTypedArray()).joinToString("\n")
-                _state.value = failure?.let { ImportState.Failed(friendlySyncError(it, connectivity.isOnlineNow())) } ?: ImportState.Success(summary)
+                _state.value = failure?.let { ImportState.Failed(SetupFailure.Sync(classifySyncFailure(it, connectivity.isOnlineNow()))) }
+                    ?: ImportState.Success(counts = total, warnings = warnings)
             } catch (c: CancellationException) {
                 _state.value = ImportState.Idle
                 _progress.value = null
                 throw c
             } catch (e: Exception) {
-                _state.value = ImportState.Failed(friendlySyncError(e.message, connectivity.isOnlineNow()))
+                _state.value = ImportState.Failed(SetupFailure.Sync(classifySyncFailure(e.message, connectivity.isOnlineNow())))
             }
         }
         importJob = job
@@ -366,7 +385,7 @@ class SetupViewModel(
                 return@launch
             }
             val inspection = backup.sectionsIn(file).getOrElse {
-                _state.value = ImportState.Failed(it.message ?: "Couldn't read the backup file")
+                _state.value = ImportState.Failed(SetupFailure.BackupRead)
                 return@launch
             }
             if (inspection.encrypted) _state.value = ImportState.NeedPassword(file)
@@ -385,9 +404,10 @@ class SetupViewModel(
     private suspend fun doRestore(file: File, password: String?, onDone: () -> Unit) {
         backup.import(file, backupPassword = password).fold(
             onSuccess = { summary ->
-                val note = if (password.isNullOrBlank()) " Re-enter any saved passwords afterwards." else ""
                 _state.value = ImportState.Success(
-                    "Restored ${summary.items} items. Re-sync your sources to load content.$note${summary.skippedNote}",
+                    restoredItems = summary.items,
+                    passwordsOmitted = password.isNullOrBlank(),
+                    skippedSources = summary.skippedSources,
                 )
                 onDone()
             },
@@ -395,14 +415,14 @@ class SetupViewModel(
                 if (it is BackupManager.WrongPasswordException) {
                     _state.value = ImportState.NeedPassword(file, retry = true, sealed = backup.isSealed(file))
                 }
-                else _state.value = ImportState.Failed(it.message ?: "Restore failed")
+                else _state.value = ImportState.Failed(SetupFailure.Restore)
             },
         )
     }
 
     private suspend fun ensureFallbackProfile(): Long {
         if (createdProfileId > 0) return createdProfileId
-        createdProfileId = profileDao.insert(ProfileEntity(name = "Profile", avatarColor = 0, avatarId = 0))
+        createdProfileId = profileDao.insert(ProfileEntity(name = createdProfileName, avatarColor = 0, avatarId = 0))
         return createdProfileId
     }
 
@@ -456,9 +476,6 @@ class SetupViewModel(
             }
         }
     }
-
-    private fun String.withWarnings(result: SyncResult.Success): String =
-        listOfNotNull(this, result.warningSummary()).joinToString("\n")
 
     private companion object {
         /** Sentinel sourceId for the pre-save Stalker handshake (same as SettingsViewModel's). */

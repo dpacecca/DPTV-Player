@@ -21,10 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -55,10 +57,10 @@ fun AddSourceChooserScreen(
             modifier = Modifier.verticalScroll(rememberScrollState()).padding(40.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Add a source", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+            Text(stringResource(R.string.setup_add_source), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Fill the form on your phone, or type the details here with the remote.",
+                stringResource(R.string.setup_add_source_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
             )
@@ -66,20 +68,20 @@ fun AddSourceChooserScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 ChooserCard(
                     icon = OwnTVIcon.PLAYLIST,
-                    title = "Remote",
-                    subtitle = "Use a phone on the same Wi-Fi",
+                    title = stringResource(R.string.setup_from_phone),
+                    subtitle = stringResource(R.string.setup_use_phone_same_wifi),
                     onClick = onRemote,
                     modifier = Modifier.focusRequester(firstFocus),
                 )
                 ChooserCard(
                     icon = OwnTVIcon.ADD,
-                    title = "Manual",
-                    subtitle = "Type Xtream / M3U / Stalker here",
+                    title = stringResource(R.string.setup_manual),
+                    subtitle = stringResource(R.string.setup_type_source_here),
                     onClick = onManual,
                 )
             }
             Spacer(Modifier.height(24.dp))
-            OwnTVButton("Back", onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
+            OwnTVButton(stringResource(R.string.common_back), onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
         }
     }
 }

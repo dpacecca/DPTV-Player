@@ -25,9 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
@@ -43,13 +45,15 @@ fun TextInputDialog(
     initial: String = "",
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
-    label: String = "Name",
-    confirmLabel: String = "Save",
+    label: String? = null,
+    confirmLabel: String? = null,
     hint: String? = null,
     onDelete: (() -> Unit)? = null,
     allowBlank: Boolean = true,
 ) {
     val colors = OwnTVTheme.colors
+    val resolvedLabel = label ?: stringResource(R.string.common_name)
+    val resolvedConfirmLabel = confirmLabel ?: stringResource(R.string.common_save)
     var value by remember { mutableStateOf(initial) }
     val fieldFocus = remember { FocusRequester() }
     // A focusable platform popup is a hard boundary from the parent dialog/screen. This matters for
@@ -75,17 +79,17 @@ fun TextInputDialog(
                     Text(hint, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 }
                 Spacer(Modifier.height(18.dp))
-                OwnTVTextField(value = value, onValueChange = { value = it }, label = label, modifier = Modifier.fillMaxWidth(), focusRequester = fieldFocus, surface = GlassSurface.DIALOGS)
+                OwnTVTextField(value = value, onValueChange = { value = it }, label = resolvedLabel, modifier = Modifier.fillMaxWidth(), focusRequester = fieldFocus, surface = GlassSurface.DIALOGS)
                 Spacer(Modifier.height(22.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (onDelete != null) {
-                        OwnTVButton("Delete", onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton(stringResource(R.string.common_delete), onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
                         Spacer(Modifier.weight(1f))
                     }
-                    OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                     Spacer(Modifier.weight(1f))
                     OwnTVButton(
-                        confirmLabel,
+                        resolvedConfirmLabel,
                         onClick = { onConfirm(value.trim()) },
                         enabled = allowBlank || value.isNotBlank(),
                     )

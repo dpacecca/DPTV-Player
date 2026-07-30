@@ -142,15 +142,15 @@ data class GuideSliceState(
 
 /** What the shared top-bar Continue chip points at (Batch 7). */
 enum class ContinueKind { LIVE, MOVIE, EPISODE }
+enum class ContinueAction { RESUME, PLAY, NEXT_UP, LAST_CHANNEL }
 
-/** A single resumable target: what to play and how to label it. */
+/** A single resumable target: semantic action and display name. */
 @Immutable
 data class ContinueTarget(
     val kind: ContinueKind,
     /** Display name (movie/series/channel). */
     val name: String,
-    /** Short action word: "Resume" / "Next up" / "Last channel" / "Play". */
-    val actionLabel: String,
+    val action: ContinueAction,
     val channelId: Long = -1L,
     val movieId: Long = -1L,
     val seriesId: Long = -1L,
@@ -196,16 +196,16 @@ class HomeViewModel(
     ): ContinueTarget? = when (h.mediaType) {
         MediaType.MOVIE -> movieDao.getById(h.itemId)?.let { m ->
             val pos = progressDao.get(pid, MediaType.MOVIE, m.id)?.positionMs ?: 0L
-            ContinueTarget(ContinueKind.MOVIE, m.name, if (pos > 0) "Resume" else "Play", movieId = m.id, positionMs = pos)
+            ContinueTarget(ContinueKind.MOVIE, m.name, if (pos > 0) ContinueAction.RESUME else ContinueAction.PLAY, movieId = m.id, positionMs = pos)
         }
         MediaType.EPISODE -> seriesDao.getEpisodeById(h.itemId)?.let { ep ->
             seriesDao.getSeriesById(ep.seriesId)?.let { s ->
                 val pos = progressDao.get(pid, MediaType.EPISODE, ep.id)?.positionMs ?: 0L
-                ContinueTarget(ContinueKind.EPISODE, s.name, if (pos > 0) "Resume" else "Next up", seriesId = ep.seriesId, episodeId = ep.id, positionMs = pos)
+                ContinueTarget(ContinueKind.EPISODE, s.name, if (pos > 0) ContinueAction.RESUME else ContinueAction.NEXT_UP, seriesId = ep.seriesId, episodeId = ep.id, positionMs = pos)
             }
         }
         MediaType.LIVE -> channelDao.getById(h.itemId)?.let { c ->
-            ContinueTarget(ContinueKind.LIVE, c.name, "Last channel", channelId = c.id)
+            ContinueTarget(ContinueKind.LIVE, c.name, ContinueAction.LAST_CHANNEL, channelId = c.id)
         }
         else -> null
     }

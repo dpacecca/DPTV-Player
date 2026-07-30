@@ -7,11 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.theme.OwnTVTheme
+import java.text.NumberFormat
 
 /**
  * Small pill showing a count (e.g. total channels, favorites). Locale-grouped numbers per the
@@ -27,7 +30,7 @@ fun CountBadge(
     val bg = if (accent) colors.accent.copy(alpha = 0.16f) else colors.card
     val fg = if (accent) colors.accent else colors.textSecondary
     Text(
-        text = formatCount(count),
+        text = stringResource(R.string.common_number_grouped, count),
         style = MaterialTheme.typography.labelMedium,
         color = fg,
         fontWeight = FontWeight.Bold,
@@ -38,5 +41,5 @@ fun CountBadge(
     )
 }
 
-/** 12,430 — grouped with thousands separators for readability at 10 feet. */
-fun formatCount(count: Int): String = "%,d".format(count)
+/** Locale-aware grouped count for presentation helpers that cannot call Compose directly. */
+fun formatCount(count: Int): String = NumberFormat.getIntegerInstance().format(count)

@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Button
 import androidx.tv.material3.Text
+import androidx.compose.ui.res.stringResource
+import tv.own.owntv.R
 
 /**
  * Shown instead of the shell when the database cannot be opened — a migration that failed, or a file
@@ -47,11 +49,9 @@ fun DatabaseRecoveryScreen(
             modifier = Modifier.widthIn(max = 760.dp).padding(48.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("OwnTV could not open its database", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(stringResource(R.string.phase1_recovery_title), fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Text(
-                "Your profiles, playlists, favorites and history have NOT been deleted — this is a " +
-                    "database upgrade failure, and the data is still on this device.\n\n" +
-                    "Please report this so it can be fixed, and include the message below.",
+                stringResource(R.string.phase1_recovery_data_safe_full),
                 fontSize = 18.sp,
                 color = Color(0xFFCFCFD6),
             )
@@ -59,16 +59,15 @@ fun DatabaseRecoveryScreen(
                 Text(message, fontSize = 14.sp, color = Color(0xFF8A8A94))
             }
             Button(onClick = onRetry, modifier = Modifier.focusRequester(focus).focusable()) {
-                Text("Try again")
+                Text(stringResource(R.string.phase1_recovery_retry))
             }
             Text(
-                "If you have a backup file you can reset the app and restore it afterwards. " +
-                    "Resetting deletes everything stored on this device.",
+                stringResource(R.string.phase1_recovery_backup_hint),
                 fontSize = 14.sp,
                 color = Color(0xFF8A8A94),
             )
             Button(onClick = { if (confirmingReset) onResetData() else confirmingReset = true }) {
-                Text(if (confirmingReset) "Confirm: erase all app data" else "Reset app data (last resort)")
+                Text(stringResource(if (confirmingReset) R.string.phase1_recovery_confirm_reset else R.string.phase1_recovery_reset))
             }
         }
     }

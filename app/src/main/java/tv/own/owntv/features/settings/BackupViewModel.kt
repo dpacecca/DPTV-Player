@@ -11,6 +11,9 @@ import tv.own.owntv.core.backup.BackupManager
 import java.io.File
 
 /** Phase 12 — drives Backup & Restore (selective export/import to a JSON file). */
+enum class DoneKind { EXPORTED, RESTORED }
+enum class BackupError { EXPORT, READ, IMPORT }
+
 class BackupViewModel(
     private val backup: BackupManager,
     private val profileDao: tv.own.owntv.core.database.dao.ProfileDao,
@@ -40,7 +43,7 @@ class BackupViewModel(
                     companion.startForBackupDownload(tv.own.owntv.core.companion.CompanionLink.DEFAULT_PORT, File(path))
                     _state.value = State.Idle
                 },
-                onFailure = { _state.value = State.Error(it.message ?: "Export failed") },
+                onFailure = { _state.value = State.Error(BackupError.EXPORT) },
             )
         }
     }
@@ -79,8 +82,14 @@ class BackupViewModel(
             val encrypted: Boolean,
             val password: String? = null,
         ) : State
-        data class Done(val message: String) : State
-        data class Error(val message: String) : State
+        data class Done(
+            val kind: DoneKind,
+            val path: String? = null,
+            val items: Int = 0,
+            val passwordsOmitted: Boolean = false,
+            val skippedSources: Int = 0,
+        ) : State
+        data class Error(val kind: BackupError) : State
 
         /**
          * Encrypted restore needs the backup password — [retry] is true after a wrong attempt.
@@ -111,10 +120,9 @@ class BackupViewModel(
             _state.value = State.Working
             backup.export(folder, sections, backupPassword, profileIds).fold(
                 onSuccess = {
-                    val note = if (backupPassword.isNullOrBlank()) " (passwords were not included)" else ""
-                    _state.value = State.Done("Saved to $it$note")
+                    _state.value = State.Done(DoneKind.EXPORTED, path = it, passwordsOmitted = backupPassword.isNullOrBlank())
                 },
-                onFailure = { _state.value = State.Error(it.message ?: "Export failed") },
+                onFailure = { _state.value = State.Error(BackupError.EXPORT) },
             )
         }
     }
@@ -134,7 +142,7 @@ class BackupViewModel(
             }
             backup.sectionsIn(file).fold(
                 onSuccess = { _state.value = State.ChooseRestore(file, it.sections, it.encrypted) },
-                onFailure = { _state.value = State.Error(it.message ?: "Couldn't read the backup file") },
+                onFailure = { _state.value = State.Error(BackupError.READ) }
             )
         }
     }
@@ -149,7 +157,7 @@ class BackupViewModel(
                     _state.value = if (it is BackupManager.WrongPasswordException) {
                         State.NeedPassword(file, sections = null, retry = true)
                     } else {
-                        State.Error(it.message ?: "Couldn't read the backup file")
+                        State.Error(BackupError.READ)
                     }
                 },
             )
@@ -162,16 +170,18 @@ class BackupViewModel(
             _state.value = State.Working
             backup.import(file, sections, backupPassword).fold(
                 onSuccess = { summary ->
-                    val note = if (backupPassword.isNullOrBlank()) " Re-enter any saved passwords in Sources/Proxy." else ""
                     _state.value = State.Done(
-                        "Restored ${summary.items} items. Re-sync your sources to load content.$note${summary.skippedNote}",
+                        DoneKind.RESTORED,
+                        items = summary.items,
+                        passwordsOmitted = backupPassword.isNullOrBlank(),
+                        skippedSources = summary.skippedSources,
                     )
                 },
                 onFailure = {
                     if (it is BackupManager.WrongPasswordException) {
                         _state.value = State.NeedPassword(file, sections, retry = true)
                     } else {
-                        _state.value = State.Error(it.message ?: "Import failed")
+                        _state.value = State.Error(BackupError.IMPORT)
                     }
                 },
             )

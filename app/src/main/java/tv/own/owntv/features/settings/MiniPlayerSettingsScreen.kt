@@ -20,11 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
+import tv.own.owntv.R
 import tv.own.owntv.player.MiniPlayerPosition
 import tv.own.owntv.player.MiniPlayerSize
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -75,11 +77,10 @@ fun MiniPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Header(title = "Mini-player", onBack = onBack)
+        Header(title = stringResource(R.string.settings_mini_player), onBack = onBack)
         Spacer(Modifier.height(4.dp))
         Text(
-            "The small floating player you get when you dock (PiP) a channel while browsing. " +
-                "Change these here, or on the fly with the resize / move buttons on the mini-player itself.",
+            stringResource(R.string.settings_mini_player_description),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
         )
@@ -87,9 +88,9 @@ fun MiniPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
 
         Row2(
             icon = OwnTVIcon.ZOOM,
-            title = "Size",
-            desc = "How big the mini-player is, as a share of the screen width (${MiniPlayerSize.MIN}%–${MiniPlayerSize.MAX}%).",
-            chip = MiniPlayerSize.label(sizePct),
+            title = stringResource(R.string.settings_size),
+            desc = stringResource(R.string.settings_mini_player_size_description, MiniPlayerSize.MIN, MiniPlayerSize.MAX),
+            chip = stringResource(R.string.common_percent, sizePct),
             primaryChip = false,
             chevron = true,
             onClick = { dialogReturn = firstFocus; dialog = MiniPlayerDialog.SIZE },
@@ -97,9 +98,9 @@ fun MiniPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
         )
         Row2(
             icon = OwnTVIcon.PIP,
-            title = "Position",
-            desc = "Which corner or edge the mini-player docks to.",
-            chip = position.label,
+            title = stringResource(R.string.settings_position),
+            desc = stringResource(R.string.settings_mini_player_position_description),
+            chip = stringResource(position.labelRes),
             primaryChip = false,
             chevron = true,
             onClick = { dialogReturn = positionFocus; dialog = MiniPlayerDialog.POSITION },
@@ -109,19 +110,19 @@ fun MiniPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
 
     when (dialog) {
         MiniPlayerDialog.SIZE -> StepperDialog(
-            title = "Mini-player size",
+            title = stringResource(R.string.settings_mini_player_size),
             value = sizePct,
             step = MiniPlayerSize.STEP,
             min = MiniPlayerSize.MIN,
             max = MiniPlayerSize.MAX,
-            format = { MiniPlayerSize.label(it) },
+            format = { stringResource(R.string.common_percent, it) },
             onSet = { vm.setMiniPlayerSize(it) },
             onReset = { vm.setMiniPlayerSize(MiniPlayerSize.DEFAULT) },
             onDismiss = { dialog = MiniPlayerDialog.NONE },
         )
         MiniPlayerDialog.POSITION -> PickerDialog(
-            title = "Mini-player position",
-            options = MiniPlayerPosition.entries.map { it.name to it.label },
+            title = stringResource(R.string.settings_mini_player_position),
+            options = MiniPlayerPosition.entries.map { it.name to stringResource(it.labelRes) },
             selected = position.name,
             onSelect = { v -> vm.setMiniPlayerPosition(MiniPlayerPosition.fromName(v)); dialog = MiniPlayerDialog.NONE },
             onDismiss = { dialog = MiniPlayerDialog.NONE },

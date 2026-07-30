@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.launcher.LauncherDeepLink
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
@@ -68,6 +69,7 @@ import tv.own.owntv.features.shell.components.Sidebar
 import tv.own.owntv.features.shell.components.TopBar
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import androidx.compose.ui.res.stringResource
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
@@ -96,7 +98,7 @@ fun OwnTVShell(
     avatarId: Int,
     onSetAvatar: (Int) -> Unit,
     profileName: String,
-    sourceSummary: String,
+    sourceSummary: String?,
     playlists: List<tv.own.owntv.core.database.entity.SourceEntity> = emptyList(),
     activePlaylistId: Long = -1L,
     onSelectPlaylist: (Long) -> Unit = {},
@@ -111,6 +113,8 @@ fun OwnTVShell(
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
+    val noSourceLabel = stringResource(R.string.shell_no_source)
+    val subtitleLoadFailed = stringResource(R.string.content_subtitle_load_failed)
     val railSelection = remember { mutableStateMapOf<MainSection, Int>() }
     val selectedRail = railSelection[selectedSection] ?: 0
     val categories = railCategoriesFor(selectedSection)
@@ -179,6 +183,7 @@ fun OwnTVShell(
     var showHistoryList by remember { mutableStateOf(false) }
     val zapChannels by liveVm.zapChannels.collectAsStateWithLifecycle()
     val zapListTitle by liveVm.zapListTitle.collectAsStateWithLifecycle()
+    val zapOverlayTitle = zapListTitle ?: stringResource(R.string.content_category_all_channels)
     val showCategoryBrowser by liveVm.showCategoryBrowser.collectAsStateWithLifecycle()
     val browserCategories by liveVm.browserCategories.collectAsStateWithLifecycle()
     val previewChannel by liveVm.previewChannel.collectAsStateWithLifecycle()
@@ -407,15 +412,15 @@ fun OwnTVShell(
                 // Phase 5 — top bar above the content (active section + Search pill + clock + playlist).
                 // Shown on EVERY section now, including Settings ("top bar same for all").
                 TopBar(
-                    sectionLabel = selectedSection.label,
+                    sectionLabel = stringResource(selectedSection.labelRes),
                     onSearchClick = { onSelectSection(MainSection.SEARCH) },
                     // The chip reflects the active filter: "All playlists" when none is chosen (id <= 0),
                     // the chosen playlist's name otherwise. With a single playlist there's nothing to switch,
                     // so just show its name.
                     playlistName = when {
-                        playlists.size <= 1 -> sourceSummary
-                        activePlaylistId <= 0L -> "All playlists"
-                        else -> playlists.firstOrNull { it.id == activePlaylistId }?.name ?: sourceSummary
+                        playlists.size <= 1 -> sourceSummary ?: noSourceLabel
+                        activePlaylistId <= 0L -> stringResource(R.string.content_all_playlists)
+                        else -> playlists.firstOrNull { it.id == activePlaylistId }?.name ?: (sourceSummary ?: noSourceLabel)
                     },
                     weatherInfo = weatherInfo,
                     weatherFahrenheit = weatherFahrenheit,
@@ -426,7 +431,15 @@ fun OwnTVShell(
                     playlistInteractive = playlists.size > 1,
                     onPlaylistClick = { showPlaylistPicker = true },
                     // Batch 7 — shared "Continue" chip: one-press resume of the most-recent item.
-                    continueLabel = continueTarget?.let { "${it.actionLabel} · ${it.name}" },
+                    continueLabel = continueTarget?.let { target ->
+                        val action = when (target.action) {
+                            tv.own.owntv.features.home.ContinueAction.RESUME -> stringResource(R.string.content_action_resume)
+                            tv.own.owntv.features.home.ContinueAction.PLAY -> stringResource(R.string.content_action_play)
+                            tv.own.owntv.features.home.ContinueAction.NEXT_UP -> stringResource(R.string.content_action_next_up)
+                            tv.own.owntv.features.home.ContinueAction.LAST_CHANNEL -> stringResource(R.string.content_action_last_channel)
+                        }
+                        stringResource(R.string.content_continue_label, action, target.name)
+                    },
                     continueIcon = when (continueTarget?.kind) {
                         tv.own.owntv.features.home.ContinueKind.LIVE -> OwnTVIcon.LIVE_TV
                         tv.own.owntv.features.home.ContinueKind.MOVIE -> OwnTVIcon.MOVIES
@@ -587,11 +600,12 @@ fun OwnTVShell(
                             )
 
                             ContentPane(
-                                sectionTitle = selectedSection.label,
-                                categoryName = categories.getOrNull(selectedRail)?.fullName ?: "All",
+                                sectionTitle = stringResource(selectedSection.labelRes),
+                                categoryName = categories.getOrNull(selectedRail)?.let { category -> category.labelRes?.let { stringResource(it) } ?: category.fullName }
+                                    ?: stringResource(R.string.content_category_all_channels),
                                 countLabel = placeholderCount(selectedSection),
                                 emptyIcon = selectedSection.emptyIcon,
-                                emptyMessage = "Content for ${selectedSection.label} arrives in a later phase. Add an M3U or Xtream source to populate this list.",
+                                emptyMessage = stringResource(R.string.content_empty_section, stringResource(selectedSection.labelRes)),
                                 onAddSource = { onSelectSection(MainSection.SETTINGS) },
                                 modifier = Modifier
                                     .weight(1.4f)
@@ -605,7 +619,7 @@ fun OwnTVShell(
                                     .fillMaxSize()
                                     .padding(Dimens.GapLarge),
                             ) {
-                                PreviewPane(hint = "Select a channel to preview it here.")
+                                PreviewPane(hint = stringResource(R.string.content_preview_select_channel))
                             }
                         }
                     }
@@ -744,7 +758,7 @@ fun OwnTVShell(
                 // attaches it live to whichever engine is playing.
                 if (showLocalSubPicker) {
                     tv.own.owntv.ui.components.StorageBrowser(
-                        title = "Select local subtitle file",
+                        title = stringResource(R.string.content_subtitle_select_file),
                         mode = tv.own.owntv.ui.components.BrowseMode.FILE,
                         fileExtensions = setOf("srt", "ass", "ssa", "vtt", "webvtt"),
                         onPick = { file ->
@@ -752,7 +766,7 @@ fun OwnTVShell(
                             scope.launch {
                                 runCatching { subtitleController.applyLocal(file) }
                                     .onFailure { e ->
-                                        localSubToast.show(e.message ?: "Couldn't load the subtitle file.")
+                                        localSubToast.show(e.message ?: subtitleLoadFailed)
                                     }
                             }
                         },
@@ -778,7 +792,7 @@ fun OwnTVShell(
                             channels = zapChannels,
                             currentId = previewChannel?.id,
                             nowPlaying = overlayNowPlaying,
-                            title = zapListTitle,
+                            title = zapOverlayTitle,
                             showNumbers = directTuneEnabled,
                             onSelect = { liveVm.ensurePlaying(it); showChannelList = false },
                             onDismiss = { showChannelList = false },
@@ -793,7 +807,7 @@ fun OwnTVShell(
                         channels = historyChannels,
                         currentId = previewChannel?.id,
                         nowPlaying = historyNowPlaying,
-                        title = "History",
+                        title = stringResource(R.string.content_history),
                         showNumbers = directTuneEnabled,
                         alignEnd = true,
                         onSelect = { liveVm.ensurePlaying(it); showHistoryList = false },
@@ -893,7 +907,7 @@ private fun OfflineBanner() {
         horizontalArrangement = Arrangement.Center,
     ) {
         Text(
-            "You're offline — playback and updates won't work until you reconnect.",
+            stringResource(R.string.content_offline_banner),
             style = MaterialTheme.typography.labelLarge,
             color = colors.onTertiaryContainer,
         )
@@ -917,47 +931,45 @@ private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (
     MainSection.HOME -> emptyList()
     MainSection.EPG -> emptyList()
     MainSection.LIVE_TV -> listOf(
-        RailCategory("Favorites", OwnTVIcon.FAVORITE),
-        RailCategory("History", OwnTVIcon.HISTORY),
-        RailCategory("All Channels"),
-        RailCategory("United Kingdom"),
-        RailCategory("United States"),
-        RailCategory("Germany"),
-        RailCategory("Sports"),
+        RailCategory("Favorites", OwnTVIcon.FAVORITE, tv.own.owntv.R.string.content_category_favorites),
+        RailCategory("History", OwnTVIcon.HISTORY, tv.own.owntv.R.string.content_category_history),
+        RailCategory("All Channels", labelRes = tv.own.owntv.R.string.content_category_all_channels, showGenreDot = false),
+        RailCategory("United Kingdom", labelRes = tv.own.owntv.R.string.content_category_united_kingdom),
+        RailCategory("United States", labelRes = tv.own.owntv.R.string.content_category_united_states),
+        RailCategory("Germany", labelRes = tv.own.owntv.R.string.content_category_germany),
+        RailCategory("Sports", labelRes = tv.own.owntv.R.string.content_category_sports),
     )
     MainSection.MOVIES -> listOf(
-        RailCategory("Favorites", OwnTVIcon.FAVORITE),
-        RailCategory("History", OwnTVIcon.HISTORY),
-        RailCategory("All Movies"),
-        RailCategory("Action"),
-        RailCategory("Drama"),
-        RailCategory("Comedy"),
-        RailCategory("Horror"),
+        RailCategory("Favorites", OwnTVIcon.FAVORITE, tv.own.owntv.R.string.content_category_favorites),
+        RailCategory("History", OwnTVIcon.HISTORY, tv.own.owntv.R.string.content_category_history),
+        RailCategory("All Movies", labelRes = tv.own.owntv.R.string.content_category_all_movies, showGenreDot = false),
+        RailCategory("Action", labelRes = tv.own.owntv.R.string.content_category_action),
+        RailCategory("Drama", labelRes = tv.own.owntv.R.string.content_category_drama),
+        RailCategory("Comedy", labelRes = tv.own.owntv.R.string.content_category_comedy),
+        RailCategory("Horror", labelRes = tv.own.owntv.R.string.content_category_horror),
     )
     MainSection.SERIES -> listOf(
-        RailCategory("Favorites", OwnTVIcon.FAVORITE),
-        RailCategory("History", OwnTVIcon.HISTORY),
-        RailCategory("All Series"),
-        RailCategory("Drama"),
-        RailCategory("Action"),
-        RailCategory("Animation"),
-        RailCategory("Documentary"),
+        RailCategory("Favorites", OwnTVIcon.FAVORITE, tv.own.owntv.R.string.content_category_favorites),
+        RailCategory("History", OwnTVIcon.HISTORY, tv.own.owntv.R.string.content_category_history),
+        RailCategory("All Series", labelRes = tv.own.owntv.R.string.content_category_all_series, showGenreDot = false),
+        RailCategory("Drama", labelRes = tv.own.owntv.R.string.content_category_drama),
+        RailCategory("Action", labelRes = tv.own.owntv.R.string.content_category_action),
+        RailCategory("Animation", labelRes = tv.own.owntv.R.string.content_category_animation),
+        RailCategory("Documentary", labelRes = tv.own.owntv.R.string.content_category_documentary),
     )
     MainSection.DOWNLOADS -> listOf(
-        RailCategory("All Downloads"),
-        RailCategory("Movies"),
-        RailCategory("Series"),
+        RailCategory("All Downloads", labelRes = tv.own.owntv.R.string.content_category_all_downloads, showGenreDot = false),
+        RailCategory("Movies", labelRes = tv.own.owntv.R.string.content_category_movies),
+        RailCategory("Series", labelRes = tv.own.owntv.R.string.content_category_series),
     )
     MainSection.SETTINGS -> emptyList()
 }
 
+@Composable
 private fun placeholderCount(section: MainSection): String = when (section) {
-    MainSection.SEARCH -> ""
-    MainSection.HOME -> ""
-    MainSection.LIVE_TV -> "0 channels"
-    MainSection.MOVIES -> "0 movies"
-    MainSection.SERIES -> "0 series"
-    MainSection.DOWNLOADS -> "0 downloads"
-    MainSection.EPG -> ""
-    MainSection.SETTINGS -> ""
+    MainSection.SEARCH, MainSection.HOME, MainSection.EPG, MainSection.SETTINGS -> ""
+    MainSection.LIVE_TV -> stringResource(R.string.content_zero_channels)
+    MainSection.MOVIES -> stringResource(R.string.content_zero_movies)
+    MainSection.SERIES -> stringResource(R.string.content_zero_series)
+    MainSection.DOWNLOADS -> stringResource(R.string.content_zero_downloads)
 }

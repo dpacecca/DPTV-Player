@@ -24,6 +24,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -31,10 +32,12 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.flow.Flow
+import tv.own.owntv.R
 import tv.own.owntv.core.companion.CompanionLink
 import tv.own.owntv.core.companion.CompanionPayload
-import tv.own.owntv.core.companion.CompanionHttpServer
 import tv.own.owntv.core.companion.CompanionServerState
+import tv.own.owntv.ui.components.companionLockedText
+import tv.own.owntv.ui.components.displayText
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.roundedPanel
@@ -70,12 +73,10 @@ fun RemoteSetupScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(modifier = Modifier.widthIn(max = 640.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Add from your phone", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+                Text(stringResource(R.string.setup_add_from_phone), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "On a phone or laptop on the same Wi-Fi, scan the QR (or open the URL), enter this PIN, " +
-                        "fill in your playlist and tap Send to TV. Its details then appear here, ready to import — " +
-                        "you press Start Import with the remote.",
+                    stringResource(R.string.setup_phone_add_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -86,14 +87,14 @@ fun RemoteSetupScreen(
                     CompanionServerState.Idle, CompanionServerState.Starting -> {
                         val starting = state == CompanionServerState.Starting
                         OwnTVButton(
-                            label = if (starting) "Opening…" else "Open server",
+                            label = if (starting) stringResource(R.string.setup_opening) else stringResource(R.string.setup_open_server),
                             onClick = { onStartListener(CompanionLink.DEFAULT_PORT) },
                             enabled = !starting,
                             modifier = Modifier.focusRequester(actionFocus),
                         )
                     }
                     is CompanionServerState.Listening -> {
-                        Text("Enter this PIN in the browser", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        Text(stringResource(R.string.setup_enter_pin_browser), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                         Spacer(Modifier.height(4.dp))
                         Text(
                             state.pin,
@@ -106,34 +107,34 @@ fun RemoteSetupScreen(
                         state.qr?.let { qr ->
                             Image(
                                 bitmap = qr,
-                                contentDescription = "QR code for the companion URL",
+                                contentDescription = stringResource(R.string.common_qr_code_companion_url),
                                 modifier = Modifier.size(188.dp).clip(RoundedCornerShape(14.dp)).background(Color.White).padding(9.dp),
                                 contentScale = ContentScale.Fit,
                             )
                             Spacer(Modifier.height(12.dp))
                         }
-                        Text("Or open this URL", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                        Text(stringResource(R.string.setup_open_url), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                         Spacer(Modifier.height(4.dp))
                         state.urls.forEach { url ->
                             Text(url, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, textAlign = TextAlign.Center)
                         }
                         Spacer(Modifier.height(18.dp))
-                        OwnTVButton("Stop server", onClick = onStopListener, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(actionFocus))
+                        OwnTVButton(stringResource(R.string.setup_stop_server), onClick = onStopListener, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(actionFocus))
                     }
                     is CompanionServerState.Failed -> {
-                        Text(state.message, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444), textAlign = TextAlign.Center)
+                        Text(state.failure.displayText(), style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444), textAlign = TextAlign.Center)
                         Spacer(Modifier.height(20.dp))
-                        OwnTVButton("Try again", onClick = { onStartListener(CompanionLink.DEFAULT_PORT) }, modifier = Modifier.focusRequester(actionFocus))
+                        OwnTVButton(stringResource(R.string.setup_try_again), onClick = { onStartListener(CompanionLink.DEFAULT_PORT) }, modifier = Modifier.focusRequester(actionFocus))
                     }
                     CompanionServerState.Locked -> {
-                        Text(CompanionHttpServer.LOCKOUT_MESSAGE, style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444), textAlign = TextAlign.Center)
+                        Text(companionLockedText(), style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444), textAlign = TextAlign.Center)
                         Spacer(Modifier.height(20.dp))
                         // Restarting mints a fresh PIN, so this is the recovery path — not a retry of a failure.
-                        OwnTVButton("Start again with a new PIN", onClick = { onStartListener(CompanionLink.DEFAULT_PORT) }, modifier = Modifier.focusRequester(actionFocus))
+                        OwnTVButton(stringResource(R.string.setup_start_again_new_pin), onClick = { onStartListener(CompanionLink.DEFAULT_PORT) }, modifier = Modifier.focusRequester(actionFocus))
                     }
                 }
                 Spacer(Modifier.height(16.dp))
-                OwnTVButton("Back", onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.common_back), onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.height(24.dp)) // breathing room so Back never sits flush to the screen edge
             }
         }

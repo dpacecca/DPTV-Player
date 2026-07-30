@@ -4,6 +4,7 @@ import kotlinx.coroutines.CancellationException
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.epg.EpgSourceStore
 import tv.own.owntv.core.repository.EpgRepository
+import tv.own.owntv.core.util.classifySyncFailure
 
 /**
  * Shared semi-auto EPG sync used by both onboarding and Settings → Playlists. Registers the playlist's own
@@ -30,6 +31,6 @@ suspend fun runSemiAutoEpgSync(
         throw c
     } catch (e: Exception) {
         store.setSynced(epgSource.id, now, e.message)
-        setState(EpgSyncUi.Failed(e.message ?: "Guide sync failed"))
+        setState(EpgSyncUi.Failed(classifySyncFailure(e.message, online = true)))
     }
 }

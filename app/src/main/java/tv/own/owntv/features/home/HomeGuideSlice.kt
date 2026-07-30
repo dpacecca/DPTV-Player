@@ -1,7 +1,6 @@
 package tv.own.owntv.features.home
 
 import tv.own.owntv.core.epg.displayLogoUrl
-import android.text.format.DateFormat
 import coil3.compose.AsyncImage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,6 +21,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -40,7 +41,6 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,12 +48,14 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
+import tv.own.owntv.R
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
-import java.util.Date
+import tv.own.owntv.ui.format.rememberSystemTimeFormatter
+import java.util.Locale
 
 @Composable
 fun HomeLiveRow(
@@ -263,7 +265,7 @@ private fun OnNowRow(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "${title.uppercase()} · ON NOW",
+                    text = stringResource(R.string.home_on_now_title, title.uppercase()),
                     style = MaterialTheme.typography.titleSmall,
                     color = colors.primary,
                     fontWeight = FontWeight.Bold,
@@ -272,7 +274,11 @@ private fun OnNowRow(
                 )
                 Spacer(Modifier.weight(1f))
                 Text(
-                    text = if (focused && activeRowIndex >= 0) "OK to watch" else if (focused) "OK to browse" else "${rows.size} channels",
+                    text = when {
+                        focused && activeRowIndex >= 0 -> stringResource(R.string.home_ok_to_watch)
+                        focused -> stringResource(R.string.home_ok_to_browse)
+                        else -> pluralStringResource(R.plurals.home_channel_count, rows.size, rows.size)
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = colors.onSurfaceVariant,
                     maxLines = 1,
@@ -308,19 +314,34 @@ private fun OnNowChannelItem(
     focused: Boolean,
 ) {
     val colors = OwnTVTheme.colors
-    val context = LocalContext.current
     val rowShape = RoundedCornerShape(8.dp)
-    val info = remember(programmes, now, context) {
-        val formatTime: (Long) -> String = { ms ->
-            DateFormat.getTimeFormat(context).format(Date(ms))
-        }
+    val formatTime = rememberSystemTimeFormatter()
+    val noProgrammeDetails = stringResource(R.string.home_no_programme_details)
+    val guideUnavailable = stringResource(R.string.home_guide_unavailable)
+    val timeRangeTemplate = stringResource(R.string.home_time_range)
+    val nowTemplate = stringResource(R.string.home_now_time)
+    val upNextTemplate = stringResource(R.string.home_up_next_time)
+    val upcomingTemplate = stringResource(R.string.home_upcoming_item)
+    val info = remember(
+        programmes,
+        now,
+        formatTime,
+        noProgrammeDetails,
+        guideUnavailable,
+        timeRangeTemplate,
+        nowTemplate,
+        upNextTemplate,
+        upcomingTemplate,
+    ) {
         val programme = currentProgramme(programmes, now) ?: programmes.firstOrNull { it.stopMs > now } ?: programmes.firstOrNull()
         OnNowProgrammeInfo(
-            title = programme?.title ?: "No programme details",
-            timeLabel = programme?.let { programmeTimeLabel(it, now, formatTime) } ?: "Guide data unavailable",
+            title = programme?.title ?: noProgrammeDetails,
+            timeLabel = programme?.let {
+                programmeTimeLabel(it, now, formatTime, timeRangeTemplate, nowTemplate, upNextTemplate)
+            } ?: guideUnavailable,
             progress = programmeProgress(programme, now),
             upcoming = upcomingProgrammes(programmes, programme, HOME_ON_NOW_UPCOMING_COUNT)
-                .map { programmeUpcomingLabel(it, formatTime) },
+                .map { programmeUpcomingLabel(it, formatTime, upcomingTemplate) },
         )
     }
 
@@ -351,7 +372,7 @@ private fun OnNowChannelItem(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = channel.number?.let { "$it  ${channel.name}" } ?: channel.name,
+                    text = channel.number?.let { stringResource(R.string.home_channel_number, it, channel.name) } ?: channel.name,
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.onSurfaceVariant.copy(alpha = if (focused) 0.88f else 0.70f),
                     maxLines = 1,
@@ -388,13 +409,13 @@ private fun OnNowChannelItem(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = "Next",
+                        text = stringResource(R.string.home_next),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant.copy(alpha = 0.52f),
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = info.upcoming.joinToString("  ·  "),
+                        text = info.upcoming.joinToString(stringResource(R.string.content_metadata_separator)),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant.copy(alpha = 0.44f),
                         maxLines = 1,
@@ -556,18 +577,27 @@ private fun programmeTimeLabel(
     programme: EpgProgrammeEntity,
     now: Long,
     formatTime: (Long) -> String,
+    timeRangeTemplate: String,
+    nowTemplate: String,
+    upNextTemplate: String,
 ): String {
-    val time = "${formatTime(programme.startMs)}-${formatTime(programme.stopMs)}"
+    val time = String.format(
+        Locale.ROOT,
+        timeRangeTemplate,
+        formatTime(programme.startMs),
+        formatTime(programme.stopMs),
+    )
     return if (now in programme.startMs until programme.stopMs) {
-        "NOW · $time"
+        String.format(Locale.ROOT, nowTemplate, time)
     } else {
-        "UP NEXT · $time"
+        String.format(Locale.ROOT, upNextTemplate, time)
     }
 }
 
 private fun programmeUpcomingLabel(
     programme: EpgProgrammeEntity,
     formatTime: (Long) -> String,
+    upcomingTemplate: String,
 ): String {
-    return "${formatTime(programme.startMs)} ${programme.title}"
+    return String.format(Locale.ROOT, upcomingTemplate, formatTime(programme.startMs), programme.title)
 }

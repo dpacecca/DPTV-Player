@@ -43,6 +43,8 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,6 +56,7 @@ import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.ContentOrderEntity
@@ -286,6 +289,7 @@ fun LiveScreen(
 
     val selectedIndex = railItems.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
     val selectedItem = railItems.getOrNull(selectedIndex)
+    val selectedLabel = selectedItem?.displayLabel() ?: stringResource(R.string.content_category_all_channels)
 
     Row(
         modifier = modifier
@@ -294,7 +298,7 @@ fun LiveScreen(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         CategoryRail(
-            categories = railItems.map { RailCategory(it.title, it.icon, showGenreDot = it.key is LiveKey.Folder) },
+            categories = railItems.map { RailCategory(it.displayLabel(), it.icon, showGenreDot = it.key is LiveKey.Folder) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             // Focusing a folder stops the in-pane preview — but only when a preview is actually running.
@@ -384,7 +388,7 @@ fun LiveScreen(
                 .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
         ) {
             Text(
-                "Live TV / ${selectedItem?.title ?: "All"}",
+                stringResource(R.string.content_section_category, stringResource(R.string.common_nav_live_tv), selectedLabel),
                 style = MaterialTheme.typography.headlineMedium,
                 color = OwnTVTheme.colors.onSurface,
                 maxLines = 2,
@@ -392,7 +396,7 @@ fun LiveScreen(
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "${selectedItem?.title ?: "All"} (${formatCount(count)} channels)",
+                stringResource(R.string.content_count_channels, selectedLabel, count),
                 style = MaterialTheme.typography.titleMedium,
                 color = OwnTVTheme.colors.primary,
                 fontWeight = FontWeight.Bold,
@@ -403,7 +407,7 @@ fun LiveScreen(
                 SearchBar(
                     query = searchQuery,
                     onQueryChange = vm::setSearchQuery,
-                    placeholder = "Search ${selectedItem?.title ?: "channels"}…",
+                    placeholder = stringResource(R.string.content_search_channels, selectedLabel),
                     modifier = Modifier.weight(1f).onFocusChanged { if (it.hasFocus && previewEnabled) vm.stopPreview() },
                 )
                 Spacer(Modifier.size(10.dp))
@@ -414,7 +418,7 @@ fun LiveScreen(
             if (channels.itemCount == 0) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        if (searchQuery.isNotBlank()) "No channels found for “${searchQuery.trim()}”" else "No channels here.",
+                        if (searchQuery.isNotBlank()) stringResource(R.string.content_no_channels_found, searchQuery.trim()) else stringResource(R.string.content_no_channels_here),
                         style = MaterialTheme.typography.bodyLarge,
                         color = OwnTVTheme.colors.onSurfaceVariant,
                     )
@@ -497,9 +501,9 @@ fun LiveScreen(
 
     renaming?.let { ch ->
         TextInputDialog(
-            title = "Rename channel",
+            title = stringResource(R.string.content_rename_channel),
             initial = ch.name,
-            hint = "Only for this profile. Leave blank to restore the original name.",
+            hint = stringResource(R.string.content_rename_hint),
             onConfirm = { vm.renameChannel(ch, it.takeIf { t -> t.isNotBlank() }); renaming = null },
             onDismiss = { renaming = null },
         )
@@ -579,7 +583,7 @@ fun LiveScreen(
     // Move mode overlay — intercepts D-pad Up/Down/OK/Back while reordering.
     moveState?.let { ms ->
         MoveOrderOverlay(
-            title = "Reorder channel",
+            title = stringResource(R.string.content_reorder_channel),
             itemNames = ms.items.map { it.name },
             activeIndex = ms.activeIndex,
             onMoveUp = vm::moveUp,
@@ -699,22 +703,22 @@ private fun ChannelContextMenu(
             Text(channelName, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
             OwnTVButton(
-                if (isFavorite) "Remove from Favourites" else "Add to Favourites",
+                if (isFavorite) stringResource(R.string.content_remove_favourite) else stringResource(R.string.content_add_favourite),
                 onClick = onToggleFavorite, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.FAVORITE,
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )
-            OwnTVButton("Rename", onClick = onRename, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            OwnTVButton("Hide channel", onClick = onHide, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            OwnTVButton("Match EPG", onClick = onMatchEpg, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
-            if (hasCatchup) OwnTVButton("Catch-up", onClick = onCatchup, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.content_rename), onClick = onRename, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.content_hide_channel), onClick = onHide, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.content_match_epg), onClick = onMatchEpg, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
+            if (hasCatchup) OwnTVButton(stringResource(R.string.content_catchup), onClick = onCatchup, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             // Always offered, regardless of the Live TV external-player default — this is the per-channel
             // escape hatch for a stream neither in-app engine can open (same as Movies/Series/Downloads).
-            OwnTVButton("Play in external player", onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.PLAY, modifier = Modifier.fillMaxWidth())
-            if (canMove) OwnTVButton("Move", onClick = onMove, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            if (canMove) OwnTVButton("Move to category…", onClick = onMoveToCategory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            if (isHistory) OwnTVButton("Remove from History", onClick = onRemoveFromHistory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.content_play_external_short), onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.PLAY, modifier = Modifier.fillMaxWidth())
+            if (canMove) OwnTVButton(stringResource(R.string.content_move), onClick = onMove, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            if (canMove) OwnTVButton(stringResource(R.string.content_move_to_category), onClick = onMoveToCategory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            if (isHistory) OwnTVButton(stringResource(R.string.content_remove_history), onClick = onRemoveFromHistory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(4.dp))
-            OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -737,7 +741,7 @@ private fun LivePreviewPane(
     val previewLoading = showVideo && previewState == tv.own.owntv.player.LivePreviewEngine.State.LOADING
     val videoRes = previewHeight?.let { "${it}p" }
     if (channel == null) {
-        PreviewPane(hint = "Focus a channel to see it here.")
+        PreviewPane(hint = stringResource(R.string.content_focus_channel))
         return
     }
     Column(
@@ -797,7 +801,7 @@ private fun LivePreviewPane(
         // the long-press menu. Just a hint so the watch affordance + where-to-find-options stay obvious.
         Spacer(Modifier.height(14.dp))
         Text(
-            "Press OK to watch fullscreen · Long-press for options",
+            stringResource(R.string.content_press_ok_fullscreen),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -826,21 +830,21 @@ private fun ChannelMetaRow(
     // EPG status — "EPG · Nd" when we know the stored coverage span (bulk-guide channels), plain "EPG"
     // when only now/next is available (short-EPG API channels), "No EPG" when nothing was resolved.
     val epgStatus = when {
-        nowNext == null || (nowNext.now == null && nowNext.next == null) -> "No EPG"
-        nowNext.coverageDays != null && nowNext.coverageDays > 0 -> "EPG · ${nowNext.coverageDays}d"
-        else -> "EPG"
+        nowNext == null || (nowNext.now == null && nowNext.next == null) -> stringResource(R.string.content_no_epg)
+        nowNext.coverageDays != null && nowNext.coverageDays > 0 -> stringResource(R.string.content_epg_days, nowNext.coverageDays)
+        else -> stringResource(R.string.content_epg)
     }
 
     // Catch-up status — only meaningful when the channel actually supports it.
     val catchupLabel = if (channel.catchup) {
-        channel.catchupDays.takeIf { it > 0 }?.let { "Catch-up · ${it}d" } ?: "Catch-up"
+        channel.catchupDays.takeIf { it > 0 }?.let { stringResource(R.string.content_catchup_days, it) } ?: stringResource(R.string.content_catchup)
     } else null
 
     val chips = buildList {
         // Genre chip (always shown, with its colour dot — including the grey "Other" fallback so every
         // channel has a genre marker), then the raw category name when it differs from the genre label.
-        add(MetaChip(genre.label, dot = genre.dot, primary = genre != ChannelGenre.OTHER))
-        if (!categoryName.isNullOrBlank() && categoryName != genre.label) add(MetaChip(categoryName))
+        add(MetaChip(stringResource(genre.displayLabelRes), dot = genre.dot, primary = genre != ChannelGenre.OTHER))
+        if (!categoryName.isNullOrBlank() && categoryName != genre.canonicalLabel) add(MetaChip(categoryName))
         if (catchupLabel != null) add(MetaChip(catchupLabel, accent = true))
         add(MetaChip(epgStatus))
     }
@@ -906,7 +910,7 @@ private fun EpgSection(nowNext: EpgNowNext?) {
     Spacer(Modifier.height(16.dp))
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (now != null) {
-            Text("NOW", style = MaterialTheme.typography.labelSmall, color = colors.primary, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.content_live_now_label), style = MaterialTheme.typography.labelSmall, color = colors.primary, fontWeight = FontWeight.Bold)
             Text(
                 now.title,
                 style = MaterialTheme.typography.titleSmall,
@@ -922,14 +926,14 @@ private fun EpgSection(nowNext: EpgNowNext?) {
                 Box(Modifier.fillMaxWidth(progress).height(4.dp).clip(RoundedCornerShape(2.dp)).background(colors.primary))
             }
             Text(
-                "${formatTime(now.startMs)} – ${formatTime(now.stopMs)}",
+                stringResource(R.string.content_live_time_range_plain, formatTime(now.startMs), formatTime(now.stopMs)),
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.onSurfaceVariant,
             )
         }
         if (next != null) {
             Spacer(Modifier.height(2.dp))
-            Text("NEXT  ·  ${formatTime(next.startMs)}", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.content_live_next_label, formatTime(next.startMs)), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold)
             Text(
                 next.title,
                 style = MaterialTheme.typography.bodyMedium,
@@ -942,7 +946,7 @@ private fun EpgSection(nowNext: EpgNowNext?) {
         val later = nowNext.upcoming
         if (later.isNotEmpty()) {
             Spacer(Modifier.height(6.dp))
-            Text("LATER", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.content_live_later_label), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold)
             later.forEach { p ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(formatTime(p.startMs), style = MaterialTheme.typography.labelSmall, color = colors.primary)
@@ -953,13 +957,17 @@ private fun EpgSection(nowNext: EpgNowNext?) {
     }
 }
 
+@Composable
 private fun formatCatchupTime(
     startMs: Long,
     stopMs: Long,
     formatTime: (Long) -> String,
 ): String {
-    val day = java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault()).format(java.util.Date(startMs))
-    return "$day ${formatTime(startMs)} – ${formatTime(stopMs)}"
+    val locale = LocalConfiguration.current.locales[0]
+    val day = remember(startMs, locale) {
+        java.text.SimpleDateFormat("EEE", locale).format(java.util.Date(startMs))
+    }
+    return stringResource(R.string.content_live_day_time_range, day, formatTime(startMs), formatTime(stopMs))
 }
 
 /** Live TV catch-up: pick a recent (already-aired) programme on a catch-up channel to replay from start. */
@@ -999,15 +1007,15 @@ private fun CatchupDialog(
         // stays reachable on small/low-res screens; the outer column can't verticalScroll (LazyColumn).
         val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 220.dp).coerceIn(140.dp, 300.dp)
         Column(Modifier.dialogPanel(width = 460.dp, corner = 16.dp, padding = 18.dp, scroll = false)) {
-            Text("Catch-up · $channelName", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Text(stringResource(R.string.content_catchup_title, channelName), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
-            Text("Pick a recent programme to replay from the start.", style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            Text(stringResource(R.string.content_catchup_prompt), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
             when (val progs = list) {
                 null -> Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 28) }
                 else -> if (progs.isEmpty()) {
                     Text(
-                        "No recent guide data for this channel yet — make sure its EPG is matched (long-press it, or use Match EPG).",
+                        stringResource(R.string.content_catchup_empty),
                         style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                     )
                 } else {
@@ -1030,7 +1038,7 @@ private fun CatchupDialog(
                 }
             }
             Spacer(Modifier.height(14.dp))
-            OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+            OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
         }
         }
     } // PopupFontTheme
@@ -1080,10 +1088,14 @@ internal fun EpgMatchDialog(
         // Same small-screen cap as CatchupDialog: search bar + buttons must stay reachable.
         val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 260.dp).coerceIn(140.dp, 240.dp)
         Column(Modifier.dialogPanel(width = 384.dp, corner = 16.dp, padding = 14.dp)) {
-            Text("Match EPG", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Text(stringResource(R.string.content_match_epg), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
             Text(
-                "Pick the guide channel for “$channelName”." + (currentMatch?.let { "  Current: $it" } ?: ""),
+                if (currentMatch != null) {
+                    stringResource(R.string.content_epg_match_prompt_current, channelName, currentMatch)
+                } else {
+                    stringResource(R.string.content_epg_match_prompt, channelName)
+                },
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(12.dp))
@@ -1091,13 +1103,13 @@ internal fun EpgMatchDialog(
             // reaches Close/Clear directly — no scrolling to the bottom of a long list.
             Row(Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
-                    SearchBar(query = query, onQueryChange = { query = it }, placeholder = "Search guide channels…", modifier = Modifier.fillMaxWidth().focusRequester(searchFocus), surface = GlassSurface.DIALOGS)
+                    SearchBar(query = query, onQueryChange = { query = it }, placeholder = stringResource(R.string.content_search_guide_channels), modifier = Modifier.fillMaxWidth().focusRequester(searchFocus), surface = GlassSurface.DIALOGS)
                     Spacer(Modifier.height(12.dp))
                     val list = results
                     when {
                         list == null -> androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 28) }
                         list.isEmpty() -> Text(
-                            if (query.isBlank()) "No EPG data yet — add an EPG source in Settings." else "No guide channels match “$query”.",
+                            if (query.isBlank()) stringResource(R.string.content_no_epg_data) else stringResource(R.string.content_no_guide_channels, query),
                             style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                         )
                         else -> LazyColumn(Modifier.fillMaxWidth().height(listHeight), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1120,8 +1132,8 @@ internal fun EpgMatchDialog(
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.width(110.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-                    if (currentMatch != null) OwnTVButton("Clear match", onClick = onClear, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                    OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                    if (currentMatch != null) OwnTVButton(stringResource(R.string.content_clear_match), onClick = onClear, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
                 }
             }
         }

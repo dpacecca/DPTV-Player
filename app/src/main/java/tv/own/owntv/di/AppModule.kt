@@ -45,7 +45,7 @@ val appModule = module {
     single { LocaleStore.from(androidContext()) }
     single { SettingsRepository(androidContext(), get()) }
     // Remote (companion) add-source LAN server — one shared instance for Setup + Settings.
-    single { CompanionController(androidContext()) }
+    single { CompanionController(androidContext(), get()) }
 
     viewModelOf(::ShellViewModel)
     viewModelOf(::HomeViewModel)

@@ -1,5 +1,6 @@
 package tv.own.owntv.features.setup
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -42,17 +44,20 @@ import androidx.tv.material3.Text
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import tv.own.owntv.R
 import tv.own.owntv.core.companion.CompanionPayload
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.sync.SyncScopeChoice
+import tv.own.owntv.core.util.FriendlySyncFailure
 import tv.own.owntv.features.settings.PickerDialog
 import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.ui.components.BrowseMode
 import tv.own.owntv.ui.components.FocusableSurface
+import tv.own.owntv.ui.components.displayText
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVTextField
@@ -67,17 +72,19 @@ private enum class SourceKind { XTREAM, M3U, STALKER }
 sealed interface StalkerTestUi {
     data object Idle : StalkerTestUi
     data object Testing : StalkerTestUi
-    data class Ok(val message: String) : StalkerTestUi
-    data class Failed(val message: String) : StalkerTestUi
+    data class Ok(val endpoint: String, val profileFields: Int, val expiry: String?) : StalkerTestUi
+    data class Failed(val failure: FriendlySyncFailure) : StalkerTestUi
 }
 
 /** MAG User-Agent presets (plan §7 "Header/UA pickiness") — value goes into the User-Agent field. */
+private data class MagPreset(@StringRes val labelRes: Int, val userAgent: String)
+
 private val MAG_UA_PRESETS = listOf(
-    "Default (MAG200)" to "",
-    "MAG250" to "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG250 stbapp ver: 2 rev: 250 Safari/533.3",
-    "MAG254" to "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG254 stbapp ver: 2 rev: 250 Safari/533.3",
-    "MAG270" to "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG270 stbapp ver: 2 rev: 250 Safari/533.3",
-    "MAG420" to "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/601.1 (KHTML, like Gecko) MAG420 stbapp ver: 4 rev: 2721 Safari/601.1",
+    MagPreset(R.string.setup_default_mag, ""),
+    MagPreset(R.string.setup_mag250, "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG250 stbapp ver: 2 rev: 250 Safari/533.3"),
+    MagPreset(R.string.setup_mag254, "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG254 stbapp ver: 2 rev: 250 Safari/533.3"),
+    MagPreset(R.string.setup_mag270, "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG270 stbapp ver: 2 rev: 250 Safari/533.3"),
+    MagPreset(R.string.setup_mag420, "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/601.1 (KHTML, like Gecko) MAG420 stbapp ver: 4 rev: 2721 Safari/601.1"),
 )
 
 @Composable
@@ -250,10 +257,10 @@ fun AddSourceScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Column(modifier = Modifier.widthIn(max = 560.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(if (editing) "Edit source" else "Add your source", style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+            Text(if (editing) stringResource(R.string.setup_edit_source) else stringResource(R.string.setup_add_your_source), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
-                if (editing) "Update this source's details, or change its auto-refresh setting." else "OwnTV is a player — bring your own Xtream, M3U, or Stalker source.",
+                if (editing) stringResource(R.string.setup_edit_source_description) else stringResource(R.string.setup_byo_source_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
             )
@@ -264,52 +271,52 @@ fun AddSourceScreen(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 // While editing, the type is fixed — show only the matching chip.
                 if (!editing || kind == SourceKind.XTREAM) {
-                    KindChip("Xtream", kind == SourceKind.XTREAM, Modifier.weight(1f).then(if (!editing) Modifier.focusRequester(firstFocus) else Modifier)) { if (!editing) kind = SourceKind.XTREAM }
+                    KindChip(stringResource(R.string.setup_xtream), kind == SourceKind.XTREAM, Modifier.weight(1f).then(if (!editing) Modifier.focusRequester(firstFocus) else Modifier)) { if (!editing) kind = SourceKind.XTREAM }
                 }
                 if (!editing || kind == SourceKind.M3U) {
-                    KindChip("M3U / M3U8", kind == SourceKind.M3U, Modifier.weight(1f)) { if (!editing) kind = SourceKind.M3U }
+                    KindChip(stringResource(R.string.setup_m3u), kind == SourceKind.M3U, Modifier.weight(1f)) { if (!editing) kind = SourceKind.M3U }
                 }
                 if (onStartStalker != null && (!editing || kind == SourceKind.STALKER)) {
-                    KindChip("Stalker (MAC)", kind == SourceKind.STALKER, Modifier.weight(1f)) { if (!editing) kind = SourceKind.STALKER }
+                    KindChip(stringResource(R.string.setup_stalker_mac), kind == SourceKind.STALKER, Modifier.weight(1f)) { if (!editing) kind = SourceKind.STALKER }
                 }
             }
             Spacer(Modifier.height(20.dp))
 
-            OwnTVTextField(name, { name = it }, label = "Name (optional)", placeholder = "My IPTV", modifier = Modifier.fillMaxWidth(), focusRequester = if (editing) firstFocus else null)
+            OwnTVTextField(name, { name = it }, label = stringResource(R.string.setup_source_name_optional), placeholder = stringResource(R.string.setup_default_iptv), modifier = Modifier.fillMaxWidth(), focusRequester = if (editing) firstFocus else null)
             Spacer(Modifier.height(14.dp))
 
             when (kind) {
                 SourceKind.XTREAM -> {
-                    OwnTVTextField(server, { server = it }, label = "Server URL", placeholder = "http://host:port", keyboardType = KeyboardType.Uri, modifier = Modifier.fillMaxWidth())
+                    OwnTVTextField(server, { server = it }, label = stringResource(R.string.setup_server_url), placeholder = stringResource(R.string.setup_server_example), keyboardType = KeyboardType.Uri, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(14.dp))
-                    OwnTVTextField(username, { username = it }, label = "Username", modifier = Modifier.fillMaxWidth())
+                    OwnTVTextField(username, { username = it }, label = stringResource(R.string.setup_username), modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(14.dp))
-                    OwnTVTextField(password, { password = it }, label = if (editing) "Password (leave blank to keep)" else "Password", isPassword = true, modifier = Modifier.fillMaxWidth())
+                    OwnTVTextField(password, { password = it }, label = if (editing) stringResource(R.string.setup_password_keep) else stringResource(R.string.setup_password), isPassword = true, modifier = Modifier.fillMaxWidth())
                 }
                 SourceKind.M3U -> {
                     val pickedName = remember(m3uUrl) {
                         if (m3uUrl.startsWith("/")) java.io.File(m3uUrl).name else null
                     }
-                    OwnTVTextField(m3uUrl, { m3uUrl = it }, label = "Playlist URL or local file", placeholder = "http://…/playlist.m3u", keyboardType = KeyboardType.Uri, modifier = Modifier.fillMaxWidth())
+                    OwnTVTextField(m3uUrl, { m3uUrl = it }, label = stringResource(R.string.setup_playlist_url_local_file), placeholder = stringResource(R.string.setup_playlist_example), keyboardType = KeyboardType.Uri, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(10.dp))
                     OwnTVButton(
-                        label = if (pickedName != null) "Local file: $pickedName" else "Choose a local .m3u / .m3u8 file…",
+                        label = if (pickedName != null) stringResource(R.string.setup_local_file_prefix, pickedName) else stringResource(R.string.setup_local_file_choose),
                         onClick = { showFileBrowser = true },
                         style = OwnTVButtonStyle.SECONDARY,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 SourceKind.STALKER -> {
-                    OwnTVTextField(portalUrl, { portalUrl = it }, label = "Portal URL", placeholder = "http://host:port/c/", keyboardType = KeyboardType.Uri, modifier = Modifier.fillMaxWidth())
+                    OwnTVTextField(portalUrl, { portalUrl = it }, label = stringResource(R.string.setup_portal_url), placeholder = stringResource(R.string.setup_portal_example), keyboardType = KeyboardType.Uri, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(14.dp))
-                    OwnTVTextField(mac, { mac = it }, label = "MAC address", placeholder = "00:1A:79:AA:BB:CC", modifier = Modifier.fillMaxWidth())
+                    OwnTVTextField(mac, { mac = it }, label = stringResource(R.string.setup_mac_address), placeholder = stringResource(R.string.setup_mac_example), modifier = Modifier.fillMaxWidth())
                     if (mac.isNotBlank() && !macValid) {
                         Spacer(Modifier.height(6.dp))
-                        Text("Enter 12 characters, e.g. 00:1A:79:AA:BB:CC", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
+                        Text(stringResource(R.string.setup_mac_invalid), style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
                     }
                     Spacer(Modifier.height(10.dp))
                     OwnTVButton(
-                        label = "Device model preset (User-Agent)…",
+                        label = stringResource(R.string.setup_device_model_preset),
                         onClick = { showUaPresetPicker = true },
                         style = OwnTVButtonStyle.SECONDARY,
                         modifier = Modifier.fillMaxWidth(),
@@ -317,7 +324,7 @@ fun AddSourceScreen(
                     if (onTestStalker != null) {
                         Spacer(Modifier.height(10.dp))
                         OwnTVButton(
-                            label = if (stalkerTest is StalkerTestUi.Testing) "Testing…" else "Test connection",
+                            label = if (stalkerTest is StalkerTestUi.Testing) stringResource(R.string.setup_testing) else stringResource(R.string.setup_test_connection),
                             onClick = { onTestStalker(portalUrl, mac, userAgent) },
                             style = OwnTVButtonStyle.SECONDARY,
                             enabled = canStart && stalkerTest !is StalkerTestUi.Testing,
@@ -326,11 +333,18 @@ fun AddSourceScreen(
                         when (stalkerTest) {
                             is StalkerTestUi.Ok -> {
                                 Spacer(Modifier.height(6.dp))
-                                Text("✓ ${stalkerTest.message}", style = MaterialTheme.typography.bodySmall, color = colors.primary)
+                                Text(
+                                    stringResource(R.string.setup_stalker_test_connected, stalkerTest.endpoint, stalkerTest.profileFields),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colors.primary,
+                                )
+                                stalkerTest.expiry?.let { expiry ->
+                                    Text(stringResource(R.string.setup_stalker_test_expires, expiry), style = MaterialTheme.typography.bodySmall, color = colors.primary)
+                                }
                             }
                             is StalkerTestUi.Failed -> {
                                 Spacer(Modifier.height(6.dp))
-                                Text(stalkerTest.message, style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
+                                Text(stalkerTest.failure.displayText(), style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
                             }
                             else -> Unit
                         }
@@ -341,7 +355,7 @@ fun AddSourceScreen(
             // EPG is managed separately now (Settings → EPG Sources), so no EPG field here. For an
             // Xtream server the guide URL is still derived automatically; M3U EPG can be added there.
             Spacer(Modifier.height(14.dp))
-            OwnTVTextField(userAgent, { userAgent = it }, label = "User-Agent (optional)", placeholder = "e.g. VLC/3.0.20 LibVLC/3.0.20", modifier = Modifier.fillMaxWidth())
+            OwnTVTextField(userAgent, { userAgent = it }, label = stringResource(R.string.setup_user_agent_optional), placeholder = stringResource(R.string.setup_user_agent_example), modifier = Modifier.fillMaxWidth())
 
             Spacer(Modifier.height(16.dp))
             // Auto-refresh dropdown (replaces the old binary "Refresh on startup" toggle). Off/Startup or a
@@ -351,8 +365,8 @@ fun AddSourceScreen(
             if (showDefaultToggle) {
                 Spacer(Modifier.height(16.dp))
                 ToggleRow(
-                    label = "Default playlist",
-                    desc = "Show only this playlist across the app. Turn off for all playlists; change anytime from the top bar.",
+                    label = stringResource(R.string.setup_default_playlist),
+                    desc = stringResource(R.string.setup_default_playlist_description),
                     checked = isDefault,
                 ) { isDefault = it }
             }
@@ -373,23 +387,23 @@ fun AddSourceScreen(
 
             if (showContentToggles) {
                 Spacer(Modifier.height(20.dp))
-                Text("What to sync", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(stringResource(R.string.setup_what_to_sync), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     if (editing) {
-                        "Off sections stay hidden and are never fetched. Turning a section back On shows cached rows immediately."
+                        stringResource(R.string.setup_sync_off_editing)
                     } else {
-                        "Now imports first · Later syncs in the background · Off is never fetched or shown."
+                        stringResource(R.string.setup_sync_choices)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(10.dp))
-                SyncScopeRow(label = "Live TV", desc = "Channels and categories", value = syncLive, editing = editing) { syncLive = it }
+                SyncScopeRow(label = stringResource(R.string.setup_live_tv), desc = stringResource(R.string.setup_channels_categories), value = syncLive, editing = editing) { syncLive = it }
                 Spacer(Modifier.height(8.dp))
-                SyncScopeRow(label = "Movies", desc = "VOD movie catalog", value = syncMovies, editing = editing) { syncMovies = it }
+                SyncScopeRow(label = stringResource(R.string.setup_movies), desc = stringResource(R.string.setup_vod_movie_catalog), value = syncMovies, editing = editing) { syncMovies = it }
                 Spacer(Modifier.height(8.dp))
-                SyncScopeRow(label = "Series", desc = "TV series catalog", value = syncSeries, editing = editing) { syncSeries = it }
+                SyncScopeRow(label = stringResource(R.string.setup_series), desc = stringResource(R.string.setup_tv_series_catalog), value = syncSeries, editing = editing) { syncSeries = it }
             }
 
             if (!editing && hideNewCatsProfile >= 0) {
@@ -403,10 +417,10 @@ fun AddSourceScreen(
 
             Spacer(Modifier.height(28.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton("Back", onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.common_back), onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
                 OwnTVButton(
-                    label = if (editing) "Save" else "Start Import",
+                    label = if (editing) stringResource(R.string.setup_update_source_save) else stringResource(R.string.setup_start_import),
                     onClick = {
                         when (kind) {
                             SourceKind.XTREAM -> onStartXtream(name, server, username, password, userAgent, epgUrl, autoRefresh, syncLive, syncMovies, syncSeries, isDefault, preferHls)
@@ -425,7 +439,7 @@ fun AddSourceScreen(
       // In-app, TV-safe file picker (SAF / system file picker is missing on many TVs).
       if (showFileBrowser) {
           StorageBrowser(
-              title = "Pick a playlist file (.m3u / .m3u8)",
+              title = stringResource(R.string.setup_pick_playlist_file),
               mode = BrowseMode.FILE,
               fileExtensions = setOf("m3u", "m3u8"),
               onPick = { file ->
@@ -438,11 +452,18 @@ fun AddSourceScreen(
       }
       if (showUaPresetPicker) {
           PickerDialog(
-              title = "Device model preset",
-              options = MAG_UA_PRESETS.map { (label, _) -> label to label },
-              selected = MAG_UA_PRESETS.firstOrNull { it.second == userAgent }?.first ?: MAG_UA_PRESETS.first().first,
-              onSelect = { label ->
-                  userAgent = MAG_UA_PRESETS.firstOrNull { it.first == label }?.second ?: ""
+              title = stringResource(R.string.setup_device_model_preset_title),
+              options = listOf(
+                  R.string.setup_default_mag.toString() to stringResource(R.string.setup_default_mag),
+                  R.string.setup_mag250.toString() to stringResource(R.string.setup_mag250),
+                  R.string.setup_mag254.toString() to stringResource(R.string.setup_mag254),
+                  R.string.setup_mag270.toString() to stringResource(R.string.setup_mag270),
+                  R.string.setup_mag420.toString() to stringResource(R.string.setup_mag420),
+              ),
+              selected = MAG_UA_PRESETS.firstOrNull { it.userAgent == userAgent }?.labelRes?.toString()
+                  ?: MAG_UA_PRESETS.first().labelRes.toString(),
+              onSelect = { labelRes ->
+                  userAgent = MAG_UA_PRESETS.firstOrNull { it.labelRes.toString() == labelRes }?.userAgent.orEmpty()
                   showUaPresetPicker = false
               },
               onDismiss = { showUaPresetPicker = false },
@@ -450,8 +471,8 @@ fun AddSourceScreen(
       }
       if (showAutoRefreshPicker) {
           PickerDialog(
-              title = "Auto refresh",
-              options = PlaylistAutoRefresh.entries.map { it.name to it.label },
+              title = stringResource(R.string.setup_auto_refresh_title),
+              options = PlaylistAutoRefresh.entries.map { it.name to playlistAutoRefreshLabel(it) },
               selected = autoRefresh.name,
               onSelect = { value ->
                   autoRefresh = runCatching { PlaylistAutoRefresh.valueOf(value) }.getOrDefault(PlaylistAutoRefresh.OFF)
@@ -465,6 +486,18 @@ fun AddSourceScreen(
 
 /** A focusable settings row showing the current auto-refresh selection; opens a picker on click. */
 @Composable
+private fun playlistAutoRefreshLabel(mode: PlaylistAutoRefresh): String = stringResource(
+    when (mode) {
+        PlaylistAutoRefresh.OFF -> R.string.phase1_sources_refresh_off
+        PlaylistAutoRefresh.STARTUP -> R.string.phase1_sources_refresh_startup
+        PlaylistAutoRefresh.HOURS_6 -> R.string.phase1_sources_refresh_6h
+        PlaylistAutoRefresh.HOURS_12 -> R.string.phase1_sources_refresh_12h
+        PlaylistAutoRefresh.HOURS_24 -> R.string.phase1_sources_refresh_24h
+        PlaylistAutoRefresh.HOURS_48 -> R.string.phase1_sources_refresh_48h
+    },
+)
+
+@Composable
 private fun AutoRefreshRow(selected: PlaylistAutoRefresh, onClick: () -> Unit) {
     val colors = OwnTVTheme.colors
     FocusableSurface(
@@ -476,15 +509,15 @@ private fun AutoRefreshRow(selected: PlaylistAutoRefresh, onClick: () -> Unit) {
     ) { _ ->
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Auto refresh", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(stringResource(R.string.setup_auto_refresh), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Text(
-                    "Off, on startup, or when data is stale",
+                    stringResource(R.string.setup_auto_refresh_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
             }
             Text(
-                selected.label,
+                playlistAutoRefreshLabel(selected),
                 style = MaterialTheme.typography.titleMedium,
                 color = colors.primary,
             )
@@ -536,10 +569,11 @@ private fun SyncScopeRow(
         val idx = options.indexOf(value).coerceAtLeast(0)
         onChange(options[(idx + delta + options.size) % options.size])
     }
+    @Composable
     fun optionLabel(choice: SyncScopeChoice): String = when (choice) {
-        SyncScopeChoice.Now -> if (editing) "On" else "Now"
-        SyncScopeChoice.Later -> "Later"
-        SyncScopeChoice.Off -> "Off"
+        SyncScopeChoice.Now -> if (editing) stringResource(R.string.setup_on) else stringResource(R.string.setup_now)
+        SyncScopeChoice.Later -> stringResource(R.string.setup_later)
+        SyncScopeChoice.Off -> stringResource(R.string.setup_off)
     }
     FocusableSurface(
         onClick = { cycle(+1) },
@@ -563,7 +597,7 @@ private fun SyncScopeRow(
                 Text(desc, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             }
             Text(
-                "◀ ${optionLabel(value)} ▶",
+                stringResource(R.string.setup_scope_value, optionLabel(value)),
                 style = MaterialTheme.typography.titleMedium,
                 color = if (value == SyncScopeChoice.Off) colors.onSurfaceVariant else colors.primary,
             )

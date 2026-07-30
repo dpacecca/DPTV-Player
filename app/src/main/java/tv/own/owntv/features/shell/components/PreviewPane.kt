@@ -12,10 +12,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.BrandLockup
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -42,7 +44,7 @@ fun PreviewPane(
         BrandLockup(markSize = 56, textSize = 34)
         Spacer(Modifier.height(Dimens.GapMedium))
         Text(
-            text = "Your own IPTV player.",
+            text = stringResource(R.string.content_preview_player),
             style = MaterialTheme.typography.titleMedium,
             color = colors.textSecondary,
             textAlign = TextAlign.Center,

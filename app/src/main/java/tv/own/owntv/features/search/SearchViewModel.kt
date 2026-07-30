@@ -56,10 +56,10 @@ data class SearchResults(
 }
 
 /** Batch 5 — empty-state launcher intents. All bounded (favourites / recent history). */
-enum class SearchIntent(val label: String) {
-    CONTINUE("Continue watching"),
-    UNWATCHED("Unwatched"),
-    CHANNELS("Channels"),
+enum class SearchIntent {
+    CONTINUE,
+    UNWATCHED,
+    CHANNELS,
 }
 
 /** Phase 11 — cross-section search over a profile's channels, movies and series. */

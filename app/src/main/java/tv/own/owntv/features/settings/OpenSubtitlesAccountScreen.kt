@@ -27,10 +27,12 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -108,17 +110,14 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { Header("OpenSubtitles", onBack) }
+            Box(Modifier.weight(1f)) { Header(stringResource(R.string.settings_open_subtitles), onBack) }
             if (state is OpenSubtitlesViewModel.UiState.SignedIn) {
-                OwnTVButton("Refresh", onClick = { vm.refresh() }, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.phase1_subtitles_refresh), onClick = { vm.refresh() }, style = OwnTVButtonStyle.SECONDARY)
             }
         }
         Spacer(Modifier.height(8.dp))
         Text(
-            "OpenSubtitles is a free, open community subtitle service. Sign in with your own " +
-                "OpenSubtitles account to search and download subtitles for movies and series " +
-                "episodes. You can create a free account at opensubtitles.com. The connection " +
-                "applies to the current profile only.",
+            stringResource(R.string.phase1_subtitles_free_description_full),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -127,25 +126,24 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
 
         when (val s = state) {
             is OpenSubtitlesViewModel.UiState.SignedIn -> {
-                GroupLabel("Account")
+                GroupLabel(stringResource(R.string.phase1_subtitles_account))
                 val session = s.session
-                InfoRow("Connected as", session.username)
-                InfoRow("Account", listOfNotNull(session.level, "VIP".takeIf { session.vip }).joinToString(" · ").ifBlank { "Free" })
+                InfoRow(stringResource(R.string.phase1_subtitles_connected_as), session.username)
+                InfoRow(stringResource(R.string.phase1_subtitles_account), listOfNotNull(session.level, stringResource(R.string.phase1_subtitles_vip).takeIf { session.vip }).joinToString(stringResource(R.string.phase1_subtitles_tags_separator)).ifBlank { stringResource(R.string.phase1_subtitles_free_account) })
                 // Provider-reported values only (§5.3): remaining-only unless a total was returned.
                 val remaining = session.remainingDownloads
                 if (remaining != null) {
                     val total = session.allowedDownloads
                     InfoRow(
-                        "Downloads",
-                        if (total != null) "$remaining of $total remaining today" else "$remaining remaining today",
+                        stringResource(R.string.phase1_subtitles_downloads),
+                        if (total != null) stringResource(R.string.phase1_subtitles_remaining, remaining, total) else stringResource(R.string.phase1_subtitles_remaining_short, remaining),
                     )
                 }
-                session.resetTime?.let { InfoRow("Resets", "in $it") }
+                session.resetTime?.let { InfoRow(stringResource(R.string.phase1_subtitles_resets), stringResource(R.string.phase1_subtitles_in, it)) }
                 Spacer(Modifier.height(14.dp))
                 Row2(
-                    icon = OwnTVIcon.SUBTITLE, title = "Sign out",
-                    desc = "Removes this profile's OpenSubtitles login from this device. Already " +
-                        "downloaded subtitles stay available offline.",
+                    icon = OwnTVIcon.SUBTITLE, title = stringResource(R.string.phase1_subtitles_sign_out),
+                    desc = stringResource(R.string.phase1_subtitles_delete_login_message),
                     modifier = Modifier.focusRequester(firstFocus),
                     onClick = { vm.signOut() },
                 )
@@ -153,7 +151,7 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
             OpenSubtitlesViewModel.UiState.Busy -> {
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Contacting OpenSubtitles…",
+                    stringResource(R.string.phase1_subtitles_contacting),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -161,8 +159,8 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
             }
             OpenSubtitlesViewModel.UiState.SignedOut -> {
                 Row2(
-                    icon = OwnTVIcon.SUBTITLE, title = "Sign in",
-                    desc = "Connect this profile's OpenSubtitles account.",
+                    icon = OwnTVIcon.SUBTITLE, title = stringResource(R.string.phase1_subtitles_sign_in),
+                    desc = stringResource(R.string.phase1_subtitles_connect_description),
                     chevron = true,
                     modifier = Modifier.focusRequester(firstFocus),
                     onClick = { showSignIn = true },
@@ -173,8 +171,8 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
         // Delete downloaded subtitles (available regardless of sign-in state — cached files are local).
         Spacer(Modifier.height(6.dp))
         Row2(
-            icon = OwnTVIcon.SUBTITLE, title = "Delete subtitles",
-            desc = "Remove subtitles you've downloaded for movies and series.",
+            icon = OwnTVIcon.SUBTITLE, title = stringResource(R.string.phase1_subtitles_delete_action),
+            desc = stringResource(R.string.phase1_subtitles_delete_description),
             chevron = true,
             modifier = Modifier.focusRequester(deleteFocus),
             onClick = { showDeleteSubs = true },
@@ -186,12 +184,12 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
         // OpenSubtitles attribution — logo + line, mirroring the TMDB credit in Metadata settings.
         androidx.compose.foundation.Image(
             painter = androidx.compose.ui.res.painterResource(tv.own.owntv.R.drawable.ic_opensubtitles_logo),
-            contentDescription = "OpenSubtitles",
+            contentDescription = stringResource(R.string.settings_open_subtitles),
             modifier = Modifier.padding(start = 16.dp),
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "This product uses the OpenSubtitles API but is not endorsed or certified by OpenSubtitles.",
+            stringResource(R.string.phase1_subtitles_api_notice),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(start = 16.dp),
@@ -208,8 +206,14 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
         )
     }
 
-    error?.let { message ->
-        ErrorDialog(message = message, onDismiss = { vm.dismissError() })
+    error?.let { kind ->
+        val messageRes = when (kind) {
+            OpenSubtitlesViewModel.ErrorKind.EMPTY_CREDENTIALS -> R.string.phase1_subtitles_enter_credentials
+            OpenSubtitlesViewModel.ErrorKind.INVALID_CREDENTIALS -> R.string.phase1_subtitles_invalid_credentials
+            OpenSubtitlesViewModel.ErrorKind.NETWORK -> R.string.phase1_subtitles_sign_in_network_error
+            OpenSubtitlesViewModel.ErrorKind.REFRESH_NETWORK -> R.string.phase1_subtitles_refresh_network_error
+        }
+        ErrorDialog(message = stringResource(messageRes), onDismiss = { vm.dismissError() })
     }
 }
 
@@ -241,35 +245,34 @@ internal fun OpenSubtitlesSignInDialog(onSubmit: (String, String, Boolean) -> Un
             contentAlignment = Alignment.Center,
         ) {
             Column(Modifier.dialogPanel(width = 480.dp, padding = 28.dp)) {
-                Text("Sign in to OpenSubtitles", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Text(stringResource(R.string.phase1_subtitles_sign_in_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "Use your opensubtitles.com account. Creating one is free.",
+                    stringResource(R.string.phase1_subtitles_sign_in_to_use),
                     style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(16.dp))
                 OwnTVTextField(
                     value = username, onValueChange = { username = it },
-                    label = "Username", modifier = Modifier.fillMaxWidth(), focusRequester = fieldFocus,
+                    label = stringResource(R.string.phase1_subtitles_username), modifier = Modifier.fillMaxWidth(), focusRequester = fieldFocus,
                 )
                 Spacer(Modifier.height(10.dp))
                 OwnTVTextField(
                     value = password, onValueChange = { password = it },
-                    label = "Password", isPassword = true, modifier = Modifier.fillMaxWidth(),
+                    label = stringResource(R.string.phase1_subtitles_password), isPassword = true, modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(14.dp))
                 Row2(
-                    icon = OwnTVIcon.SUBTITLE, title = "Stay signed in",
-                    desc = "Keep the login on this device so it can reconnect automatically when the " +
-                        "session expires. Turn off to store only a temporary session.",
-                    chip = if (staySignedIn) "On" else "Off", primaryChip = staySignedIn,
+                    icon = OwnTVIcon.SUBTITLE, title = stringResource(R.string.phase1_subtitles_stay_signed_in),
+                    desc = stringResource(R.string.phase1_subtitles_session),
+                    chip = if (staySignedIn) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = staySignedIn,
                     onClick = { staySignedIn = !staySignedIn },
                 )
                 Spacer(Modifier.height(18.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                     Spacer(Modifier.weight(1f))
-                    OwnTVButton("Sign in", onClick = { onSubmit(username.trim(), password, staySignedIn) })
+                    OwnTVButton(stringResource(R.string.phase1_subtitles_sign_in), onClick = { onSubmit(username.trim(), password, staySignedIn) })
                 }
             }
         }
@@ -288,12 +291,12 @@ private fun ErrorDialog(message: String, onDismiss: () -> Unit) {
             contentAlignment = Alignment.Center,
         ) {
             Column(Modifier.dialogPanel(width = 420.dp, padding = 24.dp)) {
-                Text("OpenSubtitles", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Text(stringResource(R.string.settings_open_subtitles), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(10.dp))
                 Text(message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                 Spacer(Modifier.height(18.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.focusRequester(focus))
+                    OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, modifier = Modifier.focusRequester(focus))
                 }
             }
         }

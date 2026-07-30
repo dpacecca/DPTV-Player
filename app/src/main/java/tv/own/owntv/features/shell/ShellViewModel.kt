@@ -40,15 +40,15 @@ import tv.own.owntv.ui.theme.ThemeMode
 import tv.own.owntv.ui.theme.UiZoom
 
 /** Top-level navigation destinations rendered in the Layer-1 sidebar. */
-enum class MainSection(val label: String) {
-    SEARCH("Search"),
-    HOME("Home"),
-    LIVE_TV("Live TV"),
-    MOVIES("Movies"),
-    SERIES("Series"),
-    DOWNLOADS("Downloads"),
-    EPG("Guide"),
-    SETTINGS("Settings"); // pinned at the bottom of the nav
+enum class MainSection(@androidx.annotation.StringRes val labelRes: Int) {
+    SEARCH(tv.own.owntv.R.string.common_nav_search),
+    HOME(tv.own.owntv.R.string.common_nav_home),
+    LIVE_TV(tv.own.owntv.R.string.common_nav_live_tv),
+    MOVIES(tv.own.owntv.R.string.common_nav_movies),
+    SERIES(tv.own.owntv.R.string.common_nav_series),
+    DOWNLOADS(tv.own.owntv.R.string.common_nav_downloads),
+    EPG(tv.own.owntv.R.string.common_nav_guide),
+    SETTINGS(tv.own.owntv.R.string.common_nav_settings); // pinned at the bottom of the nav
 
     /** Shown as an icon in the left nav rail. Phase 4 moved Search to the top bar, so it's excluded. */
     val isBrowse: Boolean get() = this != SETTINGS && this != SEARCH
@@ -299,16 +299,16 @@ class ShellViewModel(
         .flatMapLatest { pid -> if (pid < 0) flowOf("") else profileDao.observeById(pid).map { it?.name ?: "" } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
-    /** The active (default) source's name for the sidebar; "No source" when the profile has none. */
-    val sourceSummary: StateFlow<String> = settings.activeProfileId
+    /** The active (default) source's name for the sidebar; null means the profile has none. */
+    val sourceSummary: StateFlow<String?> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf(emptyList<tv.own.owntv.core.database.entity.SourceEntity>()) else sourceRepository.observeSources(pid) }
         .combine(settings.defaultSourceId) { sources, defaultId ->
             when {
-                sources.isEmpty() -> "No source"
+                sources.isEmpty() -> null
                 else -> (sources.firstOrNull { it.id == defaultId } ?: sources.first()).name
             }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "No source")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** The active profile's playlists, for the top-bar quick switcher (empty when the profile has none). */
     val playlists: StateFlow<List<tv.own.owntv.core.database.entity.SourceEntity>> = settings.activeProfileId

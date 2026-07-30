@@ -19,9 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.TextInputDialog
 import tv.own.owntv.ui.components.roundedPanel
@@ -72,40 +74,38 @@ fun WeatherSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 40.dp, vertical = 28.dp),
     ) {
-        Header("Weather", onBack)
+        Header(stringResource(R.string.settings_weather), onBack)
         Spacer(Modifier.height(8.dp))
 
-        GroupLabel("Top bar weather")
+        GroupLabel(stringResource(R.string.settings_top_bar_weather))
         Row2(
-            icon = OwnTVIcon.EPG, title = "Show weather",
-            desc = "Display the current weather in the top bar.",
-            chip = if (enabled) "On" else "Off", primaryChip = enabled,
+            icon = OwnTVIcon.EPG, title = stringResource(R.string.settings_show_weather),
+            desc = stringResource(R.string.settings_show_weather_description),
+            chip = if (enabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = enabled,
             modifier = Modifier.focusRequester(firstFocus),
             onClick = { vm.setWeatherEnabled(!enabled) },
         )
         Row2(
-            icon = OwnTVIcon.EPG, title = "Custom location",
-            desc = "Override the city used for weather. Leave blank to auto-detect, or enter a city " +
-                "(e.g. London) or \"lat,lon\" (e.g. 51.5,-0.12). Useful on a VPN, where auto-detect " +
-                "resolves to the server's city.",
-            chip = location.ifBlank { "Auto" }, primaryChip = false, chevron = true,
+            icon = OwnTVIcon.EPG, title = stringResource(R.string.settings_custom_location),
+            desc = stringResource(R.string.settings_custom_location_description),
+            chip = location.ifBlank { stringResource(R.string.settings_auto) }, primaryChip = false, chevron = true,
             modifier = Modifier.focusRequester(locationRowFocus),
             onClick = { showLocation = true },
         )
         Row2(
-            icon = OwnTVIcon.EPG, title = "Temperature unit",
-            desc = "Show the temperature in Celsius or Fahrenheit.",
-            chip = if (fahrenheit) "°F" else "°C", primaryChip = true,
+            icon = OwnTVIcon.EPG, title = stringResource(R.string.settings_temperature_unit),
+            desc = stringResource(R.string.settings_temperature_description),
+            chip = stringResource(if (fahrenheit) R.string.settings_degree_fahrenheit else R.string.settings_degree_celsius), primaryChip = true,
             onClick = { vm.setWeatherFahrenheit(!fahrenheit) },
         )
     }
 
     if (showLocation) {
         TextInputDialog(
-            title = "Custom location",
+            title = stringResource(R.string.settings_custom_location),
             initial = location,
-            label = "City or lat,lon",
-            hint = "Leave blank to auto-detect from your public IP. Enter a city (e.g. London) or \"lat,lon\" (e.g. 51.5,-0.12).",
+            label = stringResource(R.string.settings_city_latlon),
+            hint = stringResource(R.string.settings_location_hint),
             onConfirm = { vm.setWeatherLocation(it); showLocation = false },
             onDismiss = { showLocation = false },
         )

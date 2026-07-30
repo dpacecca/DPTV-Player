@@ -1,5 +1,6 @@
 package tv.own.owntv.ui.theme
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
@@ -7,16 +8,17 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import tv.own.owntv.R
 
 /**
  * How much UI motion to render. A performance/comfort control: lower-end Android TV boxes can feel
  * laggy when moving quickly between menus, so the user can tone the animations down (or off).
  */
-enum class AnimationLevel(val label: String) {
+enum class AnimationLevel(@StringRes val labelRes: Int) {
     // On = normal motion; Off = instant (no transitions). The fixed grid (v4.0.0) removed the old reason for
     // a middle "Reduced" tier, so this is now a simple On/Off reduce-motion toggle. (Legacy "REDUCED" values
     // fall back to On via the settings store's safe parse.)
-    FULL("On"), OFF("Off");
+    FULL(R.string.common_on), OFF(R.string.common_off);
 
     /** Scale an animation duration to this level (OFF collapses to 0 → an instant snap). */
     fun scale(durationMs: Int): Int = when (this) {

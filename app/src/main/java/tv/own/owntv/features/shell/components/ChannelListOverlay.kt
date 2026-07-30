@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -54,7 +56,7 @@ fun ChannelListOverlay(
     onSelect: (ChannelEntity) -> Unit,
     onDismiss: () -> Unit,
     nowPlaying: Map<Long, String> = emptyMap(),
-    title: String = "Channels",
+    title: String? = null,
     alignEnd: Boolean = false,
     showNumbers: Boolean = true,
     onOpenCategories: (() -> Unit)? = null,
@@ -92,7 +94,7 @@ fun ChannelListOverlay(
                 .padding(vertical = 18.dp),
         ) {
             Text(
-                title,
+                title ?: stringResource(R.string.content_channel_overlay_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = colors.primary,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),

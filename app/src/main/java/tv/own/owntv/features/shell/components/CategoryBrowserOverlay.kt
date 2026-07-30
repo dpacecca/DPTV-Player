@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.CategoryEntity
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -83,7 +85,7 @@ fun CategoryBrowserOverlay(
                 .padding(vertical = 18.dp),
         ) {
             Text(
-                "Categories",
+                stringResource(R.string.content_category_browser_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = colors.primary,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),

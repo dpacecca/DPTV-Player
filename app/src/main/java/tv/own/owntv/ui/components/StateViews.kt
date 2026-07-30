@@ -21,11 +21,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /** Lightweight indeterminate spinner drawn with Canvas (no Material dependency). */
@@ -84,17 +86,19 @@ fun LoadingState(
 fun ErrorState(
     message: String,
     modifier: Modifier = Modifier,
-    title: String = "Something went wrong",
-    retryLabel: String = "Retry",
+    title: String? = null,
+    retryLabel: String? = null,
     onRetry: (() -> Unit)? = null,
 ) {
     val colors = OwnTVTheme.colors
+    val resolvedTitle = title ?: stringResource(R.string.common_something_went_wrong)
+    val resolvedRetryLabel = retryLabel ?: stringResource(R.string.common_retry)
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(text = title, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary, textAlign = TextAlign.Center)
+        Text(text = resolvedTitle, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary, textAlign = TextAlign.Center)
         Spacer(Modifier.height(8.dp))
         Text(
             text = message,
@@ -105,7 +109,7 @@ fun ErrorState(
         )
         if (onRetry != null) {
             Spacer(Modifier.height(20.dp))
-            OwnTVButton(label = retryLabel, onClick = onRetry, icon = OwnTVIcon.HISTORY)
+            OwnTVButton(label = resolvedRetryLabel, onClick = onRetry, icon = OwnTVIcon.HISTORY)
         }
     }
 }

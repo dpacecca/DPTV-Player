@@ -20,11 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
+import tv.own.owntv.R
 import tv.own.owntv.features.settings.data.ChNavLimits
 import tv.own.owntv.ui.components.NumberInputDialog
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -87,10 +89,10 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Header(title = "CH+- Key Paging", onBack = onBack)
+        Header(title = stringResource(R.string.settings_ch_nav_title), onBack = onBack)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Page the category or item list with the remote's CH+ / CH− keys.",
+            stringResource(R.string.settings_ch_nav_description),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
         )
@@ -98,9 +100,9 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         Row2(
             icon = OwnTVIcon.MENU,
-            title = "Use CH+- keys to page lists",
-            desc = "When on, CH+ and CH− skip inside the focused panel (category rail or item list, and the Customize category list). When off, those keys do nothing in those screens.",
-            chip = if (enabled) "On" else "Off",
+            title = stringResource(R.string.settings_ch_nav_enabled),
+            desc = stringResource(R.string.settings_ch_nav_enabled_description),
+            chip = if (enabled) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             primaryChip = enabled,
             chevron = true,
             onClick = { dialogReturn = firstFocus; dialog = ChNavDialog.ENABLED },
@@ -108,12 +110,12 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         )
 
         Spacer(Modifier.height(10.dp))
-        GroupLabel("Skip counts")
+        GroupLabel(stringResource(R.string.settings_skip_counts))
 
         Row2(
             icon = OwnTVIcon.SKIP_PREVIOUS,
-            title = "CH+ skip (toward first)",
-            desc = "How many items one CH+ press jumps up. Long-press always goes to the first item.",
+            title = stringResource(R.string.settings_ch_nav_up),
+            desc = stringResource(R.string.settings_ch_nav_up_description),
             chip = upSkip.toString(),
             chevron = true,
             onClick = { dialogReturn = upSkipFocus; dialog = ChNavDialog.UP_SKIP },
@@ -121,8 +123,8 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         )
         Row2(
             icon = OwnTVIcon.SKIP_NEXT,
-            title = "CH− skip (toward last)",
-            desc = "How many items one CH− press jumps down. Long-press always goes to the last item.",
+            title = stringResource(R.string.settings_ch_nav_down),
+            desc = stringResource(R.string.settings_ch_nav_down_description),
             chip = downSkip.toString(),
             chevron = true,
             onClick = { dialogReturn = downSkipFocus; dialog = ChNavDialog.DOWN_SKIP },
@@ -130,30 +132,26 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         )
 
         Spacer(Modifier.height(12.dp))
-        GroupLabel("How it works")
+        GroupLabel(stringResource(R.string.settings_how_it_works))
         Text(
-            "• Skips are clamped at the ends, so short lists reach the end in one press.\n" +
-                "• Long-press CH+ = first item, long-press CH− = last item.\n" +
-                "• Long-press is disabled on the \"All\" list (every channel / movie / series) — short-press skipping still works there.\n" +
-                "• Applies to whichever panel currently has focus — the category rail or the item list/grid.\n" +
-                "• Also pages the category list in Settings → Customize Categories & Items.",
+            stringResource(R.string.settings_ch_nav_help),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
         )
     }
 
-    val warnText = "Large skips overshoot short lists and may feel jumpy on low-end TVs."
+    val warnText = stringResource(R.string.settings_large_skips_warning)
     when (dialog) {
         ChNavDialog.ENABLED -> PickerDialog(
-            title = "CH+- key paging",
-            options = listOf("true" to "On", "false" to "Off"),
+            title = stringResource(R.string.settings_ch_nav_picker),
+            options = listOf("true" to stringResource(R.string.common_on), "false" to stringResource(R.string.common_off)),
             selected = enabled.toString(),
             onSelect = { v -> vm.setChNavEnabled(v.toBoolean()); dialog = ChNavDialog.NONE },
             onDismiss = { dialog = ChNavDialog.NONE },
         )
         ChNavDialog.UP_SKIP -> NumberInputDialog(
-            title = "CH+ skip (toward first)",
+            title = stringResource(R.string.settings_ch_nav_up),
             value = upSkip,
             min = 1,
             max = ChNavLimits.HARD_MAX,
@@ -165,7 +163,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             onDismiss = { dialog = ChNavDialog.NONE },
         )
         ChNavDialog.DOWN_SKIP -> NumberInputDialog(
-            title = "CH− skip (toward last)",
+            title = stringResource(R.string.settings_ch_nav_down),
             value = downSkip,
             min = 1,
             max = ChNavLimits.HARD_MAX,

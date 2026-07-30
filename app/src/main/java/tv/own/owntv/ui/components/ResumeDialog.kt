@@ -23,9 +23,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -49,28 +51,33 @@ fun ResumeDialog(
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.dialogPanel(padding = 28.dp, fill = colors.surfaceContainerHigh.copy(alpha = 0.88f))) {
-            Text("Resume playback?", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.common_resume_prompt), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(8.dp))
             Text(
-                "You stopped at ${formatTimestamp(positionMs)}.",
+                stringResource(R.string.common_resume_position, formatTimestamp(positionMs)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(22.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton("Start over", onClick = onStartOver, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.common_start_over), onClick = onStartOver, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
-                OwnTVButton("Resume", onClick = onResume, icon = OwnTVIcon.PLAY, modifier = Modifier.focusRequester(focus))
+                OwnTVButton(stringResource(R.string.common_resume), onClick = onResume, icon = OwnTVIcon.PLAY, modifier = Modifier.focusRequester(focus))
             }
         }
     }
 }
 
 /** 0:42 / 23:45 / 1:23:45 style timestamp. */
+@Composable
 fun formatTimestamp(ms: Long): String {
     val totalSec = ms / 1000
     val h = totalSec / 3600
     val m = (totalSec % 3600) / 60
     val s = totalSec % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
+    return if (h > 0) {
+        stringResource(R.string.common_timestamp_hours, h, m, s)
+    } else {
+        stringResource(R.string.common_timestamp_minutes, m, s)
+    }
 }

@@ -33,10 +33,12 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.compose.koinInject
+import tv.own.owntv.R
 import tv.own.owntv.core.update.UpdateManager
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -72,7 +74,7 @@ fun UpdateDialog(onDismiss: () -> Unit, checkOnOpen: Boolean = false) {
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.width(520.dp).clip(RoundedCornerShape(20.dp)).background(colors.surfaceContainerHigh).padding(28.dp)) {
-            Text("App update", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.phase1_update_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(12.dp))
 
             when (val s = state) {
@@ -80,27 +82,27 @@ fun UpdateDialog(onDismiss: () -> Unit, checkOnOpen: Boolean = false) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         OwnTVSpinner(sizeDp = 28)
                         Spacer(Modifier.width(12.dp))
-                        Text("Checking for updates…", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        Text(stringResource(R.string.phase1_update_checking), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     }
                 }
                 UpdateManager.State.UpToDate -> {
                     Text(
-                        "You're on the latest version (v${manager.currentVersion}).",
+                        stringResource(R.string.phase1_update_latest, manager.currentVersion),
                         style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(20.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        OwnTVButton("Close", onClick = onDismiss, modifier = Modifier.focusRequester(focus))
+                        OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, modifier = Modifier.focusRequester(focus))
                     }
                 }
                 is UpdateManager.State.Available -> {
                     Text(
-                        "Version ${s.info.version} is available (you have v${manager.currentVersion}).",
+                        stringResource(R.string.phase1_update_available_version, s.info.version, manager.currentVersion),
                         style = MaterialTheme.typography.bodyMedium, color = colors.onSurface,
                     )
                     if (s.info.notes.isNotBlank()) {
                         Spacer(Modifier.height(12.dp))
-                        Text("What's new", style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+                        Text(stringResource(R.string.phase1_update_whats_new), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
                         Spacer(Modifier.height(6.dp))
                         Text(
                             renderReleaseNotes(s.info.notes, headingColor = colors.onSurface),
@@ -114,30 +116,36 @@ fun UpdateDialog(onDismiss: () -> Unit, checkOnOpen: Boolean = false) {
                     }
                     Spacer(Modifier.height(20.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OwnTVButton("Later", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton(stringResource(R.string.phase1_update_later), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                         Spacer(Modifier.weight(1f))
-                        OwnTVButton("Update now", onClick = { manager.downloadAndInstall() }, icon = OwnTVIcon.DOWNLOADS, modifier = Modifier.focusRequester(focus))
+                        OwnTVButton(stringResource(R.string.phase1_update_now), onClick = { manager.downloadAndInstall() }, icon = OwnTVIcon.DOWNLOADS, modifier = Modifier.focusRequester(focus))
                     }
                 }
                 is UpdateManager.State.Downloading -> {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         OwnTVSpinner(sizeDp = 28)
                         Spacer(Modifier.width(12.dp))
-                        Text("Downloading update… ${s.percent}%", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        Text(stringResource(R.string.phase1_update_downloading, s.percent), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "The system installer opens when the download finishes.",
+                        stringResource(R.string.phase1_update_installer),
                         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                     )
                 }
                 is UpdateManager.State.Failed -> {
-                    Text(s.message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Text(
+                        stringResource(
+                            if (s.kind == UpdateManager.State.FailureKind.CHECK) R.string.phase1_update_failed_check else R.string.phase1_update_failed_download,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                    )
                     Spacer(Modifier.height(20.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                         Spacer(Modifier.weight(1f))
-                        OwnTVButton("Try again", onClick = { manager.check() }, modifier = Modifier.focusRequester(focus))
+                        OwnTVButton(stringResource(R.string.phase1_update_try_again), onClick = { manager.check() }, modifier = Modifier.focusRequester(focus))
                     }
                 }
             }
