@@ -825,6 +825,8 @@ values/strings_setup.xml      onboarding, add-source, companion
 values/strings_settings.xml   all settings screens
 values/strings_player.xml     player HUD, tracks, diagnostics
 values/strings_content.xml    home, live, movies, series, epg, search, downloads, subtitles
+values/strings_features.xml   profiles, home rows, search and launcher copy
+values/strings_phase1.xml     phase-one settings, EPG, downloads, subtitles and companion copy
 values/donottranslate.xml     brand + protocol constants, translatable="false"
 ```
 
@@ -1132,7 +1134,7 @@ Must land **before** the first non-Latin locale ships, or the first Arabic user 
 
 **4b. Weblate.** Connect hosted.weblate.org to the GitHub repo (GPL-3 qualifies for the free libre tier). Configure **bidirectional** sync: push via PR on commit, plus the GitHub webhook so manual edits pushed to `main` flow back into Weblate. Enable the *Cleanup translation files*, *Squash Git commits*, and built-in Android format-check addons.
 
-**A single filemask cannot cover the five split files.** A Weblate filemask takes **exactly one** `*`, and for Android monolingual resources that `*` is the language segment. `values-*/strings*.xml` is therefore invalid (two wildcards), and a component's base file must be one concrete monolingual file, so `values/%s.xml` cannot stand in for five different filenames. Written naively, the component would not validate.
+**A single filemask cannot cover the seven split files.** A Weblate filemask takes **exactly one** `*`, and for Android monolingual resources that `*` is the language segment. `values-*/strings*.xml` is therefore invalid (two wildcards), and a component's base file must be one concrete monolingual file, so `values/%s.xml` cannot stand in for seven different filenames. Written naively, the component would not validate.
 
 Use the component-discovery addon already chosen in 0c, configured to capture **both** the language and the component filename:
 
@@ -1143,7 +1145,7 @@ Component name:     {{ component }}
 Base file:          app/src/main/res/values/{{ component }}.xml
 ```
 
-Discovery then creates five components (`strings`, `strings_setup`, `strings_settings`, `strings_player`, `strings_content`), each correctly paired with its own base file in `values/`. Two consequences of the regex to check on first run:
+Discovery then creates seven components (`strings`, `strings_setup`, `strings_settings`, `strings_player`, `strings_content`, `strings_features`, `strings_phase1`), each correctly paired with its own base file in `values/`. Two consequences of the regex to check on first run:
 
 - `donottranslate.xml` does not start with `strings`, so the pattern excludes it structurally rather than relying on a separate exclusion rule.
 - `values-b+sr+Latn` contains `+`, which `[^/]*` matches fine, but confirm Weblate maps that directory to the `sr_Latn` language code rather than creating a junk language.
@@ -1652,7 +1654,7 @@ Reconciles the 2026-07-28 review with the 2026-07-29 (v2) architectural decision
 | 4 | Error mapper cannot return `@StringRes Int` | **v2 supersedes `UiText`.** Use a semantic classifier returning `FriendlySyncFailure`. Migrate full vertical slices through an additive API or one atomic batch. Raw EPG persistence and friendly EPG rendering ship together, so no phase exposes raw exceptions to users | Errors section, Phase 1 batch 1b |
 | 5 | Hardcoded-string guard misses its own stated scope | Occurrence-aware literal baseline ratchet with an explicit safe-category list. Duplicate content in one file is counted, and assertion messages require a reviewed developer-only allowlist rather than blanket exemption. The `getString()` receiver rule is replaced by a location/boundary rule | 0d |
 | 6 | Tiered `MissingTranslation` is not expressible in lint | Coverage gate lives in `validate_strings.py`, driven by `locales.json`; lint stays informational | 4d |
-| 7 | Weblate filemask cannot map five split files | Component discovery captures both `language` and `component`; generated project language aliases map Android qualifiers such as `pt` and `es` to `pt_BR` and `es_ES` from `locales.json` | 4b |
+| 7 | Weblate filemask cannot map seven split files | Component discovery captures both `language` and `component`; generated project language aliases map Android qualifiers such as `pt` and `es` to `pt_BR` and `es_ES` from `locales.json` | 4b |
 | 8 | Backup mirror race on import | **Dissolved by v2.** There is no mirror. One SharedPreferences-backed `LocaleStore`, one write path, awaited by import | 0b |
 | 9 | `ChannelGenre.label` is display text and comparison key at once | `label` stays canonical and untranslated; display goes through `displayLabelRes` or a UI mapper. Regression test retained | Comparison keys, Phase 1 batch 5 |
 | 10 | `rememberSaveable` could restore an authenticated flag after process death | Activity-scoped ViewModel without `SavedStateHandle`; configuration-only retention | 0a |
