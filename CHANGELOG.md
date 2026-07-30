@@ -2,6 +2,38 @@
 
 ## v4.1.5 — unreleased
 
+### 🆕 Date added — sort Movies and Series by what arrived most recently
+
+- **"Date added" is a new sort mode for Movies and Series**, alongside Playlist order, A–Z and Rating.
+  Press the sort button on the Movies or Series list to cycle to it. Newest titles come first, so a
+  provider that keeps adding films puts the new ones where you'll actually see them.
+- The date comes from your provider. **Xtream playlists** carry a real added/last-modified date for
+  every movie and show, and that is what's used. **Stalker portals** carry one too, and OwnTV now reads
+  it — though on a freshly built portal it is often the date the reseller bulk-imported the catalog
+  rather than a real release date.
+- **M3U playlists have no date to give** — the `#EXTINF` format simply has no such field. Rather than
+  inventing one, "Date added" falls back to **reverse playlist order** for them: the titles at the
+  bottom of your playlist, which is where providers append new ones, come first.
+- Titles with no date always sort last, so a mixed catalog puts everything OwnTV knows a date for
+  ahead of everything it doesn't, instead of scattering them.
+- The sort is index-backed, so it stays instant on very large catalogs.
+- Your choice is remembered per section and travels in backups, exactly like the other sort modes.
+
+### ↕️ Series sorting — season and episode order, set per show
+
+- The series episode view has a **"Sorting" button** that opens a small popup with two independent
+  choices: **Seasons** and **Episodes**, each **Oldest first** or **Newest first**.
+- **It's set per show, not globally.** A long-running series you're catching up on can stay oldest-first
+  while a weekly show you follow shows the newest episode at the top — and neither affects the other.
+- The two are genuinely independent: newest seasons first with oldest episodes first is a valid
+  combination, and OwnTV keeps it.
+- Changes apply the moment you pick them; **Back** closes the popup. Both default to **Oldest first**.
+- **Playback order is never affected.** Autoplay still runs episodes in their natural order whatever
+  you choose here — this only changes what you see.
+- Opening a part-watched show still lands you on the last episode you watched, in either order.
+- Your per-show choices are kept per profile and are included in backups with the manual-ordering
+  section, so they come back on the right shows after a restore.
+
 ### 📺 Channel numbers — type a number on the remote to tune
 
 - **Type a channel number while watching Live TV full screen** and OwnTV tunes straight to it, the way a

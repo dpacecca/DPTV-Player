@@ -885,6 +885,7 @@ private fun EpisodeView(
     val episodeProgress by vm.episodeProgress.collectAsStateWithLifecycle()
     val completedIds by vm.completedEpisodeIds.collectAsStateWithLifecycle()
     val hideWatched by vm.hideWatched.collectAsStateWithLifecycle()
+    val seriesOrder by vm.seriesOrder.collectAsStateWithLifecycle()
     val nextUpId by vm.nextUpEpisodeId.collectAsStateWithLifecycle()
     val epListState = androidx.compose.foundation.lazy.rememberLazyListState()
     // Season selector rail state — long-running shows can have more seasons than fit on one line
@@ -898,6 +899,7 @@ private fun EpisodeView(
     // Downloaded subtitles for the episode whose context menu is open (subtitle plan §11).
     var contextEpisodeSubs by remember { mutableStateOf<List<tv.own.owntv.core.database.dao.LinkedSubtitle>>(emptyList()) }
     var showEpisodeDeleteSubs by remember { mutableStateOf(false) }
+    var showSorting by remember { mutableStateOf(false) }
     // Long-press target's id + its row's FocusRequester: refocus the episode row when the context menu
     // (or a window it opened) closes — otherwise focus dies with the menu and falls to the sidebar.
     var contextEpisodeId by remember { mutableStateOf<Long?>(null) }
@@ -907,9 +909,16 @@ private fun EpisodeView(
 
     BackHandler { vm.closeSeries() }
 
-    val seasons = episodes.map { it.seasonNumber }.distinct().sorted()
+    // Season rail and episode list are ordered independently (the "Sorting" popup). Both branches
+    // sort explicitly rather than leaning on upstream order, so the two orders are symmetrical.
+    val seasons = episodes.map { it.seasonNumber }.distinct()
+        .let { if (seriesOrder.seasonsDescending) it.sortedDescending() else it.sorted() }
     val activeSeason = if (seasons.contains(selectedSeason)) selectedSeason else seasons.firstOrNull() ?: 1
     val seasonEpisodes = episodes.filter { it.seasonNumber == activeSeason }
+        .let { list ->
+            if (seriesOrder.episodesDescending) list.sortedByDescending { ep -> ep.episodeNumber }
+            else list.sortedBy { ep -> ep.episodeNumber }
+        }
     // "Hide watched" filter — drops episodes watched to ≥95%. Focus-index math below uses this list so a
     // filtered-out last-watched episode falls back to the first visible one instead of losing focus.
     val visibleEpisodes = remember(seasonEpisodes, hideWatched, completedIds) {
@@ -1009,6 +1018,14 @@ private fun EpisodeView(
                     style = OwnTVButtonStyle.SECONDARY,
                 )
             }
+            // Season/episode order for THIS series (visual only — playback always runs 1,2,3…).
+            // Opens the popup; the two orders are set independently and saved per series.
+            OwnTVButton(
+                label = "Sorting",
+                onClick = { showSorting = true },
+                style = OwnTVButtonStyle.SECONDARY,
+                icon = OwnTVIcon.SORT,
+            )
         }
         Spacer(Modifier.height(16.dp))
 
@@ -1166,6 +1183,16 @@ private fun EpisodeView(
             },
             onDeleteSubtitles = if (contextEpisodeSubs.isNotEmpty()) ({ showEpisodeDeleteSubs = true }) else null,
             onDismiss = { contextEpisode = null },
+        )
+    }
+
+    // Season/episode order popup for this series. Applies immediately; stays open so both rows can
+    // be set in one visit.
+    if (showSorting) {
+        SeriesSortingDialog(
+            order = seriesOrder,
+            onChange = { seasonsDesc, episodesDesc -> vm.setSeriesOrder(seasonsDesc, episodesDesc) },
+            onDismiss = { showSorting = false },
         )
     }
 
@@ -1357,5 +1384,79 @@ private fun SeriesListRow(
                 OwnTVIcon(OwnTVIcon.FAVORITE, tint = colors.primary, modifier = Modifier.size(18.dp))
             }
         }
+    }
+}
+
+/**
+ * The series "Sorting" popup: season rail order and episode list order, set independently.
+ * Applies immediately on select (no OK button); Back closes.
+ *
+ * PRESENTATION ONLY — playback order (autoplay next episode) always runs in episode-number order,
+ * whatever is chosen here.
+ */
+@Composable
+private fun SeriesSortingDialog(
+    order: SeriesViewModel.SeriesOrder,
+    onChange: (seasonsDescending: Boolean, episodesDescending: Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    BackHandler { onDismiss() }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.75f))
+            .trapAllFocusExit()
+            .focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(Modifier.dialogPanel(width = 520.dp, padding = 28.dp)) {
+            Text("Sorting", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(20.dp))
+            SortingRow(
+                label = "Seasons",
+                descending = order.seasonsDescending,
+                onSelect = { desc -> onChange(desc, order.episodesDescending) },
+                // Pre-focus the row the user is most likely to change first.
+                focusRequester = focus,
+            )
+            Spacer(Modifier.height(12.dp))
+            SortingRow(
+                label = "Episodes",
+                descending = order.episodesDescending,
+                onSelect = { desc -> onChange(order.seasonsDescending, desc) },
+            )
+        }
+    }
+}
+
+/** One "Oldest first / Newest first" pair. Both labels are the same width, so nothing resizes. */
+@Composable
+private fun SortingRow(
+    label: String,
+    descending: Boolean,
+    onSelect: (Boolean) -> Unit,
+    focusRequester: androidx.compose.ui.focus.FocusRequester? = null,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = OwnTVTheme.colors.onSurfaceVariant,
+            modifier = Modifier.width(96.dp),
+        )
+        OwnTVButton(
+            label = "Oldest first",
+            onClick = { onSelect(false) },
+            style = if (!descending) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+            modifier = if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier,
+        )
+        OwnTVButton(
+            label = "Newest first",
+            onClick = { onSelect(true) },
+            style = if (descending) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+        )
     }
 }

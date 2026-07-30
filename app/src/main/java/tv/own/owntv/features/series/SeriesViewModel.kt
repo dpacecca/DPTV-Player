@@ -43,6 +43,7 @@ import tv.own.owntv.core.database.dao.HistoryDao
 import tv.own.owntv.core.database.dao.ProgressDao
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SeriesDao
+import tv.own.owntv.core.database.dao.SeriesSortOrderDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.DownloadEntity
@@ -84,6 +85,7 @@ class SeriesViewModel(
     private val downloadManager: DownloadManager,
     private val launcherIntegrationRepository: LauncherIntegrationRepository,
     private val contentOrderDao: ContentOrderDao,
+    private val seriesSortOrderDao: SeriesSortOrderDao,
     private val metadata: tv.own.owntv.core.metadata.MetadataRepository,
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
@@ -161,7 +163,8 @@ class SeriesViewModel(
                 when (sortMode.value) {
                     SettingsRepository.SortMode.PLAYLIST -> SettingsRepository.SortMode.ALPHA
                     SettingsRepository.SortMode.ALPHA -> SettingsRepository.SortMode.RATING
-                    SettingsRepository.SortMode.RATING -> SettingsRepository.SortMode.PLAYLIST
+                    SettingsRepository.SortMode.RATING -> SettingsRepository.SortMode.DATE_ADDED
+                    SettingsRepository.SortMode.DATE_ADDED -> SettingsRepository.SortMode.PLAYLIST
                 },
             )
         }
@@ -486,6 +489,35 @@ class SeriesViewModel(
         viewModelScope.launch {
             runCatching { metadata.clearSeriesOverride(series) }
             _seriesMetaTick.value++
+        }
+    }
+
+    /**
+     * Season/episode order for the OPEN series (the "Sorting" popup). Per profile and per series,
+     * backed by [SeriesSortOrderDao]; a show the user never changed reports [SeriesOrder.DEFAULT].
+     *
+     * PRESENTATION ONLY — playback (autoplay next episode) always runs in episode-number order.
+     */
+    data class SeriesOrder(val seasonsDescending: Boolean = false, val episodesDescending: Boolean = false) {
+        companion object { val DEFAULT = SeriesOrder() }
+    }
+
+    val seriesOrder: StateFlow<SeriesOrder> = combine(ctx, _openedSeries) { c, s -> c.profileId to s }
+        .flatMapLatest { (profileId, show) ->
+            if (show == null || profileId < 0) flowOf(SeriesOrder.DEFAULT)
+            else seriesSortOrderDao.observe(profileId, show.id).map { row ->
+                if (row == null) SeriesOrder.DEFAULT
+                else SeriesOrder(row.seasonsDescending, row.episodesDescending)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SeriesOrder.DEFAULT)
+
+    /** Applied immediately from the popup; writes one upserted row for the open series. */
+    fun setSeriesOrder(seasonsDescending: Boolean, episodesDescending: Boolean) {
+        val show = _openedSeries.value ?: return
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            seriesSortOrderDao.setOrder(pid, show.id, seasonsDescending, episodesDescending)
         }
     }
 
@@ -851,10 +883,12 @@ class SeriesViewModel(
         val ids = c.sourceIds.ifEmpty { listOf(-1L) }
         val playlist = sort == SettingsRepository.SortMode.PLAYLIST
         val rating = sort == SettingsRepository.SortMode.RATING
+        val dateAdded = sort == SettingsRepository.SortMode.DATE_ADDED
         return if (query.isBlank()) when (key) {
             LiveKey.All -> when {
                 rating -> seriesDao.pagingAllRating(ids)
                 playlist -> seriesDao.pagingAllOriginal(ids)
+                dateAdded -> seriesDao.pagingAllDateAdded(ids)
                 else -> seriesDao.pagingAll(ids)
             }
             LiveKey.Favorites -> seriesDao.pagingFavoritesManual(c.profileId, ContentOrderEntity.FAV_CONTEXT, ids)
@@ -863,6 +897,7 @@ class SeriesViewModel(
                 val ctxKey = folderContextKeys.value[key.id] ?: ""
                 when {
                     rating -> seriesDao.pagingByCategoryRating(key.id)
+                    dateAdded -> seriesDao.pagingByCategoryDateAdded(key.id)
                     // C3 fast path: no manual order in this folder → the plain indexed query has
                     // the identical (sortOrder, name) order without the join-sort.
                     ctxKey !in orderedContexts.value -> seriesDao.pagingByCategory(key.id)
@@ -870,10 +905,14 @@ class SeriesViewModel(
                 }
             }
         } else when (key) {
-            LiveKey.All -> seriesDao.searchAll(query, ids)
+            LiveKey.All ->
+                if (dateAdded) seriesDao.searchAllDateAdded(query, ids)
+                else seriesDao.searchAll(query, ids)
             LiveKey.Favorites -> seriesDao.searchFavorites(query, c.profileId, ids)
             LiveKey.History -> seriesDao.searchHistory(query, c.profileId, ids)
-            is LiveKey.Folder -> seriesDao.searchInCategory(query, key.id)
+            is LiveKey.Folder ->
+                if (dateAdded) seriesDao.searchInCategoryDateAdded(query, key.id)
+                else seriesDao.searchInCategory(query, key.id)
         }
     }
 
