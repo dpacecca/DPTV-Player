@@ -832,7 +832,7 @@ Key convention: `<area>_<screen>_<element>[_<variant>]`, snake_case: `settings_n
 
 ### 0d. Guardrails (built now so Phase 1 is a ratchet, not a hope)
 
-#### `tools/i18n/check_hardcoded_strings.py` - a literal baseline ratchet
+#### `tools/i18n/check_hardcoded_strings.py` - an explicit literal inventory ratchet
 
 The original design matched `Text(` / `text =` / `label =` / `contentDescription =`. Those four patterns describe Composable call sites, but the scope table counts **~400 user-facing literals produced outside Composables**, which is exactly the population the patterns cannot see. Two confirmed misses:
 
@@ -843,9 +843,14 @@ The original design matched `Text(` / `text =` / `label =` / `contentDescription
 
 Add enum constants, HTTP page bodies, notification text and repository-built strings to that list and the guard is blind to most of what Phase 1 must extract. A guard that reports clean while ~400 strings stay hardcoded is worse than no guard, because it is the thing the plan cites as making extraction "a ratchet instead of a hope".
 
-Mechanism: **a generated occurrence-aware baseline of every Kotlin string literal outside the safe categories.** The script walks all `.kt` files under `app/src/main/java`, collects every string literal not in a safe category, and writes a multiset to `tools/i18n/hardcoded_baseline.txt`. Identity includes file, normalised content and occurrence count or ordinal. File plus content alone is insufficient: if `"Try again"` is already present once, adding a second occurrence in the same file must grow the baseline and fail CI. Each Phase 1 batch deletes occurrences from it. At the end of Phase 1 the file is empty and the check becomes an absolute "no literals outside safe categories".
+Mechanism: **a complete occurrence-aware inventory of every Kotlin string literal, divided between two explicit reviewed files.** The tokenizer walks all `.kt` files under `app/src/main/java` but does not guess whether a literal is SQL, JSON, a log message or UI copy.
 
-Why a baseline rather than a custom UAST lint rule: a lint module gives better precision on a data-class argument, but both approaches need the same safe-category list to be useful, and the baseline reaches full coverage in a Python script with no lint-module build wiring. Revisit lint only if false positives become the bottleneck.
+- `tools/i18n/hardcoded_baseline.txt` is the existing translation debt and may only shrink.
+- `tools/i18n/safe_literals.txt` holds technical literals that are intentionally not translated. Every entry has a category whose reason is documented in the manifest header.
+
+The union of both files must exactly equal the current source inventory. Identity includes file, normalised content and occurrence count. File plus content alone is insufficient: if `"Try again"` is already present once, adding a second occurrence in the same file must change the count and fail CI. Each Phase 1 batch deletes occurrences from the hardcoded baseline. At the end of Phase 1 that baseline is empty; technical literals remain explicit in the safe manifest.
+
+This replaces custom SQL grammar, JSON receiver discovery and Kotlin call-position inference. Those mini-parsers were complex while still unable to prove user intent. If a new technical literal is intentional, classify it explicitly with `classify-safe`; otherwise move user-visible copy to Android resources. Revisit UAST lint only if explicit-manifest maintenance becomes a demonstrated bottleneck.
 
 #### Boundary rule (replaces v1's `getString()` receiver check)
 
@@ -886,7 +891,7 @@ That rule is deleted along with the provider. It is replaced by a **location** r
 
 #### Safe categories, each with its reason
 
-Every entry needs a one-line reason next to it in the script, not just membership:
+Category reasons live in the header of `safe_literals.txt` and are validated by the checker:
 
 | Category | Reason it is never translated |
 |---|---|
@@ -901,18 +906,14 @@ Every entry needs a one-line reason next to it in the script, not just membershi
 | DataStore / SharedPreferences key names | Persisted identifiers; a renamed key silently loses user data |
 | Stable English comparison needles in `ErrorMessages.kt` | Matched against internally-thrown exception text; translating either side breaks classification |
 
-Identifier spelling is not proof of any category: `sign-in`, `retry_later`, `audio-only`, `and/or`, and
-similar snake/kebab/dotted/path-shaped strings remain unsafe unless they occur in a verified key/path
-context (for example `stringPreferencesKey(...)`, a reviewed key declaration, or a `File`/path
-constructor). JSON exemptions likewise require a verified `JSONObject`/`JSONArray` receiver and a
-literal first syntactic argument; a `MutableMap.put(...)` or a second value argument is never a key.
+Identifier spelling or nearby syntax is not proof of any category. `sign-in`, `retry_later`, SQL-looking text, JSON-looking text, and assertion messages all enter the hardcoded baseline unless their exact path/text/count is explicitly present in `safe_literals.txt`.
 
-Do **not** blanket-exempt `require`, `check` or `error` messages. Existing code sometimes catches those exceptions and renders `exception.message`, for example backup parsing and update failures. They enter the normal baseline. During extraction:
+Do **not** blanket-exempt `require`, `check` or `error` messages. Existing code sometimes catches those exceptions and renders `exception.message`, for example backup parsing and update failures. During extraction:
 
 1. If the message can reach users, replace it with semantic failure state and translate at the final presentation boundary.
-2. If it is confirmed developer-only, add it to a small explicit assertion allowlist with file, normalized content and a one-line reason.
+2. If it is confirmed developer-only, classify that exact literal in `safe_literals.txt` under `assertion`.
 
-No automatic call-graph analysis is required. The allowlist is the reviewed proof; an assertion form by itself is not proof.
+No automatic call-graph analysis is required. The manifest diff is the reviewed proof.
 
 #### `tools/i18n/validate_strings.py`
 
@@ -956,12 +957,10 @@ jobs:
 git fetch origin "${GITHUB_BASE_REF}"
 BASE_SHA="$(git merge-base HEAD "origin/${GITHUB_BASE_REF}")"
 
-git show \
-  "${BASE_SHA}:tools/i18n/hardcoded_baseline.txt" \
-  > /tmp/hardcoded_baseline.base.txt
+python3 tools/i18n/check_hardcoded_strings.py verify-ci --base-sha "$BASE_SHA"
 ```
 
-The checker compares that base file against the working-tree baseline. If the literal scanner's extraction semantics change, the generated baseline carries an explicit `scanner-version` marker and the reviewed `tools/i18n/baseline_migration.json` must pin the old/new versions. The introducing migration PR must not change `app/src/main` (the workflow enforces this); land application changes separately, so `--bootstrap` cannot hide a new UI literal behind a scanner-version bump. The migration runs exact bootstrap verification once, and subsequent PRs return to the merge-base ratchet. This prevents scanner artifacts from being reported as code regressions without creating a permanent bypass.
+The checker reads the baseline from that merge-base commit and compares it with the working tree. If the literal tokenizer's extraction semantics change, the generated baseline carries an explicit `scanner-version` marker and the reviewed `tools/i18n/baseline_migration.json` must pin the old/new versions. The introducing migration PR must not change `app/src/main` (the workflow enforces this); land application changes separately, so `--bootstrap` cannot hide a new UI literal behind a scanner-version bump. The migration runs exact bootstrap verification once, and subsequent PRs return to the merge-base ratchet. This prevents scanner artifacts from being reported as code regressions without creating a permanent bypass.
 
 If the workflow also runs on protected-branch pushes, define the non-PR comparison source **explicitly** (for example, the previous release tag, or the commit the branch protection last verified). Do not let it silently fall back to `HEAD^`, which reintroduces the bug this section fixes.
 
