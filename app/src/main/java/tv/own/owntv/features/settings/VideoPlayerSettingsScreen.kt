@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -45,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.features.settings.data.SubtitleStyle
 import tv.own.owntv.player.ZoomMode
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
@@ -76,10 +78,12 @@ private val LANGUAGES = listOf(
     "tur" to "Turkish",
 )
 
-private val SUB_SIZES = listOf(0.8f to "Small", 1.0f to "Normal", 1.3f to "Large", 1.6f to "Extra Large")
+// 1.0 is the renderer's own size, so it is the "Default" entry — see SubtitleStyle.SCALE_DEFAULT.
+private val SUB_SIZES = listOf(0.8f to "Small", 1.0f to "Default", 1.3f to "Large", 1.6f to "Extra Large")
 
 private fun langName(code: String) = LANGUAGES.firstOrNull { it.first == code }?.second ?: code.ifBlank { "None / Auto" }
-private fun subSizeName(scale: Float) = SUB_SIZES.minByOrNull { kotlin.math.abs(it.first - scale) }?.second ?: "Normal"
+private fun nearestSubSize(scale: Float) = SUB_SIZES.minByOrNull { kotlin.math.abs(it.first - scale) } ?: SUB_SIZES[1]
+private fun subSizeName(scale: Float) = nearestSubSize(scale).second
 
 /**
  * Video Player settings — decoder, default aspect/zoom, subtitle size & language, audio sync. Each
@@ -97,7 +101,11 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val externalMovies by vm.externalPlayerMovies.collectAsStateWithLifecycle()
     val externalSeries by vm.externalPlayerSeries.collectAsStateWithLifecycle()
     val zoom by vm.defaultZoom.collectAsStateWithLifecycle()
+    val subStyleOn by vm.subtitleStyleEnabled.collectAsStateWithLifecycle()
     val subScale by vm.subtitleScale.collectAsStateWithLifecycle()
+    val subColor by vm.subtitleColor.collectAsStateWithLifecycle()
+    val subPosition by vm.subtitlePosition.collectAsStateWithLifecycle()
+    val subBgOpacity by vm.subtitleBgOpacity.collectAsStateWithLifecycle()
     val audioDelay by vm.audioDelayMs.collectAsStateWithLifecycle()
     val audioLang by vm.preferredAudioLang.collectAsStateWithLifecycle()
     val subLang by vm.preferredSubLang.collectAsStateWithLifecycle()
@@ -242,11 +250,13 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
         Divider()
         GroupLabel("Subtitles")
         Row2(
-            icon = OwnTVIcon.SUBTITLE, title = "Subtitle size",
-            desc = "Scale subtitle text.",
-            chip = subSizeName(subScale), chevron = true,
-            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SUB_SIZE)),
-            onClick = { savedScroll = scrollState.value; dialog = Dialog.SUB_SIZE },
+            icon = OwnTVIcon.SUBTITLE, title = "Subtitle appearance",
+            desc = "Size, text color, on-screen position and background transparency. While off, " +
+                "subtitles keep their stock look — including the styling broadcasters embed in Live TV " +
+                "subtitles.",
+            chip = if (subStyleOn) "On" else "Off", primaryChip = subStyleOn, chevron = true,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SUB_STYLE)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.SUB_STYLE },
         )
         Row2(
             icon = OwnTVIcon.SUBTITLE, title = "Preferred subtitle language",
@@ -330,11 +340,17 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onSelect = { vm.setResumeMode(it); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
-        Dialog.SUB_SIZE -> PickerDialog(
-            title = "Subtitle size",
-            options = SUB_SIZES.map { it.first.toString() to it.second },
-            selected = (SUB_SIZES.minByOrNull { kotlin.math.abs(it.first - subScale) }?.first ?: 1.0f).toString(),
-            onSelect = { vm.setSubtitleScale(it.toFloat()); dialog = Dialog.NONE },
+        Dialog.SUB_STYLE -> SubtitleAppearanceDialog(
+            enabled = subStyleOn,
+            scale = subScale,
+            color = subColor,
+            position = subPosition,
+            bgOpacity = subBgOpacity,
+            onToggle = { vm.setSubtitleStyleEnabled(it) },
+            onScale = { vm.setSubtitleScale(it) },
+            onColor = { vm.setSubtitleColor(it) },
+            onPosition = { vm.setSubtitlePosition(it) },
+            onBgOpacity = { vm.setSubtitleBgOpacity(it) },
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.SUB_LANG -> PickerDialog(
@@ -443,7 +459,7 @@ private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit
     }
 }
 
-private enum class Dialog { NONE, ZOOM, SUB_SIZE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, EXTERNAL_PLAYER }
+private enum class Dialog { NONE, ZOOM, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, EXTERNAL_PLAYER }
 
 /** Row chip for the External player row: "Off", "On" (all three), or the sections that are on. */
 private fun externalPlayerChip(live: Boolean, movies: Boolean, series: Boolean): String {
@@ -721,6 +737,545 @@ internal fun StepperDialog(
             }
         }
     }
+    }
+}
+
+/** The quick text-color presets offered above the full picker (label → "#RRGGBB"). */
+private val SUB_COLOR_PRESETS: List<Pair<String, String>> = listOf(
+    "White" to "#FFFFFF",
+    "Yellow" to "#FFEB3B",
+    "Cyan" to "#4FC3F7",
+    "Green" to "#8BC34A",
+    "Grey" to "#BDBDBD",
+)
+
+private fun subOpacityLabel(pct: Int): String = when {
+    !SubtitleStyle.hasOpacity(pct) -> "Default"
+    pct == SubtitleStyle.OPACITY_MIN -> "None"
+    pct == SubtitleStyle.OPACITY_MAX -> "Solid"
+    else -> "$pct%"
+}
+
+private fun subColorLabel(hex: String): String = if (SubtitleStyle.hasColor(hex)) hex.uppercase() else "Default"
+
+/**
+ * Subtitle appearance (#96) — the menu for the whole custom look: a master toggle, then size, text
+ * color, screen position and background transparency, each opening its own popup, with a live
+ * preview above them all.
+ *
+ * Two levels of opt-in, and both matter. The master toggle gates everything: while it's off none of
+ * these values reach any renderer, so subtitles keep their stock look — most importantly the styling
+ * broadcasters embed in Live TV (CEA-608/teletext) cues, which can only be overridden by discarding
+ * embedded styles wholesale. Each option then carries its own "Default", so turning the toggle on
+ * still changes nothing until something is actually picked.
+ *
+ * Every control writes through immediately, so a change is visible on a paused stream behind the
+ * dialog rather than only on the next channel change.
+ */
+@Composable
+private fun SubtitleAppearanceDialog(
+    enabled: Boolean,
+    scale: Float,
+    color: String,
+    position: SubtitleStyle.Position,
+    bgOpacity: Int,
+    onToggle: (Boolean) -> Unit,
+    onScale: (Float) -> Unit,
+    onColor: (String) -> Unit,
+    onPosition: (SubtitleStyle.Position) -> Unit,
+    onBgOpacity: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    var child by remember { mutableStateOf(SubDialog.NONE) }
+    // Which row opened the popup that is closing: closing a child returns focus to it, the same
+    // contract the settings list itself follows.
+    var lastChild by remember { mutableStateOf(SubDialog.NONE) }
+    val toggleFocus = remember { FocusRequester() }
+    val rowFocus = remember { SubDialog.entries.associateWith { FocusRequester() } }
+    LaunchedEffect(child) {
+        if (child == SubDialog.NONE) {
+            withFrameNanos { }
+            kotlinx.coroutines.delay(60)
+            runCatching {
+                (if (lastChild == SubDialog.NONE) toggleFocus else rowFocus.getValue(lastChild)).requestFocus()
+            }
+        }
+    }
+
+    // A child popup replaces this panel rather than stacking over it: focus stays unambiguous on a
+    // D-pad, and the popups that need one carry their own preview, so nothing is lost by hiding this.
+    if (child != SubDialog.NONE) {
+        val close = { child = SubDialog.NONE }
+        when (child) {
+            SubDialog.SIZE -> PickerDialog(
+                title = "Subtitle size",
+                options = SUB_SIZES.map { it.first.toString() to it.second },
+                selected = nearestSubSize(scale).first.toString(),
+                onSelect = { onScale(it.toFloat()); close() },
+                onDismiss = close,
+            )
+            SubDialog.COLOR -> SubtitleColorDialog(color = color, onColor = onColor, onDismiss = close)
+            SubDialog.POSITION -> SubtitlePositionDialog(position = position, onSelect = onPosition, onDismiss = close)
+            SubDialog.TRANSPARENCY -> SubtitleTransparencyDialog(
+                scale = scale, color = color, position = position,
+                bgOpacity = bgOpacity, onSet = onBgOpacity, onDismiss = close,
+            )
+            SubDialog.NONE -> Unit
+        }
+        return
+    }
+
+    BackHandler { onDismiss() }
+    tv.own.owntv.ui.theme.PopupFontTheme {
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f))
+                .trapAllFocusExit().focusGroup(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(modifier = Modifier.dialogPanel(width = 640.dp, padding = 28.dp)) {
+                Text("Subtitle appearance", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Turn this on, then change only what you want — anything left on Default keeps the " +
+                        "stock look, including the colors and placement broadcasters embed in Live TV subtitles.",
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(16.dp))
+
+                // The overview sits above every row, including the master toggle, so the effect of a
+                // change is judged against a picture instead of guessed from a chip.
+                SubtitlePreview(enabled = enabled, scale = scale, color = color, position = position, bgOpacity = bgOpacity)
+                Spacer(Modifier.height(16.dp))
+
+                Row2(
+                    icon = OwnTVIcon.SUBTITLE, title = "Customize subtitles",
+                    desc = "Off keeps subtitles exactly as the stream and the player draw them.",
+                    chip = if (enabled) "On" else "Off", primaryChip = enabled,
+                    modifier = Modifier.focusRequester(toggleFocus),
+                    onClick = { onToggle(!enabled) },
+                )
+
+                if (enabled) {
+                    val open = { target: SubDialog -> lastChild = target; child = target }
+                    Spacer(Modifier.height(2.dp))
+                    Row2(
+                        icon = OwnTVIcon.SUBTITLE, title = "Size",
+                        desc = "Scale subtitle text.",
+                        chip = subSizeName(scale), primaryChip = SubtitleStyle.hasScale(scale), chevron = true,
+                        modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.SIZE)),
+                        onClick = { open(SubDialog.SIZE) },
+                    )
+                    Row2(
+                        icon = OwnTVIcon.SUBTITLE, title = "Color",
+                        desc = "Text color — a preset, the picker, or a hex code.",
+                        chip = subColorLabel(color), primaryChip = SubtitleStyle.hasColor(color), chevron = true,
+                        modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.COLOR)),
+                        onClick = { open(SubDialog.COLOR) },
+                    )
+                    Row2(
+                        icon = OwnTVIcon.SUBTITLE, title = "Position",
+                        desc = "Where subtitles sit on screen.",
+                        chip = position.label, primaryChip = position != SubtitleStyle.Position.DEFAULT, chevron = true,
+                        modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.POSITION)),
+                        onClick = { open(SubDialog.POSITION) },
+                    )
+                    Row2(
+                        icon = OwnTVIcon.SUBTITLE, title = "Background transparency",
+                        desc = "How solid the box behind the text is.",
+                        chip = subOpacityLabel(bgOpacity), primaryChip = SubtitleStyle.hasOpacity(bgOpacity), chevron = true,
+                        modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.TRANSPARENCY)),
+                        onClick = { open(SubDialog.TRANSPARENCY) },
+                    )
+                }
+
+                Spacer(Modifier.height(20.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                    Spacer(Modifier.weight(1f))
+                    if (enabled) {
+                        OwnTVButton("Reset all", style = OwnTVButtonStyle.SECONDARY, onClick = {
+                            onScale(SubtitleStyle.SCALE_DEFAULT)
+                            onColor(SubtitleStyle.COLOR_DEFAULT)
+                            onPosition(SubtitleStyle.Position.DEFAULT)
+                            onBgOpacity(SubtitleStyle.OPACITY_DEFAULT)
+                        })
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** The four options of [SubtitleAppearanceDialog], each opening its own popup. */
+private enum class SubDialog { NONE, SIZE, COLOR, POSITION, TRANSPARENCY }
+
+/**
+ * Subtitle text color — the same D-pad-tuned picker the accent color uses (shared controls live in
+ * `ui.components`), plus a "Use default" escape that hands the color back to the stream and player.
+ */
+@Composable
+private fun SubtitleColorDialog(color: String, onColor: (String) -> Unit, onDismiss: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    // Seeded once from the stored color; the picker writes straight through to settings, so this is
+    // only the working position of the hue bar / square between key presses.
+    val hsv = remember {
+        FloatArray(3).also {
+            android.graphics.Color.colorToHSV(SubtitleStyle.colorArgb(color.ifBlank { "#FFFFFF" }), it)
+        }
+    }
+    var hue by remember { mutableStateOf(hsv[0]) }
+    var sat by remember { mutableStateOf(hsv[1]) }
+    var value by remember { mutableStateOf(hsv[2]) }
+    var hexInput by remember { mutableStateOf(color.removePrefix("#")) }
+    var hexError by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+
+    fun applyPicked(hex: String) {
+        hexInput = hex.removePrefix("#")
+        hexError = false
+        onColor(hex)
+    }
+
+    tv.own.owntv.ui.theme.PopupFontTheme {
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f))
+                .imePadding().trapAllFocusExit().focusGroup(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(modifier = Modifier.dialogPanel(width = 440.dp, corner = 16.dp, padding = 18.dp)) {
+                Text("Subtitle color", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Default leaves the color to the stream and the player.",
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SUB_COLOR_PRESETS.forEachIndexed { index, (_, hex) ->
+                        tv.own.owntv.ui.components.ColorSwatch(
+                            color = Color(SubtitleStyle.colorArgb(hex)),
+                            selected = color.equals(hex, ignoreCase = true),
+                            modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                            onClick = {
+                                android.graphics.Color.colorToHSV(SubtitleStyle.colorArgb(hex), hsv)
+                                hue = hsv[0]; sat = hsv[1]; value = hsv[2]
+                                applyPicked(hex)
+                            },
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+                // Hex field above the picker: the on-screen keyboard covers the lower half of the
+                // screen, so it has to stay high enough to remain visible while typing.
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("#", style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
+                    tv.own.owntv.ui.components.OwnTVTextField(
+                        value = hexInput,
+                        onValueChange = { hexInput = it.take(6); hexError = false },
+                        label = "Hex",
+                        placeholder = "FFFFFF",
+                        modifier = Modifier.width(170.dp),
+                    )
+                    OwnTVButton("Apply", onClick = {
+                        val hex = "#" + hexInput.trim().removePrefix("#").uppercase()
+                        if (tv.own.owntv.ui.theme.parseAccentHex(hex) != null) {
+                            android.graphics.Color.colorToHSV(SubtitleStyle.colorArgb(hex), hsv)
+                            hue = hsv[0]; sat = hsv[1]; value = hsv[2]
+                            applyPicked(hex)
+                        } else {
+                            hexError = true
+                        }
+                    })
+                }
+                if (hexError) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Enter 6 hex digits, e.g. FFEB3B", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
+                }
+
+                Spacer(Modifier.height(14.dp))
+                tv.own.owntv.ui.components.HueBar(hue = hue) { h ->
+                    hue = h
+                    applyPicked(tv.own.owntv.ui.components.hsvToHex(hue, sat, value))
+                }
+                Spacer(Modifier.height(12.dp))
+                tv.own.owntv.ui.components.SatValSquare(hue = hue, sat = sat, value = value) { s, v ->
+                    sat = s; value = v
+                    applyPicked(tv.own.owntv.ui.components.hsvToHex(hue, sat, value))
+                }
+
+                Spacer(Modifier.height(16.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OwnTVButton("Use default", style = OwnTVButtonStyle.SECONDARY, onClick = {
+                        hexInput = ""
+                        hexError = false
+                        onColor(SubtitleStyle.COLOR_DEFAULT)
+                    })
+                    Spacer(Modifier.weight(1f))
+                    OwnTVButton("Done", onClick = onDismiss)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Subtitle position — Default plus the six fixed anchors, drawn as miniature screens so the choice
+ * is made by looking rather than by reading a label.
+ */
+@Composable
+private fun SubtitlePositionDialog(
+    position: SubtitleStyle.Position,
+    onSelect: (SubtitleStyle.Position) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val selectedFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { selectedFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+    tv.own.owntv.ui.theme.PopupFontTheme {
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f))
+                .trapAllFocusExit().focusGroup(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(modifier = Modifier.dialogPanel(width = 430.dp, corner = 16.dp, padding = 18.dp, scroll = false)) {
+                Text("Subtitle position", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Default leaves placement to the stream — including where a broadcaster puts a " +
+                        "live caption. Any other choice always wins.",
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                PositionCell(
+                    position = SubtitleStyle.Position.DEFAULT,
+                    selected = position == SubtitleStyle.Position.DEFAULT,
+                    modifier = Modifier.fillMaxWidth().let {
+                        if (position == SubtitleStyle.Position.DEFAULT) it.focusRequester(selectedFocus) else it
+                    },
+                    onClick = { onSelect(SubtitleStyle.Position.DEFAULT) },
+                )
+                SubtitleStyle.Position.ANCHORS.chunked(3).forEach { anchorRow ->
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        anchorRow.forEach { anchor ->
+                            PositionCell(
+                                position = anchor,
+                                selected = position == anchor,
+                                modifier = Modifier.weight(1f).let {
+                                    if (position == anchor) it.focusRequester(selectedFocus) else it
+                                },
+                                onClick = { onSelect(anchor) },
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    OwnTVButton("Done", onClick = onDismiss)
+                }
+            }
+        }
+    }
+}
+
+/** One cell of the position picker: a miniature screen with the subtitle bar where it will land. */
+@Composable
+private fun PositionCell(
+    position: SubtitleStyle.Position,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val isDefault = position == SubtitleStyle.Position.DEFAULT
+    FocusableSurface(
+        onClick = onClick,
+        modifier = modifier.height(if (isDefault) 40.dp else 64.dp),
+        selected = selected,
+        shape = RoundedCornerShape(12.dp),
+        selectedContainerColor = colors.primaryContainer,
+        surface = GlassSurface.DIALOGS,
+        contentAlignment = Alignment.Center,
+    ) { _ ->
+        val labelColor = if (selected) colors.onPrimaryContainer else colors.onSurface
+        if (isDefault) {
+            Text(
+                position.label, style = MaterialTheme.typography.labelMedium, color = labelColor,
+                textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            Column(Modifier.fillMaxSize().padding(6.dp)) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = when {
+                        position.isTop && position.isLeft -> Alignment.TopStart
+                        position.isTop && position.isRight -> Alignment.TopEnd
+                        position.isTop -> Alignment.TopCenter
+                        position.isLeft -> Alignment.BottomStart
+                        position.isRight -> Alignment.BottomEnd
+                        else -> Alignment.BottomCenter
+                    },
+                ) {
+                    Box(
+                        Modifier.width(28.dp).height(4.dp).clip(RoundedCornerShape(2.dp))
+                            .background(if (selected) colors.onPrimaryContainer else colors.outline),
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    position.label, style = MaterialTheme.typography.labelSmall, color = labelColor,
+                    textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Background transparency — a ±10% stepper. "Default" is its own state rather than a value in the
+ * range: it means the box is left to the renderer (and, on Live TV, to the broadcaster).
+ */
+@Composable
+private fun SubtitleTransparencyDialog(
+    scale: Float,
+    color: String,
+    position: SubtitleStyle.Position,
+    bgOpacity: Int,
+    onSet: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val frPlus = remember { FocusRequester() }
+    val frMinus = remember { FocusRequester() }
+    val isDefault = !SubtitleStyle.hasOpacity(bgOpacity)
+    // From "Default" either button adopts the mid value first, so neither is ever a dead end.
+    val effective = if (isDefault) SubtitleStyle.OPACITY_START else bgOpacity
+    val minusEnabled = isDefault || effective > SubtitleStyle.OPACITY_MIN
+    val plusEnabled = isDefault || effective < SubtitleStyle.OPACITY_MAX
+    LaunchedEffect(Unit) { runCatching { (if (plusEnabled) frPlus else frMinus).requestFocus() } }
+    // Focus must never be left on a stepper that goes disabled: focus is trapped in the dialog, so
+    // that leaves the D-pad dead with only Back working (the same guard [StepperDialog] carries).
+    LaunchedEffect(plusEnabled) { if (!plusEnabled && minusEnabled) runCatching { frMinus.requestFocus() } }
+    LaunchedEffect(minusEnabled) { if (!minusEnabled && plusEnabled) runCatching { frPlus.requestFocus() } }
+    BackHandler { onDismiss() }
+    tv.own.owntv.ui.theme.PopupFontTheme {
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f))
+                .trapAllFocusExit().focusGroup(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier.dialogPanel(width = 380.dp, corner = 16.dp, padding = 18.dp, scroll = false),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text("Background transparency", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "How solid the box behind the text is.",
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                SubtitlePreview(
+                    enabled = true, scale = scale, color = color, position = position,
+                    bgOpacity = bgOpacity, height = 92.dp,
+                )
+                Spacer(Modifier.height(14.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StepBtn("–", enabled = minusEnabled, modifier = Modifier.focusRequester(frMinus)) {
+                        onSet(
+                            if (isDefault) SubtitleStyle.OPACITY_START
+                            else (effective - SubtitleStyle.OPACITY_STEP).coerceAtLeast(SubtitleStyle.OPACITY_MIN),
+                        )
+                    }
+                    Text(
+                        subOpacityLabel(bgOpacity), style = MaterialTheme.typography.titleMedium,
+                        color = colors.primary, modifier = Modifier.width(100.dp), textAlign = TextAlign.Center,
+                    )
+                    StepBtn("+", enabled = plusEnabled, modifier = Modifier.focusRequester(frPlus)) {
+                        onSet(
+                            if (isDefault) SubtitleStyle.OPACITY_START
+                            else (effective + SubtitleStyle.OPACITY_STEP).coerceAtMost(SubtitleStyle.OPACITY_MAX),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OwnTVButton("Use default", style = OwnTVButtonStyle.SECONDARY, onClick = { onSet(SubtitleStyle.OPACITY_DEFAULT) })
+                    Spacer(Modifier.weight(1f))
+                    OwnTVButton("Done", onClick = onDismiss)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * A stand-in video frame with a sample subtitle drawn the way the renderers will draw it — same
+ * color, background alpha, text scale and anchor. Anything on "Default" (or everything, while the
+ * master toggle is off) falls back to the stock look.
+ */
+@Composable
+private fun SubtitlePreview(
+    enabled: Boolean,
+    scale: Float,
+    color: String,
+    position: SubtitleStyle.Position,
+    bgOpacity: Int,
+    height: androidx.compose.ui.unit.Dp = 120.dp,
+) {
+    val colors = OwnTVTheme.colors
+    val textColor = if (enabled && SubtitleStyle.hasColor(color)) Color(SubtitleStyle.colorArgb(color)) else Color.White
+    val boxColor = if (enabled && SubtitleStyle.hasOpacity(bgOpacity)) {
+        Color(SubtitleStyle.backgroundArgb(bgOpacity))
+    } else {
+        Color.Black.copy(alpha = 0.45f)
+    }
+    val anchor = if (enabled) position else SubtitleStyle.Position.DEFAULT
+    val textScale = if (enabled) scale else SubtitleStyle.SCALE_DEFAULT
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)
+            .clip(RoundedCornerShape(12.dp))
+            // A busy-ish backdrop: a flat panel would make even a solid box look harmless.
+            .background(
+                androidx.compose.ui.graphics.Brush.linearGradient(
+                    listOf(Color(0xFF2E4A6B), Color(0xFF7A5C3E), Color(0xFF3B6B4A)),
+                ),
+            ),
+        contentAlignment = when {
+            anchor.isTop && anchor.isLeft -> Alignment.TopStart
+            anchor.isTop && anchor.isRight -> Alignment.TopEnd
+            anchor.isTop -> Alignment.TopCenter
+            anchor.isLeft -> Alignment.BottomStart
+            anchor.isRight -> Alignment.BottomEnd
+            else -> Alignment.BottomCenter
+        },
+    ) {
+        Text(
+            "The quick brown fox",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = MaterialTheme.typography.bodyLarge.fontSize * textScale,
+            ),
+            color = textColor,
+            modifier = Modifier
+                .padding(10.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(boxColor)
+                .padding(horizontal = 10.dp, vertical = 3.dp),
+        )
+        if (!enabled) {
+            Text(
+                "Preview — stock look",
+                style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+            )
+        }
     }
 }
 

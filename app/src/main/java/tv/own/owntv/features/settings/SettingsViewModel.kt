@@ -44,6 +44,7 @@ import tv.own.owntv.features.settings.data.ChNavLimits
 import tv.own.owntv.features.settings.data.EpgAutoRefresh
 import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.features.settings.data.SubtitleStyle
 import tv.own.owntv.ui.theme.AccentColor
 import tv.own.owntv.ui.theme.ThemeMode
 import tv.own.owntv.ui.theme.UiZoom
@@ -384,8 +385,22 @@ class SettingsViewModel(
     val defaultZoom: StateFlow<String> = settings.defaultZoom.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "FIT")
     fun setDefaultZoom(name: String) { viewModelScope.launch { settings.setDefaultZoom(name) } }
 
-    val subtitleScale: StateFlow<Float> = settings.subtitleScale.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 1.0f)
+    // Subtitle appearance (#96) — while subtitleStyleEnabled is false the other four are inert, and
+    // each of them separately does nothing until moved off its own "Default" value.
+    val subtitleStyleEnabled: StateFlow<Boolean> = settings.subtitleStyleEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    fun setSubtitleStyleEnabled(enabled: Boolean) { viewModelScope.launch { settings.setSubtitleStyleEnabled(enabled) } }
+
+    val subtitleScale: StateFlow<Float> = settings.subtitleScale.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SubtitleStyle.SCALE_DEFAULT)
     fun setSubtitleScale(scale: Float) { viewModelScope.launch { settings.setSubtitleScale(scale) } }
+
+    val subtitleColor: StateFlow<String> = settings.subtitleColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SubtitleStyle.COLOR_DEFAULT)
+    fun setSubtitleColor(hex: String) { viewModelScope.launch { settings.setSubtitleColor(hex) } }
+
+    val subtitlePosition: StateFlow<SubtitleStyle.Position> = settings.subtitlePosition.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SubtitleStyle.Position.DEFAULT)
+    fun setSubtitlePosition(position: SubtitleStyle.Position) { viewModelScope.launch { settings.setSubtitlePosition(position) } }
+
+    val subtitleBgOpacity: StateFlow<Int> = settings.subtitleBgOpacity.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SubtitleStyle.OPACITY_DEFAULT)
+    fun setSubtitleBgOpacity(pct: Int) { viewModelScope.launch { settings.setSubtitleBgOpacity(pct) } }
 
     val audioDelayMs: StateFlow<Int> = settings.audioDelayMs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
     fun setAudioDelayMs(ms: Int) { viewModelScope.launch { settings.setAudioDelayMs(ms) } }

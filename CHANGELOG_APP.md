@@ -13,6 +13,7 @@
 
 ### ✨ New features
 
+- **💬 Subtitle appearance — size, colour, position and background, each optional (#96)**
 - **🆕 Date added — sort Movies and Series by what arrived most recently** (community PR #94 by @cotol1985)
 - **↕️ Series sorting — season and episode order, set per show** (community PR #94 by @cotol1985)
 - **📺 Channel numbers — type a number on the remote to tune in Live TV**

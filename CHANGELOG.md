@@ -2,6 +2,31 @@
 
 ## v4.1.5 — unreleased
 
+### 💬 Subtitle appearance — size, colour, position and background, each optional (#96)
+
+- **Settings → Video Player → Subtitle appearance** is now a menu rather than a single row: a live
+  preview of how subtitles will look, a **Customize subtitles** master switch, and — once it's on —
+  **Size**, **Text color**, **Position** and **Background transparency**, each opening its own popup.
+- **Every option starts at "Default", and Default means "don't touch it".** Turning the master switch
+  on changes nothing by itself. Set only the background transparency and only the background changes;
+  everything else keeps the look the stream or the renderer gives it, including the styling
+  broadcasters embed in Live TV captions and the fonts and colours authored into ASS subtitles.
+- **Background transparency** answers the original request: a ±10% stepper from **None** (fully
+  transparent) to **Solid**, so subtitles over a bright scene can get a readable backdrop without
+  blacking out a strip of the picture.
+- **Text color** offers quick presets, a full colour picker and a hex code.
+- **Position** is six fixed anchors — top/bottom × left/center/right — drawn as miniature screens so
+  you can see where the text lands before choosing. Useful when a channel burns a ticker or a logo
+  into the exact spot subtitles normally sit.
+- **Size** moved here from its own settings row, and now sits under the master switch alongside the
+  rest. If you had already changed subtitle size, the switch is turned on for you at upgrade so your
+  size is preserved.
+- The look is applied by **all three subtitle renderers** — mpv's own, the Compose overlay used for
+  mpv direct rendering, and the Media3 view used for Live TV and image subtitles — so it doesn't
+  change depending on which engine happens to be playing. Image subtitles (PGS/VOBSUB/DVB) are picture
+  data and are drawn as authored.
+- Settings are per profile and travel in backups.
+
 ### 🆕 Date added — sort Movies and Series by what arrived most recently
 
 - **"Date added" is a new sort mode for Movies and Series**, alongside Playlist order, A–Z and Rating.

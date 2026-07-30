@@ -602,6 +602,13 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   player's **info overlay** measures live fps, bitrate and dropped frames for streams that don't
   declare them (most Xtream live TV). Turn it **off** only if a low‑end TV ever stutters — it affects
   the diagnostic numbers only, never the actual video.
+- 💬 **Subtitle appearance** (Video Player Settings) — a menu with a preview, a **Customize subtitles**
+  switch, and then **Size**, **Text color**, **Position** (six anchors: top/bottom × left/center/right)
+  and **Background transparency** (None → Solid in 10% steps). **Each one starts at "Default", and
+  Default leaves that aspect alone** — turning the switch on changes nothing until you pick something,
+  so you can set only the background and keep the stream's own colours, including the styling
+  broadcasters embed in Live TV captions. Subtitle size lives here now. Image subtitles
+  (PGS/VOBSUB/DVB) are pictures and always render as authored.
 - 📤 **External player** (Video Player Settings) — opens a popup with **separate On/Off switches for
   Live TV, Movies and Series**, so you can send live channels to VLC (or MX Player, …) while keeping
   movies in OwnTV, or any other mix. **Downloads** follow the Movies or Series switch, depending on
