@@ -75,6 +75,15 @@ jobs:
           if migration.get("fromScannerVersion") != base or migration.get("toScannerVersion") != current:
               raise SystemExit("baseline_migration.json does not match the base/current scanner versions")
           PY
+                # A scanner migration is not a way to land application changes. The source tree must
+                # be identical to the merge base while the scanner semantics/baseline are migrated;
+                # otherwise a PR could add Text("new copy"), bump the version, regenerate, and hide
+                # that regression behind bootstrap. Land application changes in a separate PR.
+                if git diff --name-only "$BASE_SHA" HEAD -- app/src/main | grep -q .; then
+                  echo "Scanner migrations may not change app/src/main; separate scanner and application changes."
+                  git diff --name-only "$BASE_SHA" HEAD -- app/src/main
+                  exit 1
+                fi
                 # Exact bootstrap still runs the over- and stale-baseline legs; only the
                 # incomparable merge-base regression leg is skipped for this explicit migration.
                 python3 tools/i18n/check_hardcoded_strings.py verify --bootstrap

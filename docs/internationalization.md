@@ -901,6 +901,12 @@ Every entry needs a one-line reason next to it in the script, not just membershi
 | DataStore / SharedPreferences key names | Persisted identifiers; a renamed key silently loses user data |
 | Stable English comparison needles in `ErrorMessages.kt` | Matched against internally-thrown exception text; translating either side breaks classification |
 
+Identifier spelling is not proof of any category: `sign-in`, `retry_later`, `audio-only`, `and/or`, and
+similar snake/kebab/dotted/path-shaped strings remain unsafe unless they occur in a verified key/path
+context (for example `stringPreferencesKey(...)`, a reviewed key declaration, or a `File`/path
+constructor). JSON exemptions likewise require a verified `JSONObject`/`JSONArray` receiver and a
+literal first syntactic argument; a `MutableMap.put(...)` or a second value argument is never a key.
+
 Do **not** blanket-exempt `require`, `check` or `error` messages. Existing code sometimes catches those exceptions and renders `exception.message`, for example backup parsing and update failures. They enter the normal baseline. During extraction:
 
 1. If the message can reach users, replace it with semantic failure state and translate at the final presentation boundary.
@@ -955,7 +961,7 @@ git show \
   > /tmp/hardcoded_baseline.base.txt
 ```
 
-The checker compares that base file against the working-tree baseline. If the literal scanner's extraction semantics change, the generated baseline carries an explicit `scanner-version` marker and the reviewed `tools/i18n/baseline_migration.json` must pin the old/new versions; the introducing PR runs exact bootstrap verification once, and subsequent PRs return to the merge-base ratchet. This prevents scanner artifacts from being reported as code regressions without creating a permanent bypass.
+The checker compares that base file against the working-tree baseline. If the literal scanner's extraction semantics change, the generated baseline carries an explicit `scanner-version` marker and the reviewed `tools/i18n/baseline_migration.json` must pin the old/new versions. The introducing migration PR must not change `app/src/main` (the workflow enforces this); land application changes separately, so `--bootstrap` cannot hide a new UI literal behind a scanner-version bump. The migration runs exact bootstrap verification once, and subsequent PRs return to the merge-base ratchet. This prevents scanner artifacts from being reported as code regressions without creating a permanent bypass.
 
 If the workflow also runs on protected-branch pushes, define the non-PR comparison source **explicitly** (for example, the previous release tag, or the commit the branch protection last verified). Do not let it silently fall back to `HEAD^`, which reintroduces the bug this section fixes.
 
