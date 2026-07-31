@@ -1,5 +1,32 @@
 # Changelog
 
+## v4.1.6 — unreleased
+
+### 🌐 Custom DNS server — global, app-wide (#90)
+
+- **Settings → Network → DNS** is a new screen, a sibling to the existing Proxy screen. Configure a
+  custom DNS server and all OwnTV domain lookups — playlist sync, Xtream/Stalker API, EPG, images,
+  ExoPlayer streams — resolve through it instead of the system resolver.
+- **Two modes, auto-detected from what you enter.** A plain IP like `8.8.8.8` or `1.1.1.1:53` sends
+  standard DNS-over-UDP queries. A URL starting with `https://` — e.g. `https://dns.google/dns-query`
+  — uses DNS-over-HTTPS (RFC 8484), which encrypts your lookups so they can't be snooped or tampered
+  with between your device and the server.
+- **One-tap presets for Google, Cloudflare and Quad9** fill the DoH URL instantly and save it. They light
+  up to show which one is active.
+- **The DNS server is live-updated** — flip it on and off, or swap servers, and every future lookup uses
+  the new setting immediately. No client rebuild, same pattern as the global proxy.
+- **"Test DNS"** resolves `dns.google` through your configured server and reports the resolved IPs and
+  round-trip time, so you can confirm it's working before saving.
+- **The toggle alone is not enough.** Turning it on reveals the server field and preset buttons. Only
+  when a server is entered and saved is DNS actually enabled — a red warning reminds you while the
+  toggle is on but no server is configured. Toggling it off immediately disables custom DNS.
+- Custom DNS is backed up and restored alongside the other settings. It does not contain secrets, so it
+  travels in plaintext in the settings section.
+- **mpv/FFmpeg is not affected** — it uses the system resolver internally and has no configurable DNS
+  option. The setting covers everything that goes through OkHttp, which is most of the app's traffic.
+- Built-in support for Android's `org.json` parser so the DoH JSON responses (per RFC 8484) are parsed
+  with zero additional dependencies.
+
 ## v4.1.5 — 2026-07-31
 
 ### 💬 Subtitle appearance — size, colour, position and background, each optional (#96)

@@ -9,6 +9,12 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v4.1.6 — unreleased
+
+### ✨ New features
+
+- **🌐 Custom DNS server — global, app-wide (#90)**
+
 ## v4.1.5 — 2026-07-31
 
 ### ✨ New features
