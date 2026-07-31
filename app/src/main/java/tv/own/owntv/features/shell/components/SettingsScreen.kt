@@ -1125,9 +1125,10 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
                             ),
                             style = MaterialTheme.typography.labelMedium, color = colors.primary,
                         )
-                        e.reason?.let {
+                        val reasonText = e.reason?.displayText() ?: e.legacyReason
+                        reasonText?.let {
                             Spacer(Modifier.height(2.dp))
-                            Text(it.displayText(), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+                            Text(it, style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
                         }
                         e.mediaSpec()?.let { spec ->
                             Spacer(Modifier.height(2.dp))
