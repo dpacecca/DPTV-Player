@@ -355,13 +355,13 @@ fun SettingsScreen(
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.EPG,
-            title = stringResource(R.string.settings_epg_sources), desc = stringResource(R.string.settings_epg_sources_description),
+            title = stringResource(R.string.settings_epg_sources), desc = stringResource(R.string.settings_epg_sources_nav_description),
             onClick = { open(SettingsTab.EPG) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.EPG)),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.SORT,
-            title = stringResource(R.string.settings_customize), desc = stringResource(R.string.settings_customize_description),
+            title = stringResource(R.string.settings_customize), desc = stringResource(R.string.settings_customize_nav_description),
             onClick = { open(SettingsTab.CUSTOMIZE) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.CUSTOMIZE)),
         )

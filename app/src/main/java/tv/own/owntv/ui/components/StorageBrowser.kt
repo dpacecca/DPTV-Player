@@ -221,9 +221,9 @@ private fun NewFolderDialog(onCreate: (String) -> Unit, onDismiss: () -> Unit) {
 
 @Composable
 private fun StorageAccess.StorageRoot.displayLabel(): String = when (kind) {
-    StorageAccess.RootKind.INTERNAL -> stringResource(R.string.phase1_storage_internal)
-    StorageAccess.RootKind.REMOVABLE -> volumeName ?: stringResource(R.string.phase1_storage_removable)
-    StorageAccess.RootKind.APP -> stringResource(R.string.phase1_storage_app)
+    StorageAccess.RootKind.INTERNAL -> stringResource(R.string.content_storage_internal)
+    StorageAccess.RootKind.REMOVABLE -> volumeName ?: stringResource(R.string.content_storage_removable)
+    StorageAccess.RootKind.APP -> stringResource(R.string.content_storage_app)
 }
 
 @Composable

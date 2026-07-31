@@ -49,9 +49,9 @@ fun DatabaseRecoveryScreen(
             modifier = Modifier.widthIn(max = 760.dp).padding(48.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(stringResource(R.string.phase1_recovery_title), fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(stringResource(R.string.recovery_title), fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Text(
-                stringResource(R.string.phase1_recovery_data_safe_full),
+                stringResource(R.string.recovery_data_safe_full),
                 fontSize = 18.sp,
                 color = Color(0xFFCFCFD6),
             )
@@ -59,15 +59,15 @@ fun DatabaseRecoveryScreen(
                 Text(message, fontSize = 14.sp, color = Color(0xFF8A8A94))
             }
             Button(onClick = onRetry, modifier = Modifier.focusRequester(focus).focusable()) {
-                Text(stringResource(R.string.phase1_recovery_retry))
+                Text(stringResource(R.string.recovery_retry))
             }
             Text(
-                stringResource(R.string.phase1_recovery_backup_hint),
+                stringResource(R.string.recovery_backup_hint),
                 fontSize = 14.sp,
                 color = Color(0xFF8A8A94),
             )
             Button(onClick = { if (confirmingReset) onResetData() else confirmingReset = true }) {
-                Text(stringResource(if (confirmingReset) R.string.phase1_recovery_confirm_reset else R.string.phase1_recovery_reset))
+                Text(stringResource(if (confirmingReset) R.string.recovery_confirm_reset else R.string.recovery_reset))
             }
         }
     }

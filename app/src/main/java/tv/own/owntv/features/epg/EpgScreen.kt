@@ -100,64 +100,64 @@ import java.util.Locale
 @Composable
 private fun guideSortLabel(sort: SettingsRepository.GuideSort): String = stringResource(
     when (sort) {
-        SettingsRepository.GuideSort.ALPHA -> R.string.phase1_epg_sort_alpha
-        SettingsRepository.GuideSort.PROVIDER -> R.string.phase1_epg_sort_provider
-        SettingsRepository.GuideSort.LIVE_TV -> R.string.phase1_epg_sort_live
-        SettingsRepository.GuideSort.CATCHUP -> R.string.phase1_epg_sort_catchup
-        SettingsRepository.GuideSort.FAVORITES -> R.string.phase1_epg_sort_favorites
+        SettingsRepository.GuideSort.ALPHA -> R.string.content_epg_sort_alpha
+        SettingsRepository.GuideSort.PROVIDER -> R.string.content_epg_sort_provider
+        SettingsRepository.GuideSort.LIVE_TV -> R.string.content_epg_sort_live
+        SettingsRepository.GuideSort.CATCHUP -> R.string.content_epg_sort_catchup
+        SettingsRepository.GuideSort.FAVORITES -> R.string.content_epg_sort_favorites
     },
 )
 
 @Composable
 private fun epgMessageText(message: EpgMessage): String = when (message) {
-    EpgMessage.CreateProfile -> stringResource(R.string.phase1_epg_create_profile)
-    EpgMessage.AddPlaylist -> stringResource(R.string.phase1_epg_add_playlist)
-    is EpgMessage.NoChannelsForQuery -> stringResource(R.string.phase1_epg_no_channels_query, message.query)
-    EpgMessage.MismatchedIds -> stringResource(R.string.phase1_epg_mismatched_ids)
+    EpgMessage.CreateProfile -> stringResource(R.string.content_epg_create_profile)
+    EpgMessage.AddPlaylist -> stringResource(R.string.content_epg_add_playlist)
+    is EpgMessage.NoChannelsForQuery -> stringResource(R.string.content_epg_no_channels_query, message.query)
+    EpgMessage.MismatchedIds -> stringResource(R.string.content_epg_mismatched_ids)
 }
 
 @Composable
 private fun epgStatsText(stats: EpgStats): String {
     val catchup = if (stats.catchupChannels > 0) {
-        pluralStringResource(R.plurals.phase1_epg_catchup_count, stats.catchupChannels, stats.catchupChannels)
+        pluralStringResource(R.plurals.content_epg_catchup_count, stats.catchupChannels, stats.catchupChannels)
     } else {
-        stringResource(R.string.phase1_epg_no_catchup_channels)
+        stringResource(R.string.content_epg_no_catchup_channels)
     }
     return if (stats.programmes > 0) {
         stringResource(
-            R.string.phase1_epg_stats_loaded,
-            pluralStringResource(R.plurals.phase1_epg_stats_channels, stats.guideChannels, stats.guideChannels),
-            pluralStringResource(R.plurals.phase1_epg_stats_programmes, stats.programmes, stats.programmes),
+            R.string.content_epg_stats_loaded,
+            pluralStringResource(R.plurals.content_epg_stats_channels, stats.guideChannels, stats.guideChannels),
+            pluralStringResource(R.plurals.content_epg_stats_programmes, stats.programmes, stats.programmes),
             catchup,
         )
     } else if (stats.catchupChannels > 0) {
         pluralStringResource(
-            R.plurals.phase1_epg_stats_catchup_available,
+            R.plurals.content_epg_stats_catchup_available,
             stats.catchupChannels,
             stats.catchupChannels,
         )
     } else {
-        stringResource(R.string.phase1_epg_stats_no_catchup)
+        stringResource(R.string.content_epg_stats_no_catchup)
     }
 }
 
 @Composable
 private fun epgMatchSummaryText(summary: EpgMatchSummary): String = when (summary) {
-    EpgMatchSummary.CatchupUnavailable -> stringResource(R.string.phase1_epg_catchup_unavailable)
-    EpgMatchSummary.MatchedNoProgrammes -> stringResource(R.string.phase1_epg_matched_no_programmes)
-    EpgMatchSummary.AddPlaylist -> stringResource(R.string.phase1_epg_add_playlist_first)
-    EpgMatchSummary.NoData -> stringResource(R.string.phase1_epg_no_match_data)
-    EpgMatchSummary.AllMatched -> stringResource(R.string.phase1_epg_all_matched)
-    is EpgMatchSummary.NoMatch -> stringResource(R.string.phase1_epg_no_match, summary.channelName)
+    EpgMatchSummary.CatchupUnavailable -> stringResource(R.string.content_epg_catchup_unavailable)
+    EpgMatchSummary.MatchedNoProgrammes -> stringResource(R.string.content_epg_matched_no_programmes)
+    EpgMatchSummary.AddPlaylist -> stringResource(R.string.content_epg_add_playlist_first)
+    EpgMatchSummary.NoData -> stringResource(R.string.content_epg_no_match_data)
+    EpgMatchSummary.AllMatched -> stringResource(R.string.content_epg_all_matched)
+    is EpgMatchSummary.NoMatch -> stringResource(R.string.content_epg_no_match, summary.channelName)
     is EpgMatchSummary.AutoMatched -> if (summary.review > 0) {
         stringResource(
-            R.string.phase1_epg_auto_matched,
-            pluralStringResource(R.plurals.phase1_epg_auto_matched_applied, summary.applied, summary.applied),
-            pluralStringResource(R.plurals.phase1_epg_auto_matched_review, summary.review, summary.review),
+            R.string.content_epg_auto_matched,
+            pluralStringResource(R.plurals.content_epg_auto_matched_applied, summary.applied, summary.applied),
+            pluralStringResource(R.plurals.content_epg_auto_matched_review, summary.review, summary.review),
         )
     } else {
         pluralStringResource(
-            R.plurals.phase1_epg_auto_matched_no_review,
+            R.plurals.content_epg_auto_matched_no_review,
             summary.applied,
             summary.applied,
         )
@@ -337,7 +337,7 @@ fun EpgScreen(
             FocusableSurface(onClick = onBack, modifier = Modifier.size(44.dp), shape = RoundedCornerShape(14.dp), contentAlignment = Alignment.Center, surface = GlassSurface.CARDS) { _ ->
                 OwnTVIcon(OwnTVIcon.BACK, tint = colors.onSurface, modifier = Modifier.size(20.dp))
             }
-            Text(stringResource(R.string.phase1_epg_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+            Text(stringResource(R.string.content_epg_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
             val headerLocales = ConfigurationCompat.getLocales(LocalConfiguration.current)
             val headerLocale = remember(headerLocales) { headerLocales.get(0) ?: Locale.ENGLISH }
             if (state.now > 0) {
@@ -353,7 +353,7 @@ fun EpgScreen(
             }
             // Jump the timeline back to the current time (useful after browsing the catch-up archive).
             if (state.now in state.windowStart..state.windowEnd) {
-                OwnTVButton(stringResource(R.string.phase1_epg_jump_now), onClick = jumpToNow, icon = OwnTVIcon.HISTORY, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.content_epg_jump_now), onClick = jumpToNow, icon = OwnTVIcon.HISTORY, style = OwnTVButtonStyle.SECONDARY)
             }
             Spacer(Modifier.weight(1f))
             // Guide sort: A–Z / Provider / Live TV (mirrors Live) / Catch-up (archive first; hidden when none).
@@ -364,20 +364,20 @@ fun EpgScreen(
             }
             // Category filter (#8): narrow the guide to one group instead of all channels at once.
             if (guideCategories.isNotEmpty()) {
-                val catLabel = categoryFilter?.let { key -> guideCategories.firstOrNull { it.key == key }?.name } ?: stringResource(R.string.phase1_epg_all)
-                OwnTVButton(stringResource(R.string.phase1_epg_category_button, catLabel), onClick = { showCategoryPicker = true }, icon = OwnTVIcon.MENU, style = OwnTVButtonStyle.SECONDARY)
+                val catLabel = categoryFilter?.let { key -> guideCategories.firstOrNull { it.key == key }?.name } ?: stringResource(R.string.content_epg_all)
+                OwnTVButton(stringResource(R.string.content_epg_category_button, catLabel), onClick = { showCategoryPicker = true }, icon = OwnTVIcon.MENU, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.width(12.dp))
             }
-            OwnTVButton(stringResource(R.string.phase1_epg_sort_button, sortLabel), onClick = vm::cycleGuideSort, icon = OwnTVIcon.SORT, style = OwnTVButtonStyle.SECONDARY)
+            OwnTVButton(stringResource(R.string.content_epg_sort_button, sortLabel), onClick = vm::cycleGuideSort, icon = OwnTVIcon.SORT, style = OwnTVButtonStyle.SECONDARY)
             Spacer(Modifier.width(12.dp))
             // Smart-match: auto-link channels whose tvg-id doesn't match the EPG feed, by name (#13).
             if (matching) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OwnTVSpinner(sizeDp = 20)
-                    Text(stringResource(R.string.phase1_epg_matching), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                    Text(stringResource(R.string.content_epg_matching), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
                 }
             } else {
-                OwnTVButton(stringResource(R.string.phase1_epg_match_button), onClick = vm::autoMatchEpg, icon = OwnTVIcon.EPG, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.content_epg_match_button), onClick = vm::autoMatchEpg, icon = OwnTVIcon.EPG, style = OwnTVButtonStyle.SECONDARY)
             }
         }
         state.stats?.let { stats ->
@@ -397,7 +397,7 @@ fun EpgScreen(
         SearchBar(
             query = query,
             onQueryChange = vm::setQuery,
-            placeholder = stringResource(R.string.phase1_epg_search_hint),
+            placeholder = stringResource(R.string.content_epg_search_hint),
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(12.dp))
@@ -406,17 +406,17 @@ fun EpgScreen(
             state.loading -> CenterBox { OwnTVSpinner(sizeDp = 56) }
             // No EPG feed added yet → guide it can't fill. Point the user to EPG Sources.
             !state.hasEpgSources && state.channels.isEmpty() -> CenterBox {
-                Text(stringResource(R.string.phase1_epg_empty), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(stringResource(R.string.content_epg_empty), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    stringResource(R.string.phase1_epg_add_description),
+                    stringResource(R.string.content_epg_add_description),
                     style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(20.dp))
-                OwnTVButton(stringResource(R.string.phase1_epg_add), onClick = onAddEpg, icon = OwnTVIcon.ADD)
+                OwnTVButton(stringResource(R.string.content_epg_add), onClick = onAddEpg, icon = OwnTVIcon.ADD)
             }
             state.channels.isEmpty() -> CenterBox {
-                Text(state.message?.let { epgMessageText(it) } ?: stringResource(R.string.phase1_epg_no_guide), style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+                Text(state.message?.let { epgMessageText(it) } ?: stringResource(R.string.content_epg_no_guide), style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
             }
             else -> {
                 // Time axis (shares hScroll with the rows below).
@@ -538,8 +538,8 @@ fun EpgScreen(
 
     if (showCategoryPicker) {
         tv.own.owntv.features.settings.PickerDialog(
-            title = stringResource(R.string.phase1_epg_guide_category),
-            options = listOf("ALL" to stringResource(R.string.phase1_epg_all_categories)) + guideCategories.map { it.key to it.name },
+            title = stringResource(R.string.content_epg_guide_category),
+            options = listOf("ALL" to stringResource(R.string.content_epg_all_categories)) + guideCategories.map { it.key to it.name },
             selected = categoryFilter ?: "ALL",
             onSelect = { vm.setCategoryFilter(it.takeUnless { value -> value == "ALL" }); showCategoryPicker = false },
             onDismiss = { showCategoryPicker = false },
@@ -576,10 +576,10 @@ private fun EpgMatchReviewDialog(
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.dialogPanel(width = 576.dp, corner = 18.dp, padding = 18.dp)) {
-            Text(stringResource(R.string.phase1_epg_review_matches), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Text(stringResource(R.string.content_epg_review_matches), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
             Text(
-                stringResource(R.string.phase1_epg_review_description),
+                stringResource(R.string.content_epg_review_description),
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(12.dp))
@@ -598,7 +598,7 @@ private fun EpgMatchReviewDialog(
                         Column(Modifier.weight(1f)) {
                             Text(s.channel.name, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
-                                stringResource(R.string.phase1_epg_channel_score, s.epgName ?: s.epgChannelId, (s.score * 100).toInt()),
+                                stringResource(R.string.content_epg_channel_score, s.epgName ?: s.epgChannelId, (s.score * 100).toInt()),
                                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
                         }
@@ -609,14 +609,14 @@ private fun EpgMatchReviewDialog(
                             unfocusedContainerColor = colors.primaryContainer,
                             contentAlignment = Alignment.Center,
                             surface = GlassSurface.DIALOGS,
-                        ) { _ -> Text(stringResource(R.string.phase1_epg_accept), style = MaterialTheme.typography.labelLarge, color = colors.onPrimaryContainer, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) }
+                        ) { _ -> Text(stringResource(R.string.content_epg_accept), style = MaterialTheme.typography.labelLarge, color = colors.onPrimaryContainer, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) }
                         FocusableSurface(
                             onClick = { onSkip(s) },
                             shape = RoundedCornerShape(10.dp),
                             unfocusedContainerColor = colors.surfaceContainerHigh,
                             contentAlignment = Alignment.Center,
                             surface = GlassSurface.DIALOGS,
-                        ) { _ -> Text(stringResource(R.string.phase1_epg_skip), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) }
+                        ) { _ -> Text(stringResource(R.string.content_epg_skip), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) }
                     }
                 }
             }
@@ -625,8 +625,8 @@ private fun EpgMatchReviewDialog(
             Column(Modifier.width(140.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Bulk actions only make sense for a multi-channel run; a single auto-match shows just accept/skip.
                 if (suggestions.size > 1) {
-                    OwnTVButton(stringResource(R.string.phase1_epg_accept_all), onClick = onAcceptAll, icon = OwnTVIcon.PLAY, modifier = Modifier.fillMaxWidth())
-                    OwnTVButton(stringResource(R.string.phase1_epg_skip_all), onClick = onSkipAll, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                    OwnTVButton(stringResource(R.string.content_epg_accept_all), onClick = onAcceptAll, icon = OwnTVIcon.PLAY, modifier = Modifier.fillMaxWidth())
+                    OwnTVButton(stringResource(R.string.content_epg_skip_all), onClick = onSkipAll, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
                 }
                 OwnTVButton(stringResource(R.string.common_done), onClick = onDone, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             }
@@ -664,20 +664,20 @@ private fun EpgMatchChooserDialog(
             Text(channelName, style = MaterialTheme.typography.titleLarge, color = colors.onSurface, maxLines = 1)
             Spacer(Modifier.height(2.dp))
             Text(
-                stringResource(R.string.phase1_epg_favourite_description),
+                stringResource(R.string.content_epg_favourite_description),
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
             OwnTVButton(
-                stringResource(if (isFavorite) R.string.phase1_epg_remove_favourite else R.string.phase1_epg_add_favourite),
+                stringResource(if (isFavorite) R.string.content_epg_remove_favourite else R.string.content_epg_add_favourite),
                 onClick = { onToggleFavorite(); onDismiss() },
                 icon = OwnTVIcon.FAVORITE,
                 modifier = Modifier.fillMaxWidth().focusRequester(firstFocus),
             )
             Spacer(Modifier.height(10.dp))
-            OwnTVButton(stringResource(R.string.phase1_epg_match_button), onClick = onAuto, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.content_epg_match_button), onClick = onAuto, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(10.dp))
-            OwnTVButton(stringResource(R.string.phase1_epg_pick_manually), onClick = onManual, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.SEARCH, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.content_epg_pick_manually), onClick = onManual, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.SEARCH, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(16.dp))
             OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
         }
@@ -748,7 +748,7 @@ private fun GuideChannelRow(
                     Box(Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(categoryColor))
                 }
                 Text(
-                    channel.number?.let { stringResource(R.string.phase1_epg_channel_number, it, channel.name) } ?: channel.name,
+                    channel.number?.let { stringResource(R.string.content_epg_channel_number, it, channel.name) } ?: channel.name,
                     style = MaterialTheme.typography.titleSmall,
                     color = if (focused) colors.primary else colors.onSurface,
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
@@ -868,10 +868,10 @@ private fun GuideInfoStrip(
                 val runtimeMin = ((p.stopMs - p.startMs) / 60_000L).coerceAtLeast(0L).toInt()
                 val bits = listOfNotNull(
                     focusedChannel.name,
-                    stringResource(R.string.phase1_epg_time_range, formatTime(p.startMs), formatTime(p.stopMs)),
-                    runtimeMin.takeIf { it > 0 }?.let { stringResource(R.string.phase1_epg_runtime, it) },
-                    catchup.takeIf { it }?.let { stringResource(R.string.phase1_epg_catchup) },
-                ).joinToString(stringResource(R.string.phase1_epg_bits_separator))
+                    stringResource(R.string.content_epg_time_range, formatTime(p.startMs), formatTime(p.stopMs)),
+                    runtimeMin.takeIf { it > 0 }?.let { stringResource(R.string.content_epg_runtime, it) },
+                    catchup.takeIf { it }?.let { stringResource(R.string.content_epg_catchup) },
+                ).joinToString(stringResource(R.string.content_epg_bits_separator))
                 Text(bits, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 synopsis?.takeIf { it.isNotBlank() }?.let { s ->
                     Text(s, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -879,7 +879,7 @@ private fun GuideInfoStrip(
             }
         } else {
             Text(
-                if (inCellMode) stringResource(R.string.phase1_epg_no_programme) else stringResource(R.string.phase1_epg_move_hint),
+                if (inCellMode) stringResource(R.string.content_epg_no_programme) else stringResource(R.string.content_epg_move_hint),
                 style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, modifier = Modifier.weight(1f),
             )
         }

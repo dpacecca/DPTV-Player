@@ -39,7 +39,7 @@ class PluralResourceBoundaryTest {
             val context = localized(tag)
             listOf(0, 1, 2, 5, 21, 102).forEach { count ->
                 val text = context.resources.getQuantityString(
-                    R.plurals.phase1_epg_sources_catchup,
+                    R.plurals.settings_epg_sources_catchup,
                     count,
                     count,
                 )

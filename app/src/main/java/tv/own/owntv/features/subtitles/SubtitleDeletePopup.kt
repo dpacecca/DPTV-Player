@@ -68,7 +68,7 @@ fun SubtitleDeletePopup(
             contentAlignment = Alignment.Center,
         ) {
             Column(Modifier.dialogPanel(width = 480.dp, padding = 24.dp)) {
-                Text(stringResource(R.string.phase1_subtitles_delete_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Text(stringResource(R.string.player_subtitles_delete_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(contentTitle, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 1)
                 Spacer(Modifier.height(14.dp))
@@ -84,7 +84,7 @@ fun SubtitleDeletePopup(
                             Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text(
-                                        item.languageName ?: item.language ?: stringResource(R.string.phase1_subtitles_subtitle),
+                                        item.languageName ?: item.language ?: stringResource(R.string.player_subtitles_subtitle),
                                         style = MaterialTheme.typography.titleSmall, color = colors.onSurface, fontWeight = FontWeight.SemiBold,
                                     )
                                     item.releaseName?.let {

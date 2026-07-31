@@ -137,7 +137,7 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var seeded by remember { mutableStateOf(false) }
     var key by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
-    val defaultTestTitle = stringResource(R.string.phase1_metadata_test_title)
+    val defaultTestTitle = stringResource(R.string.settings_metadata_test_title)
     var testTitle by remember(defaultTestTitle) { mutableStateOf(defaultTestTitle) }
     // Advanced options are hidden by default. Auto-expand if the user already has a key/URL saved, so the
     // fields aren't silently hidden when they're actually in use.
@@ -234,7 +234,7 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 value = key,
                 onValueChange = { key = it },
                 label = stringResource(R.string.settings_tmdb_api_key),
-                placeholder = stringResource(R.string.phase1_metadata_optional),
+                placeholder = stringResource(R.string.settings_metadata_optional),
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(12.dp))
@@ -259,7 +259,7 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             value = testTitle,
             onValueChange = { testTitle = it },
             label = stringResource(R.string.settings_lookup_movie),
-            placeholder = stringResource(R.string.phase1_metadata_test_title),
+            placeholder = stringResource(R.string.settings_metadata_test_title),
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(12.dp))

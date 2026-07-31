@@ -489,12 +489,12 @@ fun AddSourceScreen(
 @Composable
 private fun playlistAutoRefreshLabel(mode: PlaylistAutoRefresh): String = stringResource(
     when (mode) {
-        PlaylistAutoRefresh.OFF -> R.string.phase1_sources_refresh_off
-        PlaylistAutoRefresh.STARTUP -> R.string.phase1_sources_refresh_startup
-        PlaylistAutoRefresh.HOURS_6 -> R.string.phase1_sources_refresh_6h
-        PlaylistAutoRefresh.HOURS_12 -> R.string.phase1_sources_refresh_12h
-        PlaylistAutoRefresh.HOURS_24 -> R.string.phase1_sources_refresh_24h
-        PlaylistAutoRefresh.HOURS_48 -> R.string.phase1_sources_refresh_48h
+        PlaylistAutoRefresh.OFF -> R.string.settings_sources_refresh_off
+        PlaylistAutoRefresh.STARTUP -> R.string.settings_sources_refresh_startup
+        PlaylistAutoRefresh.HOURS_6 -> R.string.settings_sources_refresh_6h
+        PlaylistAutoRefresh.HOURS_12 -> R.string.settings_sources_refresh_12h
+        PlaylistAutoRefresh.HOURS_24 -> R.string.settings_sources_refresh_24h
+        PlaylistAutoRefresh.HOURS_48 -> R.string.settings_sources_refresh_48h
     },
 )
 

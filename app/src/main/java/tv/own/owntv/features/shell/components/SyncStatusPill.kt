@@ -27,8 +27,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
 import tv.own.owntv.R
+import tv.own.owntv.core.network.ConnectivityObserver
 import tv.own.owntv.core.sync.SyncProgressCounts
 import tv.own.owntv.core.sync.SyncResult
+import tv.own.owntv.core.util.classifySyncFailure
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import tv.own.owntv.ui.components.OwnTVSpinner
@@ -55,6 +57,7 @@ import tv.own.owntv.ui.theme.glass
 fun SyncStatusPill(modifier: Modifier = Modifier) {
     val catalogTracker: SyncActivityTracker = koinInject()
     val epgTracker: EpgActivityTracker = koinInject()
+    val connectivity: ConnectivityObserver = koinInject()
     val activeCatalog by catalogTracker.active.collectAsStateWithLifecycle()
     val activeEpg by epgTracker.active.collectAsStateWithLifecycle()
     val lastCompleted by catalogTracker.lastCompleted.collectAsStateWithLifecycle()
@@ -150,7 +153,7 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
         }
         currentCompleted?.let { completed ->
             Text(
-                completedLine(completed),
+                completedLine(completed, online = connectivity.isOnlineNow()),
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.onSurfaceVariant,
                 maxLines = 1,
@@ -202,7 +205,7 @@ private fun SyncLine.text(): String = when (this) {
 }
 
 @Composable
-private fun completedLine(completed: SyncActivityTracker.CompletedSync): String = when (val result = completed.result) {
+private fun completedLine(completed: SyncActivityTracker.CompletedSync, online: Boolean): String = when (val result = completed.result) {
     is SyncResult.Success -> {
         val changes = buildList {
             if (result.categoriesAdded > 0) {
@@ -218,7 +221,7 @@ private fun completedLine(completed: SyncActivityTracker.CompletedSync): String 
     is SyncResult.Failed -> stringResource(
         R.string.sync_status_failed,
         completed.sourceName,
-        result.message.ifBlank { stringResource(R.string.sync_error_generic) },
+        classifySyncFailure(result.message, online).displayText(),
     )
     SyncResult.Cancelled -> stringResource(R.string.sync_status_cancelled, completed.sourceName)
 }

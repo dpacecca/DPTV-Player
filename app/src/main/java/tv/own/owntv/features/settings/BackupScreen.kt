@@ -143,17 +143,17 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .focusGroup()
             .padding(horizontal = 40.dp, vertical = 28.dp),
     ) {
-        Text(stringResource(R.string.phase1_backup_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+        Text(stringResource(R.string.settings_backup_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
         Spacer(Modifier.height(8.dp))
         Text(
-            stringResource(R.string.phase1_backup_save_description),
+            stringResource(R.string.settings_backup_save_description),
             style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.widthIn(max = 680.dp),
         )
         Spacer(Modifier.height(24.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OwnTVButton(stringResource(R.string.phase1_backup_export_button), onClick = { dialogReturn = firstFocus; showExportChooser = true }, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(firstFocus))
-            OwnTVButton(stringResource(R.string.phase1_backup_restore_button), onClick = { dialogReturn = restoreBtnFocus; showRestoreChooser = true }, style = OwnTVButtonStyle.SECONDARY, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(restoreBtnFocus))
+            OwnTVButton(stringResource(R.string.settings_backup_export_button), onClick = { dialogReturn = firstFocus; showExportChooser = true }, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(firstFocus))
+            OwnTVButton(stringResource(R.string.settings_backup_restore_button), onClick = { dialogReturn = restoreBtnFocus; showRestoreChooser = true }, style = OwnTVButtonStyle.SECONDARY, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(restoreBtnFocus))
         }
         Spacer(Modifier.height(20.dp))
 
@@ -161,37 +161,37 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             BackupViewModel.State.Working -> Row(verticalAlignment = Alignment.CenterVertically) {
                 OwnTVSpinner(sizeDp = 22)
                 Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.phase1_backup_working), style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
+                Text(stringResource(R.string.settings_backup_working), style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
             }
             is BackupViewModel.State.Done -> when (s.kind) {
                 DoneKind.EXPORTED -> Text(
                     if (s.passwordsOmitted) {
-                        stringResource(R.string.phase1_backup_saved_to_without_passwords, s.path.orEmpty())
+                        stringResource(R.string.settings_backup_saved_to_without_passwords, s.path.orEmpty())
                     } else {
-                        stringResource(R.string.phase1_backup_saved_to, s.path.orEmpty())
+                        stringResource(R.string.settings_backup_saved_to, s.path.orEmpty())
                     },
                     style = MaterialTheme.typography.bodyLarge, color = colors.primary,
                 )
                 DoneKind.RESTORED -> Column {
-                    Text(pluralStringResource(R.plurals.phase1_backup_restored, s.items, s.items), style = MaterialTheme.typography.bodyLarge, color = colors.primary)
-                    Text(stringResource(R.string.phase1_backup_restore_resync), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Text(pluralStringResource(R.plurals.settings_backup_restored, s.items, s.items), style = MaterialTheme.typography.bodyLarge, color = colors.primary)
+                    Text(stringResource(R.string.settings_backup_restore_resync), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     if (s.passwordsOmitted) {
-                        Text(stringResource(R.string.phase1_backup_restore_password_note), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        Text(stringResource(R.string.settings_backup_restore_password_note), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     }
                     if (s.skippedSources > 0) {
-                        Text(pluralStringResource(R.plurals.phase1_backup_skipped_sources, s.skippedSources, s.skippedSources), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        Text(pluralStringResource(R.plurals.settings_backup_skipped_sources, s.skippedSources, s.skippedSources), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     }
                     if (s.invalidLocale) {
-                        Text(stringResource(R.string.phase1_backup_invalid_locale), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                        Text(stringResource(R.string.settings_backup_invalid_locale), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
                     }
                 }
             }
             is BackupViewModel.State.Error -> Text(
                 stringResource(
                     when (s.kind) {
-                        BackupError.EXPORT -> R.string.phase1_backup_export_error
-                        BackupError.READ -> R.string.phase1_backup_read_error
-                        BackupError.IMPORT -> R.string.phase1_backup_import_error
+                        BackupError.EXPORT -> R.string.settings_backup_export_error
+                        BackupError.READ -> R.string.settings_backup_read_error
+                        BackupError.IMPORT -> R.string.settings_backup_import_error
                     },
                 ),
                 style = MaterialTheme.typography.bodyLarge, color = Color(0xFFEF4444),
@@ -221,10 +221,10 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Export step 1: choose what to include, then pick the folder (local) or continue (remote).
     if (showExportPicker) {
         SectionPickerDialog(
-            title = stringResource(R.string.phase1_backup_what_backup),
+            title = stringResource(R.string.settings_backup_what_backup),
             sections = BackupManager.Section.entries,
             initial = BackupManager.Section.entries.toSet(),
-            confirmLabel = if (exportToRemote) stringResource(R.string.phase1_backup_continue) else stringResource(R.string.phase1_backup_choose_folder_action),
+            confirmLabel = if (exportToRemote) stringResource(R.string.settings_backup_continue) else stringResource(R.string.settings_backup_choose_folder_action),
             onConfirm = { chosen ->
                 exportSections = chosen
                 showExportPicker = false
@@ -237,10 +237,10 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Restore step 2: the picked file was inspected — choose which of its sections to apply.
     (state as? BackupViewModel.State.ChooseRestore)?.let { choose ->
         SectionPickerDialog(
-            title = stringResource(R.string.phase1_backup_what_restore),
+            title = stringResource(R.string.settings_backup_what_restore),
             sections = BackupManager.Section.entries.filter { it in choose.available },
             initial = choose.available,
-            confirmLabel = stringResource(R.string.phase1_backup_restore_action),
+            confirmLabel = stringResource(R.string.settings_backup_restore_action),
             onConfirm = { chosen -> vm.beginImport(choose.file, chosen, choose.encrypted, choose.password) },
             onDismiss = { vm.reset() },
         )
@@ -248,7 +248,7 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     if (showBrowser) {
         StorageBrowser(
-            title = stringResource(if (browser == BrowseMode.FOLDER) R.string.phase1_backup_choose_folder else R.string.phase1_backup_pick_file),
+            title = stringResource(if (browser == BrowseMode.FOLDER) R.string.settings_backup_choose_folder else R.string.settings_backup_pick_file),
             mode = browser,
             // `.own` is what we write now; `.json` stays so pre-4.2 backups keep restoring.
             fileExtensions = BackupManager.RESTORE_EXTENSIONS,
@@ -260,10 +260,10 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Export step 3: ask whether to protect passwords with a backup passphrase (or export without them).
     exportFolder?.let { folder ->
         BackupPasswordDialog(
-            title = stringResource(R.string.phase1_backup_encrypt_title),
-            message = stringResource(R.string.phase1_backup_encrypt_message),
-            confirmLabel = stringResource(R.string.phase1_backup_encrypt_export),
-            skipLabel = stringResource(R.string.phase1_backup_export_unencrypted),
+            title = stringResource(R.string.settings_backup_encrypt_title),
+            message = stringResource(R.string.settings_backup_encrypt_message),
+            confirmLabel = stringResource(R.string.settings_backup_encrypt_export),
+            skipLabel = stringResource(R.string.settings_backup_export_unencrypted),
             onConfirm = { pass -> exportFolder = null; vm.export(folder, exportSections, pass, exportProfiles) },
             onSkip = { exportFolder = null; vm.export(folder, exportSections, null, exportProfiles) },
             onDismiss = { exportFolder = null },
@@ -275,15 +275,15 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     //  - field-encrypted → asked after the section picker, optional (skip = no saved passwords).
     (state as? BackupViewModel.State.NeedPassword)?.let { need ->
         BackupPasswordDialog(
-            title = stringResource(if (need.retry) R.string.phase1_backup_wrong_password else R.string.phase1_backup_enter_password),
+            title = stringResource(if (need.retry) R.string.settings_backup_wrong_password else R.string.settings_backup_enter_password),
             message = when {
-                need.retry && need.sealed -> stringResource(R.string.phase1_backup_password_encrypted_mismatch)
-                need.retry -> stringResource(R.string.phase1_backup_password_mismatch)
-                need.sealed -> stringResource(R.string.phase1_backup_encrypted_description)
-                else -> stringResource(R.string.phase1_backup_saved_passwords_description)
+                need.retry && need.sealed -> stringResource(R.string.settings_backup_password_encrypted_mismatch)
+                need.retry -> stringResource(R.string.settings_backup_password_mismatch)
+                need.sealed -> stringResource(R.string.settings_backup_encrypted_description)
+                else -> stringResource(R.string.settings_backup_saved_passwords_description)
             },
-            confirmLabel = if (need.sealed) stringResource(R.string.phase1_backup_unlock) else stringResource(R.string.phase1_backup_restore_action),
-            skipLabel = if (need.sealed) null else stringResource(R.string.phase1_backup_skip_passwords),
+            confirmLabel = if (need.sealed) stringResource(R.string.settings_backup_unlock) else stringResource(R.string.settings_backup_restore_action),
+            skipLabel = if (need.sealed) null else stringResource(R.string.settings_backup_skip_passwords),
             onConfirm = { pass ->
                 val sections = need.sections
                 if (sections == null) vm.unlock(need.file, pass) else vm.import(need.file, sections, pass)
@@ -296,8 +296,8 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Export step 0: Remote (serve for a phone/laptop to download) or Local (save to a folder).
     if (showExportChooser) {
         RemoteLocalChooserDialog(
-            title = stringResource(R.string.phase1_backup_export_title),
-            message = stringResource(R.string.phase1_backup_export_message),
+            title = stringResource(R.string.settings_backup_export_title),
+            message = stringResource(R.string.settings_backup_export_message),
             onRemote = { showExportChooser = false; exportToRemote = true; vm.loadProfiles(); showProfilePicker = true },
             onLocal = { showExportChooser = false; exportToRemote = false; vm.loadProfiles(); showProfilePicker = true },
             onDismiss = { showExportChooser = false },
@@ -307,10 +307,10 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Remote export step 2: password prompt, then export to cache + start serving the file.
     if (showRemoteExportPassword) {
         BackupPasswordDialog(
-            title = stringResource(R.string.phase1_backup_encrypt_title),
-            message = stringResource(R.string.phase1_backup_encrypt_message),
-            confirmLabel = stringResource(R.string.phase1_backup_encrypt_prepare),
-            skipLabel = stringResource(R.string.phase1_backup_prepare_unencrypted),
+            title = stringResource(R.string.settings_backup_encrypt_title),
+            message = stringResource(R.string.settings_backup_encrypt_message),
+            confirmLabel = stringResource(R.string.settings_backup_encrypt_prepare),
+            skipLabel = stringResource(R.string.settings_backup_prepare_unencrypted),
             onConfirm = { pass -> showRemoteExportPassword = false; showRemoteExport = true; vm.exportRemote(exportSections, pass, exportProfiles) },
             onSkip = { showRemoteExportPassword = false; showRemoteExport = true; vm.exportRemote(exportSections, null, exportProfiles) },
             onDismiss = { showRemoteExportPassword = false },
@@ -332,8 +332,8 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Restore step 0: Remote (send the backup from a phone) or Local (pick a file on this device).
     if (showRestoreChooser) {
         RemoteLocalChooserDialog(
-            title = stringResource(R.string.phase1_backup_restore_title),
-            message = stringResource(R.string.phase1_backup_restore_message),
+            title = stringResource(R.string.settings_backup_restore_title),
+            message = stringResource(R.string.settings_backup_restore_message),
             onRemote = { showRestoreChooser = false; showRemoteRestore = true },
             onLocal = { showRestoreChooser = false; browser = BrowseMode.FILE; showBrowser = true },
             onDismiss = { showRestoreChooser = false },
@@ -379,8 +379,8 @@ private fun RemoteLocalChooserDialog(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.phase1_backup_local_file), onClick = onLocal, style = OwnTVButtonStyle.SECONDARY)
-                OwnTVButton(stringResource(R.string.phase1_backup_remote), onClick = onRemote, modifier = Modifier.focusRequester(firstFocus))
+                OwnTVButton(stringResource(R.string.settings_backup_local_file), onClick = onLocal, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.settings_backup_remote), onClick = onRemote, modifier = Modifier.focusRequester(firstFocus))
             }
         }
     }
@@ -413,7 +413,7 @@ private fun BackupPasswordDialog(
             OwnTVTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = stringResource(R.string.phase1_backup_password),
+                label = stringResource(R.string.settings_backup_password),
                 isPassword = true,
                 focusRequester = firstFocus,
             )
@@ -450,10 +450,10 @@ private fun ProfilePickerDialog(
 
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
         Column(Modifier.dialogPanel(width = 560.dp, padding = 28.dp)) {
-            Text(stringResource(R.string.phase1_backup_which_profiles), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.settings_backup_which_profiles), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(
-                stringResource(R.string.phase1_backup_selected_profiles),
+                stringResource(R.string.settings_backup_selected_profiles),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
@@ -461,13 +461,13 @@ private fun ProfilePickerDialog(
                 val locked = p.pinHash != null && p.id != activeId
                 CheckRow(
                     label = if (p.id == activeId) {
-                        stringResource(R.string.phase1_backup_profile_current, p.name)
+                        stringResource(R.string.settings_backup_profile_current, p.name)
                     } else {
                         p.name
                     },
                     desc = when {
-                        locked -> stringResource(R.string.phase1_backup_pin_locked)
-                        p.isKids -> stringResource(R.string.phase1_backup_kids_profile)
+                        locked -> stringResource(R.string.settings_backup_pin_locked)
+                        p.isKids -> stringResource(R.string.settings_backup_kids_profile)
                         else -> null
                     },
                     checked = p.id in ticked,
@@ -485,7 +485,7 @@ private fun ProfilePickerDialog(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.phase1_backup_continue), onClick = { onConfirm(ticked) }, enabled = ticked.isNotEmpty())
+                OwnTVButton(stringResource(R.string.settings_backup_continue), onClick = { onConfirm(ticked) }, enabled = ticked.isNotEmpty())
             }
         }
     }
@@ -517,30 +517,30 @@ private fun ProfilePinDialog(
 
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
         Column(Modifier.dialogPanel(width = 480.dp, padding = 28.dp)) {
-            Text(stringResource(R.string.phase1_backup_profile_locked, profileName), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Text(stringResource(R.string.settings_backup_profile_locked, profileName), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(8.dp))
             Text(
-                stringResource(R.string.phase1_backup_profile_pin_description),
+                stringResource(R.string.settings_backup_profile_pin_description),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
             OwnTVTextField(
                 value = pin,
                 onValueChange = { pin = it; wrong = false },
-                label = stringResource(R.string.phase1_backup_profile_pin),
+                label = stringResource(R.string.settings_backup_profile_pin),
                 isPassword = true,
                 focusRequester = fieldFocus,
             )
             if (wrong) {
                 Spacer(Modifier.height(8.dp))
-                Text(stringResource(R.string.phase1_backup_pin_incorrect), style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444))
+                Text(stringResource(R.string.settings_backup_pin_incorrect), style = MaterialTheme.typography.bodyMedium, color = Color(0xFFEF4444))
             }
             Spacer(Modifier.height(20.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                 Spacer(Modifier.weight(1f))
                 OwnTVButton(
-                    stringResource(R.string.phase1_backup_unlock),
+                    stringResource(R.string.settings_backup_unlock),
                     onClick = { if (verify(pin)) onUnlocked() else { wrong = true; pin = "" } },
                     enabled = pin.isNotBlank(),
                 )
@@ -550,23 +550,23 @@ private fun ProfilePinDialog(
 }
 
 private fun sectionLabelRes(section: BackupManager.Section): Int = when (section) {
-    BackupManager.Section.SOURCES -> R.string.phase1_backup_section_sources
-    BackupManager.Section.CUSTOMIZE -> R.string.phase1_backup_section_customize
-    BackupManager.Section.FAVORITES -> R.string.phase1_backup_section_favorites
-    BackupManager.Section.HISTORY -> R.string.phase1_backup_section_history
-    BackupManager.Section.RESUME -> R.string.phase1_backup_section_resume
-    BackupManager.Section.MANUAL_REORDER -> R.string.phase1_backup_section_reorder
-    BackupManager.Section.SETTINGS -> R.string.phase1_backup_section_settings
+    BackupManager.Section.SOURCES -> R.string.settings_backup_section_sources
+    BackupManager.Section.CUSTOMIZE -> R.string.settings_backup_section_customize
+    BackupManager.Section.FAVORITES -> R.string.settings_backup_section_favorites
+    BackupManager.Section.HISTORY -> R.string.settings_backup_section_history
+    BackupManager.Section.RESUME -> R.string.settings_backup_section_resume
+    BackupManager.Section.MANUAL_REORDER -> R.string.settings_backup_section_reorder
+    BackupManager.Section.SETTINGS -> R.string.settings_backup_section_settings
 }
 
 private fun sectionDescriptionRes(section: BackupManager.Section): Int = when (section) {
-    BackupManager.Section.SOURCES -> R.string.phase1_backup_section_sources_desc
-    BackupManager.Section.CUSTOMIZE -> R.string.phase1_backup_section_customize_desc
-    BackupManager.Section.FAVORITES -> R.string.phase1_backup_section_favorites_desc
-    BackupManager.Section.HISTORY -> R.string.phase1_backup_section_history_desc
-    BackupManager.Section.RESUME -> R.string.phase1_backup_section_resume_desc
-    BackupManager.Section.MANUAL_REORDER -> R.string.phase1_backup_section_reorder_desc
-    BackupManager.Section.SETTINGS -> R.string.phase1_backup_section_settings_desc
+    BackupManager.Section.SOURCES -> R.string.settings_backup_section_sources_desc
+    BackupManager.Section.CUSTOMIZE -> R.string.settings_backup_section_customize_desc
+    BackupManager.Section.FAVORITES -> R.string.settings_backup_section_favorites_desc
+    BackupManager.Section.HISTORY -> R.string.settings_backup_section_history_desc
+    BackupManager.Section.RESUME -> R.string.settings_backup_section_resume_desc
+    BackupManager.Section.MANUAL_REORDER -> R.string.settings_backup_section_reorder_desc
+    BackupManager.Section.SETTINGS -> R.string.settings_backup_section_settings_desc
 }
 
 /** Multi-select dialog over backup sections, with an "Everything" toggle on top. */
@@ -591,7 +591,7 @@ private fun SectionPickerDialog(
             Spacer(Modifier.height(16.dp))
 
             CheckRow(
-                label = stringResource(R.string.phase1_backup_everything),
+                label = stringResource(R.string.settings_backup_everything),
                 desc = null,
                 checked = selected.size == sections.size,
                 onToggle = { selected = if (selected.size == sections.size) emptySet() else sections.toSet() },

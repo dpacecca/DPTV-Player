@@ -497,7 +497,7 @@ private fun ImportProgressScreen(
                     Text(pluralStringResource(R.plurals.setup_skipped_sources, skipped, skipped), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
                 }
                 if (state.invalidLocale) {
-                    Text(stringResource(R.string.phase1_setup_invalid_locale), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.setup_invalid_locale), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)
                 }
                 state.warnings.warningText()?.let { warning ->
                     Text(warning, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center)

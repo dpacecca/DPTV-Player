@@ -72,10 +72,10 @@ fun UpdateStatusToast(onDone: () -> Unit, onViewChangelog: () -> Unit, modifier:
             UpdateManager.State.Idle, UpdateManager.State.Checking -> Row(verticalAlignment = Alignment.CenterVertically) {
                 OwnTVSpinner(sizeDp = 18)
                 Spacer(Modifier.width(10.dp))
-                Text(stringResource(R.string.phase1_update_checking), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Text(stringResource(R.string.update_checking), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             }
             UpdateManager.State.UpToDate -> Text(
-                stringResource(R.string.phase1_update_latest, manager.currentVersion),
+                stringResource(R.string.update_latest, manager.currentVersion),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
             )
             is UpdateManager.State.Failed -> Text(
@@ -84,24 +84,24 @@ fun UpdateStatusToast(onDone: () -> Unit, onViewChangelog: () -> Unit, modifier:
             )
             is UpdateManager.State.Available -> {
                 BackHandler { onDone() } // Back = Later
-                Text(stringResource(R.string.phase1_update_available), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+                Text(stringResource(R.string.update_available), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    stringResource(R.string.phase1_update_ready, s.info.version, manager.currentVersion),
+                    stringResource(R.string.update_ready, s.info.version, manager.currentVersion),
                     style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     // "What's New" opens the full changelog dialog (same view the manual check uses);
                     // both update paths show the changelog before downloading.
-                    OwnTVButton(stringResource(R.string.phase1_update_whats_new), onClick = onViewChangelog, modifier = Modifier.focusRequester(focus))
-                    OwnTVButton(stringResource(R.string.phase1_update_later), onClick = onDone, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton(stringResource(R.string.update_whats_new), onClick = onViewChangelog, modifier = Modifier.focusRequester(focus))
+                    OwnTVButton(stringResource(R.string.update_later), onClick = onDone, style = OwnTVButtonStyle.SECONDARY)
                 }
             }
             is UpdateManager.State.Downloading -> Row(verticalAlignment = Alignment.CenterVertically) {
                 OwnTVSpinner(sizeDp = 18)
                 Spacer(Modifier.width(10.dp))
-                Text(stringResource(R.string.phase1_update_downloading, s.percent), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                Text(stringResource(R.string.update_downloading, s.percent), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             }
         }
     }

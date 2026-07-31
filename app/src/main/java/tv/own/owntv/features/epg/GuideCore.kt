@@ -98,8 +98,8 @@ internal fun ProgrammeStripCanvas(
     val formatTime = rememberSystemTimeFormatter()
     // Time labels built once (string formatting kept out of the per-frame draw loop).
     // Resolve the templates through Compose so a live locale change invalidates the labels.
-    val timeRangeTemplate = stringResource(R.string.phase1_epg_time_range)
-    val nowTemplate = stringResource(R.string.phase1_epg_now)
+    val timeRangeTemplate = stringResource(R.string.content_epg_time_range)
+    val nowTemplate = stringResource(R.string.content_epg_now)
     val labels = remember(programmes, now, formatTime, timeRangeTemplate, nowTemplate) {
         programmes.map { p ->
             val t = String.format(
@@ -223,7 +223,7 @@ internal fun ProgrammeDetailDialog(
                 Spacer(Modifier.height(6.dp))
                 Text(programme.title, style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall, color = colors.onSurface)
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
-                Text(stringResource(R.string.phase1_epg_time_range, formatTime(programme.startMs), formatTime(programme.stopMs)), style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
+                Text(stringResource(R.string.content_epg_time_range, formatTime(programme.startMs), formatTime(programme.stopMs)), style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
                 if (!description.isNullOrBlank()) {
                     Spacer(Modifier.height(if (compact) 10.dp else 14.dp))
                     Text(description.orEmpty(), style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
@@ -246,14 +246,14 @@ internal fun ProgrammeDetailDialog(
                                 SettingsRepository.CatchupPlayer.EXTERNAL -> onPlayCatchupExternal()
                             }
                         }
-                        OwnTVButton(stringResource(R.string.phase1_epg_watch_start), onClick = startCatchup, icon = OwnTVIcon.PLAY, compact = compact, modifier = Modifier.focusRequester(fr))
-                        OwnTVButton(stringResource(R.string.phase1_epg_watch_channel), onClick = onWatch, style = OwnTVButtonStyle.SECONDARY, compact = compact)
+                        OwnTVButton(stringResource(R.string.content_epg_watch_start), onClick = startCatchup, icon = OwnTVIcon.PLAY, compact = compact, modifier = Modifier.focusRequester(fr))
+                        OwnTVButton(stringResource(R.string.content_epg_watch_channel), onClick = onWatch, style = OwnTVButtonStyle.SECONDARY, compact = compact)
                     } else {
-                        OwnTVButton(stringResource(R.string.phase1_epg_watch_channel), onClick = onWatch, icon = OwnTVIcon.PLAY, compact = compact, modifier = Modifier.focusRequester(fr))
+                        OwnTVButton(stringResource(R.string.content_epg_watch_channel), onClick = onWatch, icon = OwnTVIcon.PLAY, compact = compact, modifier = Modifier.focusRequester(fr))
                     }
                     // Favourite the channel without leaving the guide; the label flips in place.
                     OwnTVButton(
-                        stringResource(if (isFavorite) R.string.phase1_epg_unfavourite else R.string.phase1_epg_favourite),
+                        stringResource(if (isFavorite) R.string.content_epg_unfavourite else R.string.content_epg_favourite),
                         onClick = onToggleFavorite,
                         style = OwnTVButtonStyle.SECONDARY,
                         icon = OwnTVIcon.FAVORITE,
@@ -290,13 +290,13 @@ private fun CatchupPlayerChooser(
                     Text(stringResource(R.string.settings_catchup_player), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        stringResource(R.string.phase1_epg_player_choice_description),
+                        stringResource(R.string.content_epg_player_choice_description),
                         style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(14.dp))
-                    OwnTVButton(stringResource(R.string.phase1_epg_own_player), onClick = onInternal, icon = OwnTVIcon.PLAY, compact = true, modifier = Modifier.fillMaxWidth().focusRequester(fr))
+                    OwnTVButton(stringResource(R.string.content_epg_own_player), onClick = onInternal, icon = OwnTVIcon.PLAY, compact = true, modifier = Modifier.fillMaxWidth().focusRequester(fr))
                     Spacer(Modifier.height(8.dp))
-                    OwnTVButton(stringResource(R.string.phase1_epg_external_player), onClick = onExternal, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
+                    OwnTVButton(stringResource(R.string.content_epg_external_player), onClick = onExternal, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(8.dp))
                     OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
                 }

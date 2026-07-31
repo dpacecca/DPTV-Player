@@ -7,12 +7,12 @@ import tv.own.owntv.core.update.UpdateManager
 
 @Composable
 internal fun updateFailureText(failure: UpdateManager.Failure): String = when (failure) {
-    is UpdateManager.Failure.CheckHttp -> stringResource(R.string.phase1_update_failed_check_http, failure.code.toString())
-    UpdateManager.Failure.NoCompatibleApk -> stringResource(R.string.phase1_update_no_compatible_apk)
-    UpdateManager.Failure.InvalidReleaseResponse -> stringResource(R.string.phase1_update_invalid_release_response)
-    UpdateManager.Failure.CheckNetwork -> stringResource(R.string.phase1_update_failed_check)
-    is UpdateManager.Failure.DownloadHttp -> stringResource(R.string.phase1_update_failed_download_http, failure.code.toString())
-    UpdateManager.Failure.EmptyDownload -> stringResource(R.string.phase1_update_empty_download)
-    UpdateManager.Failure.DownloadNetwork -> stringResource(R.string.phase1_update_failed_download)
-    UpdateManager.Failure.Install -> stringResource(R.string.phase1_update_install_failed)
+    is UpdateManager.Failure.CheckHttp -> stringResource(R.string.update_failed_check_http, failure.code.toString())
+    UpdateManager.Failure.NoCompatibleApk -> stringResource(R.string.update_no_compatible_apk)
+    UpdateManager.Failure.InvalidReleaseResponse -> stringResource(R.string.update_invalid_release_response)
+    UpdateManager.Failure.CheckNetwork -> stringResource(R.string.update_failed_check)
+    is UpdateManager.Failure.DownloadHttp -> stringResource(R.string.update_failed_download_http, failure.code.toString())
+    UpdateManager.Failure.EmptyDownload -> stringResource(R.string.update_empty_download)
+    UpdateManager.Failure.DownloadNetwork -> stringResource(R.string.update_failed_download)
+    UpdateManager.Failure.Install -> stringResource(R.string.update_install_failed)
 }

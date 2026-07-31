@@ -133,9 +133,9 @@ fun DownloadsScreen(
             .onFocusChanged { if (it.hasFocus) onChildFocused() }
             .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
     ) {
-        Text(stringResource(R.string.phase1_downloads_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+        Text(stringResource(R.string.content_downloads_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
         Spacer(Modifier.height(6.dp))
-        Text(stringResource(R.string.phase1_downloads_description), style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
+        Text(stringResource(R.string.content_downloads_description), style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
         Spacer(Modifier.height(18.dp))
 
         storage?.let {
@@ -145,7 +145,7 @@ fun DownloadsScreen(
 
         if (downloads.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.phase1_downloads_empty), color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.content_downloads_empty), color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
             }
         } else {
             LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.focusGroup()) {
@@ -181,10 +181,10 @@ fun DownloadsScreen(
 
 /** A display row in the grouped Downloads list: either a section header or a download. */
 private enum class DownloadGroup(val labelRes: Int) {
-    ACTIVE(R.string.phase1_downloads_active),
-    WAITING(R.string.phase1_downloads_waiting),
-    COMPLETED(R.string.phase1_downloads_completed_group),
-    FAILED(R.string.phase1_downloads_failed_group),
+    ACTIVE(R.string.content_downloads_active),
+    WAITING(R.string.content_downloads_waiting),
+    COMPLETED(R.string.content_downloads_completed_group),
+    FAILED(R.string.content_downloads_failed_group),
 }
 
 private sealed interface DownloadListRow {
@@ -217,7 +217,7 @@ private fun buildDownloadRows(downloads: List<DownloadEntity>): List<DownloadLis
 private fun SectionHeader(group: DownloadGroup, count: Int) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
         Text(stringResource(group.labelRes).uppercase(), style = MaterialTheme.typography.titleSmall, color = OwnTVTheme.colors.primary, fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.phase1_downloads_count, count), style = MaterialTheme.typography.labelMedium, color = OwnTVTheme.colors.onSurfaceVariant)
+        Text(stringResource(R.string.content_downloads_count, count), style = MaterialTheme.typography.labelMedium, color = OwnTVTheme.colors.onSurfaceVariant)
     }
 }
 
@@ -226,9 +226,9 @@ private fun StorageBar(info: tv.own.owntv.core.download.DownloadStorageInfo) {
     val colors = OwnTVTheme.colors
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.phase1_downloads_storage), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.content_downloads_storage), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.weight(1f))
-            Text(stringResource(R.string.phase1_downloads_storage_free, storageSize(info.freeBytes, stringResource(R.string.phase1_downloads_unknown_size)), storageSize(info.totalBytes, stringResource(R.string.phase1_downloads_unknown_size))), style = MaterialTheme.typography.labelLarge, color = colors.primary, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.content_downloads_storage_free, storageSize(info.freeBytes, stringResource(R.string.content_downloads_unknown_size)), storageSize(info.totalBytes, stringResource(R.string.content_downloads_unknown_size))), style = MaterialTheme.typography.labelLarge, color = colors.primary, fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(6.dp))
         Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(colors.surfaceContainerLowest)) {
@@ -261,7 +261,7 @@ private fun DownloadRow(
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(download.title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            folderCrumb(download.filePath, stringResource(R.string.phase1_downloads_folder_separator))?.let {
+            folderCrumb(download.filePath, stringResource(R.string.content_downloads_folder_separator))?.let {
                 Text(it, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Spacer(Modifier.height(6.dp))
@@ -270,13 +270,13 @@ private fun DownloadRow(
         Spacer(Modifier.width(12.dp))
         when (download.status) {
             DownloadStatus.COMPLETED -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OwnTVButton(stringResource(R.string.phase1_downloads_play), onClick = onPlay, icon = OwnTVIcon.PLAY, modifier = focusModifier)
+                OwnTVButton(stringResource(R.string.content_downloads_play), onClick = onPlay, icon = OwnTVIcon.PLAY, modifier = focusModifier)
                 // Phase B: one-off external playback, independent of the global "External player" toggle.
-                OwnTVButton(stringResource(R.string.phase1_downloads_external), onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY)
+                OwnTVButton(stringResource(R.string.content_downloads_external), onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY)
             }
             DownloadStatus.FAILED -> OwnTVButton(stringResource(R.string.common_retry), onClick = onRetry, style = OwnTVButtonStyle.SECONDARY, modifier = focusModifier)
             DownloadStatus.PAUSED -> OwnTVButton(stringResource(R.string.common_resume), onClick = onResume, style = OwnTVButtonStyle.SECONDARY, modifier = focusModifier)
-            DownloadStatus.RUNNING, DownloadStatus.QUEUED -> OwnTVButton(stringResource(R.string.phase1_downloads_pause), onClick = onPause, style = OwnTVButtonStyle.SECONDARY, modifier = focusModifier)
+            DownloadStatus.RUNNING, DownloadStatus.QUEUED -> OwnTVButton(stringResource(R.string.content_downloads_pause), onClick = onPause, style = OwnTVButtonStyle.SECONDARY, modifier = focusModifier)
         }
         Spacer(Modifier.width(10.dp))
         OwnTVButton(stringResource(R.string.common_delete), onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
@@ -295,9 +295,9 @@ private fun folderCrumb(filePath: String?, separator: String): String? {
 private fun StatusLine(d: DownloadEntity) {
     val colors = OwnTVTheme.colors
     when (d.status) {
-        DownloadStatus.COMPLETED -> Text(stringResource(R.string.phase1_downloads_completed, sizeMb(d.totalBytes, stringResource(R.string.phase1_downloads_unknown_size))), style = MaterialTheme.typography.bodySmall, color = colors.primary, fontWeight = FontWeight.SemiBold)
-        DownloadStatus.FAILED -> Text(stringResource(R.string.phase1_downloads_failed), style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
-        DownloadStatus.QUEUED -> Text(stringResource(R.string.phase1_downloads_queued), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+        DownloadStatus.COMPLETED -> Text(stringResource(R.string.content_downloads_completed, sizeMb(d.totalBytes, stringResource(R.string.content_downloads_unknown_size))), style = MaterialTheme.typography.bodySmall, color = colors.primary, fontWeight = FontWeight.SemiBold)
+        DownloadStatus.FAILED -> Text(stringResource(R.string.content_downloads_failure_message), style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
+        DownloadStatus.QUEUED -> Text(stringResource(R.string.content_downloads_queued), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
         else -> { // RUNNING / PAUSED
             val frac = if (d.totalBytes > 0) (d.downloadedBytes.toFloat() / d.totalBytes).coerceIn(0f, 1f) else 0f
             Column {
@@ -306,8 +306,8 @@ private fun StatusLine(d: DownloadEntity) {
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    if (d.totalBytes > 0) stringResource(R.string.phase1_downloads_progress, (frac * 100).toInt(), sizeMb(d.downloadedBytes, stringResource(R.string.phase1_downloads_unknown_size)), sizeMb(d.totalBytes, stringResource(R.string.phase1_downloads_unknown_size)))
-                    else stringResource(R.string.phase1_downloads_progress_unknown, sizeMb(d.downloadedBytes, stringResource(R.string.phase1_downloads_unknown_size))),
+                    if (d.totalBytes > 0) stringResource(R.string.content_downloads_progress, (frac * 100).toInt(), sizeMb(d.downloadedBytes, stringResource(R.string.content_downloads_unknown_size)), sizeMb(d.totalBytes, stringResource(R.string.content_downloads_unknown_size)))
+                    else stringResource(R.string.content_downloads_progress_unknown, sizeMb(d.downloadedBytes, stringResource(R.string.content_downloads_unknown_size))),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                 )
             }
