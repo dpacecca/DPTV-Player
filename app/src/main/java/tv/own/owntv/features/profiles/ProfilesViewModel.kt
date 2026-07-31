@@ -39,6 +39,12 @@ class ProfilesViewModel(
         .map<List<ProfileEntity>, ProfileLoadState> { ProfileLoadState.Loaded(it) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ProfileLoadState.Loading)
 
+    /** The persisted profile currently shown by the app. Settings screens use this to distinguish
+     * deleting the active profile (which must invalidate the gate session) from deleting an
+     * unrelated profile (which must leave the current session alone). */
+    val activeProfileId: StateFlow<Long> = settings.activeProfileId
+        .stateIn(viewModelScope, SharingStarted.Eagerly, -1L)
+
     /** Compatibility projection for feature screens that only render an already-loaded list. */
     val profiles: StateFlow<List<ProfileEntity>> = profileState
         .map { (it as? ProfileLoadState.Loaded)?.profiles.orEmpty() }

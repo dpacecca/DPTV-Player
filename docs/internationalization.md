@@ -563,7 +563,7 @@ Use configuration-only session retention:
 - **No `rememberSaveable`**.
 - Store `authenticatedProfileId: Long?`, never a global passed/not-passed boolean.
 - Require that id to equal the current active profile whenever a gate is required.
-- Clear it before profile deletion/switching and invalidate it on every observed active-id change.
+- Clear it before deleting the active profile or switching profiles, and invalidate it on every observed active-id change.
 - Resets after process death and after a genuine cold start.
 
 ```kotlin

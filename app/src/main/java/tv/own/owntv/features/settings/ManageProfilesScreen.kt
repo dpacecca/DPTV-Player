@@ -57,6 +57,7 @@ fun ManageProfilesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: ProfilesViewModel = koinViewModel()
     val gateSession: ProfileGateSessionViewModel = koinViewModel()
     val profiles by vm.profiles.collectAsStateWithLifecycle()
+    val activeProfileId by vm.activeProfileId.collectAsStateWithLifecycle()
     val defaultProfileName = stringResource(R.string.profiles_default_name)
     val colors = OwnTVTheme.colors
 
@@ -172,9 +173,10 @@ fun ManageProfilesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             title = stringResource(R.string.profiles_delete_title, p.name),
             message = stringResource(R.string.profiles_delete_message),
             onConfirm = {
-                // Invalidate before deleting any profile. If the active profile is removed, the
-                // repository may immediately select another (possibly PIN-locked) profile.
-                gateSession.invalidateAuthentication()
+                // Only an active-profile deletion changes the identity authenticated by this
+                // Activity. Deleting an unrelated profile must not reopen the gate for the profile
+                // the user is still viewing.
+                gateSession.invalidateIfDeletingActiveProfile(p.id, activeProfileId)
                 vm.delete(p)
                 confirmDelete = null
             },

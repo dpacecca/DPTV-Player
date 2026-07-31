@@ -59,6 +59,14 @@ class ProfileGateSessionViewModel : ViewModel() {
     }
 
     /**
+     * Clear authentication only when the profile being deleted is the active profile. Deleting an
+     * unrelated profile must not reopen the gate for the profile that remains on screen.
+     */
+    fun invalidateIfDeletingActiveProfile(deletedProfileId: Long, activeProfileId: Long?) {
+        if (deletedProfileId == activeProfileId) invalidateAuthentication()
+    }
+
+    /**
      * Defensive binding for asynchronous active-profile changes. A stale authentication can never
      * authorize a newly selected profile, even during the brief DataStore/Room transition.
      */

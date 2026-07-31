@@ -71,6 +71,36 @@ class ProfileGateSessionViewModelTest {
     }
 
     @Test
+    fun `deleting an unrelated profile does not invalidate authentication`() {
+        val vm = ProfileGateSessionViewModel()
+        vm.authenticateProfile(10L)
+
+        vm.invalidateIfDeletingActiveProfile(deletedProfileId = 20L, activeProfileId = 10L)
+
+        assertEquals(10L, vm.authenticatedProfileId)
+    }
+
+    @Test
+    fun `deleting the active profile invalidates authentication`() {
+        val vm = ProfileGateSessionViewModel()
+        vm.authenticateProfile(10L)
+
+        vm.invalidateIfDeletingActiveProfile(deletedProfileId = 10L, activeProfileId = 10L)
+
+        assertNull(vm.authenticatedProfileId)
+    }
+
+    @Test
+    fun `deleting while active profile is still loading does not invalidate authentication`() {
+        val vm = ProfileGateSessionViewModel()
+        vm.authenticateProfile(10L)
+
+        vm.invalidateIfDeletingActiveProfile(deletedProfileId = 10L, activeProfileId = null)
+
+        assertEquals(10L, vm.authenticatedProfileId)
+    }
+
+    @Test
     fun `authentication is invalidated when the active profile changes but not while id is loading`() {
         val vm = ProfileGateSessionViewModel()
         vm.authenticateProfile(10L)
