@@ -55,7 +55,10 @@ import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.CategoryEntity
 import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
+import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
+import tv.own.owntv.core.database.entity.playStreamUrl
+import tv.own.owntv.core.database.entity.resolveStreamUrl
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.util.throttleLatest
@@ -481,8 +484,9 @@ class LiveViewModel(
         if (_liveOnExo.value) return
         val source = sourceById[channel.sourceId]
         if (streamUrlResolver.needsResolve(source)) { playPreviewStalker(channel, source!!); return }
+        val targetUrl = channel.playStreamUrl(source)
         // Already previewing this channel (e.g. re-focus)? Just re-apply the preview mute, no reload.
-        if (previewEngine.currentUrl == channel.streamUrl &&
+        if (previewEngine.currentUrl == targetUrl &&
             previewEngine.state.value != tv.own.owntv.player.LivePreviewEngine.State.ERROR
         ) {
             previewEngine.setMuted(!livePreviewAudio.value)
@@ -491,7 +495,7 @@ class LiveViewModel(
         stalkerPreviewCmd = null
         setStalkerReconnect(null) // non-Stalker: URLs are stable, replay on reconnect
         previewEngine.play(
-            channel.streamUrl, muted = !livePreviewAudio.value,
+            targetUrl, muted = !livePreviewAudio.value,
             meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
             userAgent = sourceUaMap[channel.sourceId],
         )
@@ -1013,13 +1017,16 @@ class LiveViewModel(
      *  stick on a black screen for HLS). */
     fun ensurePlaying(channel: ChannelEntity) {
         cancelPendingZapRebuild()
-        playChannel(channel)
+        viewModelScope.launch { playChannel(channel) }
     }
+
+    private suspend fun getSource(sourceId: Long): tv.own.owntv.core.database.entity.SourceEntity? =
+        sourceById[sourceId] ?: sourceDao.getById(sourceId)
 
     /** Internal playback: the canonical ExoPlayer / mpv / Stalker / history side-effects for a
      *  channel. Direct-tune's background rebuild path calls this without [cancelPendingZapRebuild]
      *  so the in-flight rebuild it owns isn't killed by its own play. */
-    private fun playChannel(channel: ChannelEntity) {
+    private suspend fun playChannel(channel: ChannelEntity) {
         // Live TV set to play externally: hand the channel over instead of tuning an in-app engine.
         // History is still recorded, so the channel shows up in History/Recently watched either way.
         if (externalPlayerOn.value) { playExternal(channel); return }
@@ -1043,7 +1050,7 @@ class LiveViewModel(
         tv.own.owntv.core.player.enginePinKey(channel.sourceId, "LIVE", channel.remoteId)
 
     /** Whether [channel] is pinned to mpv, honouring pins written by older builds under the stream
-     *  URL. A legacy hit is rewritten under the stable key so it survives the next Stalker resolve. */
+     *  URL. A legacy hit is rewritten under the stable key so it survives the next re-sync/Stalker resolve. */
     private fun isPinnedToMpv(channel: ChannelEntity): Boolean {
         val pins = forceMpvUrls.value
         val key = mpvPinKey(channel)
@@ -1053,12 +1060,13 @@ class LiveViewModel(
         return true
     }
 
-    private fun startOnExo(channel: ChannelEntity) {
+    private suspend fun startOnExo(channel: ChannelEntity) {
         _liveOnExo.value = true
         player.stop() // free mpv (decoder/connection) if a previous full-screen used it
-        val source = sourceById[channel.sourceId]
+        val source = getSource(channel.sourceId)
         if (streamUrlResolver.needsResolve(source)) { startOnExoStalker(channel, source!!); return }
-        if (previewEngine.currentUrl == channel.streamUrl) {
+        val targetUrl = channel.playStreamUrl(source)
+        if (previewEngine.currentUrl == targetUrl) {
             previewEngine.setMuted(false) // promote — instant if already PLAYING, otherwise keeps loading
         } else {
             // In-player zap to a DIFFERENT channel (CH+/-, D-pad, channel-list overlay): if we're leaving a
@@ -1068,9 +1076,9 @@ class LiveViewModel(
             stalkerPreviewCmd = null
             setStalkerReconnect(null) // non-Stalker: URLs are stable, replay on reconnect
             previewEngine.play(
-                channel.streamUrl, muted = false,
+                targetUrl, muted = false,
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
-                userAgent = sourceUaMap[channel.sourceId],
+                userAgent = sourceUaMap[channel.sourceId] ?: source?.userAgent,
             )
         }
         watchExoOutcome(channel)
@@ -1204,13 +1212,14 @@ class LiveViewModel(
             val source = sourceById[channel.sourceId] ?: sourceDao.getById(channel.sourceId)
             // Stalker stores the portal cmd — resolve it to a real URL (create_link) before mpv plays.
             val isStalker = streamUrlResolver.needsResolve(source)
-            val url = if (isStalker) {
+            val rawUrl = if (isStalker) {
                 runCatching { streamUrlResolver.resolve(source!!, channel.streamUrl) }
                     .onFailure { Log.w(ENGINE_TAG, "stalker mpv resolve failed '${channel.name}'", it) }
                     .getOrNull() ?: return
             } else {
                 channel.streamUrl
             }
+            val url = resolveStreamUrl(rawUrl, source)
             if (_previewChannel.value?.streamUrl != channel.streamUrl) return // zapped away while resolving
             // C-3: mpv is now the active engine — install/clear the reconnect provider to match.
             setStalkerReconnect(if (isStalker) channel.streamUrl else null)
@@ -1405,8 +1414,14 @@ class LiveViewModel(
     private suspend fun buildLiveTimeshiftUrl(ch: ChannelEntity, source: tv.own.owntv.core.database.entity.SourceEntity, startMs: Long, offsetSec: Int, tz: java.util.TimeZone): String? {
         val durationMin = (offsetSec / 60 + 5).coerceAtLeast(1) // rewound window + buffer to play up to live
         return when (source.type) {
-            SourceType.XTREAM -> ch.remoteId?.let { xtreamClient.timeshiftUrl(source, it, startMs, durationMin, tz) }
-            SourceType.M3U -> CatchupUrl.forM3u(ch.streamUrl, null, ch.catchupSource, startMs, startMs + durationMin * 60_000L)
+            SourceType.XTREAM -> ch.remoteId?.let {
+                val ext = if (source.hlsSupported && source.preferHls) "m3u8" else "ts"
+                xtreamClient.timeshiftUrl(source, it, startMs, durationMin, tz, ext)
+            }
+            SourceType.M3U -> {
+                val rawUrl = CatchupUrl.forM3u(ch.streamUrl, null, ch.catchupSource, startMs, startMs + durationMin * 60_000L)
+                rawUrl?.let { resolveStreamUrl(it, source) }
+            }
             // Stalker rewind = the same per-play archive create_link as catch-up (Phase E §5.6).
             SourceType.STALKER -> ch.remoteId?.let { rid ->
                 runCatching { streamUrlResolver.resolveCatchup(source, rid, startMs, startMs + durationMin * 60_000L) }

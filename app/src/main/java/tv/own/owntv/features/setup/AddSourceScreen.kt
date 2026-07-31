@@ -86,6 +86,7 @@ fun AddSourceScreen(
         movies: SyncScopeChoice,
         series: SyncScopeChoice,
         isDefault: Boolean,
+        preferHls: Boolean,
     ) -> Unit,
     onStartM3u: (name: String, url: String, userAgent: String, epgUrl: String, autoRefresh: PlaylistAutoRefresh, isDefault: Boolean) -> Unit,
     // The last submission from the Remote companion screen, retained as a StateFlow so it survives the
@@ -138,6 +139,7 @@ fun AddSourceScreen(
     var userAgent by remember(initial) { mutableStateOf(initial?.userAgent ?: "") }
     var autoRefresh by remember(initialAutoRefresh) { mutableStateOf(initialAutoRefresh) }
     var isDefault by remember(initialIsDefault) { mutableStateOf(initialIsDefault) }
+    var preferHls by remember(initial) { mutableStateOf(initial?.preferHls == true) }
     // Edit: On(=Now)/Off from persisted flags. Add: default all Now for Xtream; Stalker defaults
     // Live Now + Movies/Series Later when the kind switches (see LaunchedEffect below).
     var syncLive by remember(initial) {
@@ -332,6 +334,15 @@ fun AddSourceScreen(
                 ) { isDefault = it }
             }
 
+            if (kind == SourceKind.XTREAM && (initial?.hlsSupported == true)) {
+                Spacer(Modifier.height(16.dp))
+                ToggleRow(
+                    label = "Prefer HLS for Live TV",
+                    desc = "Prioritize HLS streams over MPEG-TS for Live TV & Catch-up. Automatically falls back to MPEG-TS if HLS fails.",
+                    checked = preferHls,
+                ) { preferHls = it }
+            }
+
             if (showContentToggles) {
                 Spacer(Modifier.height(20.dp))
                 Text("What to sync", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
@@ -361,7 +372,7 @@ fun AddSourceScreen(
                     label = if (editing) "Save" else "Start Import",
                     onClick = {
                         when (kind) {
-                            SourceKind.XTREAM -> onStartXtream(name, server, username, password, userAgent, epgUrl, autoRefresh, syncLive, syncMovies, syncSeries, isDefault)
+                            SourceKind.XTREAM -> onStartXtream(name, server, username, password, userAgent, epgUrl, autoRefresh, syncLive, syncMovies, syncSeries, isDefault, preferHls)
                             SourceKind.M3U -> onStartM3u(name, m3uUrl, userAgent, epgUrl, autoRefresh, isDefault)
                             SourceKind.STALKER -> onStartStalker?.invoke(
                                 name, portalUrl, mac, userAgent, autoRefresh, isDefault, syncLive, syncMovies, syncSeries,

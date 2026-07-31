@@ -154,12 +154,13 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 initial = src,
                 initialAutoRefresh = playlistAutoRefresh[src.id] ?: PlaylistAutoRefresh.OFF,
                 initialIsDefault = src.id == defaultId,
-                onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault ->
+                onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault, preferHls ->
                     vm.updateSource(
                         src.id, n, server, u, p, ua, epg, autoRefresh, isDefault,
                         syncLive = live != tv.own.owntv.core.sync.SyncScopeChoice.Off,
                         syncMovies = movies != tv.own.owntv.core.sync.SyncScopeChoice.Off,
                         syncSeries = series != tv.own.owntv.core.sync.SyncScopeChoice.Off,
+                        preferHls = preferHls,
                     )
                     editingSource = null
                 },
@@ -199,7 +200,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         modifier = Modifier,
                     )
                     AddMode.MANUAL -> AddSourceScreen(
-                        onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault ->
+                        onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault, _ ->
                             vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault)
                         },
                         onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.addM3u(n, url, ua, epg, autoRefresh, isDefault) },
