@@ -256,7 +256,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             OwnTVButton(
                 label = stringResource(
                     R.string.settings_customize_new_categories_button,
-                    stringResource(if (hideNewCategories) R.string.settings_customize_hide else R.string.settings_customize_show),
+                    stringResource(if (hideNewCategories) R.string.settings_customize_behavior_hide else R.string.settings_customize_behavior_show),
                 ),
                 onClick = { dialogReturn = newCategoriesFocus; showNewCatPicker = true },
                 style = OwnTVButtonStyle.SECONDARY,
@@ -475,7 +475,10 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     if (showNewCatPicker) {
         PickerDialog(
             title = stringResource(R.string.settings_customize_new_category_behavior),
-            options = listOf("SHOW" to stringResource(R.string.settings_customize_show), "HIDE" to stringResource(R.string.settings_customize_hide)),
+            options = listOf(
+                "SHOW" to stringResource(R.string.settings_customize_behavior_show),
+                "HIDE" to stringResource(R.string.settings_customize_behavior_hide),
+            ),
             selected = if (hideNewCategories) "HIDE" else "SHOW",
             onSelect = { value -> vm.setHideNewCategories(value == "HIDE"); showNewCatPicker = false },
             onDismiss = { showNewCatPicker = false },
