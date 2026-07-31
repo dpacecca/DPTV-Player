@@ -334,11 +334,16 @@ fun AddSourceScreen(
                 ) { isDefault = it }
             }
 
-            if (kind == SourceKind.XTREAM && (initial?.hlsSupported == true)) {
+            // Shown for every Xtream source, on Add (incl. the setup wizard and the Remote hand-off)
+            // as well as Edit: `hlsSupported` is only known AFTER the first sync has read
+            // user_info.allowed_output_formats, so gating the row on it would hide the option on a
+            // fresh install entirely. Detection only refines the wording below.
+            if (kind == SourceKind.XTREAM) {
                 Spacer(Modifier.height(16.dp))
                 ToggleRow(
                     label = "Prefer HLS for Live TV",
-                    desc = "Prioritize HLS streams over MPEG-TS for Live TV & Catch-up. Automatically falls back to MPEG-TS if HLS fails.",
+                    desc = "Prioritize HLS (.m3u8) over MPEG-TS for Live TV & Catch-up. Falls back to MPEG-TS if HLS fails." +
+                        if (initial?.hlsSupported == true) " Your provider reports HLS support." else "",
                     checked = preferHls,
                 ) { preferHls = it }
             }

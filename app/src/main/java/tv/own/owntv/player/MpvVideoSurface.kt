@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -140,19 +141,25 @@ fun ExoPreviewSurface(
         val aspect by engine.videoAspect.collectAsStateWithLifecycle()
         val videoSize by engine.videoSize.collectAsStateWithLifecycle()
         val zoom by engine.zoomMode.collectAsStateWithLifecycle()
-        AndroidView(
-            modifier = Modifier.videoZoom(zoom, aspect, videoSize, maxWidth, maxHeight),
-            factory = { ctx ->
-                SurfaceView(ctx).apply {
-                    holder.addCallback(object : SurfaceHolder.Callback {
-                        override fun surfaceCreated(holder: SurfaceHolder) = engine.setSurface(holder.surface)
-                        override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
-                        override fun surfaceDestroyed(holder: SurfaceHolder) = engine.setSurface(null)
-                    })
-                }
-            },
-            update = { it.keepScreenOn = keepAwake },
-        )
+        // Keyed on the engine's surface generation: when it releases a 4K decoder it bumps the counter,
+        // which drops this SurfaceView and builds a new one. Some hardware decoders only ever accept one
+        // 4K codec per Surface — see LivePreviewEngine.recreateSurface.
+        val surfaceGeneration by engine.surfaceGeneration.collectAsStateWithLifecycle()
+        key(surfaceGeneration) {
+            AndroidView(
+                modifier = Modifier.videoZoom(zoom, aspect, videoSize, maxWidth, maxHeight),
+                factory = { ctx ->
+                    SurfaceView(ctx).apply {
+                        holder.addCallback(object : SurfaceHolder.Callback {
+                            override fun surfaceCreated(holder: SurfaceHolder) = engine.setSurface(holder.surface)
+                            override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
+                            override fun surfaceDestroyed(holder: SurfaceHolder) = engine.detachSurface(holder.surface)
+                        })
+                    }
+                },
+                update = { it.keepScreenOn = keepAwake },
+            )
+        }
         // Subtitle overlay — mounted ONLY while subs are on, so 4K live keeps its direct hardware-overlay path.
         val subOn by engine.subtitleOn.collectAsStateWithLifecycle()
         val cues by engine.cues.collectAsStateWithLifecycle()

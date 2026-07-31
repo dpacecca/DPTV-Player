@@ -9,11 +9,12 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
-## v4.1.5 — unreleased
+## v4.1.5 — 2026-07-31
 
 ### ✨ New features
 
 - **💬 Subtitle appearance — size, colour, position and background, each optional (#96)**
+- **📶 Prefer HLS for Live TV — per source, with format auto-detection** (community PR #97 by @codeVerine)
 - **🆕 Date added — sort Movies and Series by what arrived most recently** (community PR #94 by @cotol1985)
 - **↕️ Series sorting — season and episode order, set per show** (community PR #94 by @cotol1985)
 - **📺 Channel numbers — type a number on the remote to tune in Live TV**
@@ -46,6 +47,8 @@
 - **Interrupted restores and unreadable backups were silent**
 - **Live TV gave up after a single hiccup, and stopped retrying too early**
 - **Live TV did not resume by itself after a network outage**
+- **Raw MPEG-TS channels dropped the connection every 10–15 seconds**
+- **4K channels fell back to compatibility mode when tuning from one to the next**
 - **Audio-only content showed a false playback error**
 - **Compatibility mode and the engine choice did not stick on Stalker portals**
 - **Short clips were marked watched at position 0**

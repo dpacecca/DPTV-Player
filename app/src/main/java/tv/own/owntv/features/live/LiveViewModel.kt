@@ -1039,9 +1039,18 @@ class LiveViewModel(
         val pinned = isPinnedToMpv(channel)
         // A new tune clears any "user chose ExoPlayer" override — that choice is per channel.
         if (exoChosenByUser != channel.streamUrl) exoChosenByUser = null
-        android.util.Log.i(ENGINE_TAG, "tune '${channel.name}' -> ${if (pinned) "mpv (pinned)" else "exoplayer"}")
+        engineLog("tune '${channel.name}' -> ${if (pinned) "mpv (pinned)" else "exoplayer"}")
         if (pinned) startOnMpv(channel) else startOnExo(channel)
         recordLiveHistory(channel)
+    }
+
+    /** Live engine routing decisions go to Logcat (unconditionally, so a release build can be diagnosed
+     *  from `adb logcat -s LiveEngine`) and to [LiveDiagnosticsLog]'s ring buffer. A report of "this
+     *  channel starts on mpv but plays fine on ExoPlayer" then carries the reason it was routed there.
+     *  Channel names only — never a stream URL. */
+    private fun engineLog(message: String) {
+        android.util.Log.i(ENGINE_TAG, message)
+        tv.own.owntv.player.LiveDiagnosticsLog.event("engine: $message")
     }
 
     /** P6 — the stable "compatibility mode" pin key for [channel], or null when the row has no
@@ -1112,7 +1121,7 @@ class LiveViewModel(
     }
 
     /** Start [channel] on the full mpv engine (pinned "compatibility" channel, or an ExoPlayer fallback). */
-    private fun startOnMpv(channel: ChannelEntity) { viewModelScope.launch { fallbackToMpv(channel) } }
+    private fun startOnMpv(channel: ChannelEntity) { viewModelScope.launch { fallbackToMpv(channel, "pinned to compatibility mode") } }
 
     /** HUD "compatibility mode" toggle: pin/unpin the current channel to mpv and swap engines live. */
     fun toggleForceMpv() {
@@ -1125,7 +1134,7 @@ class LiveViewModel(
         // runs on mpv while still unpinned, and the old pin-based logic then did nothing on click. Keying off
         // _liveOnExo makes every click flip the live engine, with the pin following the choice.
         val goToMpv = _liveOnExo.value // on Exo now → switch to mpv; on mpv now → switch to Exo
-        android.util.Log.i(ENGINE_TAG, "engine toggle '${channel.name}' -> ${if (goToMpv) "mpv" else "exoplayer"} (currentlyOnExo=${_liveOnExo.value})")
+        engineLog("engine toggle '${channel.name}' -> ${if (goToMpv) "mpv" else "exoplayer"} (currentlyOnExo=${_liveOnExo.value})")
         viewModelScope.launch {
             // Pin to mpv when choosing mpv; unpin when choosing Exo. Write the stable key, and clear
             // any legacy URL-keyed entry too so an un-pin can't leave the old one behind (P6).
@@ -1136,7 +1145,7 @@ class LiveViewModel(
             forceMpvStore.set(key ?: channel.streamUrl, goToMpv)
             if (key != null) forceMpvStore.set(channel.streamUrl, false)
             if (goToMpv) {
-                fallbackToMpv(channel) // ExoPlayer → mpv now
+                fallbackToMpv(channel, "user chose compatibility mode") // ExoPlayer → mpv now
             } else {                    // mpv → ExoPlayer now
                 player.stop()
                 delay(500) // let mpv's decoder/surface release before ExoPlayer takes over
@@ -1175,7 +1184,7 @@ class LiveViewModel(
     private fun watchExoOutcome(channel: ChannelEntity) {
         exoOutcomeJob?.cancel()
         if (exoChosenByUser == channel.streamUrl) {
-            android.util.Log.i(ENGINE_TAG, "auto-fallback disabled for '${channel.name}' — user chose ExoPlayer")
+            engineLog("auto-fallback disabled for '${channel.name}' — user chose ExoPlayer")
             return
         }
         exoOutcomeJob = viewModelScope.launch {
@@ -1185,25 +1194,32 @@ class LiveViewModel(
             // takes it from there, same as the ERROR branch below.
             launch {
                 previewEngine.noVideoDetected.first { it }
-                if (isStill(channel)) fallbackToMpv(channel)
+                if (isStill(channel)) fallbackToMpv(channel, "no video frame rendered (audio plays, no picture)")
             }
             val terminal = previewEngine.state.first {
                 it == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
                     it == tv.own.owntv.player.LivePreviewEngine.State.ERROR
             }
             if (!isStill(channel)) return@launch
-            if (terminal == tv.own.owntv.player.LivePreviewEngine.State.ERROR) { fallbackToMpv(channel); return@launch }
+            if (terminal == tv.own.owntv.player.LivePreviewEngine.State.ERROR) {
+                // onPlayerError assigns _state before _errorInfo, and this collector resumes inline on
+                // Dispatchers.Main.immediate — so yield first, or the detail is always read as null.
+                kotlinx.coroutines.yield()
+                val info = previewEngine.errorInfo.value
+                fallbackToMpv(channel, "ExoPlayer error before first frame: ${info?.raw ?: previewEngine.error.value}")
+                return@launch
+            }
             // PLAYING: give the track list a moment to settle, then route silent (undecodable-audio) streams to mpv.
             delay(300)
-            if (isStill(channel) && previewEngine.audioUnsupported.value) fallbackToMpv(channel)
+            if (isStill(channel) && previewEngine.audioUnsupported.value) fallbackToMpv(channel, "no decodable audio track")
         }
     }
 
     private fun isStill(channel: ChannelEntity) =
         _liveOnExo.value && _previewChannel.value?.streamUrl == channel.streamUrl
 
-    private suspend fun fallbackToMpv(channel: ChannelEntity) {
-        android.util.Log.i(ENGINE_TAG, "starting mpv for '${channel.name}'")
+    private suspend fun fallbackToMpv(channel: ChannelEntity, reason: String) {
+        engineLog("starting mpv for '${channel.name}' — reason=$reason")
         _liveOnExo.value = false            // shell flips to mpv's surface
         stalkerPreviewCmd = null
         previewEngine.stop()
@@ -1415,13 +1431,14 @@ class LiveViewModel(
         val durationMin = (offsetSec / 60 + 5).coerceAtLeast(1) // rewound window + buffer to play up to live
         return when (source.type) {
             SourceType.XTREAM -> ch.remoteId?.let {
-                val ext = if (source.hlsSupported && source.preferHls) "m3u8" else "ts"
+                // Same gate as [resolveStreamUrl]: the user's preference alone. `hlsSupported` is only a
+                // detection hint (panels routinely omit allowed_output_formats), and a wrong guess is
+                // covered by the .m3u8 ⇄ .ts fallback in the player.
+                val ext = if (source.preferHls) "m3u8" else "ts"
                 xtreamClient.timeshiftUrl(source, it, startMs, durationMin, tz, ext)
             }
-            SourceType.M3U -> {
-                val rawUrl = CatchupUrl.forM3u(ch.streamUrl, null, ch.catchupSource, startMs, startMs + durationMin * 60_000L)
-                rawUrl?.let { resolveStreamUrl(it, source) }
-            }
+            // No HLS swap here: [resolveStreamUrl] is Xtream-only, so it would be a no-op on M3U.
+            SourceType.M3U -> CatchupUrl.forM3u(ch.streamUrl, null, ch.catchupSource, startMs, startMs + durationMin * 60_000L)
             // Stalker rewind = the same per-play archive create_link as catch-up (Phase E §5.6).
             SourceType.STALKER -> ch.remoteId?.let { rid ->
                 runCatching { streamUrlResolver.resolveCatchup(source, rid, startMs, startMs + durationMin * 60_000L) }

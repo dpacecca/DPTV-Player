@@ -156,6 +156,7 @@ class SetupViewModel(
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Now,
         series: SyncScopeChoice = SyncScopeChoice.Now,
+        preferHls: Boolean = false,
     ) {
         val enabled = SyncContentTypes.fromChoices(live, movies, series)
         val priority = SyncContentTypes.priorityFromChoices(live, movies, series)
@@ -169,6 +170,7 @@ class SetupViewModel(
                 userAgent = userAgent.trim().takeIf { it.isNotBlank() },
                 epgUrl = epgUrl.trim().takeIf { it.isNotBlank() },
                 syncLive = enabled.live, syncMovies = enabled.movies, syncSeries = enabled.series,
+                preferHls = preferHls,
             )
         }
     }

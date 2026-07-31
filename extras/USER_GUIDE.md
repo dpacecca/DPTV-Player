@@ -237,6 +237,12 @@ or **narrow the whole app to just one**.
   Picking **ExoPlayer** on a channel that had auto‑switched to mpv is treated as your decision: the automatic
   fallback stops interfering with that channel until you tune elsewhere, so it can no longer flip straight back
   to mpv. If ExoPlayer genuinely can't play it, press the toggle again to return to mpv.
+- 📶 **Prefer HLS for Live TV (Xtream only)**: Xtream panels can serve a live channel either as raw MPEG‑TS or
+  as an HLS playlist. OwnTV asks for **MPEG‑TS**, which is what most panels serve best — but if your provider's
+  live channels are unstable, turn on **Prefer HLS for Live TV** when adding the source, or later in
+  **Settings → Manage sources → (your source) → Edit**. It's stored **per source**, so with two providers you
+  can prefer HLS on one and leave the other alone. Catch‑up and timeshift follow the same choice. The ⓘ
+  **Stream info** overlay has a **Format** row showing which one you're actually receiving.
 - 🔇 **Audio with no picture**: if a channel ever plays sound but shows a black screen, OwnTV now detects this
   automatically and switches engines for you (briefly shows a loading spinner). If neither engine can render
   video for that stream, you'll see a clear on‑screen message instead of a silent black screen.
@@ -755,6 +761,8 @@ http://your-server/series/st-s02e01.mkv
 
 - **Long‑press OK** is your friend — favourites, rename, hide, match EPG and catch‑up all live there.
 - A channel buffering or showing artifacts on 4K? **MPV/EXO toggle → compatibility mode** usually fixes it.
+- Live channels from one provider glitching every few seconds while another provider is fine? Try
+  **Prefer HLS for Live TV** on that source — some Xtream panels are far steadier over HLS.
 - Audio out of sync on a VOD? **Audio → A/V sync** and nudge ± until lips match.
 - **Guide looks blank when you first open it?** (especially with catch‑up channels) Try: **Settings → EPG** → tap Edit → delete your EPG source(s), then **add them again** and sync fresh. The v4.0.0 update changed how EPG loads, and old cached data needs to be cleared and reimported. Once done, the guide displays immediately.
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.1.5 — unreleased
+## v4.1.5 — 2026-07-31
 
 ### 💬 Subtitle appearance — size, colour, position and background, each optional (#96)
 
@@ -88,6 +88,22 @@
   Player → Live TV**, as a **quick-toggle chip** at the top of Settings, and in settings search. Off hides
   every number and ignores the number keys during playback; your playlist's numbers are untouched, so
   turning it back on restores them immediately.
+
+### 📶 Prefer HLS for Live TV — per source, with format auto-detection (community PR #97 by @codeVerine)
+
+- **Xtream sources have a new "Prefer HLS for Live TV" option.** Xtream panels can serve a live channel
+  two ways: as a raw MPEG-TS stream, or as an HLS playlist. OwnTV asked for MPEG-TS; some panels are
+  markedly more stable over HLS, and on those the choice is now yours.
+- The option is on the **Add source** screen and in **Edit source**, so you can flip it on an existing
+  playlist without re-adding it, and it is stored **per source** — a setup with two providers can prefer
+  HLS on the one that needs it and leave the other alone.
+- **Nothing changes unless you turn it on.** MPEG-TS stays the default, which is what the great majority
+  of panels serve best.
+- **The ⓘ stream info overlay now shows a `Format` row** — *HLS* or *MPEG-TS* — so you can confirm what
+  you're actually receiving rather than guessing from behaviour.
+- **Catch-up and timeshift follow the source's setting** too, rather than being pinned to one format.
+- The setting is part of the source record, so it survives backup and restore and is applied in remote
+  mode as well.
 
 ### 💾 A proper backup file — `.own`, with your wallpaper inside and real encryption
 
@@ -292,6 +308,12 @@
   now resumes it as soon as the connection is back — no matter how long it was gone.
 - **The error log stopped clearing itself** after an internal player reset, so playback problems can
   actually be diagnosed.
+- **Raw MPEG-TS channels no longer drop the connection every 10–15 seconds.** A live MPEG-TS channel is
+  one long-lived HTTP response, so it is the *gap* between reads that matters, not how much video is
+  buffered — and OwnTV's buffer settings left that socket idle long enough for providers and middleboxes
+  to cut it, producing a glitch every few seconds on channels that stream fine elsewhere. The live buffer
+  now keeps the connection being read often enough to stay open, without holding more memory. HLS
+  channels were never affected, because each segment is its own request.
 
 ### 🎬 Playback fixes
 
@@ -306,6 +328,16 @@
   never marked finished.
 - **4K playback surface handling** and the mpv→ExoPlayer handoff now follow the same timing rules as
   every other engine switch, which removes a class of black-screen-after-switch cases on Realtek boxes.
+- **4K channels no longer fall back to "compatibility mode" when you tune from one to the next.** Moving
+  between 4K live channels dropped the second one to mpv with a decoder error, even though the very same
+  channel played perfectly on ExoPlayer if you pressed the engine toggle. Some TV chipsets — Realtek
+  boxes in particular — accept only **one** 4K decoder per video surface: releasing the first channel's
+  decoder leaves the surface unusable, so the next channel's decoder starts and then dies about a second
+  later. Toggling to mpv and back happened to rebuild the surface, which is why that always "fixed" it.
+  Leaving a 4K channel now rebuilds the surface along with the decoder, so the next 4K channel gets a
+  clean one and plays on ExoPlayer directly. Waiting longer between channels never helped and this is not
+  a delay — a failing tune and a working one were within 30 ms of each other. Channels below 4K are
+  untouched and zap exactly as before.
 - **Subtitle timing offset no longer freezes the UI** — the shifted subtitle file is generated in the
   background and cached.
 - **Switching engine during a catch-up recording no longer jumps to the live programme.** The player

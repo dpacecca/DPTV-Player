@@ -200,8 +200,8 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         modifier = Modifier,
                     )
                     AddMode.MANUAL -> AddSourceScreen(
-                        onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault, _ ->
-                            vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault)
+                        onStartXtream = { n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault, preferHls ->
+                            vm.addXtream(n, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault, preferHls)
                         },
                         onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.addM3u(n, url, ua, epg, autoRefresh, isDefault) },
                         onStartStalker = { n, url, mac, ua, autoRefresh, isDefault, live, movies, series ->

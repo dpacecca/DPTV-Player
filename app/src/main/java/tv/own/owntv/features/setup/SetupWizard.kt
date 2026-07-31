@@ -114,8 +114,8 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
                 onBack = { vm.stopRemoteListener(); step = Step.ADD_SOURCE_CHOOSER },
             )
             Step.ADD_SOURCE -> AddSourceScreen(
-                onStartXtream = { name, server, user, pass, ua, epg, refresh, live, movies, series, _, _ ->
-                    vm.startXtream(name, server, user, pass, ua, epg, refresh, live, movies, series)
+                onStartXtream = { name, server, user, pass, ua, epg, refresh, live, movies, series, _, preferHls ->
+                    vm.startXtream(name, server, user, pass, ua, epg, refresh, live, movies, series, preferHls)
                     importOrigin = Step.ADD_SOURCE
                     step = Step.IMPORTING
                 },
