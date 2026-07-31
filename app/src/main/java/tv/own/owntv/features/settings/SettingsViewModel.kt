@@ -609,6 +609,7 @@ class SettingsViewModel(
         syncLive: Boolean = true,
         syncMovies: Boolean = true,
         syncSeries: Boolean = true,
+        preferHls: Boolean = false,
     ) {
         viewModelScope.launch {
             val existing = sourceDao.getById(id) ?: return@launch
@@ -631,6 +632,7 @@ class SettingsViewModel(
                 syncLive = syncLive,
                 syncMovies = syncMovies,
                 syncSeries = syncSeries,
+                preferHls = preferHls,
             )
             sourceRepository.updateSource(updated)
             settings.setPlaylistAutoRefresh(id, autoRefresh)
@@ -654,6 +656,12 @@ class SettingsViewModel(
             }
             // Hidden sections must drop from the Android TV launcher immediately.
             runCatching { refreshActiveTvHome(allowBrowsableRequest = true) }
+        }
+    }
+
+    fun togglePreferHls(sourceId: Long, preferHls: Boolean) {
+        viewModelScope.launch {
+            sourceDao.updatePreferHls(sourceId, preferHls)
         }
     }
 
