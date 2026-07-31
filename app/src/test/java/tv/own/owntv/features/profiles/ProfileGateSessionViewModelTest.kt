@@ -1,6 +1,8 @@
 package tv.own.owntv.features.profiles
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -14,37 +16,37 @@ import org.junit.Test
 class ProfileGateSessionViewModelTest {
 
     @Test
-    fun `gate starts unauthenticated`() {
+    fun `gate starts without an authenticated profile`() {
         val vm = ProfileGateSessionViewModel()
-        assertFalse(vm.gatePassed)
+        assertNull(vm.authenticatedProfileId)
         assertFalse(vm.addingProfile)
         assertFalse(vm.switchProfileRequested)
     }
 
     @Test
-    fun `markGatePassed authenticates and clears a pending switch`() {
+    fun `authentication is recorded for the selected profile and clears a pending switch`() {
         val vm = ProfileGateSessionViewModel()
         vm.requestSwitchProfile()
-        vm.markGatePassed()
-        assertTrue(vm.gatePassed)
+        vm.authenticateProfile(42L)
+        assertEquals(42L, vm.authenticatedProfileId)
         assertFalse(vm.switchProfileRequested)
     }
 
     @Test
-    fun `requestSwitchProfile drops past the gate and forces it open for a single unpinned profile`() {
+    fun `requestSwitchProfile clears authentication and forces the chooser open`() {
         val vm = ProfileGateSessionViewModel()
-        vm.markGatePassed()
+        vm.authenticateProfile(42L)
         vm.requestSwitchProfile()
-        assertFalse(vm.gatePassed)
+        assertNull(vm.authenticatedProfileId)
         assertTrue(vm.switchProfileRequested)
     }
 
     @Test
-    fun `cancelSwitchProfileRequest returns past the gate`() {
+    fun `cancelSwitchProfileRequest restores only the unchanged active profile`() {
         val vm = ProfileGateSessionViewModel()
         vm.requestSwitchProfile()
-        vm.cancelSwitchProfileRequest()
-        assertTrue(vm.gatePassed)
+        vm.cancelSwitchProfileRequest(42L)
+        assertEquals(42L, vm.authenticatedProfileId)
         assertFalse(vm.switchProfileRequested)
     }
 
@@ -56,15 +58,25 @@ class ProfileGateSessionViewModelTest {
         assertFalse(vm.switchProfileRequested)
         vm.cancelAddingProfile()
         assertFalse(vm.addingProfile)
-        assertFalse(vm.gatePassed)
+        assertNull(vm.authenticatedProfileId)
     }
 
     @Test
     fun `completing add-profile onboarding authenticates as the new profile`() {
         val vm = ProfileGateSessionViewModel()
         vm.startAddingProfile()
-        vm.completeAddingProfile()
+        vm.completeAddingProfile(84L)
         assertFalse(vm.addingProfile)
-        assertTrue(vm.gatePassed)
+        assertEquals(84L, vm.authenticatedProfileId)
+    }
+
+    @Test
+    fun `authentication is invalidated when the active profile changes but not while id is loading`() {
+        val vm = ProfileGateSessionViewModel()
+        vm.authenticateProfile(10L)
+        vm.invalidateIfNotProfile(null)
+        assertEquals(10L, vm.authenticatedProfileId)
+        vm.invalidateIfNotProfile(20L)
+        assertNull(vm.authenticatedProfileId)
     }
 }

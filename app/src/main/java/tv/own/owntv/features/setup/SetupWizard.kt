@@ -66,10 +66,11 @@ private enum class Step { WELCOME, DISCLAIMER, SETUP_CHOICE, CREATE_PROFILE, ADD
 
 /**
  * Onboarding for one profile. [firstRun] shows the welcome/disclaimer; otherwise it starts at profile
- * creation (used by "Add profile"). [onDone] enters the app; [onCancel] backs out (to the gate).
+ * creation (used by "Add profile"). [onDone] receives the newly active profile id and enters the
+ * app; [onCancel] backs out (to the gate).
  */
 @Composable
-fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modifier: Modifier = Modifier) {
+fun Onboarding(firstRun: Boolean, onDone: (Long?) -> Unit, onCancel: () -> Unit, modifier: Modifier = Modifier) {
     val vm: SetupViewModel = koinViewModel()
     val defaultProfileName = stringResource(R.string.setup_default_profile)
     val defaultIptvName = stringResource(R.string.setup_default_iptv)
@@ -169,13 +170,13 @@ fun Onboarding(firstRun: Boolean, onDone: () -> Unit, onCancel: () -> Unit, modi
                 onStop = { vm.stopRemoteRestore() },
                 // An uploaded file starts the restore; the state-driven IMPORT_BACKUP screen shows
                 // progress, the password prompt, or the result from here on.
-                onBackupReceived = { file -> vm.importBackup(file) { onDone() }; step = Step.IMPORT_BACKUP },
+                onBackupReceived = { file -> vm.importBackup(file, onDone); step = Step.IMPORT_BACKUP },
                 onBack = { vm.stopRemoteRestore(); step = Step.IMPORT_BACKUP_CHOOSER },
             )
             Step.IMPORT_BACKUP -> ImportBackupScreen(
                 state = importState,
-                onPick = { file -> vm.importBackup(file) { onDone() } }, // restore activates a profile itself
-                onPassword = { file, pass -> vm.restoreWithPassword(file, pass) { onDone() } },
+                onPick = { file -> vm.importBackup(file, onDone) }, // restore activates a profile itself
+                onPassword = { file, pass -> vm.restoreWithPassword(file, pass, onDone) },
                 onBack = { vm.reset(); step = backupOrigin },
             )
         }

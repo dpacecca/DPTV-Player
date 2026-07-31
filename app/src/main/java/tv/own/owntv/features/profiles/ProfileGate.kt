@@ -42,10 +42,11 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
  * Phase 6.5 — the "Who's watching?" launch gate. Shown when more than one profile exists. Picking a
- * profile makes it active (and prompts for a PIN if it's locked); [onEnter] proceeds into the shell.
+ * profile makes it active (and prompts for a PIN if it's locked); [onEnter] records the selected
+ * profile id and proceeds into the shell.
  */
 @Composable
-fun ProfileGate(onEnter: () -> Unit, onAddProfile: () -> Unit, modifier: Modifier = Modifier) {
+fun ProfileGate(onEnter: (Long) -> Unit, onAddProfile: () -> Unit, modifier: Modifier = Modifier) {
     val vm: ProfilesViewModel = koinViewModel()
     val profiles by vm.profiles.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
@@ -59,7 +60,12 @@ fun ProfileGate(onEnter: () -> Unit, onAddProfile: () -> Unit, modifier: Modifie
     }
 
     fun choose(p: ProfileEntity) {
-        if (p.pinHash != null) { pinError = false; pinFor = p } else { vm.switchTo(p, onEnter) }
+        if (p.pinHash != null) {
+            pinError = false
+            pinFor = p
+        } else {
+            vm.switchTo(p) { onEnter(p.id) }
+        }
     }
 
     Box(
@@ -89,7 +95,9 @@ fun ProfileGate(onEnter: () -> Unit, onAddProfile: () -> Unit, modifier: Modifie
         PinDialog(
             title = if (pinError) stringResource(R.string.profiles_wrong_pin) else stringResource(R.string.profiles_enter_pin, p.name),
             onSubmit = { pin ->
-                if (vm.verifyPin(p, pin)) { vm.switchTo(p, onEnter) } else pinError = true
+                if (vm.verifyPin(p, pin)) {
+                    vm.switchTo(p) { onEnter(p.id) }
+                } else pinError = true
             },
             onDismiss = { pinFor = null },
         )

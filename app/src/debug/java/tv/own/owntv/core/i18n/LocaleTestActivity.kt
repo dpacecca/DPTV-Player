@@ -7,7 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.platform.LocalContext
 
-/** Host used to verify that the actual Compose LocalContext preserves Activity semantics. */
+/** Debug-only host used to verify that Compose LocalContext preserves Activity semantics. */
 class LocaleTestActivity : ComponentActivity() {
     @Volatile
     var localizedContext: Context? = null

@@ -550,45 +550,43 @@ Nothing moves to resources yet. This phase makes the runtime, the vocabulary and
 
 - `player/SubtitleShift.kt:43` and `:60` ⟨verify⟩ - `"%02d:%02d:%02d%c%03d".format(...)` and `"%d:%02d:%02d.%02d".format(...)` pass no `Locale`, so Kotlin's extension uses `Locale.getDefault()`. Java's `Formatter` localises `%d` digits, so on an Arabic, Persian or Nepali device the shifted SRT/ASS file is **written to disk with Arabic-Indic or Devanagari digits** and becomes unparseable. Fix: `String.format(Locale.ROOT, ...)`. This is a live corruption bug today, not a future one.
 - `ui/components/OwnTVButton.kt:79-84` ⟨verify⟩ - the shared button primitive for the entire app is `maxLines = 1, softWrap = false` with no `overflow`, so long labels are **hard-clipped, not ellipsized**. German, Finnish and Russian will hit this on almost every button. Fix: drop `softWrap = false`, add `overflow = TextOverflow.Ellipsis`, let the `Text` take `Modifier.weight(1f, fill = false)` inside its `Row`.
-- `MainActivity.kt:217` - `var gatePassed by remember { mutableStateOf(false) }` is plain `remember`, so **any** Activity recreation drops the user back to the profile gate mid-session. This is live today: a font-scale or dark-mode change from system settings already triggers it, because the manifest declares no `configChanges` on `MainActivity` (`AndroidManifest.xml:85-90` ⟨verify⟩). Unrelated to i18n in cause, but i18n makes recreation far more likely. Fix as described immediately below.
+- `MainActivity.kt` previously kept authentication in plain `remember`, so **any** Activity recreation dropped the user back to the profile gate mid-session. This was live for font-scale/dark-mode changes and became more likely once i18n added deliberate recreation. It is now an Activity-scoped, profile-bound ViewModel state as described immediately below.
 
-#### The profile gate: configuration-only retention, never saveable
+#### The profile gate: configuration-only retention, profile-bound, never saveable
 
-**Do not use `rememberSaveable`.** v1 proposed it and that is unsafe. `rememberSaveable` persists through `onSaveInstanceState`, which means the value is restored after **system-initiated process death**, not only after configuration change. A restored `gatePassed = true` would put the user straight past the profile/PIN gate when Android kills the app in the background and later restores the task, which is precisely the case the gate exists to cover.
+**Do not use `rememberSaveable`.** v1 proposed it and that is unsafe. `rememberSaveable` persists through `onSaveInstanceState`, which means the value is restored after **system-initiated process death**, not only after configuration change. A restored authentication id would put a user straight past the profile/PIN gate when Android kills the app in the background and later restores the task, which is precisely the case the gate exists to cover.
 
 Use configuration-only session retention:
 
 - An **Activity-scoped ViewModel**.
-- **No `SavedStateHandle`** for the authentication-passed flag.
+- **No `SavedStateHandle`** for the authentication id.
 - **No `rememberSaveable`**.
+- Store `authenticatedProfileId: Long?`, never a global passed/not-passed boolean.
+- Require that id to equal the current active profile whenever a gate is required.
+- Clear it before profile deletion/switching and invalidate it on every observed active-id change.
 - Resets after process death and after a genuine cold start.
 
 ```kotlin
 class ProfileGateSessionViewModel : ViewModel() {
-    var gatePassed by mutableStateOf(false)
+    var authenticatedProfileId by mutableStateOf<Long?>(null)
         private set
 
-    fun markPassed() {
-        gatePassed = true
-    }
-
-    fun requireAuthentication() {
-        gatePassed = false
-    }
+    fun authenticateProfile(profileId: Long?) { authenticatedProfileId = profileId }
+    fun invalidateAuthentication() { authenticatedProfileId = null }
 }
 ```
 
-This works because `ViewModel` instances survive configuration-driven recreation through `ViewModelStore` retention but are cleared when the process dies. That is exactly the lifetime an authentication result should have.
+This works because `ViewModel` instances survive configuration-driven recreation through `ViewModelStore` retention but are cleared when the process dies. Binding the id to the active profile also means authenticating A cannot authorize B after deletion, restore, or automatic profile selection.
 
-> `gatePassed` is configuration-retained session state, not saveable state. It survives Activity recreation but resets after process death.
+> `authenticatedProfileId` is configuration-retained session state, not saveable state. It survives Activity recreation only while it still names the active profile, and resets after process death.
 
 **Audit the neighbouring flags separately; do not give them all the same lifetime.** `MainActivity.kt` holds `addingProfile` and `switchProfileRequested` beside the observed `ProfileLoadState`/active-profile streams. Classify each on its own merits:
 
-| Flag | Question to answer | Likely home |
+| State | Question to answer | Likely home |
 |---|---|---|
-| `gatePassed` | Is it an authentication result? Yes. | Activity-scoped ViewModel, no saved state |
+| `authenticatedProfileId` | Is it an authentication result bound to one active profile? Yes. | Activity-scoped ViewModel, no saved state |
 | `addingProfile` | Is it in-flight UI navigation the user would expect to survive a rotation but not a kill? | Same ViewModel, no saved state |
-| `switchProfileRequested` | Same question, plus: does it pair with `gatePassed` such that restoring one without the other is incoherent? | Same ViewModel, no saved state |
+| `switchProfileRequested` | Same question, plus: does it pair with profile-bound authentication such that restoring one without the other is incoherent? | Same ViewModel, no saved state |
 | `profileState` / active profile id | Can either asynchronous source prove that the active profile is safe? No; Room must be `Loaded`, and the loaded list must contain the active id. | Pure `shellMayCompose` policy over both observed values |
 
 Do not batch-convert. Each flag gets its own decision recorded in the PR.
@@ -1593,9 +1591,10 @@ The arsc is mmap'd so it is not resident, but the native `ResStringPool` still d
 
 ### Profile gate
 
-- `gatePassed` survives Activity recreation through the Activity-scoped ViewModel.
-- `gatePassed` does **not** restore after process death.
-- The authentication-success flag uses neither `SavedStateHandle` nor `rememberSaveable`. Assert this structurally if possible (no saved-state key exists) rather than only behaviourally.
+- `authenticatedProfileId` survives configuration recreation through the Activity-scoped ViewModel only while it equals the active profile.
+- Authentication does **not** restore after process death.
+- Deleting authenticated A and automatically selecting PIN-locked B leaves authentication null/mismatched, so B cannot enter the shell without a fresh PIN.
+- The profile-bound authentication state uses neither `SavedStateHandle` nor `rememberSaveable`. Assert this structurally if possible (no saved-state key exists) rather than only behaviourally.
 
 ### Semantic error classifier
 

@@ -101,7 +101,7 @@ class SetupViewModel(
      * so it survives leaving the wizard — exactly like the playlist [continueInBackground]. We only
      * finish onboarding; the in-flight job is deliberately not cancelled.
      */
-    fun syncEpgInBackground(onDone: () -> Unit = {}) {
+    fun syncEpgInBackground(onDone: (Long?) -> Unit = {}) {
         pendingEpgSource = null
         finish(onDone)
     }
@@ -377,7 +377,7 @@ class SetupViewModel(
 
     /** Restore everything from a backup file (replaces profiles & sources, then activates one). Encrypted
      *  backups first ask for the backup password via [ImportState.NeedPassword]. */
-    fun importBackup(file: File, onDone: () -> Unit) {
+    fun importBackup(file: File, onDone: (Long?) -> Unit) {
         viewModelScope.launch {
             _state.value = ImportState.Running
             // A sealed .own reveals nothing before it is decrypted — ask for the password first.
@@ -395,14 +395,14 @@ class SetupViewModel(
     }
 
     /** Continue an encrypted restore once the user provides (or skips, password = null) the passphrase. */
-    fun restoreWithPassword(file: File, password: String?, onDone: () -> Unit) {
+    fun restoreWithPassword(file: File, password: String?, onDone: (Long?) -> Unit) {
         viewModelScope.launch {
             _state.value = ImportState.Running
             doRestore(file, password, onDone)
         }
     }
 
-    private suspend fun doRestore(file: File, password: String?, onDone: () -> Unit) {
+    private suspend fun doRestore(file: File, password: String?, onDone: (Long?) -> Unit) {
         backup.import(file, backupPassword = password).fold(
             onSuccess = { summary ->
                 _state.value = ImportState.Success(
@@ -411,7 +411,10 @@ class SetupViewModel(
                     skippedSources = summary.skippedSources,
                     invalidLocale = summary.invalidLocale,
                 )
-                onDone()
+                // A backup may restore several profiles or a PIN-locked active profile. Restoring
+                // data is not authenticating a viewer, so let MainActivity require the selected
+                // profile's PIN rather than treating the restore as a gate pass.
+                onDone(null)
             },
             onFailure = {
                 if (it is BackupManager.WrongPasswordException) {
@@ -448,17 +451,17 @@ class SetupViewModel(
      * The semi-auto EPG prompt is skipped (its dialog lives in the wizard); EPG stays user-initiated
      * from Settings → EPG Sources, matching the app's EPG opt-in policy.
      */
-    fun continueInBackground(onDone: () -> Unit = {}) {
+    fun continueInBackground(onDone: (Long?) -> Unit = {}) {
         backgroundHandoff = true
         dismissPendingEpg()
         finish(onDone)
     }
 
     /** Completes onboarding → makes the new profile active, routing the app into the shell. */
-    fun finish(onDone: () -> Unit = {}) {
+    fun finish(onDone: (Long?) -> Unit = {}) {
         viewModelScope.launch {
             if (createdProfileId > 0) settings.setActiveProfile(createdProfileId)
-            onDone()
+            onDone(settings.activeProfileId.first().takeIf { it >= 0L })
         }
     }
 

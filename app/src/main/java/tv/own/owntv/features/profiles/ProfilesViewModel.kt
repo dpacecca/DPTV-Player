@@ -126,18 +126,19 @@ sealed interface ProfileLoadState {
  * The shell may only be composed after both sources of the launch decision are known. This small
  * policy is kept pure so the cold-start PIN invariant can be tested without a Compose test harness:
  * a persisted active id arriving before Room's locked profile must never be enough to enter the
- * shell, and a loaded empty result must never be treated as permission to enter it.
+ * shell, and a loaded empty result must never be treated as permission to enter it. Authentication
+ * is bound to the active profile id, so a session that authenticated profile A cannot authorize B.
  */
 internal fun shellMayCompose(
     profileState: ProfileLoadState,
     activeProfileId: Long?,
-    gatePassed: Boolean,
+    authenticatedProfileId: Long?,
     gateRequired: Boolean,
 ): Boolean {
     val loaded = profileState as? ProfileLoadState.Loaded ?: return false
     val active = activeProfileId ?: return false
     if (active < 0L || loaded.profiles.none { it.id == active }) return false
-    return !gateRequired || gatePassed
+    return !gateRequired || authenticatedProfileId == active
 }
 
 /** Links all currently-known sources to a freshly created profile (helper kept off the entity API). */

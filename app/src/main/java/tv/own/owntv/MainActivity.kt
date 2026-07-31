@@ -237,7 +237,7 @@ class MainActivity : ComponentActivity() {
             // after a kill-and-restore, so there is deliberately no SavedStateHandle / rememberSaveable
             // (see docs/internationalization.md, "The profile gate: configuration-only retention").
             val gateSession: ProfileGateSessionViewModel = koinViewModel()
-            val gatePassed = gateSession.gatePassed
+            val authenticatedProfileId = gateSession.authenticatedProfileId
             val addingProfile = gateSession.addingProfile
             val switchProfileRequested = gateSession.switchProfileRequested
             // The active id and the Room list are separate asynchronous streams. Neither one is a
@@ -247,6 +247,11 @@ class MainActivity : ComponentActivity() {
             val loadedProfileId = activeProfileId
             val activeProfileKnown = loadedProfileId != null &&
                 (loadedProfileId < 0L || profiles.any { it.id == loadedProfileId })
+            // Authentication is profile-bound. Invalidate the old session before a changed active id
+            // can become a shell destination (profile deletion, backup restore, or another writer).
+            LaunchedEffect(loadedProfileId) {
+                gateSession.invalidateIfNotProfile(loadedProfileId)
+            }
             LaunchedEffect(loadedProfileId != null) {
                 if (loadedProfileId != null) Perf.stamp("profile-id-loaded")
             }
@@ -255,15 +260,18 @@ class MainActivity : ComponentActivity() {
             // tests. The policy checks the Room list, active-id membership, and authentication as
             // one decision; a future branch must not accidentally make the shell depend on only
             // one of the asynchronous inputs again.
+            val gateRequired = shouldShowProfileGate || switchProfileRequested
+            val authenticatedForActiveProfile = loadedProfileId != null &&
+                authenticatedProfileId == loadedProfileId
             val shellReady = tv.own.owntv.features.profiles.shellMayCompose(
                 profileState = profileState,
                 activeProfileId = loadedProfileId,
-                gatePassed = gatePassed,
-                gateRequired = shouldShowProfileGate || switchProfileRequested,
+                authenticatedProfileId = authenticatedProfileId,
+                gateRequired = gateRequired,
             )
             // Back from a user-requested switch returns to the shell (the cold-start gate exits the app).
-            BackHandler(enabled = switchProfileRequested && !gatePassed && !addingProfile) {
-                gateSession.cancelSwitchProfileRequest()
+            BackHandler(enabled = switchProfileRequested && !addingProfile) {
+                gateSession.cancelSwitchProfileRequest(loadedProfileId)
             }
             LaunchedEffect(profilesLoaded) {
                 if (profilesLoaded) Perf.stamp("profiles-loaded")
@@ -334,14 +342,14 @@ class MainActivity : ComponentActivity() {
                             // Adding a profile from the gate → onboard the new profile.
                             addingProfile -> Onboarding(
                                 firstRun = false,
-                                onDone = { gateSession.completeAddingProfile() },
+                                onDone = { profileId -> gateSession.completeAddingProfile(profileId) },
                                 onCancel = { gateSession.cancelAddingProfile() },
                                 modifier = Modifier.fillMaxSize(),
                             )
                             // First run (no profile yet) → full onboarding.
                             profile < 0L -> Onboarding(
                                 firstRun = true,
-                                onDone = { gateSession.markGatePassed() },
+                                onDone = { profileId -> gateSession.authenticateProfile(profileId) },
                                 onCancel = {},
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -350,15 +358,15 @@ class MainActivity : ComponentActivity() {
                             // both an empty restore window and a stale id left by an interrupted restore.
                             !activeProfileKnown -> Onboarding(
                                 firstRun = false,
-                                onDone = { gateSession.markGatePassed() },
+                                onDone = { profileId -> gateSession.authenticateProfile(profileId) },
                                 onCancel = {},
                                 modifier = Modifier.fillMaxSize(),
                             )
                             // Run 2+ (or a single locked profile): "Who's watching?" — choose a profile or add one.
                             // Also opens when the sidebar avatar is single-clicked (switchProfileRequested),
                             // which is the only way to switch when there's a single unpinned profile.
-                            (shouldShowProfileGate || switchProfileRequested) && !gatePassed -> ProfileGate(
-                                onEnter = { gateSession.markGatePassed() },
+                            gateRequired && !authenticatedForActiveProfile -> ProfileGate(
+                                onEnter = { profileId -> gateSession.authenticateProfile(profileId) },
                                 onAddProfile = { gateSession.startAddingProfile() },
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -387,7 +395,8 @@ class MainActivity : ComponentActivity() {
                                     // Stop playback and return to the "Who's watching?" gate — no app restart.
                                     player.onAppBackgrounded(); player.discardBackgroundRestore(); previewEngine.stop(); previewEngine.discardBackgroundRestore(); heroPreviewEngine.stop()
                                     // Force the gate open even with a single unpinned profile (cold-start gate would
-                                    // skip it). requestSwitchProfile() drops gatePassed AND raises the request.
+                                    // skip it). requestSwitchProfile() clears the active profile
+                                    // authentication and raises the request.
                                     gateSession.requestSwitchProfile()
                                 },
                                 modifier = Modifier.fillMaxSize(),

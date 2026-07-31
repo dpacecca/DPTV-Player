@@ -12,7 +12,7 @@ class ProfileLaunchGateTest {
             shellMayCompose(
                 profileState = ProfileLoadState.Loading,
                 activeProfileId = 42L,
-                gatePassed = false,
+                authenticatedProfileId = null,
                 gateRequired = true,
             ),
         )
@@ -20,7 +20,7 @@ class ProfileLaunchGateTest {
             shellMayCompose(
                 profileState = ProfileLoadState.Loaded(emptyList()),
                 activeProfileId = 42L,
-                gatePassed = false,
+                authenticatedProfileId = null,
                 gateRequired = true,
             ),
         )
@@ -28,7 +28,7 @@ class ProfileLaunchGateTest {
             shellMayCompose(
                 profileState = ProfileLoadState.Loaded(listOf(fakeProfile(42L))),
                 activeProfileId = 42L,
-                gatePassed = false,
+                authenticatedProfileId = null,
                 gateRequired = true,
             ),
         )
@@ -36,7 +36,7 @@ class ProfileLaunchGateTest {
             shellMayCompose(
                 profileState = ProfileLoadState.Loaded(listOf(fakeProfile(42L))),
                 activeProfileId = 42L,
-                gatePassed = true,
+                authenticatedProfileId = 42L,
                 gateRequired = true,
             ),
         )
@@ -44,7 +44,7 @@ class ProfileLaunchGateTest {
 
     @Test
     fun `loaded empty result cannot enter shell even when stale id is already active`() {
-        assertFalse(shellMayCompose(ProfileLoadState.Loaded(emptyList()), 7L, gatePassed = true, gateRequired = false))
+        assertFalse(shellMayCompose(ProfileLoadState.Loaded(emptyList()), 7L, authenticatedProfileId = 7L, gateRequired = false))
     }
 
     @Test
@@ -53,10 +53,23 @@ class ProfileLaunchGateTest {
             shellMayCompose(
                 ProfileLoadState.Loaded(listOf(fakeProfile(1L))),
                 activeProfileId = 7L,
-                gatePassed = true,
+                authenticatedProfileId = 7L,
                 gateRequired = false,
             ),
         )
+    }
+
+    @Test
+    fun `authenticated profile A cannot authorize automatically selected locked profile B`() {
+        val profiles = ProfileLoadState.Loaded(listOf(fakeProfile(2L).copy(pinHash = "locked")))
+        val session = ProfileGateSessionViewModel()
+        session.authenticateProfile(1L)
+
+        // Deleting A clears the session before the repository selects B. Even if a caller observes
+        // the new active id before that clear, the profile-bound policy still rejects stale A auth.
+        session.invalidateAuthentication()
+        assertFalse(shellMayCompose(profiles, 2L, session.authenticatedProfileId, gateRequired = true))
+        assertFalse(shellMayCompose(profiles, 2L, authenticatedProfileId = 1L, gateRequired = true))
     }
 
     private fun fakeProfile(id: Long) = tv.own.owntv.core.database.entity.ProfileEntity(

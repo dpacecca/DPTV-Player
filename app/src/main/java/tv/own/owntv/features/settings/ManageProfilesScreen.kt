@@ -42,6 +42,7 @@ import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ProfileEntity
 import tv.own.owntv.features.profiles.ProfileEditorDialog
+import tv.own.owntv.features.profiles.ProfileGateSessionViewModel
 import tv.own.owntv.features.profiles.ProfilesViewModel
 import tv.own.owntv.ui.components.OwnTVAvatar
 import tv.own.owntv.ui.components.OwnTVButton
@@ -54,6 +55,7 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 @Composable
 fun ManageProfilesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: ProfilesViewModel = koinViewModel()
+    val gateSession: ProfileGateSessionViewModel = koinViewModel()
     val profiles by vm.profiles.collectAsStateWithLifecycle()
     val defaultProfileName = stringResource(R.string.profiles_default_name)
     val colors = OwnTVTheme.colors
@@ -169,7 +171,13 @@ fun ManageProfilesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         ConfirmDialog(
             title = stringResource(R.string.profiles_delete_title, p.name),
             message = stringResource(R.string.profiles_delete_message),
-            onConfirm = { vm.delete(p); confirmDelete = null },
+            onConfirm = {
+                // Invalidate before deleting any profile. If the active profile is removed, the
+                // repository may immediately select another (possibly PIN-locked) profile.
+                gateSession.invalidateAuthentication()
+                vm.delete(p)
+                confirmDelete = null
+            },
             onDismiss = { confirmDelete = null },
         )
     }

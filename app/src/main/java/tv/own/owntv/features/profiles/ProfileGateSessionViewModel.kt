@@ -12,13 +12,13 @@ import androidx.lifecycle.ViewModel
  * **Why a ViewModel and not `rememberSaveable`** (see `docs/internationalization.md`, Phase 0a —
  * "The profile gate: configuration-only retention, never saveable"):
  *
- * A gate-passed flag must survive an Activity recreation caused by a *configuration* change (font
- * scale, dark mode, a script-family language switch — all of which OwnTV now triggers far more often
- * than before i18n), so the user is not dumped back at the PIN gate mid-session. But it must **not**
- * survive system-initiated process death: `rememberSaveable` persists through `onSaveInstanceState`,
- * which is restored after a background kill, and a restored `gatePassed = true` would put a user
- * straight past the profile/PIN gate when Android revives the task — precisely the case the gate
- * exists to cover.
+ * The authenticated profile id must survive an Activity recreation caused by a *configuration* change
+ * (font scale, dark mode, a script-family language switch — all of which OwnTV now triggers far more
+ * often than before i18n), so the user is not dumped back at the PIN gate mid-session. But it must
+ * **not** survive system-initiated process death: `rememberSaveable` persists through
+ * `onSaveInstanceState`, which is restored after a background kill, and a restored authentication id
+ * would put a user straight past the profile/PIN gate when Android revives the task — precisely the
+ * case the gate exists to cover.
  *
  * A ViewModel tied to the Activity's `ViewModelStore` has exactly that lifetime: it survives
  * configuration recreations through store retention, and is cleared when the process dies. There is
@@ -31,8 +31,8 @@ import androidx.lifecycle.ViewModel
  */
 class ProfileGateSessionViewModel : ViewModel() {
 
-    /** True once the active profile has been authenticated this session. Resets on process death. */
-    var gatePassed by mutableStateOf(false)
+    /** The profile authenticated in this Activity session; never a process-wide boolean. */
+    var authenticatedProfileId by mutableStateOf<Long?>(null)
         private set
 
     /** True while the "add a profile" onboarding flow is open from the gate. Resets on process death. */
@@ -47,10 +47,27 @@ class ProfileGateSessionViewModel : ViewModel() {
     var switchProfileRequested by mutableStateOf(false)
         private set
 
-    /** User authenticated through the gate / finished onboarding; clear any pending switch request. */
-    fun markGatePassed() {
-        gatePassed = true
+    /** Record successful authentication for exactly [profileId], then close any pending switch gate. */
+    fun authenticateProfile(profileId: Long?) {
+        authenticatedProfileId = profileId?.takeIf { it >= 0L }
         switchProfileRequested = false
+    }
+
+    /** Clear authentication before a profile is deleted or otherwise replaced. */
+    fun invalidateAuthentication() {
+        authenticatedProfileId = null
+    }
+
+    /**
+     * Defensive binding for asynchronous active-profile changes. A stale authentication can never
+     * authorize a newly selected profile, even during the brief DataStore/Room transition.
+     */
+    fun invalidateIfNotProfile(activeProfileId: Long?) {
+        // null means the asynchronous active-id stream has not emitted yet. Do not turn a
+        // configuration recreation's transient null into a needless PIN prompt.
+        if (activeProfileId != null && authenticatedProfileId != null && authenticatedProfileId != activeProfileId) {
+            authenticatedProfileId = null
+        }
     }
 
     /** Open the add-profile onboarding from the gate. */
@@ -59,10 +76,10 @@ class ProfileGateSessionViewModel : ViewModel() {
         switchProfileRequested = false
     }
 
-    /** Add-profile onboarding completed: enter the shell as the new profile. */
-    fun completeAddingProfile() {
+    /** Add-profile onboarding completed: enter the shell as the newly active profile. */
+    fun completeAddingProfile(profileId: Long?) {
         addingProfile = false
-        gatePassed = true
+        authenticateProfile(profileId)
     }
 
     /** Add-profile onboarding cancelled: back to the gate. */
@@ -70,10 +87,10 @@ class ProfileGateSessionViewModel : ViewModel() {
         addingProfile = false
     }
 
-    /** Back out of a user-requested switch: return past the gate. */
-    fun cancelSwitchProfileRequest() {
+    /** Back out of a user-requested switch: restore authentication for the unchanged active profile. */
+    fun cancelSwitchProfileRequest(activeProfileId: Long?) {
         switchProfileRequested = false
-        gatePassed = true
+        authenticateProfile(activeProfileId)
     }
 
     /**
@@ -82,7 +99,9 @@ class ProfileGateSessionViewModel : ViewModel() {
      * owns session state.
      */
     fun requestSwitchProfile() {
-        gatePassed = false
+        // A forced chooser is a new authentication boundary. If the user backs out, the caller
+        // explicitly restores the unchanged active profile id via cancelSwitchProfileRequest().
+        authenticatedProfileId = null
         switchProfileRequested = true
     }
 }
