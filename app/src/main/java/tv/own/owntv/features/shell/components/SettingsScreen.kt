@@ -65,7 +65,10 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.features.customize.CustomizeScreen
+import tv.own.owntv.core.i18n.SupportedLocales
 import tv.own.owntv.features.settings.HomeSettingsScreen
+import tv.own.owntv.features.settings.LanguageSettingsScreen
+import tv.own.owntv.features.settings.LanguageSettingsViewModel
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.update.UpdateDialog
 import tv.own.owntv.features.settings.BackupScreen
@@ -103,7 +106,7 @@ import java.io.File
 
 private enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
-private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, MINI_PLAYER, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, WEATHER, NAV_MENU, CH_NAV }
+private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, VIDEO, MINI_PLAYER, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, WEATHER, NAV_MENU, CH_NAV }
 
 /**
  * The MD3 Settings screen (shown when [MainSection.SETTINGS] is active): grouped sections, each row
@@ -195,6 +198,9 @@ fun SettingsScreen(
         }
     }
     val settingsVm: SettingsViewModel = koinViewModel()
+    val languageVm: LanguageSettingsViewModel = koinViewModel()
+    val currentLocaleTag by languageVm.currentTag.collectAsStateWithLifecycle()
+    val languageChip = languageChipText(currentLocaleTag)
     val downloadRoot by settingsVm.downloadRoot.collectAsStateWithLifecycle()
     val livePreview by settingsVm.livePreviewEnabled.collectAsStateWithLifecycle()
     val previewAudio by settingsVm.livePreviewAudio.collectAsStateWithLifecycle()
@@ -227,6 +233,7 @@ fun SettingsScreen(
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by remember { mutableStateOf<SettingsTab?>(null) }
     val rowFocus = remember { mapOf(
+        SettingsTab.LANGUAGE to FocusRequester(),
         SettingsTab.SOURCES to FocusRequester(),
         SettingsTab.EPG to FocusRequester(),
         SettingsTab.PROFILES to FocusRequester(),
@@ -257,6 +264,7 @@ fun SettingsScreen(
     }
 
     when (tab) {
+        SettingsTab.LANGUAGE -> { LanguageSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.SOURCES -> { ManageSourcesScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.EPG -> { tv.own.owntv.features.settings.EpgSourcesScreen(onBack = { tab = SettingsTab.ROOT; consumeEpgAdd = false }, modifier = modifier, startOnAdd = consumeEpgAdd); return }
         SettingsTab.PROFILES -> { ManageProfilesScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
@@ -288,7 +296,7 @@ fun SettingsScreen(
             .focusProperties {
                 onEnter = {
                     val target = rowFocus[lastTab]
-                        ?: if (searchQuery.isBlank()) rowFocus.getValue(SettingsTab.PROFILES) else searchFieldFocus
+                        ?: if (searchQuery.isBlank()) rowFocus.getValue(SettingsTab.LANGUAGE) else searchFieldFocus
                     runCatching { target.requestFocus() }
                 }
             }
@@ -338,6 +346,17 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
 
         if (searchQuery.isBlank()) {
+        GroupLabel(stringResource(R.string.settings_group_general))
+        SettingsRow(
+            tone = TileTone.PRIMARY, icon = OwnTVIcon.LANGUAGE,
+            title = stringResource(R.string.settings_language),
+            desc = stringResource(R.string.settings_language_description),
+            chip = languageChip,
+            chipTone = TileTone.PRIMARY,
+            onClick = { open(SettingsTab.LANGUAGE) }, showChevron = true,
+            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.LANGUAGE)),
+        )
+        SectionDivider()
         GroupLabel(stringResource(R.string.settings_profile_group))
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.PERSON,
@@ -602,6 +621,8 @@ fun SettingsScreen(
             // isn't composed while searching). Toggle entries keep the results visible so the chip
             // updates live.
             val entries = listOf(
+                SettingsSearchEntry(stringResource(R.string.settings_group_general), stringResource(R.string.settings_language), stringResource(R.string.settings_search_keywords_language), OwnTVIcon.LANGUAGE, TileTone.PRIMARY,
+                    chip = languageChip, chipTone = TileTone.PRIMARY) { open(SettingsTab.LANGUAGE) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_profile), stringResource(R.string.profiles_title), stringResource(R.string.settings_search_keywords_profiles), OwnTVIcon.PERSON, TileTone.SECONDARY) { open(SettingsTab.PROFILES) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_playlists), stringResource(R.string.settings_search_keywords_playlists), OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { open(SettingsTab.SOURCES) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_epg_sources), stringResource(R.string.settings_search_keywords_epg), OwnTVIcon.EPG, TileTone.PRIMARY) { open(SettingsTab.EPG) },
@@ -867,6 +888,14 @@ private fun startupLabel(mode: tv.own.owntv.features.settings.data.StartupMode):
 private fun navModeLabel(mode: tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode): String = stringResource(
     if (mode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) R.string.settings_dynamic else R.string.settings_static,
 )
+
+/** Chip text for the Language settings row: system-default label, or the selected locale's endonym. */
+@Composable
+private fun languageChipText(tag: String): String {
+    if (tag.isEmpty()) return stringResource(R.string.settings_language_system_default)
+    return SupportedLocales.all.find { it.languageTag == tag }?.endonym
+        ?: stringResource(R.string.settings_language_system_default)
+}
 
 /** The six quick presets shown at the top of the accent picker. */
 private val AccentPresetChoices: List<tv.own.owntv.ui.theme.AccentColor> =

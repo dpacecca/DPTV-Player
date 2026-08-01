@@ -24,7 +24,7 @@ enum class OwnTVIcon {
     PAUSE, REWIND, FORWARD, AUDIO, SUBTITLE, SKIP_NEXT, SKIP_PREVIOUS,
     BACK, VOLUME_HIGH, VOLUME_LOW, VOLUME_MUTE, ASPECT, FULLSCREEN, FULLSCREEN_EXIT, PIP, CLOSE,
     SORT, SWAP, HEADPHONES, EXPAND,
-    IMAGE, INFO,
+    IMAGE, INFO, LANGUAGE,
 }
 
 @Composable
@@ -348,6 +348,15 @@ fun OwnTVIcon(
                 drawLineStroke(p(6f, 15f), p(20f, 15f), tint, stroke)
                 drawLineStroke(p(6f, 15f), p(9f, 12.5f), tint, stroke)
                 drawLineStroke(p(6f, 15f), p(9f, 17.5f), tint, stroke)
+            }
+            OwnTVIcon.LANGUAGE -> {
+                // Material Translate — Latin "A" + character bars (not a globe; globe reads as network).
+                drawLineStroke(p(4f, 15f), p(8.5f, 4f), tint, stroke)
+                drawLineStroke(p(8.5f, 4f), p(13f, 15f), tint, stroke)
+                drawLineStroke(p(5.8f, 11f), p(11.2f, 11f), tint, stroke)
+                drawLineStroke(p(15f, 6f), p(21f, 6f), tint, stroke)
+                drawLineStroke(p(15f, 10.5f), p(19.5f, 10.5f), tint, stroke)
+                drawLineStroke(p(15f, 15f), p(21f, 15f), tint, stroke)
             }
         }
     }
