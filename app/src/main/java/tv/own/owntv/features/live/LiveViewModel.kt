@@ -605,19 +605,19 @@ class LiveViewModel(
     }
 
     // The ordered channel list the player zaps within (CH+/CH-, D-pad up/down) and shows in the
-    // left-hand overlay. It is ALWAYS the playing channel's own provider category — never the rail
-    // the user happened to launch from. Opening a channel from History or All Channels used to leave
-    // the player stuck browsing that rail; now tuning re-arms the list from `channel.categoryId`.
+    // left-hand overlay. This is playback CONTEXT: the Favorites/History/All/folder/custom rail that
+    // launched the channel, or a provider category explicitly selected in the in-player browser.
+    // `channel.categoryId` remains metadata and is used only when a caller has no browse context.
     private var zapList: List<ChannelEntity> = emptyList()
     private val _canZap = MutableStateFlow(false)
     val canZap: StateFlow<Boolean> = _canZap.asStateFlow()
     // The opened channel list, exposed so the in-player channel-list overlay can show & jump within it.
     private val _zapChannels = MutableStateFlow<List<ChannelEntity>>(emptyList())
     val zapChannels: StateFlow<List<ChannelEntity>> = _zapChannels.asStateFlow()
-    /** Heading for the left overlay — the playing channel's category name (or "All Channels"). */
+    /** Heading for the left overlay — the name of the active playback browse context. */
     private val _zapListTitle = MutableStateFlow("Channels")
     val zapListTitle: StateFlow<String> = _zapListTitle.asStateFlow()
-    /** The category [zapList] was built from; null means the uncategorized → All fallback. */
+    /** Provider category selected in the in-player browser, or null for a synthetic/caller-owned rail. */
     private var zapCategoryId: Long? = null
     private var zapArmed = false
 
@@ -650,6 +650,7 @@ class LiveViewModel(
             if (list.isEmpty()) return@launch
             zapCategoryId = categoryId
             zapArmed = true
+            zapList = list
             _zapChannels.value = list
             // CH+/- and the channel-list button read this; without it they keep acting on the
             // previously loaded category.
@@ -778,10 +779,18 @@ class LiveViewModel(
         return channelDao.recentlyWatched(pid, 1).first().firstOrNull()
     }
 
-    /** Open a channel fullscreen. [list] is the rail the user launched from and is deliberately IGNORED:
-     *  the player always zaps/browses within the channel's own provider category ([armZapList]). */
-    @Suppress("UNUSED_PARAMETER")
+    /** Open a channel fullscreen, preserving the browse context it was launched from. The channel's
+     *  provider category is metadata (used by [previewCategoryName]); it must not replace Favorites,
+     *  History, All, a custom category, or the provider folder the user is actually browsing. */
     fun watchFullscreen(channel: ChannelEntity, list: List<ChannelEntity>) {
+        zapListJob?.cancel()
+        zapList = list
+        _zapChannels.value = list
+        _canZap.value = list.size > 1
+        val key = _selected.value
+        zapCategoryId = (key as? LiveKey.Folder)?.id
+        zapArmed = true
+        _zapListTitle.value = railItems.value.firstOrNull { it.key == key }?.title ?: "Channels"
         ensurePlaying(channel)
     }
 
@@ -790,6 +799,7 @@ class LiveViewModel(
      *  programme dialog), not the zap-through-a-category flow the history debounce exists to filter,
      *  and a live channel opened from the Guide was not reliably landing in History. */
     fun watchFromGuide(channel: ChannelEntity) {
+        armZapList(channel)
         ensurePlaying(channel)
         recordLiveHistory(channel, immediate = true)
     }
@@ -1109,7 +1119,6 @@ class LiveViewModel(
         // History is still recorded, so the channel shows up in History/Recently watched either way.
         if (externalPlayerOn.value) { playExternal(channel); return }
         _previewChannel.value = channel
-        armZapList(channel) // zap/browse within THIS channel's category, whatever rail we came from
         timeshiftJob?.cancel(); tickJob?.cancel(); _timeshiftOffsetSec.value = null // normal live = not timeshifted
         _catchupActive.value = false // tuning live ends any archive playback the HUD was showing
         // Self-learning routing: a channel the user pinned to mpv skips ExoPlayer entirely (no artifacts/silent
@@ -1235,15 +1244,27 @@ class LiveViewModel(
     fun ensurePlayingById(channelId: Long) {
         viewModelScope.launch {
             val channel = channelDao.getById(channelId) ?: return@launch
+            armZapList(channel)
             ensurePlaying(channel)
         }
     }
 
-    /** [zapChannels] is the caller's rail and is deliberately IGNORED — the zap/overlay list always comes
-     *  from the channel's own category ([armZapList]), which also fixes the stale-list case in #55. */
-    @Suppress("UNUSED_PARAMETER")
+    /** Open a channel from a caller-owned rail (for example Home favorites), preserving that rail as the
+     *  playback browse/zap context instead of replacing it with provider-category metadata. */
     suspend fun ensurePlayingByIdAsync(channelId: Long, zapChannels: List<ChannelEntity> = emptyList()): Boolean {
         val channel = channelDao.getById(channelId) ?: return false
+        if (zapChannels.isEmpty()) {
+            // A single Home "continue watching" tile has no browse rail of its own.
+            armZapList(channel)
+        } else {
+            zapListJob?.cancel()
+            zapList = zapChannels
+            _zapChannels.value = zapChannels
+            _canZap.value = zapChannels.size > 1
+            zapCategoryId = null
+            zapArmed = true
+            _zapListTitle.value = "Channels"
+        }
         ensurePlaying(channel)
         return true
     }

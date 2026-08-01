@@ -258,7 +258,7 @@ class SettingsViewModel(
     }
 
     val autoFrameRate: StateFlow<Boolean> = settings.autoFrameRate
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     fun setAutoFrameRate(enabled: Boolean) {
         viewModelScope.launch { settings.setAutoFrameRate(enabled) }

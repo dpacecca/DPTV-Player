@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.1.6 — unreleased
+## v4.1.6 — 2026-08-01
 
 ### ✏️ Bulk editing — rename channels, movies and series in bulk (#86)
 
@@ -62,6 +62,19 @@
   option. The setting covers everything that goes through OkHttp, which is most of the app's traffic.
 - Built-in support for Android's `org.json` parser so the DoH JSON responses (per RFC 8484) are parsed
   with zero additional dependencies.
+
+### 🐛 Fixes
+
+- **Live TV playback switched to the channel's provider category after opening it from Favorites,
+  History, All Channels or a custom category.** The preview pane still shows the channel's real
+  provider category as metadata, but full-screen playback now keeps the browse context it was launched
+  from. D-pad Up/Down, CH+/− and the Left channel-list overlay all stay within that same context. A
+  category explicitly chosen from the in-player category browser becomes the new playback context.
+- **Auto frame rate could still blank the TV when the setting was Off.** Media3/ExoPlayer and mpv each
+  had their own surface-level frame-rate request in addition to OwnTV's window-level controller, so
+  disabling the toggle did not stop every display-mode request. All three paths now obey the setting,
+  and turning it off clears an already-applied surface hint. AFR defaults to Off in v4.1.6; existing
+  installs are reset to Off exactly once, while any choice the user makes afterward is preserved.
 
 ## v4.1.5 — 2026-07-31
 
