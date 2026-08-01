@@ -85,11 +85,14 @@ fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     val selectedFocus = remember { FocusRequester() }
     val searchFocus = remember { FocusRequester() }
-    // Land on the currently selected row once when the screen opens.
-    LaunchedEffect(Unit) {
-        runCatching { selectedFocus.requestFocus() }
-            .recoverCatching { searchFocus.requestFocus() }
+    // Land on the currently selected row once when the screen opens; fall back to search if the
+    // row was filtered out. requestFocus() reports failure via Boolean, not exceptions.
+    fun requestPreferredFocus() {
+        if (!selectedFocus.requestFocus()) {
+            searchFocus.requestFocus()
+        }
     }
+    LaunchedEffect(Unit) { requestPreferredFocus() }
     BackHandler { onBack() }
 
     Column(
@@ -97,10 +100,7 @@ fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .fillMaxSize()
             .roundedPanel()
             .focusProperties {
-                onEnter = {
-                    runCatching { selectedFocus.requestFocus() }
-                        .recoverCatching { searchFocus.requestFocus() }
-                }
+                onEnter = { requestPreferredFocus() }
             }
             .focusGroup()
             .verticalScroll(rememberScrollState())
