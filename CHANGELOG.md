@@ -1,5 +1,14 @@
 # Changelog
 
+## v4.1.7 — unreleased
+
+### 🐛 Fixes
+
+- **Live TV channels that only allow one stream at a time no longer lock themselves out.** Some providers permit a single connection per account and refuse the second one. Switching between the standard and compatibility player, or opening a channel right after another, could leave the app competing with itself: the engine that had just been asked to stop was still connected, so the new one was refused and the channel showed an error or an endless spinner. Each engine now fully releases its connection before the other one starts, the app waits briefly and retries once when a provider says the account is still in use, and on such providers the muted preview no longer runs while a channel is playing full-screen.
+- **Audio and video no longer drift apart on live channels in compatibility mode.** A workaround for a handful of feeds with broken timestamps — letting the picture run on its own clock — was being applied to every live channel, which slowly pushed the sound ahead of or behind the picture on perfectly healthy streams. Live playback now keeps accurate audio-synced timing, and the workaround switches on only for a channel that actually reports broken timestamps.
+- **Channels whose provider refuses the standard player's stream URLs are handed to the compatibility player sooner.** Some panels sign every segment with a short-lived token and then reject it; the standard player cannot recover from that by design. Two refusals are now enough to switch engines, and the provider is remembered for the rest of the session so its other channels start on the working engine right away.
+- **A provider that refuses playback outright is no longer hammered with the identical request.** The retry ladder stops repeating a request that was already rejected, while the alternative-format and player fallbacks still get their turn.
+
 ## v4.1.6 — 2026-08-01
 
 ### ✏️ Bulk editing — rename channels, movies and series in bulk (#86)

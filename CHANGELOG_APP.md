@@ -9,6 +9,15 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v4.1.7 — unreleased
+
+### 🐛 Fixes
+
+- **Live TV channels that only allow one stream at a time no longer lock themselves out**
+- **Audio and video no longer drift apart on live channels in compatibility mode**
+- **Faster switch to the compatibility player when a provider refuses the standard player's stream URLs**
+- **A provider that refuses playback outright is no longer hammered with the identical request**
+
 ## v4.1.6 — 2026-08-01
 
 ### ✨ New features

@@ -71,6 +71,7 @@ import tv.own.owntv.core.parser.XtEpgEntry
 import tv.own.owntv.core.parser.XtreamClient
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.player.LiveStreamQuirks
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.format.formatSystemTime
@@ -563,6 +564,9 @@ class LiveViewModel(
         val source = sourceById[channel.sourceId]
         if (streamUrlResolver.needsResolve(source)) { playPreviewStalker(channel, source!!); return }
         val targetUrl = channel.playStreamUrl(source)
+        // A one-session panel counts the muted preview as the account's single stream, so previewing while
+        // mpv is playing full-screen locks the user's own playback out. Browsing stays silent there.
+        if (player.hasActiveStream && LiveStreamQuirks.isSingleSession(targetUrl)) return
         // Already previewing this channel (e.g. re-focus)? Just re-apply the preview mute, no reload.
         if (previewEngine.currentUrl == targetUrl &&
             previewEngine.state.value != tv.own.owntv.player.LivePreviewEngine.State.ERROR
@@ -594,6 +598,7 @@ class LiveViewModel(
                 .onFailure { Log.w(ENGINE_TAG, "stalker preview resolve failed '${channel.name}'", it) }
                 .getOrNull() ?: return@launch
             if (_liveOnExo.value) return@launch // promoted to fullscreen while resolving
+            if (player.hasActiveStream && LiveStreamQuirks.isSingleSession(url)) return@launch // see playPreview
             stalkerPreviewCmd = channel.streamUrl
             setStalkerReconnect(channel.streamUrl) // C-3: re-resolve on reconnect if the URL expires
             previewEngine.play(
@@ -1234,8 +1239,11 @@ class LiveViewModel(
             if (goToMpv) {
                 fallbackToMpv(channel, "user chose compatibility mode") // ExoPlayer → mpv now
             } else {                    // mpv → ExoPlayer now
-                player.stop()
-                delay(500) // let mpv's decoder/surface release before ExoPlayer takes over
+                // Release before acquiring: mpv's stop is asynchronous, so a blind delay used to hand the
+                // stream to ExoPlayer while FFmpeg's socket was still open. On a one-session panel that
+                // makes us our own competitor and ExoPlayer is refused (HTTP 458).
+                player.stopAndAwaitRelease()
+                delay(500) // floor: the decoder/surface teardown lands just after the core reports the stop
                 if (_previewChannel.value?.streamUrl == channel.streamUrl) startOnExo(channel)
             }
         }
@@ -1295,6 +1303,13 @@ class LiveViewModel(
                 previewEngine.noVideoDetected.first { it }
                 if (isStill(channel)) fallbackToMpv(channel, "no video frame rendered (audio plays, no picture)")
             }
+            // The provider signs each segment URL with an expiring token and refuses them all; Media3 can
+            // only re-issue the URL it already resolved, so no amount of retrying recovers this. mpv/FFmpeg
+            // re-reads the playlist and fetches with a fresh token, so hand over as soon as it's proven.
+            launch {
+                previewEngine.segmentsRefused.first { it }
+                if (isStill(channel)) fallbackToMpv(channel, "provider refuses ExoPlayer's signed segment URLs")
+            }
             val terminal = previewEngine.state.first {
                 it == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
                     it == tv.own.owntv.player.LivePreviewEngine.State.ERROR
@@ -1319,6 +1334,9 @@ class LiveViewModel(
 
     private suspend fun fallbackToMpv(channel: ChannelEntity, reason: String) {
         engineLog("starting mpv for '${channel.name}' — reason=$reason")
+        // Preserve the format Exo actually discovered. Some panels redirect their advertised `.ts`
+        // endpoint to HLS; handing that misleading URL to mpv traps FFmpeg at the manifest EOF.
+        val exoDiscoveredHls = _liveOnExo.value && previewEngine.isHlsStream
         _liveOnExo.value = false            // shell flips to mpv's surface
         stalkerPreviewCmd = null
         previewEngine.stop()
@@ -1334,7 +1352,16 @@ class LiveViewModel(
             } else {
                 channel.streamUrl
             }
-            val url = resolveStreamUrl(rawUrl, source)
+            val preferredUrl = resolveStreamUrl(rawUrl, source)
+            // Record what Exo discovered against the *panel*, not this one channel: the redirect is a
+            // property of the provider, so every later channel — and mpv's own option choices — start
+            // out knowing this `.ts` is really HLS instead of re-learning it the slow way.
+            if (exoDiscoveredHls) LiveStreamQuirks.rememberHlsRedirect(preferredUrl)
+            val url = if (LiveStreamQuirks.isKnownHlsHost(preferredUrl)) {
+                LiveStreamQuirks.toHlsUrl(preferredUrl)
+            } else {
+                preferredUrl
+            }
             if (_previewChannel.value?.streamUrl != channel.streamUrl) return // zapped away while resolving
             // C-3: mpv is now the active engine — install/clear the reconnect provider to match.
             setStalkerReconnect(if (isStalker) channel.streamUrl else null)
