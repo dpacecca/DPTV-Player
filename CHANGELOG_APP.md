@@ -13,6 +13,8 @@
 
 ### ✨ New features
 
+- **✏️ Bulk editing — rename channels, movies and series in bulk (#86)**
+- **🗂️ Custom combined categories (#87)**
 - **🌐 Custom DNS server — global, app-wide (#90)**
 
 ## v4.1.5 — 2026-07-31

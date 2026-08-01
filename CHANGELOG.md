@@ -2,6 +2,42 @@
 
 ## v4.1.6 — unreleased
 
+### ✏️ Bulk editing — rename channels, movies and series in bulk (#86)
+
+- **The Customize screen got a proper item list.** A category's name is now a focusable button (one
+  D-pad press per row, instead of walking past the arrows first): OK opens that category's items —
+  every row visible, hidden items marked and recoverable, paged so a category with tens of thousands
+  of rows still opens instantly.
+- **Per-row Rename on Live TV** renames one channel from the item list; Movies and Series get bulk
+  rename only (one film exists in ten languages, so per-row renames are meaningless there).
+- **Bulk rename with rules.** Long-press Rename (or use the header pill on Movies/Series) to select a
+  span with the same remote-friendly flow as Hide/Move. Build an ordered rule list that adds or
+  removes prefixes and suffixes, supports several removable alternatives separated by semicolons,
+  and optionally ignores case and trims leftover separators. The live review shows every proposed
+  name before anything is written. Applied names are stored per profile and section, survive
+  re-syncs, and appear everywhere — Live TV, Movies, Series, search and recently-watched.
+- **Auto cleanup** creates an editable rule preset for country/provider tags, quality and codec tags,
+  emoji, symbols and stray separators, then opens the same review before applying anything.
+- **Restore original names** undoes a bulk rename for the whole span — the only undo for a bulk
+  apply, so it is one tap away and always available.
+- Renamed names travel in backups and are per profile, like every other customization.
+
+### 🗂️ Custom combined categories (#87)
+
+- **Create your own combined categories** from the Customize screen — a "＋ New category" pill on
+  every section. A combined category can hold channels, movies or series from any source folder,
+  side by side, in one rail at the top of Browse.
+- **Move to category…** is available in the Live/Movies/Series context menu and on the Customize
+  item list. Items leave their origin folder by default (they stay findable in All Channels and
+  search); tick "Keep in <origin> as well" to keep a copy. Moving out of Favorites un-favourites
+  the item; moving out of another combined category removes it there.
+- **Combined categories behave like folders**: rename them, delete them (items stay in their
+  original categories), reorder their items manually, hide them from Browse, and they remember
+  their own last-focused item. They are per profile and survive re-syncs and backups.
+- **"Hide new categories by default"** is now set from the add-source window too — a profile-wide
+  default so categories that arrive on a future sync start hidden until you show them from
+  Customize.
+
 ### 🌐 Custom DNS server — global, app-wide (#90)
 
 - **Settings → Network → DNS** is a new screen, a sibling to the existing Proxy screen. Configure a

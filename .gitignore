@@ -29,6 +29,7 @@ signing.properties
 
 # Internal planning documents — kept local, never committed
 future-plan/
+futureplan/
 
 
 # JVM crash dumps from a Gradle daemon (never worth committing)

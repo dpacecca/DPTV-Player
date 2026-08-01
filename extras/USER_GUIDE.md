@@ -519,6 +519,35 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   individual channels, movies and series from one place. Pick a section at the top (Live TV / Movies /
   Series) — hidden items are listed first, each with an **Unhide** button, and your categories follow below.
   With a long provider category list, use **CH+ / CH−** to page it (long‑press = first/last folder).
+  - 🗂️ **Open a category's items**: focus a category **name** and press **OK** — every channel, movie or
+    series in it opens as its own list (paged, so even a huge category opens instantly). Hidden items
+    show up there marked **Hidden**, with a **Show** button; each Live channel row also has **Rename**,
+    and every row has the usual reorder buttons. **Back** returns to the category list.
+  - ✏️ **Bulk rename (#86)**: **long‑press Rename** on a category (or an item in Live TV) to start a
+    rename span, then press **Rename** on the last row — every row in between is selected. Movies and
+    Series have no per‑row Rename, so their item lists get a **✎ Rename items** pill in the header that
+    selects the whole category. From the popup:
+    - **✎ Add rule** — add or remove a **prefix** or **suffix**. Separate several removable alternatives
+      with semicolons; the case-insensitive and trim-leftovers options handle capitalization and
+      separators. Rules run from top to bottom, and the **live review** shows every proposed name
+      before anything is written.
+    - **✨ Auto cleanup** — creates editable rules for country/provider tags, quality and codec tags,
+      emoji, symbols and stray separators, then opens the same review.
+    - **↺ Restore original names** — undoes a bulk rename for the whole span; the only undo, always
+      available.
+    Renamed names are per profile, survive re‑syncs, and show everywhere the original name does —
+    Live TV, Movies, Series, search and recently‑watched.
+  - 🗂️ **Custom combined categories (#87)**: press **＋ New category** at the top to create your own
+    combined category for the section. It appears as its own rail at the top of Browse (Live TV /
+    Movies / Series). Fill it from:
+    - **Live/Movies/Series context menu → Move to category…**, or
+    - the **Move to…** button on the Customize item list.
+    A **"Keep in <origin> as well"** checkbox decides whether the item stays in its original folder
+    or leaves it (items that leave are still findable in **All** and search; moving out of Favorites
+    un‑favourites them). Combined categories can be **renamed** (its rename dialog has a **Delete**
+    button — deleting removes the category, items stay in their original folders), **hidden**,
+    **reordered as a block** with the span trick, and their items can be **reordered manually** with
+    the row arrows. They're per profile and ride in Backup & Restore.
   - **Hide a range of categories fast**: focus a category's **Hide** button and **long‑press (select‑hold)** it to
     enter **span/range mode**. Then scroll **up or down** — every category between your starting point and the
     category you land on gets hidden together as a range. Handy for quickly hiding a big block of categories (or
@@ -532,9 +561,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   - 🗂️ **New category behavior (Show / Hide)**: at the top of the screen, choose what happens to a
     category your provider adds on a **later re-sync** — **Show** (default) or **Hide** it automatically.
     Handy if you keep only a few categories visible and don't want new ones popping up. It's per profile
-    and rides in Backup & Restore. When a re-sync changes categories, the completion message tells you how
-    many were **added / removed**. With two or more playlists in view, category lists are **grouped by
-    provider** and each Customize row shows which provider it belongs to.
+    and rides in Backup & Restore; the **add-source window** has the same **"Hide new categories by
+    default"** toggle, so you can set it before the first sync. When a re-sync changes categories, the
+    completion message tells you how many were **added / removed**. With two or more playlists in view,
+    category lists are **grouped by provider** and each Customize row shows which provider it belongs to.
   - 🔒 **Optional PIN lock**: tap **Set PIN** at the top-right to lock this screen. Once set, opening
     Customize Categories & Items asks for the PIN each time, so nobody else can unhide items or change your category
     setup. The PIN is per-profile and is **not** included in backups (so a restore can never lock you out).

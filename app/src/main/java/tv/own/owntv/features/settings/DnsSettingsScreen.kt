@@ -94,6 +94,8 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     val toggleFocus = remember { FocusRequester() }
     val firstPresetFocus = remember { FocusRequester() }
+    val serverFieldFocus = remember { FocusRequester() }
+    val saveFocus = remember { FocusRequester() }
 
     LaunchedEffect(Unit) { runCatching { toggleFocus.requestFocus() } }
 
@@ -129,7 +131,9 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             title = "Use custom DNS",
             desc = "Resolve all OwnTV domain lookups through a custom DNS server.",
             chip = if (effectiveEnabled) "On" else "Off", primaryChip = effectiveEnabled,
-            modifier = Modifier.focusRequester(toggleFocus),
+            modifier = Modifier
+                .focusRequester(toggleFocus)
+                .focusProperties { if (toggleOn) down = firstPresetFocus },
             onClick = { applyToggle(!toggleOn) },
         )
 
@@ -149,7 +153,15 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 Spacer(Modifier.height(12.dp))
 
                 // DoH preset chips — first chip gets focus when toggle turns on.
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Explicit vertical links: the 2D focus search otherwise jumps straight from the
+                // preset row to the header / Save, skipping the toggle above and the field below.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.focusProperties {
+                        up = toggleFocus
+                        down = serverFieldFocus
+                    },
+                ) {
                     var first = true
                     for ((label, url) in DohPresets.all) {
                         val isActive = server.trim() == url
@@ -177,12 +189,22 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     onValueChange = { server = it },
                     label = "DNS server",
                     placeholder = "8.8.8.8 or https://dns.google/dns-query",
-                    modifier = Modifier.fillMaxWidth(),
+                    focusRequester = serverFieldFocus,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusProperties {
+                            up = firstPresetFocus
+                            down = saveFocus
+                        },
                 )
 
                 Spacer(Modifier.height(20.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    OwnTVButton("Save", onClick = { applySave() })
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.focusProperties { up = serverFieldFocus },
+                ) {
+                    OwnTVButton("Save", onClick = { applySave() }, modifier = Modifier.focusRequester(saveFocus))
                     OwnTVButton(
                         label = if (dnsTestState is SettingsViewModel.DnsTestState.Testing) "Testing…" else "Test DNS",
                         onClick = {

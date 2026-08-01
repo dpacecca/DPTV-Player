@@ -67,7 +67,8 @@ Scan to join from your phone:
 
 ### 🧭 Browse
 - **Continue Watching** home with TMDB-enriched previews; Live / Movies / Series / Downloads / Guide sections
-- Per-profile customizable rows, Favorites & History, inline + global search, multi-playlist switcher
+- Per-profile customizable rows, Favorites & History, bulk rename rules, custom combined categories,
+  inline + global search, and a multi-playlist switcher
 - **TMDB** posters, plots, cast & trailers **in 40 languages**; scales to ~50k channels / ~168k movies with priority + incremental syncing
 
 ### 📥 Sources & EPG
