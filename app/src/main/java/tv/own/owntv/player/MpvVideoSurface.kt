@@ -39,7 +39,16 @@ private class MpvSurfaceView(context: Context, private val player: OwnTVPlayer) 
         val surface = holder.surface ?: return
         if (!surface.isValid) return
         if (fps <= 0f) {
-            runCatching { surface.clearFrameRate() }
+            runCatching {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    surface.clearFrameRate()
+                } else {
+                    // clearFrameRate() was added in API 34. On Android 11–13, passing 0 clears the
+                    // previously requested surface frame-rate hint using the original API 30 contract.
+                    @Suppress("DEPRECATION")
+                    surface.setFrameRate(0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT)
+                }
+            }
             return
         }
         runCatching {
