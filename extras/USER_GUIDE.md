@@ -461,7 +461,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 |---|---|
 | **Subtitles** | Pick a subtitle track (incl. **image subtitles**) and set **subtitle delay**. Live channels with **embedded closed captions (CC)** — common on US channels — show a CC track on both engines; on mpv, selecting it briefly switches the channel to software decoding (≤1080p) and hardware decoding returns when CC is turned off. On raw `.ts` channels the CC entry always appears, even when the channel carries no captions. |
 | **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±50 ms** steps) — use this if surround makes lips drift. |
-| **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · buffer. |
+| **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · **audio out** · buffer. **Audio out** tells you whether your TV/receiver is decoding the sound (*passthrough*) or OwnTV is (*decoded in app*), whether surround is currently allowed, and why it fell back to stereo if it did. |
 | **Favorite** (♥) | Add or remove what you're watching from **Favorites** without leaving the stream — a live channel, a movie, or a series (an episode favorites its parent show). The heart fills when it's already a favorite. |
 | **Speed** | Playback speed (VOD). |
 | **MPV/EXO (⇄)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (shows the active engine; teal on the non‑default one). Flipping it briefly confirms "Switched to MPV/ExoPlayer" at the bottom. |
@@ -627,7 +627,11 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   visible HDMI re-handshake. The v4.1.6 update resets it to Off once for existing users; changing it
   afterward is remembered normally, and Off disables both ExoPlayer and mpv frame-rate requests.
 - 🧩 **Hardware decoder** (Video Player Settings) — hardware decoding is on for smooth 4K; switch to software
-  only if a specific codec misbehaves.
+  only if a specific codec misbehaves. Turning it **off** now applies to **both players** (it used to
+  reach only the compatibility one, which left normal Live TV on the hardware decoder anyway). The
+  hardware decoder stays available as a backstop, so nothing that played before can stop playing —
+  expect slower decoding and, on some devices, a resolution ceiling. Stream info's **Decoder** row shows
+  which one is really in use.
 - 📡 **Live latency** (Video Player Settings) — how close to the live edge Live TV plays, trading latency
   against stability: **Low latency**, **Balanced** (default), **Stable**, or a **Custom** buffer in seconds.
   It applies on the next channel open, to live streams only, on both engines. **Balanced** changes nothing
@@ -666,10 +670,21 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 - 🌦️ **Weather** — its own submenu: **Show weather** (top‑bar chip on/off), **Custom location** (city or
   "lat,lon"; blank = auto‑detect — set this if a VPN shows the wrong city), and **Temperature unit**
   (**°C / °F**).
-- 🔊 **Surround sound** — ⚠️ **off by default, opt‑in.** Turn it on **only if you have a real 5.1/7.1
-  receiver**. On TV speakers or a stereo soundbar it can make **audio lag behind video (lip‑sync drift)** —
-  if you enable it and see drift, fix it live with the player's **Audio → A/V sync** nudge. Most people
-  should leave this off.
+- 🔊 **Surround sound** — three choices, answering *who decodes Dolby/DTS*. Press OK to cycle.
+  - **Auto** (default, recommended) — try surround, and switch back to stereo automatically if your TV
+    or soundbar turns out not to play it properly.
+  - **Stereo only** — OwnTV decodes everything and sends plain stereo. The right answer for **TV
+    speakers or a stereo soundbar**, and the one to pick if sound ever lags behind the picture.
+  - **Surround** — send Dolby/DTS to a **real 5.1/7.1 receiver** to decode.
+
+  Whichever you pick, OwnTV watches the audio output: if your equipment accepts the sound and then goes
+  silent, errors, or keeps stuttering, it **falls back to stereo on its own**, tells you, and gets sound
+  back in a few seconds. That safety net runs in **all three modes** and can't be switched off. Once it
+  has fired it stays on stereo for the rest of the session (so channel or player switches can't lose the
+  sound again) — restart the app, or change this setting, to give your equipment another try.
+
+  Applies to **Live TV, Movies and Series on both players**. Changing it re-opens whatever is playing.
+  If sound and picture still drift, nudge it live with the player's **Audio → A/V sync**.
 - 🩺 **Playback error log** (Playback) — the last ~10 playback failures with their plain‑English
   reason, stream details and device info. If a channel or movie errored and you dismissed the
   message, open this to read (or clear) exactly what happened — perfect for bug reports, no computer

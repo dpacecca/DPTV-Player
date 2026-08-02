@@ -11,8 +11,13 @@
 
 ## v4.1.7 — unreleased
 
+### ✨ New features
+
+- **🔊 Surround sound rebuilt — Auto, Stereo only, Surround, and it can no longer leave you in silence**
+
 ### 🐛 Fixes
 
+- **"Hardware decoding: Off" now applies to the standard player too**
 - **Live TV channels that only allow one stream at a time no longer lock themselves out**
 - **Audio and video no longer drift apart on live channels in compatibility mode**
 - **Faster switch to the compatibility player when a provider refuses the standard player's stream URLs**
@@ -36,7 +41,7 @@
 ### ✨ New features
 
 - **💬 Subtitle appearance — size, colour, position and background, each optional (#96)**
-- **📶 Prefer HLS for Live TV — per source, with format auto-detection** (community PR #97 by @codeVerine)
+- **📶 Prefer HLS for Live TV — per source, with format auto-detection** (community PR #97 by @pt5pnzghm6-sys)
 - **🆕 Date added — sort Movies and Series by what arrived most recently** (community PR #94 by @cotol1985)
 - **↕️ Series sorting — season and episode order, set per show** (community PR #94 by @cotol1985)
 - **📺 Channel numbers — type a number on the remote to tune in Live TV**

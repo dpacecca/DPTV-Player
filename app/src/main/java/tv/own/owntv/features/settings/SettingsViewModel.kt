@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tv.own.owntv.core.database.dao.ProfileDao
+import tv.own.owntv.player.AudioOutputPolicy
+import tv.own.owntv.player.SurroundMode
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.network.ConnectivityObserver
@@ -269,6 +271,21 @@ class SettingsViewModel(
 
     fun setSurroundSound(enabled: Boolean) {
         viewModelScope.launch { settings.setSurroundSound(enabled) }
+    }
+
+    val surroundMode: StateFlow<SurroundMode> = settings.surroundMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SurroundMode.AUTO)
+
+    /** Cycle Auto → Stereo only → Surround → Auto. Any change clears the session's stereo latch: the
+     *  user touching this control is explicitly asking the audio output for another chance. */
+    fun cycleSurroundMode() {
+        val next = when (surroundMode.value) {
+            SurroundMode.AUTO -> SurroundMode.STEREO
+            SurroundMode.STEREO -> SurroundMode.SURROUND
+            SurroundMode.SURROUND -> SurroundMode.AUTO
+        }
+        AudioOutputPolicy.clearLatch()
+        viewModelScope.launch { settings.setSurroundMode(next) }
     }
 
     val autoPlayNext: StateFlow<Boolean> = settings.autoPlayNext

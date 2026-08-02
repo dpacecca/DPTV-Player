@@ -2,7 +2,39 @@
 
 ## v4.1.7 — unreleased
 
+### 🔊 Surround sound rebuilt — Auto, Stereo only, Surround, and it can no longer leave you in silence
+
+- **The setting is now three choices instead of an on/off switch: Auto (new default), Stereo only, and
+  Surround.** They answer one question — who decodes Dolby/DTS. **Surround** sends it to your TV or
+  receiver to decode; **Stereo only** decodes it inside OwnTV and sends plain stereo, which is the right
+  answer for TV speakers and stereo soundbars; **Auto** starts like Surround and drops back to stereo by
+  itself the moment your audio output is caught failing. Your existing choice is kept: if you had
+  surround on you stay on Surround, if you had turned it off you stay on Stereo only, and if you never
+  touched it you get Auto.
+- **The setting now actually applies to Live TV.** It only ever reached the compatibility player, and
+  Live TV normally uses the standard one — so on live channels the switch did nothing at all in either
+  position, and a TV that mishandles Dolby got handed Dolby regardless of what you had chosen. This is
+  the cause behind live channels that played picture with no sound, or whose sound drifted, no matter
+  what you changed.
+- **New safety net: if your TV or soundbar accepts the sound and then doesn't play it, OwnTV notices and
+  switches to stereo for you.** It watches for the audio output going silent, erroring, or repeatedly
+  starving, then falls back, tells you, and gets sound back within a few seconds. It runs in **all three
+  modes, including Surround** — asking for 5.1 is not asking for silence — and once it has fired, every
+  player in the app stays on stereo for the rest of the session, so switching channels or engines can't
+  lose the sound again. Restart the app, or change the setting, to give your equipment another go.
+- **Stream info now tells you what the audio is actually doing.** A new **Audio out** row shows whether
+  your TV/receiver is decoding the sound (passthrough) or OwnTV is, whether surround is currently
+  allowed, and — if the safety net fired — why. Useful when you have no receiver display to check
+  against.
+
 ### 🐛 Fixes
+
+- **"Hardware decoding: Off" now applies to the standard player too.** It only ever reached the
+  compatibility player, so turning it off to work around a TV whose decoder mishandles a stream still
+  left that decoder in charge whenever playback used the standard player — including all normal Live TV.
+  Both players now prefer software decoders when it is off, with the hardware decoder still available as
+  a backstop, so nothing that used to play can stop playing. The **Decoder** row in stream info also
+  reports the decoder that is really in use instead of always claiming hardware.
 
 - **Live TV channels that only allow one stream at a time no longer lock themselves out.** Some providers permit a single connection per account and refuse the second one. Switching between the standard and compatibility player, or opening a channel right after another, could leave the app competing with itself: the engine that had just been asked to stop was still connected, so the new one was refused and the channel showed an error or an endless spinner. Each engine now fully releases its connection before the other one starts, the app waits briefly and retries once when a provider says the account is still in use, and on such providers the muted preview no longer runs while a channel is playing full-screen.
 - **Audio and video no longer drift apart on live channels in compatibility mode.** A workaround for a handful of feeds with broken timestamps — letting the picture run on its own clock — was being applied to every live channel, which slowly pushed the sound ahead of or behind the picture on perfectly healthy streams. Live playback now keeps accurate audio-synced timing, and the workaround switches on only for a channel that actually reports broken timestamps.
@@ -174,7 +206,7 @@
   every number and ignores the number keys during playback; your playlist's numbers are untouched, so
   turning it back on restores them immediately.
 
-### 📶 Prefer HLS for Live TV — per source, with format auto-detection (community PR #97 by @codeVerine)
+### 📶 Prefer HLS for Live TV — per source, with format auto-detection (community PR #97 by @pt5pnzghm6-sys)
 
 - **Xtream sources have a new "Prefer HLS for Live TV" option.** Xtream panels can serve a live channel
   two ways: as a raw MPEG-TS stream, or as an HLS playlist. OwnTV asked for MPEG-TS; some panels are

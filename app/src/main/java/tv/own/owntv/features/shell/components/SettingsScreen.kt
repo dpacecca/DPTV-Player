@@ -61,6 +61,7 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.features.customize.CustomizeScreen
+import tv.own.owntv.player.SurroundMode
 import tv.own.owntv.features.settings.HomeSettingsScreen
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.update.UpdateDialog
@@ -194,7 +195,7 @@ fun SettingsScreen(
     val previewAudio by settingsVm.livePreviewAudio.collectAsStateWithLifecycle()
     val hdr by settingsVm.hdrEnabled.collectAsStateWithLifecycle()
     val autoFrameRate by settingsVm.autoFrameRate.collectAsStateWithLifecycle()
-    val surroundSound by settingsVm.surroundSound.collectAsStateWithLifecycle()
+    val surroundMode by settingsVm.surroundMode.collectAsStateWithLifecycle()
     val autoPlayNext by settingsVm.autoPlayNext.collectAsStateWithLifecycle()
     val updateCheckOnStart by settingsVm.updateCheckOnStart.collectAsStateWithLifecycle()
     val channelNumbers by settingsVm.directTune.collectAsStateWithLifecycle()
@@ -507,10 +508,14 @@ fun SettingsScreen(
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
             title = "Surround sound",
-            desc = "Decode Dolby/DTS to surround (5.1/7.1) for a real 5.1/7.1 receiver. Leave OFF for TV speakers or a stereo soundbar — multichannel can lag audio behind video on some TVs/soundbars. If it drifts, nudge the player's Audio menu → A/V sync.",
-            chip = if (surroundSound) "On" else "Off",
-            chipTone = if (surroundSound) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setSurroundSound(!surroundSound) },
+            desc = when (surroundMode) {
+                SurroundMode.AUTO -> "Auto — try Dolby/DTS surround, and switch back to stereo by itself if the TV or soundbar doesn't actually play it. Recommended."
+                SurroundMode.STEREO -> "Stereo only — always decode in the app and send plain 2.0 sound. Use this on TV speakers or a stereo soundbar, or if audio ever lags behind the picture."
+                SurroundMode.SURROUND -> "Surround — send Dolby/DTS to a real 5.1/7.1 receiver. If it goes silent or stutters, OwnTV still drops back to stereo and tells you."
+            },
+            chip = surroundMode.label,
+            chipTone = if (surroundMode == SurroundMode.STEREO) TileTone.SECONDARY else TileTone.PRIMARY,
+            onClick = { settingsVm.cycleSurroundMode() },
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.SKIP_NEXT,
@@ -633,8 +638,8 @@ fun SettingsScreen(
                     chip = if (hdr) "On" else "Off", chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setHdrEnabled(!hdr) },
                 SettingsSearchEntry("Playback", "Auto frame rate", "afr refresh rate hz judder 24fps 25fps 50hz 60hz display mode match", OwnTVIcon.VIDEO, TileTone.PRIMARY,
                     chip = if (autoFrameRate) "On" else "Off", chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoFrameRate(!autoFrameRate) },
-                SettingsSearchEntry("Playback", "Surround sound", "dolby dts 5.1 7.1 receiver audio", OwnTVIcon.AUDIO, TileTone.SECONDARY,
-                    chip = if (surroundSound) "On" else "Off", chipTone = if (surroundSound) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setSurroundSound(!surroundSound) },
+                SettingsSearchEntry("Playback", "Surround sound", "dolby dts 5.1 7.1 receiver audio stereo", OwnTVIcon.AUDIO, TileTone.SECONDARY,
+                    chip = surroundMode.label, chipTone = if (surroundMode == SurroundMode.STEREO) TileTone.SECONDARY else TileTone.PRIMARY, showChevron = false) { settingsVm.cycleSurroundMode() },
                 SettingsSearchEntry("Playback", "Auto-play next episode", "autoplay series season", OwnTVIcon.SKIP_NEXT, TileTone.SECONDARY,
                     chip = if (autoPlayNext) "On" else "Off", chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoPlayNext(!autoPlayNext) },
                 SettingsSearchEntry("Playback", "Catch-up", "archive timezone offset catchup external player vlc mx", OwnTVIcon.EPG, TileTone.SECONDARY,
