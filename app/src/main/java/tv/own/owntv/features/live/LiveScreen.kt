@@ -43,7 +43,6 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -87,6 +86,7 @@ import tv.own.owntv.ui.components.PreviewPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.gridFocusTarget
+import tv.own.owntv.ui.format.rememberBestDateFormatter
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
@@ -964,10 +964,8 @@ private fun formatCatchupTime(
     stopMs: Long,
     formatTime: (Long) -> String,
 ): String {
-    val locale = LocalConfiguration.current.locales[0]
-    val day = remember(startMs, locale) {
-        java.text.SimpleDateFormat("EEE", locale).format(java.util.Date(startMs))
-    }
+    val formatDay = rememberBestDateFormatter("EEE")
+    val day = formatDay(startMs)
     return stringResource(R.string.content_live_day_time_range, day, formatTime(startMs), formatTime(stopMs))
 }
 

@@ -44,7 +44,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -92,6 +91,7 @@ import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.BackgroundImageChooserDialog
 import tv.own.owntv.ui.components.ingestBackgroundImage
 import tv.own.owntv.ui.components.trapAllFocusExit
+import tv.own.owntv.ui.format.formatBestDateTime
 import tv.own.owntv.ui.theme.ALL_GLASS_SURFACES
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassConfig
@@ -1122,8 +1122,7 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(entries) { if (entries != null) runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
-    val locale = LocalConfiguration.current.locales[0]
-    val timeFmt = remember(locale) { java.text.SimpleDateFormat("d MMM HH:mm", locale) }
+    val dateContext = LocalContext.current
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
@@ -1148,7 +1147,7 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
                         Text(
                             stringResource(
                                 R.string.settings_playback_entry,
-                                timeFmt.format(java.util.Date(e.atMs)),
+                                formatBestDateTime(dateContext, "dMMM", e.atMs),
                                 e.engine.playbackDisplayName(),
                                 stringResource(if (e.live) R.string.settings_live else R.string.settings_vod),
                             ),

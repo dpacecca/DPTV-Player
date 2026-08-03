@@ -55,7 +55,6 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,7 +62,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.core.os.ConfigurationCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
@@ -89,13 +87,11 @@ import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.features.epg.GuideGridDefaults
 import tv.own.owntv.features.epg.ProgrammeDetailDialog
 import tv.own.owntv.features.epg.ProgrammeStripCanvas
+import tv.own.owntv.ui.format.rememberBestDateFormatter
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 private fun guideSortLabel(sort: SettingsRepository.GuideSort): String = stringResource(
@@ -338,16 +334,13 @@ fun EpgScreen(
                 OwnTVIcon(OwnTVIcon.BACK, tint = colors.onSurface, modifier = Modifier.size(20.dp))
             }
             Text(stringResource(R.string.content_epg_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
-            val headerLocales = ConfigurationCompat.getLocales(LocalConfiguration.current)
-            val headerLocale = remember(headerLocales) { headerLocales.get(0) ?: Locale.ENGLISH }
+            val formatHeaderDate = rememberBestDateFormatter("EEEdMMM")
             if (state.now > 0) {
                 // The day being browsed: "now" on open; follows the cursor when D-padding left into
                 // the catch-up archive (windowStart would show the archive start — days in the past).
                 val headerDate = if (inCellMode && cursorTime > 0) cursorTime else state.now
                 Text(
-                    // Locale read off the configuration, not Locale.getDefault(), so the header
-                    // recomposes if the TV's language changes while the guide is open.
-                    SimpleDateFormat("EEE d MMM", headerLocale).format(Date(headerDate)),
+                    formatHeaderDate(headerDate),
                     style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant,
                 )
             }
