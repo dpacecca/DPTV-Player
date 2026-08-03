@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
@@ -46,6 +47,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import tv.own.owntv.R
+import tv.own.owntv.core.i18n.HorizontalDirection
+import tv.own.owntv.core.i18n.horizontalDirection
 import tv.own.owntv.core.companion.CompanionPayload
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
@@ -561,6 +564,7 @@ private fun SyncScopeRow(
     onChange: (SyncScopeChoice) -> Unit,
 ) {
     val colors = OwnTVTheme.colors
+    val layoutDirection = LocalLayoutDirection.current
     val options = if (editing) {
         listOf(SyncScopeChoice.Now, SyncScopeChoice.Off)
     } else {
@@ -582,10 +586,10 @@ private fun SyncScopeRow(
             .fillMaxWidth()
             .onKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
-                when (event.key) {
-                    Key.DirectionLeft -> { cycle(-1); true }
-                    Key.DirectionRight -> { cycle(+1); true }
-                    else -> false
+                when (event.key.horizontalDirection(layoutDirection)) {
+                    HorizontalDirection.START -> { cycle(-1); true }
+                    HorizontalDirection.END -> { cycle(+1); true }
+                    null -> false
                 }
             },
         shape = RoundedCornerShape(14.dp),

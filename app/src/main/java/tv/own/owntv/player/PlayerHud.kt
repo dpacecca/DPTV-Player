@@ -52,6 +52,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -72,6 +73,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import tv.own.owntv.R
+import tv.own.owntv.core.i18n.HorizontalDirection
+import tv.own.owntv.core.i18n.horizontalDirection
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -218,6 +221,7 @@ fun PlayerHud(
     liveEpgCard: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val layoutDirection = LocalLayoutDirection.current
     val isPlaying by player.isPlaying.collectAsStateWithLifecycle()
     val position by player.position.collectAsStateWithLifecycle()
     val duration by player.duration.collectAsStateWithLifecycle()
@@ -468,10 +472,11 @@ fun PlayerHud(
                 canZap && (e.key == Key.ChannelDown || e.key == Key.MediaPrevious) -> { zap(-1); true }
                 canZap && !controlsVisible && e.key == Key.DirectionUp -> { zap(1); true }
                 canZap && !controlsVisible && e.key == Key.DirectionDown -> { zap(-1); true }
-                // With the HUD hidden, Left opens this channel's category list and Right the watch
-                // history — the two in-player channel lists (live only).
-                onOpenChannelList != null && !controlsVisible && e.key == Key.DirectionLeft -> { onOpenChannelList(); true }
-                onOpenHistoryList != null && !controlsVisible && e.key == Key.DirectionRight -> { onOpenHistoryList(); true }
+                // The category list lives at logical Start; history lives at logical End.
+                onOpenChannelList != null && !controlsVisible &&
+                    e.key.horizontalDirection(layoutDirection) == HorizontalDirection.START -> { onOpenChannelList(); true }
+                onOpenHistoryList != null && !controlsVisible &&
+                    e.key.horizontalDirection(layoutDirection) == HorizontalDirection.END -> { onOpenHistoryList(); true }
                 controlsVisible -> { wakeTick++; false }
                 else -> false
             }
@@ -1140,6 +1145,7 @@ private fun SeekBar(positionMs: Long, durationMs: Long, onSeek: (Long) -> Unit) 
     Box(
         modifier = Modifier.fillMaxWidth().height(24.dp)
             .onKeyEvent { e ->
+                // Physical by design: left rewinds and right advances media time in every locale.
                 if (e.type == KeyEventType.KeyDown) when (e.key) {
                     Key.DirectionLeft -> { onSeek(-10_000); true }
                     Key.DirectionRight -> { onSeek(10_000); true }
@@ -1185,6 +1191,7 @@ private fun LiveTimelineBar(offsetSec: Int, onScrub: (Int) -> Unit) {
     Box(
         modifier = Modifier.fillMaxWidth().height(24.dp)
             .onKeyEvent { e ->
+                // Physical by design: left moves away from live; right moves toward the live edge.
                 if (e.type == KeyEventType.KeyDown) when (e.key) {
                     Key.DirectionLeft -> { onScrub(LIVE_SCRUB_STEP_SEC); true }    // back in time
                     Key.DirectionRight -> { onScrub(-LIVE_SCRUB_STEP_SEC); true }  // toward live

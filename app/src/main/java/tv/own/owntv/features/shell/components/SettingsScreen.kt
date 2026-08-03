@@ -1346,8 +1346,8 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
                             .focusProperties {
                                 up = FocusRequester.Cancel
                                 down = FocusRequester.Cancel
-                                left = FocusRequester.Cancel
-                                right = FocusRequester.Cancel
+                                start = FocusRequester.Cancel
+                                end = FocusRequester.Cancel
                             },
                     )
                 }

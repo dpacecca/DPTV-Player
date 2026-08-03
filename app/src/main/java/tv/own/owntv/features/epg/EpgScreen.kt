@@ -723,6 +723,7 @@ private fun GuideChannelRow(
             modifier = Modifier.width(GuideGridDefaults.ChannelCol).height(GuideGridDefaults.RowHeight).padding(end = 6.dp)
                 .focusRequester(labelFR)
                 .then(if (labelFocus != null) Modifier.focusRequester(labelFocus) else Modifier)
+                // Physical by design: the guide is an LTR timeline, so the strip is always right.
                 .focusProperties { right = stripFR }
                 .onFocusChanged { if (it.isFocused) onExitToChannels() }, // back on a label ⇒ leave CELL stage
             shape = RoundedCornerShape(10.dp),
@@ -760,12 +761,14 @@ private fun GuideChannelRow(
                     if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
                     val progs = programmes
                     if (inCellMode) when (e.key) {
+                        // Physical by design: left is earlier and right is later on the LTR timeline.
                         Key.DirectionLeft -> { moveGuideCursor(progs, cursorTime, -1, windowStart, onMoveCursor); true }
                         Key.DirectionRight -> { moveGuideCursor(progs, cursorTime, +1, windowStart, onMoveCursor); true }
                         Key.DirectionCenter, Key.Enter -> { progs?.let { openAtCursor(it, cursorTime, onOpen) }; true }
                         else -> false // Up/Down fall through to spatial nav (jump to the next channel's row)
                     } else when (e.key) {
                         Key.DirectionCenter, Key.Enter -> { if (!progs.isNullOrEmpty()) onEnterCell(); true }
+                        // Physical by design: channel labels stay left of the timeline strip.
                         Key.DirectionLeft -> { runCatching { labelFR.requestFocus() }; true } // back to the channel
                         Key.DirectionRight -> true // nothing further right — stay on the row
                         else -> false

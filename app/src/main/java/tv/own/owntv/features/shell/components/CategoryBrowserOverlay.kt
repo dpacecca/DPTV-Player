@@ -24,8 +24,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
+import tv.own.owntv.core.i18n.HorizontalDirection
+import tv.own.owntv.core.i18n.horizontalDirection
 import tv.own.owntv.core.database.entity.CategoryEntity
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -56,6 +58,7 @@ fun CategoryBrowserOverlay(
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
+    val layoutDirection = LocalLayoutDirection.current
     val currentIndex = remember(categories, currentCategoryId) {
         categories.indexOfFirst { it.first.id == currentCategoryId }.coerceAtLeast(0)
     }
@@ -77,8 +80,10 @@ fun CategoryBrowserOverlay(
                 .width(380.dp)
                 .background(Color.Black.copy(alpha = 0.82f))
                 .onPreviewKeyEvent { e ->
-                    // Left goes back to the channel list (same direction the panel came from).
-                    if (e.type == KeyEventType.KeyDown && e.key == Key.DirectionLeft) {
+                    // Pushing outward from logical Start returns to the channel list.
+                    if (e.type == KeyEventType.KeyDown &&
+                        e.key.horizontalDirection(layoutDirection) == HorizontalDirection.START
+                    ) {
                         onDismiss(); true
                     } else false
                 }

@@ -75,6 +75,7 @@ fun HueBar(hue: Float, modifier: Modifier = Modifier, onHue: (Float) -> Unit) {
             .focusable()
             .onKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
+                // Physical by design: the hue spectrum always runs left to right.
                 when (e.key) {
                     Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { editing = !editing; true }
                     Key.Back -> if (editing) { editing = false; true } else false
@@ -135,6 +136,7 @@ fun SatValSquare(
             .focusable()
             .onKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
+                // Physical by design: saturation/value follow the fixed 2D color field.
                 when (e.key) {
                     Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { editing = !editing; true }
                     Key.Back -> if (editing) { editing = false; true } else false

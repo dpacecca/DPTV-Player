@@ -133,6 +133,7 @@ fun TrailerPlayerScreen(videoKey: String, onExit: () -> Unit) {
     val onSeekKey: (androidx.compose.ui.input.key.KeyEvent) -> Boolean = onKey@{ e ->
         if (e.type != KeyEventType.KeyDown) return@onKey false
         val p = player ?: return@onKey false
+        // Physical by design: left rewinds and right advances trailer time in every locale.
         when (e.key) {
             Key.DirectionLeft -> { p.seekTo((currentSec - 10f).coerceAtLeast(0f)); true }
             Key.DirectionRight -> {

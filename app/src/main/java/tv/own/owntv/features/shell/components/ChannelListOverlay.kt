@@ -25,8 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -37,6 +37,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import tv.own.owntv.R
+import tv.own.owntv.core.i18n.HorizontalDirection
+import tv.own.owntv.core.i18n.horizontalDirection
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -63,8 +65,8 @@ fun ChannelListOverlay(
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
-    // Pushing further outwards at the edge closes the panel: Left for the left panel, Right for the right.
-    val dismissKey = if (alignEnd) Key.DirectionRight else Key.DirectionLeft
+    val layoutDirection = LocalLayoutDirection.current
+    val dismissDirection = if (alignEnd) HorizontalDirection.END else HorizontalDirection.START
     val currentIndex = remember(channels, currentId) {
         channels.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
     }
@@ -84,9 +86,9 @@ fun ChannelListOverlay(
                 .width(380.dp)
                 .background(Color.Black.copy(alpha = 0.82f))
                 .onPreviewKeyEvent { e ->
-                    if (e.type == KeyEventType.KeyDown && e.key == dismissKey) {
-                        // Left on the channel panel opens the category browser when one is wired up,
-                        // instead of closing. Back (BackHandler) always closes.
+                    if (e.type == KeyEventType.KeyDown && e.key.horizontalDirection(layoutDirection) == dismissDirection) {
+                        // Pushing outward from the Start panel opens categories when they are wired;
+                        // pushing outward from the End panel closes it. Back always closes.
                         if (!alignEnd && onOpenCategories != null) onOpenCategories() else onDismiss()
                         true
                     } else false

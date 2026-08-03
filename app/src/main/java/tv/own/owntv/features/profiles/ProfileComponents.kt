@@ -103,19 +103,19 @@ private fun PinDialogBody(title: String, onSubmit: (String) -> Unit, onDismiss: 
             modifier = Modifier.fillMaxWidth().focusRequester(focus),
         )
         Spacer(Modifier.height(20.dp))
-        // Explicit left/right links: spatial D-pad search from Cancel would otherwise wander into
+        // Explicit start/end links: spatial D-pad search from Cancel would otherwise wander into
         // the gate's profile tiles BEHIND the dialog before reaching OK.
         val cancelFocus = remember { FocusRequester() }
         val okFocus = remember { FocusRequester() }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OwnTVButton(
                 stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY,
-                modifier = Modifier.focusRequester(cancelFocus).focusProperties { right = okFocus },
+                modifier = Modifier.focusRequester(cancelFocus).focusProperties { end = okFocus },
             )
             Spacer(Modifier.weight(1f))
             OwnTVButton(
                 stringResource(R.string.common_ok), onClick = { onSubmit(pin) }, enabled = pin.length >= 4,
-                modifier = Modifier.focusRequester(okFocus).focusProperties { left = cancelFocus },
+                modifier = Modifier.focusRequester(okFocus).focusProperties { start = cancelFocus },
             )
         }
     }

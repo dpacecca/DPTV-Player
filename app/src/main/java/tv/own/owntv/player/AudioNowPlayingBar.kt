@@ -46,6 +46,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,6 +55,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
+import tv.own.owntv.core.i18n.HorizontalDirection
+import tv.own.owntv.core.i18n.horizontalDirection
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -91,6 +94,7 @@ fun AudioNowPlayingBar(
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
+    val layoutDirection = LocalLayoutDirection.current
     val isPlaying by player.isPlaying.collectAsStateWithLifecycle()
     val meta by player.currentMeta.collectAsStateWithLifecycle()
     val volume by player.volume.collectAsStateWithLifecycle()
@@ -151,11 +155,13 @@ fun AudioNowPlayingBar(
             // and OK falls through so the focused button's own click handler runs it.
             .onPreviewKeyEvent { ev ->
                 if (!active || ev.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                when (ev.key) {
-                    Key.DirectionLeft -> { moveFocus(-1); true }
-                    Key.DirectionRight -> { moveFocus(1); true }
-                    Key.DirectionUp, Key.DirectionDown -> true // swallow: never escape vertically
-                    else -> false
+                when (ev.key.horizontalDirection(layoutDirection)) {
+                    HorizontalDirection.START -> { moveFocus(-1); true }
+                    HorizontalDirection.END -> { moveFocus(1); true }
+                    null -> when (ev.key) {
+                        Key.DirectionUp, Key.DirectionDown -> true // swallow: never escape vertically
+                        else -> false
+                    }
                 }
             }
             .focusGroup(),
