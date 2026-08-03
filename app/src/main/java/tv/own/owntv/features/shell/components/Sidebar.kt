@@ -52,6 +52,7 @@ import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.format.localizedInteger
 import tv.own.owntv.ui.theme.glass
 
 /**
@@ -396,7 +397,7 @@ private fun NavItem(
                                 .padding(horizontal = 8.dp, vertical = 2.dp),
                         ) {
                             Text(
-                                text = count.toString(),
+                                text = localizedInteger(count),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = colors.onPrimaryContainer,
                                 fontWeight = FontWeight.Bold,
@@ -420,4 +421,3 @@ private val MainSection.navIcon: OwnTVIcon
         MainSection.EPG -> OwnTVIcon.EPG
         MainSection.SETTINGS -> OwnTVIcon.SETTINGS
     }
-

@@ -99,6 +99,7 @@ import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.format.localizedInteger
 
 @Composable
 fun MoviesScreen(
@@ -852,7 +853,7 @@ private fun metaLine(movie: MovieEntity, meta: tv.own.owntv.core.database.entity
     val year = if (tmdbWins) meta?.year ?: movie.year else movie.year ?: meta?.year
     val rating = if (tmdbWins) meta?.rating?.takeIf { it > 0 } ?: movie.rating?.takeIf { it > 0 }
         else movie.rating?.takeIf { it > 0 } ?: meta?.rating?.takeIf { it > 0 }
-    year?.let { parts.add(it.toString()) }
+    year?.let { parts.add(localizedInteger(it, grouping = false)) }
     rating?.let { parts.add(stringResource(R.string.content_rating, it)) }
     movie.durationSecs?.takeIf { it > 0 }?.let { secs ->
         val h = secs / 3600

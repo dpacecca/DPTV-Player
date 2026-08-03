@@ -32,6 +32,7 @@ import tv.own.owntv.ui.components.NumberInputDialog
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.format.localizedInteger
 
 private enum class ChNavDialog { NONE, ENABLED, UP_SKIP, DOWN_SKIP }
 
@@ -116,7 +117,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             icon = OwnTVIcon.SKIP_PREVIOUS,
             title = stringResource(R.string.settings_ch_nav_up),
             desc = stringResource(R.string.settings_ch_nav_up_description),
-            chip = upSkip.toString(),
+            chip = localizedInteger(upSkip, grouping = false),
             chevron = true,
             onClick = { dialogReturn = upSkipFocus; dialog = ChNavDialog.UP_SKIP },
             modifier = Modifier.focusRequester(upSkipFocus),
@@ -125,7 +126,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             icon = OwnTVIcon.SKIP_NEXT,
             title = stringResource(R.string.settings_ch_nav_down),
             desc = stringResource(R.string.settings_ch_nav_down_description),
-            chip = downSkip.toString(),
+            chip = localizedInteger(downSkip, grouping = false),
             chevron = true,
             onClick = { dialogReturn = downSkipFocus; dialog = ChNavDialog.DOWN_SKIP },
             modifier = Modifier.focusRequester(downSkipFocus),

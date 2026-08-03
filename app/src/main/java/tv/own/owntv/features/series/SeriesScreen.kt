@@ -102,6 +102,7 @@ import tv.own.owntv.ui.components.gridFocusTarget
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.format.localizedInteger
 
 @Composable
 fun SeriesScreen(
@@ -570,7 +571,7 @@ private fun SeriesGrid(
                     }
                     Spacer(Modifier.height(14.dp))
                     Text(s.name, style = MaterialTheme.typography.titleLarge, color = OwnTVTheme.colors.onSurface)
-                    val metaBits = listOfNotNull(year?.toString(), rating?.let { stringResource(R.string.content_rating, it) })
+                    val metaBits = listOfNotNull(year?.let { localizedInteger(it, grouping = false) }, rating?.let { stringResource(R.string.content_rating, it) })
                     if (metaBits.isNotEmpty()) {
                         Spacer(Modifier.height(4.dp))
                         Text(metaBits.joinToString(stringResource(R.string.content_metadata_separator)), style = MaterialTheme.typography.bodyMedium, color = OwnTVTheme.colors.onSurfaceVariant)
@@ -761,7 +762,7 @@ private fun buildSeriesDetails(
     val year = if (tmdbWins) meta?.year ?: s.year else s.year ?: meta?.year
     val rating = if (tmdbWins) meta?.rating?.takeIf { it > 0 } ?: s.rating?.takeIf { it > 0 }
         else s.rating?.takeIf { it > 0 } ?: meta?.rating?.takeIf { it > 0 }
-    val metaLine = listOfNotNull(year?.toString(), rating?.let { stringResource(R.string.content_rating, it) }).joinToString(stringResource(R.string.content_metadata_separator))
+    val metaLine = listOfNotNull(year?.let { localizedInteger(it, grouping = false) }, rating?.let { stringResource(R.string.content_rating, it) }).joinToString(stringResource(R.string.content_metadata_separator))
     return tv.own.owntv.features.shell.components.MediaDetailsUi(
         title = s.name,
         backdropUrl = backdrop,
@@ -800,7 +801,7 @@ private fun EpisodeDetailPane(
         else episode.plot?.takeIf { it.isNotBlank() } ?: meta?.overview
     val bits = listOfNotNull(
         stringResource(R.string.content_season_episode, episode.seasonNumber, episode.episodeNumber),
-        meta?.year?.toString(),
+        meta?.year?.let { localizedInteger(it, grouping = false) },
         meta?.rating?.takeIf { it > 0 }?.let { stringResource(R.string.content_rating, it) },
     )
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Dimens.GapLarge)) {
@@ -920,7 +921,7 @@ private fun buildEpisodeDetails(
     val still = tv.own.owntv.core.metadata.MetadataImages.backdrop(meta?.backdropPath ?: meta?.posterPath)
     val title = if (tmdbWins) meta?.title?.takeIf { it.isNotBlank() } ?: episodeDisplayTitle(ep) else episodeDisplayTitle(ep)
     val plot = if (tmdbWins) meta?.overview ?: ep.plot else ep.plot?.takeIf { it.isNotBlank() } ?: meta?.overview
-    val metaLine = listOfNotNull(meta?.year?.toString(), meta?.rating?.takeIf { it > 0 }?.let { stringResource(R.string.content_rating, it) }).joinToString(stringResource(R.string.content_metadata_separator))
+    val metaLine = listOfNotNull(meta?.year?.let { localizedInteger(it, grouping = false) }, meta?.rating?.takeIf { it > 0 }?.let { stringResource(R.string.content_rating, it) }).joinToString(stringResource(R.string.content_metadata_separator))
     return tv.own.owntv.features.shell.components.MediaDetailsUi(
         title = title,
         subtitle = stringResource(R.string.content_season_episode, ep.seasonNumber, ep.episodeNumber),
@@ -1371,7 +1372,7 @@ private fun EpisodeRow(
                     if (completed) {
                         Text("✓", style = MaterialTheme.typography.titleMedium, color = colors.onPrimaryContainer)
                     } else {
-                        Text(episode.episodeNumber.toString(), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                        Text(localizedInteger(episode.episodeNumber, grouping = false), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
                     }
                 }
                 Text(
@@ -1450,7 +1451,7 @@ private fun SeriesListRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 val meta = buildList {
-                    series.year?.let { add(it.toString()) }
+                    series.year?.let { add(localizedInteger(it, grouping = false)) }
                     series.rating?.takeIf { it > 0 }?.let { add(stringResource(R.string.content_rating, it)) }
                 }.joinToString(stringResource(R.string.content_metadata_separator))
                 if (meta.isNotBlank()) {

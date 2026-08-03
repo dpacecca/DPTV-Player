@@ -91,6 +91,7 @@ import tv.own.owntv.ui.format.formatSystemTime
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.format.localizedInteger
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.compose.foundation.layout.widthIn
@@ -865,7 +866,8 @@ private fun HeroRowSection(
 
                             val subtitle = when (expandedItem) {
                                 is HeroItem.MovieHero ->
-                                    expandedItem.item.subtitle ?: expandedItem.movie.year?.toString().orEmpty()
+                                    expandedItem.item.subtitle
+                                        ?: expandedItem.movie.year?.let { localizedInteger(it, grouping = false) }.orEmpty()
                                 is HeroItem.SeriesHero ->
                                     expandedItem.item.subtitle.orEmpty()
                                 is HeroItem.LiveHero -> stringResource(R.string.home_recent_live)

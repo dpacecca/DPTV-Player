@@ -82,6 +82,7 @@ import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.LocalActionSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.format.localizedDecimal
 
 private val SPEEDS = listOf(0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0)
 private val TEAL = Color(0xFF52DBC8)
@@ -1026,7 +1027,7 @@ private fun SpeedButton(label: String, active: Boolean, onClick: () -> Unit) {
 private fun formatSpeed(speed: Double): String = if (speed == 1.0) {
     stringResource(R.string.player_speed_normal_short)
 } else {
-    stringResource(R.string.player_speed, speed.toString())
+    stringResource(R.string.player_speed, localizedDecimal(speed))
 }
 
 /** Next-episode countdown card: "Next episode in Ns" + title, with Play now / Cancel. Play now advances
@@ -1363,7 +1364,7 @@ private fun SpeedDialog(current: Double, onSelect: (Double) -> Unit, onDismiss: 
         items(SPEEDS.size) { index ->
             val speed = SPEEDS[index]
             OptionRow(
-                label = if (speed == 1.0) stringResource(R.string.player_speed_normal) else stringResource(R.string.player_speed, speed.toString()),
+                label = if (speed == 1.0) stringResource(R.string.player_speed_normal) else stringResource(R.string.player_speed, localizedDecimal(speed)),
                 selected = kotlin.math.abs(speed - current) < 0.01,
                 modifier = if (index == selectedIndex) Modifier.focusRequester(focus) else Modifier,
                 onClick = { onSelect(speed) },

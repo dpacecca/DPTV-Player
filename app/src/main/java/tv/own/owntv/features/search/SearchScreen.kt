@@ -51,6 +51,7 @@ import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.format.localizedInteger
 
 /** One row in the flattened results list — drives both the list rows and the detail pane. */
 @Composable
@@ -504,5 +505,5 @@ private fun channelDetail(row: ChannelSearchResult): String? =
 
 @Composable
 private fun metaLine(year: Int?, rating: Double?, type: String): String =
-    listOfNotNull(type, year?.toString(), rating?.let { stringResource(R.string.content_rating, it) })
+    listOfNotNull(type, year?.let { localizedInteger(it, grouping = false) }, rating?.let { stringResource(R.string.content_rating, it) })
         .joinToString(stringResource(R.string.content_genres_separator))

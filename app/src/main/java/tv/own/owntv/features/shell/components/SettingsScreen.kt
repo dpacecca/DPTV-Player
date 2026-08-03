@@ -1675,7 +1675,7 @@ private fun utcOffsetLabel(minutes: Int): String {
     if (minutes == 0) return "UTC"
     val sign = if (minutes < 0) "-" else "+"
     val abs = kotlin.math.abs(minutes)
-    return "UTC$sign%02d:%02d".format(abs / 60, abs % 60)
+    return "UTC$sign%02d:%02d".format(Locale.ROOT, abs / 60, abs % 60)
 }
 
 @Composable
