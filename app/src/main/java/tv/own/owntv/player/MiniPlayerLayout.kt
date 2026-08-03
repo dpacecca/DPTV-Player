@@ -1,6 +1,7 @@
 package tv.own.owntv.player
 
 import androidx.annotation.StringRes
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import tv.own.owntv.R
 
@@ -37,12 +38,12 @@ enum class MiniPlayerPosition(@StringRes val labelRes: Int) {
 
     val alignment: Alignment
         get() = when (this) {
-            TOP_LEFT -> Alignment.TopStart
+            TOP_LEFT -> AbsoluteAlignment.TopLeft
             TOP_CENTER -> Alignment.TopCenter
-            TOP_RIGHT -> Alignment.TopEnd
-            BOTTOM_LEFT -> Alignment.BottomStart
+            TOP_RIGHT -> AbsoluteAlignment.TopRight
+            BOTTOM_LEFT -> AbsoluteAlignment.BottomLeft
             BOTTOM_CENTER -> Alignment.BottomCenter
-            BOTTOM_RIGHT -> Alignment.BottomEnd
+            BOTTOM_RIGHT -> AbsoluteAlignment.BottomRight
         }
 
     /** Next spot for the on-the-fly move button — cycles through all six in order. */

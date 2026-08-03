@@ -36,6 +36,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -91,10 +92,22 @@ internal fun ProgrammeStripCanvas(
     val padPx = with(density) { 10.dp.toPx() }
     val borderPx = with(density) { Dimens.FocusBorderWidth.toPx() }
     val corner = with(density) { CornerRadius(10.dp.toPx(), 10.dp.toPx()) }
-    val titleStyle = MaterialTheme.typography.titleSmall.copy(color = colors.onSurface)
-    val titleNowStyle = MaterialTheme.typography.titleSmall.copy(color = colors.onPrimaryContainer)
-    val timeStyle = MaterialTheme.typography.labelSmall.copy(color = colors.onSurfaceVariant)
-    val timeNowStyle = MaterialTheme.typography.labelSmall.copy(color = colors.onPrimaryContainer)
+    val titleStyle = MaterialTheme.typography.titleSmall.copy(
+        color = colors.onSurface,
+        textDirection = TextDirection.Content,
+    )
+    val titleNowStyle = MaterialTheme.typography.titleSmall.copy(
+        color = colors.onPrimaryContainer,
+        textDirection = TextDirection.Content,
+    )
+    val timeStyle = MaterialTheme.typography.labelSmall.copy(
+        color = colors.onSurfaceVariant,
+        textDirection = TextDirection.Content,
+    )
+    val timeNowStyle = MaterialTheme.typography.labelSmall.copy(
+        color = colors.onPrimaryContainer,
+        textDirection = TextDirection.Content,
+    )
     val formatTime = rememberSystemTimeFormatter()
     // Time labels built once (string formatting kept out of the per-frame draw loop).
     // Resolve the templates through Compose so a live locale change invalidates the labels.
@@ -118,7 +131,10 @@ internal fun ProgrammeStripCanvas(
     // Vertical "now" marker + catch-up glyph — measured once, reused each frame.
     val nowColor = Color(0xFFFF5C5C)
     val nowLinePx = with(density) { 2.dp.toPx() }
-    val catchupStyle = MaterialTheme.typography.labelSmall.copy(color = colors.primary)
+    val catchupStyle = MaterialTheme.typography.labelSmall.copy(
+        color = colors.primary,
+        textDirection = TextDirection.Content,
+    )
     val catchupGlyph = remember(catchupStyle) { measurer.measure("↻", catchupStyle) }
 
     val scrollPx = hScroll.value.toFloat() // read in composable scope so Canvas redraws on scroll

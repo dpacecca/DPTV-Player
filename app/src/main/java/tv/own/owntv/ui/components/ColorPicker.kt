@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,8 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -64,41 +67,43 @@ fun HueBar(hue: Float, modifier: Modifier = Modifier, onHue: (Float) -> Unit) {
         focused -> colors.primary
         else -> colors.outline
     }
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(30.dp)
-            .clip(RoundedCornerShape(15.dp))
-            .background(Brush.horizontalGradient(HueSpectrum))
-            .border(if (editing || focused) 3.dp else 1.dp, ring, RoundedCornerShape(15.dp))
-            .onFocusChanged { focused = it.isFocused; if (!it.isFocused) editing = false }
-            .focusable()
-            .onKeyEvent { e ->
-                if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
-                // Physical by design: the hue spectrum always runs left to right.
-                when (e.key) {
-                    Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { editing = !editing; true }
-                    Key.Back -> if (editing) { editing = false; true } else false
-                    Key.DirectionLeft -> if (editing) { onHue(((hue - 4f) % 360f + 360f) % 360f); true } else false
-                    Key.DirectionRight -> if (editing) { onHue((hue + 4f) % 360f); true } else false
-                    Key.DirectionUp, Key.DirectionDown -> editing // trap vertical only while editing
-                    else -> false
-                }
-            },
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        // Knob marking the current hue.
-        BoxWithConstraints {
-            val x = (maxWidth - 12.dp) * (hue / 360f).coerceIn(0f, 1f)
-            Box(
-                modifier = Modifier
-                    .offset(x = x)
-                    .width(12.dp)
-                    .height(38.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color.White)
-                    .border(2.dp, Color(0x99000000), RoundedCornerShape(6.dp)),
-            )
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(30.dp)
+                .clip(RoundedCornerShape(15.dp))
+                .background(Brush.horizontalGradient(HueSpectrum))
+                .border(if (editing || focused) 3.dp else 1.dp, ring, RoundedCornerShape(15.dp))
+                .onFocusChanged { focused = it.isFocused; if (!it.isFocused) editing = false }
+                .focusable()
+                .onKeyEvent { e ->
+                    if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
+                    // Physical by design: the hue spectrum always runs left to right.
+                    when (e.key) {
+                        Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { editing = !editing; true }
+                        Key.Back -> if (editing) { editing = false; true } else false
+                        Key.DirectionLeft -> if (editing) { onHue(((hue - 4f) % 360f + 360f) % 360f); true } else false
+                        Key.DirectionRight -> if (editing) { onHue((hue + 4f) % 360f); true } else false
+                        Key.DirectionUp, Key.DirectionDown -> editing // trap vertical only while editing
+                        else -> false
+                    }
+                },
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            // Knob marking the current hue.
+            BoxWithConstraints {
+                val x = (maxWidth - 12.dp) * (hue / 360f).coerceIn(0f, 1f)
+                Box(
+                    modifier = Modifier
+                        .offset(x = x)
+                        .width(12.dp)
+                        .height(38.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.White)
+                        .border(2.dp, Color(0x99000000), RoundedCornerShape(6.dp)),
+                )
+            }
         }
     }
 }
@@ -126,44 +131,46 @@ fun SatValSquare(
     }
     val hueColor = Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, 1f, 1f)))
     val step = 0.04f
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(190.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .border(if (editing || focused) 3.dp else 1.dp, ring, RoundedCornerShape(16.dp))
-            .onFocusChanged { focused = it.isFocused; if (!it.isFocused) editing = false }
-            .focusable()
-            .onKeyEvent { e ->
-                if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
-                // Physical by design: saturation/value follow the fixed 2D color field.
-                when (e.key) {
-                    Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { editing = !editing; true }
-                    Key.Back -> if (editing) { editing = false; true } else false
-                    Key.DirectionLeft -> if (editing) { onChange((sat - step).coerceIn(0f, 1f), value); true } else false
-                    Key.DirectionRight -> if (editing) { onChange((sat + step).coerceIn(0f, 1f), value); true } else false
-                    Key.DirectionUp -> if (editing) { onChange(sat, (value + step).coerceIn(0f, 1f)); true } else false
-                    Key.DirectionDown -> if (editing) { onChange(sat, (value - step).coerceIn(0f, 1f)); true } else false
-                    else -> false
-                }
-            },
-    ) {
-        // Base hue, then white (left→right) and black (bottom→top) gradients = an HSV square.
-        Box(Modifier.matchParentSize().background(hueColor))
-        Box(Modifier.matchParentSize().background(Brush.horizontalGradient(listOf(Color.White, Color.Transparent))))
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black))))
-        // Cursor: x = saturation, y = 1 - brightness.
-        BoxWithConstraints(Modifier.matchParentSize()) {
-            val cx = (maxWidth - 22.dp) * sat.coerceIn(0f, 1f)
-            val cy = (maxHeight - 22.dp) * (1f - value).coerceIn(0f, 1f)
-            Box(
-                modifier = Modifier
-                    .offset(x = cx, y = cy)
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .background(Color.Transparent)
-                    .border(3.dp, Color.White, CircleShape),
-            )
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(190.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .border(if (editing || focused) 3.dp else 1.dp, ring, RoundedCornerShape(16.dp))
+                .onFocusChanged { focused = it.isFocused; if (!it.isFocused) editing = false }
+                .focusable()
+                .onKeyEvent { e ->
+                    if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
+                    // Physical by design: saturation/value follow the fixed 2D color field.
+                    when (e.key) {
+                        Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { editing = !editing; true }
+                        Key.Back -> if (editing) { editing = false; true } else false
+                        Key.DirectionLeft -> if (editing) { onChange((sat - step).coerceIn(0f, 1f), value); true } else false
+                        Key.DirectionRight -> if (editing) { onChange((sat + step).coerceIn(0f, 1f), value); true } else false
+                        Key.DirectionUp -> if (editing) { onChange(sat, (value + step).coerceIn(0f, 1f)); true } else false
+                        Key.DirectionDown -> if (editing) { onChange(sat, (value - step).coerceIn(0f, 1f)); true } else false
+                        else -> false
+                    }
+                },
+        ) {
+            // Base hue, then white (left→right) and black (bottom→top) gradients = an HSV square.
+            Box(Modifier.matchParentSize().background(hueColor))
+            Box(Modifier.matchParentSize().background(Brush.horizontalGradient(listOf(Color.White, Color.Transparent))))
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black))))
+            // Cursor: x = saturation, y = 1 - brightness.
+            BoxWithConstraints(Modifier.matchParentSize()) {
+                val cx = (maxWidth - 22.dp) * sat.coerceIn(0f, 1f)
+                val cy = (maxHeight - 22.dp) * (1f - value).coerceIn(0f, 1f)
+                Box(
+                    modifier = Modifier
+                        .offset(x = cx, y = cy)
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(Color.Transparent)
+                        .border(3.dp, Color.White, CircleShape),
+                )
+            }
         }
     }
 }

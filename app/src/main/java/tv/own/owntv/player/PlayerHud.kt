@@ -63,6 +63,8 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -1142,6 +1144,7 @@ private fun SeekBar(positionMs: Long, durationMs: Long, onSeek: (Long) -> Unit) 
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val frac = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
     Box(
         modifier = Modifier.fillMaxWidth().height(24.dp)
             .onKeyEvent { e ->
@@ -1169,10 +1172,15 @@ private fun SeekBar(positionMs: Long, durationMs: Long, onSeek: (Long) -> Unit) 
                 Box(
                     Modifier.offset(y = (-32).dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp),
                 ) {
-                    Text(stringResource(R.string.player_time_remaining, formatTime((durationMs - positionMs).coerceAtLeast(0))), style = MaterialTheme.typography.labelMedium, color = Color.White)
+                    Text(
+                        stringResource(R.string.player_time_remaining, formatTime((durationMs - positionMs).coerceAtLeast(0))),
+                        style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content),
+                        color = Color.White,
+                    )
                 }
             }
         }
+    }
     }
 }
 
@@ -1188,6 +1196,7 @@ private fun LiveTimelineBar(offsetSec: Int, onScrub: (Int) -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val frac = (1f - offsetSec.toFloat() / LIVE_WINDOW_SEC).coerceIn(0f, 1f) // 1 = live edge, 0 = far edge
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
     Box(
         modifier = Modifier.fillMaxWidth().height(24.dp)
             .onKeyEvent { e ->
@@ -1214,10 +1223,15 @@ private fun LiveTimelineBar(offsetSec: Int, onScrub: (Int) -> Unit) {
             }
             Box(Modifier.fillMaxWidth(frac), contentAlignment = Alignment.CenterEnd) {
                 Box(Modifier.padding(bottom = 30.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
-                    Text(if (offsetSec <= 1) stringResource(R.string.player_live) else stringResource(R.string.player_live_offset, mmss(offsetSec)), style = MaterialTheme.typography.labelMedium, color = Color.White)
+                    Text(
+                        if (offsetSec <= 1) stringResource(R.string.player_live) else stringResource(R.string.player_live_offset, mmss(offsetSec)),
+                        style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content),
+                        color = Color.White,
+                    )
                 }
             }
         }
+    }
     }
 }
 

@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.first
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,8 +57,11 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.pluralStringResource
@@ -415,49 +419,51 @@ fun EpgScreen(
                 // Time axis (shares hScroll with the rows below).
                 val formatTime = rememberSystemTimeFormatter()
                 val slots = ((state.windowEnd - state.windowStart) / (GuideGridDefaults.SlotMin * 60_000L)).toInt()
-                Row {
-                    Spacer(Modifier.width(GuideGridDefaults.ChannelCol))
-                    Row(Modifier.horizontalScroll(hScroll)) {
-                        for (i in 0 until slots) {
-                            val slotMs = state.windowStart + i * GuideGridDefaults.SlotMin * 60_000L
-                            Text(
-                                formatTime(slotMs),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = colors.onSurfaceVariant,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.width((GuideGridDefaults.SlotMin * GuideGridDefaults.PxPerMin.value).dp).padding(start = 6.dp),
-                            )
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Row {
+                        Spacer(Modifier.width(GuideGridDefaults.ChannelCol))
+                        Row(Modifier.horizontalScroll(hScroll)) {
+                            for (i in 0 until slots) {
+                                val slotMs = state.windowStart + i * GuideGridDefaults.SlotMin * 60_000L
+                                Text(
+                                    formatTime(slotMs),
+                                    style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content),
+                                    color = colors.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.width((GuideGridDefaults.SlotMin * GuideGridDefaults.PxPerMin.value).dp).padding(start = 6.dp),
+                                )
+                            }
                         }
                     }
-                }
-                Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(8.dp))
 
-                LazyColumn(modifier = Modifier.weight(1f), state = rowListState, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    itemsIndexed(state.channels, key = { _, ch -> ch.id }) { index, channel ->
-                        GuideChannelRow(
-                            vm = vm,
-                            channel = channel,
-                            windowStart = state.windowStart,
-                            windowEnd = state.windowEnd,
-                            now = state.now,
-                            hScroll = hScroll,
-                            labelFocus = when {
-                                channel.id == restoreChannelId -> restoreCell
-                                channel.id == vm.lastTunedChannelId -> tunedCell
-                                index == 0 -> firstCell
-                                else -> null
-                            },
-                            onTune = { vm.noteChannelTuned(channel); if (onPlayChannel != null) onPlayChannel(channel, state.channels) else { vm.play(channel); onFullscreen() } },
-                            onOpen = { restoreChannelId = channel.id; detail = channel to it },
-                            onMatchEpg = { restoreChannelId = channel.id; matchChooser = channel },
-                            inCellMode = inCellMode,
-                            cursorTime = cursorTime,
-                            onEnterCell = { cursorTime = state.now; inCellMode = true },
-                            onExitToChannels = { inCellMode = false },
-                            onMoveCursor = { cursorTime = it },
-                            onStripFocused = { focusedChannel = channel },
-                            categoryColor = guideCategories.firstOrNull { it.categoryId == channel.categoryId }?.name?.let { ChannelGenre.dotFor(it) },
-                        )
+                    LazyColumn(modifier = Modifier.weight(1f), state = rowListState, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        itemsIndexed(state.channels, key = { _, ch -> ch.id }) { index, channel ->
+                            GuideChannelRow(
+                                vm = vm,
+                                channel = channel,
+                                windowStart = state.windowStart,
+                                windowEnd = state.windowEnd,
+                                now = state.now,
+                                hScroll = hScroll,
+                                labelFocus = when {
+                                    channel.id == restoreChannelId -> restoreCell
+                                    channel.id == vm.lastTunedChannelId -> tunedCell
+                                    index == 0 -> firstCell
+                                    else -> null
+                                },
+                                onTune = { vm.noteChannelTuned(channel); if (onPlayChannel != null) onPlayChannel(channel, state.channels) else { vm.play(channel); onFullscreen() } },
+                                onOpen = { restoreChannelId = channel.id; detail = channel to it },
+                                onMatchEpg = { restoreChannelId = channel.id; matchChooser = channel },
+                                inCellMode = inCellMode,
+                                cursorTime = cursorTime,
+                                onEnterCell = { cursorTime = state.now; inCellMode = true },
+                                onExitToChannels = { inCellMode = false },
+                                onMoveCursor = { cursorTime = it },
+                                onStripFocused = { focusedChannel = channel },
+                                categoryColor = guideCategories.firstOrNull { it.categoryId == channel.categoryId }?.name?.let { ChannelGenre.dotFor(it) },
+                            )
+                        }
                     }
                 }
                 // Non-modal bottom strip — previews the cursor programme while browsing in CELL mode.
@@ -743,7 +749,7 @@ private fun GuideChannelRow(
                 }
                 Text(
                     channel.number?.let { stringResource(R.string.content_epg_channel_number, it, channel.name) } ?: channel.name,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.Content),
                     color = if (focused) colors.primary else colors.onSurface,
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
