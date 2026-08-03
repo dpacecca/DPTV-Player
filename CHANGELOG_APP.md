@@ -19,11 +19,14 @@
 - **🗓️ Guide time offset — for a guide that is hours out, globally or for one channel**
 - **🎧 Sound behaves like a TV app now — and the remote's transport keys work**
 - **🩺 Diagnostics you can actually send**
-- **🧩 M3U playlists: per-channel headers, and catch-up that actually builds a URL**
+- **🧩 M3U playlists: per-item headers, and catch-up that actually builds a URL**
 
 ### 🐛 Fixes
 
 - **4K movies that failed to play on some TVs now get a real rescue instead of a wrong error**
+- **A film or episode now gets every decoding option before it gives up, whichever player you prefer**
+- **A file that repeatedly defeats your preferred player stops re-trying it**
+- **The Home screen's background preview no longer holds a channel open on a dead stream**
 - **Channels found in Search now play exactly like channels opened from Live TV**
 - **Prefer HLS also applies in the TV Guide and to catch-up**
 - **Retry on a movie retries the movie**

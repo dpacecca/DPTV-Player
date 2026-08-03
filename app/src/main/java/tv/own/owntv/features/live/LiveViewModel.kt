@@ -1150,7 +1150,7 @@ class LiveViewModel(
             } else {
                 channel.streamUrl
             }
-            externalPlayerLauncher.launch(url, channel.name)
+            externalPlayerLauncher.launch(url, channel.name, source?.userAgent, channel.httpHeaders)
             recordLiveHistory(channel, immediate = true)
         }
     }

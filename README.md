@@ -78,7 +78,7 @@ Scan to join from your phone:
 - XMLTV **TV Guide** grid, **Catch-up TV** (up to 7 days) + live rewind, auto EPG matching, multiple guide sources
 - **Guide time offset** — correct a guide published in another time zone, globally or per channel
 - Optional **guide channel logos** — per EPG source, use that feed's own logos instead of your playlist's
-- M3U extras honoured: per-channel HTTP headers (`#EXTVLCOPT` / `#EXTHTTP` / `#KODIPROP` / URL suffix) and the `append` / `shift` / `flussonic` / `xc` catch-up styles
+- M3U extras honoured: per-item HTTP headers on live, movie and series entries (`#EXTVLCOPT` / `#EXTHTTP` / `#KODIPROP` / URL suffix) and the `append` / `shift` / `flussonic` / `xc` catch-up styles
 
 ### 👥 Profiles & Downloads
 - Multiple profiles with own favorites/history/resume, PIN locks, kids flag, "Who's watching?" gate

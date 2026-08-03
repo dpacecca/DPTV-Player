@@ -95,7 +95,7 @@
   and shows you the path, so it can be pulled off the TV with
   `adb pull /sdcard/Android/data/tv.own.owntv/files/owntv-playback-report.txt`.
 
-### 🧩 M3U playlists: per-channel headers, and catch-up that actually builds a URL
+### 🧩 M3U playlists: per-item headers, and catch-up that actually builds a URL
 
 - **Per-channel HTTP options in an M3U playlist are honoured.** `#EXTVLCOPT:http-user-agent`,
   `#EXTVLCOPT:http-referrer`, `#EXTHTTP`, `#KODIPROP` stream headers and the
@@ -108,6 +108,12 @@
   `flussonic` and `xc`. The catch-up *type* was parsed and thrown away, so the most widespread form built
   a broken URL and "Watch from start" played nothing at all. `{lutc}`, `{now}` and `{timenow}` are now
   substituted instead of being sent to the provider literally.
+- **Per-item HTTP options now work on movies and series too, not just live channels.** A playlist that
+  gives a film or an episode its own User-Agent or Referer had those options dropped, so exactly the
+  same 403 that used to hit live channels hit VOD instead. They are now stored per item and sent by
+  both players — and by an external player, which previously received no headers or User-Agent at all
+  from anywhere in the app. In a series they are applied per episode, so a season that mixes
+  header-carrying and plain episodes plays right through.
 - These need one playlist refresh before they take effect.
 
 ### 🐛 Fixes
@@ -118,6 +124,21 @@
   and software decoding (which is capped at 1080p, so 4K had none at all), and nothing ever asked the TV
   what it can actually decode. Playback now steps down through an extra hardware rung before software,
   and when the TV genuinely cannot decode a video the message says so — instead of blaming the file.
+- **A film or episode now gets every decoding option before it gives up, whichever player you prefer.**
+  Playback tries the standard player's hardware decoder, then its software decoder, then the
+  compatibility player's hardware decoder, then its software decoder — the same four rungs in the same
+  order, mirrored, whichever player you set as your preferred one. The standard player's software rung
+  existed only for catch-up recordings before this, so a video that its hardware decoder could not
+  handle skipped straight to the other player and, on the way, lost the setting you had chosen.
+- **A file that repeatedly defeats your preferred player stops re-trying it.** When a video fails on the
+  standard player for a decoding reason, that film or episode is remembered and opens on the
+  compatibility player next time; and if three items in a row have had to switch, the rest of the
+  session starts on the working player straight away. Changing the preferred-player setting clears this,
+  and nothing is remembered for a failure that was the network's fault rather than the decoder's.
+- **The Home screen's background preview no longer holds a channel open on a dead stream.** It had no
+  time limit of its own, so a stream that connected but never produced a picture kept the connection —
+  which matters on providers that allow one stream at a time. It also decoded and discarded the audio
+  it never plays; that is switched off at the source now.
 - **Channels found in Search now play exactly like channels opened from Live TV.** Search had its own
   minimal way of starting a channel, so it skipped the Prefer HLS setting, the automatic switch to the
   compatibility player, per-channel compatibility pins and the channel list for CH+/CH−. A channel that
@@ -151,8 +172,10 @@
 - **A provider that refuses playback outright is no longer hammered with the identical request.** The retry ladder stops repeating a request that was already rejected, while the alternative-format and player fallbacks still get their turn.
 - **Catch-up recordings that opened with sound but no picture now recover by themselves.** A recording
   starts in the middle of the video stream, which some TV decoders cannot begin from; playback now
-  reopens it in software decoding and remembers that provider for the rest of the session, so its other
-  recordings start on the working path straight away.
+  reopens it in software decoding and remembers that provider, so its other recordings start on the
+  working path straight away. That memory is now kept across app restarts as well — re-learning it cost
+  a whole failed recording every time you opened the app, since the fault is in the provider's archive
+  and does not come and go.
 - **Zapping no longer slows down the Guide, artwork and playlist updates.** Stopping a live channel
   releases its connections — necessary, because many providers count them — but everything else in the
   app was sharing those connections and had to reconnect from scratch. Playback now has its own pool.

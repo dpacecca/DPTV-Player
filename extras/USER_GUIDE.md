@@ -349,7 +349,10 @@ or **narrow the whole app to just one**.
   external app (VLC, MX Player, …) — one‑off, regardless of the global **External player** setting.
 - 🔧 **Two playback engines with automatic fallback**: movies/episodes play on **mpv** by default (or
   **ExoPlayer** if you switched the **Movies & Series player** setting). If the chosen engine can't play an
-  item, the **other engine is tried automatically** before any error. You can also switch the **current**
+  item, the **other engine is tried automatically** before any error. Each engine is given both its
+  hardware and its software decoder before the other is tried, so a video gets four chances in all. If an
+  item keeps failing on your preferred engine for a decoding reason, it is remembered and opens on the
+  other one from then on. You can also switch the **current**
   movie/episode manually: bring up the controls and press the **engine toggle (the ⇄ MPV/EXO pill)** — it
   flips between mpv and ExoPlayer at the same position (the pill shows the active engine; teal while on
   ExoPlayer, and a small "Switched to MPV/ExoPlayer" note confirms it). Handy when one engine doesn't show a
@@ -803,8 +806,10 @@ http://your-server/live/bbc1.ts
 > are also read on live entries — the `append`, `shift`, `flussonic` and `xc` styles are all supported,
 > and `{utc}` / `{lutc}` / `{now}` / date tokens in `catchup-source` are filled in.
 
-**Per-channel HTTP options** are supported too, for a channel whose server needs its own User-Agent or
-Referer. Any of these forms works, on the lines just after `#EXTINF` (or as a suffix on the URL):
+**Per-item HTTP options** are supported too, for an entry whose server needs its own User-Agent or
+Referer. They work on live, movie and series entries alike, and are sent by both players and by an
+external player. Any of these forms works, on the lines just after `#EXTINF` (or as a suffix on the
+URL):
 
 ```
 #EXTINF:-1 group-title="UK Channels",Some Restream
@@ -817,7 +822,7 @@ http://your-server/live/other.ts|User-Agent=MyPlayer/1.0&Referer=http://example.
 ```
 
 `#EXTHTTP:{"cookie":"…"}` and `#KODIPROP:inputstream.adaptive.stream_headers=…` are read as well. A
-per-channel User-Agent wins over the playlist-wide one set in **Manage sources**.
+per-item User-Agent wins over the playlist-wide one set in **Manage sources**.
 
 ### Movies example
 

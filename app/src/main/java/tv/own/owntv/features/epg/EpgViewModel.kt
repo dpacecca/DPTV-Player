@@ -357,7 +357,8 @@ class EpgViewModel(
                 _matchSummary.value = "Catch-up isn't available for this channel."
                 return@launch
             }
-            externalPlayerLauncher.launch(url, "${channel.name} · ${programme.title}")
+            val sourceUa = withContext(kotlinx.coroutines.Dispatchers.IO) { sourceDao.getById(channel.sourceId)?.userAgent }
+            externalPlayerLauncher.launch(url, "${channel.name} · ${programme.title}", sourceUa, channel.httpHeaders)
         }
     }
 

@@ -443,7 +443,7 @@ class MovieViewModel(
             val pid = currentProfileId()
             Log.d(TAG, "playExternal movieId=${movie.id}")
             val url = resolvedUrlOrNull(movie) ?: return@launch
-            externalPlayerLauncher.launch(url, movie.name)
+            externalPlayerLauncher.launch(url, movie.name, sourceDao.getById(movie.sourceId)?.userAgent, movie.httpHeaders)
             if (pid != null) {
                 runCatching {
                     historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.MOVIE, itemId = movie.id))
@@ -462,7 +462,7 @@ class MovieViewModel(
             if (settings.externalPlayerMovies.first()) {
                 Log.d(TAG, "play movieId=${movie.id} -> external player")
                 val url = resolvedUrlOrNull(movie) ?: return@launch
-                externalPlayerLauncher.launch(url, movie.name)
+                externalPlayerLauncher.launch(url, movie.name, sourceDao.getById(movie.sourceId)?.userAgent, movie.httpHeaders)
                 if (pid != null) {
                     runCatching {
                         historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.MOVIE, itemId = movie.id))
@@ -492,6 +492,7 @@ class MovieViewModel(
                 isLive = false,
                 startPositionMs = startPositionMs,
                 userAgent = sourceUa,
+                httpHeaders = movie.httpHeaders,
                 // P6 — engine pins key on this, not on playUrl (a Stalker playUrl is minted per play).
                 contentKey = tv.own.owntv.core.player.enginePinKey(movie.sourceId, "MOVIE", movie.remoteId),
                 // F12 — a Stalker create_link URL dies before a long film ends; give the player a way to
