@@ -826,14 +826,14 @@ private fun MovieDetailsPane(
         }
         if (!plot.isNullOrBlank()) {
             Spacer(Modifier.height(12.dp))
-            Text(plot, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 6)
+            Text(plot, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 6, overflow = TextOverflow.Ellipsis)
         }
         val cast = jsonList(meta?.castJson)
         if (cast.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             Text(stringResource(R.string.content_media_cast), style = MaterialTheme.typography.labelMedium, color = colors.onSurface)
             Spacer(Modifier.height(2.dp))
-            Text(cast.take(6).joinToString(", "), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 2)
+            Text(cast.take(6).joinToString(", "), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Spacer(Modifier.height(20.dp))
         // Display-only pane (§11.1): actions live on the poster — OK plays, long-press opens the menu
@@ -947,7 +947,7 @@ private fun MovieListRow(
                 )
                 val meta = metaLine(movie)
                 if (meta.isNotBlank()) {
-                    Text(meta, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1)
+                    Text(meta, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             if (completed) {

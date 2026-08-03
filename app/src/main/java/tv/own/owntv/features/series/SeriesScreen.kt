@@ -89,6 +89,7 @@ import tv.own.owntv.ui.components.TrailerPlayerScreen
 import tv.own.owntv.ui.components.chNavPaging
 import tv.own.owntv.ui.components.longPressMenuGuard
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import tv.own.owntv.ui.components.SearchBar
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.trapVerticalFocusExit
@@ -582,13 +583,13 @@ private fun SeriesGrid(
                     }
                     if (!plot.isNullOrBlank()) {
                         Spacer(Modifier.height(12.dp))
-                        Text(plot, style = MaterialTheme.typography.bodyMedium, color = OwnTVTheme.colors.onSurfaceVariant, maxLines = 8)
+                        Text(plot, style = MaterialTheme.typography.bodyMedium, color = OwnTVTheme.colors.onSurfaceVariant, maxLines = 8, overflow = TextOverflow.Ellipsis)
                     }
                     if (cast.isNotEmpty()) {
                         Spacer(Modifier.height(12.dp))
                         Text(stringResource(R.string.content_media_cast), style = MaterialTheme.typography.labelMedium, color = OwnTVTheme.colors.onSurface)
                         Spacer(Modifier.height(2.dp))
-                        Text(cast.take(6).joinToString(", "), style = MaterialTheme.typography.bodySmall, color = OwnTVTheme.colors.onSurfaceVariant, maxLines = 2)
+                        Text(cast.take(6).joinToString(", "), style = MaterialTheme.typography.bodySmall, color = OwnTVTheme.colors.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                     Spacer(Modifier.height(16.dp))
                     Text(stringResource(R.string.content_press_ok_episodes), style = MaterialTheme.typography.bodyMedium, color = OwnTVTheme.colors.primary)
@@ -1455,7 +1456,7 @@ private fun SeriesListRow(
                     series.rating?.takeIf { it > 0 }?.let { add(stringResource(R.string.content_rating, it)) }
                 }.joinToString(stringResource(R.string.content_metadata_separator))
                 if (meta.isNotBlank()) {
-                    Text(meta, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1)
+                    Text(meta, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             if (isFavorite) {
@@ -1490,7 +1491,7 @@ private fun SeriesSortingDialog(
             .focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
-        Column(Modifier.dialogPanel(width = 520.dp, padding = 28.dp)) {
+        Column(Modifier.dialogPanel(width = 680.dp, padding = 28.dp)) {
             Text(stringResource(R.string.content_sorting), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
             Spacer(Modifier.height(20.dp))
             SortingRow(
@@ -1518,12 +1519,18 @@ private fun SortingRow(
     onSelect: (Boolean) -> Unit,
     focusRequester: androidx.compose.ui.focus.FocusRequester? = null,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         Text(
             label,
             style = MaterialTheme.typography.labelLarge,
             color = OwnTVTheme.colors.onSurfaceVariant,
-            modifier = Modifier.width(96.dp),
+            modifier = Modifier.widthIn(min = 110.dp, max = 180.dp),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
         OwnTVButton(
             label = stringResource(R.string.content_oldest_first),

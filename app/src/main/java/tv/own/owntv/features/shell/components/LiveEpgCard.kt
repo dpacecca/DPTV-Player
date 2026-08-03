@@ -84,6 +84,7 @@ fun LiveEpgCard(epg: EpgNowNext?, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.5f),
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 val span = (entry.stopMs - entry.startMs).toFloat()
                 if (span > 0f) {
@@ -124,6 +125,7 @@ fun LiveEpgCard(epg: EpgNowNext?, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.4f),
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

@@ -8,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
@@ -49,6 +50,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -194,6 +196,10 @@ fun AudioNowPlayingBar(
                     color = colors.onSurface,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth().then(
+                        if (hasFocus) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier,
+                    ),
                 )
                 if (expanded) {
                     when {
@@ -207,12 +213,14 @@ fun AudioNowPlayingBar(
                             style = MaterialTheme.typography.labelSmall.copy(fontFamily = PopupFontFamily),
                             color = colors.onSurfaceVariant,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                         meta.localizedSubtitle() != null -> Text(
                             meta.localizedSubtitle() ?: "",
                             style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.SansSerif),
                             color = colors.onSurfaceVariant,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }

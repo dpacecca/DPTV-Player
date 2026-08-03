@@ -149,6 +149,7 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.onSurfaceVariant,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         currentCompleted?.let { completed ->

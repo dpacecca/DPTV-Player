@@ -2,6 +2,7 @@ package tv.own.owntv.player
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -25,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
@@ -63,7 +65,16 @@ fun MiniPlayer(
                 .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)))
                 .padding(start = 48.dp, end = 96.dp, top = 6.dp, bottom = 6.dp),
         ) {
-            Text(meta.title ?: "", style = MaterialTheme.typography.labelMedium, color = Color.White, maxLines = 1)
+            Text(
+                meta.title ?: "",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().then(
+                    if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier,
+                ),
+            )
         }
 
         // Audio Mode (top-left): switch to audio-only and surface the top-bar now-playing bar.

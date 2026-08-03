@@ -744,6 +744,7 @@ private fun TopBar(
                             color = Color.White.copy(alpha = 0.45f),
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                         Spacer(Modifier.width(10.dp))
                     }
@@ -1347,7 +1348,9 @@ private fun TrackDialog(
                         formatDelay(audioDelayMs ?: 0),
                         style = MaterialTheme.typography.bodyMedium, color = colors.primary,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        modifier = Modifier.width(78.dp),
+                        modifier = Modifier.widthIn(min = 78.dp, max = 140.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     StepButton(stringResource(R.string.common_plus), enabled = (audioDelayMs ?: 0) < 5_000) { onAdjustAudioDelay(50) }
                 }

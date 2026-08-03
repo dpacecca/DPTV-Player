@@ -32,6 +32,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
@@ -344,12 +345,12 @@ private fun DetailPane(
                 OwnTVIcon(icon, tint = colors.onSurfaceVariant, modifier = Modifier.size(48.dp))
             }
         }
-        Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface, maxLines = 2)
+        Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
         if (subtitle != null) {
             Text(subtitle, style = MaterialTheme.typography.labelLarge, color = colors.primary, fontWeight = FontWeight.SemiBold)
         }
         if (!plot.isNullOrBlank()) {
-            Text(plot, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 5)
+            Text(plot, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, maxLines = 5, overflow = TextOverflow.Ellipsis)
         }
         Spacer(Modifier.height(2.dp))
         FocusableSurface(
@@ -425,9 +426,10 @@ private fun ResultRow(
                     style = MaterialTheme.typography.titleSmall,
                     color = if (focused) colors.primary else colors.onSurface,
                     maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 if (subtitle != null) {
-                    Text(subtitle, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1)
+                    Text(subtitle, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             if (isFavorite) {

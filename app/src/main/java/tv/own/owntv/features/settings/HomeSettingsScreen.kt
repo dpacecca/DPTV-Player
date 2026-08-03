@@ -26,6 +26,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
@@ -222,6 +223,7 @@ private fun HomeRowCard(
                 style = MaterialTheme.typography.titleSmall,
                 color = if (hidden) colors.onSurfaceVariant else colors.onSurface,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             if (hidden) {
                 Text(
@@ -229,6 +231,7 @@ private fun HomeRowCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.onSurfaceVariant,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

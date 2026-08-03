@@ -660,7 +660,7 @@ private fun EpgMatchChooserDialog(
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.dialogPanel()) {
-            Text(channelName, style = MaterialTheme.typography.titleLarge, color = colors.onSurface, maxLines = 1)
+            Text(channelName, style = MaterialTheme.typography.titleLarge, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(2.dp))
             Text(
                 stringResource(R.string.content_epg_favourite_description),

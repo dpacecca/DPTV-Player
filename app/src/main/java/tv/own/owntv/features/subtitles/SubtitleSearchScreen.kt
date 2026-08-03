@@ -29,6 +29,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
@@ -195,7 +196,7 @@ private fun ResultsList(
                                 r.languageName ?: r.language ?: stringResource(tv.own.owntv.R.string.player_subtitles_subtitle),
                                 style = MaterialTheme.typography.titleSmall, color = colors.onSurface, fontWeight = FontWeight.SemiBold,
                             )
-                            Text(r.releaseName ?: stringResource(tv.own.owntv.R.string.player_subtitles_subtitle), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1)
+                            Text(r.releaseName ?: stringResource(tv.own.owntv.R.string.player_subtitles_subtitle), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             val tags = buildList {
                                 if (r.fromTrusted) add(stringResource(tv.own.owntv.R.string.player_subtitles_trusted))
                                 if (r.hearingImpaired) add(stringResource(tv.own.owntv.R.string.player_subtitles_sdh))

@@ -1270,6 +1270,7 @@ private fun EmptyHomeState(
                 style = MaterialTheme.typography.titleLarge,
                 color = colors.onSurface,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.height(8.dp))
             Text(
@@ -1302,6 +1303,7 @@ private fun AllRowsHiddenState(
                 style = MaterialTheme.typography.titleLarge,
                 color = colors.onSurface,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.height(8.dp))
             Text(

@@ -2,6 +2,7 @@ package tv.own.owntv.features.shell.components
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -254,6 +256,7 @@ private fun ProfileCard(
                 style = MaterialTheme.typography.titleMedium,
                 color = colors.onSurface,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
             )
             Text(
@@ -261,6 +264,7 @@ private fun ProfileCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(12.dp))
@@ -281,7 +285,16 @@ private fun ProfileCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OwnTVIcon(icon = OwnTVIcon.PERSON, tint = c, modifier = Modifier.size(18.dp))
-                    Text(stringResource(R.string.common_switch_profile), style = MaterialTheme.typography.labelLarge, color = c, maxLines = 1)
+                    Text(
+                        stringResource(R.string.common_switch_profile),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = c,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f).then(
+                            if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier,
+                        ),
+                    )
                 }
             }
         }
@@ -387,7 +400,10 @@ private fun NavItem(
                         style = MaterialTheme.typography.titleMedium,
                         color = ladder.content,
                         maxLines = 1,
-                        modifier = Modifier.weight(1f),
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f).then(
+                            if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier,
+                        ),
                     )
                     if (count > 0) {
                         Box(

@@ -3,6 +3,7 @@ package tv.own.owntv.features.shell.components
 import android.text.format.DateFormat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +35,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -124,6 +127,7 @@ private fun SearchPill(onClick: () -> Unit, visible: Boolean) {
     FocusableSurface(
         onClick = onClick,
         modifier = Modifier
+            .widthIn(max = 180.dp)
             .graphicsLayer { this.alpha = alpha }
             .focusProperties { canFocus = visible },
         shape = RoundedCornerShape(TopBarChipCorner),
@@ -138,7 +142,18 @@ private fun SearchPill(onClick: () -> Unit, visible: Boolean) {
         val fg = if (focused) colors.onPrimaryContainer else colors.onSurfaceVariant
         Row(Modifier.padding(horizontal = 14.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OwnTVIcon(icon = OwnTVIcon.SEARCH, tint = fg, modifier = Modifier.size(16.dp))
-            Text(stringResource(R.string.common_search), style = MaterialTheme.typography.labelLarge, color = fg)
+            Text(
+                stringResource(R.string.common_search),
+                style = MaterialTheme.typography.labelLarge,
+                color = fg,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier,
+                    ),
+            )
         }
     }
 }
@@ -150,6 +165,7 @@ private fun ContinueChip(label: String, icon: OwnTVIcon, onClick: () -> Unit, vi
     FocusableSurface(
         onClick = onClick,
         modifier = Modifier
+            .widthIn(max = 240.dp)
             .graphicsLayer { this.alpha = alpha }
             .focusProperties { canFocus = visible },
         shape = RoundedCornerShape(TopBarChipCorner),
@@ -167,7 +183,19 @@ private fun ContinueChip(label: String, icon: OwnTVIcon, onClick: () -> Unit, vi
         ) {
             val fg = if (focused) colors.onPrimary else colors.onPrimaryContainer
             OwnTVIcon(icon = icon, tint = fg, modifier = Modifier.size(16.dp))
-            Text(label, style = MaterialTheme.typography.labelLarge, color = fg, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                color = fg,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier,
+                    ),
+            )
         }
     }
 }
@@ -196,12 +224,13 @@ private fun PlaylistChip(label: String, interactive: Boolean = false, onClick: (
         // Neutral display-only badge (no always-on accent), frosts in glass mode like the other chips.
         val shape = RoundedCornerShape(TopBarChipCorner)
         Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.surfaceContainer.copy(alpha = 0.6f), shape, frostScale = TopBarFrost).topBarGlassRim(shape).padding(horizontal = 14.dp, vertical = 7.dp)) {
-            Text(label, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text(label, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         return
     }
     FocusableSurface(
         onClick = onClick,
+        modifier = Modifier.widthIn(max = 240.dp),
         shape = RoundedCornerShape(TopBarChipCorner),
         surface = GlassSurface.TOPBAR,
         glassFrostScale = TopBarFrost,
@@ -217,7 +246,17 @@ private fun PlaylistChip(label: String, interactive: Boolean = false, onClick: (
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text(label, style = MaterialTheme.typography.labelLarge, color = fg, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                color = fg,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).then(
+                    if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier,
+                ),
+            )
             OwnTVIcon(icon = OwnTVIcon.CHEVRON, tint = fg, modifier = Modifier.size(16.dp))
         }
     }
@@ -236,7 +275,7 @@ private fun WeatherChip(info: WeatherInfo, fahrenheit: Boolean) {
     Box(Modifier.clip(shape).glass(GlassSurface.TOPBAR, colors.surfaceContainer.copy(alpha = 0.6f), shape, frostScale = TopBarFrost).topBarGlassRim(shape).padding(horizontal = 14.dp, vertical = 7.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             WeatherConditionIcon(info = info, Modifier.size(16.dp))
-            Text(location, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(location, style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

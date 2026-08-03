@@ -3,6 +3,7 @@ package tv.own.owntv.features.shell.components
 import tv.own.owntv.core.epg.displayLogoUrl
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -172,6 +173,9 @@ private fun ChannelRow(
                     },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth().then(
+                        if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier,
+                    ),
                 )
                 if (nowTitle != null) {
                     Text(
