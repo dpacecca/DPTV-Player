@@ -623,7 +623,9 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 - 🎞️ **Auto frame rate** (Playback, off by default) — in full screen, asks the TV to switch to a refresh rate matching
   the video (24/25/30/50/60 fps) and hands the display back on exit, so 24fps films and 25/50fps
   broadcasts stop juddering on a 60Hz panel. Works for Live TV and VOD on both engines, and never
-  changes resolution. Enable it only if your TV or receiver switches refresh rates cleanly without a
+  changes resolution. Streams that don't declare a frame rate (most live channels) are now **measured**,
+  so it works there too; if a channel judders while the setting is off and your TV has a suitable mode,
+  OwnTV offers to turn it on — once ever. Enable it only if your TV or receiver switches refresh rates cleanly without a
   visible HDMI re-handshake. The v4.1.6 update resets it to Off once for existing users; changing it
   afterward is remembered normally, and Off disables both ExoPlayer and mpv frame-rate requests.
 - 🧩 **Hardware decoder** (Video Player Settings) — hardware decoding is on for smooth 4K; switch to software
@@ -634,9 +636,16 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   which one is really in use.
 - 📡 **Live latency** (Video Player Settings) — how close to the live edge Live TV plays, trading latency
   against stability: **Low latency**, **Balanced** (default), **Stable**, or a **Custom** buffer in seconds.
-  It applies on the next channel open, to live streams only, on both engines. **Balanced** changes nothing
-  (so it can't regress a working stream); picking **Low latency** or a below‑Balanced custom value warns
-  first that a smaller buffer can stutter on weaker connections.
+  It applies on the next channel open, to live streams only, on both engines, and it now sizes the real
+  buffer on both (it used to be little more than a hint the standard player's stream type ignored).
+  **Balanced** changes nothing (so it can't regress a working stream); picking **Low latency** or a
+  below‑Balanced custom value warns first that a smaller buffer can stutter on weaker connections.
+- ⏱️ **Pre-buffer live streams** (Video Player Settings → Live TV, off by default) — collect this much
+  video (2 / 5 / 10 s) before a channel starts, and again after a stutter, instead of starting on the
+  first frame. It is an **amount of video, not a wait**: a fast provider delivers 10s of video in well
+  under a second, so the channel still starts instantly. Use it on a provider that freezes every few
+  seconds. **Pre-buffer per playlist** right below it lets one troublesome playlist differ from the rest.
+  Stream info's **Live buffer** row shows what the player actually applied.
 - 🪟 **Mini‑player** (Settings → Playback) — set the docked live‑PiP window's **size** (percentage of screen
   width) and **screen position** (four corners plus top/bottom centre). Both are also adjustable **on the
   fly** from the mini‑player's own resize / move controls, and the window scales with your TV size and UI zoom.

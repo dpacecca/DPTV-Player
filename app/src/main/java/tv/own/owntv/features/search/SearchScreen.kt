@@ -68,6 +68,10 @@ fun SearchScreen(
     onFullscreen: () -> Unit,
     onOpenSeries: (SeriesEntity) -> Unit,
     onChildFocused: () -> Unit,
+    /** Tune a channel result through the shared Live TV path (Prefer HLS, the ExoPlayer→mpv ladder,
+     *  compatibility-mode pins, the zap list). Null falls back to this screen's own minimal mpv-only
+     *  play — kept only so the screen still works standalone in a preview/test host. */
+    onPlayChannel: ((ChannelEntity) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val vm: SearchViewModel = koinViewModel()
@@ -132,7 +136,16 @@ fun SearchScreen(
                 // result row (otherwise focus falls back to the sidebar). While typing, leave focus
                 // in the search field so the keyboard keeps working.
                 autoFocusFirst = !searching,
-                onPlayChannel = { vm.playChannel(it); onFullscreen() },
+                onPlayChannel = { ch ->
+                    if (onPlayChannel != null) {
+                        // History + "recent search" bookkeeping stays here; playback goes to the one
+                        // shared live path so a channel behaves the same however it was found.
+                        vm.noteChannelPlayed(ch)
+                        onPlayChannel(ch)
+                    } else {
+                        vm.playChannel(ch); onFullscreen()
+                    }
+                },
                 onToggleFavorite = { vm.toggleFavoriteChannel(it) },
                 onPlayMovie = { vm.playMovie(it); if (!vm.externalPlayerOn.value) onFullscreen() },
                 onOpenSeries = { vm.rememberCurrentQuery(); onOpenSeries(it) },

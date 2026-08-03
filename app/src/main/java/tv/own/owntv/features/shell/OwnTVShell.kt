@@ -159,6 +159,9 @@ fun OwnTVShell(
     // Auto frame rate: only ever applied to the FULL-SCREEN surface (never the mini-player or the
     // in-pane Live preview) — see FrameRateController.
     val autoFrameRate by settingsRepo.autoFrameRate.collectAsStateWithLifecycle(initialValue = false)
+    // ...and the one-time suggestion to turn it on, for the 25-fps-on-60-Hz judder the direct render path
+    // cannot fix by itself (F13). `true` until the flag is read, so it can never flash on first frame.
+    val afrPrompted by settingsRepo.autoFrameRatePrompted.collectAsStateWithLifecycle(initialValue = true)
     // Direct tune (type a channel number on the remote). Settings → Video Player → Live TV; default on.
     val directTuneEnabled by settingsRepo.directTune.collectAsStateWithLifecycle(initialValue = true)
     // "Prefer EPG logos": start following the setting once, here rather than in Application.onCreate —
@@ -513,6 +516,16 @@ fun OwnTVShell(
                             // Open the actual series (its episode list), then switch to the Series section —
                             // the screen shares this SeriesViewModel, so it shows the opened show.
                             onOpenSeries = { series -> seriesVm.openSeries(series); onSelectSection(MainSection.SERIES) },
+                            // A channel found in Search tunes through the same LiveViewModel path as one
+                            // opened from Live TV or the Guide (F05) — Prefer HLS, the ExoPlayer→mpv
+                            // ladder, compatibility-mode pins, the external-player toggle, and CH+/- zap.
+                            onPlayChannel = { ch ->
+                                restoreFocus = false
+                                liveVm.watchFromGuide(ch)
+                                zapSource = MainSection.LIVE_TV
+                                homeVm.stopPreview()
+                                if (playerMode != PlayerMode.MINI && !liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
+                            },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -650,6 +663,22 @@ fun OwnTVShell(
             }
             // Direct render mode: mpv can't draw subtitles on the decoder-owned surface — the app does.
             if (isFull && !liveOnExo) tv.own.owntv.player.SubtitleOverlay(player = player, modifier = Modifier.fillMaxSize())
+            if (isFull && !autoFrameRate && !afrPrompted) {
+                // Frame rate of whichever engine is on screen. On the mpv side this is what the direct
+                // path judders on; on Exo it now survives "Measured stream stats" being off (F14).
+                val activeFps by if (liveOnExo) {
+                    liveVm.previewEngine.videoFps.collectAsStateWithLifecycle()
+                } else {
+                    player.videoFps.collectAsStateWithLifecycle()
+                }
+                tv.own.owntv.player.AutoFrameRatePrompt(
+                    fps = activeFps,
+                    afrEnabled = autoFrameRate,
+                    alreadyPrompted = afrPrompted,
+                    onEnable = { scope.launch { settingsRepo.setAutoFrameRate(true) } },
+                    onDismiss = { scope.launch { settingsRepo.setAutoFrameRatePrompted() } },
+                )
+            }
             if (isFull) {
                 // CH+/CH- zap through the channel list of whichever section opened the current stream
                 // (Live TV or the Guide); never for VOD. When live plays on ExoPlayer (liveOnExo=true) the

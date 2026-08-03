@@ -40,6 +40,7 @@ import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.MovieEntity
 import tv.own.owntv.core.database.entity.SeriesEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
+import tv.own.owntv.core.database.entity.playStreamUrl
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.features.settings.data.SettingsRepository
@@ -257,6 +258,20 @@ class SearchViewModel(
         }
     }
 
+    /** The non-playback half of tuning a channel result: watch history + the recent-searches entry.
+     *  The shell calls this and then hands playback to LiveViewModel's shared path (F05), so a channel
+     *  opened from Search gets the same engine routing as one opened from Live TV. */
+    fun noteChannelPlayed(channel: ChannelEntity) {
+        record(MediaType.LIVE, channel.id)
+        rememberCurrentQuery()
+    }
+
+    /**
+     * Fallback tune used only when this screen has no shared-live-path callback (standalone host).
+     * Deliberately minimal — mpv straight away, no ExoPlayer-first ladder and no compatibility pins —
+     * but it must at least respect the source's Prefer HLS choice, or an Xtream channel that only
+     * works as `.m3u8` here fails where the same channel plays from Live TV.
+     */
     fun playChannel(channel: ChannelEntity) {
         viewModelScope.launch {
             val source = sourceDao.getById(channel.sourceId)
@@ -266,12 +281,11 @@ class SearchViewModel(
                     .onFailure { Log.w(TAG, "stalker resolve failed channelId=${channel.id}", it) }
                     .getOrNull() ?: return@launch
             } else {
-                channel.streamUrl
+                channel.playStreamUrl(source)
             }
-            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent)
+            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent, livePrerollSecsOverride = source?.livePrerollSecs?.takeIf { it >= 0 })
         }
-        record(MediaType.LIVE, channel.id)
-        rememberCurrentQuery()
+        noteChannelPlayed(channel)
     }
 
     fun playMovie(movie: MovieEntity) {

@@ -196,6 +196,11 @@ class LiveViewModel(
     // Full sources by id — lets the synchronous play() paths tell a Stalker source (needs play-time
     // create_link resolution) from M3U/Xtream (final URL already stored) without a DB round-trip.
     private var sourceById: Map<Long, tv.own.owntv.core.database.entity.SourceEntity> = emptyMap()
+
+    /** This playlist's "Pre-buffer" override in seconds, or null to follow the global
+     *  setting. Per-playlist because the periodic-rebuffer problem it solves belongs to a provider. */
+    private fun prerollFor(sourceId: Long?): Int? =
+        sourceId?.let { sourceById[it]?.livePrerollSecs }?.takeIf { it >= 0 }
     private val ctx: StateFlow<Ctx> = activeProfileSources(settings, sourceDao)
         .map { aps ->
             sourceUaMap = aps.sources.associate { it.id to it.userAgent }
@@ -580,6 +585,7 @@ class LiveViewModel(
             targetUrl, muted = !livePreviewAudio.value,
             meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
             userAgent = sourceUaMap[channel.sourceId],
+            prerollSecsOverride = prerollFor(channel.sourceId),
         )
     }
 
@@ -605,6 +611,7 @@ class LiveViewModel(
                 url, muted = !livePreviewAudio.value,
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
                 userAgent = source.userAgent,
+                prerollSecsOverride = prerollFor(channel.sourceId),
             )
         }
     }
@@ -799,10 +806,14 @@ class LiveViewModel(
         ensurePlaying(channel)
     }
 
-    /** Tune a channel picked in the Guide. Same as [ensurePlaying] except history is written straight
-     *  away: the Guide is a deliberate one-shot pick (you chose a channel, or "Watch channel" in a
-     *  programme dialog), not the zap-through-a-category flow the history debounce exists to filter,
-     *  and a live channel opened from the Guide was not reliably landing in History. */
+    /** Tune a channel picked outside the Live TV list — the Guide, or a Search result (F05). Same as
+     *  [ensurePlaying] except history is written straight away: this is a deliberate one-shot pick (you
+     *  chose a channel, or "Watch channel" in a programme dialog), not the zap-through-a-category flow
+     *  the history debounce exists to filter, and such a channel was not reliably landing in History.
+     *
+     *  Every live entry point funnels through here into [playChannel], so Prefer HLS, the
+     *  ExoPlayer→mpv ladder, compatibility-mode pins, learned stream quirks, the per-playlist
+     *  pre-buffer and the external-player toggle apply however the channel was found. */
     fun watchFromGuide(channel: ChannelEntity) {
         armZapList(channel)
         ensurePlaying(channel)
@@ -1180,6 +1191,7 @@ class LiveViewModel(
                 targetUrl, muted = false,
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
                 userAgent = sourceUaMap[channel.sourceId] ?: source?.userAgent,
+                prerollSecsOverride = prerollFor(channel.sourceId),
             )
         }
         watchExoOutcome(channel)
@@ -1207,6 +1219,7 @@ class LiveViewModel(
                 url, muted = false,
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
                 userAgent = source.userAgent,
+                prerollSecsOverride = prerollFor(channel.sourceId),
             )
             watchExoOutcome(channel)
         }
@@ -1365,7 +1378,7 @@ class LiveViewModel(
             if (_previewChannel.value?.streamUrl != channel.streamUrl) return // zapped away while resolving
             // C-3: mpv is now the active engine — install/clear the reconnect provider to match.
             setStalkerReconnect(if (isStalker) channel.streamUrl else null)
-            player.play(url, title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent)
+            player.play(url, title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent, livePrerollSecsOverride = prerollFor(channel.sourceId))
         }
     }
 

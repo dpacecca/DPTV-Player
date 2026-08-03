@@ -542,6 +542,18 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setLiveLatencyCustomSecs(secs) }
     }
 
+    /** "Pre-buffer" (F07): the global choice, in seconds (0 = Off). */
+    val livePrerollSecs: StateFlow<Int> =
+        settings.livePrerollSecs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.LiveBuffer.PREROLL_OFF)
+    fun setLivePrerollSecs(secs: Int) {
+        viewModelScope.launch { settings.setLivePrerollSecs(secs) }
+    }
+
+    /** Per-playlist override of the above. `-1` = follow the global value. */
+    fun setSourcePreroll(sourceId: Long, secs: Int) {
+        viewModelScope.launch { sourceDao.updateLivePreroll(sourceId, secs) }
+    }
+
     val animationLevel: StateFlow<tv.own.owntv.ui.theme.AnimationLevel> =
         settings.animationLevel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.ui.theme.AnimationLevel.FULL)
     fun setAnimationLevel(level: tv.own.owntv.ui.theme.AnimationLevel) { viewModelScope.launch { settings.setAnimationLevel(level) } }

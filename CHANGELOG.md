@@ -27,7 +27,64 @@
   allowed, and — if the safety net fired — why. Useful when you have no receiver display to check
   against.
 
+### ⏱️ Live latency really changes the buffer now — and a new Pre-buffer control, per playlist
+
+- **The Live latency setting finally drives the actual buffer.** On the standard player it was mostly
+  decoration: the buffer sizes were fixed no matter what you chose, and the only thing the setting fed
+  was a hint that HLS understands and a plain MPEG-TS stream ignores completely — which is what many
+  providers serve. Choosing "most stable" therefore changed nothing for a lot of people. Both players
+  now size their live buffer from the setting.
+- **New setting: Pre-buffer live streams (off / 2 / 5 / 10 s).** It collects that much video before a
+  live channel starts playing — and again after a stutter — instead of starting on the first frame. It
+  is an *amount of video*, not a countdown: on a fast provider 10s of video arrive in well under a
+  second, so the channel still starts instantly. On a provider that hiccups every few seconds, it holds
+  the picture until there is enough to play through.
+- **Pre-buffer per playlist.** Most people have one troublesome provider and several fine ones, so any
+  playlist can override the global value (or keep following it). Settings → Video Player → Live TV.
+- **Stream info shows what the player actually applied** — a **Live buffer** row with the pre-buffer
+  amount, the buffer depth, and whether a playlist override is in force. Defaults are unchanged: Balanced
+  with Pre-buffer off reproduces the previous behaviour exactly.
+
+### 🎞️ Auto frame rate works out the frame rate by itself — and offers itself when 25 fps judders
+
+- **Auto frame rate now works on channels that don't declare their frame rate.** Most live streams
+  don't, and the feature had nothing to act on — so on exactly the content it exists for (25 fps
+  European channels on a 60 Hz TV) it did nothing at all. The frame rate is now measured from playback
+  when the stream doesn't state one, and only used when two readings agree and land on a real broadcast
+  rate — a wrong guess would ask the TV for the wrong mode. On the standard player the measurement no
+  longer depends on the *Measured stream stats* toggle being on.
+- **A one-time suggestion when it would help.** If a channel judders because its frame rate doesn't
+  divide into your TV's refresh rate, and your TV really has a better mode, OwnTV offers to turn Auto
+  frame rate on — naming the actual numbers. Shown **once ever**, never on a TV that has nothing better
+  to switch to, and it can be turned off again in Settings → Video Player.
+
 ### 🐛 Fixes
+
+- **4K movies that failed to play on some TVs now get a real rescue instead of a wrong error.** Four
+  things stacked up: the "out of memory" decoder error was not recognised, a decoder failure was
+  reported as a malformed file from the provider, there was no fallback between the direct hardware path
+  and software decoding (which is capped at 1080p, so 4K had none at all), and nothing ever asked the TV
+  what it can actually decode. Playback now steps down through an extra hardware rung before software,
+  and when the TV genuinely cannot decode a video the message says so — instead of blaming the file.
+- **Channels found in Search now play exactly like channels opened from Live TV.** Search had its own
+  minimal way of starting a channel, so it skipped the Prefer HLS setting, the automatic switch to the
+  compatibility player, per-channel compatibility pins and the channel list for CH+/CH−. A channel that
+  needed any of that failed in Search while playing fine elsewhere. There is now one shared path for
+  every place a live channel can be started.
+- **Prefer HLS also applies in the TV Guide and to catch-up.** A playlist whose provider only serves
+  this account HLS could fail to open from the Guide, and its catch-up recordings were always requested
+  in the other format.
+- **Retry on a movie retries the movie.** The Retry button always restarted playback as if it were a
+  live stream: back to the beginning, with live-stream settings — and on a portal playlist it could even
+  end up on the last live channel you watched. It now resumes the film where it stopped.
+- **Long films on portal (Stalker) playlists survive their link expiring.** Those playlists hand out
+  stream links that expire after a couple of hours, which is well inside a long movie; a retry then
+  failed on the dead link. The app now asks the portal for a fresh link, for movies and episodes as well
+  as live channels.
+- **Providers that allow one stream at a time recover in the compatibility player too.** It treated the
+  provider's "your one connection is already in use" answer as a flat refusal and gave up almost
+  immediately, while the standard player waited and reconnected — the reason a channel could play on one
+  player and not the other. It now backs off and retries, and remembers that provider for the session.
 
 - **"Hardware decoding: Off" now applies to the standard player too.** It only ever reached the
   compatibility player, so turning it off to work around a TV whose decoder mishandles a stream still

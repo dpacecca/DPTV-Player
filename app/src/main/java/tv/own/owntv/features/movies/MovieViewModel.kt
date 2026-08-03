@@ -494,6 +494,16 @@ class MovieViewModel(
                 userAgent = sourceUa,
                 // P6 — engine pins key on this, not on playUrl (a Stalker playUrl is minted per play).
                 contentKey = tv.own.owntv.core.player.enginePinKey(movie.sourceId, "MOVIE", movie.remoteId),
+                // F12 — a Stalker create_link URL dies before a long film ends; give the player a way to
+                // mint a fresh one instead of retrying the expired link. Null for M3U/Xtream, which also
+                // clears any provider the previous item left on the player.
+                reconnectProvider = if (streamUrlResolver.needsResolve(source)) {
+                    tv.own.owntv.core.stalker.ReconnectUrlProvider {
+                        runCatching { streamUrlResolver.resolve(source!!, movie.streamUrl, vod = true) }
+                            .onFailure { Log.w(TAG, "stalker VOD reconnect resolve failed movieId=${movie.id}", it) }
+                            .getOrNull()
+                    }
+                } else null,
             )
             _playingMovie.value = movie
             // Enable the player's OpenSubtitles search for this movie (subtitle plan §4). tmdbId is

@@ -14,9 +14,17 @@
 ### ✨ New features
 
 - **🔊 Surround sound rebuilt — Auto, Stereo only, Surround, and it can no longer leave you in silence**
+- **⏱️ Live latency really changes the buffer now — and a new Pre-buffer control, per playlist**
+- **🎞️ Auto frame rate works out the frame rate by itself — and offers itself when 25 fps judders**
 
 ### 🐛 Fixes
 
+- **4K movies that failed to play on some TVs now get a real rescue instead of a wrong error**
+- **Channels found in Search now play exactly like channels opened from Live TV**
+- **Prefer HLS also applies in the TV Guide and to catch-up**
+- **Retry on a movie retries the movie**
+- **Long films on portal (Stalker) playlists survive their link expiring**
+- **Providers that allow one stream at a time recover in the compatibility player too**
 - **"Hardware decoding: Off" now applies to the standard player too**
 - **Live TV channels that only allow one stream at a time no longer lock themselves out**
 - **Audio and video no longer drift apart on live channels in compatibility mode**

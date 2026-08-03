@@ -41,6 +41,7 @@ import tv.own.owntv.core.customize.applyCustomizationsWithCustoms
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
 import tv.own.owntv.core.database.entity.WatchHistoryEntity
+import tv.own.owntv.core.database.entity.playStreamUrl
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.network.ConnectivityObserver
 import tv.own.owntv.core.repository.EpgRepository
@@ -282,9 +283,11 @@ class EpgViewModel(
                     .onFailure { android.util.Log.w("EpgViewModel", "stalker resolve failed channelId=${channel.id}", it) }
                     .getOrNull() ?: return@launch
             } else {
-                channel.streamUrl
+                // Prefer HLS is a per-source choice; this fallback must honour it too, or a channel that
+                // only works as `.m3u8` fails here while playing fine from Live TV (F05).
+                channel.playStreamUrl(source)
             }
-            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent)
+            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent, livePrerollSecsOverride = source?.livePrerollSecs?.takeIf { it >= 0 })
             val pid = currentProfileId() ?: return@launch
             runCatching {
                 historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.LIVE, itemId = channel.id))
