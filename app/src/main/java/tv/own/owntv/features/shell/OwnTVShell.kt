@@ -140,6 +140,9 @@ fun OwnTVShell(
     var showLocalSubPicker by remember { mutableStateOf(false) }
     val localSubToast = tv.own.owntv.ui.components.rememberInAppToast()
     val mpvEngine = remember(player) { tv.own.owntv.player.MpvPlaybackEngine(player) }
+    // Audio focus + MediaSession (F27). This is the only place that knows which engine currently owns
+    // the speaker, so it hands that engine over and takes it back when the player closes.
+    val playbackSession = koinInject<tv.own.owntv.player.PlaybackSession>()
     val launcherIntegrationRepository = koinInject<LauncherIntegrationRepository>()
     val homeVm = org.koin.androidx.compose.koinViewModel<HomeViewModel>()
     val movieVm = org.koin.androidx.compose.koinViewModel<MovieViewModel>()
@@ -156,6 +159,13 @@ fun OwnTVShell(
     // rather than the live stream — the HUD swaps live-only controls for the VOD ones.
     val catchupActive by liveVm.catchupActive.collectAsStateWithLifecycle()
     val vodExoActive by player.exoActiveState.collectAsStateWithLifecycle()
+    // Publish the active engine to the system (audio focus + MediaSession), and detach when the player
+    // is closed — an inactive session must not keep answering the TV's transport keys or the Assistant.
+    LaunchedEffect(liveOnExo, playerMode) {
+        playbackSession.attach(
+            if (playerMode == PlayerMode.NONE) null else if (liveOnExo) liveVm.previewEngine else mpvEngine,
+        )
+    }
     // Auto frame rate: only ever applied to the FULL-SCREEN surface (never the mini-player or the
     // in-pane Live preview) — see FrameRateController.
     val autoFrameRate by settingsRepo.autoFrameRate.collectAsStateWithLifecycle(initialValue = false)
@@ -662,7 +672,18 @@ fun OwnTVShell(
                 MpvVideoSurface(player = player, modifier = Modifier.fillMaxSize(), autoFrameRate = isFull && autoFrameRate)
             }
             // Direct render mode: mpv can't draw subtitles on the decoder-owned surface — the app does.
-            if (isFull && !liveOnExo) tv.own.owntv.player.SubtitleOverlay(player = player, modifier = Modifier.fillMaxSize())
+            // Also drawn docked (F19b): the mini-player is a real watching mode for a subtitled film, and
+            // dropping the only line of dialogue there made subtitles look broken. Scaled to the box.
+            if (!liveOnExo) {
+                tv.own.owntv.player.SubtitleOverlay(
+                    player = player, modifier = Modifier.fillMaxSize(),
+                    // Tied to the chosen mini size, but nudged up and floored: a strictly proportional
+                    // line would be unreadable in the smallest box.
+                    sizeScale = if (isFull) 1f else {
+                        (tv.own.owntv.player.MiniPlayerSize.fraction(miniSizePct) * 1.5f).coerceIn(0.35f, 0.7f)
+                    },
+                )
+            }
             if (isFull && !autoFrameRate && !afrPrompted) {
                 // Frame rate of whichever engine is on screen. On the mpv side this is what the direct
                 // path judders on; on Exo it now survives "Measured stream stats" being off (F14).

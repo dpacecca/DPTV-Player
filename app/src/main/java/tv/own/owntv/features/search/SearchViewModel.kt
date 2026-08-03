@@ -283,7 +283,7 @@ class SearchViewModel(
             } else {
                 channel.playStreamUrl(source)
             }
-            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent, livePrerollSecsOverride = source?.livePrerollSecs?.takeIf { it >= 0 })
+            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent, httpHeaders = channel.httpHeaders, livePrerollSecsOverride = source?.livePrerollSecs?.takeIf { it >= 0 })
         }
         noteChannelPlayed(channel)
     }

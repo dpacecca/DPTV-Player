@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -267,6 +268,12 @@ class LiveViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, SectionCustomizations())
 
+    /** Global guide shift (minutes); a per-channel override in [custom] wins over it. Changing it
+     *  drops the now/next cache so the details pane reflects the new offset straight away. */
+    private val epgOffset: StateFlow<Int> = settings.epgOffsetMinutes
+        .onEach { epgCache.clear(); epgRefresh.value++ }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
     /** The user's custom combined categories with live member counts — the "Move to…" dialog's list. */
     val moveTargets: StateFlow<List<MoveTarget>> = combine(ctx, custom) { c, cust -> c to cust }
         .flatMapLatest { (c, cust) ->
@@ -435,6 +442,26 @@ class LiveViewModel(
     /** The current manual EPG id for a channel, or null if auto-matched. */
     fun currentEpgMatch(channel: ChannelEntity): String? = custom.value.epgMatches[CustomizeKeys.channel(channel)]
 
+    /** Shift this channel's guide by [minutes] (null → follow the global EPG offset). */
+    fun setEpgShift(channel: ChannelEntity, minutes: Int?) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            val key = CustomizeKeys.channel(channel)
+            customize.setEpgShift(pid, MediaType.LIVE, key, minutes)
+            // loadEpg reads the shift off `custom` — let the DataStore edit reach it before refreshing.
+            kotlinx.coroutines.withTimeoutOrNull(1_000) { custom.first { it.epgShifts[key]?.toIntOrNull() == minutes } }
+            epgCache.remove(channel.id) // the cached now/next was built on the old shift
+            epgRefresh.value++
+        }
+    }
+
+    /** The channel's own guide shift in minutes, or null when it follows the global offset. */
+    fun currentEpgShift(channel: ChannelEntity): Int? =
+        tv.own.owntv.core.epg.EpgShift.overrideFor(custom.value, channel)
+
+    /** The global guide shift, shown as the per-channel dialog's "follow global" default. */
+    fun globalEpgShift(): Int = epgOffset.value
+
     /** Distinct EPG channels for the "Match EPG" picker (across the profile's playlists + EPG feeds),
      *  ranked so guide channels resembling [channelName] come first instead of a plain A-Z list. */
     suspend fun availableEpgChannels(channelName: String, query: String): List<tv.own.owntv.core.database.entity.EpgChannelEntity> {
@@ -560,6 +587,12 @@ class LiveViewModel(
         player.reconnectUrlProvider = provider
     }
 
+    // True while the in-pane preview is suppressed because the provider allows one stream at a time and
+    // that stream is already in use (full-screen playback). The pane says so instead of sitting silently
+    // dead — otherwise "no preview" looks like a broken channel (F31).
+    private val _previewBlockedSingleSession = MutableStateFlow(false)
+    val previewBlockedSingleSession: StateFlow<Boolean> = _previewBlockedSingleSession.asStateFlow()
+
     fun playPreview(channel: ChannelEntity) {
         // Don't touch the engine while it's promoted to full-screen. Clicking OK before the in-pane preview's
         // focus-delay fires would otherwise let this late preview call re-mute the now-full-screen stream
@@ -571,7 +604,11 @@ class LiveViewModel(
         val targetUrl = channel.playStreamUrl(source)
         // A one-session panel counts the muted preview as the account's single stream, so previewing while
         // mpv is playing full-screen locks the user's own playback out. Browsing stays silent there.
-        if (player.hasActiveStream && LiveStreamQuirks.isSingleSession(targetUrl)) return
+        if (player.hasActiveStream && LiveStreamQuirks.isSingleSession(targetUrl)) {
+            _previewBlockedSingleSession.value = true
+            return
+        }
+        _previewBlockedSingleSession.value = false
         // Already previewing this channel (e.g. re-focus)? Just re-apply the preview mute, no reload.
         if (previewEngine.currentUrl == targetUrl &&
             previewEngine.state.value != tv.own.owntv.player.LivePreviewEngine.State.ERROR
@@ -586,6 +623,7 @@ class LiveViewModel(
             meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
             userAgent = sourceUaMap[channel.sourceId],
             prerollSecsOverride = prerollFor(channel.sourceId),
+            httpHeaders = channel.httpHeaders,
         )
     }
 
@@ -604,7 +642,11 @@ class LiveViewModel(
                 .onFailure { Log.w(ENGINE_TAG, "stalker preview resolve failed '${channel.name}'", it) }
                 .getOrNull() ?: return@launch
             if (_liveOnExo.value) return@launch // promoted to fullscreen while resolving
-            if (player.hasActiveStream && LiveStreamQuirks.isSingleSession(url)) return@launch // see playPreview
+            if (player.hasActiveStream && LiveStreamQuirks.isSingleSession(url)) { // see playPreview
+                _previewBlockedSingleSession.value = true
+                return@launch
+            }
+            _previewBlockedSingleSession.value = false
             stalkerPreviewCmd = channel.streamUrl
             setStalkerReconnect(channel.streamUrl) // C-3: re-resolve on reconnect if the URL expires
             previewEngine.play(
@@ -612,6 +654,7 @@ class LiveViewModel(
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
                 userAgent = source.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
+                httpHeaders = channel.httpHeaders,
             )
         }
     }
@@ -1192,6 +1235,7 @@ class LiveViewModel(
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
                 userAgent = sourceUaMap[channel.sourceId] ?: source?.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
+                httpHeaders = channel.httpHeaders,
             )
         }
         watchExoOutcome(channel)
@@ -1220,6 +1264,7 @@ class LiveViewModel(
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl),
                 userAgent = source.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
+                httpHeaders = channel.httpHeaders,
             )
             watchExoOutcome(channel)
         }
@@ -1378,7 +1423,7 @@ class LiveViewModel(
             if (_previewChannel.value?.streamUrl != channel.streamUrl) return // zapped away while resolving
             // C-3: mpv is now the active engine — install/clear the reconnect provider to match.
             setStalkerReconnect(if (isStalker) channel.streamUrl else null)
-            player.play(url, title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent, livePrerollSecsOverride = prerollFor(channel.sourceId))
+            player.play(url, title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent, httpHeaders = channel.httpHeaders, livePrerollSecsOverride = prerollFor(channel.sourceId))
         }
     }
 
@@ -1419,10 +1464,15 @@ class LiveViewModel(
         val now = System.currentTimeMillis()
         val windowMs = (ch.catchupDays.coerceAtLeast(1) * 24L * 60 * 60 * 1000).coerceAtMost(CATCHUP_LOOKBACK_CAP_MS)
         val ids = ctx.value.sourceIds + epgSourceStore.getAll().map { it.id }
-        epgDao.programmesForChannel(ids, epgKey, now - windowMs, now + 60 * 60 * 1000)
-            .filter { it.startMs <= now }          // already started → catch-up applies
+        // Shifted guide → shifted window, and the rows come back on the corrected clock, so the
+        // archive URL built from the picked programme asks for the time it really aired.
+        val shift = tv.own.owntv.core.epg.EpgShift.minutesFor(custom.value, ch, epgOffset.value)
+        val at = tv.own.owntv.core.epg.EpgShift.toStored(now, shift)
+        epgDao.programmesForChannel(ids, epgKey, at - windowMs, at + 60 * 60 * 1000)
+            .filter { it.startMs <= at }           // already started → catch-up applies
             .sortedByDescending { it.startMs }      // most recent first
             .take(80)
+            .map { tv.own.owntv.core.epg.EpgShift.apply(it, shift) }
     }
 
     /** Full description for a programme picked in the catch-up dialog. The list query drops it to stay
@@ -1484,15 +1534,15 @@ class LiveViewModel(
             _timeshiftOffsetSec.value = null // guide archive isn't the live-rewind timeshift
             _catchupActive.value = true      // HUD: VOD engine toggle, not the live compatibility toggle
             clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
-            // isLive=false → seekable archive; preferSoftware → tolerate mid-GOP archive segments.
-            player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.displayLogoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
+            // isLive=false → seekable archive; isArchive → mid-GOP tolerant (hardware first, software rescue).
+            player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.displayLogoUrl, isLive = false, isArchive = true, userAgent = sourceUa, httpHeaders = ch.httpHeaders)
         }
     }
 
     // ---- Live rewind / timeshift -------------------------------------------------------------------
     // Watch a catch-up-capable live channel a few minutes behind the live edge (a missed goal, etc.) using
     // the provider's rolling archive (Xtream timeshift / M3U catchup), then jump back to live. The archive
-    // is a VOD-style stream on mpv (preferSoftware, mid-GOP tolerant); "Go to live" returns to ExoPlayer.
+    // is a VOD-style stream on mpv (isArchive, mid-GOP tolerant); "Go to live" returns to ExoPlayer.
     private val _timeshiftOffsetSec = MutableStateFlow<Int?>(null) // null = at the live edge; >0 = N s behind
     val timeshiftOffsetSec: StateFlow<Int?> = _timeshiftOffsetSec.asStateFlow()
 
@@ -1546,7 +1596,7 @@ class LiveViewModel(
             val localLabel = formatSystemTime(appContext, startMs)
             _previewChannel.value = ch
             clearLiveOnExo() // archive plays as a VOD-style mpv stream, not the live ExoPlayer channel
-            player.play(url, title = ch.name, subtitle = "Rewind · $localLabel", logoUrl = ch.displayLogoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
+            player.play(url, title = ch.name, subtitle = "Rewind · $localLabel", logoUrl = ch.displayLogoUrl, isLive = false, isArchive = true, userAgent = sourceUa, httpHeaders = ch.httpHeaders)
             timeshiftStartWall = startMs
             startOffsetTick()
         }
@@ -1577,7 +1627,14 @@ class LiveViewModel(
                 xtreamClient.timeshiftUrl(source, it, startMs, durationMin, tz, ext)
             }
             // No HLS swap here: [resolveStreamUrl] is Xtream-only, so it would be a no-op on M3U.
-            SourceType.M3U -> CatchupUrl.forM3u(ch.streamUrl, null, ch.catchupSource, startMs, startMs + durationMin * 60_000L)
+            SourceType.M3U -> CatchupUrl.forM3u(
+                ch.streamUrl,
+                ch.catchupType,
+                ch.catchupSource,
+                startMs,
+                startMs + durationMin * 60_000L,
+                tz,
+            )
             // Stalker rewind = the same per-play archive create_link as catch-up (Phase E §5.6).
             SourceType.STALKER -> ch.remoteId?.let { rid ->
                 runCatching { streamUrlResolver.resolveCatchup(source, rid, startMs, startMs + durationMin * 60_000L) }
@@ -1614,16 +1671,22 @@ class LiveViewModel(
 
         // 1) Bulk guide via the effective EPG id (manual match overrides the channel's own id).
         val epgKey = (custom.value.epgMatches[CustomizeKeys.channel(ch)] ?: ch.epgChannelId)?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+        // Guide shift (global or per-channel): the stored rows keep the feed's own clock, so we look
+        // up the SHIFTED "now" and move what comes back — display and catch-up then agree.
+        val shift = tv.own.owntv.core.epg.EpgShift.minutesFor(custom.value, ch, epgOffset.value)
         if (epgKey != null) {
-            val nowProg = epgDao.nowPlaying(epgKey, now)
-            val future = epgDao.upcoming(epgKey, now, 6).first().filter { it.startMs > (nowProg?.startMs ?: 0) }
+            val at = tv.own.owntv.core.epg.EpgShift.toStored(now, shift)
+            val nowProg = epgDao.nowPlaying(epgKey, at)
+            val future = epgDao.upcoming(epgKey, at, 6).first().filter { it.startMs > (nowProg?.startMs ?: 0) }
             val nextProg = future.firstOrNull()
             if (nowProg != null || nextProg != null) {
-                val prevProg = epgDao.previousProgramme(epgKey, nowProg?.startMs ?: now)
+                val prevProg = epgDao.previousProgramme(epgKey, nowProg?.startMs ?: at)
                 // Days of stored guide — accurate for bulk-guide channels (the short-EPG API path
                 // leaves this null, since its ~8 entries only span a few hours).
                 val days = runCatching { epgDao.coverageDays(epgKey) }.getOrNull()?.takeIf { it > 0 }
-                val result = EpgNowNext(nowProg?.toXt(), nextProg?.toXt(), future.drop(1).take(4).map { it.toXt() }, previous = prevProg?.toXt(), coverageDays = days)
+                fun tv.own.owntv.core.database.entity.EpgProgrammeEntity.shifted() =
+                    tv.own.owntv.core.epg.EpgShift.apply(this, shift).toXt()
+                val result = EpgNowNext(nowProg?.shifted(), nextProg?.shifted(), future.drop(1).take(4).map { it.shifted() }, previous = prevProg?.shifted(), coverageDays = days)
                 epgCache[ch.id] = CachedEpg(now, result)
                 return@withContext result
             }
@@ -1632,7 +1695,7 @@ class LiveViewModel(
         // 2) Provider short-EPG API fallback (Xtream get_short_epg / Stalker get_short_epg, Phase E §5.5).
         val streamId = ch.remoteId ?: return@withContext null
         val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
-        val entries = when (source.type) {
+        val rawEntries = when (source.type) {
             SourceType.XTREAM -> runCatching { xtreamClient.getShortEpg(source, streamId, limit = 8) }
                 .getOrNull().orEmpty()
             SourceType.STALKER -> runCatching {
@@ -1640,6 +1703,10 @@ class LiveViewModel(
                     .map { XtEpgEntry(title = it.title, description = it.description, startMs = it.startMs, stopMs = it.stopMs) }
             }.getOrNull().orEmpty()
             else -> return@withContext null
+        }
+        // The provider's own guide needs the same shift as the stored one — same channel, same clock.
+        val entries = if (shift == 0) rawEntries else rawEntries.map {
+            it.copy(startMs = it.startMs + shift * 60_000L, stopMs = it.stopMs + shift * 60_000L)
         }
         // A gap in the provider's own guide data around "now" (nothing covers this instant) must leave
         // current null — picking the next entry that simply hasn't ended yet would mislabel an upcoming
@@ -1668,22 +1735,28 @@ class LiveViewModel(
         val epgIds = epgSourceStore.getAll().map { it.id }
         val sourceIds = (channels.map { it.sourceId } + epgIds).distinct()
         // Manual EPG-match overrides take precedence over the channel's own epgChannelId, mirroring loadEpg.
+        // Shifted channels look up a different instant, so the batch is grouped by shift — with no
+        // offsets configured (the normal case) that's still exactly one query group.
+        val cust = custom.value
         val channelKeys = channels.mapNotNull { ch ->
-            val key = (custom.value.epgMatches[CustomizeKeys.channel(ch)] ?: ch.epgChannelId)
+            val key = (cust.epgMatches[CustomizeKeys.channel(ch)] ?: ch.epgChannelId)
                 ?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
-            if (key != null) ch.id to key else null
+            if (key != null) Triple(ch.id, key, tv.own.owntv.core.epg.EpgShift.minutesFor(cust, ch, epgOffset.value)) else null
         }
         if (channelKeys.isEmpty()) return@withContext emptyMap()
-        val rowsByKey = channelKeys
-            .map { it.second }.distinct()
-            .chunked(400)
-            .flatMap { keys -> epgDao.programmeSummariesForChannels(sourceIds, keys, now, now + 1) }
-            .groupBy { it.epgChannelId }
         val result = HashMap<Long, String>()
-        for ((channelId, epgKey) in channelKeys) {
-            rowsByKey[epgKey]
-                ?.firstOrNull { now in it.startMs until it.stopMs }
-                ?.let { result[channelId] = it.title }
+        for ((shift, group) in channelKeys.groupBy { it.third }) {
+            val at = tv.own.owntv.core.epg.EpgShift.toStored(now, shift)
+            val rowsByKey = group
+                .map { it.second }.distinct()
+                .chunked(400)
+                .flatMap { keys -> epgDao.programmeSummariesForChannels(sourceIds, keys, at, at + 1) }
+                .groupBy { it.epgChannelId }
+            for ((channelId, epgKey, _) in group) {
+                rowsByKey[epgKey]
+                    ?.firstOrNull { at in it.startMs until it.stopMs }
+                    ?.let { result[channelId] = it.title }
+            }
         }
         result
     }

@@ -289,6 +289,12 @@ or **narrow the whole app to just one**.
   programme's details. Favourites apply everywhere — Live TV, Search, and the Home Favourites rail.
 - **Auto‑match EPG**: the guide can smart‑match your channels to guide data; you can also fix one channel
   manually via the long‑press channel menu.
+- 🕰️ **Guide time offset** — if the whole guide sits a few hours away from what is actually on screen
+  (a provider publishing its XMLTV in another time zone), set **Settings → EPG → Guide time offset**
+  (−12 h to +14 h, 15‑minute steps). For a single channel that is wrong on its own — typically an
+  East/West feed sharing one guide — use the **long‑press channel menu** in Live TV or the Guide and set
+  an offset just for it; that overrides the global one. The correction shows up everywhere the guide is
+  used (grid, Now/Next, "On now" rows, catch‑up), and a resync never undoes it.
 - 🙈 **Hidden categories stay hidden**: categories you hide via long‑press → Customize are excluded
   from the Guide too — the "Category" dropdown and the guide rows both respect them (category
   renames and manual order carry over from Live TV as well).
@@ -460,15 +466,24 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 | Button | What it does |
 |---|---|
 | **Subtitles** | Pick a subtitle track (incl. **image subtitles**) and set **subtitle delay**. Live channels with **embedded closed captions (CC)** — common on US channels — show a CC track on both engines; on mpv, selecting it briefly switches the channel to software decoding (≤1080p) and hardware decoding returns when CC is turned off. On raw `.ts` channels the CC entry always appears, even when the channel carries no captions. |
-| **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±50 ms** steps) — use this if surround makes lips drift. |
-| **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · **audio out** · buffer. **Audio out** tells you whether your TV/receiver is decoding the sound (*passthrough*) or OwnTV is (*decoded in app*), whether surround is currently allowed, and why it fell back to stereo if it did. |
+| **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±50 ms** steps) — use this if surround makes lips drift. Available on movies/series and on live channels in **compatibility mode** (the standard live player can't shift audio, so it isn't offered there). |
+| **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · **audio out** · buffer. **Audio out** tells you whether your TV/receiver is decoding the sound (*passthrough*) or OwnTV is (*decoded in app*), whether surround is currently allowed, and why it fell back to stereo if it did. While it's open, a **share** button appears next to it: **Report this stream** saves that whole readout into the playback log, ready to export (see Settings). |
 | **Favorite** (♥) | Add or remove what you're watching from **Favorites** without leaving the stream — a live channel, a movie, or a series (an episode favorites its parent show). The heart fills when it's already a favorite. |
 | **Speed** | Playback speed (VOD). |
 | **MPV/EXO (⇄)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (shows the active engine; teal on the non‑default one). Flipping it briefly confirms "Switched to MPV/ExoPlayer" at the bottom. |
 | **Aspect/Zoom** | Change aspect ratio / zoom (works in every render mode). |
 | **PiP** | Picture‑in‑picture for live. |
 | **Headphones** | **Audio Mode** — see below. |
-| **Volume** | mpv VODs/channels can be **boosted to 150%** for quiet streams. |
+| **Volume** | Quiet streams can be **boosted to 150%** — movies, series and Live TV alike (on live it uses your TV's own audio effect; a TV that doesn't support it stays at 100%). |
+
+A few things that need no button:
+
+- **Remote transport keys work** — play/pause, next and previous from the remote, a headset or a voice
+  assistant reach the player. Next/previous move between episodes in a series. With the player closed
+  they do nothing to OwnTV.
+- **A notification or a system sound won't pause your film** — the sound dips for a moment and comes
+  back. Only another app taking the audio for good pauses playback.
+- **Subtitles show in the docked mini‑player too**, sized to the small window.
 
 ---
 
@@ -694,10 +709,16 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 
   Applies to **Live TV, Movies and Series on both players**. Changing it re-opens whatever is playing.
   If sound and picture still drift, nudge it live with the player's **Audio → A/V sync**.
-- 🩺 **Playback error log** (Playback) — the last ~10 playback failures with their plain‑English
-  reason, stream details and device info. If a channel or movie errored and you dismissed the
-  message, open this to read (or clear) exactly what happened — perfect for bug reports, no computer
-  needed.
+- 🩺 **Playback log** (Playback) — the last 25 playback entries with their plain‑English reason, stream
+  details and device info. It records **failures**, **events** (a decode rescue, a switch between
+  players, the stereo safety net firing, a provider that only allows one stream) and any **report** you
+  saved from the player's info overlay. If a channel or movie errored and you dismissed the message,
+  open this to read exactly what happened — perfect for bug reports, no computer needed. **Export**
+  writes everything to a file and shows the path, so it can be pulled off the TV:
+  `adb pull /sdcard/Android/data/tv.own.owntv/files/owntv-playback-report.txt`.
+- 🔍 **Detailed playback logging** (Video Player Settings → Diagnostics, off by default) — turn this on
+  when you're chasing a playback problem, then reproduce it and **Export** the log: the report will
+  include the full live‑playback trace. It only changes what is written down, never playback itself.
 - 🔄 **Check updates on startup** — get notified when a newer version is on GitHub Releases.
 - 💾 **Backup & Restore** — export/restore your profiles, sources, customizations, favorites, history,
   resume positions, **manual Move positions** and app settings. Export starts by asking **which
@@ -778,8 +799,25 @@ http://your-server/live/bbc1.ts
 ```
 
 > `url-tvg="…"` on the `#EXTM3U` header line is picked up as the playlist's EPG source automatically if
-> you haven't set one. Catch-up attributes (`catchup="default"`, `catchup-source="…"`, `catchup-days="7"`)
-> are also read on live entries.
+> you haven't set one. Catch-up attributes (`catchup="…"`, `catchup-source="…"`, `catchup-days="7"`)
+> are also read on live entries — the `append`, `shift`, `flussonic` and `xc` styles are all supported,
+> and `{utc}` / `{lutc}` / `{now}` / date tokens in `catchup-source` are filled in.
+
+**Per-channel HTTP options** are supported too, for a channel whose server needs its own User-Agent or
+Referer. Any of these forms works, on the lines just after `#EXTINF` (or as a suffix on the URL):
+
+```
+#EXTINF:-1 group-title="UK Channels",Some Restream
+#EXTVLCOPT:http-user-agent=MyPlayer/1.0
+#EXTVLCOPT:http-referrer=http://example.com/
+http://your-server/live/restream.ts
+
+#EXTINF:-1 group-title="UK Channels",Another Restream
+http://your-server/live/other.ts|User-Agent=MyPlayer/1.0&Referer=http://example.com/
+```
+
+`#EXTHTTP:{"cookie":"…"}` and `#KODIPROP:inputstream.adaptive.stream_headers=…` are read as well. A
+per-channel User-Agent wins over the playlist-wide one set in **Manage sources**.
 
 ### Movies example
 

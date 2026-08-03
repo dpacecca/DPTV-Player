@@ -136,6 +136,7 @@ fun EpgScreen(
     var detail by remember { mutableStateOf<Pair<ChannelEntity, EpgProgrammeEntity>?>(null) }
     var matchingChannel by remember { mutableStateOf<ChannelEntity?>(null) }
     var matchChooser by remember { mutableStateOf<ChannelEntity?>(null) }
+    var offsetChannel by remember { mutableStateOf<ChannelEntity?>(null) }
     // Two-stage timeline navigation (#4): Right from a channel focuses its whole programme row (ROW
     // stage); OK steps into per-programme browsing (CELL stage) where Left/Right move a cursor and
     // Up/Down jump to the adjacent channel at the same time. cursorTime is the highlighted time.
@@ -440,7 +441,18 @@ fun EpgScreen(
             onToggleFavorite = { vm.toggleFavoriteChannel(channel) },
             onAuto = { vm.autoMatchOne(channel); matchChooser = null },
             onManual = { matchChooser = null; matchingChannel = channel },
+            onOffset = { matchChooser = null; offsetChannel = channel },
             onDismiss = { matchChooser = null },
+        )
+    }
+
+    offsetChannel?.let { channel ->
+        tv.own.owntv.features.live.EpgOffsetDialog(
+            channelName = channel.name,
+            currentMinutes = vm.currentEpgShift(channel),
+            globalMinutes = vm.globalEpgShift(),
+            onSet = { vm.setEpgShift(channel, it) },
+            onDismiss = { offsetChannel = null },
         )
     }
 
@@ -578,6 +590,7 @@ private fun EpgMatchChooserDialog(
     onToggleFavorite: () -> Unit,
     onAuto: () -> Unit,
     onManual: () -> Unit,
+    onOffset: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
@@ -608,6 +621,8 @@ private fun EpgMatchChooserDialog(
             OwnTVButton("Auto-match EPG", onClick = onAuto, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(10.dp))
             OwnTVButton("Pick EPG manually", onClick = onManual, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.SEARCH, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(10.dp))
+            OwnTVButton("EPG time offset", onClick = onOffset, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(16.dp))
             OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
         }

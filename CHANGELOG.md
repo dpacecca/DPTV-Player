@@ -58,6 +58,58 @@
   frame rate on — naming the actual numbers. Shown **once ever**, never on a TV that has nothing better
   to switch to, and it can be turned off again in Settings → Video Player.
 
+### 🗓️ Guide time offset — for a guide that is hours out, globally or for one channel
+
+- **New setting: Settings → EPG → Guide time offset.** Shifts the whole guide by up to −12 h/+14 h in
+  15-minute steps. It is for the common case where a provider publishes one XMLTV feed in its own time
+  zone, so every programme in the Guide sits a few hours away from what is actually on screen.
+- **Per-channel override in the long-press menu**, in both Live TV and the Guide. Networks routinely hang
+  their East and West feeds off the same guide data, so one of the two is always wrong; now you can
+  correct that channel alone. An explicit "no shift" on a channel is an override too — it pins that
+  channel to the feed's own times while the global offset moves everything else.
+- **The correction applies everywhere the guide is read** — the Guide grid, Now/Next, the "On now" rows,
+  the catch-up picker and the archive URLs built from those programmes — and it never rewrites stored
+  data, so a resync or a guide refresh cannot undo it.
+
+### 🎧 Sound behaves like a TV app now — and the remote's transport keys work
+
+- **A notification or a system sound no longer plays straight over your film.** The app now asks for
+  audio focus and ducks: the sound dips briefly and comes back. Only another app taking the audio
+  permanently pauses playback.
+- **Play/pause, next and previous from the remote, a headset or voice now reach the player**, through a
+  system media session that works with both players. It publishes what is playing, and seek/skip are
+  offered for films and episodes only. With the player closed, those keys do nothing to OwnTV.
+
+### 🩺 Diagnostics you can actually send
+
+- **New: Settings → Video player → Detailed playback logging.** The full live playback trace used to
+  exist only in development builds, so a report from a normal install came back with nothing in it. It
+  can now be switched on in any build, and it only affects what is written down — never playback.
+- **The playback log now records events, not just failures** — a decode rescue, a handoff between
+  players, the stereo safety net firing, a provider that only allows one stream. A juddering picture or
+  drifting sound is not a crash, so previously there was nothing in the log to send.
+- **New: "Report this stream"** in the player. Open the stream info overlay (ⓘ) and a share button
+  appears; it saves exactly the readout you are looking at — codec, resolution, HDR, bitrate, decoder,
+  audio, buffer, engine, position — into the playback log.
+- **New: Export**, in Settings → Playback error log. Writes the whole log plus the live trace to a file
+  and shows you the path, so it can be pulled off the TV with
+  `adb pull /sdcard/Android/data/tv.own.owntv/files/owntv-playback-report.txt`.
+
+### 🧩 M3U playlists: per-channel headers, and catch-up that actually builds a URL
+
+- **Per-channel HTTP options in an M3U playlist are honoured.** `#EXTVLCOPT:http-user-agent`,
+  `#EXTVLCOPT:http-referrer`, `#EXTHTTP`, `#KODIPROP` stream headers and the
+  `http://host/x.ts|User-Agent=…&Referer=…` suffix were all ignored — and the pipe suffix was worse than
+  ignored, it was sent as part of the URL. A playlist where one restream needs its own User-Agent or
+  Referer (routine for CDN-token playlists) answered 403 with nothing the user could do. Both players
+  send them now, including across the automatic switch between players. A per-channel User-Agent
+  overrides the playlist-wide one.
+- **Catch-up on M3U playlists works for the common `catchup="append"` style**, plus `shift`,
+  `flussonic` and `xc`. The catch-up *type* was parsed and thrown away, so the most widespread form built
+  a broken URL and "Watch from start" played nothing at all. `{lutc}`, `{now}` and `{timenow}` are now
+  substituted instead of being sent to the provider literally.
+- These need one playlist refresh before they take effect.
+
 ### 🐛 Fixes
 
 - **4K movies that failed to play on some TVs now get a real rescue instead of a wrong error.** Four
@@ -97,6 +149,27 @@
 - **Audio and video no longer drift apart on live channels in compatibility mode.** A workaround for a handful of feeds with broken timestamps — letting the picture run on its own clock — was being applied to every live channel, which slowly pushed the sound ahead of or behind the picture on perfectly healthy streams. Live playback now keeps accurate audio-synced timing, and the workaround switches on only for a channel that actually reports broken timestamps.
 - **Channels whose provider refuses the standard player's stream URLs are handed to the compatibility player sooner.** Some panels sign every segment with a short-lived token and then reject it; the standard player cannot recover from that by design. Two refusals are now enough to switch engines, and the provider is remembered for the rest of the session so its other channels start on the working engine right away.
 - **A provider that refuses playback outright is no longer hammered with the identical request.** The retry ladder stops repeating a request that was already rejected, while the alternative-format and player fallbacks still get their turn.
+- **Catch-up recordings that opened with sound but no picture now recover by themselves.** A recording
+  starts in the middle of the video stream, which some TV decoders cannot begin from; playback now
+  reopens it in software decoding and remembers that provider for the rest of the session, so its other
+  recordings start on the working path straight away.
+- **Zapping no longer slows down the Guide, artwork and playlist updates.** Stopping a live channel
+  releases its connections — necessary, because many providers count them — but everything else in the
+  app was sharing those connections and had to reconnect from scratch. Playback now has its own pool.
+- **Audio Mode really switches the picture off.** It stopped drawing the video but kept decoding every
+  frame, so it saved neither power nor heat on the standard player. The video is now switched off
+  properly, and comes back cleanly when you leave Audio Mode.
+- **On providers that allow one stream at a time, the preview pane now says so** instead of sitting
+  blank, which read as a broken channel. OwnTV also reads the limit straight from the provider's account
+  info when a playlist syncs, so it no longer has to find out by failing a channel first — and the Home
+  screen's own preview stops competing for that single stream too.
+- **Subtitles are drawn in the small docked player.** They only ever appeared full-screen, so docking a
+  subtitled film silently dropped the dialogue. They are sized to the docked window.
+- **The audio/video sync nudge is available on live channels** in compatibility mode, not just on films.
+  A live feed can arrive with the provider's own drift baked in, and mpv can correct it.
+- **Volume boost above 100% now works on Live TV too**, up to 150%, like films and series. Live TV
+  stopped at 100% because its player cannot amplify by itself; the boost now comes from the system's own
+  audio effect. A TV whose audio hardware refuses the effect simply stays at 100%.
 
 ## v4.1.6 — 2026-08-01
 

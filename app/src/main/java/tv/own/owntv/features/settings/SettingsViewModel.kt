@@ -319,6 +319,21 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setCatchupOffsetMinutes(catchupOffsetMinutes.value + deltaMinutes) }
     }
 
+    /** Global guide shift in minutes (0 = off). Per-channel overrides live in the channel menu. */
+    val epgOffsetMinutes: StateFlow<Int> = settings.epgOffsetMinutes
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    val epgOffsetRangeMinutes: IntRange = settings.epgOffsetRangeMinutes
+
+    /** Nudge the global EPG offset by [deltaMinutes] (the picker's − / + steps), clamped to range. */
+    fun adjustEpgOffset(deltaMinutes: Int) {
+        viewModelScope.launch { settings.setEpgOffsetMinutes(epgOffsetMinutes.value + deltaMinutes) }
+    }
+
+    fun setEpgOffsetMinutes(minutes: Int) {
+        viewModelScope.launch { settings.setEpgOffsetMinutes(minutes) }
+    }
+
     val androidTvHomeEnabled: StateFlow<Boolean> = settings.androidTvHomeEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
@@ -359,6 +374,9 @@ class SettingsViewModel(
 
     val measuredStreamStats: StateFlow<Boolean> = settings.measuredStreamStats.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setMeasuredStreamStats(enabled: Boolean) { viewModelScope.launch { settings.setMeasuredStreamStats(enabled) } }
+
+    val detailedDiagnostics: StateFlow<Boolean> = settings.detailedDiagnostics.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    fun setDetailedDiagnostics(enabled: Boolean) { viewModelScope.launch { settings.setDetailedDiagnostics(enabled) } }
 
     val directTune: StateFlow<Boolean> = settings.directTune.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setDirectTune(enabled: Boolean) { viewModelScope.launch { settings.setDirectTune(enabled) } }

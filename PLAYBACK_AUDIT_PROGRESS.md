@@ -68,8 +68,8 @@ to judge it by ear.
 | 3 | Live latency drives the Exo LoadControl + pre-roll gate (ntas-sys) — DB 25 | **ok, done, applied-confirmed** |
 | 4 | AFR: 25fps@60Hz prompt, fps measurement decoupled from the stats toggle, "Pre-buffer" rename | **ok, done, tested** |
 | 5 | One shared live path (Prefer-HLS everywhere), VOD Retry, Stalker VOD reconnect, 458 | **ok, done, tested** |
-| 6 | M3U per-channel headers + working catch-up `append` — DB 26 | not started |
-| 7 | Diagnostics, MediaSession, audio focus (duck-don't-pause), connection-pool scoping | not started |
+| 6 | M3U per-channel headers + working catch-up `append` — DB 26 | **ok, done, tested** |
+| 7 | Diagnostics, MediaSession, audio focus (duck-don't-pause), connection-pool scoping | **ok, done, tested** |
 
 ---
 
@@ -718,11 +718,343 @@ Begin **Phase 6** — M3U per-channel headers and the catch-up `append` mode (F1
 carry a Room migration to **DB 26**. Read `PLAYBACK_AUDIT.md` F16/F17 first, and treat the migration
 with the usual care (public baseline vs. dev DB version).
 
-## Phase 6 — M3U specifics
+## Phase 6 — M3U specifics (F16 / F17)
 
-Not started. F16 / F17. Room migration to **DB 26**.
+**Status: `ok, done, tested`** — owner-confirmed on the TV, including the DB 26 upgrade over the
+installed build. `:app:assembleDebug`, the unit-test suite and `:app:assembleStandardRelease` are all
+clean; the APK is signed with the real release key (`CN=Ashiq Hasan`, SHA-256 `e8fbd2f2…`).
+Room **DB 25 → 26**.
 
-## Phase 7 — Diagnostics, MediaSession, audio focus
+### What this phase fixes, and why
 
-Not started. F18 / F26 (logging half) / F28. Audio focus uses the **duck-don't-pause** design the owner
-chose. Last in the queue by the owner's decision.
+Two M3U-only gaps, both of which make a playlist that works in VLC/TiviMate fail in OwnTV.
+
+- **F16 — per-channel HTTP options were dropped on the floor.** `M3uParser` ignored every directive
+  that wasn't `#EXTINF`, and stored the URL line verbatim. So `#EXTVLCOPT:http-user-agent`,
+  `#EXTVLCOPT:http-referrer`, `#EXTHTTP:{"cookie":…}`, `#KODIPROP:inputstream.adaptive.stream_headers`
+  and the `http://host/x.ts|User-Agent=Foo&Referer=Bar` suffix all vanished. Only a *per-source* UA
+  existed, so a playlist where **one** restream needs its own UA/Referer — routine for CDN-token and
+  restream playlists — answered 403 with no way for the user to fix it. (The pipe suffix was worse
+  than ignored: it was played as part of the URL.)
+- **F17 — the catch-up *type* was parsed and thrown away.** `ChannelEntity` stored only
+  `catchup: Boolean`, so `CatchupUrl.forSource` passed a hardcoded `null` type and the `append` branch
+  inside `forM3u` was **unreachable**. The very common
+  `catchup="append" catchup-source="?utc={utc}&lutc={lutc}"` therefore built a URL that was just the
+  bare query string, and `{lutc}` wasn't a known token so it reached the provider literally.
+
+### Changes
+
+**New: `core/network/StreamHeaders.kt`** — the one place headers are represented. Stored as `Key:
+Value` per line (not JSON: it is what an HTTP request looks like, needs no parser, and is readable in
+a backup). Canonicalises the handful of names playlists really use, so `referer` / `Referrer` /
+`REFERER` collapse to one entry, and **refuses transport-owned names** (`Host`, `Content-Length`,
+`Connection`, `Transfer-Encoding`, `Range`) — a playlist that sets one breaks the request rather than
+fixing it. Also formats mpv's `http-header-fields` and extracts the per-channel User-Agent.
+
+**`M3uParser`** parses all four conventions into `M3uEntry.headers`, and strips a `|…` suffix off the
+stored URL. Deliberately cheap on the hot path: the three new prefixes are only tested inside the
+existing `line.startsWith("#")` branch, so a playlist without them pays exactly what it paid before.
+A `|` only counts as a header suffix when it follows a scheme and is followed by a `=`, so a pipe
+inside a path stays part of the URL. Headers are held in their own pending slot that is cleared on
+each `#EXTINF`, so they can never leak into the next entry.
+
+**`ChannelEntity.httpHeaders` + `ChannelEntity.catchupType`**, filled by `M3uSyncer`.
+`computeContentHash()` folds the two new fields in **only when the channel actually has one** —
+adding them unconditionally would change every stored hash at once and turn the next resync of a
+100k-channel playlist into a full rewrite for everybody, while this way a later header change still
+propagates.
+
+**Both engines send them.** mpv sets `http-header-fields` per load (always written, so a channel with
+no headers clears the previous one's); `LivePreviewEngine` and `ExoSubtitleEngine` use
+`setDefaultRequestProperties`. The live engine's cached data-source/media-source factories are now
+keyed on **UA + headers**, not UA alone, so a channel with its own Referer can't reuse the previous
+channel's factory. A per-channel `User-Agent` **overrides** the per-source one — a playlist-wide UA is
+the general setting, an `#EXTVLCOPT` line is the specific one. The headers also cross the mpv →
+ExoPlayer handoff, which additionally fixes a pre-existing gap: `ExoSubtitleEngine` used to force the
+default UA, so a stream that needed a custom UA on mpv lost it the moment the fallback engine took
+over.
+
+**F17:** `forM3u` now receives the real type and handles `append` (joined onto the live URL, with the
+`?`→`&` separator corrected when the channel URL already carries a query — otherwise the result has
+two `?` and is rejected outright), `shift`, `flussonic` (`…/index.m3u8` →
+`…/timeshift_abs-<start>.m3u8`, `…/mpegts` → `…/archive-<start>-<dur>.ts`) and `xc` (rebuilds the
+panel's `timeshift.php` from the credentials in the live URL). `{lutc}`/`{now}`/`{timenow}` are now
+substituted with the current time. Live rewind (`buildLiveTimeshiftUrl`) passes the type too.
+
+**Room 25 → 26**: guarded `ALTER TABLE channels ADD COLUMN catchupType TEXT` / `httpHeaders TEXT`,
+plus the standing `healSchema(db)` on the final hop. Both nullable, no rewrite of the channels table.
+Migration registered in `DatabaseModule`, schema `26.json` exported, migration test at v26 with column
+assertions.
+
+### Files changed
+
+| File | Why |
+|---|---|
+| `core/network/StreamHeaders.kt` | **new** — header canonicalisation, storage format, mpv/UA helpers |
+| `core/parser/M3uParser.kt` | `#EXTVLCOPT` / `#EXTHTTP` / `#KODIPROP` / pipe-suffix parsing; `M3uEntry.headers` |
+| `core/database/entity/ContentEntities.kt` | `httpHeaders` + `catchupType` columns; conditional content hash |
+| `core/sync/M3uSyncer.kt` | stores both new values |
+| `core/database/OwnTVDatabase.kt` | version 26, `MIGRATION_25_26` |
+| `di/DatabaseModule.kt` | register `MIGRATION_25_26` |
+| `core/epg/CatchupUrl.kt` | type passed through; `append` separator fix; `shift`/`flussonic`/`xc`; now-tokens |
+| `features/live/LiveViewModel.kt` | headers at all 7 play sites; rewind passes the catch-up type |
+| `features/epg/EpgViewModel.kt`, `features/search/SearchViewModel.kt` | headers at their play sites |
+| `player/OwnTVPlayer.kt` | `httpHeaders` on `play()`, mpv `http-header-fields`, per-channel UA precedence, carries both into the Exo handoff |
+| `player/LivePreviewEngine.kt` | `httpHeaders` on `play()`, factories keyed on UA+headers, rebuild carries them |
+| `player/ExoSubtitleEngine.kt` | honours the UA and headers (previously always the default UA) |
+| `test/parser/M3uHeaderParsingTest.kt` | **new** — 8 tests over the four conventions + leak/round-trip |
+| `test/epg/CatchupUrlTest.kt` | now-tokens, separator fix, `shift`/`flussonic`/`xc` |
+| `androidTest/.../OwnTVDatabaseMigrationTest.kt` | `CURRENT_VERSION = 26` + column assertions |
+| `app/schemas/.../26.json` | exported schema |
+
+### What the owner should test
+
+Install over the existing app (**keeps all data** — this is also the DB 26 upgrade test):
+
+```powershell
+adb install -r app\build\outputs\apk\standard\release\app-standard-release.apk
+```
+
+1. **The upgrade itself.** First launch must not crash, and the catalog, playlists, favourites and
+   history must all still be there. That is the migration.
+2. **No regression on existing playlists.** Live TV, Movies, Series, the Guide, Search and catch-up all
+   behave as before. This is the important one: the parser changed, so an M3U playlist should still
+   import with exactly the same channel count as before.
+3. **The new values only appear after a re-sync.** The migration leaves both columns null on existing
+   rows, so an M3U playlist has to be refreshed once before any of this takes effect. Worth doing on
+   one playlist and confirming nothing about it changes.
+4. **A playlist with a pipe suffix**, if you have one (`http://host/x.ts|User-Agent=…`): the channel
+   should now play, where before the whole `|…` was sent as part of the URL.
+5. **Catch-up on an M3U playlist with `catchup="append"`** — "Watch from start" should now build a real
+   URL. Previously it played nothing at all on those playlists.
+6. **Live rewind on an M3U channel** still works.
+
+### Known limits / risks of this phase
+
+- **Headers are a live-channel property only.** M3U *VOD* entries (movies/episodes) can carry the same
+  directives, but the audit scoped the column to `ChannelEntity`, and adding it to movies and episodes
+  as well would triple the migration. If a report ever shows a 403 on an M3U movie, that is the follow-up.
+- **The external player receives no headers** — the intent carries only the URL, so a channel that
+  needs a Referer will fail in a third-party player. Unchanged from before, but now inconsistent with
+  the in-app behaviour.
+- **The `xc` and `flussonic` catch-up styles are written from the published conventions, not observed**
+  against a real provider — no playlist here uses them. They are only reached for a channel whose
+  `catchup` type says so, and the old code produced *nothing* in those cases, so the downside is
+  bounded: a wrong URL instead of no URL.
+- **The `append` separator fix is the one behaviour change that could alter something that worked.** A
+  provider expecting a literal second `?` (there is no such convention, but panels are panels) would
+  now get `&` instead. Item 5 covers it.
+- Nothing is populated until a playlist re-syncs, so a user who never refreshes sees no change at all.
+- The migration test was **compiled only, never executed** — running instrumentation tests reinstalls
+  the app and would wipe the owner's data. It can be run on an emulator if wanted.
+
+### Next session — start here
+
+Nothing outstanding here: Phase 6 is owner-tested and confirmed, including the DB 26 upgrade.
+
+## Phase 7 — Diagnostics, MediaSession, audio focus (F18 / F26-logging / F27 / F28)
+
+**Status: `ok, done, tested`** — owner-confirmed on the TV. One fault was found and fixed during the
+test: the log viewer would not scroll (see the last item under "Changes"). `:app:assembleDebug`, the
+full unit-test suite and `:app:assembleStandardRelease` all clean; the release APK is signed with the
+real key (`CN=Ashiq Hasan`, SHA-256 `e8fbd2f2…`). **No Room migration — the database stays at v26.**
+This is the last phase of the audit.
+
+### What this phase fixes, and why
+
+- **F28 — one connection pool for everything.** Every HTTP user shared the single OkHttp client, so
+  stopping live playback (which evicts idle sockets to release the provider's session) also dropped the
+  keep-alive connections EPG, the panel API, metadata and image loading were relying on. The fix keeps
+  one *configuration* and splits the *sockets*.
+- **F27 — the app never asked for audio focus and had no MediaSession.** A notification, an assistant
+  reply or another app's sound played straight over the film; nothing paused, nothing ducked, and the
+  TV's own transport keys (play/pause on a remote, a headset button, "pause" by voice) reached nothing.
+- **F18 — the diagnostics a report needs were compiled out of release builds.** The live trace only ran
+  in debug/diagnostic builds, and the on-disk log recorded hard failures *only*. A user whose picture
+  judders or whose sound drifts has no failure to report, so the log they were asked for came back
+  empty. There was also no way to get the log off a TV.
+- **F26 (logging half)** — the quality events that explain a complaint (a decode rescue, an engine
+  handoff, the stereo safety net firing) were Logcat-only, i.e. invisible to every user.
+
+### Changes
+
+1. **A streaming-scoped HTTP client** (`core/network/StreamingHttpClient.kt`, new). Built with
+   `base.newBuilder().connectionPool(…)`, so it inherits the singleton's proxy selector, authenticator,
+   DNS, forced HTTP/1.1, default-UA interceptor and timeouts, but owns its sockets. All three streaming
+   engines (`LivePreviewEngine`, `ExoSubtitleEngine`, `HeroPreviewEngine`) take it, and
+   `releaseHttpConnections()` now evicts *that* pool. OkHttp only evicts idle connections, so nothing in
+   flight is harmed, and the diagnostic client derives from it, so it shares the same pool.
+2. **Audio focus + MediaSession** (`player/PlaybackSession.kt`, new; wired in `OwnTVShell`). Deliberately
+   the *framework* `android.media.session.MediaSession`, not Media3's: mpv is not a Media3 `Player`, so a
+   Media3 session would need a `SimpleBasePlayer` adapter — a large, risky change — plus a new dependency.
+   The framework session is engine-agnostic and free. It publishes title/artist, duration (`-1` for live)
+   and position, and exposes seek/FF/rewind actions for VOD only. Transport callbacks route back into
+   whichever `PlaybackEngine` currently owns the speaker; `OwnTVShell` is the only place that knows which
+   that is, so it hands the engine over and hands back `null` when the player closes (an idle session must
+   not answer a remote's play key).
+   **Focus policy is duck-don't-pause**, as chosen: `setWillPauseWhenDucked(false)` lets the platform
+   attenuate for a transient-can-duck loss, a plain `LOSS_TRANSIENT` ducks to 25% manually and restores on
+   gain, and only a permanent `LOSS` pauses and abandons focus. Nothing pauses a film for a notification.
+3. **Detailed playback logging is a runtime setting** (Settings → Video player → Diagnostics). It drives
+   `LiveDiagnosticsLog.enabled`, so a release build can now produce the full live trace on request; debug
+   and `-PdiagnosticBuild` builds stay on regardless. It is collected inside `LivePreviewEngine.init` —
+   *not* at app start — because cold start does no DataStore work.
+4. **The playback log records events, not just failures.** `PlaybackErrorLog` gained a `Kind`
+   (`ERROR` / `EVENT` / `REPORT`), an `event()` and a `report()` entry point, and its capacity went 10 → 25.
+   The JSON reader uses `optString`, so an older file still loads and its entries read as `ERROR`.
+   Event call sites are deliberately few and one-shot: the stereo latch on all three engines, both mpv
+   decode-rescue rungs, the catch-up archive software rescue, the live 403 → mpv handoff, and a learned
+   one-session panel (458) on both engines.
+5. **"Report this stream"** — a share button in the player's bottom bar, shown only while the stream-info
+   overlay is open (there is nothing to report otherwise). It writes the readout the user is looking at —
+   codec, resolution, HDR, bitrate, decoder, audio, buffer, engine, position — into the log as a `REPORT`
+   entry, and confirms with the existing bottom-centre toast.
+6. **Export.** The log viewer gained an **Export** button that writes the whole log plus the live
+   diagnostics ring as plain text to the app's external files dir and shows the path on screen:
+   `adb pull /sdcard/Android/data/tv.own.owntv/files/owntv-playback-report.txt`. A TV has nowhere to
+   "share" to, so a pullable file is the export that actually works. The viewer also shows each entry's
+   kind now, and its own description and search keywords were updated.
+7. **The viewer scrolls** (found by the owner during the test). It used the dialog panel's own
+   `verticalScroll` with nothing focusable inside it — on a TV that column only moves when focus moves
+   into it, so with the capacity raised to 25 the panel simply grew past the screen and the older half was
+   unreachable. The entries now live in a height-capped `LazyColumn` whose rows are focusable, the same
+   pattern the "Fill from playlist" dialog uses. Focus still starts on **Close**, so Export/Clear/Close
+   stay one press away and Up walks back through the history; Back still closes.
+
+### Files changed
+
+| File | Why |
+|---|---|
+| `core/network/StreamingHttpClient.kt` | **new** — playback-scoped OkHttp client + its own `ConnectionPool` (F28) |
+| `di/DataModule.kt` | registers it |
+| `di/PlayerModule.kt` | engines take the streaming client; registers `PlaybackSession` |
+| `player/LivePreviewEngine.kt` | streaming client, pool-scoped `releaseHttpConnections()`, diagnostics toggle collector, event log on the mpv handoff and on 458 |
+| `player/ExoSubtitleEngine.kt`, `player/HeroPreviewEngine.kt` | streaming client; stereo-latch event log (Exo VOD) |
+| `player/OwnTVPlayer.kt` | streaming client; event log on both rescue rungs, the archive rescue, the surround failsafe and a learned 458 |
+| `player/PlaybackSession.kt` | **new** — audio focus (duck-don't-pause) + framework MediaSession (F27) |
+| `features/shell/OwnTVShell.kt` | hands the currently-sounding engine to the session, `null` when the player closes |
+| `player/PlaybackErrorLog.kt` | `Kind`, `event()`, `report()`, `export()`, capacity 25 |
+| `player/PlayerHud.kt` | "Report this stream" button (only while stream info is open) + its confirmation |
+| `features/settings/data/SettingsRepository.kt` | `detailedDiagnostics` flow + setter + backup key |
+| `features/settings/SettingsViewModel.kt` | `detailedDiagnostics` state + setter |
+| `features/settings/VideoPlayerSettingsScreen.kt` | the Diagnostics row |
+| `features/shell/components/SettingsScreen.kt` | log viewer: kind chip, Export, updated copy; search entry for the new row |
+
+### What the owner should test
+
+Install over the existing app (**keeps all data**):
+
+```powershell
+adb install -r app\build\outputs\apk\standard\release\app-standard-release.apk
+```
+
+1. **Nothing pauses your film.** Trigger a notification or a short system sound during a movie — the
+   audio should dip briefly and come back, never pause. If something takes audio permanently (another
+   media app), playback should pause.
+2. **Transport keys.** If the remote has play/pause (or you can use a headset/assistant), pause and
+   resume from it during a movie and during a live channel. Skip/next should move episodes in a series.
+   With the player closed, those keys must do nothing to OwnTV.
+3. **Zapping still releases the provider session.** On a one-session panel, zap a few channels and switch
+   engines — the "session in use" behaviour should be no worse than before. Meanwhile the Guide, images
+   and metadata should not feel slower after a zap (that is the point of the split pool).
+4. **Report this stream.** Play anything → open the stream-info overlay (ⓘ) → the share button appears →
+   press it → "Stream report saved" appears. Then Settings → Playback error log: the entry is there,
+   marked **Report**.
+5. **Export.** In that dialog press **Export** — a path appears. Then, from a PC:
+   `adb pull /sdcard/Android/data/tv.own.owntv/files/owntv-playback-report.txt`
+6. **Detailed playback logging.** Settings → Video player → Diagnostics → turn it on, play a live channel,
+   then export again: the report should now carry a live diagnostics section.
+7. **General regression:** live, movies, series, catch-up, PiP and the mini player all behave as before.
+
+### Known limits / risks of this phase
+
+- **The MediaSession is transport-only.** It is not a foreground media service, so it does not give
+  background audio, a lock-screen/now-playing card on every launcher, or playback that survives the
+  player screen closing. Nothing in the app claimed those before either.
+- **`onStop` from a remote is treated as pause**, not exit: the session must not tear down UI it doesn't
+  own.
+- **Ducking is manual for `LOSS_TRANSIENT`** — the platform ducks `LOSS_TRANSIENT_CAN_DUCK` itself. On a
+  TV that ducks in hardware, the two could stack briefly; it restores on focus gain either way.
+- **The split connection pool is the one change that could alter live behaviour**, because it changes what
+  a stop evicts. It should only ever help (metadata sockets are no longer collateral damage), but item 3
+  is the check.
+- **Event logging is best-effort and deliberately sparse.** It is not a substitute for the live trace;
+  it exists so a report is never empty.
+- The diagnostics toggle only affects *what is written down*. It never changes playback.
+
+### Audit complete — and the follow-up round with it
+
+All seven phases are owner-tested, and so is the follow-up round below (F30/F31/F19a–F19e). Every **S1 and S2** finding in `PLAYBACK_AUDIT.md` is fixed, and every
+S3 finding that the three reported issues depended on. What remains uncommitted alongside the audit — the
+EPG time offset feature and the catch-up hardware-first decode work — is separate from it but was tested
+in the same passes. Next session: documentation (`CHANGELOG.md`, `CHANGELOG_APP.md`,
+`extras/USER_GUIDE.md`) and the commit note, per the session-end sequence.
+
+## What the audit deliberately did NOT do
+
+Nothing here is a regression or a half-finished change: these are audit findings that were looked at and
+left, each for a stated reason. They are listed so a later session doesn't re-discover them as "bugs".
+
+### Worth doing, just not now (a small follow-up round) — **now done**
+
+This whole group was implemented after the audit closed, in one follow-up round. See
+**Follow-up round** below for what each change actually does. Nothing is left in this group.
+
+### Investigated and rejected — do not retry blindly
+
+- **Plan item 24 — `vo=gpu-next` / GL path for live** (frame pacing). Tried twice on the owner's TV in an
+  earlier session and both attempts were **clearly worse**; the reasoning and the measurements are written
+  into `OwnTVPlayer.kt` above `useDirect()`. The real cure needs a timed `releaseOutputBuffer` inside
+  libmpv's Android VO — a native change, not an option we can set.
+- **F19h — replace the >1080p software-decode guard with a measured check.** The guard exists because
+  software 4K on TV hardware degrades into an unwatchable slideshow rather than a clean failure. A measured
+  version needs a spread of real devices to calibrate on; with one TV available it would be guesswork.
+- **F19f / F19g — `PlayerBudget` GPU tiering and the unused `demuxerLavfOptionsFor` parameters.** Internal
+  tidiness with no user-visible effect. F19f in particular would need device data we don't have.
+
+## Follow-up round (after the audit) — **ok, done, tested**
+
+The seven "worth doing, just not now" items, done in one pass. Status: **owner-tested on TV, all ok —
+including the DB 26 → 27 upgrade over an installed build (catalog, playlists, profiles and history kept).**
+
+| # | Change | What it does |
+|---|---|---|
+| F30 | Xtream `max_connections` read at sync | The panel's own `user_info.max_connections` is stored on the source (`sources.maxConnections`, DB **27**) and, when it is `1`, seeds `LiveStreamQuirks.rememberSessionLimit()` — at sync *and* on every app start from the shared source flow. The app no longer has to burn one failed tune learning what the provider already told it. |
+| F31 | Preview pane says why it is off | On a one-session provider whose stream is already in use, the pane shows "Preview off — your provider allows one stream at a time" instead of sitting dead, which read as a broken channel. |
+| F19c | Audio Mode really releases the video decoder | Dropping the surface only stopped the *drawing* — ExoPlayer kept decoding every frame. Audio Mode now disables the video track too (and re-applies that after a player rebuild). |
+| F19d | Home hero preview: one-session guard + it learns the 458 | The hero preview now skips playback when mpv already holds the provider's single session, and a 458 there feeds `rememberSessionLimit()` like the live engine's does. |
+| F19e | A/V-sync nudge on live | The nudge is now offered wherever the engine can actually shift audio (`PlaybackEngine.audioDelayAvailable()` → true on mpv), instead of on VOD only. Still hidden when live runs on ExoPlayer, which has no `audio-delay`. |
+| F19b | mpv subtitles in the docked mini-player | `SubtitleOverlay` gained a `sizeScale` and is composed docked as well as full-screen, scaled to the chosen mini size (floored so the smallest box stays readable). |
+| F19a | Volume boost above 100% on Live TV | 100–150% now comes from a platform `LoudnessEnhancer` on the ExoPlayer audio session (≈ +3.5 dB at 150%, matching mpv), not from player gain — ExoPlayer cannot amplify past unity and the old gain-processor attempt broke the audio sink. Released as soon as the volume is back at 100, re-bound after a player rebuild, and a device that refuses the effect just stays at unity. Needs `MODIFY_AUDIO_SETTINGS` (normal permission, no prompt). |
+
+### Files changed
+
+| File | Why |
+|---|---|
+| `core/database/entity/ProfileEntities.kt`, `core/database/OwnTVDatabase.kt`, `di/DatabaseModule.kt` | `sources.maxConnections` + `MIGRATION_26_27` (additive, guarded, carries `healSchema`) at DB version 27 |
+| `core/database/dao/SourceDao.kt`, `core/parser/XtreamClient.kt`, `core/sync/XtreamSyncer.kt` | parse and persist `user_info.max_connections` |
+| `core/repository/ActiveSources.kt` | seeds the one-session quirk from the stored value on every source emission |
+| `features/live/LiveViewModel.kt`, `features/live/LiveScreen.kt` | the "preview off" state and its hint |
+| `player/HeroPreviewEngine.kt`, `di/playerModule.kt` | hero one-session guard (`streamInUse`) + 458 learning |
+| `player/LivePreviewEngine.kt` | video-track disable in Audio Mode; the LoudnessEnhancer boost |
+| `player/PlaybackEngine.kt`, `player/PlayerHud.kt` | `audioDelayAvailable()` gating for the A/V-sync nudge |
+| `player/SubtitleOverlay.kt`, `features/shell/OwnTVShell.kt` | scaled subtitles, drawn docked too |
+| `AndroidManifest.xml` | `MODIFY_AUDIO_SETTINGS` for the boost effect |
+| `app/schemas/…/27.json`, `androidTest/…/OwnTVDatabaseMigrationTest.kt` | exported schema + `CURRENT_VERSION = 27` and the new column assertion |
+
+### Owner test steps — all passed
+
+1. **Upgrade path** — install the release APK over the existing app with `adb install -r` (never uninstall)
+   and confirm the catalog, playlists, profiles and history survive the DB 26 → 27 migration.
+2. **Xtream sync** — run a playlist refresh on an Xtream source; on a one-stream account, start a channel
+   full-screen and move focus in the list: the preview pane should show the "one stream at a time" hint
+   rather than a dead box, on the *first* attempt after a fresh start.
+3. **Home hero** — with a channel playing on a one-stream account, go Home: the hero shows the poster and
+   playback keeps running (no 458 knock-off).
+4. **Audio Mode** on a live channel — audio keeps playing, picture stops; leaving Audio Mode brings the
+   picture back cleanly.
+5. **A/V-sync** — open Audio → the ± nudge is now present on a live channel *in compatibility (mpv) mode*
+   and still absent on a normal ExoPlayer live channel.
+6. **Mini-player subtitles** — play a subtitled film, dock it: subtitles appear, sized to the box.
+7. **Volume boost on live** — push volume past 100% on a quiet live channel: it should get louder up to
+   150%, with no crackle or audio dropout; back at 100% it must sound exactly as before.

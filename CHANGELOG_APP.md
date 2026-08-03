@@ -16,6 +16,10 @@
 - **🔊 Surround sound rebuilt — Auto, Stereo only, Surround, and it can no longer leave you in silence**
 - **⏱️ Live latency really changes the buffer now — and a new Pre-buffer control, per playlist**
 - **🎞️ Auto frame rate works out the frame rate by itself — and offers itself when 25 fps judders**
+- **🗓️ Guide time offset — for a guide that is hours out, globally or for one channel**
+- **🎧 Sound behaves like a TV app now — and the remote's transport keys work**
+- **🩺 Diagnostics you can actually send**
+- **🧩 M3U playlists: per-channel headers, and catch-up that actually builds a URL**
 
 ### 🐛 Fixes
 
@@ -30,6 +34,13 @@
 - **Audio and video no longer drift apart on live channels in compatibility mode**
 - **Faster switch to the compatibility player when a provider refuses the standard player's stream URLs**
 - **A provider that refuses playback outright is no longer hammered with the identical request**
+- **Catch-up recordings that opened with sound but no picture now recover by themselves**
+- **Zapping no longer slows down the Guide, artwork and playlist updates**
+- **Audio Mode really switches the picture off**
+- **On providers that allow one stream at a time, the preview pane now says so**
+- **Subtitles are drawn in the small docked player**
+- **The audio/video sync nudge is available on live channels**
+- **Volume boost above 100% now works on Live TV too**
 
 ## v4.1.6 — 2026-08-01
 

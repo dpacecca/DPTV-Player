@@ -111,6 +111,10 @@ class EpgViewModel(
         .flatMapLatest { pid -> if (pid < 0) flowOf(SectionCustomizations()) else customize.observe(pid, MediaType.LIVE) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, SectionCustomizations())
 
+    /** Global guide shift in minutes; a per-channel override in [custom] wins over it. */
+    private val epgOffset: StateFlow<Int> = settings.epgOffsetMinutes
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
     /** Guide category filter: null = all channels, otherwise a provider/custom stable key. */
     private val _categoryFilter = MutableStateFlow<String?>(null)
     val categoryFilter: StateFlow<String?> = _categoryFilter.asStateFlow()
@@ -160,15 +164,38 @@ class EpgViewModel(
     private val _cacheRevision = MutableStateFlow(0)
     val cacheRevision: StateFlow<Int> = _cacheRevision.asStateFlow()
 
+    // Rows whose guide is shifted can't share the batch cache — their window is a different slice of
+    // stored time — so they get their own cache, keyed "<epg key>|<minutes>". Empty unless the user
+    // has actually set an offset, which keeps the normal guide exactly as fast as before.
+    private val shiftedRowCache = java.util.concurrent.ConcurrentHashMap<String, List<EpgProgrammeEntity>>()
+
+    /** Minutes this channel's guide is shifted by (per-channel override, else the global offset). */
+    private fun shiftFor(channel: ChannelEntity): Int =
+        tv.own.owntv.core.epg.EpgShift.minutesFor(custom.value, channel, epgOffset.value)
+
     /** Synchronous cache peek — lets a re-composed row render instantly without a loading flash. */
-    fun cachedProgrammes(channel: ChannelEntity): List<EpgProgrammeEntity>? =
-        channel.epgChannelId?.trim()?.lowercase()?.let { rowCache[it] }
+    fun cachedProgrammes(channel: ChannelEntity): List<EpgProgrammeEntity>? {
+        val key = channel.epgChannelId?.trim()?.lowercase() ?: return null
+        val shift = shiftFor(channel)
+        return if (shift == 0) rowCache[key] else shiftedRowCache["$key|$shift"]
+    }
 
     /** Lazily loads one row's programmes (indexed query + cache) as the row scrolls into view. */
     suspend fun programmesFor(channel: ChannelEntity): List<EpgProgrammeEntity> {
         val key = channel.epgChannelId?.trim()?.lowercase() ?: return emptyList()
-        rowCache[key]?.let { return it }
         val s = _state.value
+        val shift = shiftFor(channel)
+        if (shift != 0) {
+            val cacheKey = "$key|$shift"
+            shiftedRowCache[cacheKey]?.let { return it }
+            val from = tv.own.owntv.core.epg.EpgShift.toStored(s.windowStart, shift)
+            val to = tv.own.owntv.core.epg.EpgShift.toStored(s.windowEnd, shift)
+            val shifted = epgDao.programmeSummariesForChannel(loadedSourceIds, key, from, to)
+                .map { tv.own.owntv.core.epg.EpgShift.apply(it, shift) }
+            shiftedRowCache[cacheKey] = shifted
+            return shifted
+        }
+        rowCache[key]?.let { return it }
         val list = epgDao.programmeSummariesForChannel(loadedSourceIds, key, s.windowStart, s.windowEnd)
         rowCache[key] = list
         return list
@@ -287,7 +314,7 @@ class EpgViewModel(
                 // only works as `.m3u8` fails here while playing fine from Live TV (F05).
                 channel.playStreamUrl(source)
             }
-            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent, livePrerollSecsOverride = source?.livePrerollSecs?.takeIf { it >= 0 })
+            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent, httpHeaders = channel.httpHeaders, livePrerollSecsOverride = source?.livePrerollSecs?.takeIf { it >= 0 })
             val pid = currentProfileId() ?: return@launch
             runCatching {
                 historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.LIVE, itemId = channel.id))
@@ -312,8 +339,9 @@ class EpgViewModel(
             lastTunedChannelId = channel.id
             _canZap.value = false // archive playback isn't part of the live zap list
             // isLive = false → the archive plays back seekable, with a normal progress bar.
-            // preferSoftware → tolerate mid-GOP archive segments the hardware decoder can't (blank/crash).
-            player.play(url, title = channel.name, subtitle = programme.title, logoUrl = channel.displayLogoUrl, isLive = false, preferSoftware = true, userAgent = sourceUa)
+            // isArchive → mid-GOP tolerant: opens in hardware, drops to software if this panel's archive
+            // turns out to be one the hardware decoder can't resync on (blank picture).
+            player.play(url, title = channel.name, subtitle = programme.title, logoUrl = channel.displayLogoUrl, isLive = false, isArchive = true, userAgent = sourceUa, httpHeaders = channel.httpHeaders)
         }
     }
 
@@ -378,6 +406,27 @@ class EpgViewModel(
 
     /** The channel's current manual EPG match (or null if auto-matched). */
     fun currentEpgMatch(channel: ChannelEntity): String? = custom.value.epgMatches[CustomizeKeys.channel(channel)]
+
+    /** The channel's own guide shift in minutes, or null when it follows the global offset. */
+    fun currentEpgShift(channel: ChannelEntity): Int? =
+        tv.own.owntv.core.epg.EpgShift.overrideFor(custom.value, channel)
+
+    /** The global guide shift — the per-channel dialog's "follow global" default. */
+    fun globalEpgShift(): Int = epgOffset.value
+
+    /** Shift this channel's guide by [minutes] (null → follow the global offset), then refresh. */
+    fun setEpgShift(channel: ChannelEntity, minutes: Int?) {
+        viewModelScope.launch {
+            val pid = settings.activeProfileId.first()
+            val key = CustomizeKeys.channel(channel)
+            customize.setEpgShift(pid, MediaType.LIVE, key, minutes)
+            // Rows re-read the shift from `custom` — wait for the DataStore edit to land there first,
+            // or the refresh below can still render with the old offset.
+            kotlinx.coroutines.withTimeoutOrNull(1_000) { custom.first { it.epgShifts[key]?.toIntOrNull() == minutes } }
+            shiftedRowCache.clear()
+            _cacheRevision.value++ // visible rows re-read with the new shift
+        }
+    }
 
     /** Set/clear a channel's manual EPG match (null clears → auto-match), then reload the guide. */
     fun setEpgMatch(channel: ChannelEntity, epgChannelId: String?) {
@@ -688,6 +737,7 @@ class EpgViewModel(
             if (windowChanged) {
                 cachedWindow = windowStart to windowEnd
                 rowCache.clear()
+                shiftedRowCache.clear()
                 // Pass 1 (blocking): the forward window only, so the Guide opens instantly and fully from cache.
                 val forward = loadWindowGrouped(ids, nowAligned, windowEnd)
                 forward.forEach { (k, list) -> rowCache[k] = list }

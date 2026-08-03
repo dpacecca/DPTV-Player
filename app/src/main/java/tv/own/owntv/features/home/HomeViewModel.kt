@@ -529,22 +529,32 @@ class HomeViewModel(
         val sourceIds = (activeIds.toList() + epgIds).distinct()
         val customizations = customize.observe(profileId, tv.own.owntv.core.model.MediaType.LIVE).first()
         val programmes = linkedMapOf<Long, List<EpgProgrammeEntity>>()
+        // Channels with a guide shift query a moved window and get moved rows back, so the rail's
+        // progress bars line up with what's actually on. Grouped, so no shift = one query as before.
+        val globalShift = settings.epgOffsetMinutes.first()
         val channelKeys = channels.mapNotNull { channel ->
             val key = customizations.epgMatches[CustomizeKeys.channel(channel)] ?: channel.epgChannelId
             key?.trim()?.lowercase()
                 ?.takeIf { it.isNotEmpty() }
-                ?.let { channel.id to it }
+                ?.let { Triple(channel.id, it, tv.own.owntv.core.epg.EpgShift.minutesFor(customizations, channel, globalShift)) }
         }
-        val rowsByKey = channelKeys
-            .map { it.second }
-            .distinct()
-            .chunked(400)
-            .flatMap { epgKeys -> epgDao.programmeSummariesForChannels(sourceIds, epgKeys, windowStart, windowEnd) }
-            .groupBy { it.epgChannelId }
-
-        for ((channelId, epgKey) in channelKeys) {
-            rowsByKey[epgKey]?.takeIf { it.isNotEmpty() }?.let { programmes[channelId] = it }
+        val collected = HashMap<Long, List<EpgProgrammeEntity>>()
+        for ((shift, group) in channelKeys.groupBy { it.third }) {
+            val from = tv.own.owntv.core.epg.EpgShift.toStored(windowStart, shift)
+            val to = tv.own.owntv.core.epg.EpgShift.toStored(windowEnd, shift)
+            val rowsByKey = group
+                .map { it.second }
+                .distinct()
+                .chunked(400)
+                .flatMap { epgKeys -> epgDao.programmeSummariesForChannels(sourceIds, epgKeys, from, to) }
+                .groupBy { it.epgChannelId }
+            for ((channelId, epgKey, _) in group) {
+                rowsByKey[epgKey]?.takeIf { it.isNotEmpty() }
+                    ?.let { collected[channelId] = tv.own.owntv.core.epg.EpgShift.apply(it, shift) }
+            }
         }
+        // Back into channel order — the rail renders straight off this map's iteration order.
+        for (channel in channels) collected[channel.id]?.let { programmes[channel.id] = it }
 
         GuideSliceState(
             channels = channels,

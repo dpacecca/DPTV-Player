@@ -98,6 +98,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
     val vodExo by vm.vodPreferExo.collectAsStateWithLifecycle()
     val measuredStats by vm.measuredStreamStats.collectAsStateWithLifecycle()
+    val detailedDiagnostics by vm.detailedDiagnostics.collectAsStateWithLifecycle()
     val directTune by vm.directTune.collectAsStateWithLifecycle()
     val externalLive by vm.externalPlayerLive.collectAsStateWithLifecycle()
     val externalMovies by vm.externalPlayerMovies.collectAsStateWithLifecycle()
@@ -359,6 +360,14 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
                 "low-end TV stutters — it never affects the actual video, only the diagnostic numbers.",
             chip = if (measuredStats) "On" else "Off", primaryChip = measuredStats,
             onClick = { vm.setMeasuredStreamStats(!measuredStats) },
+        )
+        Row2(
+            icon = OwnTVIcon.INFO, title = "Detailed playback logging",
+            desc = "Keep a full trace of what the live engine does — every tune, fallback and reconnect — " +
+                "in Logcat and in the exported report. Leave it off unless you are chasing a problem; " +
+                "it never changes playback, only how much is written down.",
+            chip = if (detailedDiagnostics) "On" else "Off", primaryChip = detailedDiagnostics,
+            onClick = { vm.setDetailedDiagnostics(!detailedDiagnostics) },
         )
     }
 
