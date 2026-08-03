@@ -887,8 +887,9 @@ private fun SubtitleAppearanceDialog(
                     val open = { target: SubDialog -> lastChild = target; child = target }
                     Spacer(Modifier.height(2.dp))
                     Row2(
-                        icon = OwnTVIcon.SUBTITLE, title = "Size",
-                        desc = "Scale subtitle text.",
+                        icon = OwnTVIcon.SUBTITLE,
+                        title = stringResource(R.string.settings_subtitle_size),
+                        desc = stringResource(R.string.settings_subtitle_size_description),
                         chip = subSizeName(scale), primaryChip = SubtitleStyle.hasScale(scale), chevron = true,
                         modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.SIZE)),
                         onClick = { open(SubDialog.SIZE) },
