@@ -46,6 +46,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
@@ -183,7 +184,7 @@ fun AudioNowPlayingBar(
             Column(Modifier.widthIn(max = if (expanded) 260.dp else 150.dp), verticalArrangement = Arrangement.Center) {
                 Text(
                     meta.title ?: "",
-                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = PopupFontFamily),
+                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.SansSerif),
                     color = colors.onSurface,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -203,7 +204,7 @@ fun AudioNowPlayingBar(
                         )
                         meta.localizedSubtitle() != null -> Text(
                             meta.localizedSubtitle() ?: "",
-                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = PopupFontFamily),
+                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.SansSerif),
                             color = colors.onSurfaceVariant,
                             maxLines = 1,
                         )

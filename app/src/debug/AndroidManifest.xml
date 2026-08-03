@@ -4,5 +4,8 @@
         <activity
             android:name="tv.own.owntv.core.i18n.LocaleTestActivity"
             android:exported="false" />
+        <activity
+            android:name="tv.own.owntv.core.i18n.FontFallbackQaActivity"
+            android:exported="true" />
     </application>
 </manifest>
