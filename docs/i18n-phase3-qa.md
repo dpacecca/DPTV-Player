@@ -34,7 +34,7 @@ Not run in this implementation session, in accordance with the plan's no-default
 ```sh
 python3 tools/i18n/check_number_locale.py
 python3 tools/i18n/check_text_overflow.py
-python3 tools/i18n/validate_strings.py --release
+python3 tools/i18n/validate_strings.py
 python3 tools/i18n/check_hardcoded_strings.py verify --bootstrap
 python3 tools/i18n/gen_supported_locales.py check
 python3 tools/i18n/test_i18n_tools.py
@@ -48,6 +48,10 @@ python3 tools/i18n/test_i18n_tools.py
   :app:assembleStandardRelease
 ```
 
+After Phase 4a lands, use `python3 tools/i18n/validate_strings.py --report text` so the same
+structural validation also prints informational coverage. Do not use the old `--release`
+completeness policy as the acceptance criterion for community translations.
+
 After assembling, run the APK checks with the actual output paths:
 
 ```sh
@@ -58,6 +62,10 @@ python3 tools/i18n/check_pseudo_locales.py --apk <release-apk> --mode release
 ## Manual walkthrough status
 
 The following checks require installed APKs and remain pending. Phase 3 should not be marked fully verified until they are recorded here or in the PR description.
+
+Phase 4a reuses this groundwork for a paid seed pilot in German, Arabic, Japanese, and Turkish. That
+pilot checks real translated content, but it does not replace the broader pseudolocale and device
+walkthrough below. Translation coverage is informational; malformed localized values remain errors.
 
 ### Pseudolocales
 

@@ -1,6 +1,9 @@
 # Internationalization & Localization for OwnTV
 
-> **Status:** approved implementation plan, **v2**, not yet started. Written 2026-07-27 against AGP 9.2.1, Compose BOM 2026.05.00 (compose-ui 1.11.1), minSdk 26 / targetSdk 36. Revised 2026-07-28 after a first design review, **restructured 2026-07-29 (v2)** after a second architectural review, and clarified 2026-07-29 after the v2 implementation-readiness review. v2 changes the localisation *boundary*, not the verified Android mechanics.
+> **Status:** approved implementation plan, **v2**. Phases 0-3 are implemented; Phase 4 remains
+> planned. Written 2026-07-27 against AGP 9.2.1, Compose BOM 2026.05.00 (compose-ui 1.11.1), minSdk
+> 26 / targetSdk 36. Revised through 2026-08-04, including the Phase 4a fallback and coverage policy.
+> v2 changes the localisation *boundary*, not the verified Android mechanics.
 >
 > **For the implementing agent:** phases are in strict priority order and each is independently shippable. Do not reorder. Phase 0's guardrails are what make Phase 1's ~1,600-string extraction a ratchet instead of a hope, and Phase 3 must land before any non-Latin locale ships.
 >
@@ -31,7 +34,9 @@ v2 replaces the "make every layer able to speak the user's language" model with 
 11. **Preserves debug pseudolocales when release locale filtering is enabled**, and verifies them in the built debug APK rather than trusting the build flag.
 12. **Compares the hardcoded-literal baseline against the pull request merge base**, not the previous commit.
 13. **Defines an explicit `locales.json` schema** separating runtime tags, Android qualifiers, Weblate codes, packaging status, picker visibility and tier.
-14. **Replaces the previous 12-language Tier 1 list with the 21 supported languages** specified in Phase 4. The initial catalogue contains only those 21; more languages are added when users or contributors request them.
+14. **Replaces the previous 12-language Tier 1 list with the 21 supported languages** specified in
+Phase 4. The catalogue contains those 21 language choices plus the hidden en-GB regional override;
+more languages are added when users or contributors request them.
 
 Everything not listed above is carried forward from v1 unchanged, including the APK measurement method, RTL rules, font rules, date/number rules, plural rules, Weblate configuration and the pseudolocale QA sweep. The old 111-locale size projection is not carried forward because the approved initial scope is now 21 languages.
 
@@ -104,7 +109,11 @@ Measured scope (unchanged by v2, see the note below):
 
 **Do not reduce the 1,400-1,600 figure because `UiText` is gone.** Removing `UiText` changes *where* a sentence is resolved, not *how many* sentences need translating. Launcher prose, notification text, system toasts and chooser titles remain in scope.
 
-Outcome: 21 supported languages, translated and maintained through Weblate, with release-gated coverage and a build that mechanically prevents regressions back into hardcoded English. Additional languages are optional and enter the catalogue only in response to user or contributor demand.
+Outcome: source English is guaranteed complete; 20 community languages are seeded once and then
+maintained through Weblate. Missing community translations fall back to English, while coverage is
+reported in CI and shown in the picker without becoming a release gate. The build still mechanically
+prevents regressions back into hardcoded English and rejects malformed localized values. Additional
+languages enter the catalogue only in response to user or contributor demand.
 
 ---
 
@@ -144,7 +153,8 @@ Compose and named final renderers
 
 **3. Semantic state, not a translation-message type, for everything produced outside Composables.** ViewModels, Workers and repositories must stop emitting English sentences, but they must not start emitting resource references either. They emit typed state; Compose words it. See "Non-Compose text producers" below for the full classification and the replacement patterns.
 
-**4. All 21 supported locales are bundled in the APK.**
+**4. All 21 supported language choices are bundled in the APK after Phase 4c.** Source en-US and the
+hidden en-GB override ship first; the 20 community locales are enabled together after seeding.
 
 The measurement method was verified empirically against the built APK. **`resources.arsc` is stored uncompressed** (`991228 Stored 991228 0%`), so every byte of locale data lands 1:1 on the APK; there is no deflate discount. The measured cost model from the current arsc is approximately **20 B per (string × locale)** of table structure, plus a UTF-8 string pool at ~35.6 B/string overhead plus payload.
 
@@ -156,15 +166,19 @@ The measurement method was verified empirically against the built APK. **`resour
 
 Nothing meaningfully reduces locale resources once packaged: `shrinkResources` removes unreferenced resources but never strips locales; aapt2 sparse encoding requires minSdk >= 32 (we are 26, and every type chunk is confirmed `DENSE`); bundle language splits are N/A for sideloaded APKs. `androidResources.localeFilters` (a `MutableSet<String>` on the DSL) remains the explicit packaging control.
 
-The old 111-locale projection is obsolete after the decision to support 21 languages initially. Phase 0 introduces `localeFilters` and must record a new filtered baseline; Phase 4 must record the actual 21-language APK delta rather than treating the planning allowance as a measurement.
+The old 111-locale projection is obsolete after the decision to support 21 languages initially. Phase
+0 introduces `localeFilters` and records a filtered baseline; Phase 4e records the actual 21-language
+APK delta rather than treating the planning allowance as a measurement.
 
 **Consequence to watch:** even the smaller 21-language increase should be measured because the ABI flavor split was created after truncated-download "parse error" reports. Track release-asset download failures after the first localized release.
 
 **5. Translation supply chain: one-off 21-language LLM seed, then Weblate only.** A manually-run script seeds the 20 non-source translations for the 21 supported languages once via the Claude API. It is then archived and never runs in CI. From that point Weblate (free hosted tier, the repo is GPL-3 so it qualifies) is the sole writer, with direct GitHub edits also supported via bidirectional sync. No bot-versus-human merge conflicts by construction.
 
-> Consequence to accept: strings added in future releases appear in English until translations land. Android's resource fallback handles this gracefully during development; the generated coverage report makes it visible; the 21 supported languages are release-gated before a localized release.
+> Consequence to accept: strings added in future releases appear in English until community
+> translations land. Android's resource fallback is the intended production behavior. The generated
+> CI report and picker badge make missing work visible without blocking a release.
 
-**6. Source English is en-US, with a reviewed `values-en-rGB` override.** Canonical `values/` is normalized to en-US spelling; `values-en-rGB` contains the explicit British regional overrides for favourites, colour, catalogue and programme wording. The regional file is packaged but is not a separate Tier 1 translation target. English is a Tier 1 target in its own right (Phase 4d), while British English remains a regional source override unless the product later exposes it explicitly.
+**6. Source English is en-US, with a reviewed `values-en-rGB` override.** Canonical `values/` is normalized to en-US spelling; `values-en-rGB` contains the explicit British regional overrides for favourites, colour, catalogue and programme wording. English is the only completeness guarantee. The regional file is packaged but hidden from the picker and is not a separate community translation target.
 
 **7. One SharedPreferences-backed `LocaleStore`, because the locale is bootstrap-critical.** The selected locale must be readable *synchronously* inside `Application.attachBaseContext` and `Activity.attachBaseContext`. DataStore is asynchronous and cannot be read cleanly from those hooks without blocking a lifecycle callback or redesigning startup around a delayed bootstrap plus a possible recreation. Removing the API 33 reconcile removed the *reconciliation* complexity, not the *cold-start* requirement. So this one setting lives in SharedPreferences, alone, with no DataStore key and no mirror. Full treatment in 0b.
 
@@ -608,7 +622,7 @@ There is no `UiText.kt` and no `LocaleContextProvider.kt`. If either file exists
 | `AppLocale.kt` | Resolves a stored tag to an effective locale list; `""` reads the current device list from `Resources.getSystem().configuration.locales`. `wrap(base, tag)` uses a locale-specific `Configuration` plus `createConfigurationContext`; `applyGlobally(tag)` applies that effective list through `Locale.setDefault()` and `LocaleList.setDefault()` |
 | `LocaleStore.kt` | The single locale authority. SharedPreferences-backed. BCP-47 tag, `""` means follow system. Synchronous read for `attachBaseContext`, durable write, observable `StateFlow` |
 | `LocalizedContent.kt` | `@Composable` wrapper providing the four locals |
-| `SupportedLocales.kt` | Generated from `tools/i18n/locales.json` plus computed coverage: runtime tag, endonym, English name, script, RTL, completeness % |
+| `SupportedLocales.kt` | Generated from `tools/i18n/locales.json` plus computed coverage: runtime tag, endonym, English name, script, RTL, informational coverage % |
 
 Companion-specific localisation lives with the companion feature, not here:
 
@@ -788,8 +802,13 @@ Also removed with it: the known upstream non-determinism issue [281825213](https
 
 **`localeFilters` still ships in Phase 0**, for the reason v1 identified and for a second reason v2 adds:
 
-- It strips **library** locale folders at merge time. appcompat 1.7.1 alone contributes ~85 locale folders to the APK that ships today. Setting the filter to the Phase 0 packaged set removes them before OwnTV translations are added. Measure the Phase 0 APK and record the new baseline; then measure the actual 21-language delta in Phase 4.
-- It is what makes `packaged = false` in `locales.json` mean something. Phase 0 contains all 21 supported catalogue entries but initially packages only English; the remaining entries cost zero bytes and stay invisible until the translation release is ready.
+- It strips **library** locale folders at merge time. appcompat 1.7.1 alone contributes ~85 locale
+  folders to the APK that ships today. Setting the filter to the Phase 0 packaged set removes them
+  before OwnTV translations are added. The Phase 0 baseline is recorded; Phase 4e measures the actual
+  21-language delta.
+- It is what makes `packaged = false` in `locales.json` mean something. Phase 0 contains 22 catalogue
+  entries: en-US, the hidden en-GB regional override, and 20 community targets. It initially packages
+  en-US and en-GB; the remaining entries cost zero bytes and stay invisible until Phase 4c.
 
 #### Pseudolocales must survive the filter
 
@@ -923,7 +942,7 @@ No automatic call-graph analysis is required. The manifest diff is the reviewed 
 
 #### `tools/i18n/validate_strings.py`
 
-Placeholder parity against source, `'` `%` `&` `<` escaping, duplicate keys, `translatable="false"` keys leaking into translations, plurals carrying the quantities that locale actually requires. It also owns **per-locale coverage enforcement** driven by `tools/i18n/locales.json`, and it is the script that **computes** coverage rather than reading a stored number. See Phase 4d for why tiering cannot live in Android lint.
+Placeholder parity against source, `'` `%` `&` `<` escaping, duplicate keys, `translatable="false"` keys leaking into translations, and plurals carrying the quantities that locale actually requires. It also computes the **informational per-locale coverage report** from `tools/i18n/locales.json` and the resource tree. Missing community keys do not affect the exit code; present-but-invalid localized values do.
 
 #### `.github/workflows/i18n.yml` - baseline ratchet against the merge base
 
@@ -1063,7 +1082,8 @@ The phone-facing web UI (~25 strings). Category 6. Extract to resources and rout
 - **A string used for comparison, parsing or protocol behaviour is a key, not a display label. Never translate it in place.**
 - `<plurals>` for anything counted, never `"s"`-suffix branching (`EpgViewModel.kt:448` ⟨verify⟩, `SyncManager.kt:130` ⟨verify⟩, `DownloadStatusStrip.kt:56` ⟨verify⟩). Verified: Android resolves quantities through bundled ICU (`PluralRules.forLocale`) on API 24+, so full CLDR rules for Arabic's 6 forms, Polish's 4 and Russian's 3 are free, with nothing to hand-implement. Exactly six valid keywords: `zero one two few many other`. **`other` is mandatory in every `<plurals>`** or lookup throws `NotFoundException` at runtime; `validate_strings.py` must enforce it. The plural rule object is derived from *that `Resources` instance's* configuration, which is a second independent reason `LocalResources` must be the wrapped one, or Compose picks quantities using the device locale's rules against your overridden strings.
 - `translatable="false"` for brand and protocol strings.
-- `<xliff:g>` around placeholders and a `comment=` attribute on any non-obvious key. Weblate shows both to translators.
+- `<xliff:g>` around placeholders and a preceding `<!-- Translators: ... -->` comment on any
+  non-obvious key. Weblate shows both to translators.
 - Never persist a resolved translation or a resource ID.
 
 ---
@@ -1091,13 +1111,17 @@ There is no DataStore observation and no system-picker reconciliation on this pa
 Twenty-two rows including "System default" still require deliberate D-pad design, so the useful picker affordances are preserved:
 
 - "System default" pinned first, written as the empty tag `""`, then recently used, then A-Z by **endonym** (native name in its own script: "Deutsch", not "German").
-- Each row shows endonym, English name and completeness %, sourced from generated `SupportedLocales.kt`.
+- Each row shows endonym, English name and an informational coverage badge, sourced from generated
+  `SupportedLocales.kt`. The badge never disables a row or promises completeness.
 - Reuse of the existing `ui/components/SearchBar.kt` for filtering. Alphabet-bucket jumping is optional at this size and should be added only if device testing shows it helps.
 - Endonyms must render with `FontFamily.SansSerif`, never the bundled Lora (see Phase 3a).
 - Same-script switches apply instantly with no restart; script-family changes trigger the single documented Activity recreation.
 - D-pad reachability: every control focusable, no horizontal-only affordances.
 
-**The picker shows only catalogue entries that are ready**, normally `packaged = true` **and** `pickerVisible = true`. A locale present in `locales.json` for planning purposes but not yet translated is invisible. Pseudolocales are never normal production entries.
+**The picker shows entries explicitly enabled for release**, where `packaged = true` **and**
+`pickerVisible = true`. Coverage is not part of that predicate. A catalogue entry may remain hidden
+while its seed is being prepared, but after Phase 4c an incomplete community locale stays selectable
+and missing keys fall back to English. Pseudolocales are never normal production entries.
 
 ---
 
@@ -1134,7 +1158,21 @@ Must land **before** the first non-Latin locale ships, or the first Arabic user 
 
 ## Phase 4 - Translation infrastructure
 
-**4a. One-off seed.** `tools/i18n/seed_translations.py` reads `values/*.xml`, batches per file to the Claude API with a project glossary, each key's `comment=` context, and hard instructions to preserve placeholders and brand terms. It writes the 20 non-source resource directories represented by the initial 21-entry catalogue. Run **manually, once**, committed once, then document the script as archived. Never wire it into CI and never make it seed speculative future locales.
+**4a. Align fallback policy and create the one-off seed.** English is the only guaranteed-complete
+language. Change the validator and CI so missing community keys are reported but do not fail; keep
+structural validation for every localized value that exists. Remove release review-state gating and
+`translation_status.json`. Keep the picker coverage badge and generate the same informational metric
+into `SupportedLocales.kt`; generator freshness may reject stale badge metadata, but no percentage is
+a release threshold.
+
+Then `tools/i18n/seed_translations.py` reads the six `values/strings*.xml` files, sends tokenized text
+and translator-comment context through a manually run Claude Batch API workflow, and writes all 20
+community resource directories: six files each, 120 files total. The script must preserve placeholders,
+plurals, escaping, file ownership, and source key order. Run a paid pilot for German, Arabic, Japanese,
+and Turkish, validate and inspect it, then submit the remaining 16 locales. The maintainer runs paid
+batches; the implementing agent builds and tests the tools and works from persisted results. Never run
+the seed in CI or extend it to speculative future locales. The implementation contract lives in
+[`docs/i18n-phase4a-seed-translations.md`](./i18n-phase4a-seed-translations.md).
 
 **4b. Weblate.** Connect hosted.weblate.org to the GitHub repo (GPL-3 qualifies for the free libre tier). Configure **bidirectional** sync: push via PR on commit, plus the GitHub webhook so manual edits pushed to `main` flow back into Weblate. Enable the *Cleanup translation files*, *Squash Git commits*, and built-in Android format-check addons.
 
@@ -1167,11 +1205,14 @@ Verify the direction and case against the hosted Weblate project before import. 
 
 Severity note preserved from v1: this is third-party service configuration, surfaced immediately by Weblate's own validation when the component is created, and it blocks nothing before 4b.
 
-### 4c. The `locales.json` schema
+### Catalogue schema (implemented in Phase 0)
 
 `tools/i18n/locales.json` is the single authoritative catalogue. **It must not treat runtime BCP-47 tags, Android resource qualifiers and translation-platform codes as interchangeable.** v1 used one undifferentiated identifier for all three, which cannot work: the runtime tag `pt-BR` must map to the Android qualifier `pt` and the Weblate code `pt_BR` simultaneously.
 
-The file is created in **Phase 0**, because Phase 0's build already consumes it for `localeFilters`. Its initial contents are exactly the 21 supported languages. Only English is initially packaged; the other 20 entries become packaged and visible together when the multilingual release gate passes.
+The file is created in **Phase 0**, because Phase 0's build already consumes it for `localeFilters`.
+Its initial contents are 22 entries: source en-US, the hidden en-GB regional override, and 20
+community targets. en-US and en-GB are initially packaged; the other 20 entries become packaged and
+visible together in Phase 4c.
 
 Fields, at minimum:
 
@@ -1207,7 +1248,10 @@ pickerVisible
 }
 ```
 
-Do not pre-populate untranslated future languages. A new language enters the catalogue in the same pull request that records the user/contributor request, supplies verified runtime/Android/Weblate metadata, defines its packaging and picker state, and adds whatever translation or coverage policy that request adopts.
+Do not pre-populate untranslated future languages. A new language enters the catalogue in the same
+pull request that records the user/contributor request, supplies verified runtime/Android/Weblate
+metadata, and defines its packaging and picker state. Its coverage is informational, like every other
+community locale.
 
 The schema must handle the cases where the three namespaces genuinely diverge:
 
@@ -1238,15 +1282,15 @@ Do **not** maintain a coverage percentage by hand in `locales.json`. Coverage is
 values/*.xml
 +
 values-<locale>/*.xml
-        ↓
-validate_strings.py
-        ↓
-computed coverage
-        ↓
-SupportedLocales.kt / reports
+        │
+        ├── validate_strings.py ── CI report
+        └── gen_supported_locales.py ── SupportedLocales.kt ── picker badge
 ```
 
-This is what prevents stale metadata from claiming completeness, and it is what makes the CI gate and the picker's "completeness %" column structurally incapable of disagreeing: they are the same number from the same run.
+Both tools must use the same suffixed source and localized key sets. The generator freshness check
+prevents the picker badge from silently becoming stale; the validator test proves the CI report and
+badge use the same numerator and denominator. Neither consumer turns that percentage into a release
+threshold.
 
 #### Packaging and picker rules
 
@@ -1260,10 +1304,10 @@ packaged = true:
 pickerVisible = true:
     shown in the in-app picker
 
-Tier 1 release:
+Community locale release:
     packaged = true
     pickerVisible = true
-    coverage = 100%
+    coverage = informational
 ```
 
 `pickerVisible = true` must imply `packaged = true`. The reverse is allowed (a locale can be packaged for testing before it is offered). A validation test enforces the implication.
@@ -1290,9 +1334,12 @@ The legacy codes follow Java's own normalisation (`Locale("he").getLanguage()` r
 
 **Trap to avoid:** since Android 7.0 the resolver ascends to the parent *and then descends to a sibling child*, so naming Brazilian `values-b+pt+BR` lets a `pt-PT` device land on Brazilian strings. Putting the primary variant in the bare `values-pt` / `values-es` makes every `pt-*` / `es-*` device resolve deterministically.
 
-### 4d. Tier 1: 21 language targets
+### Initial language set: source English plus 20 community targets
 
-This list **replaces** the previous 12-language Tier 1 set and is the complete initial catalogue. Hindi, Indonesian and every other language are absent until a user or contributor request adds them deliberately.
+This list **replaces** the previous 12-language Tier 1 set and is the complete initial user-facing
+language set. The catalogue additionally contains the hidden en-GB regional override. Hindi,
+Indonesian, and every other language are absent until a user or contributor request adds them
+deliberately.
 
 1. Arabic
 2. Portuguese - Brazil
@@ -1344,42 +1391,50 @@ Use this mapping unless verification against the repository, the Android resourc
 | Swedish | `sv` | `values-sv` | `sv` | |
 | Turkish | `tr` | `values-tr` | `tr` | Locale-sensitive casing tests |
 
-**English remains Tier 1 even though it is the source language.** English coverage means:
+**English is the source language, even though its catalogue tier remains 1.** Its guarantee means:
 
 - Every source key exists in `values/`.
 - Placeholder and plural validation passes.
 - Canonical source wording is en-US.
 - The small `values-en-rGB` override may remain for regional spelling.
-- British English is **not** a separate Tier 1 target unless the product later exposes it separately.
+- British English is **not** a separate picker target unless the product later exposes it separately.
 
-**Chinese - Traditional means `zh-TW` for Tier 1.** Do not silently add `zh-HK` as a second target. Add it later only through the same explicit user/contributor-request process as any other optional locale.
+**Chinese - Traditional means `zh-TW` for the initial language set.** Do not silently add `zh-HK` as
+a second target. Add it later only through the same explicit user/contributor-request process as any
+other optional locale.
 
 #### Tier table
 
 | Tier | Locales | CI rule |
 |---|---|---|
-| Tier 1 | `en-US`, `ar`, `pt-BR`, `zh-CN`, `zh-TW`, `cs`, `da`, `nl`, `fr`, `de`, `it`, `ja`, `ko`, `nb`, `pl`, `pt-PT`, `ru`, `es-US`, `es-ES`, `sv`, `tr` | 100% coverage required; release-gating |
-| Optional future locale | Added only after a concrete user/contributor request | Its addition PR must state whether it is release-gating; otherwise coverage is reported and English fallback is allowed |
+| Source | `en-US` | Complete source key set and structural validation required |
+| Community | `ar`, `pt-BR`, `zh-CN`, `zh-TW`, `cs`, `da`, `nl`, `fr`, `de`, `it`, `ja`, `ko`, `nb`, `pl`, `pt-PT`, `ru`, `es-US`, `es-ES`, `sv`, `tr` | Coverage reported; missing keys fall back to English; present invalid values fail |
+| Regional source override | `en-GB` | Intentionally partial, packaged, hidden from the picker, and excluded from the community backlog |
+| Optional future locale | Added only after a concrete user/contributor request | Same informational coverage and English-fallback policy as other community locales |
 
-#### Tier 1 validation
+#### Translation validation
 
-**Per-locale policy cannot be enforced through Android lint.** `MissingTranslation` severity is configured **per issue**, not per locale. It cannot require 100% coverage for the 21 supported languages while allowing a future optional requested locale to remain incomplete. Keep the policy in `validate_strings.py`.
+`MissingTranslation` remains informational. Do not promote it to an error: English is the only
+complete source, and missing community values are valid Android fallback behavior.
 
-Enforce it in `validate_strings.py`, which already parses every resource file and computes per-locale coverage against `locales.json`.
+`validate_strings.py` parses every resource file, reports per-locale coverage against `locales.json`,
+and validates the entries that are present. Missing community keys change the report but not the exit
+code.
 
-For every Tier 1 translation, `validate_strings.py` must require:
+For every localized resource that exists, `validate_strings.py` must require:
 
-- Every translatable source key present.
-- Every plural resource present.
 - Required CLDR plural quantities for that locale.
 - Mandatory `other` in every `<plurals>`.
 - Placeholder count and positional-index parity with source.
 - Valid XML and correct escaping.
 - No `translatable="false"` leakage into translations.
-- No empty translation unless explicitly allowlisted.
-- No unfinished (needs-editing) translation in a release build.
+- No translation-only key.
+- No empty localized value.
+- Valid leading and trailing whitespace.
 
-**Any of the 21 supported languages below 100% exits non-zero and blocks release.** A future optional locale follows the policy recorded when it is added. `MissingTranslation` stays a lint **warning**, informational only, until every packaged locale is complete, at which point it can be promoted to `error` as a redundant second gate.
+There is no release review-state file and no completeness gate. A 0% or partial community locale is
+valid once its generated badge metadata is current. This distinction is intentional: a missing key
+falls back to English, while an empty or malformed localized key overrides the fallback and is a bug.
 
 Source English validation must additionally check:
 
@@ -1388,7 +1443,11 @@ Source English validation must additionally check:
 - Plural validity.
 - Escaping.
 - `translatable` versus non-translatable placement.
-- Required `comment=` attributes where this plan mandates them.
+- Required preceding translator comments where this plan mandates them.
+
+When an English edit changes meaning, add a new resource key. Reusing the old key can leave a stale
+community translation overriding the new meaning with no file-level signal. Cosmetic spelling or
+punctuation changes may retain the key.
 
 #### Packaging rollout
 
@@ -1401,13 +1460,16 @@ en-rGB
 
 while `locales.json` already contains the other 20 supported entries with `packaged = false` and `pickerVisible = false`.
 
-**Before the first multilingual release, all 21 Tier 1 targets must be:**
+Phase 4c flips `packaged` and `pickerVisible` for all 20 community targets in one release and
+regenerates `SupportedLocales.kt`. en-GB remains packaged and hidden.
 
-- Packaged.
-- Visible in the in-app picker.
-- At 100% validated coverage.
-- Included in automated release validation.
-- Represented in manual QA through the matrix below.
+**Before the first multilingual release:**
+
+- all 20 community targets are packaged and visible in the in-app picker;
+- generated picker coverage matches the current resource tree and the CI report;
+- every present localized value passes structural validation;
+- missing values are confirmed to fall back to English; and
+- the representative manual QA matrix below is completed.
 
 #### Representative manual QA matrix
 
@@ -1428,9 +1490,23 @@ while `locales.json` already contains the other 20 supported entries with `packa
 | Locale-sensitive casing | Turkish |
 | Scandinavian endonym and layout handling | Norwegian, Danish or Swedish |
 
-Automated validation covers **every** Tier 1 locale. A complete manual walkthrough is not required for every locale on every pull request, but release smoke testing must include the representative matrix plus targeted checks for the remaining Tier 1 targets.
+Automated structural validation covers every present localized value. A complete manual walkthrough is
+not required for every locale on every pull request, but release smoke testing must include the
+representative matrix plus targeted checks for the remaining community targets.
 
-**4e. Docs.** `docs/i18n.md` covering: how to add a string, naming conventions, placeholder and plural rules, the comparison-key rule (quoted verbatim at the top), the `ErrorMessages` English-needle caveat, the "never persist a translation or a resource ID" rule, and where the localisation boundary sits. Plus a `CONTRIBUTING.md` section pointing translators at Weblate.
+**4c. Packaging flip.** Flip `packaged` and `pickerVisible` for all 20 community targets in one
+release, leave en-GB hidden, regenerate `SupportedLocales.kt`, and keep partial locales usable through
+English fallback. No Gradle or picker-code change is required because both already derive behavior
+from the catalogue and generated runtime data.
+
+**4d. Later validator and supply-chain hardening.** Any source-drift hashes, Weblate-state ingestion,
+split status storage, or richer reporting remain informational unless product policy is explicitly
+changed. Do not recreate a 100% community-language gate. A semantic English wording change gets a new
+resource key so an old translation cannot silently override a new meaning.
+
+**4e. APK delta.** Build `standardRelease` before and after the 4c flip, record the actual APK and
+`resources.arsc` delta in [`docs/i18n-apk-size-baseline.md`](./i18n-apk-size-baseline.md), and keep
+`localeFilters` as the one-line rollback lever.
 
 ### Phase 1 review hardening shipped with the extraction
 
@@ -1453,9 +1529,9 @@ Build and static checks (commands to run, not run automatically):
 
 ```bash
 ./gradlew :app:assembleStandardDebug
-python3 tools/i18n/validate_strings.py         # placeholder/plural checks + Tier 1 coverage gate
+python3 tools/i18n/validate_strings.py --report text  # structural checks + informational coverage
 python3 tools/i18n/check_hardcoded_strings.py  # literal baseline, may only shrink
-./gradlew :app:lintStandardDebug               # MissingTranslation informational only, see 4d
+./gradlew :app:lintStandardDebug               # MissingTranslation remains informational
 ```
 
 End-to-end on a real device or TV emulator, per the reproduce-before-you-believe rule.
@@ -1547,7 +1623,8 @@ Also add a second occurrence of an already-baselined literal in the same file an
 - **Expansion** - switch to Deutsch or another long-Latin locale and walk Settings, Setup and the player HUD. Every button ellipsizes; nothing hard-clips.
 - **Pseudolocale sweep** - debug build in `en-XA`; any string still rendering in plain unaccented English is an unextracted literal. Then `ar-XB` for bidi.
 - **Subtitle regression** - set the device to Arabic, shift a subtitle in the player, and inspect the written `.srt` on disk: timestamps must be ASCII digits.
-- **Font and tofu checks** - every script in the Tier 1 set renders with real glyphs in popups, the language picker endonym column and the audio now-playing bar.
+- **Font and tofu checks** - every script in the initial language set renders with real glyphs in
+  popups, the language picker endonym column and the audio now-playing bar.
 - **Companion glyphs** - confirm the phone page renders non-Latin scripts without tofu, i.e. the CSS fallback stack works alongside the Lora file it serves.
 - **Date and number checks** - confirm dates follow the UI locale, the 12/24-hour choice follows the **system** setting, display numbers localise and protocol/persistence numbers stay `Locale.ROOT`.
 - **APK size and memory** - the measurements in the block below, on real 1 GB hardware.
@@ -1671,7 +1748,7 @@ Reconciles the 2026-07-28 review with the 2026-07-29 (v2) architectural decision
 | 3 | Phase 0 would advertise ~85 untranslated dependency locales | `localeFilters` ships in Phase 0, fed from `locales.json` `resourceQualifier`, starting at `en` + `en-rGB`. The `generateLocaleConfig` half is dropped with the system picker; the filter is retained for APK size and dependency-locale control | 0b Gradle, 4c |
 | 4 | Error mapper cannot return `@StringRes Int` | **v2 supersedes `UiText`.** Use a semantic classifier returning `FriendlySyncFailure`. Migrate full vertical slices through an additive API or one atomic batch. Raw EPG persistence and friendly EPG rendering ship together, so no phase exposes raw exceptions to users | Errors section, Phase 1 batch 1b |
 | 5 | Hardcoded-string guard misses its own stated scope | Occurrence-aware literal baseline ratchet with explicit classification in `safe_literals.txt`. Duplicate content in one file is counted, and assertion messages require a reviewed `assertion` entry with exact path, text and count rather than blanket exemption. The `getString()` receiver rule is replaced by a location/boundary rule | 0d |
-| 6 | Tiered `MissingTranslation` is not expressible in lint | Coverage gate lives in `validate_strings.py`, driven by `locales.json`; lint stays informational | 4d |
+| 6 | Tiered `MissingTranslation` is not expressible in lint | Missing community keys are valid fallback and coverage is informational. `validate_strings.py` reports coverage and gates only malformed present values; lint stays informational | 4a, 4d |
 | 7 | Weblate filemask cannot map six split files | Component discovery captures both `language` and `component`; generated project language aliases map Android qualifiers such as `pt` and `es` to `pt_BR` and `es_ES` from `locales.json` | 4b |
 | 8 | Backup mirror race on import | **Dissolved by v2.** There is no mirror. One SharedPreferences-backed `LocaleStore`, one write path, awaited by import | 0b |
 | 9 | `ChannelGenre.label` is display text and comparison key at once | `label` stays canonical and untranslated; display goes through `displayLabelRes` or a UI mapper. Regression test retained | Comparison keys, Phase 1 batch 5 |
@@ -1781,7 +1858,8 @@ Kept because each is load-bearing, verified, and has no cheaper equivalent:
 - Locale directory qualifiers, including the legacy `iw` / `in` / `ji` and `b+sr+Latn` cases.
 - `localeFilters`, for APK size and dependency-locale control.
 - Debug pseudolocales, with an APK-level check that they survived filtering.
-- Release gating across the 21 supported languages.
+- Structural validation for every present localized value, with informational coverage across the 20
+  community languages and English fallback for missing keys.
 - Named final-renderer handling for companion HTML, notifications, existing system toasts/chooser UI and the low-priority legacy launcher.
 - APK-size and memory monitoring on real 1 GB hardware.
 - Semantic-state refactoring of the existing non-Compose text builders. This is the one place where v2 adds work relative to v1, and it is deliberate: the cost is paid once, in Phase 1, in exchange for deleting an abstraction and a global from every future feature.

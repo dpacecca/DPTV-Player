@@ -1,14 +1,15 @@
 # i18n locale-filter APK-size baseline
 
 > Recorded at Phase 0 completion (commit on `feature/i18n-phase-0`, 2026-07-29) as the reference for
-> measuring the resource-table cost of packaging additional locales in Phase 4.
+> measuring the resource-table cost of packaging additional locales in Phase 4e.
 
 ## Why this exists
 
 `androidResources.localeFilters` strips library locale folders (appcompat alone contributes ~85) so
 only the catalogued, `packaged = true` qualifiers ship. Phase 0 packages **only `en` and `en-rGB`**;
-Phase 4 flips the remaining 20 Tier 1 locales to `packaged = true` one by one (or in regional batches).
-This file is the **before** measurement so the per-locale APK-size delta is visible in the Phase 4 PRs
+Phase 4a writes all 20 community locale resource sets while keeping them filtered out. Phase 4c flips
+the remaining 20 locales to `packaged = true` together. Phase 4e measures that complete before/after
+change. This file is the **before** measurement so the aggregate 21-language APK-size delta is visible
 and a surprise regression (a library locale folder that slipped past the filter) is caught.
 
 ## Measurement method
@@ -37,15 +38,16 @@ the locale-filtered string table only.
 | Pseudolocales in release | none (verified) |
 | Build | `assembleStandardRelease`, arm64-v8a + armeabi-v7a ABI split, R8 optimization on |
 
-## Phase 4 comparison template
+## Phase 4e comparison template
 
-When a locale (or batch) is flipped to `packaged = true`, re-measure and append a row here:
+Build `standardRelease` before and after the Phase 4c flip, then append the measured result here:
 
 | Phase | Locales packaged | APK size | `resources.arsc` | Δ APK | Δ arsc |
 |---|---|---|---|---|---|
 | 0 | en, en-rGB | 51,693,164 | 40,008 | — | — |
-| 4a | en, en-rGB + … | TBD | TBD | TBD | TBD |
+| 4e, after 4c | en, en-rGB + 20 community locales | TBD | TBD | TBD | TBD |
 
-A per-locale arsc delta in the tens-of-KB range is expected (a full string table for ~1,600 keys);
-a delta in the hundreds of KB signals a library locale folder leaked through `localeFilters` and
-should be investigated with `aapt2 dump configurations` before the PR merges.
+The earlier 2-4 MB aggregate allowance is a planning estimate, not a result. Record the measured
+delta without converting it into a per-locale claim. Use `aapt2 dump configurations` to verify that
+only the intended 20 community configurations were added and that no dependency locale slipped past
+`localeFilters`.

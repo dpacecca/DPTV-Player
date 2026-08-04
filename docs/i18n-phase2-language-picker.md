@@ -1,0 +1,242 @@
+# Phase 2 - Language Picker - Implementation Plan
+
+> **Status:** implemented. Written 2026-08-01; policy notes reconciled for Phase 4a on 2026-08-04.
+> Depends on Phase 0's `core/i18n/` runtime (landed on `feature/i18n-phase-0`).
+
+## Goal
+
+In-app language picker wired through existing settings navigation. 22 rows (System default + 21 catalogue entries). Same-script switch instant; cross-script triggers one `Activity.recreate()`.
+
+## Prerequisites (all landed in Phase 0)
+
+- `LocaleStore` (`core/i18n/LocaleStore.kt`) - SharedPreferences-backed single locale authority
+- `AppLocale` (`core/i18n/AppLocale.kt`) - context wrapping + process-level Locale/LocaleList defaults
+- `LocalizedContent` (`core/i18n/LocalizedContent.kt`) - provides the 4 Compose locals (`LocalResources`, `LocalContext`, `LocalConfiguration`, `LocalLayoutDirection`) that make string resolution follow the selected locale. Also handles script-family detection and triggers `Activity.recreate()` when crossing script boundaries
+- `SupportedLocales` (`core/i18n/SupportedLocales.kt`) - generated catalogue from `locales.json`
+  plus resource-derived coverage (22 entries; en-US and the hidden en-GB override are currently
+  packaged)
+
+## First-launch behavior
+
+**Today (before translations ship):** App shows English regardless. No translations exist, so Android resource fallback picks source `values/`. Stored locale defaults to `""` (follow system), but "follow system" only matters when translated resources exist for that system locale.
+
+**After Phase 4c (translations packaged and flags flipped):** If the device is set to e.g. French
+and `fr` is packaged, the app auto-launches in French. `""` means follow the device. Android resolves
+`values-fr/` via `attachBaseContext` wrapping. A missing French key falls back to source English; an
+incomplete community translation does not make the locale unavailable. If the device locale is not
+in the 21-language catalogue, the ordinary Android fallback chain applies.
+
+## Architecture: Write Path
+
+```
+LanguageSettingsScreen (new Composable)
+    │ user picks locale
+    ▼
+LanguageSettingsViewModel (new, Activity-scoped)
+    │ coroutineScope.launch
+    ▼
+LocaleStore.set(tag)  (Phase 0, exists)
+    ├── SharedPreferences.commit() (durable, off main thread)
+    ├── StateFlow update (_currentTag.value = tag)
+    └── AppLocale.applyGlobally(tag) (Locale.setDefault + LocaleList)
+            │
+            ▼
+    LocalizedContent (observes currentTag)
+        ├── same script → CompositionLocalProvider (instant recomposition)
+        └── different script → Activity.recreate() (attachBaseContext wraps new locale)
+```
+
+## Files to create / modify
+
+| File | Action | What |
+|---|---|---|
+| `features/settings/LanguageSettingsScreen.kt` | NEW | Picker UI - searchable list, endonym rows, coverage %, D-pad navigation |
+| `features/settings/LanguageSettingsViewModel.kt` | NEW | Thin ViewModel - reads `LocaleStore.currentTag`, calls `LocaleStore.set()`, sorts picker rows |
+| `features/shell/components/SettingsScreen.kt` | EDIT | Add `LANGUAGE` to `SettingsTab` enum, add row under new "General" group, add `SettingsSearchEntry`, wire navigation |
+| `ui/components/OwnTVIcon.kt` | EDIT | Add `LANGUAGE` enum entry (translate icon - "A" with lines, Google Material standard) |
+| `res/values/strings_settings.xml` | EDIT | Add ~12 string resources for picker UI text |
+| `di/` (Koin module) | EDIT | Register `LanguageSettingsViewModel` |
+
+## Implementation steps
+
+### Step 1. Add LANGUAGE icon to OwnTVIcon enum
+
+Add `LANGUAGE` to `OwnTVIcon` enum at `ui/components/OwnTVIcon.kt:21-27`. Draw a translate-style glyph (A with lines) via Canvas path - Google's standard language/translate icon. All existing icons are custom Canvas-drawn paths.
+
+### Step 2. Add string resources
+
+Add to `res/values/strings_settings.xml` (~12 strings):
+
+- `settings_language` - "Language" (row title)
+- `settings_language_description` - "App display language" (row description)
+- `settings_language_system_default` - "System default" (chip and picker row label)
+- `settings_language_system_default_description` - "Follows device language" (picker row subtitle)
+- `settings_language_search_hint` - "Search languages..." (search bar placeholder)
+- `settings_search_keywords_language` - "language locale translation international i18n" (search keywords)
+- `settings_language_coverage` - "%1$d%%" (coverage format)
+- `settings_group_general` - "General" (new group label)
+
+Add translator comments to each string.
+
+### Step 3. Create LanguageSettingsViewModel
+
+New file `features/settings/LanguageSettingsViewModel.kt`:
+
+```kotlin
+class LanguageSettingsViewModel(
+    private val localeStore: LocaleStore,
+) : ViewModel() {
+
+    val currentTag: StateFlow<String> = localeStore.currentTag
+
+    val pickerRows: List<SupportedLocale> =
+        SupportedLocales.pickerRows.sortedBy { it.endonym.lowercase() }
+
+    fun setLocale(tag: String) {
+        viewModelScope.launch { localeStore.set(tag) }
+    }
+}
+```
+
+Thin by design. `LocaleStore` does all persistence and process-level locale application. `SupportedLocales.pickerRows` handles the `packaged && pickerVisible` filter.
+
+### Step 4. Create LanguageSettingsScreen composable
+
+New file `features/settings/LanguageSettingsScreen.kt`. Follows existing sub-screen pattern:
+
+- Signature: `fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)`
+- Uses `Header(title, onBack)` from `VideoPlayerSettingsScreen.kt:472` (internal fun, so either import or replicate the pattern)
+- `roundedPanel()` modifier on the Column
+- SearchBar at top (reuse existing `ui/components/SearchBar.kt`) for filtering
+- Scrollable `Column` of locale rows, each wrapped in `FocusableSurface`
+
+Each row layout:
+- Radio check indicator (filled teal circle with checkmark when selected, outline when not)
+- Endonym text - **must use `FontFamily.SansSerif`**, never bundled Lora (Lora has no CJK/Arabic/Hebrew glyphs; SansSerif uses platform Noto fallback)
+- English name text (smaller, secondary color)
+- Coverage % badge (right-aligned)
+
+Row ordering:
+1. "System default" pinned first (tag = `""`)
+2. Separator
+3. Remaining rows A-Z sorted by endonym (native name in its own script)
+
+On row click: call `viewModel.setLocale(tag)`. The downstream path through `LocaleStore` -> `LocalizedContent` handles everything else (instant recomposition or script-change recreate).
+
+Search filtering: match query against endonym, English name, and language tag.
+
+D-pad: every row focusable, back exits to settings root. Focus the currently selected row on initial composition.
+
+### Step 5. Wire into SettingsScreen
+
+Edit `features/shell/components/SettingsScreen.kt`:
+
+**5a.** Add `LANGUAGE` to `SettingsTab` enum at line 106:
+```kotlin
+private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, PROFILES, ... }
+```
+
+**5b.** Add new "General" `GroupLabel` above existing "Profile" group (before line 339). Insert:
+```kotlin
+GroupLabel(stringResource(R.string.settings_group_general))
+```
+
+**5c.** Add `SettingsRow` for language:
+```kotlin
+SettingsRow(
+    tone = TileTone.PRIMARY, icon = OwnTVIcon.LANGUAGE,
+    title = stringResource(R.string.settings_language),
+    desc = stringResource(R.string.settings_language_description),
+    chip = languageChipText(currentTag),
+    chipTone = TileTone.PRIMARY,
+    onClick = { open(SettingsTab.LANGUAGE) }, showChevron = true,
+    modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.LANGUAGE)),
+)
+SectionDivider()
+```
+
+The `languageChipText` helper:
+- If tag is `""` -> `stringResource(R.string.settings_language_system_default)`
+- Otherwise -> `SupportedLocales.all.find { it.languageTag == tag }?.endonym ?: stringResource(R.string.settings_language_system_default)`
+
+This requires reading `LocaleStore.currentTag` in `SettingsScreen`. Get it via `koinViewModel<LanguageSettingsViewModel>()` or directly from the injected `LocaleStore`.
+
+**5d.** Add navigation case in the `when(tab)` block (around line 259-272):
+```kotlin
+SettingsTab.LANGUAGE -> { LanguageSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+```
+
+**5e.** Add `SettingsSearchEntry` in the search entries list (around line 596):
+```kotlin
+SettingsSearchEntry(
+    stringResource(R.string.settings_group_general),
+    stringResource(R.string.settings_language),
+    stringResource(R.string.settings_search_keywords_language),
+    OwnTVIcon.LANGUAGE, TileTone.PRIMARY,
+    chip = languageChipText(currentTag),
+    chipTone = TileTone.PRIMARY,
+) { open(SettingsTab.LANGUAGE) },
+```
+
+**5f.** Add `FocusRequester` for the new row in the `rowFocus` map (around line 230):
+```kotlin
+SettingsTab.LANGUAGE to FocusRequester(),
+```
+
+### Step 6. Register ViewModel in Koin
+
+Find the settings DI module and add:
+```kotlin
+viewModel { LanguageSettingsViewModel(get()) }
+```
+
+### Step 7. Build, install, test on device
+
+Verify:
+- D-pad navigation through all picker rows
+- Search filtering works (English name, endonym, tag)
+- Same-script switch applies instantly (no flicker, no recreate)
+- Cross-script switch triggers exactly one recreate
+- "System default" follows device language
+- Back navigation returns to settings root
+- Chip on settings root updates to reflect selected language
+- Focus goes to currently selected row when entering picker
+- Only `packaged && pickerVisible` locales appear (currently just en-US + System default)
+
+## Design decisions
+
+**Icon:** Material Translate icon (A with lines) - Google's standard for language settings. Not globe (ambiguous with network/internet).
+
+**Sorting:** System default pinned first, then A-Z by endonym. No "recently used" section - 22 rows is small enough that recency adds complexity without clear benefit. Trivially addable later if needed.
+
+**Font:** Endonyms use `FontFamily.SansSerif` unconditionally. English name and coverage badge can use app's normal font.
+
+**Visibility:** Only `packaged = true AND pickerVisible = true` rows appear. Phase 2 ships with just
+English + System default visible; the packaged en-GB spelling override remains hidden. Phase 4c flips
+the flags for the remaining 20 community locales together.
+
+**Coverage %:** Keep the read-only translation coverage badge. `gen_supported_locales.py` computes it
+from the source and localized resource key sets and embeds it in `SupportedLocales.kt`. The percentage
+is informational: it never disables a row, gates packaging, or promises completeness. Missing keys
+fall back to English. CI checks that the generated badge data is current, not that it equals 100%.
+Future "Help translate" UI belongs after Phase 4b when Weblate is live.
+
+**Script-change:** Same-script = instant recomposition via Compose locals. Cross-script = one `Activity.recreate()` because `LocalLocaleList` is `@RestrictTo`. Already handled by `LocalizedContent.sameScriptFamily()`.
+
+## Chip on settings root row
+
+| State | Chip Text | Source |
+|---|---|---|
+| System default (`""`) | "System default" | `stringResource(R.string.settings_language_system_default)` |
+| Explicit locale | Endonym (e.g. "Deutsch") | `SupportedLocales.all.find { it.languageTag == tag }?.endonym` |
+| Unknown tag (corrupt prefs) | "System default" | Fallback - `LocaleStore.readBlocking()` normalizes to `""` |
+
+## Out of scope
+
+- Translation generation and policy alignment (Phase 4a)
+- Backup export/import of locale (Phase 0b already wired)
+- RTL layout fixes (Phase 3)
+- Font fallback for non-Latin scripts (Phase 3a)
+- Pseudolocale testing (Phase 3g)
+- `locales.json` flag flipping (Phase 4c)
+- "Help translate" / Weblate contribution CTA (post Phase 4b)
