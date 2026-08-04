@@ -613,6 +613,16 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     top bar, cards, mini‑player — or all at once. Turning everything off turns glass off.
   - The frost (blur) needs a background image and **Android 12+**; otherwise panels are simply
     translucent. All glass settings are kept in backups.
+- **Settings → Panel Width Adjustment**: set how wide the three browse panels are — the **category rail**,
+  the **item list/grid** and the **preview/poster** pane — separately for **Live TV**, **Movies** and
+  **Series**.
+  - Each section opens a popup with **Customize panel On/Off** and a **−/+** control per panel. The values
+    are **shares of the screen and must add up to 100%**: a **Total size** line shows the running total, and
+    pressing **Okay** while it isn't 100% shows a note in red instead of saving, so you always take from one
+    panel to give to another.
+  - **Reset** returns a section to the standard widths; leaving a section **Off** keeps today's layout.
+    Movie and series posters re‑flow automatically, so a narrower list just shows fewer per row. Saved in
+    backups.
 - **Settings → Animations**: turn interface motion **off** for a snappier feel on lower‑end TV boxes.
 - **Profiles** (Settings → Profiles): multiple viewers, a **Kids mode**, and **PIN locks**.
 

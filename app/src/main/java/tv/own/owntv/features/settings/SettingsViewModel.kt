@@ -44,6 +44,8 @@ import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.features.settings.data.ChNavLimits
 import tv.own.owntv.features.settings.data.EpgAutoRefresh
+import tv.own.owntv.features.settings.data.PanelSection
+import tv.own.owntv.features.settings.data.PanelShares
 import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.settings.data.SubtitleStyle
@@ -448,11 +450,33 @@ class SettingsViewModel(
     val chNavDownSkip: StateFlow<Int> = settings.chNavDownSkip.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ChNavLimits.DEFAULT_SKIP)
     fun setChNavDownSkip(n: Int) { viewModelScope.launch { settings.setChNavDownSkip(n) } }
 
+    // --- Manual panel widths: one StateFlow per section, so Live/Movies/Series each read their own ---
+    private fun <T> panelFlows(source: (PanelSection) -> kotlinx.coroutines.flow.Flow<T>, initial: T): Map<PanelSection, StateFlow<T>> =
+        PanelSection.entries.associateWith {
+            source(it).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initial)
+        }
+
+    val panelWidthEnabled: Map<PanelSection, StateFlow<Boolean>> = panelFlows(settings::panelWidthEnabled, false)
+    val panelShares: Map<PanelSection, StateFlow<PanelShares?>> = panelFlows(settings::panelShares, null)
+
+    fun setPanelWidths(s: PanelSection, enabled: Boolean, shares: PanelShares) {
+        viewModelScope.launch { settings.setPanelWidths(s, enabled, shares) }
+    }
+
     val preferredAudioLang: StateFlow<String> = settings.preferredAudioLang.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setPreferredAudioLang(lang: String) { viewModelScope.launch { settings.setPreferredAudioLang(lang) } }
 
     val preferredSubLang: StateFlow<String> = settings.preferredSubLang.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setPreferredSubLang(lang: String) { viewModelScope.launch { settings.setPreferredSubLang(lang) } }
+
+    /** OpenSubtitles search language filter — off (the default) means results come back in every language. */
+    val subSearchFilterEnabled: StateFlow<Boolean> =
+        settings.subSearchFilterEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    fun setSubSearchFilterEnabled(enabled: Boolean) { viewModelScope.launch { settings.setSubSearchFilterEnabled(enabled) } }
+
+    val subSearchLanguages: StateFlow<String> =
+        settings.subSearchLanguages.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    fun setSubSearchLanguages(codes: String) { viewModelScope.launch { settings.setSubSearchLanguages(codes) } }
 
     // --- Personalization (theme / accent / UI zoom) ---
     val themeMode: StateFlow<ThemeMode> = settings.themeMode.stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.DARK)

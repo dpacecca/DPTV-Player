@@ -9,10 +9,11 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
-## v4.1.7 — unreleased
+## v4.1.7 — 2026-08-04
 
 ### ✨ New features
 
+- **📐 Panel Width Adjustment — set how wide the categories, list and preview panels are**
 - **🔊 Surround sound rebuilt — Auto, Stereo only, Surround, and it can no longer leave you in silence**
 - **⏱️ Live latency really changes the buffer now — and a new Pre-buffer control, per playlist**
 - **🎞️ Auto frame rate works out the frame rate by itself — and offers itself when 25 fps judders**

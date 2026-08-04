@@ -1,6 +1,19 @@
 # Changelog
 
-## v4.1.7 — unreleased
+## v4.1.7 — 2026-08-04
+
+### 📐 Panel Width Adjustment — set how wide the categories, list and preview panels are
+
+- **New setting: Settings → Panel Width Adjustment**, with a separate popup for **Live TV**, **Movies**
+  and **Series**. Each panel gets its own **−/+** control, so you can widen the channel list on a small
+  screen, shrink the category rail you never scroll, or give the preview more room for artwork.
+- **The numbers are shares of the screen and always add up to 100%.** Category 30% + List 20% +
+  Preview 50% is the whole row. A running **Total size** line shows where you are, and saving while it
+  doesn't read 100% is refused with a note in red telling you what to fix — so a panel can never quietly
+  eat another one.
+- Each section has its own **Customize panel** switch and a **Reset** back to the standard widths, and a
+  section left off keeps the layout exactly as it is today. Movie and series posters re-flow by
+  themselves, so a narrower list simply shows fewer per row. The settings travel with your backup.
 
 ### 🔊 Surround sound rebuilt — Auto, Stereo only, Surround, and it can no longer leave you in silence
 

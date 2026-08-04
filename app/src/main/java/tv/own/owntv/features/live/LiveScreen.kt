@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -59,6 +60,9 @@ import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.features.customize.MoveToCategoryDialog
 import tv.own.owntv.features.settings.SettingsViewModel
+import tv.own.owntv.features.settings.data.PanelSection
+import tv.own.owntv.features.settings.data.computePanelWidths
+import tv.own.owntv.features.settings.rememberPanelShares
 import tv.own.owntv.features.shell.components.CategoryRail
 import tv.own.owntv.ui.components.MoveOrderOverlay
 import tv.own.owntv.features.shell.components.PreviewPane
@@ -297,13 +301,19 @@ fun LiveScreen(
     val selectedIndex = railItems.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
     val selectedItem = railItems.getOrNull(selectedIndex)
 
+    // Manual panel widths (Settings → Panel Width Adjustment). Null = this section is at Default, and
+    // the three panels below keep their stock Dimens/weight() sizing.
+    val panelShares = rememberPanelShares(PanelSection.LIVE, settingsVm)
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    val panels = panelShares?.let { computePanelWidths(it, maxWidth) }
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .onFocusChanged { if (it.hasFocus) onChildFocused() },
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         CategoryRail(
+            width = panels?.category ?: Dimens.RailWidthFixed,
             categories = railItems.map { RailCategory(it.title, it.icon, showGenreDot = it.key is LiveKey.Folder) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
@@ -330,7 +340,7 @@ fun LiveScreen(
         // Layer 3 — header + channel list (fixed-width column; the preview pane fills the rest)
         Column(
             modifier = Modifier
-                .width(Dimens.ChannelListWidth)
+                .width(panels?.list ?: Dimens.ChannelListWidth)
                 .fillMaxHeight()
                 .roundedPanel(fillColor = ContentPanelFill)
                 // Track whether this pane holds focus so chNavPaging only consumes CH keys when it does.
@@ -465,7 +475,13 @@ fun LiveScreen(
         }
 
         // Layer 4 — preview pane (informational only — no focusable actions; management lives in long-press)
-        Box(modifier = Modifier.weight(1f).fillMaxSize().roundedPanel(fillColor = PreviewPanelFill).padding(Dimens.GapLarge)) {
+        Box(
+            modifier = Modifier
+                .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
+                .fillMaxSize()
+                .roundedPanel(fillColor = PreviewPanelFill)
+                .padding(Dimens.GapLarge),
+        ) {
             LivePreviewPane(
                 channel = previewChannel,
                 categoryName = previewCategoryName,
@@ -475,6 +491,7 @@ fun LiveScreen(
                 singleSessionBlocked = previewBlockedSingleSession,
             )
         }
+    }
     }
 
     catchupChannel?.let { ch ->

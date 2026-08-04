@@ -101,7 +101,7 @@ import java.io.File
 
 private enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
-private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, MINI_PLAYER, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, WEATHER, NAV_MENU, CH_NAV }
+private enum class SettingsTab { ROOT, SOURCES, EPG, PROFILES, BACKUP, VIDEO, MINI_PLAYER, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH }
 
 /**
  * The MD3 Settings screen (shown when [MainSection.SETTINGS] is active): grouped sections, each row
@@ -224,6 +224,11 @@ fun SettingsScreen(
     val rememberCatLive by settingsVm.rememberCategoryLive.collectAsStateWithLifecycle()
     val rememberCatMovies by settingsVm.rememberCategoryMovies.collectAsStateWithLifecycle()
     val rememberCatSeries by settingsVm.rememberCategorySeries.collectAsStateWithLifecycle()
+    // "Custom" on the Panel Width row as soon as any one of the three sections is switched on.
+    val panelWidthLive by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.features.settings.data.PanelSection.LIVE).collectAsStateWithLifecycle()
+    val panelWidthMovies by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.features.settings.data.PanelSection.MOVIES).collectAsStateWithLifecycle()
+    val panelWidthSeries by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.features.settings.data.PanelSection.SERIES).collectAsStateWithLifecycle()
+    val panelWidthCustom = panelWidthLive || panelWidthMovies || panelWidthSeries
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by remember { mutableStateOf<SettingsTab?>(null) }
@@ -242,6 +247,7 @@ fun SettingsScreen(
         SettingsTab.WEATHER to FocusRequester(),
         SettingsTab.NAV_MENU to FocusRequester(),
         SettingsTab.CH_NAV to FocusRequester(),
+        SettingsTab.PANEL_WIDTH to FocusRequester(),
     ) }
     val open: (SettingsTab) -> Unit = { lastTab = it; tab = it }
     // Restore focus to the row a sub-screen was opened from when the user navigates back. Fresh entry
@@ -272,6 +278,7 @@ fun SettingsScreen(
         SettingsTab.WEATHER -> { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.NAV_MENU -> { tv.own.owntv.features.settings.NavMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+        SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.ROOT -> Unit
     }
 
@@ -407,6 +414,14 @@ fun SettingsScreen(
             chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { open(SettingsTab.CH_NAV) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.CH_NAV)),
+        )
+        SettingsRow(
+            tone = TileTone.PRIMARY, icon = OwnTVIcon.ZOOM,
+            title = "Panel Width Adjustment", desc = "Resize the category, list and preview panels in Live TV, Movies & Series",
+            chip = if (panelWidthCustom) "Custom" else "Default",
+            chipTone = if (panelWidthCustom) TileTone.PRIMARY else TileTone.SECONDARY,
+            onClick = { open(SettingsTab.PANEL_WIDTH) }, showChevron = true,
+            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.PANEL_WIDTH)),
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.PLAYLIST,
@@ -637,6 +652,8 @@ fun SettingsScreen(
                     chip = navMenuMode.label, chipTone = if (navMenuMode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },
                 SettingsSearchEntry("Content", "CH+- Key Paging", "channel up down skip page list category channel", OwnTVIcon.PLAYLIST, TileTone.PRIMARY,
                     chip = if (chNavEnabled) "On" else "Off", chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
+                SettingsSearchEntry("Content", "Panel Width Adjustment", "panel width size resize category list preview poster column layout live movies series", OwnTVIcon.ZOOM, TileTone.PRIMARY,
+                    chip = if (panelWidthCustom) "Custom" else "Default", chipTone = if (panelWidthCustom) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.PANEL_WIDTH) },
                 SettingsSearchEntry("Content", "Browsing & lists", "remember position scroll category last item live movies series reset top", OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { savedScroll = scrollState.value; dialogReturn = browsingRowFocus; showBrowsing = true },
                 SettingsSearchEntry("Content", "Home screen", "rows hero reorder filter", OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
                 SettingsSearchEntry("Content", "Metadata (TMDB)", "posters plots cast ratings", OwnTVIcon.VIDEO, TileTone.PRIMARY) { open(SettingsTab.METADATA) },
