@@ -194,8 +194,6 @@ private fun LanguageRow(
                 )
             }
             if (coverage != null) {
-                // Picker rows are packaged+visible, so coverage is always a real 0..100 (never the
-                // catalogue's -1 "no resources yet" sentinel used for unpackaged entries).
                 Text(
                     stringResource(R.string.settings_language_coverage, coverage),
                     style = MaterialTheme.typography.labelMedium,

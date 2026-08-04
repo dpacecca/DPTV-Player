@@ -27,8 +27,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -74,10 +76,10 @@ fun MoveToCategoryDialog(
             Column(
                 Modifier.dialogPanel(width = 560.dp, padding = 28.dp),
             ) {
-                Text("Move to category", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Text(stringResource(R.string.settings_move_category_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "The item leaves “$originName” unless you keep it there.",
+                    stringResource(R.string.settings_move_category_description, originName),
                     style = MaterialTheme.typography.bodyMedium,
                     color = colors.onSurfaceVariant,
                 )
@@ -97,7 +99,7 @@ fun MoveToCategoryDialog(
                             contentAlignment = Alignment.CenterStart,
                         ) {
                             Text(
-                                "＋ New category…",
+                                stringResource(R.string.settings_move_category_new),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = colors.onSurface,
                                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
@@ -129,7 +131,7 @@ fun MoveToCategoryDialog(
                                     modifier = Modifier.weight(1f),
                                 )
                                 Text(
-                                    "${target.count}",
+                                    stringResource(R.string.common_number_grouped, target.count),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = colors.onSurfaceVariant,
                                 )
@@ -147,7 +149,8 @@ fun MoveToCategoryDialog(
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Text(
-                        (if (keepInOrigin) "☑" else "☐") + " Keep in “$originName” as well",
+                        (if (keepInOrigin) "☑ " else "☐ ") +
+                            stringResource(R.string.settings_move_category_keep, originName),
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurface,
                         modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
@@ -155,10 +158,10 @@ fun MoveToCategoryDialog(
                 }
                 Spacer(Modifier.height(20.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OwnTVButton("Cancel", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                     Spacer(Modifier.weight(1f))
                     OwnTVButton(
-                        "Move",
+                        stringResource(R.string.settings_move_category_action),
                         onClick = { selectedTarget?.let { onMove(it, keepInOrigin) } },
                         enabled = selectedTarget != null,
                         style = OwnTVButtonStyle.SECONDARY,

@@ -487,8 +487,11 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     if (showSortPicker) {
         PickerDialog(
-            title = "Sort categories",
-            options = listOf("PLAYLIST" to "Provider", "ALPHA" to "A–Z"),
+            title = stringResource(R.string.settings_customize_sort_categories),
+            options = listOf(
+                "PLAYLIST" to stringResource(R.string.content_provider),
+                "ALPHA" to stringResource(R.string.settings_sort_alpha),
+            ),
             selected = currentSort.name,
             onSelect = { value ->
                 val mode = runCatching { SettingsRepository.SortMode.valueOf(value) }.getOrNull()
@@ -503,9 +506,9 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // plan §3.5: "It must never touch content."
     deletingCategory?.let { row ->
         PinConfirmDialog(
-            title = "Delete “${row.displayName}”?",
-            message = "The combined category is removed. Its items stay in their original categories.",
-            confirmLabel = "Delete",
+            title = stringResource(R.string.settings_customize_delete_category, row.displayName),
+            message = stringResource(R.string.settings_customize_delete_category_description),
+            confirmLabel = stringResource(R.string.common_delete),
             onConfirm = {
                 vm.deleteCustomCategory(row)
                 deletingCategory = null
@@ -532,9 +535,9 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // ＋ New category (issue #87): name the empty combined category, then it appears in the list.
     if (creatingCategory) {
         TextInputDialog(
-            title = "New category",
-            hint = "A combined category for this profile — move channels, movies or series into it.",
-            confirmLabel = "Create",
+            title = stringResource(R.string.settings_customize_new_category_title),
+            hint = stringResource(R.string.settings_customize_new_category_description),
+            confirmLabel = stringResource(R.string.common_create),
             allowBlank = false,
             onConfirm = { vm.createCustomCategory(it); creatingCategory = false },
             onDismiss = { creatingCategory = false },

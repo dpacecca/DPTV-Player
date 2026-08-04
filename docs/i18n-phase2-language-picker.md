@@ -5,7 +5,9 @@
 
 ## Goal
 
-In-app language picker wired through existing settings navigation. 22 rows (System default + 21 catalogue entries). Same-script switch instant; cross-script triggers one `Activity.recreate()`.
+In-app language picker wired through existing settings navigation. 25 rows (System default + 24
+user-facing catalogue entries; en-GB remains hidden). Same-script switch instant; cross-script
+triggers one `Activity.recreate()`.
 
 ## Prerequisites (all landed in Phase 0)
 
@@ -13,18 +15,18 @@ In-app language picker wired through existing settings navigation. 22 rows (Syst
 - `AppLocale` (`core/i18n/AppLocale.kt`) - context wrapping + process-level Locale/LocaleList defaults
 - `LocalizedContent` (`core/i18n/LocalizedContent.kt`) - provides the 4 Compose locals (`LocalResources`, `LocalContext`, `LocalConfiguration`, `LocalLayoutDirection`) that make string resolution follow the selected locale. Also handles script-family detection and triggers `Activity.recreate()` when crossing script boundaries
 - `SupportedLocales` (`core/i18n/SupportedLocales.kt`) - generated catalogue from `locales.json`
-  plus resource-derived coverage (22 entries; en-US and the hidden en-GB override are currently
-  packaged)
+  plus resource-derived coverage (25 entries; every entry is packaged, while en-GB remains hidden)
 
 ## First-launch behavior
 
-**Today (before translations ship):** App shows English regardless. No translations exist, so Android resource fallback picks source `values/`. Stored locale defaults to `""` (follow system), but "follow system" only matters when translated resources exist for that system locale.
+**With incomplete community translations:** Every supported language remains selectable. Android
+uses each localized value that exists and falls back to source `values/` English for missing keys.
+Stored locale defaults to `""` (follow system).
 
-**After Phase 4c (translations packaged and flags flipped):** If the device is set to e.g. French
-and `fr` is packaged, the app auto-launches in French. `""` means follow the device. Android resolves
+If the device is set to e.g. French, the app auto-launches in French. `""` means follow the device. Android resolves
 `values-fr/` via `attachBaseContext` wrapping. A missing French key falls back to source English; an
 incomplete community translation does not make the locale unavailable. If the device locale is not
-in the 21-language catalogue, the ordinary Android fallback chain applies.
+in the 24-language catalogue, the ordinary Android fallback chain applies.
 
 ## Architecture: Write Path
 
@@ -201,19 +203,18 @@ Verify:
 - Back navigation returns to settings root
 - Chip on settings root updates to reflect selected language
 - Focus goes to currently selected row when entering picker
-- Only `packaged && pickerVisible` locales appear (currently just en-US + System default)
+- All 24 user-facing catalogue languages appear; en-GB remains a hidden regional override
 
 ## Design decisions
 
 **Icon:** Material Translate icon (A with lines) - Google's standard for language settings. Not globe (ambiguous with network/internet).
 
-**Sorting:** System default pinned first, then A-Z by endonym. No "recently used" section - 22 rows is small enough that recency adds complexity without clear benefit. Trivially addable later if needed.
+**Sorting:** System default pinned first, then A-Z by endonym. No "recently used" section - 25 rows is small enough that recency adds complexity without clear benefit. Trivially addable later if needed.
 
 **Font:** Endonyms use `FontFamily.SansSerif` unconditionally. English name and coverage badge can use app's normal font.
 
-**Visibility:** Only `packaged = true AND pickerVisible = true` rows appear. Phase 2 ships with just
-English + System default visible; the packaged en-GB spelling override remains hidden. Phase 4c flips
-the flags for the remaining 20 community locales together.
+**Visibility:** Only `packaged = true AND pickerVisible = true` rows appear. All source/community
+language choices set both flags; the packaged en-GB spelling override remains hidden.
 
 **Coverage %:** Keep the read-only translation coverage badge. `gen_supported_locales.py` computes it
 from the source and localized resource key sets and embeds it in `SupportedLocales.kt`. The percentage
@@ -238,5 +239,5 @@ Future "Help translate" UI belongs after Phase 4b when Weblate is live.
 - RTL layout fixes (Phase 3)
 - Font fallback for non-Latin scripts (Phase 3a)
 - Pseudolocale testing (Phase 3g)
-- `locales.json` flag flipping (Phase 4c)
+- locale-filter APK-size measurement after enabling the full catalogue (Phase 4e)
 - "Help translate" / Weblate contribution CTA (post Phase 4b)

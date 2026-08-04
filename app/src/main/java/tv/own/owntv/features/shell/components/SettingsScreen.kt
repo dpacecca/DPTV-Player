@@ -585,7 +585,8 @@ fun SettingsScreen(
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.SEARCH,
-            title = "DNS", desc = "Use a custom DNS server for domain lookups",
+            title = stringResource(R.string.settings_dns),
+            desc = stringResource(R.string.settings_dns_description),
             onClick = { open(SettingsTab.DNS) }, showChevron = true,
             modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.DNS)),
         )

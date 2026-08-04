@@ -768,22 +768,41 @@ internal fun StepperDialog(
 }
 
 /** The quick text-color presets offered above the full picker (label → "#RRGGBB"). */
-private val SUB_COLOR_PRESETS: List<Pair<String, String>> = listOf(
-    "White" to "#FFFFFF",
-    "Yellow" to "#FFEB3B",
-    "Cyan" to "#4FC3F7",
-    "Green" to "#8BC34A",
-    "Grey" to "#BDBDBD",
+private val SUB_COLOR_PRESETS: List<Pair<Int, String>> = listOf(
+    R.string.settings_subtitle_color_white to "#FFFFFF",
+    R.string.settings_subtitle_color_yellow to "#FFEB3B",
+    R.string.settings_subtitle_color_cyan to "#4FC3F7",
+    R.string.settings_subtitle_color_green to "#8BC34A",
+    R.string.settings_subtitle_color_grey to "#BDBDBD",
 )
 
+@Composable
 private fun subOpacityLabel(pct: Int): String = when {
-    !SubtitleStyle.hasOpacity(pct) -> "Default"
-    pct == SubtitleStyle.OPACITY_MIN -> "None"
-    pct == SubtitleStyle.OPACITY_MAX -> "Solid"
-    else -> "$pct%"
+    !SubtitleStyle.hasOpacity(pct) -> stringResource(R.string.settings_subtitle_default)
+    pct == SubtitleStyle.OPACITY_MIN -> stringResource(R.string.settings_subtitle_background_none)
+    pct == SubtitleStyle.OPACITY_MAX -> stringResource(R.string.settings_subtitle_background_solid)
+    else -> stringResource(R.string.common_percent, pct)
 }
 
-private fun subColorLabel(hex: String): String = if (SubtitleStyle.hasColor(hex)) hex.uppercase() else "Default"
+@Composable
+private fun subColorLabel(hex: String): String = if (SubtitleStyle.hasColor(hex)) {
+    hex.uppercase()
+} else {
+    stringResource(R.string.settings_subtitle_default)
+}
+
+@Composable
+private fun subtitlePositionName(position: SubtitleStyle.Position): String = stringResource(
+    when (position) {
+        SubtitleStyle.Position.DEFAULT -> R.string.settings_subtitle_default
+        SubtitleStyle.Position.TOP_LEFT -> R.string.player_mini_top_left
+        SubtitleStyle.Position.TOP_CENTER -> R.string.player_mini_top_center
+        SubtitleStyle.Position.TOP_RIGHT -> R.string.player_mini_top_right
+        SubtitleStyle.Position.BOTTOM_LEFT -> R.string.player_mini_bottom_left
+        SubtitleStyle.Position.BOTTOM_CENTER -> R.string.player_mini_bottom_center
+        SubtitleStyle.Position.BOTTOM_RIGHT -> R.string.player_mini_bottom_right
+    },
+)
 
 /**
  * Subtitle appearance (#96) — the menu for the whole custom look: a master toggle, then size, text
@@ -861,11 +880,10 @@ private fun SubtitleAppearanceDialog(
             contentAlignment = Alignment.Center,
         ) {
             Column(modifier = Modifier.dialogPanel(width = 640.dp, padding = 28.dp)) {
-                Text("Subtitle appearance", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Text(stringResource(R.string.settings_subtitle_appearance), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "Turn this on, then change only what you want — anything left on Default keeps the " +
-                        "stock look, including the colors and placement broadcasters embed in Live TV subtitles.",
+                    stringResource(R.string.settings_subtitle_customize_description),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(16.dp))
@@ -876,9 +894,11 @@ private fun SubtitleAppearanceDialog(
                 Spacer(Modifier.height(16.dp))
 
                 Row2(
-                    icon = OwnTVIcon.SUBTITLE, title = "Customize subtitles",
-                    desc = "Off keeps subtitles exactly as the stream and the player draw them.",
-                    chip = if (enabled) "On" else "Off", primaryChip = enabled,
+                    icon = OwnTVIcon.SUBTITLE,
+                    title = stringResource(R.string.settings_subtitle_customize),
+                    desc = stringResource(R.string.settings_subtitle_customize_off),
+                    chip = stringResource(if (enabled) R.string.common_on else R.string.common_off),
+                    primaryChip = enabled,
                     modifier = Modifier.focusRequester(toggleFocus),
                     onClick = { onToggle(!enabled) },
                 )
@@ -895,22 +915,25 @@ private fun SubtitleAppearanceDialog(
                         onClick = { open(SubDialog.SIZE) },
                     )
                     Row2(
-                        icon = OwnTVIcon.SUBTITLE, title = "Color",
-                        desc = "Text color — a preset, the picker, or a hex code.",
+                        icon = OwnTVIcon.SUBTITLE,
+                        title = stringResource(R.string.settings_subtitle_color_short),
+                        desc = stringResource(R.string.settings_subtitle_color_description),
                         chip = subColorLabel(color), primaryChip = SubtitleStyle.hasColor(color), chevron = true,
                         modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.COLOR)),
                         onClick = { open(SubDialog.COLOR) },
                     )
                     Row2(
-                        icon = OwnTVIcon.SUBTITLE, title = "Position",
-                        desc = "Where subtitles sit on screen.",
-                        chip = position.label, primaryChip = position != SubtitleStyle.Position.DEFAULT, chevron = true,
+                        icon = OwnTVIcon.SUBTITLE,
+                        title = stringResource(R.string.settings_subtitle_position_short),
+                        desc = stringResource(R.string.settings_subtitle_position_description),
+                        chip = subtitlePositionName(position), primaryChip = position != SubtitleStyle.Position.DEFAULT, chevron = true,
                         modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.POSITION)),
                         onClick = { open(SubDialog.POSITION) },
                     )
                     Row2(
-                        icon = OwnTVIcon.SUBTITLE, title = "Background transparency",
-                        desc = "How solid the box behind the text is.",
+                        icon = OwnTVIcon.SUBTITLE,
+                        title = stringResource(R.string.settings_subtitle_background_transparency),
+                        desc = stringResource(R.string.settings_subtitle_background_description),
                         chip = subOpacityLabel(bgOpacity), primaryChip = SubtitleStyle.hasOpacity(bgOpacity), chevron = true,
                         modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.TRANSPARENCY)),
                         onClick = { open(SubDialog.TRANSPARENCY) },
@@ -919,10 +942,10 @@ private fun SubtitleAppearanceDialog(
 
                 Spacer(Modifier.height(20.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OwnTVButton("Close", onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                    OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
                     Spacer(Modifier.weight(1f))
                     if (enabled) {
-                        OwnTVButton("Reset all", style = OwnTVButtonStyle.SECONDARY, onClick = {
+                        OwnTVButton(stringResource(R.string.settings_subtitle_reset_all), style = OwnTVButtonStyle.SECONDARY, onClick = {
                             onScale(SubtitleStyle.SCALE_DEFAULT)
                             onColor(SubtitleStyle.COLOR_DEFAULT)
                             onPosition(SubtitleStyle.Position.DEFAULT)
@@ -974,10 +997,10 @@ private fun SubtitleColorDialog(color: String, onColor: (String) -> Unit, onDism
             contentAlignment = Alignment.Center,
         ) {
             Column(modifier = Modifier.dialogPanel(width = 440.dp, corner = 16.dp, padding = 18.dp)) {
-                Text("Subtitle color", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(stringResource(R.string.settings_subtitle_color), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Default leaves the color to the stream and the player.",
+                    stringResource(R.string.settings_subtitle_color_default_description),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
@@ -1004,11 +1027,11 @@ private fun SubtitleColorDialog(color: String, onColor: (String) -> Unit, onDism
                     tv.own.owntv.ui.components.OwnTVTextField(
                         value = hexInput,
                         onValueChange = { hexInput = it.take(6); hexError = false },
-                        label = "Hex",
+                        label = stringResource(R.string.settings_subtitle_hex),
                         placeholder = "FFFFFF",
                         modifier = Modifier.width(170.dp),
                     )
-                    OwnTVButton("Apply", onClick = {
+                    OwnTVButton(stringResource(R.string.settings_apply), onClick = {
                         val hex = "#" + hexInput.trim().removePrefix("#").uppercase()
                         if (tv.own.owntv.ui.theme.parseAccentHex(hex) != null) {
                             android.graphics.Color.colorToHSV(SubtitleStyle.colorArgb(hex), hsv)
@@ -1021,7 +1044,7 @@ private fun SubtitleColorDialog(color: String, onColor: (String) -> Unit, onDism
                 }
                 if (hexError) {
                     Spacer(Modifier.height(8.dp))
-                    Text("Enter 6 hex digits, e.g. FFEB3B", style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
+                    Text(stringResource(R.string.settings_subtitle_color_hex_hint), style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
                 }
 
                 Spacer(Modifier.height(14.dp))
@@ -1037,13 +1060,13 @@ private fun SubtitleColorDialog(color: String, onColor: (String) -> Unit, onDism
 
                 Spacer(Modifier.height(16.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OwnTVButton("Use default", style = OwnTVButtonStyle.SECONDARY, onClick = {
+                    OwnTVButton(stringResource(R.string.settings_subtitle_use_default), style = OwnTVButtonStyle.SECONDARY, onClick = {
                         hexInput = ""
                         hexError = false
                         onColor(SubtitleStyle.COLOR_DEFAULT)
                     })
                     Spacer(Modifier.weight(1f))
-                    OwnTVButton("Done", onClick = onDismiss)
+                    OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
                 }
             }
         }
@@ -1071,11 +1094,10 @@ private fun SubtitlePositionDialog(
             contentAlignment = Alignment.Center,
         ) {
             Column(modifier = Modifier.dialogPanel(width = 430.dp, corner = 16.dp, padding = 18.dp, scroll = false)) {
-                Text("Subtitle position", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(stringResource(R.string.settings_subtitle_position), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Default leaves placement to the stream — including where a broadcaster puts a " +
-                        "live caption. Any other choice always wins.",
+                    stringResource(R.string.settings_subtitle_position_default_description),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
@@ -1104,7 +1126,7 @@ private fun SubtitlePositionDialog(
                 }
                 Spacer(Modifier.height(16.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    OwnTVButton("Done", onClick = onDismiss)
+                    OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
                 }
             }
         }
@@ -1133,7 +1155,7 @@ private fun PositionCell(
         val labelColor = if (selected) colors.onPrimaryContainer else colors.onSurface
         if (isDefault) {
             Text(
-                position.label, style = MaterialTheme.typography.labelMedium, color = labelColor,
+                subtitlePositionName(position), style = MaterialTheme.typography.labelMedium, color = labelColor,
                 textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
             )
         } else {
@@ -1156,7 +1178,7 @@ private fun PositionCell(
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    position.label, style = MaterialTheme.typography.labelSmall, color = labelColor,
+                    subtitlePositionName(position), style = MaterialTheme.typography.labelSmall, color = labelColor,
                     textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -1201,10 +1223,10 @@ private fun SubtitleTransparencyDialog(
                 modifier = Modifier.dialogPanel(width = 380.dp, corner = 16.dp, padding = 18.dp, scroll = false),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("Background transparency", style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Text(stringResource(R.string.settings_subtitle_background_transparency), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "How solid the box behind the text is.",
+                    stringResource(R.string.settings_subtitle_background_description),
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
@@ -1233,9 +1255,9 @@ private fun SubtitleTransparencyDialog(
                 }
                 Spacer(Modifier.height(14.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OwnTVButton("Use default", style = OwnTVButtonStyle.SECONDARY, onClick = { onSet(SubtitleStyle.OPACITY_DEFAULT) })
+                    OwnTVButton(stringResource(R.string.settings_subtitle_use_default), style = OwnTVButtonStyle.SECONDARY, onClick = { onSet(SubtitleStyle.OPACITY_DEFAULT) })
                     Spacer(Modifier.weight(1f))
-                    OwnTVButton("Done", onClick = onDismiss)
+                    OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
                 }
             }
         }
@@ -1286,7 +1308,7 @@ private fun SubtitlePreview(
         },
     ) {
         Text(
-            "The quick brown fox",
+            stringResource(R.string.settings_subtitle_preview_sample),
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontSize = MaterialTheme.typography.bodyLarge.fontSize * textScale,
             ),
@@ -1299,7 +1321,7 @@ private fun SubtitlePreview(
         )
         if (!enabled) {
             Text(
-                "Preview — stock look",
+                stringResource(R.string.settings_subtitle_preview_stock),
                 style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
             )

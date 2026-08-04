@@ -1112,7 +1112,18 @@ class SettingsViewModel(
         data object Idle : DnsTestState
         data object Testing : DnsTestState
         data class Ok(val millis: Long, val resolvedIps: List<String>) : DnsTestState
-        data class Fail(val message: String) : DnsTestState
+        data class Fail(val failure: DnsTestFailure) : DnsTestState
+    }
+
+    sealed interface DnsTestFailure {
+        data object ServerRequired : DnsTestFailure
+        data object ServerNotReachable : DnsTestFailure
+        data object TimedOut : DnsTestFailure
+        data object NetworkUnreachable : DnsTestFailure
+        data object ConnectionRefused : DnsTestFailure
+        data class NoAddresses(val host: String) : DnsTestFailure
+        data class Unknown(val rawMessage: String) : DnsTestFailure
+        data object Generic : DnsTestFailure
     }
 
     private val _dnsTest = MutableStateFlow<DnsTestState>(DnsTestState.Idle)
@@ -1125,7 +1136,7 @@ class SettingsViewModel(
         val doh = dohUrl.trim()
         val h = host.trim()
         if (enabled && h.isBlank() && doh.isBlank()) {
-            _dnsTest.value = DnsTestState.Fail("Enter a DNS server host or a DoH URL.")
+            _dnsTest.value = DnsTestState.Fail(DnsTestFailure.ServerRequired)
             return
         }
         val testHost = "dns.google" // a reliable hostname for testing DNS
@@ -1146,34 +1157,37 @@ class SettingsViewModel(
                     val start = System.currentTimeMillis()
                     val addrs = holder.dns.lookup(testHost)
                     val ms = System.currentTimeMillis() - start
-                    if (addrs.isEmpty()) throw java.io.IOException("DNS returned no addresses for $testHost")
+                    if (addrs.isEmpty()) throw DnsNoAddressesException(testHost)
                     addrs.map { it.hostAddress ?: "?" } to ms
                 }
             }
             _dnsTest.value = result.fold(
                 onSuccess = { (ips, ms) -> DnsTestState.Ok(ms, ips) },
-                onFailure = { DnsTestState.Fail(friendlyDnsError(it)) },
+                onFailure = { DnsTestState.Fail(classifyDnsError(it)) },
             )
         }
     }
 
-    private fun friendlyDnsError(e: Throwable): String {
+    private fun classifyDnsError(e: Throwable): DnsTestFailure {
         val msg = e.message.orEmpty()
         return when {
+            e is DnsNoAddressesException -> DnsTestFailure.NoAddresses(e.host)
             msg.contains("UnknownHostException", ignoreCase = true) || msg.contains("unknown host", ignoreCase = true) ->
-                "DNS server not reachable."
+                DnsTestFailure.ServerNotReachable
             msg.contains("timeout", ignoreCase = true) || msg.contains("timed out", ignoreCase = true) ->
-                "DNS request timed out."
+                DnsTestFailure.TimedOut
             msg.contains("Network is unreachable", ignoreCase = true) ->
-                "Network is unreachable — check the server address."
+                DnsTestFailure.NetworkUnreachable
             msg.contains("refused", ignoreCase = true) ->
-                "Connection refused — check the server address and port."
+                DnsTestFailure.ConnectionRefused
             e is java.net.SocketTimeoutException ->
-                "DNS request timed out."
-            e is java.io.IOException && msg.isNotBlank() -> msg
-            else -> "DNS test failed — check the server address."
+                DnsTestFailure.TimedOut
+            e is java.io.IOException && msg.isNotBlank() -> DnsTestFailure.Unknown(msg)
+            else -> DnsTestFailure.Generic
         }
     }
+
+    private class DnsNoAddressesException(val host: String) : java.io.IOException()
 
     // --- TMDB metadata enrichment (plan §4) — Phase M1 config + manual "look up title" test ---
 

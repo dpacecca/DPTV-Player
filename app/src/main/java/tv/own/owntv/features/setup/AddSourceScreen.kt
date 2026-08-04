@@ -382,9 +382,14 @@ fun AddSourceScreen(
             if (kind == SourceKind.XTREAM) {
                 Spacer(Modifier.height(16.dp))
                 ToggleRow(
-                    label = "Prefer HLS for Live TV",
-                    desc = "Prioritize HLS (.m3u8) over MPEG-TS for Live TV & Catch-up. Falls back to MPEG-TS if HLS fails." +
-                        if (initial?.hlsSupported == true) " Your provider reports HLS support." else "",
+                    label = stringResource(R.string.setup_prefer_hls_live_tv),
+                    desc = stringResource(
+                        if (initial?.hlsSupported == true) {
+                            R.string.setup_prefer_hls_description_supported
+                        } else {
+                            R.string.setup_prefer_hls_description
+                        },
+                    ),
                     checked = preferHls,
                 ) { preferHls = it }
             }
@@ -413,8 +418,8 @@ fun AddSourceScreen(
             if (!editing && hideNewCatsProfile >= 0) {
                 Spacer(Modifier.height(16.dp))
                 ToggleRow(
-                    label = "Hide new categories by default",
-                    desc = "Profile-wide: categories that appear on future syncs start hidden. See them anytime in Customize.",
+                    label = stringResource(R.string.setup_hide_new_categories),
+                    desc = stringResource(R.string.setup_hide_new_categories_description),
                     checked = hideNewCats,
                 ) { hidden -> scope.launch { settings.setHideNewCategoriesDefault(hideNewCatsProfile, hidden) } }
             }

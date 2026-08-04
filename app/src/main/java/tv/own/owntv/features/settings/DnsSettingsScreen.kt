@@ -24,11 +24,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.R
 import tv.own.owntv.core.network.DohPresets
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -122,15 +124,16 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Header("DNS", onBack)
+        Header(stringResource(R.string.settings_dns), onBack)
         Spacer(Modifier.height(8.dp))
 
-        GroupLabel("Custom DNS")
+        GroupLabel(stringResource(R.string.settings_dns_custom))
         Row2(
             icon = OwnTVIcon.SEARCH,
-            title = "Use custom DNS",
-            desc = "Resolve all OwnTV domain lookups through a custom DNS server.",
-            chip = if (effectiveEnabled) "On" else "Off", primaryChip = effectiveEnabled,
+            title = stringResource(R.string.settings_dns_use_custom),
+            desc = stringResource(R.string.settings_dns_toggle_description),
+            chip = stringResource(if (effectiveEnabled) R.string.common_on else R.string.common_off),
+            primaryChip = effectiveEnabled,
             modifier = Modifier
                 .focusRequester(toggleFocus)
                 .focusProperties { if (toggleOn) down = firstPresetFocus },
@@ -141,7 +144,7 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         if (toggleOn && !serverConfigured) {
             Spacer(Modifier.height(8.dp))
             Text(
-                "Custom DNS is enabled but no server is configured. Enter a server address and tap Save, or turn this off.",
+                stringResource(R.string.settings_dns_server_missing),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFFEF4444),
             )
@@ -187,8 +190,8 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 OwnTVTextField(
                     value = server,
                     onValueChange = { server = it },
-                    label = "DNS server",
-                    placeholder = "8.8.8.8 or https://dns.google/dns-query",
+                    label = stringResource(R.string.settings_dns_server),
+                    placeholder = stringResource(R.string.settings_dns_server_hint),
                     focusRequester = serverFieldFocus,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -204,13 +207,16 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.focusProperties { up = serverFieldFocus },
                 ) {
-                    OwnTVButton("Save", onClick = { applySave() }, modifier = Modifier.focusRequester(saveFocus))
+                    OwnTVButton(stringResource(R.string.common_save), onClick = { applySave() }, modifier = Modifier.focusRequester(saveFocus))
                     OwnTVButton(
-                        label = if (dnsTestState is SettingsViewModel.DnsTestState.Testing) "Testing…" else "Test DNS",
+                        label = stringResource(
+                            if (dnsTestState is SettingsViewModel.DnsTestState.Testing) R.string.settings_testing
+                            else R.string.settings_dns_test,
+                        ),
                         onClick = {
                             val s = server.trim()
                             val doh = if (s.startsWith("https://", ignoreCase = true)) s else ""
-                            vm.testDns(effectiveEnabled, s, 53, doh)
+                            vm.testDns(toggleOn, s, 53, doh)
                         },
                         style = OwnTVButtonStyle.SECONDARY,
                     )
@@ -221,13 +227,13 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         Spacer(Modifier.height(20.dp))
         Text(
-            "Custom DNS can help bypass ISP-level domain blocking or enable geo-unblocking via SmartDNS services. DNS-over-HTTPS (DoH) is recommended — it encrypts your lookups.",
+            stringResource(R.string.settings_dns_explanation),
             style = MaterialTheme.typography.bodyMedium,
             color = colors.onSurfaceVariant,
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "This setting only affects OkHttp-based traffic (playlist sync, EPG, API calls, images, ExoPlayer streams). mpv uses the system resolver and is not affected.",
+            stringResource(R.string.settings_dns_limitations),
             style = MaterialTheme.typography.bodySmall,
             color = colors.onSurfaceVariant,
         )
@@ -238,11 +244,27 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 private fun DnsTestLabel(state: SettingsViewModel.DnsTestState) {
     val colors = OwnTVTheme.colors
     val (text, color) = when (state) {
-        is SettingsViewModel.DnsTestState.Ok -> "Resolved ✓ (${state.millis} ms) → ${state.resolvedIps.joinToString(", ")}" to colors.primary
-        is SettingsViewModel.DnsTestState.Fail -> state.message to Color(0xFFEF4444)
+        is SettingsViewModel.DnsTestState.Ok -> stringResource(
+            R.string.settings_dns_resolved,
+            state.millis,
+            state.resolvedIps.joinToString(", "),
+        ) to colors.primary
+        is SettingsViewModel.DnsTestState.Fail -> state.failure.displayText() to Color(0xFFEF4444)
         else -> null to colors.onSurfaceVariant
     }
     if (text != null) {
         Text(text, style = MaterialTheme.typography.bodyMedium, color = color)
     }
+}
+
+@Composable
+private fun SettingsViewModel.DnsTestFailure.displayText(): String = when (this) {
+    SettingsViewModel.DnsTestFailure.ServerRequired -> stringResource(R.string.settings_dns_enter_server)
+    SettingsViewModel.DnsTestFailure.ServerNotReachable -> stringResource(R.string.settings_dns_not_reachable)
+    SettingsViewModel.DnsTestFailure.TimedOut -> stringResource(R.string.settings_dns_timed_out)
+    SettingsViewModel.DnsTestFailure.NetworkUnreachable -> stringResource(R.string.settings_dns_network_unreachable)
+    SettingsViewModel.DnsTestFailure.ConnectionRefused -> stringResource(R.string.settings_dns_connection_refused)
+    is SettingsViewModel.DnsTestFailure.NoAddresses -> stringResource(R.string.settings_dns_no_addresses, host)
+    is SettingsViewModel.DnsTestFailure.Unknown -> rawMessage
+    SettingsViewModel.DnsTestFailure.Generic -> stringResource(R.string.settings_dns_test_failed)
 }

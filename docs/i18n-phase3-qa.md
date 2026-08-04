@@ -15,7 +15,9 @@ Phase 3 hardens locale-sensitive rendering before non-Latin production locales a
 ## Source-review evidence
 
 - `PopupTheme.kt` retains its existing font-family structure. Provider title and subtitle text in `AudioNowPlayingBar` use the system Sans family, while the localized progress line retains popup typography.
-- The debug-only font fallback activity contains static Arabic, Simplified Chinese, Traditional Chinese, Japanese, Korean, Cyrillic, Greek, and mixed-script fixtures. Only the debug manifest registers it.
+- The debug-only font fallback activity contains static Arabic, Simplified Chinese, Traditional
+  Chinese, Japanese, Korean, Malayalam, Hindi, Bangla, Cyrillic, Greek, and mixed-script fixtures. Only the
+  debug manifest registers it.
 - Date renderers resolve the active resource locale, Android best date-time pattern, current timezone, and system hour cycle. Date and time use one combined pattern where both are shown.
 - Stable protocol, persistence, hash, and technical numeric formatting is pinned to `Locale.ROOT`. Display-number localization remains at the final UI renderer.
 - Logical horizontal navigation uses `HorizontalDirection.START` and `HorizontalDirection.END`. Media seeking, colour controls, and the EPG timeline remain physical by design.
@@ -24,7 +26,9 @@ Phase 3 hardens locale-sensitive rendering before non-Latin production locales a
 - The pre-edit overflow inventory found 43 bounded text calls without an overflow argument. A post-edit parser inventory found none. The only `TextOverflow.Clip` call is the reviewed ASCII channel-number exception.
 - Focus-triggered marquee was added to exactly the ten approved targets. Each remains a single-line text node with ellipsis when unfocused and reuses its parent focus state.
 - The stepper, audio-delay row, stream-information columns, and series sorting row now reserve space for their actions while allowing translated values and labels to use bounded flexible space.
-- `tools/i18n/locales.json` still packages only the existing English entries (`en-US` and the `en-GB` override). Every non-English catalogue locale remains `packaged = false`.
+- At the Phase 3 snapshot, `tools/i18n/locales.json` packaged only `en-US` and the `en-GB`
+  override. Phase 4a now packages and exposes all community locales, relying on English fallback and
+  the informational coverage badge while their translations are incomplete.
 - `git diff --check` passed for the implementation commits.
 
 ## Automated verification status
@@ -91,6 +95,9 @@ adb shell am start \
 ```
 
 Also exercise representative real provider titles, channel/programme names, playlists, and subtitle filenames in the actual EPG, overlays, and subtitle UI. Classify each issue as missing glyphs, incorrect shaping, incorrect paragraph direction, or only inconsistent serif/sans appearance.
+
+For the first-pass locale runs, explicitly verify Malayalam shaping, Hindi Devanagari conjuncts,
+and Bangla conjuncts and vowel signs in both the fixture and the language picker endonyms.
 
 ### RTL acceptance checks
 

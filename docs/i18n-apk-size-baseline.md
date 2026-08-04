@@ -6,10 +6,10 @@
 ## Why this exists
 
 `androidResources.localeFilters` strips library locale folders (appcompat alone contributes ~85) so
-only the catalogued, `packaged = true` qualifiers ship. Phase 0 packages **only `en` and `en-rGB`**;
-Phase 4a writes all 20 community locale resource sets while keeping them filtered out. Phase 4c flips
-the remaining 20 locales to `packaged = true` together. Phase 4e measures that complete before/after
-change. This file is the **before** measurement so the aggregate 21-language APK-size delta is visible
+only the catalogued, `packaged = true` qualifiers ship. Phase 0 packaged **only `en` and `en-rGB`**;
+Phase 4a enables all 23 community qualifiers even while their resource files are incomplete or absent.
+Phase 4e measures that complete before/after change. This file is the **before** measurement so the
+aggregate 24-language APK-size delta is visible
 and a surprise regression (a library locale folder that slipped past the filter) is caught.
 
 ## Measurement method
@@ -40,14 +40,14 @@ the locale-filtered string table only.
 
 ## Phase 4e comparison template
 
-Build `standardRelease` before and after the Phase 4c flip, then append the measured result here:
+Build `standardRelease` before and after the Phase 4a catalogue flip, then append the measured result here:
 
 | Phase | Locales packaged | APK size | `resources.arsc` | Δ APK | Δ arsc |
 |---|---|---|---|---|---|
 | 0 | en, en-rGB | 51,693,164 | 40,008 | — | — |
-| 4e, after 4c | en, en-rGB + 20 community locales | TBD | TBD | TBD | TBD |
+| 4e, after Phase 4a flip | en, en-rGB + 23 community locales | TBD | TBD | TBD | TBD |
 
 The earlier 2-4 MB aggregate allowance is a planning estimate, not a result. Record the measured
 delta without converting it into a per-locale claim. Use `aapt2 dump configurations` to verify that
-only the intended 20 community configurations were added and that no dependency locale slipped past
+only the intended 23 community configurations were added and that no dependency locale slipped past
 `localeFilters`.

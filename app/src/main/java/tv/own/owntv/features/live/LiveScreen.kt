@@ -198,7 +198,7 @@ fun LiveScreen(
     // menu-open time (the rail can't change under the modal, but capturing is still safer).
     var moveItem by remember { mutableStateOf<ChannelEntity?>(null) }
     var moveOriginKey by remember { mutableStateOf<String?>(null) }
-    var moveOriginName by remember { mutableStateOf("this category") }
+    var moveOriginName by remember { mutableStateOf<String?>(null) }
     var creatingCategory by remember { mutableStateOf(false) }
     // When the long-press menu closes (Cancel, Favourite, Hide) WITHOUT opening another dialog, return focus
     // to the channel it was opened from — otherwise focus falls back to the nav panel.
@@ -543,7 +543,7 @@ fun LiveScreen(
                     LiveKey.Favorites -> ContentOrderEntity.FAV_CONTEXT
                     else -> null
                 }
-                moveOriginName = railItems.firstOrNull { it.key == selectedKey }?.title ?: "this category"
+                moveOriginName = railItems.firstOrNull { it.key == selectedKey }?.title
                 moveItem = ch
                 contextChannel = null
             },
@@ -556,9 +556,9 @@ fun LiveScreen(
     val moveTargets by vm.moveTargets.collectAsStateWithLifecycle()
     if (creatingCategory) {
         TextInputDialog(
-            title = "New category",
-            hint = "A combined category for this profile — move channels, movies or series into it.",
-            confirmLabel = "Create",
+            title = stringResource(R.string.settings_customize_new_category_title),
+            hint = stringResource(R.string.settings_customize_new_category_description),
+            confirmLabel = stringResource(R.string.common_create),
             allowBlank = false,
             onConfirm = { vm.createCustomCategory(it); creatingCategory = false },
             onDismiss = { creatingCategory = false },
@@ -569,7 +569,7 @@ fun LiveScreen(
             if (originKey != null) {
                 MoveToCategoryDialog(
                     moveTargets = moveTargets.filterNot { it.id == originKey },
-                    originName = moveOriginName,
+                    originName = moveOriginName ?: stringResource(R.string.settings_customize_this_category),
                     onNewCategory = { creatingCategory = true },
                     onMove = { targetId, keepInOrigin ->
                         vm.moveToCategory(CustomizeKeys.channel(ch), ch.id, originKey, targetId, keepInOrigin)

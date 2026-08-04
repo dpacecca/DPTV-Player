@@ -1,4 +1,4 @@
-# i18n Phase 4a — align fallback policy and seed the 20 translations
+# i18n Phase 4a — align fallback policy and seed the 23 translations
 
 This is the implementation plan for Phase 4a. Work from this file alongside
 `docs/i18n-phase2-language-picker.md`, `docs/i18n-phase3-qa.md`, `docs/i18n.md`, and
@@ -7,15 +7,16 @@ This is the implementation plan for Phase 4a. Work from this file alongside
 Phase 4a has two ordered parts:
 
 1. Align the existing tooling and picker with the product policy agreed after Phase 3.
-2. Build the one-off seed tool and generate the 21 community-language resource sets.
+2. Build the one-off seed tool and generate the 23 community-language resource sets.
 
 The policy alignment is part of 4a because the current release validator would otherwise reject an
 incomplete community translation. Generated picker coverage remains useful, but it is informational:
 translation changes update the badge without imposing a minimum percentage. Land the policy
 alignment before adding the generated locale files.
 
-Phase 4b (Weblate), 4c (the real packaging and picker-visibility flip), and 4e (APK delta) remain
-separate. No deferred appendix is approved work.
+Phase 4b (Weblate) and 4e (APK delta) remain separate. The former 4c packaging flip is absorbed here:
+all supported languages are packaged and picker-visible because coverage is informational and missing
+keys safely fall back to English.
 
 ## Locked product policy
 
@@ -35,30 +36,30 @@ separate. No deferred appendix is approved work.
   a list of Android strings. Never feed it into the translation model.
 - `values/donottranslate.xml` remains the small Android resource set for brand, engine, and unit
   constants. It is not copied into localized directories.
-- The seed aims to produce a complete initial snapshot for all 20 target locales. That is a property
+- The seed aims to produce a complete initial snapshot for all 23 target locales. That is a property
   of this one seed run, not a permanent CI or release requirement.
 - Seeded translations do not receive review-state entries. Translation approval state is not a
   release requirement.
 
 ## Current and post-alignment inventory
 
-The current source tree has six translatable files containing 1,537 keys: 1,490 `<string>` entries and
-47 `<plurals>` entries. There are no `<string-array>` entries. The language-picker coverage badge uses
+The current source tree has six translatable files containing 1,655 keys: 1,602 `<string>` entries and
+53 `<plurals>` entries. There are no `<string-array>` entries. The language-picker coverage badge uses
 one of those strings, `settings_language_coverage`.
 
 Part 1 keeps that badge and source string. The seed must derive its inventory and should find:
 
-- 1,537 source keys: 1,490 `<string>` plus 47 `<plurals>`
+- 1,655 source keys: 1,602 `<string>` plus 53 `<plurals>`
 - six source filenames
-- 23 catalogue entries: source English, the en-GB regional override, and 21 community targets
-- 21 target locale directories
-- 126 generated translation files
+- 25 catalogue entries: source English, the en-GB regional override, and 23 community targets
+- 23 target locale directories
+- 138 generated translation files
 
 These counts are assertions against the present checkout, not magic constants for the implementation.
 The tool must always compute and print the final inventory and fail a dry run if it differs from its
 request manifest.
 
-The current per-file key counts produce 41 translation chunks per locale at a maximum of 40 keys per
+The current per-file key counts produce 44 translation chunks per locale at a maximum of 40 keys per
 chunk. Recompute rather than assuming that count if the source changes before execution.
 
 ## Part 1 — align fallback, coverage, and catalogue policy
@@ -105,7 +106,7 @@ Keep structural failures for every localized entry that exists:
 - invalid leading or trailing whitespace
 
 Add `--report text|json|none`, defaulting to `text`. Coverage is computed from the same suffixed key
-sets the validator already uses for strings, plurals, and arrays. Report the 20 Tier 1 community
+sets the validator already uses for strings, plurals, and arrays. Report the 23 Tier 1 community
 targets. Exclude source English and the intentionally partial tier-0 en-GB regional override; en-GB is
 not a translation backlog.
 
@@ -113,9 +114,8 @@ The text report is deterministic and catalogue-ordered:
 
 ```text
 Translation coverage:
-  de       1420 / 1537   92.4%   117 missing
-  ar        806 / 1537   52.4%   731 missing
-  ja          0 / 1537    0.0%  1537 missing
+  de          0 / 1655    0.0%  1655 missing
+  ml       1537 / 1655   92.9%   118 missing
 ```
 
 The JSON report has a versioned root and machine-readable per-locale counts:
@@ -123,13 +123,13 @@ The JSON report has a versioned root and machine-readable per-locale counts:
 ```json
 {
   "schemaVersion": 1,
-  "sourceKeys": 1537,
+  "sourceKeys": 1655,
   "locales": [
     {
-      "languageTag": "de",
-      "translatedKeys": 1420,
-      "missingKeys": 117,
-      "coveragePercent": 92.4
+      "languageTag": "ml",
+      "translatedKeys": 1537,
+      "missingKeys": 118,
+      "coveragePercent": 92.9
     }
   ]
 }
@@ -161,7 +161,7 @@ resource tree.
   and the language picker.
 - Keep `check`; freshness means that the checked-in Kotlin matches both the catalogue and current
   translation resources.
-- Regenerate `SupportedLocales.kt` after the pilot files and again after all 20 locale sets are
+- Regenerate `SupportedLocales.kt` after the pilot files and again after all 23 locale sets are
   promoted. A freshly generated 0% or partial value is valid and must pass `check`.
 
 Do not replace this with runtime JSON parsing. `tools/i18n/locales.json` is tooling input and is not
@@ -195,17 +195,17 @@ English edits may retain the key.
 
 ### Outcome
 
-Generate the initial complete snapshot for the 20 non-source catalogue locales:
+Generate the initial complete snapshot for the 23 non-source catalogue locales:
 
-- 20 locale directories
+- 23 locale directories
 - the same six filenames as source in each directory
-- 120 UTF-8 Android XML files
+- 138 UTF-8 Android XML files
 - every post-alignment source key represented in its corresponding file
 - locale-correct plural quantities
 - no localized `donottranslate.xml`
 
-All target entries remain `packaged: false` and `pickerVisible: false`, so the files do not ship in the
-APK until Phase 4c.
+All target entries use `packaged: true` and `pickerVisible: true`. A locale is selectable before its
+seed is complete; its badge reports the current percentage and missing keys fall back to English.
 
 The seed's strict completeness check is intentionally stronger than CI. CI permits future community
 translations to be partial; this one paid seed run must not silently lose a requested key.
@@ -220,7 +220,7 @@ translations to be partial; this one paid seed run must not silently lose a requ
 | `tools/i18n/requirements-seed.txt` | New exact `anthropic` SDK pin for a local venv; never installed by CI. |
 | `tools/i18n/test_i18n_tools.py` | Add offline policy, generator, report, and seed regression tests. |
 | `.gitignore` | Ignore `/runs/`; never commit batch inputs, IDs, raw results, or retry state. |
-| `app/src/main/res/values-*/strings*.xml` | 120 generated translation files. |
+| `app/src/main/res/values-*/strings*.xml` | 138 generated translation files. |
 
 `seed_text.py` must not import the SDK. Existing i18n tests run in an environment where `anthropic` is
 not installed.
@@ -302,20 +302,28 @@ maintainer has collected results.
 ### Correct batch topology
 
 Glossary results are inputs to translation prompts, so they cannot share one batch submission with the
-translations that consume them. The pilot must also finish before money is spent on the remaining 16
-locales.
+translations that consume them. Generate Malayalam first as the maintainer-readable flow check, then
+Hindi and Bangla as separate single-locale runs. The de/ar/ja/tr pilot must finish before money is
+spent on the remaining 16 locales.
 
-At the current 41 chunks per locale, the initial topology is:
+At the current 44 chunks per locale, the initial topology is:
 
 | Stage | Requests |
 |---|---:|
+| Malayalam glossary | 1 |
+| Malayalam translations | 44 |
+| Hindi glossary | 1 |
+| Hindi translations | 44 |
+| Bangla glossary | 1 |
+| Bangla translations | 44 |
 | Pilot glossaries: de, ar, ja, tr | 4 |
-| Pilot translations | 164 |
+| Pilot translations | 176 |
 | Remaining glossaries | 16 |
-| Remaining translations | 656 |
-| Initial total before retries | 840 |
+| Remaining translations | 704 |
+| Initial total before retries | 1,035 |
 
-Retries are separate follow-up batches containing only failed keys. They are not included in the 840.
+Retries are separate follow-up batches containing only failed keys. They are not included in the
+1,035.
 
 ### Extract and tokenize
 
@@ -493,7 +501,11 @@ python3 tools/i18n/test_i18n_tools.py
 python3 tools/i18n/gen_supported_locales.py
 python3 tools/i18n/gen_supported_locales.py check
 python3 tools/i18n/validate_strings.py --report text
+python3 tools/i18n/seed_translations.py prepare-glossary --locales hi --dry-run
+python3 tools/i18n/seed_translations.py prepare-glossary --locales bn --dry-run
 python3 tools/i18n/seed_translations.py prepare-glossary --locales de,ar,ja,tr --dry-run
+python3 tools/i18n/seed_text.py check --locales hi
+python3 tools/i18n/seed_text.py check --locales bn
 python3 tools/i18n/seed_text.py check --locales de,ar,ja,tr
 ./gradlew :app:processStandardDebugResources --console=plain
 ```
@@ -501,15 +513,28 @@ python3 tools/i18n/seed_text.py check --locales de,ar,ja,tr
 The real submission commands are printed from the prepared manifest for the maintainer. The agent does
 not submit a batch, poll Anthropic, or spend API credit.
 
-After all 20 locales are promoted, repeat the offline seed check, validator report, generator freshness
+After all 23 locales are promoted, repeat the offline seed check, validator report, generator freshness
 check, and Android resource compilation. CI should print 100% immediately after the seed, but a future
 missing community translation must reduce the report without failing the build.
 
 ## Pilot walkthrough
 
-Run the paid pilot for de, ar, ja, and tr only. After offline validation, temporarily set both
-`packaged` and `pickerVisible` for those four entries in a local `locales.json` edit, regenerate
-`SupportedLocales.kt`, and build a debug APK.
+Generate Malayalam by itself first and switch between English and Malayalam throughout the app. The
+maintainer can review Malayalam directly, so this is the first end-to-end check of picker selection,
+fallback, script rendering, resource ownership, and the informational coverage badge. Reconcile every
+new English source key before preparing this run; otherwise the seed checker will correctly reject the
+locale as incomplete even though Android and CI permit English fallback.
+
+Generate Hindi by itself next with `--locales hi`. Validate all six `values-hi/strings*.xml` files,
+then perform an English/Hindi switch and Devanagari glyph check. Hindi is already visible at 0%
+before generation and uses English fallback until its files are promoted.
+
+Generate Bangla by itself next with `--locales bn`. Validate all six `values-bn/strings*.xml` files,
+then perform an English/Bangla switch and inspect conjuncts, vowel signs, and line wrapping. Bangla
+is already visible at 0% before generation and uses English fallback until its files are promoted.
+
+Run the paid pilot for de, ar, ja, and tr only. After offline validation, regenerate
+`SupportedLocales.kt` and build a debug APK; no temporary catalogue edit is needed.
 
 - German: inspect Sidebar and TopBar expansion; confirm focused marquee remains usable.
 - Arabic: confirm RTL mirroring, glyph shaping, no tofu, readable mixed provider text, and a
@@ -523,12 +548,11 @@ Use the existing Phase 3 real-script and RTL walkthrough for the broader geometr
 Plural-file completeness and the exact Arabic count-token contract are proved by the offline seed
 checker; do not claim that casually observing one UI count proves every CLDR branch.
 
-After the walkthrough, restore `locales.json` and regenerate `SupportedLocales.kt` again. The committed
-state must keep all 21 community locales unpackaged and hidden. Do not revert the policy-alignment
-version of generated Kotlin.
+After the walkthrough, keep the catalogue enabled and regenerate `SupportedLocales.kt` whenever
+translation files change so the informational badges remain current.
 
-Only after the pilot is clean and its actual API usage is reviewed may the maintainer approve the
-remaining 16-locale submissions.
+Only after the Malayalam, Hindi, and Bangla flow checks and the four-locale pilot are clean, and their
+actual API usage is reviewed, may the maintainer approve the remaining 16-locale submissions.
 
 ## Done when
 
@@ -539,17 +563,16 @@ remaining 16-locale submissions.
 - generated Kotlin coverage matches the current resource tree and the CI report.
 - generator freshness can fail for stale badge metadata, but never for a low coverage percentage.
 - the seed tool is stdlib-isolated from the Anthropic driver, resumable, dry-runnable, and fully tested.
-- the 120 locale files are present and pass the seed's stricter complete-snapshot check.
+- the 138 locale files are present and pass the seed's stricter complete-snapshot check.
 - no unresolved file exists for any target locale.
 - Android resource compilation succeeds when verification is authorized.
-- the de/ar/ja/tr pilot walkthrough is recorded as clean.
-- no catalogue packaging or picker-visibility flip is committed.
+- the Malayalam, Hindi, and Bangla single-locale walkthroughs and de/ar/ja/tr pilot are recorded as clean.
+- all 23 community locales are packaged and picker-visible; en-GB remains a hidden regional override.
 - no API credentials, batch payloads, raw results, or run state are committed.
 
 ## Explicitly out of scope
 
 - Weblate project/component configuration or GitHub hooks
-- the real 20-locale `packaged` / `pickerVisible` flip
 - Gradle packaging changes
 - a runtime JSON translation catalogue
 - translation approval workflows or review-state gates
@@ -567,9 +590,9 @@ state are informational; they do not become OwnTV release gates.
 
 ### 4c — packaging and picker visibility
 
-Flip `packaged` and `pickerVisible` for the 21 community targets in one release and regenerate
-`SupportedLocales.kt` because `locales.json` changed. Missing keys continue to fall back to English.
-The picker shows each locale's informational translation percentage even when it is incomplete.
+Completed as part of 4a: all 23 community targets are packaged and picker-visible. Missing keys fall
+back to English, and the picker shows each locale's informational translation percentage even when it
+is incomplete.
 
 ### 4d — later validator and supply-chain hardening
 
@@ -580,5 +603,5 @@ exists.
 
 ### 4e — APK delta
 
-Build `standardRelease` before and after the 4c flip, record the actual APK and `resources.arsc` delta,
+Build `standardRelease` before and after the Phase 4a catalogue flip, record the actual APK and `resources.arsc` delta,
 and retain `localeFilters` as the rollback lever.
