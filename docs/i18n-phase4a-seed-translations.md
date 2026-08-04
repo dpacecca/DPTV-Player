@@ -7,7 +7,7 @@ This is the implementation plan for Phase 4a. Work from this file alongside
 Phase 4a has two ordered parts:
 
 1. Align the existing tooling and picker with the product policy agreed after Phase 3.
-2. Build the one-off seed tool and generate the 20 community-language resource sets.
+2. Build the one-off seed tool and generate the 21 community-language resource sets.
 
 The policy alignment is part of 4a because the current release validator would otherwise reject an
 incomplete community translation. Generated picker coverage remains useful, but it is informational:
@@ -50,9 +50,9 @@ Part 1 keeps that badge and source string. The seed must derive its inventory an
 
 - 1,537 source keys: 1,490 `<string>` plus 47 `<plurals>`
 - six source filenames
-- 22 catalogue entries: source English, the en-GB regional override, and 20 community targets
-- 20 target locale directories
-- 120 generated translation files
+- 23 catalogue entries: source English, the en-GB regional override, and 21 community targets
+- 21 target locale directories
+- 126 generated translation files
 
 These counts are assertions against the present checkout, not magic constants for the implementation.
 The tool must always compute and print the final inventory and fail a dry run if it differs from its
@@ -524,7 +524,7 @@ Plural-file completeness and the exact Arabic count-token contract are proved by
 checker; do not claim that casually observing one UI count proves every CLDR branch.
 
 After the walkthrough, restore `locales.json` and regenerate `SupportedLocales.kt` again. The committed
-state must keep all 20 community locales unpackaged and hidden. Do not revert the policy-alignment
+state must keep all 21 community locales unpackaged and hidden. Do not revert the policy-alignment
 version of generated Kotlin.
 
 Only after the pilot is clean and its actual API usage is reviewed may the maintainer approve the
@@ -567,7 +567,7 @@ state are informational; they do not become OwnTV release gates.
 
 ### 4c — packaging and picker visibility
 
-Flip `packaged` and `pickerVisible` for the 20 community targets in one release and regenerate
+Flip `packaged` and `pickerVisible` for the 21 community targets in one release and regenerate
 `SupportedLocales.kt` because `locales.json` changed. Missing keys continue to fall back to English.
 The picker shows each locale's informational translation percentage even when it is incomplete.
 
