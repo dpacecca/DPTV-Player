@@ -148,11 +148,11 @@ fun OwnTVShell(
     val movieVm = org.koin.androidx.compose.koinViewModel<MovieViewModel>()
     val seriesVm = org.koin.androidx.compose.koinViewModel<SeriesViewModel>()
     // Same activity-scoped instances the Live/Guide screens use — lets the fullscreen HUD zap channels
-    // up/down (CH+/CH-) through whichever section's list opened the stream.
+    // up/down (CH+/CH-). Guide tunes start through LiveViewModel too (they set zapSource = LIVE_TV), so
+    // there is exactly ONE zap path: liveVm's. The Guide keeps its own EpgViewModel only for the grid.
     val liveVm = org.koin.androidx.compose.koinViewModel<LiveViewModel>()
     val epgVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.epg.EpgViewModel>()
     val liveCanZap by liveVm.canZap.collectAsStateWithLifecycle()
-    val epgCanZap by epgVm.canZap.collectAsStateWithLifecycle()
     // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
     val liveOnExo by liveVm.liveOnExo.collectAsStateWithLifecycle()
     // A catch-up archive programme is playing (Guide "Watch from start" or the Live TV catch-up picker)
@@ -467,7 +467,6 @@ fun OwnTVShell(
                             val isLiveStream = liveOnExo || player.isLiveContent
                             val zapFn: ((Int) -> Unit)? = when {
                                 !isLiveStream -> null
-                                zapSource == MainSection.EPG && epgCanZap -> epgVm::zap
                                 zapSource == MainSection.LIVE_TV && liveCanZap -> liveVm::zap
                                 else -> null
                             }
@@ -708,7 +707,6 @@ fun OwnTVShell(
                 val isLiveStream = liveOnExo || player.isLiveContent
                 val zap: ((Int) -> Unit)? = when {
                     !isLiveStream -> null
-                    zapSource == MainSection.EPG && epgCanZap -> epgVm::zap
                     zapSource == MainSection.LIVE_TV && liveCanZap -> liveVm::zap
                     else -> null
                 }

@@ -50,6 +50,17 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
             modules(appModule, databaseModule, dataModule, playerModule)
         }
         Perf.stamp("koin-started")
+        // Detailed playback logging follows the setting for the WHOLE process. It used to be observed by
+        // the live preview engine, which is a lazy singleton — so nothing wrote to the diagnostics log
+        // until the user happened to open Live TV, and a fault during startup, a VOD open or an EPG sync
+        // produced an empty report from a user who had deliberately turned logging on.
+        appScope.launch {
+            val settings = GlobalContext.get().get<tv.own.owntv.features.settings.data.SettingsRepository>()
+            settings.detailedDiagnostics.collect { on ->
+                tv.own.owntv.player.LiveDiagnosticsLog.enabled =
+                    on || BuildConfig.DEBUG || BuildConfig.DIAGNOSTIC_BUILD
+            }
+        }
         // Seed the one persisted playback quirk (panels whose catch-up archive needs a software
         // decoder) off the main thread. One small DataStore read, fire-and-forget: nothing on the
         // launch path waits for it, and the value is only consulted when an archive is opened.

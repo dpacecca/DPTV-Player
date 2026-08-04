@@ -40,11 +40,29 @@
 - **A provider that refuses playback outright is no longer hammered with the identical request**
 - **Catch-up recordings that opened with sound but no picture now recover by themselves**
 - **Zapping no longer slows down the Guide, artwork and playlist updates**
-- **Audio Mode really switches the picture off**
+- **Audio Mode really switches the picture off — on both players**
 - **On providers that allow one stream at a time, the preview pane now says so**
 - **Subtitles are drawn in the small docked player**
 - **The audio/video sync nudge is available on live channels**
 - **Volume boost above 100% now works on Live TV too**
+- **…and on films and episodes that play on the standard player**
+- **Your preferred audio and subtitle languages now apply on the standard player as well**
+- **Default zoom now applies to Live TV, and zoom no longer carries over between channels**
+- **Auto frame rate is respected for films and episodes on the standard player**
+- **Switching to Audio Mode during a slow start no longer shows "video could not be rendered"**
+- **A live channel left in Audio Mode no longer reconnects on a loop**
+- **The Home screen's background preview follows Hardware decoding and per-item headers**
+- **Detailed logging now records from the moment the app starts**
+- **HDR and Audio sync now say which player they apply to**
+- **Coming back from Audio Mode no longer drops the picture to a few frames a second**
+- **Prefer HLS no longer breaks the odd channel that has no HLS version**
+- **A live channel that never opens no longer spins forever**
+- **A live channel that starts and then freezes for good is handed over to the other player**
+- **A channel that loads video but never starts playing is now spotted in seconds**
+- **A channel that can't fill the Pre-buffer opens anyway instead of spinning**
+- **Live TV gives up on a stuck channel sooner**
+- **A channel that won't play now works its way through all four combinations before giving up**
+- **Switching to the standard player by hand no longer strands you on a spinner**
 
 ## v4.1.6 — 2026-08-01
 

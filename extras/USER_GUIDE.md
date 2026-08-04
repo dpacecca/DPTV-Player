@@ -235,9 +235,15 @@ or **narrow the whole app to just one**.
   the engine that's **actually playing** (teal while on mpv, whether you pinned it or OwnTV auto‑switched), and
   **one tap always flips** the engine — a small "Switched to MPV/ExoPlayer" note confirms it. It's **remembered
   per channel**, so that one channel always uses mpv while everything else stays fast.
-  Picking **ExoPlayer** on a channel that had auto‑switched to mpv is treated as your decision: the automatic
-  fallback stops interfering with that channel until you tune elsewhere, so it can no longer flip straight back
-  to mpv. If ExoPlayer genuinely can't play it, press the toggle again to return to mpv.
+  Picking **ExoPlayer** on a channel that had auto‑switched to mpv is treated as your decision, and OwnTV
+  gives it a real try in both stream formats. If ExoPlayer genuinely can't play that channel at all, it ends
+  up back on mpv rather than leaving you on a spinner — press the toggle again whenever you want to retry.
+  **A channel that won't play is worked through every combination.** With two engines and (when **Prefer HLS**
+  is on) two stream formats there are four ways to open a channel, and one that defeats a given pairing is
+  often fine on another. A failing channel now steps through them in a fixed order, each tried once, starting
+  from whichever engine it opened on: ExoPlayer+HLS → ExoPlayer+TS → mpv+HLS → mpv+TS, or the same list led by
+  mpv. With Prefer HLS off — or on a channel your playlist has no HLS version of — the HLS steps drop out and
+  it is simply one engine to the other. Turn on **Detailed playback logging** to see each step it took.
 - 📶 **Prefer HLS for Live TV (Xtream only)**: Xtream panels can serve a live channel either as raw MPEG‑TS or
   as an HLS playlist. OwnTV asks for **MPEG‑TS**, which is what most panels serve best — but if your provider's
   live channels are unstable, turn on **Prefer HLS for Live TV** when adding the source, or later in
@@ -474,10 +480,10 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 | **Favorite** (♥) | Add or remove what you're watching from **Favorites** without leaving the stream — a live channel, a movie, or a series (an episode favorites its parent show). The heart fills when it's already a favorite. |
 | **Speed** | Playback speed (VOD). |
 | **MPV/EXO (⇄)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (shows the active engine; teal on the non‑default one). Flipping it briefly confirms "Switched to MPV/ExoPlayer" at the bottom. |
-| **Aspect/Zoom** | Change aspect ratio / zoom (works in every render mode). |
+| **Aspect/Zoom** | Change aspect ratio / zoom (works in every render mode). Each channel/film starts from **Settings → Default zoom**; a zoom you set here applies to what's playing and doesn't carry over to the next channel. |
 | **PiP** | Picture‑in‑picture for live. |
 | **Headphones** | **Audio Mode** — see below. |
-| **Volume** | Quiet streams can be **boosted to 150%** — movies, series and Live TV alike (on live it uses your TV's own audio effect; a TV that doesn't support it stays at 100%). |
+| **Volume** | Quiet streams can be **boosted to 150%** — movies, series and Live TV alike, whichever player they end up on (where the player can't amplify by itself the boost comes from your TV's own audio effect; a TV that doesn't support it stays at 100%). |
 
 A few things that need no button:
 
@@ -648,6 +654,8 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   the top — with Live TV also restoring the last focused channel. These are independent of **App startup
   → Last channel**.
 - 🌈 **HDR** — use HDR output when the video and TV support it. Turn on for HDR/Dolby Vision content.
+  It steers the **compatibility (mpv) player** only; the standard player hands HDR straight to your TV,
+  which decides for itself.
 - 🎞️ **Auto frame rate** (Playback, off by default) — in full screen, asks the TV to switch to a refresh rate matching
   the video (24/25/30/50/60 fps) and hands the display back on exit, so 24fps films and 25/50fps
   broadcasts stop juddering on a 60Hz panel. Works for Live TV and VOD on both engines, and never
@@ -673,7 +681,12 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   first frame. It is an **amount of video, not a wait**: a fast provider delivers 10s of video in well
   under a second, so the channel still starts instantly. Use it on a provider that freezes every few
   seconds. **Pre-buffer per playlist** right below it lets one troublesome playlist differ from the rest.
-  Stream info's **Live buffer** row shows what the player actually applied.
+  Stream info's **Live buffer** row shows what the player actually applied. Some channels can't supply that
+  much video at once (a 4K feed on a provider with a short live window) — OwnTV notices after a few seconds
+  and reopens just that channel without the pre-buffer, for the rest of the session. Separately, a channel
+  that loads plenty of video but still never shows a picture (a provider-side timing fault, most often seen
+  with **Prefer HLS** on) is now given up on after a few seconds rather than spinning, so it moves on to its
+  original format or the compatibility player.
 - 🪟 **Mini‑player** (Settings → Playback) — set the docked live‑PiP window's **size** (percentage of screen
   width) and **screen position** (four corners plus top/bottom centre). Both are also adjustable **on the
   fly** from the mini‑player's own resize / move controls, and the window scales with your TV size and UI zoom.
@@ -687,6 +700,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   player's **info overlay** measures live fps, bitrate and dropped frames for streams that don't
   declare them (most Xtream live TV). Turn it **off** only if a low‑end TV ever stutters — it affects
   the diagnostic numbers only, never the actual video.
+- 🗣️ **Preferred audio / subtitle language** (Video Player Settings) — when a stream carries several
+  tracks, the one in this language is selected for you instead of whatever the provider listed first.
+  It applies on **both players** now, so it works on Live TV as well as movies and episodes, and a
+  change takes effect on what's already playing.
 - 💬 **Subtitle appearance** (Video Player Settings) — a menu with a preview, a **Customize subtitles**
   switch, and then **Size**, **Text color**, **Position** (six anchors: top/bottom × left/center/right)
   and **Background transparency** (None → Solid in 10% steps). **Each one starts at "Default", and

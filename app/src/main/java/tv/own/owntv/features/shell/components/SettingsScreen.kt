@@ -539,7 +539,9 @@ fun SettingsScreen(
         )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.VIDEO,
-            title = "HDR", desc = "Use HDR output when the video & TV support it",
+            // F01: the flag only reaches mpv (`hdr-compute-peak` / tone-mapping). ExoPlayer hands HDR
+            // straight to the display and has no equivalent switch, so say which player it steers.
+            title = "HDR", desc = "Use HDR output when the video & TV support it (mpv player)",
             chip = if (hdr) "On" else "Off",
             chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setHdrEnabled(!hdr) },

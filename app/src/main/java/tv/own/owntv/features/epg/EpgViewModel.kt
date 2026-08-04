@@ -27,7 +27,6 @@ import kotlinx.coroutines.withContext
 import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.database.dao.ChannelDao
 import tv.own.owntv.core.database.dao.EpgDao
-import tv.own.owntv.core.database.dao.HistoryDao
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
@@ -40,8 +39,6 @@ import tv.own.owntv.core.customize.applyCustomizations
 import tv.own.owntv.core.customize.applyCustomizationsWithCustoms
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
-import tv.own.owntv.core.database.entity.WatchHistoryEntity
-import tv.own.owntv.core.database.entity.playStreamUrl
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.network.ConnectivityObserver
 import tv.own.owntv.core.repository.EpgRepository
@@ -50,7 +47,6 @@ import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.core.repository.activeSourceIds
 import tv.own.owntv.core.util.friendlySyncError
 import tv.own.owntv.features.settings.data.SettingsRepository
-import tv.own.owntv.player.OwnTVPlayer
 
 data class EpgUiState(
     /** All channels with guide data in the window; each row loads its own programmes lazily. */
@@ -94,10 +90,8 @@ class EpgViewModel(
     private val epgSourceStore: tv.own.owntv.core.epg.EpgSourceStore,
     private val connectivity: ConnectivityObserver,
     private val customize: CustomizationStore,
-    private val historyDao: HistoryDao,
     private val sourceDao: SourceDao,
     private val xtream: XtreamClient,
-    val player: OwnTVPlayer,
     private val favoriteDao: tv.own.owntv.core.database.dao.FavoriteDao,
     private val categoryDao: tv.own.owntv.core.database.dao.CategoryDao,
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
@@ -284,66 +278,19 @@ class EpgViewModel(
     var lastTunedChannelId: Long? = null
         private set
 
-    /** True once a guide channel is playing fullscreen and there's a list to step through, so the
-     *  player HUD's CH+/CH- keys can zap up/down the guide's channels (like the Live list). */
-    private val _canZap = MutableStateFlow(false)
-    val canZap: StateFlow<Boolean> = _canZap.asStateFlow()
-
     /** Record that this channel was tuned from the guide, so focus returns to its row on Back.
      *  Call this before delegating playback to liveVm, so lastTunedChannelId is set correctly. */
     fun noteChannelTuned(channel: ChannelEntity) {
         lastTunedChannelId = channel.id
-        _canZap.value = _state.value.channels.size > 1
     }
 
-    /** Tune to a channel from the guide (fullscreen playback + history, like the Live list). */
-    fun play(channel: ChannelEntity) {
-        lastTunedChannelId = channel.id
-        _canZap.value = _state.value.channels.size > 1
-        viewModelScope.launch {
-            val source = sourceDao.getById(channel.sourceId)
-            // Stalker stores the portal cmd — mint a playable URL (create_link) before playing. (The
-            // shell normally routes Guide tunes through LiveViewModel.watchFullscreen; this fallback
-            // path must still never hand a raw cmd to the engine.)
-            val url = if (streamUrlResolver.needsResolve(source)) {
-                runCatching { streamUrlResolver.resolve(source!!, channel.streamUrl) }
-                    .onFailure { android.util.Log.w("EpgViewModel", "stalker resolve failed channelId=${channel.id}", it) }
-                    .getOrNull() ?: return@launch
-            } else {
-                // Prefer HLS is a per-source choice; this fallback must honour it too, or a channel that
-                // only works as `.m3u8` fails here while playing fine from Live TV (F05).
-                channel.playStreamUrl(source)
-            }
-            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent, httpHeaders = channel.httpHeaders, livePrerollSecsOverride = source?.livePrerollSecs?.takeIf { it >= 0 })
-            val pid = currentProfileId() ?: return@launch
-            runCatching {
-                historyDao.record(WatchHistoryEntity(profileId = pid, mediaType = MediaType.LIVE, itemId = channel.id))
-            }.onFailure { t ->
-                android.util.Log.w("OwnTVHome", "play history record failed channelId=${channel.id} profile=$pid", t)
-            }
-        }
-    }
-
-    /**
-     * Play a past programme from the channel's catch-up archive (seekable, like VOD). Used by the
-     * Guide's "Watch from start / Play recording" action on catch-up channels.
-     */
-    fun playCatchup(channel: ChannelEntity, programme: EpgProgrammeEntity) {
-        viewModelScope.launch {
-            val url = withContext(kotlinx.coroutines.Dispatchers.IO) { catchupUrlFor(channel, programme) }
-            if (url == null) {
-                _matchSummary.value = "Catch-up isn't available for this channel."
-                return@launch
-            }
-            val sourceUa = sourceDao.getById(channel.sourceId)?.userAgent
-            lastTunedChannelId = channel.id
-            _canZap.value = false // archive playback isn't part of the live zap list
-            // isLive = false → the archive plays back seekable, with a normal progress bar.
-            // isArchive → mid-GOP tolerant: opens in hardware, drops to software if this panel's archive
-            // turns out to be one the hardware decoder can't resync on (blank picture).
-            player.play(url, title = channel.name, subtitle = programme.title, logoUrl = channel.displayLogoUrl, isLive = false, isArchive = true, userAgent = sourceUa, httpHeaders = channel.httpHeaders)
-        }
-    }
+    // Two more live-start paths used to live here — a `play(channel)` that tuned a Guide channel
+    // straight on mpv, and a `playCatchup(...)` that opened the archive itself. Both bypassed the
+    // ExoPlayer-first ladder, the per-channel engine pin and the learned decode quirks, and `play()`
+    // also recorded its own history row. They were unreachable (the shell always supplies the
+    // callbacks), so EpgScreen now REQUIRES them and these copies are gone: LiveViewModel is the one
+    // place a live channel or an archive programme starts. `playCatchupExternal` below is different —
+    // it hands the URL to another app, so it stays.
 
     /** Which player takes a catch-up archive — read by the Guide's programme dialog to route itself. */
     val catchupPlayer: StateFlow<SettingsRepository.CatchupPlayer> = settings.catchupPlayer
@@ -615,17 +562,10 @@ class EpgViewModel(
         _matchSummary.value = null
     }
 
-    /** Zap to the neighbouring guide channel ([delta] = +1 down / -1 up), wrapping at the ends so it
-     *  never dead-ends (last → first, first → last). */
-    fun zap(delta: Int) {
-        val list = _state.value.channels
-        if (list.size < 2) return
-        val i = list.indexOfFirst { it.id == lastTunedChannelId }
-        if (i < 0) return
-        val next = ((i + delta) % list.size + list.size) % list.size // modulo wrap (handles negatives)
-        if (next == i) return
-        play(list[next])
-    }
+    // A guide-local `zap(delta)` used to live here, stepping the guide list and calling the deleted
+    // `play()`. It was already unreachable: a Guide tune goes through LiveViewModel.watchFromGuide,
+    // which sets the shell's zapSource to LIVE_TV, so CH+/CH- always used LiveViewModel.zap — the one
+    // with the ExoPlayer ladder, the pending-tune anchor and the bounded rebuild.
 
     fun load() {
         viewModelScope.launch {

@@ -268,13 +268,10 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setAutoFrameRate(enabled) }
     }
 
-    val surroundSound: StateFlow<Boolean> = settings.surroundSound
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-
-    fun setSurroundSound(enabled: Boolean) {
-        viewModelScope.launch { settings.setSurroundSound(enabled) }
-    }
-
+    // The old surround BOOLEAN is gone from here: [surroundMode] replaced it, and the leftover flow
+    // defaulted to `true` where the setting's own default is `false` — a trap for anyone who wired a UI
+    // to it. The legacy key itself still lives in SettingsRepository, which reads it so an upgrading
+    // user's old choice carries into the three-state setting.
     val surroundMode: StateFlow<SurroundMode> = settings.surroundMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SurroundMode.AUTO)
 

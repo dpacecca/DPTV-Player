@@ -55,10 +55,19 @@ sealed interface HeroItem {
     val watchNextType: LauncherWatchNextType
     val lastEngagementAt: Long
 
+    /** Playlist this item came from — used to give the preview the same source-wide User-Agent the
+     *  player uses. */
+    val sourceId: Long
+
+    /** This item's own `Key: Value` request headers (M3U), or null. Same reason as [sourceId]. */
+    val httpHeaders: String?
+
     data class MovieHero(
         val movie: MovieEntity,
         val item: LauncherContinuationItem,
     ) : HeroItem {
+        override val sourceId: Long = movie.sourceId
+        override val httpHeaders: String? = movie.httpHeaders
         override val streamUrl: String = movie.streamUrl
         override val seekToMs: Long = (item.positionMs - 10_000L).coerceAtLeast(0L)
         override val positionMs: Long = item.positionMs
@@ -72,6 +81,8 @@ sealed interface HeroItem {
         val episode: EpisodeEntity,
         val item: LauncherContinuationItem,
     ) : HeroItem {
+        override val sourceId: Long = series.sourceId // episodes hang off the series, which owns the source
+        override val httpHeaders: String? = episode.httpHeaders
         override val streamUrl: String = episode.streamUrl
         override val seekToMs: Long = if (item.watchNextType == LauncherWatchNextType.NEXT) {
             0L
@@ -88,6 +99,8 @@ sealed interface HeroItem {
         val channel: ChannelEntity,
         val watchedAt: Long,
     ) : HeroItem {
+        override val sourceId: Long = channel.sourceId
+        override val httpHeaders: String? = channel.httpHeaders
         override val streamUrl: String = channel.streamUrl
         override val seekToMs: Long = 0L
         override val positionMs: Long = 0L
@@ -262,6 +275,18 @@ class HomeViewModel(
 
     fun stopPreview() {
         heroPreviewEngine.stop()
+    }
+
+    /**
+     * Start the hero preview for [hero] with the SAME request identity the player would use: the
+     * playlist's User-Agent plus the item's own headers. Without them a source that needs a custom UA or
+     * a Referer had a home screen that 403'd on every preview while the item itself played fine.
+     */
+    suspend fun startPreview(hero: HeroItem) {
+        val ua = withContext(Dispatchers.IO) {
+            runCatching { sourceDao.getById(hero.sourceId)?.userAgent }.getOrNull()
+        }
+        heroPreviewEngine.play(hero.streamUrl, hero.seekToMs, ua, hero.httpHeaders)
     }
 
     fun refresh() {

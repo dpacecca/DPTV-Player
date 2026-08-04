@@ -297,7 +297,9 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
         )
         Row2(
             icon = OwnTVIcon.AUDIO, title = "Audio sync",
-            desc = "Shift audio earlier or later to match the video.",
+            // F15: only mpv can shift audio against video (`audio-delay`); ExoPlayer has no equivalent,
+            // so PlaybackEngine.audioDelayAvailable() is false there. Name the player in the row.
+            desc = "Shift audio earlier or later to match the video (mpv player).",
             chip = "%+d ms".format(audioDelay), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.AUDIO_SYNC)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.AUDIO_SYNC },

@@ -266,27 +266,10 @@ class SearchViewModel(
         rememberCurrentQuery()
     }
 
-    /**
-     * Fallback tune used only when this screen has no shared-live-path callback (standalone host).
-     * Deliberately minimal — mpv straight away, no ExoPlayer-first ladder and no compatibility pins —
-     * but it must at least respect the source's Prefer HLS choice, or an Xtream channel that only
-     * works as `.m3u8` here fails where the same channel plays from Live TV.
-     */
-    fun playChannel(channel: ChannelEntity) {
-        viewModelScope.launch {
-            val source = sourceDao.getById(channel.sourceId)
-            // Stalker stores the portal cmd, not a playable URL — mint one (create_link) before playing.
-            val url = if (streamUrlResolver.needsResolve(source)) {
-                runCatching { streamUrlResolver.resolve(source!!, channel.streamUrl) }
-                    .onFailure { Log.w(TAG, "stalker resolve failed channelId=${channel.id}", it) }
-                    .getOrNull() ?: return@launch
-            } else {
-                channel.playStreamUrl(source)
-            }
-            player.play(url, title = channel.name, logoUrl = channel.displayLogoUrl, isLive = true, userAgent = source?.userAgent, httpHeaders = channel.httpHeaders, livePrerollSecsOverride = source?.livePrerollSecs?.takeIf { it >= 0 })
-        }
-        noteChannelPlayed(channel)
-    }
+    // A second live-start path used to live here as a "standalone host" fallback: mpv straight away, no
+    // ExoPlayer-first ladder, no per-channel engine pin, no learned quirks. It was unreachable in the app
+    // (the shell always supplies the callback) but it was a standing invitation for the two paths to
+    // drift, so SearchScreen now REQUIRES the shared callback and this copy is gone.
 
     fun playMovie(movie: MovieEntity) {
         viewModelScope.launch {

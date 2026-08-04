@@ -107,11 +107,13 @@ fun EpgScreen(
     onAddEpg: () -> Unit = {},
     restoreFocus: Boolean = false,
     onRestored: () -> Unit = {},
-    onPlayChannel: ((channel: ChannelEntity, channels: List<ChannelEntity>) -> Unit)? = null,
-    /** "Watch from start" on a catch-up programme. The shell routes this through LiveViewModel so the
-     *  archive is tracked as catch-up playback (which decides what engine toggle the player HUD offers);
-     *  null falls back to EpgViewModel's own mpv-only path. */
-    onPlayCatchup: ((channel: ChannelEntity, programme: EpgProgrammeEntity) -> Unit)? = null,
+    /** Required: every live tune in the app goes through the one shared path in LiveViewModel, so a
+     *  channel gets the same Prefer HLS handling, ExoPlayer→mpv ladder, per-channel engine pin and
+     *  external-player routing however the user reached it. */
+    onPlayChannel: (channel: ChannelEntity, channels: List<ChannelEntity>) -> Unit,
+    /** "Watch from start" on a catch-up programme. Required for the same reason, and additionally so the
+     *  archive is tracked as catch-up playback (which decides what engine toggle the player HUD offers). */
+    onPlayCatchup: (channel: ChannelEntity, programme: EpgProgrammeEntity) -> Unit,
 ) {
     val vm: EpgViewModel = koinViewModel()
     val state by vm.state.collectAsStateWithLifecycle()
@@ -385,7 +387,7 @@ fun EpgScreen(
                                 index == 0 -> firstCell
                                 else -> null
                             },
-                            onTune = { vm.noteChannelTuned(channel); if (onPlayChannel != null) onPlayChannel(channel, state.channels) else { vm.play(channel); onFullscreen() } },
+                            onTune = { vm.noteChannelTuned(channel); onPlayChannel(channel, state.channels) },
                             onOpen = { restoreChannelId = channel.id; detail = channel to it },
                             onMatchEpg = { restoreChannelId = channel.id; matchChooser = channel },
                             inCellMode = inCellMode,
@@ -418,12 +420,11 @@ fun EpgScreen(
             canCatchup = vm.canCatchup(channel, p, state.now),
             isFavorite = channel.id in favoriteIds,
             onToggleFavorite = { vm.toggleFavoriteChannel(channel) },
-            onWatch = { detail = null; vm.noteChannelTuned(channel); if (onPlayChannel != null) onPlayChannel(channel, state.channels) else { vm.play(channel); onFullscreen() } },
+            onWatch = { detail = null; vm.noteChannelTuned(channel); onPlayChannel(channel, state.channels) },
             onPlayCatchup = {
                 detail = null
                 vm.noteChannelTuned(channel)
-                val viaShell = onPlayCatchup
-                if (viaShell != null) viaShell(channel, p) else { vm.playCatchup(channel, p); onFullscreen() }
+                onPlayCatchup(channel, p)
             },
             // External play needs no shell involvement: nothing is mounted in-app, so it goes straight
             // through the Guide's own VM (which owns the archive-URL builder) in both hosting modes.
