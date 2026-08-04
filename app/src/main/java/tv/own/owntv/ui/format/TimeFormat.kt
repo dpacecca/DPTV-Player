@@ -42,9 +42,8 @@ fun formatSystemTime(context: Context, ms: Long): String {
 fun rememberBestDateFormatter(
     skeleton: String,
 ): (Long) -> String {
-    val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val locale = context.resources.configuration.locales[0]
+    val locale = configuration.locales[0]
     val timeZone = TimeZone.getDefault()
     val key = DateFormatterKey(locale, skeleton, timeZone.id)
     val formatter = remember(context, configuration, key) {
