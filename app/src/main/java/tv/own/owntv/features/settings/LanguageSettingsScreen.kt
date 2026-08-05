@@ -1,7 +1,13 @@
 package tv.own.owntv.features.settings
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
@@ -32,8 +38,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -43,10 +51,16 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
+import tv.own.owntv.core.companion.CompanionLink
+import tv.own.owntv.core.i18n.SupportedLocale
 import tv.own.owntv.core.i18n.SupportedLocales
 import tv.own.owntv.ui.components.FocusableSurface
+import tv.own.owntv.ui.components.OwnTVButton
+import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.SearchBar
+import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.roundedPanel
+import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
@@ -60,7 +74,7 @@ fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val viewModel: LanguageSettingsViewModel = koinViewModel()
     val currentTag by viewModel.currentTag.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
-    val colors = OwnTVTheme.colors
+    var showContribution by remember { mutableStateOf(false) }
 
     val systemLabel = stringResource(R.string.settings_language_system_default)
     val systemDesc = stringResource(R.string.settings_language_system_default_description)
@@ -123,8 +137,8 @@ fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         if (showSystemDefault) {
             LanguageRow(
-                endonym = stringResource(R.string.settings_language_system_default),
-                englishName = stringResource(R.string.settings_language_system_default_description),
+                endonym = systemLabel,
+                englishName = systemDesc,
                 coverage = null,
                 selected = currentTag.isEmpty(),
                 onClick = { viewModel.setLocale(SupportedLocales.SYSTEM_DEFAULT_TAG) },
@@ -144,11 +158,134 @@ fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             LanguageRow(
                 endonym = locale.endonym,
                 englishName = locale.englishName,
-                coverage = locale.coverage,
+                coverage = coverageBadgePercent(locale),
                 selected = selected,
                 onClick = { viewModel.setLocale(locale.languageTag) },
                 modifier = if (selected) Modifier.focusRequester(selectedFocus) else Modifier,
             )
+        }
+
+        Spacer(Modifier.height(16.dp))
+        OwnTVButton(
+            label = stringResource(R.string.settings_language_help_translate),
+            onClick = { showContribution = true },
+            modifier = Modifier.fillMaxWidth(),
+            style = OwnTVButtonStyle.SECONDARY,
+        )
+    }
+
+    if (showContribution) {
+        TranslationContributionDialog(onDismiss = { showContribution = false })
+    }
+}
+
+internal fun coverageBadgePercent(locale: SupportedLocale): Int? =
+    SupportedLocales.coverageBadgePercent(locale)
+
+internal fun openContributionLink(context: Context, url: String): Boolean = runCatching {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
+    true
+}.getOrDefault(false)
+
+internal fun copyContributionLink(context: Context, url: String): Boolean = runCatching {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.settings_language_help_translate), url))
+    true
+}.getOrDefault(false)
+
+@Composable
+private fun TranslationContributionDialog(onDismiss: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    val context = LocalContext.current
+    val url = SupportedLocales.CONTRIBUTION_PROJECT_URL
+    val urlFocus = remember { FocusRequester() }
+    val qr = remember(url) { CompanionLink.renderQr(url) }
+    var status by remember { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(Unit) { urlFocus.requestFocus() }
+    BackHandler { onDismiss() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.75f))
+            .trapAllFocusExit()
+            .focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier.dialogPanel(width = 760.dp, padding = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                stringResource(R.string.settings_language_help_translate),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.settings_language_contribution_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(16.dp))
+            if (qr != null) {
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White)
+                        .padding(8.dp),
+                ) {
+                    Image(
+                        bitmap = qr,
+                        contentDescription = stringResource(R.string.settings_language_contribution_qr_description),
+                        modifier = Modifier.size(220.dp),
+                    )
+                }
+            } else {
+                Text(
+                    stringResource(R.string.settings_language_contribution_qr_failed),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+            // The URL is itself a focusable action so TV users can activate it with OK; the copy
+            // action below provides a second accessible way to transfer the exact same URL.
+            OwnTVButton(
+                label = url,
+                onClick = {
+                    status = if (openContributionLink(context, url)) null
+                    else R.string.settings_language_contribution_open_failed
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(urlFocus),
+                style = OwnTVButtonStyle.SECONDARY,
+            )
+            status?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(stringResource(it), style = MaterialTheme.typography.bodySmall)
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton(
+                    label = stringResource(R.string.settings_language_contribution_copy),
+                    onClick = {
+                        status = if (copyContributionLink(context, url)) {
+                            R.string.settings_language_contribution_copied
+                        } else {
+                            R.string.settings_language_contribution_copy_failed
+                        }
+                    },
+                    style = OwnTVButtonStyle.SECONDARY,
+                )
+                OwnTVButton(
+                    label = stringResource(R.string.settings_close),
+                    onClick = onDismiss,
+                    style = OwnTVButtonStyle.SECONDARY,
+                )
+            }
         }
     }
 }

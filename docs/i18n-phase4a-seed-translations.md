@@ -1,6 +1,11 @@
-# i18n Phase 4a — align fallback policy and seed the 23 translations
+# i18n Phase 4a — historical seed plan for the original 23 translations
 
-This is the implementation plan for Phase 4a. Work from this file alongside
+> **Historical:** this records the original 23-locale seed iteration. Every inventory, count, and
+> packaging statement below describes that superseded snapshot, not the current catalogue. The
+> current authoritative catalogue-only and 70% promotion policy is `tools/i18n/README.md`; statements
+> below that all catalogue locales are immediately packaged/selectable are superseded.
+
+This was the implementation plan for Phase 4a. Work from this file alongside
 `docs/i18n-phase2-language-picker.md`, `docs/i18n-phase3-qa.md`, `docs/i18n.md`, and
 `docs/internationalization.md`.
 

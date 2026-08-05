@@ -289,3 +289,13 @@ GPLv3 and its source made available.
 ---
 
 <sub>OwnTV is an open-source, player-only project, built with the help of AI.</sub>
+
+<!-- i18n-contribution:start -->
+## Help translate OwnTV
+
+Contribute interface translations across OwnTV's six Android resource components on [Hosted Weblate](https://hosted.weblate.org/projects/owntv/). See the [language contributor guide](tools/i18n/README.md) for the workflow, identifiers, validation, and promotion policy.
+
+![QR code for the OwnTV Hosted Weblate project overview](tools/i18n/owntv-weblate-qr.svg)
+
+Accessible plain link: <https://hosted.weblate.org/projects/owntv/>
+<!-- i18n-contribution:end -->

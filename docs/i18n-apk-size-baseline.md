@@ -7,7 +7,7 @@
 
 `androidResources.localeFilters` strips library locale folders (appcompat alone contributes ~85) so
 only the catalogued, `packaged = true` qualifiers ship. Phase 0 packaged **only `en` and `en-rGB`**;
-Phase 4a enables all 23 community qualifiers even while their resource files are incomplete or absent.
+Historically Phase 4a enabled the original 23 complete community qualifiers. New catalogue-only locales are not packaged merely because they are catalogued.
 Phase 4e measures that complete before/after change. This file is the **before** measurement so the
 aggregate 24-language APK-size delta is visible
 and a surprise regression (a library locale folder that slipped past the filter) is caught.
@@ -45,7 +45,7 @@ Build `standardRelease` before and after the Phase 4a catalogue flip, then appen
 | Phase | Locales packaged | APK size | `resources.arsc` | Δ APK | Δ arsc |
 |---|---|---|---|---|---|
 | 0 | en, en-rGB | 51,693,164 | 40,008 | — | — |
-| 4e, after Phase 4a flip | en, en-rGB + 23 community locales | TBD | TBD | TBD | TBD |
+| Historical 4e, after Phase 4a flip | en, en-rGB + original 23 community locales | TBD | TBD | TBD | TBD |
 
 The earlier 2-4 MB aggregate allowance is a planning estimate, not a result. Record the measured
 delta without converting it into a per-locale claim. Use `aapt2 dump configurations` to verify that

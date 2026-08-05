@@ -27,8 +27,8 @@ Phase 3 hardens locale-sensitive rendering before non-Latin production locales a
 - Focus-triggered marquee was added to exactly the ten approved targets. Each remains a single-line text node with ellipsis when unfocused and reuses its parent focus state.
 - The stepper, audio-delay row, stream-information columns, and series sorting row now reserve space for their actions while allowing translated values and labels to use bounded flexible space.
 - At the Phase 3 snapshot, `tools/i18n/locales.json` packaged only `en-US` and the `en-GB`
-  override. Phase 4a now packages and exposes all community locales, relying on English fallback and
-  the informational coverage badge while their translations are incomplete.
+  override. The original 23 community locales are packaged; newer catalogue-only requests remain unshipped and
+  hidden until manual promotion at the 70% readiness threshold.
 - `git diff --check` passed for the implementation commits.
 
 ## Automated verification status
