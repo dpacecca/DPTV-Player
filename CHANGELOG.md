@@ -1,5 +1,57 @@
 # Changelog
 
+## v4.2.0 — unreleased
+
+### 🧪 Test HLS support — find out whether your provider really serves HLS before you turn it on
+
+- **New button directly above "Prefer HLS for Live TV"**, on every Xtream playlist — when adding one,
+  when editing one, and in first-run setup. Until now the only way to find out whether HLS worked was to
+  turn the setting on, sync, and watch channels fail.
+- **It asks the provider, then checks the answer.** First it reads what formats the account claims to
+  support, then it actually requests an HLS channel and looks at what comes back. The claim and the
+  reality disagree in both directions often enough that the claim alone is not worth much: plenty of
+  providers serve HLS without listing it, and a few list it without serving it. What actually came back
+  wins.
+- **No sync needed.** On a brand-new playlist it takes the first channel straight from the provider and
+  stops reading there, so it costs one short request instead of downloading a channel list. If the
+  playlist is already synced it uses a channel you already have and skips even that.
+- **The toggle is never hidden, disabled or overruled by the result.** A provider that under-reports its
+  formats must not be able to veto your choice — the test refines the note under the toggle, nothing
+  more.
+- **It won't tell you "no" on a dead channel.** Many providers list a placeholder entry ("### INFO ###")
+  as their first channel. A failed HLS test is only reported as a real "no" once the same channel is
+  confirmed to play over MPEG-TS; otherwise it says the test channel looks dead. If your account is out
+  of connections it tells you that instead of guessing.
+- A confirmed result is remembered and is not overwritten by the next sync's weaker claim.
+
+### 🐛 Fixes
+
+- **Prefer HLS no longer applies to catch-up — this reverses a v4.1.7 change.** Catch-up recordings are
+  requested as MPEG-TS again, always. Tying the two together was wrong: "Prefer HLS" describes the live
+  edge, which providers remux to HLS on demand, while the timeshift server is a different thing that
+  serves recordings off disk with no HLS repackager in front of it. Asking it for HLS reliably returns an
+  error page, so v4.1.7 silently broke catch-up for accounts whose live TV was perfectly fine. Live TV
+  and the Guide keep the v4.1.7 behaviour.
+- **Catch-up recordings now get both of their fallbacks instead of one.** The alternate `timeshift.php`
+  request shared a "already tried an alternate" marker with Live TV's format swap, so whichever ran first
+  used up the other's turn — archives on providers that need the alternate form got a single attempt and
+  then an error.
+- **One channel without an HLS version no longer sends every other channel's preview to the wrong
+  format.** The "this channel has no HLS" note was a single global flag, so after one such channel every
+  preview in the list was tuned in the other format until the next channel change — and pressing OK then
+  rebuilt the stream from scratch instead of simply using the preview that was already playing.
+- **A provider that doesn't serve HLS at all is now recognised after three channels.** Before, every
+  single channel paid two dead attempts before falling back, for the whole session. Three different
+  channels failing is enough to tell "this one channel isn't remuxed" apart from "this provider doesn't
+  do HLS".
+- **Streams that VLC plays but OwnTV didn't now get one more attempt with error tolerance turned on.**
+  Re-streamed feeds often carry damaged or malformed data that the player's strict defaults reject
+  outright. There is now a final attempt that ignores those errors and rebuilds timestamps, and a channel
+  that needed it is remembered so it doesn't pay the failed strict attempt again that session.
+- **The HLS note under the toggle no longer implies an answer it doesn't have.** On a playlist that had
+  never synced it read "your provider does not report HLS support", which was indistinguishable from a
+  real "no". It now says nothing until the provider has actually been asked.
+
 ## v4.1.7 — 2026-08-04
 
 ### 📐 Panel Width Adjustment — set how wide the categories, list and preview panels are

@@ -50,10 +50,18 @@ import tv.own.owntv.R
 import tv.own.owntv.core.i18n.HorizontalDirection
 import tv.own.owntv.core.i18n.horizontalDirection
 import tv.own.owntv.core.companion.CompanionPayload
+import tv.own.owntv.core.database.dao.ChannelDao
 import tv.own.owntv.core.database.dao.ProfileDao
+import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.SourceEntity
+import tv.own.owntv.core.model.HlsSupport
 import tv.own.owntv.core.model.SourceType
+import tv.own.owntv.core.parser.HlsInconclusiveReason
+import tv.own.owntv.core.parser.HlsNotServedReason
+import tv.own.owntv.core.parser.HlsProbe
+import tv.own.owntv.core.parser.HlsTest
+import tv.own.owntv.core.parser.XtreamClient
 import tv.own.owntv.core.sync.SyncScopeChoice
 import tv.own.owntv.core.util.FriendlySyncFailure
 import tv.own.owntv.features.settings.PickerDialog
@@ -78,6 +86,15 @@ sealed interface StalkerTestUi {
     data object Testing : StalkerTestUi
     data class Ok(val endpoint: String, val profileFields: Int, val expiry: String?) : StalkerTestUi
     data class Failed(val failure: FriendlySyncFailure) : StalkerTestUi
+}
+
+/** UI state of the Xtream "Test HLS support" probe. Local to this screen — the probe is one short
+ *  request and saves nothing unless the source already exists. */
+private sealed interface HlsTestUi {
+    data object Idle : HlsTestUi
+    data object Testing : HlsTestUi
+    data class Complete(val test: HlsTest) : HlsTestUi
+    data class Failed(val rawMessage: String) : HlsTestUi
 }
 
 /** MAG User-Agent presets (plan §7 "Header/UA pickiness") — value goes into the User-Agent field. */
@@ -191,6 +208,67 @@ fun AddSourceScreen(
     }
     val hideNewCats by settings.hideNewCategoriesDefault(hideNewCatsProfile)
         .collectAsStateWithLifecycle(initialValue = false)
+
+    // ---- "Test HLS support" (Xtream) ----
+    // A panel's `allowed_output_formats` is a claim, and a common one to get wrong in both directions,
+    // so the button also *requests* an `.m3u8` channel and reads the answer. Driven from here rather
+    // than a ViewModel so both hosts (the setup wizard and Settings → Manage sources) get it without
+    // duplicating the plumbing — it's one short request that stores nothing unless the source exists.
+    val xtreamClient: XtreamClient = koinInject()
+    val channelDao: ChannelDao = koinInject()
+    val sourceDao: SourceDao = koinInject()
+    var hlsTest by remember { mutableStateOf<HlsTestUi>(HlsTestUi.Idle) }
+    // A tested verdict outranks whatever the last sync recorded, so the note under the toggle updates
+    // right away — including while ADDING, where there is no row to write to yet.
+    var testedSupport by remember(initial) { mutableStateOf<HlsSupport?>(null) }
+    // A verdict belongs to the credentials it was measured against. Editing any of them drops it —
+    // a green "HLS works" sitting next to a server URL it never tested is worse than no answer.
+    LaunchedEffect(server, username, password) {
+        hlsTest = HlsTestUi.Idle
+        testedSupport = null
+    }
+
+    fun runHlsTest() {
+        hlsTest = HlsTestUi.Testing
+        scope.launch {
+            val probeSource = SourceEntity(
+                id = initial?.id ?: 0L,
+                name = name,
+                type = SourceType.XTREAM,
+                url = server.trim(),
+                username = username.trim(),
+                password = password,
+                userAgent = userAgent.trim().takeIf { it.isNotBlank() },
+            )
+            // Stream ids belong to the panel that issued them, so a saved channel is only a valid
+            // shortcut while the form still points at the same account.
+            val sameAccount = initial != null && initial.type == SourceType.XTREAM &&
+                initial.url.trim() == probeSource.url &&
+                initial.username?.trim() == probeSource.username &&
+                initial.password == probeSource.password
+            val result = try {
+                val known = if (sameAccount && probeSource.id > 0) channelDao.anyRemoteId(probeSource.id) else null
+                xtreamClient.testHlsSupport(probeSource, known)
+            } catch (c: kotlinx.coroutines.CancellationException) {
+                throw c
+            } catch (e: Exception) {
+                hlsTest = HlsTestUi.Failed(e.message ?: e.javaClass.simpleName)
+                return@launch
+            }
+            hlsTest = HlsTestUi.Complete(result)
+            // Only a decisive probe is worth storing. "Busy" and "couldn't verify" fall back to the
+            // panel's claim for the wording, but must not overwrite an earlier proven answer.
+            val proven = when (result.probe) {
+                HlsProbe.Served -> HlsSupport.SUPPORTED
+                is HlsProbe.NotServed -> HlsSupport.UNSUPPORTED
+                else -> null
+            }
+            testedSupport = proven ?: result.declared?.let(HlsSupport::of) ?: HlsSupport.UNKNOWN
+            if (proven != null && sameAccount && probeSource.id > 0) {
+                sourceDao.updateHlsSupport(probeSource.id, proven)
+            }
+        }
+    }
 
     // Pre-fill from a Remote (companion) submission handed off by the host. StateFlow replays its
     // current value to this new collector, so the payload posted before this screen mounted still lands.
@@ -378,16 +456,51 @@ fun AddSourceScreen(
             // Shown for every Xtream source, on Add (incl. the setup wizard and the Remote hand-off)
             // as well as Edit: `hlsSupported` is only known AFTER the first sync has read
             // user_info.allowed_output_formats, so gating the row on it would hide the option on a
-            // fresh install entirely. Detection only refines the wording below.
+            // fresh install entirely. Detection only refines the wording below — it never disables the
+            // toggle, because a panel that under-reports its formats must not veto the user's choice.
             if (kind == SourceKind.XTREAM) {
+                Spacer(Modifier.height(16.dp))
+                OwnTVButton(
+                    label = stringResource(
+                        if (hlsTest is HlsTestUi.Testing) R.string.setup_hls_testing else R.string.setup_hls_test_support,
+                    ),
+                    // Re-entry is blocked HERE rather than through `enabled`: a disabled FocusableSurface
+                    // is not a focus target, so flipping it off under the user's cursor would drop D-pad
+                    // focus off the screen for the length of the probe.
+                    onClick = { if (hlsTest !is HlsTestUi.Testing) runHlsTest() },
+                    style = OwnTVButtonStyle.SECONDARY,
+                    // Needs the credentials, but not a synced playlist: the probe pulls one stream id
+                    // straight off the panel when the source is new.
+                    enabled = server.isNotBlank() && username.isNotBlank() && password.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                when (val t = hlsTest) {
+                    is HlsTestUi.Complete -> {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            t.displayText(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (t.test.probe is HlsProbe.Served) colors.primary else Color(0xFFEF4444),
+                        )
+                    }
+                    is HlsTestUi.Failed -> {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            stringResource(R.string.setup_hls_test_failed, t.rawMessage),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFEF4444),
+                        )
+                    }
+                    else -> Unit
+                }
                 Spacer(Modifier.height(16.dp))
                 ToggleRow(
                     label = stringResource(R.string.setup_prefer_hls_live_tv),
                     desc = stringResource(
-                        if (initial?.hlsSupported == true) {
-                            R.string.setup_prefer_hls_description_supported
-                        } else {
-                            R.string.setup_prefer_hls_description
+                        when (testedSupport ?: initial?.hlsSupported ?: HlsSupport.UNKNOWN) {
+                            HlsSupport.SUPPORTED -> R.string.setup_prefer_hls_description_supported
+                            HlsSupport.UNSUPPORTED -> R.string.setup_prefer_hls_description_unsupported
+                            HlsSupport.UNKNOWN -> R.string.setup_prefer_hls_description
                         },
                     ),
                     checked = preferHls,
@@ -490,6 +603,46 @@ fun AddSourceScreen(
               onDismiss = { showAutoRefreshPicker = false },
           )
       }
+    }
+}
+
+/** Resolve a semantic HLS probe result only at the Compose presentation boundary. */
+@Composable
+private fun HlsTestUi.Complete.displayText(): String {
+    val declared = test.declared
+        ?: return stringResource(R.string.setup_hls_test_provider_unreachable)
+
+    return when (val probe = test.probe) {
+        HlsProbe.Served -> stringResource(
+            if (declared) R.string.setup_hls_test_works else R.string.setup_hls_test_works_unadvertised,
+        )
+        is HlsProbe.Busy -> stringResource(R.string.setup_hls_test_busy, probe.code)
+        is HlsProbe.NotServed -> {
+            val reason = when (val reason = probe.reason) {
+                HlsNotServedReason.NotPlaylist -> stringResource(R.string.setup_hls_test_reason_not_playlist)
+                is HlsNotServedReason.NoEndpoint -> stringResource(
+                    R.string.setup_hls_test_reason_no_endpoint,
+                    reason.httpCode,
+                )
+            }
+            stringResource(R.string.setup_hls_test_not_served, reason)
+        }
+        is HlsProbe.Inconclusive -> {
+            val reason = when (val reason = probe.reason) {
+                is HlsInconclusiveReason.HttpError -> stringResource(
+                    R.string.setup_hls_test_reason_http,
+                    reason.httpCode,
+                )
+                is HlsInconclusiveReason.Unexpected -> reason.rawMessage
+                HlsInconclusiveReason.NoAnswer -> stringResource(R.string.setup_hls_test_reason_no_answer)
+                HlsInconclusiveReason.NoLiveChannels -> stringResource(R.string.setup_hls_test_reason_no_live_channels)
+                HlsInconclusiveReason.DeadTestChannel -> stringResource(R.string.setup_hls_test_reason_dead_channel)
+            }
+            val providerClaim = stringResource(
+                if (declared) R.string.setup_hls_provider_advertises else R.string.setup_hls_provider_does_not_advertise,
+            )
+            stringResource(R.string.setup_hls_test_inconclusive, reason, providerClaim)
+        }
     }
 }
 
