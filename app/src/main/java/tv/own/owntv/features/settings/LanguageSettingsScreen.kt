@@ -221,6 +221,7 @@ private fun TranslationContributionDialog(onDismiss: () -> Unit) {
             Text(
                 stringResource(R.string.settings_language_help_translate),
                 style = MaterialTheme.typography.titleLarge,
+                color = colors.primary,
             )
             Spacer(Modifier.height(8.dp))
             Text(
