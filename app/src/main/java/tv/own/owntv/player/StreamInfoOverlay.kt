@@ -97,7 +97,9 @@ private val StreamInfoLabel.resourceId: Int
         StreamInfoLabel.BITRATE -> R.string.player_stream_bitrate
         StreamInfoLabel.DECODER -> R.string.player_stream_decoder
         StreamInfoLabel.AUDIO -> R.string.player_stream_audio
+        StreamInfoLabel.AUDIO_OUTPUT -> R.string.player_stream_audio_output
         StreamInfoLabel.BUFFER -> R.string.player_stream_buffer
+        StreamInfoLabel.LIVE_BUFFER -> R.string.player_stream_live_buffer
     }
 
 @Composable
@@ -156,10 +158,40 @@ private fun StreamInfoValue.displayText(): String {
             sampleRateHz?.let { stringResource(R.string.player_stream_khz, number(it / 1000.0)) },
             bitsPerSecond?.takeIf { it > 0 }?.let { stringResource(R.string.player_stream_kbps, number(it / 1000.0)) },
         ).joinToString(stringResource(R.string.player_metadata_separator))
+        is StreamInfoValue.AudioOutput -> buildList {
+            add(
+                when (kind) {
+                    AudioOutputKind.PASSTHROUGH -> stringResource(R.string.player_stream_audio_passthrough)
+                    AudioOutputKind.DECODED_IN_APP -> stringResource(R.string.player_stream_audio_decoded_in_app)
+                    AudioOutputKind.PCM -> channelCount?.let { count ->
+                        stringResource(R.string.player_stream_audio_pcm, channelLabel(count) ?: count.toString())
+                    } ?: stringResource(R.string.player_stream_audio_decoded_in_app)
+                },
+            )
+            add(
+                stringResource(
+                    if (multichannelAllowed) R.string.player_stream_multichannel_allowed
+                    else R.string.settings_surround_stereo,
+                ),
+            )
+            fallbackReason?.let { add(stringResource(R.string.player_stream_fell_back, it)) }
+        }.joinToString(stringResource(R.string.player_metadata_separator))
         is StreamInfoValue.Buffer -> listOfNotNull(
             bufferedMs?.let { stringResource(R.string.player_stream_seconds, number(it / 1000.0)) },
             droppedFrames?.let { pluralStringResource(R.plurals.player_stream_dropped_frames, it.toInt(), it) },
         ).joinToString(stringResource(R.string.player_metadata_separator))
+        is StreamInfoValue.LiveBuffer -> buildList {
+            add(
+                if (prerollEnabled) {
+                    stringResource(R.string.player_stream_preroll_video, number(prerollSeconds ?: 0.0))
+                } else {
+                    stringResource(R.string.player_stream_preroll_off)
+                },
+            )
+            depthSeconds?.let { add(stringResource(R.string.player_stream_depth, number(it))) }
+            readaheadSeconds?.let { add(stringResource(R.string.player_stream_readahead, number(it))) }
+            if (playlistOverride) add(stringResource(R.string.player_stream_playlist_override))
+        }.joinToString(stringResource(R.string.player_metadata_separator))
         is StreamInfoValue.Raw -> text
     }
 }

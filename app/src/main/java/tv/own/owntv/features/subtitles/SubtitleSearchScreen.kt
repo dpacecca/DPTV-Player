@@ -116,10 +116,15 @@ fun SubtitleSearchScreen(
                         )
                         SubtitleSearchViewModel.UiState.Loading ->
                             Centered { OwnTVSpinner(); Spacer(Modifier.height(12.dp)); Text(stringResource(tv.own.owntv.R.string.player_subtitles_working), color = OwnTVTheme.colors.onSurfaceVariant) }
-                        SubtitleSearchViewModel.UiState.Empty -> Message(
-                            stringResource(tv.own.owntv.R.string.player_subtitles_no_matches),
+                        is SubtitleSearchViewModel.UiState.Empty -> Message(
+                            if (s.showingAllLanguages) {
+                                stringResource(tv.own.owntv.R.string.player_subtitles_no_matches_all_languages)
+                            } else {
+                                stringResource(tv.own.owntv.R.string.player_subtitles_no_matches_chosen_language)
+                            },
                             primary = stringResource(tv.own.owntv.R.string.player_subtitles_edit_search), onPrimary = { editing = true },
-                            secondary = stringResource(tv.own.owntv.R.string.player_subtitles_show_all_languages), onSecondary = vm::showAllLanguages,
+                            secondary = stringResource(tv.own.owntv.R.string.player_subtitles_show_all_languages).takeIf { !s.showingAllLanguages },
+                            onSecondary = vm::showAllLanguages,
                             tertiary = stringResource(tv.own.owntv.R.string.settings_close), onTertiary = onDismiss,
                         )
                         is SubtitleSearchViewModel.UiState.Error -> Message(

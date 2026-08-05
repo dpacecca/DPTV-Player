@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -62,6 +63,9 @@ import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.features.customize.MoveToCategoryDialog
 import tv.own.owntv.features.settings.SettingsViewModel
+import tv.own.owntv.features.settings.data.PanelSection
+import tv.own.owntv.features.settings.data.computePanelWidths
+import tv.own.owntv.features.settings.rememberPanelShares
 import tv.own.owntv.features.shell.components.CategoryRail
 import tv.own.owntv.ui.components.MoveOrderOverlay
 import tv.own.owntv.features.shell.components.PreviewPane
@@ -114,6 +118,7 @@ fun LiveScreen(
     val previewChannel by vm.previewChannel.collectAsStateWithLifecycle()
     val previewCategoryName by vm.previewCategoryName.collectAsStateWithLifecycle()
     val previewArmed by vm.previewArmed.collectAsStateWithLifecycle()
+    val previewBlockedSingleSession by vm.previewBlockedSingleSession.collectAsStateWithLifecycle()
     val nowNext by vm.nowNext.collectAsStateWithLifecycle()
     val searchQuery by vm.searchQuery.collectAsStateWithLifecycle()
     val sortMode by vm.sortMode.collectAsStateWithLifecycle()
@@ -186,6 +191,7 @@ fun LiveScreen(
     var railPaneFocused by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf<ChannelEntity?>(null) }
     var matchingEpg by remember { mutableStateOf<ChannelEntity?>(null) }
+    var offsettingEpg by remember { mutableStateOf<ChannelEntity?>(null) }
     var catchupChannel by remember { mutableStateOf<ChannelEntity?>(null) }
     // Programme picked in the catch-up dialog, awaiting the "Watch from start / Watch channel" choice.
     // The Live picker used to start the archive straight from the pick, so the same programme opened
@@ -235,7 +241,7 @@ fun LiveScreen(
         contextMenuOpen = false
         // A follow-up dialog (rename / match EPG / catch-up / move) grabs focus itself — only restore
         // for plain closes (Cancel, Favourite, Hide, Close). Those dialogs restore on their own close.
-        if (renaming != null || matchingEpg != null || catchupChannel != null || enteringMoveMode ||
+        if (renaming != null || matchingEpg != null || offsettingEpg != null || catchupChannel != null || enteringMoveMode ||
             moveItem != null || creatingCategory
         ) return@LaunchedEffect
         restoreToContextRow()
@@ -270,6 +276,14 @@ fun LiveScreen(
             restoreToContextRow()
         }
     }
+    // Same for the EPG-offset dialog: it owns focus while open, so hand it back to the channel row.
+    var epgOffsetWasOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(offsettingEpg) {
+        if (offsettingEpg != null) { epgOffsetWasOpen = true; return@LaunchedEffect }
+        if (!epgOffsetWasOpen) return@LaunchedEffect
+        epgOffsetWasOpen = false
+        restoreToContextRow()
+    }
     // Returning from fullscreen: scroll to and focus the channel you were watching (waits for the list to load).
     // Also used by "Startup → Live · Favorites": there's no remembered channel yet, so land on the first row
     // (not the nav panel).
@@ -292,13 +306,19 @@ fun LiveScreen(
     val selectedItem = railItems.getOrNull(selectedIndex)
     val selectedLabel = selectedItem?.displayLabel() ?: stringResource(R.string.content_category_all_channels)
 
+    // Manual panel widths (Settings → Panel Width Adjustment). Null = this section is at Default, and
+    // the three panels below keep their stock Dimens/weight() sizing.
+    val panelShares = rememberPanelShares(PanelSection.LIVE, settingsVm)
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    val panels = panelShares?.let { computePanelWidths(it, maxWidth) }
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .onFocusChanged { if (it.hasFocus) onChildFocused() },
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         CategoryRail(
+            width = panels?.category ?: Dimens.RailWidthFixed,
             categories = railItems.map { RailCategory(it.displayLabel(), it.icon, showGenreDot = it.key is LiveKey.Folder) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
@@ -325,7 +345,7 @@ fun LiveScreen(
         // Layer 3 — header + channel list (fixed-width column; the preview pane fills the rest)
         Column(
             modifier = Modifier
-                .width(Dimens.ChannelListWidth)
+                .width(panels?.list ?: Dimens.ChannelListWidth)
                 .fillMaxHeight()
                 .roundedPanel(fillColor = ContentPanelFill)
                 // Track whether this pane holds focus so chNavPaging only consumes CH keys when it does.
@@ -460,15 +480,23 @@ fun LiveScreen(
         }
 
         // Layer 4 — preview pane (informational only — no focusable actions; management lives in long-press)
-        Box(modifier = Modifier.weight(1f).fillMaxSize().roundedPanel(fillColor = PreviewPanelFill).padding(Dimens.GapLarge)) {
+        Box(
+            modifier = Modifier
+                .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
+                .fillMaxSize()
+                .roundedPanel(fillColor = PreviewPanelFill)
+                .padding(Dimens.GapLarge),
+        ) {
             LivePreviewPane(
                 channel = previewChannel,
                 categoryName = previewCategoryName,
                 nowNext = nowNext,
                 previewEngine = vm.previewEngine,
                 showVideo = effectivePreview,
+                singleSessionBlocked = previewBlockedSingleSession,
             )
         }
+    }
     }
 
     catchupChannel?.let { ch ->
@@ -521,6 +549,16 @@ fun LiveScreen(
         )
     }
 
+    offsettingEpg?.let { ch ->
+        EpgOffsetDialog(
+            channelName = ch.name,
+            currentMinutes = vm.currentEpgShift(ch),
+            globalMinutes = vm.globalEpgShift(),
+            onSet = { vm.setEpgShift(ch, it) },
+            onDismiss = { offsettingEpg = null },
+        )
+    }
+
     // Long-press a channel → quick actions.
     contextChannel?.let { ch ->
         ChannelContextMenu(
@@ -533,6 +571,7 @@ fun LiveScreen(
             onRename = { renaming = ch; contextChannel = null },
             onHide = { vm.hideChannel(ch); contextChannel = null },
             onMatchEpg = { matchingEpg = ch; contextChannel = null },
+            onEpgOffset = { offsettingEpg = ch; contextChannel = null },
             onCatchup = { catchupChannel = ch; contextChannel = null },
             onPlayExternal = { vm.playExternal(ch); contextChannel = null },
             onMove = { contextChannel = null; enteringMoveMode = true; vm.enterMoveMode(ch, selectedKey) },
@@ -667,7 +706,7 @@ private fun ChannelRow(
     }
 }
 
-/** Long-press quick actions for a Live channel (favourite / rename / hide / match EPG / catch-up / move / remove history). */
+/** Long-press quick actions for a Live channel (favourite / rename / hide / match EPG / EPG offset / catch-up / move / remove history). */
 @Composable
 private fun ChannelContextMenu(
     channelName: String,
@@ -679,6 +718,7 @@ private fun ChannelContextMenu(
     onRename: () -> Unit,
     onHide: () -> Unit,
     onMatchEpg: () -> Unit,
+    onEpgOffset: () -> Unit,
     onCatchup: () -> Unit,
     onPlayExternal: () -> Unit,
     onMove: () -> Unit,
@@ -711,6 +751,7 @@ private fun ChannelContextMenu(
             OwnTVButton(stringResource(R.string.content_rename), onClick = onRename, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             OwnTVButton(stringResource(R.string.content_hide_channel), onClick = onHide, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             OwnTVButton(stringResource(R.string.content_match_epg), onClick = onMatchEpg, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
+            OwnTVButton(stringResource(R.string.content_epg_time_offset), onClick = onEpgOffset, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
             if (hasCatchup) OwnTVButton(stringResource(R.string.content_catchup), onClick = onCatchup, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
             // Always offered, regardless of the Live TV external-player default — this is the per-channel
             // escape hatch for a stream neither in-app engine can open (same as Movies/Series/Downloads).
@@ -731,6 +772,7 @@ private fun LivePreviewPane(
     nowNext: EpgNowNext?,
     previewEngine: tv.own.owntv.player.LivePreviewEngine,
     showVideo: Boolean,
+    singleSessionBlocked: Boolean = false,
 ) {
     val colors = OwnTVTheme.colors
     val previewState by previewEngine.state.collectAsStateWithLifecycle()
@@ -767,6 +809,22 @@ private fun LivePreviewPane(
             }
             if (previewLoading) {
                 OwnTVSpinner(sizeDp = 28)
+            }
+            // One-stream provider with the stream already in use: explain the dead pane rather than
+            // leaving the user to read it as a broken channel (F31).
+            if (singleSessionBlocked && !previewPlaying) {
+                Box(
+                    Modifier.align(Alignment.BottomCenter).padding(10.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f))
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.content_preview_single_stream),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = androidx.compose.ui.graphics.Color.White,
+                    )
+                }
             }
             // Real stream spec — aspect · resolution · fps · audio. The channel NAME often lies ("…4K"),
             // so this shows what you'll actually get before you commit to watching. Falls back to just the
@@ -1139,4 +1197,115 @@ internal fun EpgMatchDialog(
     }
     } // PopupFontTheme
     } // Popup
+}
+
+/**
+ * Per-channel EPG time offset. Providers often hang both the East and the West stream of a network
+ * off ONE guide, so one of them runs hours out; this moves that channel's guide only. Shared with the
+ * Guide screen (long-press a channel → EPG offset). The change is written on "Done", so stepping
+ * through a few hours is a single edit.
+ */
+@Composable
+internal fun EpgOffsetDialog(
+    channelName: String,
+    currentMinutes: Int?,
+    globalMinutes: Int,
+    onSet: (Int?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    var minutes by remember { mutableStateOf(currentMinutes ?: globalMinutes) }
+    val doneFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { doneFocus.requestFocus() } }
+    androidx.activity.compose.BackHandler { onDismiss() }
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+    tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
+    androidx.compose.foundation.layout.Box(
+        // trapAllFocusExit, like every other dialog here: a D-pad press at the edge of a row must not
+        // walk out of the popup onto the screen behind the scrim.
+        Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f))
+            .trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.dialogPanel(width = 420.dp, corner = 16.dp, padding = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(stringResource(R.string.content_epg_time_offset), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                stringResource(R.string.content_epg_offset_channel_description, channelName),
+                style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Spacer(Modifier.height(14.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton(
+                    stringResource(R.string.content_epg_shift_minutes, "−", "30"),
+                    onClick = { minutes = (minutes - 30).coerceAtLeast(-12 * 60) },
+                    style = OwnTVButtonStyle.SECONDARY, compact = true,
+                )
+                Text(
+                    liveEpgShiftLabel(minutes),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = colors.primary,
+                    modifier = Modifier.width(120.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                OwnTVButton(
+                    stringResource(R.string.content_epg_shift_minutes, "+", "30"),
+                    onClick = { minutes = (minutes + 30).coerceAtMost(14 * 60) },
+                    style = OwnTVButtonStyle.SECONDARY, compact = true,
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                stringResource(
+                    if (currentMinutes == null) R.string.content_epg_offset_following_global else R.string.content_epg_offset_channel_only,
+                    liveEpgShiftLabel(globalMinutes),
+                ),
+                style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OwnTVButton(
+                    stringResource(R.string.common_done),
+                    onClick = { onSet(minutes); onDismiss() },
+                    modifier = Modifier.weight(1f).focusRequester(doneFocus),
+                )
+                if (currentMinutes != null) {
+                    OwnTVButton(
+                        stringResource(R.string.content_epg_offset_use_global),
+                        onClick = { onSet(null); onDismiss() },
+                        style = OwnTVButtonStyle.SECONDARY,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+    } // PopupFontTheme
+    } // Popup
+}
+
+@Composable
+private fun liveEpgShiftLabel(minutes: Int): String {
+    if (minutes == 0) return stringResource(R.string.common_off)
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.US
+    val number = java.text.NumberFormat.getIntegerInstance(locale)
+    val sign = if (minutes < 0) "−" else "+"
+    val absolute = kotlin.math.abs(minutes)
+    val hours = absolute / 60
+    val remainder = absolute % 60
+    return when {
+        hours == 0 -> stringResource(R.string.content_epg_shift_minutes, sign, number.format(remainder))
+        remainder == 0 -> stringResource(R.string.content_epg_shift_hours, sign, number.format(hours))
+        else -> stringResource(
+            R.string.content_epg_shift_hours_minutes,
+            sign,
+            number.format(hours),
+            number.format(remainder),
+        )
+    }
 }

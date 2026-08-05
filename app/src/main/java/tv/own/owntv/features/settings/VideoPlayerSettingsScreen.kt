@@ -53,6 +53,7 @@ import tv.own.owntv.R
 import tv.own.owntv.features.settings.data.SubtitleStyle
 import tv.own.owntv.player.ZoomMode
 import tv.own.owntv.ui.components.FocusableSurface
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.dialogPanel
@@ -121,6 +122,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
     val vodExo by vm.vodPreferExo.collectAsStateWithLifecycle()
     val measuredStats by vm.measuredStreamStats.collectAsStateWithLifecycle()
+    val detailedDiagnostics by vm.detailedDiagnostics.collectAsStateWithLifecycle()
     val directTune by vm.directTune.collectAsStateWithLifecycle()
     val externalLive by vm.externalPlayerLive.collectAsStateWithLifecycle()
     val externalMovies by vm.externalPlayerMovies.collectAsStateWithLifecycle()
@@ -137,6 +139,10 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val resumeMode by vm.resumeMode.collectAsStateWithLifecycle()
     val liveLatency by vm.liveLatencyMode.collectAsStateWithLifecycle()
     val liveCustomSecs by vm.liveLatencyCustomSecs.collectAsStateWithLifecycle()
+    val livePreroll by vm.livePrerollSecs.collectAsStateWithLifecycle()
+    val sources by vm.sources.collectAsStateWithLifecycle()
+    // The playlist whose per-playlist "Pre-buffer" override is being edited.
+    var prerollSource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
     // Low-latency acknowledgement popup (shown for "Low latency" and below-Balanced custom values).
     // First lambda runs on "I understand", second on "Cancel".
     var lowWarning by remember { mutableStateOf<Pair<() -> Unit, () -> Unit>?>(null) }
@@ -176,7 +182,12 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     LaunchedEffect(dialog, lowWarning) {
         if (dialog != Dialog.NONE) {
             // The custom-seconds dialog has no row of its own — it belongs to the Live latency row.
-            val returnRow = if (dialog == Dialog.LIVE_CUSTOM) Dialog.LIVE_LATENCY else dialog
+            val returnRow = when (dialog) {
+                Dialog.LIVE_CUSTOM -> Dialog.LIVE_LATENCY
+                // The per-playlist value picker belongs to the playlist row that opened it.
+                Dialog.LIVE_PREROLL_SOURCE -> Dialog.LIVE_PREROLL_SOURCES
+                else -> dialog
+            }
             dialogReturn = dialogRowFocus.getValue(returnRow)
         } else if (lowWarning != null) {
             // The warning popup has no row of its own — it always returns to the Live latency row.
@@ -318,6 +329,35 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_LATENCY },
         )
         Row2(
+            icon = OwnTVIcon.LIVE_TV,
+            title = stringResource(R.string.settings_live_preroll),
+            desc = stringResource(R.string.settings_live_preroll_description),
+            chip = if (livePreroll <= 0) {
+                stringResource(R.string.common_off)
+            } else {
+                stringResource(R.string.settings_live_buffer_seconds, livePreroll)
+            },
+            primaryChip = livePreroll > 0,
+            chevron = true,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_PREROLL)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_PREROLL },
+        )
+        if (sources.isNotEmpty()) {
+            Row2(
+                icon = OwnTVIcon.LIVE_TV,
+                title = stringResource(R.string.settings_live_preroll_per_playlist),
+                desc = stringResource(R.string.settings_live_preroll_per_playlist_description),
+                chip = sources.count { it.livePrerollSecs >= 0 }.let { count ->
+                    if (count == 0) stringResource(R.string.common_off)
+                    else pluralStringResource(R.plurals.settings_live_preroll_overrides, count, count)
+                },
+                primaryChip = sources.any { it.livePrerollSecs >= 0 },
+                chevron = true,
+                modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_PREROLL_SOURCES)),
+                onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_PREROLL_SOURCES },
+            )
+        }
+        Row2(
             icon = OwnTVIcon.LIVE_TV, title = stringResource(R.string.settings_channel_numbers),
             desc = stringResource(R.string.settings_channel_numbers_description),
             chip = if (directTune) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = directTune,
@@ -331,6 +371,12 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             desc = stringResource(R.string.settings_measured_stats_description),
             chip = if (measuredStats) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = measuredStats,
             onClick = { vm.setMeasuredStreamStats(!measuredStats) },
+        )
+        Row2(
+            icon = OwnTVIcon.INFO, title = stringResource(R.string.settings_detailed_playback_logging),
+            desc = stringResource(R.string.settings_detailed_playback_logging_description),
+            chip = stringResource(if (detailedDiagnostics) R.string.common_on else R.string.common_off), primaryChip = detailedDiagnostics,
+            onClick = { vm.setDetailedDiagnostics(!detailedDiagnostics) },
         )
     }
 
@@ -422,6 +468,46 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
                 }
             },
         )
+        Dialog.LIVE_PREROLL -> PickerDialog(
+            title = stringResource(R.string.settings_live_preroll),
+            options = tv.own.owntv.features.settings.data.LiveBuffer.PREROLL_CHOICES.map {
+                it.toString() to if (it <= 0) stringResource(R.string.common_off) else stringResource(R.string.settings_video_seconds, it)
+            },
+            selected = livePreroll.toString(),
+            onSelect = { vm.setLivePrerollSecs(it.toIntOrNull() ?: 0); dialog = Dialog.NONE },
+            onDismiss = { dialog = Dialog.NONE },
+        )
+        Dialog.LIVE_PREROLL_SOURCES -> PickerDialog(
+            title = stringResource(R.string.settings_live_preroll_playlist_picker),
+            options = sources.map { src ->
+                val value = if (src.livePrerollSecs >= 0) {
+                    stringResource(R.string.settings_video_seconds, src.livePrerollSecs)
+                } else {
+                    stringResource(R.string.settings_live_preroll_follow)
+                }
+                src.id.toString() to "${src.name}  ·  $value"
+            },
+            selected = prerollSource?.id?.toString() ?: "",
+            onSelect = { id ->
+                prerollSource = sources.firstOrNull { it.id.toString() == id }
+                dialog = if (prerollSource != null) Dialog.LIVE_PREROLL_SOURCE else Dialog.NONE
+            },
+            onDismiss = { dialog = Dialog.NONE },
+        )
+        Dialog.LIVE_PREROLL_SOURCE -> PickerDialog(
+            title = prerollSource?.name ?: stringResource(R.string.settings_sort_playlist),
+            options = listOf("-1" to stringResource(R.string.settings_live_preroll_follow)) +
+                tv.own.owntv.features.settings.data.LiveBuffer.PREROLL_CHOICES.map {
+                    it.toString() to if (it <= 0) stringResource(R.string.common_off) else stringResource(R.string.settings_video_seconds, it)
+                },
+            selected = (prerollSource?.livePrerollSecs ?: -1).toString(),
+            onSelect = { value ->
+                prerollSource?.let { vm.setSourcePreroll(it.id, value.toIntOrNull() ?: -1) }
+                prerollSource = null
+                dialog = Dialog.NONE
+            },
+            onDismiss = { prerollSource = null; dialog = Dialog.NONE },
+        )
         Dialog.EXTERNAL_PLAYER -> ExternalPlayerDialog(
             live = externalLive, movies = externalMovies, series = externalSeries,
             onToggle = { section, enabled -> vm.setExternalPlayer(section, enabled) },
@@ -466,7 +552,7 @@ private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit
     }
 }
 
-private enum class Dialog { NONE, ZOOM, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, EXTERNAL_PLAYER }
+private enum class Dialog { NONE, ZOOM, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER }
 
 /** Row chip for the External player row: "Off", "On" (all three), or the sections that are on. */
 @Composable
