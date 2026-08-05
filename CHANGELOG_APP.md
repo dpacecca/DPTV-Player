@@ -9,6 +9,21 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v4.2.0 — unreleased
+
+### ✨ New features
+
+- **🧪 Test HLS support — find out whether your provider really serves HLS before you turn it on**
+
+### 🐛 Fixes
+
+- **Prefer HLS no longer applies to catch-up**
+- **Catch-up recordings now get both of their fallbacks instead of one**
+- **One channel without an HLS version no longer sends every other channel's preview to the wrong format**
+- **A provider that doesn't serve HLS at all is now recognised after three channels**
+- **Streams that VLC plays but OwnTV didn't now get one more attempt with error tolerance turned on**
+- **The HLS note under the toggle no longer implies an answer it doesn't have**
+
 ## v4.1.7 — 2026-08-04
 
 ### ✨ New features

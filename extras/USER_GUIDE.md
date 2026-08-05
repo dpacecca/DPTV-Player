@@ -248,8 +248,14 @@ or **narrow the whole app to just one**.
   as an HLS playlist. OwnTV asks for **MPEG‑TS**, which is what most panels serve best — but if your provider's
   live channels are unstable, turn on **Prefer HLS for Live TV** when adding the source, or later in
   **Settings → Manage sources → (your source) → Edit**. It's stored **per source**, so with two providers you
-  can prefer HLS on one and leave the other alone. Catch‑up and timeshift follow the same choice. The ⓘ
-  **Stream info** overlay has a **Format** row showing which one you're actually receiving.
+  can prefer HLS on one and leave the other alone. It applies to **Live TV only** — catch‑up and timeshift are
+  always requested as MPEG‑TS, because the provider's archive server serves recordings straight off disk and
+  has no HLS version of them. The ⓘ **Stream info** overlay has a **Format** row showing which one you're
+  actually receiving.
+- 🧪 **Test HLS support**: the button just above that toggle checks whether your provider really serves HLS —
+  it asks the panel what it supports and then actually requests an HLS channel to see what comes back. It works
+  before the playlist has been synced, so you can check while adding it. The toggle stays available whatever the
+  test says: some panels serve HLS without advertising it, so the result is advice, not a lock.
 - 🔇 **Audio with no picture**: if a channel ever plays sound but shows a black screen, OwnTV now detects this
   automatically and switches engines for you (briefly shows a loading spinner). If neither engine can render
   video for that stream, you'll see a clear on‑screen message instead of a silent black screen.
@@ -894,7 +900,8 @@ http://your-server/series/st-s02e01.mkv
 - **Long‑press OK** is your friend — favourites, rename, hide, match EPG and catch‑up all live there.
 - A channel buffering or showing artifacts on 4K? **MPV/EXO toggle → compatibility mode** usually fixes it.
 - Live channels from one provider glitching every few seconds while another provider is fine? Try
-  **Prefer HLS for Live TV** on that source — some Xtream panels are far steadier over HLS.
+  **Prefer HLS for Live TV** on that source — some Xtream panels are far steadier over HLS. Press
+  **Test HLS support** just above it first to see whether that provider serves HLS at all.
 - Audio out of sync on a VOD? **Audio → A/V sync** and nudge ± until lips match.
 - **Guide looks blank when you first open it?** (especially with catch‑up channels) Try: **Settings → EPG** → tap Edit → delete your EPG source(s), then **add them again** and sync fresh. The v4.0.0 update changed how EPG loads, and old cached data needs to be cleared and reimported. Once done, the guide displays immediately.
 

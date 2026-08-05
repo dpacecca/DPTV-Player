@@ -1174,12 +1174,17 @@ class LiveViewModel(
      *  → `.m3u8` swap — except on a channel already caught having no working `.m3u8`, which goes back
      *  to the `.ts` its panel does serve. See [LiveStreamQuirks.rememberNoHlsVariant]. */
     private fun tuneUrl(channel: ChannelEntity, source: SourceEntity?): String =
-        if (forceTsForExo || LiveStreamQuirks.lacksHlsVariant(channel.streamUrl)) channel.streamUrl
+        if (forceTsForExo == channel.streamUrl || LiveStreamQuirks.lacksHlsVariant(channel.streamUrl)) channel.streamUrl
         else channel.playStreamUrl(source)
 
-    /** Set while the ladder is on an explicit `.ts` rung, so [tuneUrl] serves the original stream even
-     *  before the "no HLS variant" lesson has been written (the rung must not depend on that order). */
-    private var forceTsForExo = false
+    /** The channel whose ladder is on an explicit `.ts` rung, so [tuneUrl] serves the original stream
+     *  even before the "no HLS variant" lesson has been written (the rung must not depend on that order).
+     *
+     *  Keyed by channel, not a bare flag: [playPreview] tunes through [tuneUrl] too, so a global flag left
+     *  set by channel A's TS rung sent the preview of every *other* channel to `.ts` until the next
+     *  [armLadder]. Pressing OK then computed the `.m3u8` again, found it didn't match the preview's URL,
+     *  and rebuilt the stream from scratch instead of promoting the one already playing. */
+    private var forceTsForExo: String? = null
 
     /** Internal playback: the canonical ExoPlayer / mpv / Stalker / history side-effects for a
      *  channel. Direct-tune's background rebuild path calls this without [cancelPendingZapRebuild]
@@ -1547,7 +1552,7 @@ class LiveViewModel(
     private suspend fun armLadder(channel: ChannelEntity, startsOnMpv: Boolean) {
         ladderUrl = channel.streamUrl
         ladderSpent.clear()
-        forceTsForExo = false
+        forceTsForExo = null
         val order = if (startsOnMpv) {
             listOf(Rung.MPV_HLS, Rung.MPV_TS, Rung.EXO_HLS, Rung.EXO_TS)
         } else {
@@ -1604,7 +1609,7 @@ class LiveViewModel(
         if (next.onMpv) {
             fallbackToMpv(channel, reason, forceTs = !next.isHls)
         } else {
-            forceTsForExo = !next.isHls
+            forceTsForExo = if (next.isHls) null else channel.streamUrl
             switchToExo(channel)
         }
         return true
@@ -1898,11 +1903,10 @@ class LiveViewModel(
         val durationMin = (offsetSec / 60 + 5).coerceAtLeast(1) // rewound window + buffer to play up to live
         return when (source.type) {
             SourceType.XTREAM -> ch.remoteId?.let {
-                // Same gate as [resolveStreamUrl]: the user's preference alone. `hlsSupported` is only a
-                // detection hint (panels routinely omit allowed_output_formats), and a wrong guess is
-                // covered by the .m3u8 ⇄ .ts fallback in the player.
-                val ext = if (source.preferHls) "m3u8" else "ts"
-                xtreamClient.timeshiftUrl(source, it, startMs, durationMin, tz, ext)
+                // Always `.ts` — live rewind reads the same timeshift server as catch-up, and "Prefer
+                // HLS" deliberately does not apply to it. See [CatchupUrl.forSource] for why: the
+                // archive has no HLS repackager, so `.m3u8` there answers with an error page.
+                xtreamClient.timeshiftUrl(source, it, startMs, durationMin, tz, "ts")
             }
             // No HLS swap here: [resolveStreamUrl] is Xtream-only, so it would be a no-op on M3U.
             SourceType.M3U -> CatchupUrl.forM3u(
