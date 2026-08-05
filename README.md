@@ -293,11 +293,9 @@ GPLv3 and its source made available.
 <!-- i18n-contribution:start -->
 ## Help translate OwnTV
 
-> **Captain-configured rehearsal endpoint:** this URL is intentionally recorded without an independent production-route verification.
-
-Contribute interface translations across OwnTV's six Android resource components on [Hosted Weblate](http://127.0.0.1:8080/projects/owntv/). See the [language contributor guide](tools/i18n/README.md) for the workflow, identifiers, validation, and promotion policy.
+Contribute interface translations across OwnTV's six Android resource components on [Hosted Weblate](https://hosted.weblate.org/projects/owntv/). See the [language contributor guide](tools/i18n/README.md) for the workflow, identifiers, validation, and promotion policy.
 
 ![QR code for the OwnTV Hosted Weblate project overview](tools/i18n/owntv-weblate-qr.svg)
 
-Accessible plain link: <http://127.0.0.1:8080/projects/owntv/>
+Accessible plain link: <https://hosted.weblate.org/projects/owntv/>
 <!-- i18n-contribution:end -->
