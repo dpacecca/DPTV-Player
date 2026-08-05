@@ -87,6 +87,8 @@ Add translator comments to each string.
 New file `features/settings/LanguageSettingsViewModel.kt`:
 
 ```kotlin
+import java.util.Locale
+
 class LanguageSettingsViewModel(
     private val localeStore: LocaleStore,
 ) : ViewModel() {
@@ -94,7 +96,7 @@ class LanguageSettingsViewModel(
     val currentTag: StateFlow<String> = localeStore.currentTag
 
     val pickerRows: List<SupportedLocale> =
-        SupportedLocales.pickerRows.sortedBy { it.endonym.lowercase() }
+        SupportedLocales.pickerRows.sortedBy { it.englishName.lowercase(Locale.ROOT) }
 
     fun setLocale(tag: String) {
         viewModelScope.launch { localeStore.set(tag) }
@@ -123,7 +125,7 @@ Each row layout:
 Row ordering:
 1. "System default" pinned first (tag = `""`)
 2. Separator
-3. Remaining rows A-Z sorted by endonym (native name in its own script)
+3. Remaining rows A-Z sorted by English name
 
 On row click: call `viewModel.setLocale(tag)`. The downstream path through `LocaleStore` -> `LocalizedContent` handles everything else (instant recomposition or script-change recreate).
 
@@ -211,7 +213,7 @@ Verify:
 
 **Icon:** Material Translate icon (A with lines) - Google's standard for language settings. Not globe (ambiguous with network/internet).
 
-**Sorting:** System default pinned first, then A-Z by endonym. Catalogue-only entries are not rows
+**Sorting:** System default pinned first, then A-Z by English name. Catalogue-only entries are not rows
 until a maintainer promotes them after the readiness check.
 
 **Font:** Endonyms use `FontFamily.SansSerif` unconditionally. English name and coverage badge can use app's normal font.

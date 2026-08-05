@@ -1130,7 +1130,7 @@ There is no DataStore observation and no system-picker reconciliation on this pa
 
 Twenty-five rows including "System default" still require deliberate D-pad design, so the useful picker affordances are preserved:
 
-- "System default" pinned first, written as the empty tag `""`, then recently used, then A-Z by **endonym** (native name in its own script: "Deutsch", not "German").
+- "System default" pinned first, written as the empty tag `""`, then A-Z by **English name**; each row still shows the native endonym alongside it.
 - Each row shows endonym, English name and an informational coverage badge, sourced from generated
   `SupportedLocales.kt`. The badge never disables a row or promises completeness.
 - Reuse of the existing `ui/components/SearchBar.kt` for filtering. Alphabet-bucket jumping is optional at this size and should be added only if device testing shows it helps.

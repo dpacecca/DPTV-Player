@@ -65,7 +65,7 @@ import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
- * In-app language picker. System default is pinned first; remaining rows are A–Z by endonym.
+ * In-app language picker. System default is pinned first; remaining rows are A–Z by English name.
  * Same-script switches recompose instantly via [tv.own.owntv.core.i18n.LocalizedContent];
  * cross-script switches trigger one [android.app.Activity.recreate].
  */
