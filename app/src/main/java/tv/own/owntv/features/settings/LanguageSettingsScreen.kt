@@ -135,6 +135,17 @@ fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         )
         Spacer(Modifier.height(12.dp))
 
+        Spacer(Modifier.height(16.dp))
+        OwnTVButton(
+            label = stringResource(R.string.settings_language_help_translate),
+            onClick = { showContribution = true },
+            modifier = Modifier.fillMaxWidth(),
+            style = OwnTVButtonStyle.SECONDARY,
+        )
+        Spacer(Modifier.height(12.dp))
+        Divider()
+        Spacer(Modifier.height(12.dp))
+
         if (showSystemDefault) {
             LanguageRow(
                 endonym = systemLabel,
@@ -164,14 +175,6 @@ fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 modifier = if (selected) Modifier.focusRequester(selectedFocus) else Modifier,
             )
         }
-
-        Spacer(Modifier.height(16.dp))
-        OwnTVButton(
-            label = stringResource(R.string.settings_language_help_translate),
-            onClick = { showContribution = true },
-            modifier = Modifier.fillMaxWidth(),
-            style = OwnTVButtonStyle.SECONDARY,
-        )
     }
 
     if (showContribution) {

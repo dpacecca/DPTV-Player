@@ -394,17 +394,6 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
 
         if (searchQuery.isBlank()) {
-        GroupLabel(stringResource(R.string.settings_group_general))
-        SettingsRow(
-            tone = TileTone.PRIMARY, icon = OwnTVIcon.LANGUAGE,
-            title = stringResource(R.string.settings_language),
-            desc = stringResource(R.string.settings_language_description),
-            chip = languageChip,
-            chipTone = TileTone.PRIMARY,
-            onClick = { open(SettingsTab.LANGUAGE) }, showChevron = true,
-            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.LANGUAGE)),
-        )
-        SectionDivider()
         GroupLabel(stringResource(R.string.settings_profile_group))
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.PERSON,
@@ -521,6 +510,15 @@ fun SettingsScreen(
         )
         SectionDivider()
         GroupLabel(stringResource(R.string.settings_appearance_group))
+        SettingsRow(
+            tone = TileTone.PRIMARY, icon = OwnTVIcon.LANGUAGE,
+            title = stringResource(R.string.settings_language),
+            desc = stringResource(R.string.settings_language_description),
+            chip = languageChip,
+            chipTone = TileTone.PRIMARY,
+            onClick = { open(SettingsTab.LANGUAGE) }, showChevron = true,
+            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.LANGUAGE)),
+        )
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.THEME,
             title = stringResource(R.string.settings_theme), desc = stringResource(R.string.settings_theme_description),
@@ -698,7 +696,7 @@ fun SettingsScreen(
             // isn't composed while searching). Toggle entries keep the results visible so the chip
             // updates live.
             val entries = listOf(
-                SettingsSearchEntry(stringResource(R.string.settings_group_general), stringResource(R.string.settings_language), stringResource(R.string.settings_search_keywords_language), OwnTVIcon.LANGUAGE, TileTone.PRIMARY,
+                SettingsSearchEntry(stringResource(R.string.settings_appearance_group), stringResource(R.string.settings_language), stringResource(R.string.settings_search_keywords_language), OwnTVIcon.LANGUAGE, TileTone.PRIMARY,
                     chip = languageChip, chipTone = TileTone.PRIMARY) { open(SettingsTab.LANGUAGE) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_profile), stringResource(R.string.profiles_title), stringResource(R.string.settings_search_keywords_profiles), OwnTVIcon.PERSON, TileTone.SECONDARY) { open(SettingsTab.PROFILES) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_content), stringResource(R.string.settings_playlists), stringResource(R.string.settings_search_keywords_playlists), OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { open(SettingsTab.SOURCES) },
