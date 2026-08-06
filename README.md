@@ -293,5 +293,5 @@ GPLv3 and its source made available.
 <!-- i18n-contribution:start -->
 ## Help translate OwnTV
 
-Contribute interface translations across OwnTV's six Android resource components on [Hosted Weblate](https://hosted.weblate.org/projects/owntv/). See the [language contributor guide](tools/i18n/README.md) for the workflow, identifiers, validation, and promotion policy.
+If your language is already available, contribute interface translations across OwnTV's six Android resource components on [Hosted Weblate](https://hosted.weblate.org/projects/owntv/). If it is not listed, [open a language request ticket](https://github.com/ahXN00/OwnTV/issues/new?template=feature_request.yml&title=%5BLanguage%5D%20Add%20) first. A maintainer will review the request, register the locale, and prepare its base translation files on Hosted Weblate. Once the language appears on Hosted Weblate, you can start translating it there. See the [language contributor guide](tools/i18n/README.md) for identifiers, validation, and promotion policy.
 <!-- i18n-contribution:end -->

@@ -202,9 +202,11 @@ private fun TranslationContributionDialog(onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
     val context = LocalContext.current
     val url = SupportedLocales.CONTRIBUTION_PROJECT_URL
+    val requestUrl = SupportedLocales.LANGUAGE_REQUEST_URL
     val urlFocus = remember { FocusRequester() }
     val qr = remember(url) { CompanionLink.renderQr(url) }
     var status by remember { mutableStateOf<Int?>(null) }
+    var copyUrl by remember { mutableStateOf(url) }
 
     LaunchedEffect(Unit) { urlFocus.requestFocus() }
     BackHandler { onDismiss() }
@@ -231,6 +233,12 @@ private fun TranslationContributionDialog(onDismiss: () -> Unit) {
                 stringResource(R.string.settings_language_contribution_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.primary,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.settings_language_request_workflow),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
             if (qr != null) {
@@ -259,12 +267,30 @@ private fun TranslationContributionDialog(onDismiss: () -> Unit) {
             OwnTVButton(
                 label = url,
                 onClick = {
-                    status = if (openContributionLink(context, url)) null
-                    else R.string.settings_language_contribution_open_failed
+                    status = if (openContributionLink(context, url)) {
+                        null
+                    } else {
+                        copyUrl = url
+                        R.string.settings_language_contribution_open_failed
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(urlFocus),
+                style = OwnTVButtonStyle.SECONDARY,
+            )
+            Spacer(Modifier.height(10.dp))
+            OwnTVButton(
+                label = stringResource(R.string.settings_language_request_new),
+                onClick = {
+                    status = if (openContributionLink(context, requestUrl)) {
+                        null
+                    } else {
+                        copyUrl = requestUrl
+                        R.string.settings_language_contribution_open_failed
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
                 style = OwnTVButtonStyle.SECONDARY,
             )
             status?.let {
@@ -276,7 +302,7 @@ private fun TranslationContributionDialog(onDismiss: () -> Unit) {
                 OwnTVButton(
                     label = stringResource(R.string.settings_language_contribution_copy),
                     onClick = {
-                        status = if (copyContributionLink(context, url)) {
+                        status = if (copyContributionLink(context, copyUrl)) {
                             R.string.settings_language_contribution_copied
                         } else {
                             R.string.settings_language_contribution_copy_failed
