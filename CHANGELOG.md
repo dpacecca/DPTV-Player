@@ -26,7 +26,16 @@
 
 ### 🐛 Fixes
 
-- **Prefer HLS no longer applies to catch-up — this reverses a v4.1.7 change.** Catch-up recordings are
+- **Live channels that switch themselves to the compatibility player play again instead of turning
+  black — this fixes a v4.1.7 regression.** When OwnTV decides by itself that a channel needs the
+  compatibility player (no picture, an error before the first frame, audio the TV can't decode, a
+  provider refusing the standard player's stream URLs), the screen switched over correctly — and then
+  nothing was ever loaded. The result was a channel that showed a frame, went black and stayed black
+  forever, with no error, no retry and no further fallback, on channels that played perfectly in
+  v4.1.6. Only the automatic switch was affected: choosing **compatibility mode** by hand from the
+  player always worked, and that was the only way to watch those channels. Every automatic handoff now
+  completes, and if it is ever abandoned because you changed channel mid-switch, the playback log says
+  so instead of going silent. Catch-up recordings are
   requested as MPEG-TS again, always. Tying the two together was wrong: "Prefer HLS" describes the live
   edge, which providers remux to HLS on demand, while the timeshift server is a different thing that
   serves recordings off disk with no HLS repackager in front of it. Asking it for HLS reliably returns an

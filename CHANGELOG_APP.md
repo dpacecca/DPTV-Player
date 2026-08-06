@@ -17,6 +17,7 @@
 
 ### 🐛 Fixes
 
+- **Live channels that switch themselves to the compatibility player play again instead of turning black**
 - **Prefer HLS no longer applies to catch-up**
 - **Catch-up recordings now get both of their fallbacks instead of one**
 - **One channel without an HLS version no longer sends every other channel's preview to the wrong format**
