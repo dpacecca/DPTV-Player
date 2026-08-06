@@ -323,7 +323,9 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
                 "not a countdown: a fast provider delivers 10s of video in well under a second, so the " +
                 "channel still starts instantly and that is correct. On a provider that hiccups every " +
                 "few seconds it holds the picture until there is enough to play through. Off keeps the " +
-                "fastest possible start.",
+                "fastest possible start, and is the right choice on most providers. Raise it only if you " +
+                "actually stutter: many providers publish just a few seconds ahead of live, and asking " +
+                "for more video than they send makes stuttering worse, not better.",
             chip = tv.own.owntv.features.settings.data.LiveBuffer.prerollLabel(livePreroll),
             primaryChip = livePreroll > 0,
             chevron = true,
