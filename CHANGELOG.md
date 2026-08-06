@@ -51,6 +51,41 @@
 - **The HLS note under the toggle no longer implies an answer it doesn't have.** On a playlist that had
   never synced it read "your provider does not report HLS support", which was indistinguishable from a
   real "no". It now says nothing until the provider has actually been asked.
+- **Turning "Prefer HLS" off could stop every channel playing on the standard player until the app was
+  restarted.** While Prefer HLS was on, any channel that fell back to the compatibility player taught
+  OwnTV that the provider serves HLS behind its `.ts` addresses — a lesson that applies to the whole
+  provider. It was the wrong lesson: that channel was only playing HLS because the setting had asked for
+  it. With the setting switched back off, every channel on that provider was then read as a playlist
+  instead of a stream, failed instantly ("Input does not start with the #EXTM3U header") and handed off
+  to the compatibility player. The lesson is now only learned when a `.ts` address really does answer
+  with a playlist.
+- **Auto frame rate no longer makes the picture pause several times on one channel.** Live TV streams
+  almost never state their frame rate, so the app measures it — and a measurement wanders, reading 24.6
+  then 25.1 for a channel that is plain 25fps throughout. Each of those readings picked a different
+  display mode, and every mode change blanks the TV for a second or more while HDMI re-negotiates, so a
+  channel whose frame rate never changed could black out three or four times in a row. Readings are now
+  pulled onto the nearest rate content is really made at, and a second mode change can't follow the first
+  within five seconds — it waits, and a newer reading replaces the waiting one. The first switch on a
+  channel is still immediate.
+- **Auto frame rate now prefers a refresh rate the TV can reach without blanking.** On Android 12 and
+  newer the panel reports which rates it can slide to seamlessly; when two of them suit the content
+  equally, the seamless one is chosen. Where no seamless mode fits, the switch still happens as before —
+  the preference never removes an option, so 25/50fps content on a 60Hz TV keeps working.
+- **Auto frame rate is now turned off once on TVs running Android below 12, and warns before it is
+  switched back on there.** Only from Android 12 does a TV tell the app which refresh rates it can move
+  to without blanking, so on older sets every switch risks blacking the picture out mid-programme — the
+  cause behind most "the stream pauses when the frame rate changes" reports. On those devices the setting
+  is reset to off a single time on the first launch after updating; turning it on afterwards explains
+  what may happen and asks you to confirm, and that choice is then left alone for good. Nothing changes
+  on Android 12 and newer, and the reset never repeats. The one-time suggestion to *enable* Auto frame
+  rate for a juddering 25fps channel no longer appears on those older devices either.
+- **A Live TV engine handoff is now written to the playback error log.** When a channel moves from
+  ExoPlayer to mpv, or runs out of fallbacks entirely, the log records what happened and why. Until now
+  that whole sequence left no trace anywhere a TV user could read, so a channel that failed this way
+  produced a completely empty log.
+- **Export in the playback error log is always available.** It used to be hidden whenever the list above
+  it was empty — but the export carries more than that list, including the recent Live TV diagnostics,
+  so it was withheld in exactly the case that needed it most.
 
 ## v4.1.7 — 2026-08-04
 

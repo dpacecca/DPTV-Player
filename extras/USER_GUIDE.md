@@ -667,9 +667,17 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   broadcasts stop juddering on a 60Hz panel. Works for Live TV and VOD on both engines, and never
   changes resolution. Streams that don't declare a frame rate (most live channels) are now **measured**,
   so it works there too; if a channel judders while the setting is off and your TV has a suitable mode,
-  OwnTV offers to turn it on — once ever. Enable it only if your TV or receiver switches refresh rates cleanly without a
-  visible HDMI re-handshake. The v4.1.6 update resets it to Off once for existing users; changing it
-  afterward is remembered normally, and Off disables both ExoPlayer and mpv frame-rate requests.
+  OwnTV offers to turn it on — once ever. Because a measured rate wanders slightly, readings are pulled
+  onto the nearest real frame rate and a second switch can't follow the first within five seconds — so
+  one channel no longer blanks the picture several times over. Where the TV reports it (Android 12+), a
+  refresh rate it can reach *without* blanking is preferred. Enable it only if your TV or receiver
+  switches refresh rates cleanly without a visible HDMI re-handshake. The v4.1.6 update resets it to Off
+  once for existing users; changing it afterward is remembered normally, and Off disables both ExoPlayer
+  and mpv frame-rate requests. **On a TV running Android below 12** the set never reports which rates it
+  can switch to smoothly, so a change can black the screen out for a second or two mid-programme: v4.2.0
+  resets the setting to Off once on those devices, warns before you switch it back on, and never offers
+  to enable it for a juddering channel there. Turning it on anyway is fine — that choice is then left
+  alone.
 - 🧩 **Hardware decoder** (Video Player Settings) — hardware decoding is on for smooth 4K; switch to software
   only if a specific codec misbehaves. Turning it **off** now applies to **both players** (it used to
   reach only the compatibility one, which left normal Live TV on the hardware decoder anyway). The

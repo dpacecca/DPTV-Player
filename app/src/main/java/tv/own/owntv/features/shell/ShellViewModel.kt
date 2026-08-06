@@ -117,6 +117,9 @@ class ShellViewModel(
         viewModelScope.launch { runCatching { settings.migrateLegacyRefreshFlags() } }
         // v4.1.6: one-time safety reset. Later user changes to AFR are never overwritten.
         viewModelScope.launch { runCatching { settings.migrateAutoFrameRate416() } }
+        // v4.2.0: one-time safety reset for devices below Android 12, where the app cannot tell a
+        // seamless refresh-rate switch from one that blanks the panel. Later user changes are kept.
+        viewModelScope.launch { runCatching { settings.migrateAutoFrameRatePre12() } }
         // v4.1.6: reset live latency to Balanced once; later user choices remain untouched.
         viewModelScope.launch { runCatching { settings.migrateLiveLatency416() } }
         viewModelScope.launch {

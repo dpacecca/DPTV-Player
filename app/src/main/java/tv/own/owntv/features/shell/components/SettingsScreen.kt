@@ -133,6 +133,7 @@ fun SettingsScreen(
     var showAnimations by remember { mutableStateOf(false) }
     var showStartup by remember { mutableStateOf(false) }
     var showErrorLog by remember { mutableStateOf(false) }
+    var showAfrWarning by remember { mutableStateOf(false) }
     var showBgImageChooser by remember { mutableStateOf(false) }
     var showBgPicker by remember { mutableStateOf(false) }
     var showBgRemote by remember { mutableStateOf(false) }
@@ -166,19 +167,20 @@ fun SettingsScreen(
     val animationsRowFocus = remember { FocusRequester() }
     val startupRowFocus = remember { FocusRequester() }
     val errorLogRowFocus = remember { FocusRequester() }
+    val afrRowFocus = remember { FocusRequester() }
     val glassEffectRowFocus = remember { FocusRequester() }
     // Hoisted scroll state for the root settings list. We snapshot its position the instant a row is
     // clicked (in onClick, before any recomposition) and restore it on dialog close, so the list
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
     val scrollState = rememberScrollState()
     var savedScroll by remember { mutableIntStateOf(0) }
-    val anyDialogOpen = showZoom || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showErrorLog || showBgImageChooser || showBgPicker || showGlassEffect || showBrowsing
+    val anyDialogOpen = showZoom || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showErrorLog || showAfrWarning || showBgImageChooser || showBgPicker || showGlassEffect || showBrowsing
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showErrorLog, showBgImageChooser, showBgPicker, showGlassEffect, showBrowsing) {
+    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showErrorLog, showAfrWarning, showBgImageChooser, showBgPicker, showGlassEffect, showBrowsing) {
         if (!anyDialogOpen) {
             // When a scrim dialog is torn down, Compose's focus re-search through the newly-exposed
             // scrollable Column resets its scroll to 0 and then bringIntoView-animates to wherever
@@ -229,6 +231,22 @@ fun SettingsScreen(
     val panelWidthMovies by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.features.settings.data.PanelSection.MOVIES).collectAsStateWithLifecycle()
     val panelWidthSeries by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.features.settings.data.PanelSection.SERIES).collectAsStateWithLifecycle()
     val panelWidthCustom = panelWidthLive || panelWidthMovies || panelWidthSeries
+
+    // Auto frame rate is the one toggle that can make the picture visibly worse on the wrong hardware:
+    // below Android 12 there is no way to ask the display which refresh rates it can reach *without*
+    // blanking, so switching can black the screen out mid-programme. Turning it ON there therefore asks
+    // first (shared by the settings row and the search result, which return focus to different places).
+    // Turning it OFF is always immediate — nobody needs confirming out of a setting we recommend against.
+    val afrNeedsWarning = android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S
+    val toggleAutoFrameRate: (FocusRequester) -> Unit = { returnFocus ->
+        if (!autoFrameRate && afrNeedsWarning) {
+            savedScroll = scrollState.value
+            dialogReturn = returnFocus
+            showAfrWarning = true
+        } else {
+            settingsVm.setAutoFrameRate(!autoFrameRate)
+        }
+    }
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by remember { mutableStateOf<SettingsTab?>(null) }
@@ -549,10 +567,14 @@ fun SettingsScreen(
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.VIDEO,
             title = "Auto frame rate",
-            desc = "Match the TV's refresh rate to the video (24/25/50/60 fps) in full screen, for Live TV and VOD, and restore it on exit. Turn off if your TV or receiver re-handshakes HDMI noisily on every channel change.",
+            desc = "Match the TV's refresh rate to the video (24/25/50/60 fps) in full screen, for Live TV and VOD, and restore it on exit. Turn off if your TV or receiver re-handshakes HDMI noisily on every channel change." +
+                // Stated on the row as well as in the confirm dialog, so it is still visible to someone
+                // who turned it on anyway and later wonders why the picture keeps blanking.
+                if (afrNeedsWarning) " Not recommended on this TV: below Android 12 the rate can't be changed smoothly." else "",
             chip = if (autoFrameRate) "On" else "Off",
             chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setAutoFrameRate(!autoFrameRate) },
+            modifier = Modifier.focusRequester(afrRowFocus),
+            onClick = { toggleAutoFrameRate(afrRowFocus) },
         )
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
@@ -683,7 +705,7 @@ fun SettingsScreen(
                 SettingsSearchEntry("Playback", "HDR", "high dynamic range output", OwnTVIcon.VIDEO, TileTone.PRIMARY,
                     chip = if (hdr) "On" else "Off", chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setHdrEnabled(!hdr) },
                 SettingsSearchEntry("Playback", "Auto frame rate", "afr refresh rate hz judder 24fps 25fps 50hz 60hz display mode match", OwnTVIcon.VIDEO, TileTone.PRIMARY,
-                    chip = if (autoFrameRate) "On" else "Off", chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoFrameRate(!autoFrameRate) },
+                    chip = if (autoFrameRate) "On" else "Off", chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { toggleAutoFrameRate(searchFieldFocus) },
                 SettingsSearchEntry("Playback", "Surround sound", "dolby dts 5.1 7.1 receiver audio stereo off disable", OwnTVIcon.AUDIO, TileTone.SECONDARY,
                     chip = surroundMode.label, chipTone = if (surroundMode == SurroundMode.STEREO) TileTone.SECONDARY else TileTone.PRIMARY, showChevron = false) { settingsVm.cycleSurroundMode() },
                 SettingsSearchEntry("Playback", "Auto-play next episode", "autoplay series season", OwnTVIcon.SKIP_NEXT, TileTone.SECONDARY,
@@ -833,6 +855,12 @@ fun SettingsScreen(
     }
     if (showErrorLog) {
         PlaybackErrorLogDialog(onDismiss = { showErrorLog = false })
+    }
+    if (showAfrWarning) {
+        AutoFrameRateWarningDialog(
+            onEnable = { settingsVm.setAutoFrameRate(true); showAfrWarning = false },
+            onDismiss = { showAfrWarning = false },
+        )
     }
     if (showFolderPicker) {
         StorageBrowser(
@@ -1198,17 +1226,23 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
             }
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (!entries.isNullOrEmpty()) {
-                    // Plain-text dump next to the app's other external files, so it can be pulled over adb
-                    // or picked up by a file manager — a TV has nowhere useful to "share" to.
-                    OwnTVButton("Export", onClick = {
-                        scope.launch {
-                            val f = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                tv.own.owntv.player.PlaybackErrorLog.export(context)
-                            }
-                            exportPath = f?.absolutePath ?: "— export failed"
+                // Plain-text dump next to the app's other external files, so it can be pulled over adb
+                // or picked up by a file manager — a TV has nowhere useful to "share" to.
+                //
+                // Offered even with no entries above, because the export carries more than this list: it
+                // appends the live diagnostics ring, which is populated regardless of the "Detailed
+                // playback log" setting. Hiding the button on an empty list therefore withheld the trace
+                // precisely in the case that needed it most — a Live TV engine handoff that left no error
+                // entry at all still has its full reason recorded in that ring.
+                OwnTVButton("Export", onClick = {
+                    scope.launch {
+                        val f = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            tv.own.owntv.player.PlaybackErrorLog.export(context)
                         }
-                    }, style = OwnTVButtonStyle.SECONDARY)
+                        exportPath = f?.absolutePath ?: "— export failed"
+                    }
+                }, style = OwnTVButtonStyle.SECONDARY)
+                if (!entries.isNullOrEmpty()) {
                     OwnTVButton("Clear log", onClick = {
                         tv.own.owntv.player.PlaybackErrorLog.clear(context)
                         exportPath = null
@@ -1226,6 +1260,50 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
  * Pick what watch history to clear: everything, or just Live TV / Movies / Series. Over a dimmed scrim;
  * Cancel is focused first so a stray OK doesn't wipe anything. [onClear] gets null for "all".
  */
+/**
+ * Shown when Auto frame rate is switched **on** on a device below Android 12 — never when switching it
+ * off, and never on Android 12+.
+ *
+ * `Display.Mode.getAlternativeRefreshRates()`, the only way to learn which refresh rates the panel can
+ * reach *without* blanking, arrived in API 31. Below it OwnTV picks a mode blind, and on many older TV
+ * boxes that means an HDMI re-handshake — the picture goes black for a second or two, mid-programme. The
+ * setting stays available because plenty of hardware switches cleanly and AFR is the only cure for
+ * 25 fps judder on a 60 Hz panel; this just makes sure the trade is a choice rather than a surprise.
+ *
+ * Focus starts on "Keep off": the recommendation is the safe default, and a stray Select can't enable it.
+ */
+@Composable
+private fun AutoFrameRateWarningDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    BackHandler { onDismiss() }
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(Modifier.dialogPanel(width = 500.dp, padding = 28.dp)) {
+            Text("Not recommended on this TV", style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "This device runs Android ${android.os.Build.VERSION.RELEASE}. Below Android 12 the TV can't " +
+                    "tell OwnTV which refresh rates it is able to switch to smoothly, so changing the rate may " +
+                    "black the screen out for a second or two — sometimes more than once during a programme.\n\n" +
+                    "We recommend leaving Auto frame rate off here. If your TV does switch cleanly, turn it on " +
+                    "and see: you can change it back at any time.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(22.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OwnTVButton("Keep off", onClick = onDismiss, modifier = Modifier.focusRequester(focus))
+                Spacer(Modifier.weight(1f))
+                OwnTVButton("Turn on anyway", onClick = onEnable, style = OwnTVButtonStyle.SECONDARY)
+            }
+        }
+    }
+}
+
 @Composable
 private fun ClearHistoryDialog(
     onClear: (tv.own.owntv.core.model.MediaType?) -> Unit,
