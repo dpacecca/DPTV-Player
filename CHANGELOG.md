@@ -35,7 +35,8 @@
   v4.1.6. Only the automatic switch was affected: choosing **compatibility mode** by hand from the
   player always worked, and that was the only way to watch those channels. Every automatic handoff now
   completes, and if it is ever abandoned because you changed channel mid-switch, the playback log says
-  so instead of going silent. Catch-up recordings are
+  so instead of going silent.
+- **Prefer HLS no longer applies to catch-up — this reverses a v4.1.7 change.** Catch-up recordings are
   requested as MPEG-TS again, always. Tying the two together was wrong: "Prefer HLS" describes the live
   edge, which providers remux to HLS on demand, while the timeshift server is a different thing that
   serves recordings off disk with no HLS repackager in front of it. Asking it for HLS reliably returns an
