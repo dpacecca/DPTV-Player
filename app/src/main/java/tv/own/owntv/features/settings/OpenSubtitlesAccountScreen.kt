@@ -62,8 +62,7 @@ private val SUB_SEARCH_LANGUAGE_CODES = listOf(
 
 @Composable
 private fun subSearchLanguages(): List<Pair<String, String>> {
-    val configuration = LocalConfiguration.current
-    val displayLocale = configuration.locales[0] ?: java.util.Locale.getDefault()
+    val displayLocale = LocalConfiguration.current.locales[0]
     return remember(displayLocale) {
         SUB_SEARCH_LANGUAGE_CODES.map { code ->
             code to java.util.Locale.forLanguageTag(code).getDisplayName(displayLocale)
