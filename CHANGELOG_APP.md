@@ -23,6 +23,12 @@
 - **A provider that doesn't serve HLS at all is now recognised after three channels**
 - **Streams that VLC plays but OwnTV didn't now get one more attempt with error tolerance turned on**
 - **The HLS note under the toggle no longer implies an answer it doesn't have**
+- **Turning "Prefer HLS" off could stop every channel playing on the standard player until restart**
+- **Auto frame rate no longer makes the picture pause several times on one channel**
+- **Auto frame rate now prefers a refresh rate the TV can reach without blanking**
+- **Auto frame rate is turned off once on TVs below Android 12, and warns before it is switched back on**
+- **A Live TV engine handoff is now written to the playback error log**
+- **Export in the playback error log is always available**
 
 ## v4.1.7 — 2026-08-04
 

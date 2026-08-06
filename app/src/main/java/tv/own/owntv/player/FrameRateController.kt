@@ -34,7 +34,13 @@ import kotlin.math.abs
  * Mode selection keeps the CURRENT resolution and only varies the refresh rate — never switch a 4K
  * output down to 1080p just to hit a rate. A mode is a match when its refresh rate is an integer
  * multiple (1x–3x) of the video fps, which makes 24fps prefer 24/48/72Hz and 25fps prefer 50Hz while
- * still accepting 60Hz for 30fps. Among matches the LOWEST multiple wins (a true 24Hz beats 72Hz).
+ * still accepting 60Hz for 30fps. Among matches a **seamless** switch wins first, then the LOWEST
+ * multiple (a true 24Hz beats 72Hz) — see [pickMode].
+ *
+ * Every actual mode change costs an HDMI re-handshake, and on a live stream that black gap reads as
+ * "the picture paused". Two guards keep changes to the ones that earn it: [snapFps] stops a drifting
+ * *measured* frame rate from picking a different mode each time it is re-sampled, and a cooldown in
+ * [apply] collapses a burst of requests into one switch.
  *
  * Everything is best-effort: no matching mode, a locked-down display, or a manufacturer that ignores
  * the request all degrade to "leave the display alone", never to a crash or a black screen.
@@ -48,34 +54,122 @@ object FrameRateController {
     /** Grace period before a release actually lands — see [reset]. */
     private const val RESET_DELAY_MS = 1_500L
 
+    /**
+     * The frame rates real content is actually shot/broadcast at. A [fps] reading is snapped to the
+     * nearest of these before a mode is chosen — see [snapFps].
+     */
+    private val STANDARD_FPS = floatArrayOf(
+        23.976f, 24f, 25f, 29.97f, 30f, 47.952f, 48f, 50f, 59.94f, 60f, 100f, 119.88f, 120f,
+    )
+
+    /** A reading further than this from every entry in [STANDARD_FPS] is left alone rather than snapped. */
+    private const val SNAP_MAX_DELTA_HZ = 1.0f
+
+    /**
+     * Minimum spacing between two display-mode changes. Every change is an HDMI re-handshake that blanks
+     * the panel for a second or more, so a burst of them is far worse than a late one — see [apply].
+     */
+    private const val MODE_CHANGE_COOLDOWN_MS = 5_000L
+
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private var pendingReset: Runnable? = null
+    private var pendingApply: Runnable? = null
+    /** Uptime of the last mode change actually pushed to the window; 0 = none this session. */
+    private var lastChangeAtMs = 0L
 
     private fun cancelPendingReset() {
         pendingReset?.let { handler.removeCallbacks(it) }
         pendingReset = null
     }
 
+    private fun cancelPendingApply() {
+        pendingApply?.let { handler.removeCallbacks(it) }
+        pendingApply = null
+    }
+
     /**
      * Request a display mode matching [fps] for [activity]'s window. Pass fps <= 0 to leave the current
      * mode alone (an unknown frame rate is not a reason to switch anything).
+     *
+     * **Rate-limited.** A change that would land within [MODE_CHANGE_COOLDOWN_MS] of the previous one is
+     * deferred, not dropped, and a later request replaces the deferred one. This matters most on Live TV:
+     * raw MPEG-TS rarely declares a frame rate, so `videoFps` there is a *measurement* that is re-sampled
+     * several times per tune (`LivePreviewEngine.FPS_MAX_ATTEMPTS`). Readings that drift across a boundary
+     * — 24.6 then 25.1 — used to resolve to different modes and fire a separate HDMI handshake each time,
+     * blanking the picture repeatedly on a stream that never changed frame rate at all. [snapFps] removes
+     * most of that drift; this collapses whatever is left into one switch.
      */
     fun apply(activity: Activity, fps: Float) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || fps <= 0f) return
         cancelPendingReset()
+        cancelPendingApply()
         runCatching {
-            val display: Display = activity.windowManager.defaultDisplay ?: return
-            val current = display.mode ?: return
-            val target = display.supportedModes
-                ?.filter { it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight }
-                ?.mapNotNull { mode -> multipleOf(mode.refreshRate, fps)?.let { mode to it } }
-                ?.minByOrNull { (mode, mult) -> mult * 1000 + abs(mode.refreshRate - mult * fps) }
-                ?.first
-                ?: return
+            val target = pickMode(activity, fps) ?: return
             if (target.modeId == activity.window.attributes.preferredDisplayModeId) return
+            val waitMs = MODE_CHANGE_COOLDOWN_MS - (android.os.SystemClock.uptimeMillis() - lastChangeAtMs)
+            if (lastChangeAtMs != 0L && waitMs > 0) {
+                Log.i(TAG, "AFR: ${fps}fps -> mode ${target.modeId} deferred ${waitMs}ms (cooldown)")
+                // Re-resolve on the way out rather than capturing `target`: by then the fps may have moved
+                // again, and the newest reading is the one worth acting on.
+                val task = Runnable { pendingApply = null; apply(activity, fps) }
+                pendingApply = task
+                handler.postDelayed(task, waitMs)
+                return
+            }
             activity.window.attributes = activity.window.attributes.apply { preferredDisplayModeId = target.modeId }
+            lastChangeAtMs = android.os.SystemClock.uptimeMillis()
             Log.i(TAG, "AFR: video ${fps}fps -> display mode ${target.modeId} (${target.refreshRate}Hz)")
         }.onFailure { Log.w(TAG, "AFR apply failed: ${it.message}") }
+    }
+
+    /**
+     * The best display mode for [fps] at the CURRENT resolution, or null when nothing matches.
+     *
+     * Shared by [apply] and [betterRefreshRateFor] so the "Auto frame rate would help here" prompt (F13)
+     * can never promise a switch [apply] would not make.
+     *
+     * Ordering, highest priority first:
+     *  1. **Seamless** switches (API 31+). A mode listed in the current mode's `alternativeRefreshRates`
+     *     is one the panel can move to without re-handshaking HDMI, i.e. without the black gap that makes
+     *     a live stream look like it paused. Media3's own AFR path is pinned to seamless-only for exactly
+     *     this reason; this one only *prefers* it, because on most TVs 60→50 is not seamless and refusing
+     *     it outright would silently turn AFR off for the content that needs it most.
+     *  2. The lowest refresh-rate multiple (a true 24Hz beats 72Hz).
+     *  3. The closest rate within that multiple.
+     */
+    private fun pickMode(activity: Activity, fps: Float): Display.Mode? {
+        val display: Display = activity.windowManager.defaultDisplay ?: return null
+        val current = display.mode ?: return null
+        val wanted = snapFps(fps)
+        val seamless = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            current.alternativeRefreshRates?.toList().orEmpty()
+        } else {
+            emptyList()
+        }
+        return display.supportedModes
+            ?.filter { it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight }
+            ?.mapNotNull { mode -> multipleOf(mode.refreshRate, wanted)?.let { mode to it } }
+            ?.minByOrNull { (mode, mult) ->
+                val isSeamless = seamless.any { abs(it - mode.refreshRate) <= TOLERANCE_HZ }
+                (if (isSeamless) 0f else 1_000_000f) + mult * 1000f + abs(mode.refreshRate - mult * wanted)
+            }
+            ?.first
+    }
+
+    /**
+     * Pull [fps] onto the nearest rate content is really made at, when it is close enough to one.
+     *
+     * Live TV feeds this a *measured* frame rate (raw MPEG-TS almost never declares one), and a
+     * measurement wanders: the same 25fps channel can read 24.6 and then 25.1. Those two land on opposite
+     * sides of [TOLERANCE_HZ] and pick different display modes, so the panel re-handshakes for a frame
+     * rate that never actually changed. Snapping first makes both readings mean "25".
+     *
+     * A reading that is nowhere near a standard rate is returned untouched — better to let [multipleOf]
+     * find no match and leave the display alone than to invent a rate the content isn't at.
+     */
+    private fun snapFps(fps: Float): Float {
+        val nearest = STANDARD_FPS.minByOrNull { abs(it - fps) } ?: return fps
+        return if (abs(nearest - fps) <= SNAP_MAX_DELTA_HZ) nearest else fps
     }
 
     /**
@@ -90,6 +184,9 @@ object FrameRateController {
     fun reset(activity: Activity) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
         cancelPendingReset()
+        // A deferred switch must not outlive the playback that asked for it — otherwise stopping during
+        // the cooldown still blanks the panel a moment later, for a stream that is already gone.
+        cancelPendingApply()
         val task = Runnable { resetNow(activity) }
         pendingReset = task
         handler.postDelayed(task, RESET_DELAY_MS)
@@ -100,6 +197,9 @@ object FrameRateController {
         runCatching {
             if (activity.window.attributes.preferredDisplayModeId == 0) return
             activity.window.attributes = activity.window.attributes.apply { preferredDisplayModeId = 0 }
+            // Playback stopped and the display is back on its default, so the next tune is not a "burst"
+            // — it starts with a clean cooldown and switches immediately.
+            lastChangeAtMs = 0L
             Log.i(TAG, "AFR: display mode released")
         }.onFailure { Log.w(TAG, "AFR reset failed: ${it.message}") }
     }
@@ -119,12 +219,9 @@ object FrameRateController {
         return runCatching {
             val display: Display = activity.windowManager.defaultDisplay ?: return null
             val current = display.mode ?: return null
-            if (multipleOf(current.refreshRate, fps) != null) return null // already clean — nothing to gain
-            display.supportedModes
-                ?.filter { it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight }
-                ?.mapNotNull { mode -> multipleOf(mode.refreshRate, fps)?.let { mode to it } }
-                ?.minByOrNull { (mode, mult) -> mult * 1000 + abs(mode.refreshRate - mult * fps) }
-                ?.first?.refreshRate
+            // Snapped, like the mode choice itself: the prompt must judge the same rate [apply] will act on.
+            if (multipleOf(current.refreshRate, snapFps(fps)) != null) return null // already clean
+            pickMode(activity, fps)?.refreshRate
         }.getOrNull()
     }
 

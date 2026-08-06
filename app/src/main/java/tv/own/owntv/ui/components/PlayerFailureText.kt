@@ -29,5 +29,7 @@ fun PlayerFailureReason.displayText(): String = when (this) {
     PlayerFailureReason.VOD_ENGINE_SESSION_FALLBACK -> stringResource(R.string.player_reason_vod_engine_session_fallback)
     PlayerFailureReason.ONE_SESSION_PROVIDER -> stringResource(R.string.player_reason_one_session_provider)
     PlayerFailureReason.MPV_HANDOFF -> stringResource(R.string.player_reason_mpv_handoff)
+    PlayerFailureReason.LIVE_FALLBACK -> stringResource(R.string.player_reason_live_fallback)
+    PlayerFailureReason.LIVE_NO_FALLBACK -> stringResource(R.string.player_reason_live_no_fallback)
     PlayerFailureReason.STREAM_REPORT -> stringResource(R.string.player_reason_stream_report)
 }

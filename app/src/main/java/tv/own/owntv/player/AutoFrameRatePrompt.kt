@@ -71,6 +71,11 @@ fun AutoFrameRatePrompt(
     LaunchedEffect(fps, afrEnabled, alreadyPrompted) {
         offer = null
         if (afrEnabled || alreadyPrompted) return@LaunchedEffect
+        // Below Android 12 the display never tells us which rates it can reach without blanking, so
+        // enabling AFR there trades judder for a black screen at every switch — Settings actively warns
+        // against it. Volunteering the suggestion on that hardware would be recommending both ways at
+        // once, so the offer is simply never made; the setting is still there for anyone who wants it.
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) return@LaunchedEffect
         val rate = fps ?: return@LaunchedEffect
         if (rate <= 0f) return@LaunchedEffect
         val activity = context.findActivityForPrompt() ?: return@LaunchedEffect

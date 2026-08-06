@@ -4,6 +4,7 @@ package tv.own.owntv.features.live
 
 import tv.own.owntv.core.epg.displayLogoUrl
 import androidx.compose.runtime.Immutable
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -121,6 +122,7 @@ data class EpgNowNext(
 )
 
 class LiveViewModel(
+    private val appContext: Context,
     private val channelDao: ChannelDao,
     private val categoryDao: CategoryDao,
     private val favoriteDao: FavoriteDao,
@@ -1228,6 +1230,33 @@ class LiveViewModel(
         tv.own.owntv.player.LiveDiagnosticsLog.event("engine: $message")
     }
 
+    /**
+     * Mirror a fallback-ladder decision into the user-visible playback log (Settings → "Playback error
+     * log"), on top of the diagnostics ring [engineLog] already writes.
+     *
+     * That log's whole point is that a TV user can't read logcat, and it explicitly advertises engine
+     * handoffs — but the live ladder wrote to neither it nor anything else the user can reach, so a
+     * channel that walked ExoPlayer → mpv → dead produced a completely empty log and every report of it
+     * became guesswork. Called once per ladder step (at most four per tune, only ever on a failure), so
+     * it stays inside the "keep these rare" rule the log is built on. URLs in [reason] are redacted by
+     * [PlaybackErrorLog] itself.
+     *
+     * Call this BEFORE the engine actually switches: [_liveOnExo] then still names the engine that failed.
+     */
+    private fun recordLadderEvent(
+        event: tv.own.owntv.player.PlayerFailureReason,
+        channel: ChannelEntity,
+        detail: String,
+    ) {
+        tv.own.owntv.player.PlaybackErrorLog.event(
+            context = appContext,
+            engine = if (_liveOnExo.value) "ExoPlayer" else "mpv",
+            live = true,
+            reason = event,
+            detail = "'${channel.name}': $detail",
+        )
+    }
+
     /** P6 — the stable "compatibility mode" pin key for [channel], or null when the row has no
      *  provider id (some hand-made M3U entries), where the stream URL stays the key. */
     private fun mpvPinKey(channel: ChannelEntity): String? =
@@ -1592,6 +1621,7 @@ class LiveViewModel(
         if (ladderUrl != channel.streamUrl) return false // a newer tune owns the ladder now
         val next = ladderOrder.firstOrNull { it !in ladderSpent } ?: run {
             engineLog("'${channel.name}' — no fallback left ($reason)")
+            recordLadderEvent(tv.own.owntv.player.PlayerFailureReason.LIVE_NO_FALLBACK, channel, reason)
             return false
         }
         ladderSpent += next
@@ -1608,6 +1638,7 @@ class LiveViewModel(
             Rung.MPV_HLS -> "mpv + HLS"; Rung.MPV_TS -> "mpv + TS"
         }
         engineLog("'${channel.name}' falling back to $label ($reason)")
+        recordLadderEvent(tv.own.owntv.player.PlayerFailureReason.LIVE_FALLBACK, channel, "$label — $reason")
         if (next.onMpv) {
             fallbackToMpv(channel, reason, forceTs = !next.isHls)
         } else {
@@ -1632,7 +1663,17 @@ class LiveViewModel(
         engineLog("starting mpv for '${channel.name}' — reason=$reason")
         // Preserve the format Exo actually discovered. Some panels redirect their advertised `.ts`
         // endpoint to HLS; handing that misleading URL to mpv traps FFmpeg at the manifest EOF.
-        val exoDiscoveredHls = _liveOnExo.value && previewEngine.isHlsStream
+        //
+        // "Discovered" strictly means Exo asked for something that was *not* HLS and got HLS anyway.
+        // Playing an `.m3u8` we deliberately requested teaches nothing about the `.ts` endpoint — and
+        // recording it as a redirect was actively harmful, because [LiveStreamQuirks.rememberHlsRedirect]
+        // keys by host: one "Prefer HLS" channel that fell back to mpv branded the entire panel as
+        // "its `.ts` is really HLS". Turning Prefer HLS off in that same session then routed every plain
+        // `.ts` into HlsMediaSource, which dies on the first bytes ("Input does not start with the
+        // #EXTM3U header") — so every channel failed before its first frame and walked the ladder to mpv.
+        val exoTuneUrl = previewEngine.currentUrl
+        val exoDiscoveredHls = _liveOnExo.value && previewEngine.isHlsStream &&
+            exoTuneUrl != null && !LiveStreamQuirks.isExplicitHlsUrl(exoTuneUrl)
         exoOutcomeJob?.cancel()             // mpv owns the channel now
         _liveOnExo.value = false            // shell flips to mpv's surface
         stalkerPreviewCmd = null
