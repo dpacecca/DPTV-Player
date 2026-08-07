@@ -2,6 +2,27 @@
 
 ## v4.2.0 — unreleased
 
+### 🌍 OwnTV in 24 languages — choose before setup, change anytime (community PR #108 by @codeVerine)
+
+- **OwnTV's complete interface is now available in English plus 23 fully translated languages:** Arabic,
+  Bangla, Brazilian and European Portuguese, Simplified and Traditional Chinese, Czech, Danish, Dutch,
+  French, German, Hindi, Italian, Japanese, Korean, Malayalam, Norwegian Bokmål, Polish, Russian, European
+  and US Spanish, Swedish, and Turkish. Missing text safely falls back to English.
+- **A fresh installation asks for the app language before Get Started.** The selected language and its
+  description are shown in a compact TV-friendly control; the full list opens in OwnTV's standard popup,
+  with isolated D-pad focus, scrolling, and focus restored after selection. The welcome, disclaimer, setup
+  choice, and add-playlist pages now share a modern OwnTV design with a subtle animated teal glow and ring.
+- **The language can be changed later from Settings → Look & Feel → Language.** Rows show each language in
+  its own script, include a searchable English name, and keep a durable System default option that follows
+  the TV's locale. The choice is independent of profiles and of the separate TMDB metadata-language setting.
+- **RTL and locale-aware presentation are built in.** Arabic mirrors logical navigation where appropriate;
+  dates, times, numbers, counts, plurals, launcher text, notifications, setup, companion pages, playback
+  messages, and diagnostics use localized resources without changing the underlying player or sync logic.
+- **Translation maintenance is now part of the project.** Six resource domains, a generated locale catalogue,
+  Hosted Weblate contribution and new-language request paths, 19 catalogue-only future languages, 132 tooling
+  tests, pseudolocale checks, and CI guards protect placeholders, plurals, formatting, overflow, and release
+  packaging. Every packaged translation covers all 1,771 source entries.
+
 ### 🧪 Test HLS support — find out whether your provider really serves HLS before you turn it on
 
 - **New button directly above "Prefer HLS for Live TV"**, on every Xtream playlist — when adding one,

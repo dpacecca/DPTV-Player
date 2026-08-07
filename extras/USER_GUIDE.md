@@ -13,6 +13,32 @@ obvious at first glance — once you know them, the app is a lot faster to live 
 
 ---
 
+## 🌍 App language & first-run setup
+
+On a fresh installation, OwnTV opens with its language selector focused before **Get Started**. Keep
+**System default** to follow the TV's language, or open the selector and choose one of the 23 complete
+translated languages. Each choice is shown in its own script with an English description; selecting it
+updates the welcome screen immediately and returns focus to the selector.
+
+The four main setup pages use the same OwnTV welcome design and D-pad behaviour:
+
+1. **Welcome** — choose the interface language, then press **Get Started**.
+2. **Before you start** — read the player-only disclaimer and press **I understand**.
+3. **Set up OwnTV** — create a new profile or restore a backup from a local file or another device.
+4. **Add playlist** — add a new M3U, Xtream, or Stalker source, use a playlist already shared by another
+   profile, import a backup, or skip for now.
+
+Change the interface language at any time under **Settings → Look & Feel → Language**. The picker is
+searchable and includes **System default**. This setting translates OwnTV itself—menus, setup, player
+messages, notifications, diagnostics, and companion pages. It is separate from **Settings → Metadata
+(TMDB) → Language**, which controls the language of downloaded plots, titles, and artwork. App-language
+changes do not alter playlists, profiles, playback engines, or sync behaviour.
+
+Arabic uses RTL-aware navigation where logical direction should mirror. Language selection survives app
+restarts, profile changes, and backup/restore. Missing strings safely fall back to English.
+
+---
+
 ## 📱 Add a playlist from your phone (Remote setup)
 
 Typing an Xtream server or a long M3U URL with a TV remote is painful. **Remote setup** lets you fill

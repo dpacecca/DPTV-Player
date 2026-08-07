@@ -86,6 +86,7 @@ Scan to join from your phone:
 
 ### 🎨 Settings & Robustness
 - Material 3 theming & accent, **Liquid Glass** frosted look over your own background photo, searchable settings, sidebar/category customization, adjustable panel widths, external player, weather chip
+- **24 complete interface languages** with System default, an in-app searchable language picker, RTL-aware navigation, and a language-first welcome flow on fresh installations
 - **Backup & Restore** locally or over Wi-Fi — a single `.own` file carrying your background image, optionally encrypted end to end with your own password (older `.json` backups still restore); in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
 
 📖 Full details: **[player reference →](extras/player.html)** · **[user guide →](extras/USER_GUIDE.md)**
@@ -216,7 +217,7 @@ https://github.com/ahXN00/OwnTV/releases/latest/download/OwnTV.apk
 
 **Prefer the command line?** From the project folder run `./gradlew assembleDebug` (use `gradlew.bat assembleDebug` on Windows). The APK lands in `app/build/outputs/apk/`.
 
-**First launch** — you'll go through onboarding: accept the disclaimer, create a profile, then **add a source** (M3U, Xtream, or Stalker/MAC portal) — or import a backup. After it imports, browse from the sidebar and open the **Guide** for the EPG. Everything else is under **Settings**.
+**First launch** — choose the app language (or keep **System default**) before pressing **Get Started**. The modern four-page onboarding then takes you through the disclaimer, profile/backup choice, and adding a source (M3U, Xtream, or Stalker/MAC portal). You can also restore a local backup or send one from another device. Change the interface language later under **Settings → Look & Feel → Language**; this is separate from the TMDB metadata-language setting. After a source imports, browse from the sidebar and open the **Guide** for the EPG.
 
 **Tested on:** a real **TCL Google TV**, and the **Android Studio emulator** (both the Android TV and Google TV system images).
 

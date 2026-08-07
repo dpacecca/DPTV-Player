@@ -13,6 +13,8 @@
 
 ### ✨ New features
 
+- **🌍 OwnTV in 24 languages (community PR #108 by @codeVerine)**
+- **✨ Redesigned first-run setup with language choice**
 - **🧪 Test HLS support — find out whether your provider really serves HLS before you turn it on**
 
 ### 🐛 Fixes
