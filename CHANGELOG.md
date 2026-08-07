@@ -96,6 +96,29 @@
 - **Export in the playback error log is always available.** It used to be hidden whenever the list above
   it was empty — but the export carries more than that list, including the recent Live TV diagnostics,
   so it was withheld in exactly the case that needed it most.
+- **Playlists whose provider blocks media players now play.** Some providers sit behind a protection
+  service that decides whether to answer by looking at what the request calls itself — and a request that
+  calls itself a media player is turned away with a "checking your browser" page, while the very same
+  address is served normally to anything else. Every channel on such a playlist failed instantly on both
+  players, which looked exactly like a dead provider. OwnTV now notices that kind of refusal and asks once
+  more as an ordinary desktop browser; if that works, the rest of the playlist opens straight away with no
+  second attempt. Playlists that set their own User-Agent are untouched — your setting is always used as-is.
+- **When a provider explains why it refused a channel, that explanation is now shown on the error
+  screen.** Providers often answer with a plain sentence — for example "Channel limit has been reached.
+  Stop one of your active streams before opening a new channel." — and OwnTV used to throw it away and
+  show a generic message instead. The provider's own words are now shown, whichever player hit the wall,
+  and refusals caused by having too many streams open are named as such rather than reported as an
+  offline channel.
+- **A channel is no longer sent looking for an address that doesn't exist when the provider is simply
+  busy.** If a provider refused because the account already had a stream open, OwnTV treated it as a
+  format problem and started guessing other addresses for the same channel — every one of them refused
+  too — so a channel that would have played on the second press spent nearly a minute failing and then
+  blamed itself. Refusals of that kind now stop the guessing immediately.
+- **The standard player can now switch stream format by itself.** Trying a channel's other address form
+  (`.m3u8` ⇄ `.ts`) was something only the compatibility player could do, so a channel published in one
+  form and served in the other could only be rescued by switching players — a visible interruption for
+  what is a one-character difference. It is now tried in place first, and only when the failure really is
+  about format.
 
 ## v4.1.7 — 2026-08-04
 
