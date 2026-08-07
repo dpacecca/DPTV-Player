@@ -17,6 +17,7 @@
 
 ### 🐛 Fixes
 
+- **Live channels that switch themselves to the compatibility player play again instead of turning black**
 - **Prefer HLS no longer applies to catch-up**
 - **Catch-up recordings now get both of their fallbacks instead of one**
 - **One channel without an HLS version no longer sends every other channel's preview to the wrong format**
@@ -29,6 +30,10 @@
 - **Auto frame rate is turned off once on TVs below Android 12, and warns before it is switched back on**
 - **A Live TV engine handoff is now written to the playback error log**
 - **Export in the playback error log is always available**
+- **Playlists whose provider blocks media players now play**
+- **When a provider explains why it refused a channel, that explanation is now shown on the error screen**
+- **A channel is no longer sent looking for an address that doesn't exist when the provider is simply busy**
+- **The standard player can now switch stream format by itself**
 
 ## v4.1.7 — 2026-08-04
 

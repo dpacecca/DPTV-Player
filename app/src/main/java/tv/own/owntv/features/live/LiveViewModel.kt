@@ -1640,7 +1640,16 @@ class LiveViewModel(
         engineLog("'${channel.name}' falling back to $label ($reason)")
         recordLadderEvent(tv.own.owntv.player.PlayerFailureReason.LIVE_FALLBACK, channel, "$label — $reason")
         if (next.onMpv) {
-            fallbackToMpv(channel, reason, forceTs = !next.isHls)
+            // Detached on purpose. [fallbackToMpv] cancels [exoOutcomeJob] the moment mpv takes over —
+            // but every automatic rung is dispatched from INSIDE that job (the audio/no-video/error
+            // watchers and [watchExoAfterFirstFrame] all run there), so calling it inline meant the
+            // handoff cancelled itself and died at its first suspension point: the shell had already
+            // flipped to mpv's surface, mpv was never asked to load anything, and [watchMpvOutcome]
+            // never armed. That is a permanent black screen whose diagnostics stop dead at
+            // "starting mpv" — no mpv_load, no mpv error, no further rung. Running the handoff as a
+            // sibling of the watcher instead of its child keeps the cancel meaning what it says.
+            mpvHandoffJob?.cancel()
+            mpvHandoffJob = viewModelScope.launch { fallbackToMpv(channel, reason, forceTs = !next.isHls) }
         } else {
             forceTsForExo = if (next.isHls) null else channel.streamUrl
             switchToExo(channel)
@@ -1658,6 +1667,10 @@ class LiveViewModel(
         }
         startOnExo(channel)
     }
+
+    /** The in-flight automatic ExoPlayer→mpv handoff, so a newer ladder step supersedes an older one.
+     *  Deliberately NOT a child of [exoOutcomeJob] — see the call site in [advanceLadder]. */
+    private var mpvHandoffJob: Job? = null
 
     private suspend fun fallbackToMpv(channel: ChannelEntity, reason: String, forceTs: Boolean = false) {
         engineLog("starting mpv for '${channel.name}' — reason=$reason")
@@ -1709,6 +1722,11 @@ class LiveViewModel(
             setStalkerReconnect(if (isStalker) channel.streamUrl else null)
             player.play(url, title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent, httpHeaders = channel.httpHeaders, livePrerollSecsOverride = prerollFor(channel.sourceId))
             watchMpvOutcome(channel)
+        } else {
+            // The only way out of this function that leaves the shell on mpv's surface with nothing
+            // loaded. Normal when the user zapped during the decoder-release wait; in a support log it
+            // is the difference between "the handoff was abandoned" and "the handoff vanished".
+            engineLog("mpv handoff for '${channel.name}' abandoned — the channel changed while ExoPlayer released")
         }
     }
 
