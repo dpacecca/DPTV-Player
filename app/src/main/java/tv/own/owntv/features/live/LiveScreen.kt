@@ -480,21 +480,23 @@ fun LiveScreen(
         }
 
         // Layer 4 — preview pane (informational only — no focusable actions; management lives in long-press)
-        Box(
-            modifier = Modifier
-                .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
-                .fillMaxSize()
-                .roundedPanel(fillColor = PreviewPanelFill)
-                .padding(Dimens.GapLarge),
-        ) {
-            LivePreviewPane(
-                channel = previewChannel,
-                categoryName = previewCategoryName,
-                nowNext = nowNext,
-                previewEngine = vm.previewEngine,
-                showVideo = effectivePreview,
-                singleSessionBlocked = previewBlockedSingleSession,
-            )
+        if (panelShares?.preview != 0) {
+            Box(
+                modifier = Modifier
+                    .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
+                    .fillMaxSize()
+                    .roundedPanel(fillColor = PreviewPanelFill)
+                    .padding(Dimens.GapLarge),
+            ) {
+                LivePreviewPane(
+                    channel = previewChannel,
+                    categoryName = previewCategoryName,
+                    nowNext = nowNext,
+                    previewEngine = vm.previewEngine,
+                    showVideo = effectivePreview,
+                    singleSessionBlocked = previewBlockedSingleSession,
+                )
+            }
         }
     }
     }

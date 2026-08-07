@@ -177,6 +177,7 @@ fun SettingsScreen(
     var showStartup by remember { mutableStateOf(false) }
     var showErrorLog by remember { mutableStateOf(false) }
     var showAfrWarning by remember { mutableStateOf(false) }
+    var showLivePreviewPanelWarning by remember { mutableStateOf(false) }
     var showBgImageChooser by remember { mutableStateOf(false) }
     var showBgPicker by remember { mutableStateOf(false) }
     var showBgRemote by remember { mutableStateOf(false) }
@@ -211,19 +212,21 @@ fun SettingsScreen(
     val startupRowFocus = remember { FocusRequester() }
     val errorLogRowFocus = remember { FocusRequester() }
     val afrRowFocus = remember { FocusRequester() }
+    val livePreviewQuickFocus = remember { FocusRequester() }
+    val livePreviewRowFocus = remember { FocusRequester() }
     val glassEffectRowFocus = remember { FocusRequester() }
     // Hoisted scroll state for the root settings list. We snapshot its position the instant a row is
     // clicked (in onClick, before any recomposition) and restore it on dialog close, so the list
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
     val scrollState = rememberScrollState()
     var savedScroll by remember { mutableIntStateOf(0) }
-    val anyDialogOpen = showZoom || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showErrorLog || showAfrWarning || showBgImageChooser || showBgPicker || showGlassEffect || showBrowsing
+    val anyDialogOpen = showZoom || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showGlassEffect || showBrowsing
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showErrorLog, showAfrWarning, showBgImageChooser, showBgPicker, showGlassEffect, showBrowsing) {
+    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showGlassEffect, showBrowsing) {
         if (!anyDialogOpen) {
             // When a scrim dialog is torn down, Compose's focus re-search through the newly-exposed
             // scrollable Column resets its scroll to 0 and then bringIntoView-animates to wherever
@@ -245,6 +248,7 @@ fun SettingsScreen(
     val languageChip = languageChipText(currentLocaleTag)
     val downloadRoot by settingsVm.downloadRoot.collectAsStateWithLifecycle()
     val livePreview by settingsVm.livePreviewEnabled.collectAsStateWithLifecycle()
+    val livePreviewPanelActive by settingsVm.livePreviewPanelActive.collectAsStateWithLifecycle()
     val previewAudio by settingsVm.livePreviewAudio.collectAsStateWithLifecycle()
     val hdr by settingsVm.hdrEnabled.collectAsStateWithLifecycle()
     val autoFrameRate by settingsVm.autoFrameRate.collectAsStateWithLifecycle()
@@ -289,6 +293,17 @@ fun SettingsScreen(
             showAfrWarning = true
         } else {
             settingsVm.setAutoFrameRate(!autoFrameRate)
+        }
+    }
+    val toggleLivePreview: (FocusRequester) -> Unit = { returnFocus ->
+        if (livePreview) {
+            settingsVm.setLivePreviewEnabled(false)
+        } else if (!livePreviewPanelActive) {
+            savedScroll = scrollState.value
+            dialogReturn = returnFocus
+            showLivePreviewPanelWarning = true
+        } else {
+            settingsVm.setLivePreviewEnabled(true)
         }
     }
 
@@ -360,7 +375,7 @@ fun SettingsScreen(
             .focusProperties {
                 onEnter = {
                     val target = rowFocus[lastTab]
-                        ?: if (searchQuery.isBlank()) rowFocus.getValue(SettingsTab.LANGUAGE) else searchFieldFocus
+                        ?: if (searchQuery.isBlank()) rowFocus.getValue(SettingsTab.PROFILES) else searchFieldFocus
                     runCatching { target.requestFocus() }
                 }
             }
@@ -387,7 +402,12 @@ fun SettingsScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            QuickToggleChip(stringResource(R.string.settings_quick_live_preview), livePreview, OwnTVIcon.LIVE_TV) { settingsVm.setLivePreviewEnabled(!livePreview) }
+            QuickToggleChip(
+                stringResource(R.string.settings_quick_live_preview),
+                livePreview,
+                OwnTVIcon.LIVE_TV,
+                modifier = Modifier.focusRequester(livePreviewQuickFocus),
+            ) { toggleLivePreview(livePreviewQuickFocus) }
             QuickToggleChip(stringResource(R.string.settings_quick_preview_sound), previewAudio, OwnTVIcon.AUDIO) { settingsVm.setLivePreviewAudio(!previewAudio) }
             QuickToggleChip(stringResource(R.string.settings_quick_channel_numbers), channelNumbers, OwnTVIcon.LIVE_TV) { settingsVm.setDirectTune(!channelNumbers) }
             QuickToggleChip(stringResource(R.string.settings_quick_hdr), hdr, OwnTVIcon.VIDEO) { settingsVm.setHdrEnabled(!hdr) }
@@ -592,7 +612,8 @@ fun SettingsScreen(
             title = stringResource(R.string.settings_quick_live_preview), desc = stringResource(R.string.settings_live_preview_description),
             chip = if (livePreview) stringResource(R.string.common_on) else stringResource(R.string.common_off),
             chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setLivePreviewEnabled(!livePreview) },
+            onClick = { toggleLivePreview(livePreviewRowFocus) },
+            modifier = Modifier.focusRequester(livePreviewRowFocus),
         )
         if (livePreview) {
             SettingsRow(
@@ -747,7 +768,7 @@ fun SettingsScreen(
                 SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_weather), stringResource(R.string.settings_search_keywords_weather), OwnTVIcon.EPG, TileTone.SECONDARY,
                     chip = if (weatherEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.WEATHER) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_quick_live_preview), stringResource(R.string.settings_search_keywords_live_preview), OwnTVIcon.LIVE_TV, TileTone.TERTIARY,
-                    chip = if (livePreview) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewEnabled(!livePreview) },
+                    chip = if (livePreview) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { toggleLivePreview(searchFieldFocus) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_preview_audio), stringResource(R.string.settings_search_keywords_sound), OwnTVIcon.AUDIO, TileTone.SECONDARY,
                     chip = if (previewAudio) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewAudio(!previewAudio) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_quick_channel_numbers), stringResource(R.string.settings_search_keywords_channel_numbers), OwnTVIcon.LIVE_TV, TileTone.PRIMARY,
@@ -917,6 +938,9 @@ fun SettingsScreen(
             onEnable = { settingsVm.setAutoFrameRate(true); showAfrWarning = false },
             onDismiss = { showAfrWarning = false },
         )
+    }
+    if (showLivePreviewPanelWarning) {
+        LivePreviewPanelHiddenDialog(onDismiss = { showLivePreviewPanelWarning = false })
     }
     if (showFolderPicker) {
         StorageBrowser(
@@ -1330,11 +1354,11 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
                 // error list is empty; an engine handoff can leave useful diagnostics without an entry.
                 OwnTVButton(stringResource(R.string.settings_export), onClick = {
                     scope.launch {
-                        val f = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        val path = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                             tv.own.owntv.player.PlaybackErrorLog.export(context)
                         }
-                        exportPath = f?.absolutePath
-                        exportFailed = f == null
+                        exportPath = path
+                        exportFailed = path == null
                     }
                 }, style = OwnTVButtonStyle.SECONDARY)
                 if (!entries.isNullOrEmpty()) {
@@ -1393,6 +1417,41 @@ private fun AutoFrameRateWarningDialog(onEnable: () -> Unit, onDismiss: () -> Un
                     stringResource(R.string.settings_auto_frame_rate_turn_on_anyway),
                     onClick = onEnable,
                     style = OwnTVButtonStyle.SECONDARY,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LivePreviewPanelHiddenDialog(onDismiss: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    BackHandler { onDismiss() }
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(Modifier.dialogPanel(width = 500.dp, padding = 28.dp)) {
+            Text(
+                stringResource(R.string.settings_live_preview_panel_hidden_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.onSurface,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                stringResource(R.string.settings_live_preview_panel_hidden_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(22.dp))
+            Row(Modifier.fillMaxWidth()) {
+                Spacer(Modifier.weight(1f))
+                OwnTVButton(
+                    stringResource(R.string.common_ok),
+                    onClick = onDismiss,
+                    modifier = Modifier.focusRequester(focus),
                 )
             }
         }
@@ -2183,6 +2242,7 @@ private fun QuickToggleChip(
     label: String,
     on: Boolean,
     icon: OwnTVIcon,
+    modifier: Modifier = Modifier,
     onToggle: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
@@ -2194,6 +2254,7 @@ private fun QuickToggleChip(
     val glassy = LocalGlass.current.isGlassy(GlassSurface.CARDS)
     FocusableSurface(
         onClick = onToggle,
+        modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         contentAlignment = Alignment.Center,
         surface = GlassSurface.CARDS,

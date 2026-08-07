@@ -179,6 +179,8 @@ or **narrow the whole app to just one**.
 - **Live preview**: focus a channel and its video plays in the preview pane (with the **real stream
   resolution**, e.g. `1080p`/`4K`, so a mislabelled "4K" channel can't fool you). Toggle this in
   **Settings → Playback → Live preview**; sound for the preview is **Settings → Playback → Preview audio**.
+  If the Live Preview panel is hidden through Panel Width Adjustment, preview video stays off and the
+  toggle explains that the panel needs a width above 0% before video can be enabled again.
 - 🖼️ **The preview pane is info-only now.** There are **no buttons** in it — Favorite, Rename, Hide,
   Match EPG and Catch-up all live in the **long-press menu** (below). Because nothing in the pane is
   focusable, **right-arrow no longer drops you onto the buttons by accident** — D-pad stays in the
@@ -658,6 +660,11 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     are **shares of the screen and must add up to 100%**: a **Total size** line shows the running total, and
     pressing **Okay** while it isn't 100% shows a note in red instead of saving, so you always take from one
     panel to give to another.
+  - The third panel — **Live Preview**, **Movie Poster** or **Series Poster** — can be set to **0%** to hide
+    it completely. Category and List keep their 10% minimum, and hiding the third panel also removes its
+    gap so the two remaining panels use the whole row.
+  - If Live Preview video is on when you save its panel at 0%, OwnTV warns first. Confirming hides the
+    panel and turns preview video off; it cannot be enabled again until the panel is given a width above 0%.
   - **Reset** returns a section to the standard widths; leaving a section **Off** keeps today's layout.
     Movie and series posters re‑flow automatically, so a narrower list just shows fewer per row. Saved in
     backups.
@@ -784,8 +791,9 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   players, the stereo safety net firing, a provider that only allows one stream) and any **report** you
   saved from the player's info overlay. If a channel or movie errored and you dismissed the message,
   open this to read exactly what happened — perfect for bug reports, no computer needed. **Export**
-  writes everything to a file and shows the path, so it can be pulled off the TV:
-  `adb pull /sdcard/Android/data/tv.own.owntv/files/owntv-playback-report.txt`.
+  writes everything to **`Download/owntv-playback-report.txt`** and shows the path. The public Download
+  folder is created automatically when missing, and exporting again replaces the previous report, so a
+  normal TV file manager or USB-copy tool can access it without ADB.
 - 🔍 **Detailed playback logging** (Video Player Settings → Diagnostics, off by default) — turn this on
   when you're chasing a playback problem, then reproduce it and **Export** the log: the report will
   include the full live‑playback trace. It only changes what is written down, never playback itself.

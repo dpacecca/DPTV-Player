@@ -534,17 +534,18 @@ private fun SeriesGrid(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
-                .fillMaxSize()
-                .roundedPanel(fillColor = PreviewPanelFill)
-                .padding(Dimens.GapLarge),
-        ) {
-            val s = selectedSeries
-            if (s == null) {
-                PreviewPane(hint = stringResource(R.string.content_focus_series))
-            } else {
+        if (panelShares?.preview != 0) {
+            Box(
+                modifier = Modifier
+                    .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
+                    .fillMaxSize()
+                    .roundedPanel(fillColor = PreviewPanelFill)
+                    .padding(Dimens.GapLarge),
+            ) {
+                val s = selectedSeries
+                if (s == null) {
+                    PreviewPane(hint = stringResource(R.string.content_focus_series))
+                } else {
                 // Gap-fill merge (§7.1/§4.1): provider wins unless the mode is TMDB-only.
                 val meta = selectedSeriesMeta?.takeIf { it.seriesId == s.id }?.cache
                 val tmdbWins = metadataMode.tmdbWins
@@ -609,6 +610,7 @@ private fun SeriesGrid(
                     }
                     Spacer(Modifier.height(16.dp))
                     Text(stringResource(R.string.content_press_ok_episodes), style = MaterialTheme.typography.bodyMedium, color = OwnTVTheme.colors.primary)
+                }
                 }
             }
         }

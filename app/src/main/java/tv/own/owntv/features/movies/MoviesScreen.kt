@@ -471,20 +471,22 @@ fun MoviesScreen(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
-                .fillMaxSize()
-                .roundedPanel(fillColor = PreviewPanelFill)
-                .padding(Dimens.GapLarge),
-        ) {
-            MovieDetailsPane(
-                movie = selectedMovie,
-                meta = selectedMovieMeta?.takeIf { it.movieId == selectedMovie?.id }?.cache,
-                tmdbWins = metadataMode.tmdbWins,
-                resumePositionMs = selectedProgress?.takeIf { !vm.isMovieCompleted(it) }?.positionMs?.takeIf { it > 0 },
-                downloadStrip = selectedMovie?.let { m -> downloadStates[m.id]?.let { tv.own.owntv.ui.components.downloadStripFor(listOf(it)) } },
-            )
+        if (panelShares?.preview != 0) {
+            Box(
+                modifier = Modifier
+                    .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
+                    .fillMaxSize()
+                    .roundedPanel(fillColor = PreviewPanelFill)
+                    .padding(Dimens.GapLarge),
+            ) {
+                MovieDetailsPane(
+                    movie = selectedMovie,
+                    meta = selectedMovieMeta?.takeIf { it.movieId == selectedMovie?.id }?.cache,
+                    tmdbWins = metadataMode.tmdbWins,
+                    resumePositionMs = selectedProgress?.takeIf { !vm.isMovieCompleted(it) }?.positionMs?.takeIf { it > 0 },
+                    downloadStrip = selectedMovie?.let { m -> downloadStates[m.id]?.let { tv.own.owntv.ui.components.downloadStripFor(listOf(it)) } },
+                )
+            }
         }
     }
     }

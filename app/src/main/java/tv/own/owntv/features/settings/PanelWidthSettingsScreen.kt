@@ -178,27 +178,66 @@ private fun PanelWidthDialog(
     val colors = OwnTVTheme.colors
     val savedEnabled by vm.panelWidthEnabled.getValue(section).collectAsStateWithLifecycle()
     val savedShares by vm.panelShares.getValue(section).collectAsStateWithLifecycle()
+    val livePreviewEnabled by vm.livePreviewEnabled.collectAsStateWithLifecycle()
     val stock = remember(section, rowWidth) { defaultPanelShares(section, rowWidth) }
 
     var enabled by remember { mutableStateOf(savedEnabled) }
     var draft by remember { mutableStateOf(savedShares ?: stock) }
     // The red note only appears once the user has actually tried to save an unbalanced total.
     var showError by remember { mutableStateOf(false) }
+    var showPreviewDisableConfirmation by remember { mutableStateOf(false) }
     val valid = draft.isValid
 
     val toggleFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) {
+    val confirmationFocus = remember { FocusRequester() }
+    LaunchedEffect(showPreviewDisableConfirmation) {
         kotlinx.coroutines.delay(80)
-        runCatching { toggleFocus.requestFocus() }
+        runCatching {
+            if (showPreviewDisableConfirmation) confirmationFocus.requestFocus() else toggleFocus.requestFocus()
+        }
     }
     LaunchedEffect(valid) { if (valid) showError = false }
-    BackHandler { onDismiss() }
+    BackHandler {
+        if (showPreviewDisableConfirmation) showPreviewDisableConfirmation = false else onDismiss()
+    }
 
     tv.own.owntv.ui.theme.PopupFontTheme {
         Box(
             Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
             contentAlignment = Alignment.Center,
         ) {
+            if (showPreviewDisableConfirmation) {
+                Column(modifier = Modifier.dialogPanel(width = 500.dp, corner = 16.dp, padding = 24.dp)) {
+                    Text(
+                        stringResource(R.string.settings_panel_width_disable_preview_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = colors.onSurface,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        stringResource(R.string.settings_panel_width_disable_preview_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(22.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OwnTVButton(
+                            stringResource(R.string.common_cancel),
+                            onClick = { showPreviewDisableConfirmation = false },
+                            modifier = Modifier.focusRequester(confirmationFocus),
+                        )
+                        Spacer(Modifier.weight(1f))
+                        OwnTVButton(
+                            stringResource(R.string.common_ok),
+                            onClick = {
+                                vm.setPanelWidths(section, enabled, draft)
+                                onDismiss()
+                            },
+                            style = OwnTVButtonStyle.SECONDARY,
+                        )
+                    }
+                }
+            } else {
             Column(modifier = Modifier.dialogPanel(width = 440.dp, corner = 16.dp, padding = 16.dp)) {
                 Text(
                     stringResource(R.string.settings_panel_width_dialog_title, sectionTitle(section)),
@@ -243,7 +282,11 @@ private fun PanelWidthDialog(
                     Spacer(Modifier.height(6.dp))
                     StepRow(stringResource(R.string.settings_panel_width_list), draft.list) { draft = draft.copy(list = it) }
                     Spacer(Modifier.height(6.dp))
-                    StepRow(stringResource(R.string.settings_panel_width_preview_panel, previewLabel(section)), draft.preview) { draft = draft.copy(preview = it) }
+                    StepRow(
+                        stringResource(R.string.settings_panel_width_preview_panel, previewLabel(section)),
+                        draft.preview,
+                        minimum = 0,
+                    ) { draft = draft.copy(preview = it) }
 
                     Spacer(Modifier.height(10.dp))
                     Row(
@@ -302,6 +345,10 @@ private fun PanelWidthDialog(
                             // An unbalanced total is only a problem for a section that's actually on.
                             if (enabled && !valid) {
                                 showError = true
+                            } else if (
+                                section == PanelSection.LIVE && enabled && draft.preview == 0 && livePreviewEnabled
+                            ) {
+                                showPreviewDisableConfirmation = true
                             } else {
                                 vm.setPanelWidths(section, enabled, draft)
                                 onDismiss()
@@ -310,13 +357,19 @@ private fun PanelWidthDialog(
                     )
                 }
             }
+            }
         }
     }
 }
 
 /** One panel's row: label, then − value + in [PanelWidthLimits.STEP] increments. */
 @Composable
-private fun StepRow(label: String, value: Int, onSet: (Int) -> Unit) {
+private fun StepRow(
+    label: String,
+    value: Int,
+    minimum: Int = PanelWidthLimits.MIN,
+    onSet: (Int) -> Unit,
+) {
     val colors = OwnTVTheme.colors
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
@@ -327,8 +380,8 @@ private fun StepRow(label: String, value: Int, onSet: (Int) -> Unit) {
         // Both buttons stay focusable at the ends of the range: disabling the one holding focus would
         // drop it, and focus is trapped in this dialog — the D-pad would go dead (the bug fixed in
         // StepperDialog). They just stop moving the value and dim instead.
-        StepBtn("–", atLimit = value <= PanelWidthLimits.MIN) {
-            onSet((value - PanelWidthLimits.STEP).coerceAtLeast(PanelWidthLimits.MIN))
+        StepBtn("–", atLimit = value <= minimum) {
+            onSet((value - PanelWidthLimits.STEP).coerceAtLeast(minimum))
         }
         Text(
             stringResource(R.string.common_percent, value),

@@ -21,7 +21,8 @@
 - **Translation maintenance is now part of the project.** Six resource domains, a generated locale catalogue,
   Hosted Weblate contribution and new-language request paths, 19 catalogue-only future languages, 132 tooling
   tests, pseudolocale checks, and CI guards protect placeholders, plurals, formatting, overflow, and release
-  packaging. Every packaged translation covers all 1,771 source entries.
+  packaging. The initial translated catalogue covered all 1,771 source entries; newly added text safely
+  falls back to English until translations catch up.
 
 ### 🧪 Test HLS support — find out whether your provider really serves HLS before you turn it on
 
@@ -44,6 +45,17 @@
   confirmed to play over MPEG-TS; otherwise it says the test channel looks dead. If your account is out
   of connections it tells you that instead of guessing.
 - A confirmed result is remembered and is not overwritten by the next sync's weaker claim.
+
+### 📐 Panel Width Adjustment — hide the preview or poster panel completely
+
+- **The third browse panel can now be set to 0%.** In Live TV this hides the Preview panel; in Movies
+  and Series it hides the Poster panel. Category and List keep their 10% minimum, the saved total still
+  has to be exactly 100%, and the hidden panel is removed from the layout together with its unused gap —
+  the other two panels receive the full remaining row instead of leaving an invisible strip behind.
+- **Live Preview video cannot stay on without a Live Preview panel.** Saving a 0% Live Preview width
+  while preview video is on explains what will happen and asks first; confirming turns the video off as
+  the panel is hidden. Trying to turn preview video back on shows where to restore the panel width and
+  leaves the toggle off. The same rule is enforced when settings are restored from a backup.
 
 ### 🐛 Fixes
 
@@ -117,6 +129,13 @@
 - **Export in the playback error log is always available.** It used to be hidden whenever the list above
   it was empty — but the export carries more than that list, including the recent Live TV diagnostics,
   so it was withheld in exactly the case that needed it most.
+- **Playback reports now export to the TV's public Download folder.** The report is written as
+  `Download/owntv-playback-report.txt`, replacing the previous app-private Android/data location, so it
+  is visible to normal file managers and easy to copy without ADB. OwnTV creates the Download folder if
+  the device does not already have one and replaces its previous report instead of accumulating numbered
+  copies.
+- **Opening Settings now focuses Profiles, the first row, instead of Language.** D-pad navigation starts
+  where the visible settings list starts; returning from a sub-page still restores the row that opened it.
 - **Playlists whose provider blocks media players now play.** Some providers sit behind a protection
   service that decides whether to answer by looking at what the request calls itself — and a request that
   calls itself a media player is turned away with a "checking your browser" page, while the very same

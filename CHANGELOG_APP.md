@@ -16,6 +16,7 @@
 - **🌍 OwnTV in 24 languages (community PR #108 by @codeVerine)**
 - **✨ Redesigned first-run setup with language choice**
 - **🧪 Test HLS support — find out whether your provider really serves HLS before you turn it on**
+- **📐 Panel Width Adjustment can hide the preview or poster panel completely**
 
 ### 🐛 Fixes
 
@@ -32,6 +33,8 @@
 - **Auto frame rate is turned off once on TVs below Android 12, and warns before it is switched back on**
 - **A Live TV engine handoff is now written to the playback error log**
 - **Export in the playback error log is always available**
+- **Playback reports now export to the public Download folder**
+- **Settings now opens with focus on Profiles, the first row**
 - **Playlists whose provider blocks media players now play**
 - **When a provider explains why it refused a channel, that explanation is now shown on the error screen**
 - **A channel is no longer sent looking for an address that doesn't exist when the provider is simply busy**

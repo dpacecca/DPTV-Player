@@ -65,12 +65,14 @@ Scan to join from your phone:
 - **Subtitles** — text (SRT/ASS), image (PGS/VOBSUB/DVB), closed captions, plus OpenSubtitles search & local files with timing adjust; customisable size, colour, position and background transparency
 - Resume prompts, next-episode auto-play, mini-player/PiP, **audio-only mode**, and a live codec/resolution/HDR stream-info overlay
 - **Behaves like a TV app** — remote/headset/assistant transport keys via a system media session, and audio focus that ducks for a notification instead of pausing your film
-- **Diagnostics you can send** — a playback log of failures *and* events, "Report this stream" from the info overlay, optional detailed trace, and a one-press export you can `adb pull` off the TV
+- **Diagnostics you can send** — a playback log of failures *and* events, "Report this stream" from the info overlay, optional detailed trace, and a one-press export to `Download/owntv-playback-report.txt`
 
 ### 🧭 Browse
 - **Continue Watching** home with TMDB-enriched previews; Live / Movies / Series / Downloads / Guide sections
 - Per-profile customizable rows, Favorites & History, bulk rename rules, custom combined categories,
   inline + global search, and a multi-playlist switcher
+- Per-section panel widths for Live TV, Movies and Series, including a 0% option that completely hides
+  the preview/poster panel while keeping the remaining panels at an exact 100% total
 - **TMDB** posters, plots, cast & trailers **in 40 languages**; scales to ~50k channels / ~168k movies with priority + incremental syncing
 
 ### 📥 Sources & EPG
