@@ -19,8 +19,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -57,12 +63,181 @@ import tv.own.owntv.core.i18n.SupportedLocales
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
+import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.OwnTVPopup
 import tv.own.owntv.ui.components.SearchBar
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
+
+/** Compact first-launch dropdown. The list itself uses [OwnTVPopup], so it follows the same popup
+ * scale, typography, centering, focus isolation, and keyboard-safe geometry as the rest of OwnTV. */
+@Composable
+fun FirstRunLanguageSelector(modifier: Modifier = Modifier) {
+    val viewModel: LanguageSettingsViewModel = koinViewModel()
+    val currentTag by viewModel.currentTag.collectAsStateWithLifecycle()
+    val selectedLocale = remember(currentTag, viewModel.pickerRows) {
+        viewModel.pickerRows.firstOrNull { it.languageTag == currentTag }
+    }
+    val triggerFocus = remember { FocusRequester() }
+    var showPicker by remember { mutableStateOf(false) }
+    var restoreFocus by remember { mutableStateOf(false) }
+    val colors = OwnTVTheme.colors
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(80)
+        runCatching { triggerFocus.requestFocus() }
+    }
+    LaunchedEffect(showPicker) {
+        if (!showPicker && restoreFocus) {
+            kotlinx.coroutines.delay(80)
+            runCatching { triggerFocus.requestFocus() }
+            restoreFocus = false
+        }
+    }
+
+    FocusableSurface(
+        onClick = {
+            restoreFocus = true
+            showPicker = true
+        },
+        modifier = modifier
+            .width(284.dp)
+            .height(61.dp)
+            .focusRequester(triggerFocus),
+        shape = RoundedCornerShape(20.dp),
+        focusedContainerColor = colors.primaryContainer,
+        unfocusedContainerColor = colors.surfaceContainerHigh,
+        focusedScale = 1.03f,
+        glowElevation = 14,
+        surface = GlassSurface.CARDS,
+        glassIdleRimAlpha = 0.12f,
+        contentAlignment = Alignment.CenterStart,
+    ) { focused ->
+        val foreground = if (focused) colors.onPrimaryContainer else colors.onSurface
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 17.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(13.dp),
+        ) {
+            OwnTVIcon(
+                icon = OwnTVIcon.LANGUAGE,
+                tint = if (focused) foreground else colors.primary,
+                modifier = Modifier.size(28.dp),
+            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = selectedLocale?.endonym ?: stringResource(R.string.settings_language_system_default),
+                    style = MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.SansSerif),
+                    color = foreground,
+                )
+                Text(
+                    text = selectedLocale?.englishName ?: stringResource(R.string.settings_language_system_default_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = foreground.copy(alpha = 0.78f),
+                )
+            }
+            OwnTVIcon(
+                icon = OwnTVIcon.CHEVRON,
+                tint = foreground.copy(alpha = 0.8f),
+                modifier = Modifier.size(18.dp).rotate(90f),
+            )
+        }
+    }
+
+    if (showPicker) {
+        FirstRunLanguagePopup(
+            viewModel = viewModel,
+            currentTag = currentTag,
+            onDismiss = { showPicker = false },
+        )
+    }
+}
+
+@Composable
+private fun FirstRunLanguagePopup(
+    viewModel: LanguageSettingsViewModel,
+    currentTag: String,
+    onDismiss: () -> Unit,
+) {
+    val selectedIndex = remember(currentTag, viewModel.pickerRows) {
+        if (currentTag.isEmpty()) 0
+        else (viewModel.pickerRows.indexOfFirst { it.languageTag == currentTag } + 1).coerceAtLeast(0)
+    }
+    val selectedFocus = remember { FocusRequester() }
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex)
+
+    fun choose(tag: String) {
+        viewModel.setLocale(tag)
+        onDismiss()
+    }
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(80)
+        runCatching { selectedFocus.requestFocus() }
+    }
+    BackHandler { onDismiss() }
+
+    OwnTVPopup(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.7f))
+                .trapAllFocusExit()
+                .focusGroup(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier.dialogPanel(
+                    width = 330.dp,
+                    corner = 18.dp,
+                    padding = 18.dp,
+                    scroll = false,
+                ),
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_language),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = OwnTVTheme.colors.onSurface,
+                )
+                Spacer(Modifier.height(12.dp))
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 460.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    item(key = SupportedLocales.SYSTEM_DEFAULT_TAG) {
+                        LanguageRow(
+                            endonym = stringResource(R.string.settings_language_system_default),
+                            englishName = stringResource(R.string.settings_language_system_default_description),
+                            coverage = null,
+                            selected = currentTag.isEmpty(),
+                            onClick = { choose(SupportedLocales.SYSTEM_DEFAULT_TAG) },
+                            modifier = if (currentTag.isEmpty()) Modifier.focusRequester(selectedFocus) else Modifier,
+                        )
+                    }
+                    items(viewModel.pickerRows, key = { it.languageTag }) { locale ->
+                        val selected = locale.languageTag == currentTag
+                        LanguageRow(
+                            endonym = locale.endonym,
+                            englishName = locale.englishName,
+                            coverage = null,
+                            selected = selected,
+                            onClick = { choose(locale.languageTag) },
+                            modifier = if (selected) Modifier.focusRequester(selectedFocus) else Modifier,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
 /**
  * In-app language picker. System default is pinned first; remaining rows are A–Z by English name.

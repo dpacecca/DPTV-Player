@@ -1,6 +1,13 @@
 package tv.own.owntv.features.setup
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,18 +32,25 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
@@ -45,6 +59,7 @@ import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.sync.importProgressDisplay
 import tv.own.owntv.features.profiles.ProfileEditorDialog
+import tv.own.owntv.features.settings.FirstRunLanguageSelector
 import tv.own.owntv.ui.components.BrandLockup
 import tv.own.owntv.ui.components.BrowseMode
 import tv.own.owntv.ui.components.FocusableSurface
@@ -66,7 +81,7 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 private enum class Step { WELCOME, DISCLAIMER, SETUP_CHOICE, CREATE_PROFILE, ADD_CONTENT, ADD_SOURCE_CHOOSER, ADD_SOURCE_REMOTE, ADD_SOURCE, IMPORTING, EXISTING, IMPORT_BACKUP_CHOOSER, IMPORT_BACKUP_REMOTE, IMPORT_BACKUP }
 
 /**
- * Onboarding for one profile. [firstRun] shows the welcome/disclaimer; otherwise it starts at profile
+ * Onboarding for one profile. [firstRun] shows language/welcome/disclaimer; otherwise it starts at profile
  * creation (used by "Add profile"). [onDone] receives the newly active profile id and enters the
  * app; [onCancel] backs out (to the gate).
  */
@@ -77,7 +92,7 @@ fun Onboarding(firstRun: Boolean, onDone: (Long?) -> Unit, onCancel: () -> Unit,
     val defaultIptvName = stringResource(R.string.setup_default_iptv)
     val defaultPlaylistName = stringResource(R.string.setup_name_default_playlist)
     val defaultPortalName = stringResource(R.string.setup_default_portal)
-    var step by remember { mutableStateOf(if (firstRun) Step.WELCOME else Step.CREATE_PROFILE) }
+    var step by rememberSaveable(firstRun) { mutableStateOf(if (firstRun) Step.WELCOME else Step.CREATE_PROFILE) }
     val importState by vm.state.collectAsStateWithLifecycle()
     val progress by vm.progress.collectAsStateWithLifecycle()
     val epgSync by vm.epgSync.collectAsStateWithLifecycle()
@@ -193,14 +208,30 @@ fun Onboarding(firstRun: Boolean, onDone: (Long?) -> Unit, onCancel: () -> Unit,
 
 @Composable
 private fun WelcomeScreen(onNext: () -> Unit) {
-    val fr = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
-    Centered {
-        BrandLockup(markSize = 72, textSize = 44)
-        Spacer(Modifier.height(16.dp))
+    MainSetupPage {
+        Text(
+            stringResource(R.string.setup_welcome_to),
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp,
+            ),
+            color = OwnTVTheme.colors.primary.copy(alpha = 0.82f),
+        )
+        Spacer(Modifier.height(19.dp))
+        BrandLockup(markSize = 82, textSize = 62)
+        Spacer(Modifier.height(24.dp))
         Text(stringResource(R.string.setup_welcome_tagline), style = MaterialTheme.typography.titleMedium, color = OwnTVTheme.colors.onSurfaceVariant)
-        Spacer(Modifier.height(40.dp))
-        OwnTVButton(stringResource(R.string.setup_get_started), onClick = onNext, icon = OwnTVIcon.PLAY, modifier = Modifier.focusRequester(fr))
+        Spacer(Modifier.height(30.dp))
+        SetupAccentRule()
+        Spacer(Modifier.height(26.dp))
+        FirstRunLanguageSelector()
+        Spacer(Modifier.height(14.dp))
+        OwnTVButton(
+            stringResource(R.string.setup_get_started),
+            onClick = onNext,
+            modifier = Modifier.width(192.dp).height(50.dp),
+            icon = OwnTVIcon.PLAY,
+        )
     }
 }
 
@@ -209,9 +240,11 @@ private fun DisclaimerScreen(onAgree: () -> Unit, onBack: () -> Unit) {
     val colors = OwnTVTheme.colors
     val fr = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
-    Centered {
+    MainSetupPage {
+        BrandLockup(markSize = 36, textSize = 26)
+        Spacer(Modifier.height(24.dp))
         Text(stringResource(R.string.setup_before_you_start), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(10.dp))
         Text(
             stringResource(R.string.setup_disclaimer),
             style = MaterialTheme.typography.bodyLarge,
@@ -219,10 +252,21 @@ private fun DisclaimerScreen(onAgree: () -> Unit, onBack: () -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(max = 560.dp),
         )
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(20.dp))
+        SetupAccentRule()
+        Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OwnTVButton(stringResource(R.string.common_back), onClick = onBack, style = OwnTVButtonStyle.SECONDARY)
-            OwnTVButton(stringResource(R.string.setup_i_understand), onClick = onAgree, modifier = Modifier.focusRequester(fr))
+            OwnTVButton(
+                stringResource(R.string.common_back),
+                onClick = onBack,
+                modifier = Modifier.width(140.dp),
+                style = OwnTVButtonStyle.SECONDARY,
+            )
+            OwnTVButton(
+                stringResource(R.string.setup_i_understand),
+                onClick = onAgree,
+                modifier = Modifier.width(220.dp).focusRequester(fr),
+            )
         }
     }
 }
@@ -233,13 +277,20 @@ private fun SetupChoiceScreen(onCreate: () -> Unit, onRestore: () -> Unit, onBac
     val fr = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
     BackHandler { onBack() }
-    Centered {
+    MainSetupPage {
+        BrandLockup(markSize = 36, textSize = 26)
+        Spacer(Modifier.height(24.dp))
         Text(stringResource(R.string.setup_set_up_owntv), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(10.dp))
         Text(
             stringResource(R.string.setup_setup_choice_description),
-            style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = 560.dp),
         )
+        Spacer(Modifier.height(20.dp))
+        SetupAccentRule()
         Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             ChoiceCard(icon = OwnTVIcon.PERSON, title = stringResource(R.string.setup_new_profile), desc = stringResource(R.string.setup_create_profile_add_sources), modifier = Modifier.focusRequester(fr), onClick = onCreate)
@@ -253,10 +304,20 @@ private fun AddContentScreen(hasExisting: Boolean, onNew: () -> Unit, onExisting
     val colors = OwnTVTheme.colors
     val fr = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
-    Centered {
+    MainSetupPage {
+        BrandLockup(markSize = 36, textSize = 26)
+        Spacer(Modifier.height(24.dp))
         Text(stringResource(R.string.setup_add_playlist), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
-        Spacer(Modifier.height(6.dp))
-        Text(stringResource(R.string.setup_add_playlist_description), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        Spacer(Modifier.height(10.dp))
+        Text(
+            stringResource(R.string.setup_add_playlist_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = 560.dp),
+        )
+        Spacer(Modifier.height(20.dp))
+        SetupAccentRule()
         Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             ChoiceCard(icon = OwnTVIcon.ADD, title = stringResource(R.string.setup_new), desc = stringResource(R.string.setup_add_m3u_xtream), modifier = Modifier.focusRequester(fr), onClick = onNew)
@@ -266,7 +327,84 @@ private fun AddContentScreen(hasExisting: Boolean, onNew: () -> Unit, onExisting
             ChoiceCard(icon = OwnTVIcon.DOWNLOADS, title = stringResource(R.string.setup_import), desc = stringResource(R.string.setup_restore_backup_file), onClick = onImport)
         }
         Spacer(Modifier.height(24.dp))
-        OwnTVButton(stringResource(R.string.setup_skip_for_now), onClick = onSkip, style = OwnTVButtonStyle.SECONDARY)
+        OwnTVButton(
+            stringResource(R.string.setup_skip_for_now),
+            onClick = onSkip,
+            modifier = Modifier.width(190.dp),
+            style = OwnTVButtonStyle.SECONDARY,
+        )
+    }
+}
+
+@Composable
+private fun SetupAccentRule() {
+    Box(
+        Modifier
+            .width(38.dp)
+            .height(3.dp)
+            .background(OwnTVTheme.colors.primary, RoundedCornerShape(50)),
+    )
+}
+
+private const val MAIN_SETUP_CONTENT_SCALE = 0.62f
+
+@Composable
+private fun MainSetupPage(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    Box(Modifier.fillMaxSize()) {
+        SetupAmbientBackdrop()
+        Box(
+            modifier = Modifier.fillMaxSize().padding(40.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .graphicsLayer {
+                        scaleX = MAIN_SETUP_CONTENT_SCALE
+                        scaleY = MAIN_SETUP_CONTENT_SCALE
+                    }
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                content = content,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SetupAmbientBackdrop() {
+    val primary = OwnTVTheme.colors.primary
+    val transition = rememberInfiniteTransition()
+    val ringScale by transition.animateFloat(
+        initialValue = 0.97f,
+        targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 6_000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+    )
+
+    Canvas(Modifier.fillMaxSize()) {
+        val center = Offset(size.width * 0.5f, size.height * 0.48f)
+        val glowRadius = size.minDimension * 0.46f
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    primary.copy(alpha = 0.12f),
+                    primary.copy(alpha = 0.045f),
+                    Color.Transparent,
+                ),
+                center = center,
+                radius = glowRadius,
+            ),
+            radius = glowRadius,
+            center = center,
+        )
+        drawCircle(
+            color = primary.copy(alpha = 0.075f),
+            radius = size.minDimension * 0.34f * ringScale,
+            center = center,
+            style = Stroke(width = 1.dp.toPx()),
+        )
     }
 }
 
