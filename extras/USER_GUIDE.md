@@ -50,7 +50,8 @@ the form on your phone instead.
 3. **On a phone or laptop on the same Wi‑Fi**, scan the QR (or open the URL). The page asks for the
    **PIN** shown on the TV, then shows a form with **Xtream / M3U / Stalker** tabs.
 4. **Fill the form and tap “Send to TV.”** The details appear in the Add Source screen on the TV, with
-   the matching type selected and the fields filled.
+   the matching type selected and the fields filled. The Stalker tab also carries optional Serial Number,
+   Device ID, Device ID2, and Signature values for portals that require advanced device identification.
 5. **Press Start Import on the TV** with the remote — the phone only fills the form; it never starts the
    import. Leave the Remote screen (Back) and the server stops automatically.
 
@@ -91,20 +92,22 @@ submission must include it. *Core idea from a community suggestion (PR #66 by @z
 ## 📡 Stalker / Ministra portal
 
 Some IPTV providers use the Stalker (MAG portal) protocol — you add them with a **Portal URL**
-and a **MAC address** (no username/password). Once added, a Stalker portal behaves like any other
-playlist: Live TV, Movies, Series, downloads, TMDB metadata, backup, and the playlist switcher all
-work the same.
+and a **MAC address** (no username/password). Stricter portals can also require a Serial Number,
+Device ID, Device ID2, or Signature. Once added, a Stalker portal behaves like any other playlist:
+Live TV, Movies, Series, downloads, TMDB metadata, backup, and the playlist switcher all work the same.
 
 ### Add a Stalker source
 1. **Settings → Manage sources → Add source → Stalker (MAC)** (also available in the first‑run
    setup wizard).
 2. Enter the **Portal URL** (e.g. `http://host:port/c/`) and the **MAC address** your provider
    gave you (e.g. `00:1A:79:AA:BB:CC`).
-3. (Optional) Pick a **Device model preset** for the User-Agent if your portal is picky about the
+3. If your provider supplied them, enter **Serial Number**, **Device ID**, **Device ID2**, and
+   **Signature** under **Advanced device identification**. Leave them blank for a normal MAC-only portal.
+4. (Optional) Pick a **Device model preset** for the User-Agent if your portal is picky about the
    MAG box model (MAG250/254/270/420). The default works on most portals.
-4. Tap **Test connection** — it verifies the handshake before saving. A "Connected" message means
-   the portal accepted the MAC (if the portal reports a subscription end date, it's shown too).
-5. **Start Import** — Live channels, Movies, and Series all populate, just like an Xtream source.
+5. Tap **Test connection** — it verifies the complete identity before saving. A "Connected" message
+   means the portal accepted it (if the portal reports a subscription end date, it's shown too).
+6. **Start Import** — Live channels, Movies, and Series all populate, just like an Xtream source.
 
 ### Notes & troubleshooting
 - **Series episodes** load when you open a show (episode names show as "Episode 1, 2, …" —
@@ -114,7 +117,8 @@ work the same.
   **Settings → EPG**.
 - **Catch-up**: channels whose portal keeps an archive get the usual catch-up features (Guide
   "Watch from start", the Live TV catch-up picker, live rewind).
-- **"Portal refused the login"** — check the MAC address (copy it exactly), and check the TV's
+- **"Portal refused the login"** — check the MAC and any advanced device-identification values
+  (copy them exactly), and check the TV's
   **date & time** (Stalker validates request timestamps; a clock more than a few minutes off
   fails the handshake).
 - **Stream drops after a long watch** — Stalker links expire after a few hours; OwnTV re-fetches

@@ -177,9 +177,11 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     editingSource = null
                 },
                 onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.updateSource(src.id, n, url, "", "", ua, epg, autoRefresh, isDefault); editingSource = null },
-                onStartStalker = { n, url, mac, ua, autoRefresh, isDefault, live, movies, series ->
+                onStartStalker = { n, url, mac, serialNumber, deviceId, deviceId2, signature, ua, autoRefresh, isDefault, live, movies, series ->
                     vm.updateSource(
                         src.id, n, url, "", "", ua, "", autoRefresh, isDefault, mac = mac,
+                        stalkerSerialNumber = serialNumber, stalkerDeviceId = deviceId,
+                        stalkerDeviceId2 = deviceId2, stalkerSignature = signature,
                         syncLive = live != tv.own.owntv.core.sync.SyncScopeChoice.Off,
                         syncMovies = movies != tv.own.owntv.core.sync.SyncScopeChoice.Off,
                         syncSeries = series != tv.own.owntv.core.sync.SyncScopeChoice.Off,
@@ -187,7 +189,9 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     vm.resetStalkerTest()
                     editingSource = null
                 },
-                onTestStalker = { url, mac, ua -> vm.testStalker(url, mac, ua) },
+                onTestStalker = { url, mac, serialNumber, deviceId, deviceId2, signature, ua ->
+                    vm.testStalker(url, mac, serialNumber, deviceId, deviceId2, signature, ua)
+                },
                 stalkerTest = stalkerTestUi,
                 onBack = { vm.resetStalkerTest(); editingSource = null },
                 modifier = Modifier,
@@ -216,11 +220,16 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                             vm.addXtream(n.ifBlank { defaultIptvName }, server, u, p, ua, epg, autoRefresh, live, movies, series, isDefault, preferHls)
                         },
                         onStartM3u = { n, url, ua, epg, autoRefresh, isDefault -> vm.addM3u(n.ifBlank { defaultPlaylistName }, url, ua, epg, autoRefresh, isDefault) },
-                        onStartStalker = { n, url, mac, ua, autoRefresh, isDefault, live, movies, series ->
+                        onStartStalker = { n, url, mac, serialNumber, deviceId, deviceId2, signature, ua, autoRefresh, isDefault, live, movies, series ->
                             vm.resetStalkerTest()
-                            vm.addStalker(n.ifBlank { defaultPortalName }, url, mac, ua, autoRefresh, isDefault, live, movies, series)
+                            vm.addStalker(
+                                n.ifBlank { defaultPortalName }, url, mac, serialNumber, deviceId,
+                                deviceId2, signature, ua, autoRefresh, isDefault, live, movies, series,
+                            )
                         },
-                        onTestStalker = { url, mac, ua -> vm.testStalker(url, mac, ua) },
+                        onTestStalker = { url, mac, serialNumber, deviceId, deviceId2, signature, ua ->
+                            vm.testStalker(url, mac, serialNumber, deviceId, deviceId2, signature, ua)
+                        },
                         stalkerTest = stalkerTestUi,
                         // Submissions from the Remote screen land here pre-filled (type + fields).
                         remotePayload = vm.remotePayload,

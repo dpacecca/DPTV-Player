@@ -27,8 +27,9 @@
 OwnTV is a native **Android TV** IPTV **player** built with Kotlin, Jetpack Compose for TV, and a
 **dual playback engine** — **libmpv (FFmpeg)** for movies/series and maximum compatibility, **ExoPlayer
 (Media3)** for near-instant Live TV. It's a *player only* — you bring your own Xtream login, M3U playlist
-(by **URL or a local `.m3u`/`.m3u8` file** on the device), or **Stalker/Ministra portal (Portal URL + MAC
-address)**, and OwnTV gives you a fast, modern, remote-first way to browse and watch them.
+(by **URL or a local `.m3u`/`.m3u8` file** on the device), or **Stalker/Ministra portal (Portal URL + MAC,
+with optional Serial Number, Device IDs, and Signature)**, and OwnTV gives you a fast, modern,
+remote-first way to browse and watch them.
 
 > ⚠️ OwnTV does **not** provide any channels, playlists, subscriptions, streams, or media content.
 > You are responsible for adding your own legally accessible sources.
@@ -76,7 +77,7 @@ Scan to join from your phone:
 - **TMDB** posters, plots, cast & trailers **in 40 languages**; scales to ~50k channels / ~168k movies with priority + incremental syncing
 
 ### 📥 Sources & EPG
-- **Xtream**, **M3U** (typed playlists), and **Stalker/Ministra** MAC portals; add a source from your phone over LAN (QR + PIN)
+- **Xtream**, **M3U** (typed playlists), and **Stalker/Ministra** portals, including optional advanced device identification; add any source from your phone over LAN (QR + PIN)
 - XMLTV **TV Guide** grid, **Catch-up TV** (up to 7 days) + live rewind, auto EPG matching, multiple guide sources
 - **Guide time offset** — correct a guide published in another time zone, globally or per channel
 - Optional **guide channel logos** — per EPG source, use that feed's own logos instead of your playlist's

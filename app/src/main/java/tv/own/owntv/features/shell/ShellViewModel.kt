@@ -40,7 +40,7 @@ import tv.own.owntv.ui.theme.ThemeMode
 import tv.own.owntv.ui.theme.UiZoom
 
 /** Top-level navigation destinations rendered in the Layer-1 sidebar. */
-enum class MainSection(@androidx.annotation.StringRes val labelRes: Int) {
+enum class MainSection(@param:androidx.annotation.StringRes val labelRes: Int) {
     SEARCH(tv.own.owntv.R.string.common_nav_search),
     HOME(tv.own.owntv.R.string.common_nav_home),
     LIVE_TV(tv.own.owntv.R.string.common_nav_live_tv),

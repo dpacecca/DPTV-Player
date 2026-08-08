@@ -201,6 +201,10 @@ class SetupViewModel(
         name: String,
         portalUrl: String,
         mac: String,
+        serialNumber: String = "",
+        deviceId: String = "",
+        deviceId2: String = "",
+        signature: String = "",
         userAgent: String = "",
         autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
         live: SyncScopeChoice = SyncScopeChoice.Now,
@@ -221,10 +225,20 @@ class SetupViewModel(
                     portalUrl = portalUrl.trim(),
                     mac = canonicalMac,
                     userAgent = userAgent.trim().takeIf { it.isNotBlank() },
+                    deviceIdentity = tv.own.owntv.core.stalker.StalkerDeviceIdentity(
+                        serialNumber = serialNumber.trim().takeIf { it.isNotBlank() },
+                        deviceId = deviceId.trim().takeIf { it.isNotBlank() },
+                        deviceId2 = deviceId2.trim().takeIf { it.isNotBlank() },
+                        signature = signature.trim().takeIf { it.isNotBlank() },
+                    ),
                 ),
             )
             sourceRepository.addStalkerSource(
                 profileId, name.trim(), portalUrl.trim(), canonicalMac,
+                serialNumber.trim().takeIf { it.isNotBlank() },
+                deviceId.trim().takeIf { it.isNotBlank() },
+                deviceId2.trim().takeIf { it.isNotBlank() },
+                signature.trim().takeIf { it.isNotBlank() },
                 userAgent.trim().takeIf { it.isNotBlank() },
                 syncLive = enabled.live, syncMovies = enabled.movies, syncSeries = enabled.series,
             )

@@ -2,6 +2,21 @@
 
 ## v4.2.0 — unreleased
 
+### 🔐 Advanced Stalker device identification — support portals that require more than a MAC
+
+- **Stalker sources now accept four optional device-identification values:** Serial Number, Device ID,
+  Device ID2, and Signature. They appear together under **Advanced device identification** when adding
+  or editing a Stalker source, including during first-run setup.
+- **Remote setup supports the same fields.** Enter them from the Stalker tab on a phone or laptop and
+  they arrive pre-filled on the TV with the Portal URL, MAC, and User-Agent. **Test connection** uses the
+  complete form, so a strict portal can be verified before the source is saved.
+- **The identity follows every later portal login.** Syncs, lazy episode loading, catch-up, short EPG,
+  subscription checks, and playback-link renewal all reuse the stored values. Blank advanced fields are
+  omitted completely, preserving the existing MAC-only flow for portals that do not require them.
+- **Existing installations upgrade without re-adding a source.** The new values are optional, and
+  password-protected backups encrypt them alongside the Stalker MAC. Backups without a password omit
+  device identifiers rather than writing them in plain text.
+
 ### 🌍 OwnTV in 24 languages — choose before setup, change anytime (community PR #108 by @codeVerine)
 
 - **OwnTV's complete interface is now available in English plus 23 fully translated languages:** Arabic,
@@ -58,6 +73,11 @@
   leaves the toggle off. The same rule is enforced when settings are restored from a backup.
 
 ### 🐛 Fixes
+
+- **The top-bar Search and playlist controls are compact again.** A localization safety change made
+  short labels expand to their maximum allowed widths, so the Search button looked like a text field and
+  the playlist selector occupied too much of the right side. Both now size themselves to their content,
+  as in v4.1.7, while genuinely long translations and playlist names remain bounded and scroll on focus.
 
 - **A channel that is briefly full now waits and starts by itself, instead of dropping you on the error
   screen.** Some providers answer a channel change with "too many connections right now, come back in N

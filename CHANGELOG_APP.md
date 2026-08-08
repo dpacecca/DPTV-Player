@@ -15,11 +15,13 @@
 
 - **🌍 OwnTV in 24 languages (community PR #108 by @codeVerine)**
 - **✨ Redesigned first-run setup with language choice**
+- **🔐 Advanced Stalker device identification**
 - **🧪 Test HLS support — find out whether your provider really serves HLS before you turn it on**
 - **📐 Panel Width Adjustment can hide the preview or poster panel completely**
 
 ### 🐛 Fixes
 
+- **The top-bar Search and playlist controls are compact again**
 - **A channel that is briefly full now waits and starts by itself, instead of dropping you on the error screen**
 - **Live channels that switch themselves to the compatibility player play again instead of turning black**
 - **Prefer HLS no longer applies to catch-up**

@@ -149,7 +149,6 @@ private fun SearchPill(onClick: () -> Unit, visible: Boolean) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
-                    .weight(1f)
                     .then(
                         if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier,
                     ),
@@ -253,7 +252,7 @@ private fun PlaylistChip(label: String, interactive: Boolean = false, onClick: (
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).then(
+                modifier = Modifier.then(
                     if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE) else Modifier,
                 ),
             )

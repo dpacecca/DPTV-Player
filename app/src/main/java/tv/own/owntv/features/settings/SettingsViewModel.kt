@@ -36,6 +36,7 @@ import tv.own.owntv.core.sync.SyncResult
 import tv.own.owntv.core.sync.SyncCounts
 import tv.own.owntv.core.sync.SyncScopeChoice
 import tv.own.owntv.core.sync.SyncWarning
+import tv.own.owntv.core.stalker.stalkerCredentials
 import tv.own.owntv.core.util.FriendlySyncFailure
 import tv.own.owntv.core.util.classifySyncFailure
 import tv.own.owntv.core.sync.work.CatalogSyncState
@@ -208,7 +209,7 @@ class SettingsViewModel(
             }
             tv.own.owntv.core.model.SourceType.STALKER ->
                 s.mac?.let { tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(it) }?.let { mac ->
-                    val creds = tv.own.owntv.core.stalker.StalkerCredentials(s.id, s.url, mac, s.userAgent)
+                    val creds = s.stalkerCredentials(mac)
                     stalkerAuth.withAuthRetry(creds) { session ->
                         val info = runCatching {
                             stalkerClient.getAccountInfo(session.apiBase, mac, session.token, creds.userAgent)
@@ -681,6 +682,10 @@ class SettingsViewModel(
         autoRefresh: PlaylistAutoRefresh,
         isDefault: Boolean = false,
         mac: String = "",
+        stalkerSerialNumber: String = "",
+        stalkerDeviceId: String = "",
+        stalkerDeviceId2: String = "",
+        stalkerSignature: String = "",
         syncLive: Boolean = true,
         syncMovies: Boolean = true,
         syncSeries: Boolean = true,
@@ -702,6 +707,10 @@ class SettingsViewModel(
                 username = user.trim().takeIf { it.isNotBlank() } ?: existing.username,
                 password = pass.takeIf { it.isNotBlank() } ?: existing.password,
                 mac = newMac,
+                stalkerSerialNumber = stalkerSerialNumber.trim().takeIf { it.isNotBlank() },
+                stalkerDeviceId = stalkerDeviceId.trim().takeIf { it.isNotBlank() },
+                stalkerDeviceId2 = stalkerDeviceId2.trim().takeIf { it.isNotBlank() },
+                stalkerSignature = stalkerSignature.trim().takeIf { it.isNotBlank() },
                 userAgent = userAgent.trim().takeIf { it.isNotBlank() },
                 epgUrl = epgUrl.trim().takeIf { it.isNotBlank() },
                 syncLive = syncLive,
@@ -800,7 +809,10 @@ class SettingsViewModel(
     }
 
     /** "Test connection": portal handshake + get_profile with the form's values, no source saved. */
-    fun testStalker(portalUrl: String, mac: String, userAgent: String = "") {
+    fun testStalker(
+        portalUrl: String, mac: String, serialNumber: String = "", deviceId: String = "",
+        deviceId2: String = "", signature: String = "", userAgent: String = "",
+    ) {
         val canonicalMac = tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(mac)
         if (canonicalMac == null) {
             _stalkerTest.value = StalkerTestState.Failed(FriendlySyncFailure.InvalidMac)
@@ -818,6 +830,12 @@ class SettingsViewModel(
                             portalUrl = portalUrl.trim(),
                             mac = canonicalMac,
                             userAgent = userAgent.trim().takeIf { it.isNotBlank() },
+                            deviceIdentity = tv.own.owntv.core.stalker.StalkerDeviceIdentity(
+                                serialNumber = serialNumber.trim().takeIf { it.isNotBlank() },
+                                deviceId = deviceId.trim().takeIf { it.isNotBlank() },
+                                deviceId2 = deviceId2.trim().takeIf { it.isNotBlank() },
+                                signature = signature.trim().takeIf { it.isNotBlank() },
+                            ),
                         ),
                     )
                     val endpoint = session.apiBase.substringAfter("://").substringAfter('/', "portal")
@@ -851,6 +869,10 @@ class SettingsViewModel(
         name: String,
         portalUrl: String,
         mac: String,
+        serialNumber: String = "",
+        deviceId: String = "",
+        deviceId2: String = "",
+        signature: String = "",
         userAgent: String = "",
         autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
         isDefault: Boolean = false,
@@ -875,10 +897,20 @@ class SettingsViewModel(
                     portalUrl = portalUrl.trim(),
                     mac = canonicalMac,
                     userAgent = userAgent.trim().takeIf { it.isNotBlank() },
+                    deviceIdentity = tv.own.owntv.core.stalker.StalkerDeviceIdentity(
+                        serialNumber = serialNumber.trim().takeIf { it.isNotBlank() },
+                        deviceId = deviceId.trim().takeIf { it.isNotBlank() },
+                        deviceId2 = deviceId2.trim().takeIf { it.isNotBlank() },
+                        signature = signature.trim().takeIf { it.isNotBlank() },
+                    ),
                 ),
             )
             sourceRepository.addStalkerSource(
                 pid, name.trim(), portalUrl.trim(), canonicalMac,
+                serialNumber.trim().takeIf { it.isNotBlank() },
+                deviceId.trim().takeIf { it.isNotBlank() },
+                deviceId2.trim().takeIf { it.isNotBlank() },
+                signature.trim().takeIf { it.isNotBlank() },
                 userAgent.trim().takeIf { it.isNotBlank() },
                 syncLive = enabled.live, syncMovies = enabled.movies, syncSeries = enabled.series,
             )
