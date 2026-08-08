@@ -70,6 +70,9 @@ Scan to join from your phone:
 
 ### 🧭 Browse
 - **Continue Watching** home with TMDB-enriched previews; Live / Movies / Series / Downloads / Guide sections
+- **Now Trending** Home showcase — current TMDB movie/series rankings matched to titles your active provider
+  can actually play, with trailers, full cast/details, provider language/quality/season signals, and flexible
+  movie/series balancing
 - Per-profile customizable rows, Favorites & History, bulk rename rules, custom combined categories,
   inline + global search, and a multi-playlist switcher
 - Per-section panel widths for Live TV, Movies and Series, including a 0% option that completely hides

@@ -7,6 +7,7 @@ import tv.own.owntv.R
 @Composable
 fun HomeRow.displayTitle(): String = stringResource(
     when (this) {
+        HomeRow.TRENDING -> R.string.home_row_now_trending
         HomeRow.HERO -> R.string.home_row_keep_watching
         HomeRow.RECENT_CHANNELS -> R.string.home_row_recent_channels
         HomeRow.FAVORITE_CHANNELS -> R.string.home_row_favorite_channels
@@ -18,6 +19,7 @@ fun HomeRow.displayTitle(): String = stringResource(
 @Composable
 fun HomeRow.settingsDescription(): String = stringResource(
     when (this) {
+        HomeRow.TRENDING -> R.string.home_row_trending_description
         HomeRow.HERO -> R.string.home_row_hero_description
         HomeRow.RECENT_CHANNELS -> R.string.home_row_recent_description
         HomeRow.FAVORITE_CHANNELS -> R.string.home_row_favorite_description

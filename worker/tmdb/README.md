@@ -34,6 +34,12 @@ run your **own free copy in about 10 minutes** and point OwnTV at it — no prog
 
    `https://my-owntv-meta.<your-subdomain>.workers.dev/3/search/movie?query=Oppenheimer`
 
+   Then confirm the two Trending endpoints used by Home:
+
+   `https://my-owntv-meta.<your-subdomain>.workers.dev/3/trending/movie/day`
+
+   `https://my-owntv-meta.<your-subdomain>.workers.dev/3/trending/tv/day`
+
    If you see a wall of movie data (JSON), it works. If you see an error, re-check step 5
    (the secret must be named `TMDB_KEY`).
 8. In OwnTV on your TV: **Settings → Metadata → Advanced → Custom metadata server URL** →
@@ -62,10 +68,16 @@ The deployed URL is printed by `wrangler deploy`; test and configure it as in st
 
 ## Notes
 
-- Free-plan limits (~100k Worker requests/day) are far more than enough for personal use —
-  responses are edge-cached for 30 days, so most lookups never reach TMDB.
+- Free-plan limits (~100k Worker requests/day) are far more than enough for personal use. Ordinary
+  search/details responses are fresh for 30 days; fast-changing Trending responses are fresh for 15 minutes.
+- Equivalent query strings share one cache entry even when their parameter order differs. A caller-supplied
+  `api_key` is discarded, so it never changes authentication or cache identity.
+- TMDB calls time out after eight seconds and retry once for transport errors, rate limits and temporary
+  upstream failures. If TMDB is unavailable, a previously cached metadata response may be served for up to
+  90 days and a Trending response for up to 24 hours instead of making Home fail empty.
 - Only GET requests to `/3/...` are proxied; everything else is rejected.
-- Upstream errors are passed through uncached, so a transient TMDB failure doesn't stick.
+- Upstream errors are never cached. JSON errors and response headers include a request id plus cache state
+  (`HIT`, `MISS`, or `STALE`) to make self-hosted troubleshooting easier without exposing the TMDB key.
 - Images are **not** proxied — OwnTV loads poster/backdrop art directly from `image.tmdb.org`,
   which needs no key. The Worker only ever sees small JSON lookups.
 

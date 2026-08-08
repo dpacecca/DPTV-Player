@@ -13,6 +13,10 @@
 #     across app updates) ---
 -keep class * extends androidx.work.ListenableWorker
 
+# --- Room: Room.getGeneratedImplementation() derives this exact class name and loads it
+#     reflectively. Keep the generated database entry point in optimized release builds. ---
+-keep class tv.own.owntv.core.database.OwnTVDatabase_Impl { *; }
+
 # --- Persisted enum names: DataStore prefs, backup JSON ("t" = MediaType.name), and
 #     per-setting modes (ZoomMode, ThemeMode, StartupMode, AnimationLevel, ResumeMode,
 #     EpgAutoRefresh, PlaylistAutoRefresh, ...) round-trip through Enum.name/valueOf.

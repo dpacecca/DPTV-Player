@@ -88,9 +88,11 @@ fun SearchScreen(
      *  channel gets the same Prefer HLS handling, ExoPlayer→mpv ladder, per-channel engine pin and
      *  external-player routing however the user reached it. */
     onPlayChannel: (ChannelEntity) -> Unit,
+    vm: SearchViewModel = koinViewModel(),
+    returnToHomeOnBack: Boolean = false,
+    onReturnToHome: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val vm: SearchViewModel = koinViewModel()
     val query by vm.query.collectAsStateWithLifecycle()
     val results by vm.results.collectAsStateWithLifecycle()
     val curated by vm.curatedResults.collectAsStateWithLifecycle()
@@ -103,10 +105,11 @@ fun SearchScreen(
     LaunchedEffect(Unit) { runCatching { searchFocus.requestFocus() } }
 
     // Back clears an active query/intent (returning to the launcher) before leaving the screen.
-    BackHandler(enabled = query.isNotBlank() || intent != null) {
+    BackHandler(enabled = returnToHomeOnBack || query.isNotBlank() || intent != null) {
         vm.setQuery("")
         vm.setIntent(null)
-        runCatching { searchFocus.requestFocus() }
+        if (returnToHomeOnBack) onReturnToHome()
+        else runCatching { searchFocus.requestFocus() }
     }
 
     val searching = query.trim().length >= 2

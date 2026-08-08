@@ -6,9 +6,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tv.own.owntv.features.home.HeroKind
@@ -16,13 +20,69 @@ import tv.own.owntv.features.home.HomeConfig
 import tv.own.owntv.features.home.HomeLiveRowMode
 import tv.own.owntv.features.home.HomeRow
 import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.database.dao.SourceDao
+import tv.own.owntv.core.database.dao.TrendingDao
+import tv.own.owntv.core.database.entity.TrendingAttemptStatus
+import tv.own.owntv.core.database.entity.TrendingSnapshotEntity
+import tv.own.owntv.core.database.entity.TrendingSnapshotStatus
+import tv.own.owntv.core.sync.TrendingActivityTracker
 
 class HomeSettingsViewModel(
     private val settings: SettingsRepository,
+    private val sourceDao: SourceDao,
+    private val trendingDao: TrendingDao,
+    private val trendingActivity: TrendingActivityTracker,
 ) : ViewModel() {
     val config: StateFlow<HomeConfig> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf(HomeConfig()) else settings.homeConfig(pid) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeConfig())
+
+    private data class TrendingSettingsData(
+        val sourceIds: Set<Long> = emptySet(),
+        val states: List<TrendingSnapshotEntity> = emptyList(),
+        val metadataEnabled: Boolean = true,
+    )
+
+    private val trendingData = combine(settings.activeProfileId, settings.metadataConfigFlow) { profileId, metadata ->
+        profileId to metadata.enabled
+    }.flatMapLatest { (profileId, metadataEnabled) ->
+        if (profileId < 0) {
+            flowOf(TrendingSettingsData(metadataEnabled = metadataEnabled))
+        } else {
+            flow {
+                val sourceIds = sourceDao.sourceIdsForProfile(profileId).toSet()
+                if (sourceIds.isEmpty()) {
+                    emit(TrendingSettingsData(metadataEnabled = metadataEnabled))
+                } else {
+                    emitAll(
+                        trendingDao.observeStatesForSources(sourceIds.toList()).map { states ->
+                            TrendingSettingsData(sourceIds, states, metadataEnabled)
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    val trendingAvailability: StateFlow<TrendingAvailability> = combine(trendingData, trendingActivity.active) { data, active ->
+        when {
+            !data.metadataEnabled -> TrendingAvailability.MetadataDisabled
+            active.keys.any { it in data.sourceIds } -> TrendingAvailability.Building
+            data.states.any { it.status == TrendingSnapshotStatus.ELIGIBLE } -> {
+                val eligible = data.states.filter { it.status == TrendingSnapshotStatus.ELIGIBLE }
+                TrendingAvailability.Showing(
+                    count = eligible.sumOf { it.itemCount }.coerceAtMost(10),
+                    refreshFailed = eligible.any { it.lastAttemptStatus == TrendingAttemptStatus.FAILED },
+                )
+            }
+            data.states.any { it.failureStage == "no VOD content" } -> TrendingAvailability.NoVodScope
+            data.states.any { it.status == TrendingSnapshotStatus.BELOW_THRESHOLD } -> TrendingAvailability.BelowThreshold(
+                data.states.maxOf { it.matchedItemCount },
+            )
+            data.states.any { it.lastAttemptStatus == TrendingAttemptStatus.FAILED } -> TrendingAvailability.Failed
+            else -> TrendingAvailability.WaitingForSync
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TrendingAvailability.WaitingForSync)
 
     fun setRowHidden(row: HomeRow, hidden: Boolean) {
         updateConfig { config -> config.copy(hidden = if (hidden) config.hidden + row else config.hidden - row) }
@@ -91,4 +151,14 @@ class HomeSettingsViewModel(
             settings.updateHomeConfig(pid) { current -> transform(current) }
         }
     }
+}
+
+sealed interface TrendingAvailability {
+    data object WaitingForSync : TrendingAvailability
+    data object Building : TrendingAvailability
+    data object MetadataDisabled : TrendingAvailability
+    data object NoVodScope : TrendingAvailability
+    data object Failed : TrendingAvailability
+    data class BelowThreshold(val matched: Int) : TrendingAvailability
+    data class Showing(val count: Int, val refreshFailed: Boolean) : TrendingAvailability
 }

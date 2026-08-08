@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -71,6 +72,7 @@ fun TopBar(
     searchVisible: Boolean = true,
     playlistInteractive: Boolean = false,
     onPlaylistClick: () -> Unit = {},
+    playlistDownFocusRequester: FocusRequester? = null,
     // Batch 7 — shared "Continue" chip (resume last movie/episode/channel). Null label = nothing to resume.
     continueLabel: String? = null,
     continueIcon: OwnTVIcon = OwnTVIcon.PLAY,
@@ -102,7 +104,12 @@ fun TopBar(
             if (weatherInfo != null) WeatherChip(info = weatherInfo, fahrenheit = weatherFahrenheit)
             ClockChip()
             if (playlistName.isNotBlank()) {
-                PlaylistChip(label = playlistName, interactive = playlistInteractive, onClick = onPlaylistClick)
+                PlaylistChip(
+                    label = playlistName,
+                    interactive = playlistInteractive,
+                    onClick = onPlaylistClick,
+                    downFocusRequester = playlistDownFocusRequester,
+                )
             }
         }
     }
@@ -215,7 +222,12 @@ private fun ClockChip() {
 }
 
 @Composable
-private fun PlaylistChip(label: String, interactive: Boolean = false, onClick: () -> Unit = {}) {
+private fun PlaylistChip(
+    label: String,
+    interactive: Boolean = false,
+    onClick: () -> Unit = {},
+    downFocusRequester: FocusRequester? = null,
+) {
     val colors = OwnTVTheme.colors
     // Static badge when there's only one playlist (nothing to switch); a focusable button with a chevron
     // when there are 2+, opening the playlist quick-switcher.
@@ -229,7 +241,15 @@ private fun PlaylistChip(label: String, interactive: Boolean = false, onClick: (
     }
     FocusableSurface(
         onClick = onClick,
-        modifier = Modifier.widthIn(max = 240.dp),
+        modifier = Modifier
+            .widthIn(max = 240.dp)
+            .then(
+                if (downFocusRequester != null) {
+                    Modifier.focusProperties { down = downFocusRequester }
+                } else {
+                    Modifier
+                },
+            ),
         shape = RoundedCornerShape(TopBarChipCorner),
         surface = GlassSurface.TOPBAR,
         glassFrostScale = TopBarFrost,

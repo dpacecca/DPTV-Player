@@ -39,6 +39,39 @@
   packaging. The initial translated catalogue covered all 1,771 source entries; newly added text safely
   falls back to English until translations catch up.
 
+### 🔥 Now Trending on Home — TMDB discovery that only recommends titles your provider can play
+
+- **Home can now open with a large Now Trending showcase built from the current TMDB movie and TV charts.**
+  OwnTV fetches 25 movie and 25 series candidates after a catalogue sync, then publishes up to 10 entries
+  only after matching them to exact, playable rows from the active provider. The target is an even five/five
+  mix, but either type can fill unused places; a result is shown from four matches upward.
+- **Matching is indexed, language-aware, and safe against remakes.** Provider titles are normalized and
+  backfilled once, exact title/year candidates are checked before the narrow FTS fallback, and the final
+  variant prefers the selected provider language, then English, then an untagged title. TMDB rank remains
+  global across movies and series, while the provider row is revalidated immediately before playback.
+- **The showcase explains every choice.** It shows TMDB rank and media type, provider match, rating, preferred
+  language or fallback, advertised 4K/HDR/audio signals parsed from the provider name, and the number of
+  provider seasons already available for a series. Play/Open Episodes, Trailer, More Details (including cast
+  and genres), and All Versions lead into the same established playback, metadata and search flows.
+- **Remote navigation behaves as one complete Home row.** Moving among any showcase controls keeps the entire
+  panel fixed; Home scrolls only when focus crosses into another row. Auto-advance pauses on the four main
+  action buttons, continues on Previous/Pause/Next, and can still be paused manually.
+- **The background build is visible instead of mysterious.** The sync status pill can show a second line for
+  candidate fetch, indexed-catalog preparation, per-candidate movie/series matching, provider-season loading,
+  enrichment and publishing. The same detailed stages and timing totals are available through the
+  `TrendingRefreshWorker` / `TrendingRepository` logcat tags.
+- **The feature follows Home and metadata settings.** It is on by default, can be hidden or reordered from
+  **Settings → Home screen**, and runs only when Home is shown and metadata mode is **Provider + TMDB** or
+  **TMDB only**. The settings row explains when Trending is unavailable or below its four-item threshold.
+  The per-profile Home choice travels in backup/restore; fetched Trending snapshots and metadata do not.
+- **Existing data upgrades in place.** Room migrations add the atomic Trending snapshot, item and indexed
+  provider-title structures without rebuilding playlists, favourites, history, progress or customizations.
+  All new interface text is translated across every packaged OwnTV language.
+- **The bundled/self-hostable Cloudflare gateway now supports Trending traffic robustly.** Trending responses
+  use a short 15-minute freshness window, ordinary metadata keeps its 30-day window, equivalent query strings
+  share one cache key, transient TMDB failures retry once, upstream calls time out, and a still-valid stale
+  response can be served during an outage. Responses include cache/request diagnostics without exposing keys.
+
 ### 🧪 Test HLS support — find out whether your provider really serves HLS before you turn it on
 
 - **New button directly above "Prefer HLS for Live TV"**, on every Xtream playlist — when adding one,

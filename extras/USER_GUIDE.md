@@ -149,8 +149,24 @@ or **narrow the whole app to just one**.
 
 ---
 
-## 🏠 Home — Continue Watching
+## 🏠 Home — Now Trending & Continue Watching
 
+- 🔥 **Now Trending (first row):** after a playlist sync, OwnTV checks the latest TMDB movie and series
+  charts against that provider's catalogue and shows up to 10 titles it can actually play. It aims for five
+  movies and five series, but either type fills unused places; at least four matches are required. The panel
+  shows the TMDB rank, provider match, language choice/fallback, advertised quality/HDR/audio labels, and the
+  number of seasons currently available from the provider.
+- **Trending controls:** use **Play/Open Episodes**, **Trailer**, **More Details** (full plot, cast and genres),
+  or **All Versions**. Previous/Pause/Next controls sit below the showcase. The timer pauses while focus is on
+  one of the four main actions and continues on the three navigation controls unless you manually pause it.
+  Moving inside Trending never scrolls the Home page; Up/Down scroll only when focus crosses to another row.
+- **When it appears:** Trending is enabled by default and requires Home to be shown plus **Provider + TMDB**
+  or **TMDB only** under **Settings → Metadata (TMDB)**. Hide, show or reorder it under **Settings → Home
+  screen**. That settings row explains if a completed build found fewer than four playable matches. The Home
+  setting is included in backup/restore, but downloaded Trending results are rebuilt after sync and are not.
+- **Watch a Trending build:** during a catalogue sync, the bottom status pill can use a second line for the
+  candidate fetch, provider-title preparation, movie/series matching, season loading and final publishing.
+  It disappears when the build completes, like the normal sync status.
 - The **Home** tab opens to a row of what you were watching — partly‑watched **movies, episodes and recent
   live channels**, newest first.
 - **Dwell to expand:** hold focus on a hero card for **3 seconds** and it widens to a big 16:9 preview and

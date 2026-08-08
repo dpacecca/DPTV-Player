@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -29,12 +30,15 @@ import tv.own.owntv.core.database.dao.MovieDao
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SeriesDao
 import tv.own.owntv.core.database.dao.SourceDao
+import tv.own.owntv.core.database.dao.TrendingDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpisodeEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
+import tv.own.owntv.core.database.entity.MetadataCacheEntity
 import tv.own.owntv.core.database.entity.MovieEntity
 import tv.own.owntv.core.database.entity.SeriesEntity
+import tv.own.owntv.core.database.entity.TrendingItemEntity
 import tv.own.owntv.core.launcher.LauncherContinuationItem
 import tv.own.owntv.core.launcher.LauncherContinuationKind
 import tv.own.owntv.core.launcher.LauncherRecommendationPlanner
@@ -46,6 +50,7 @@ import tv.own.owntv.core.metadata.MetadataRepository
 import tv.own.owntv.core.repository.activeSourceIds
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.HeroPreviewEngine
+import tv.own.owntv.core.trending.TrendingMatcher
 
 sealed interface HeroItem {
     val streamUrl: String
@@ -118,7 +123,33 @@ data class HomeHeroMetadata(
 )
 
 @Immutable
+sealed interface TrendingHomeItem {
+    val snapshot: TrendingItemEntity
+    val stableKey: String get() = "${snapshot.mediaType.name}:${snapshot.tmdbId}"
+
+    data class Movie(
+        override val snapshot: TrendingItemEntity,
+        val movie: MovieEntity,
+    ) : TrendingHomeItem
+
+    data class Series(
+        override val snapshot: TrendingItemEntity,
+        val series: SeriesEntity,
+    ) : TrendingHomeItem
+}
+
+@Immutable
+data class TrendingDetailsMetadata(
+    val cache: MetadataCacheEntity?,
+    val tmdbWins: Boolean,
+)
+
+@Immutable
 data class HomeUiState(
+    val trendingItems: List<TrendingHomeItem> = emptyList(),
+    val activeTrendingIndex: Int = 0,
+    val trendingPreferredLanguage: String = "EN",
+    val trendingSeasonCounts: Map<Long, Int> = emptyMap(),
     val heroItems: List<HeroItem> = emptyList(),
     val activeHeroIndex: Int = 0,
     val continueMovies: List<LauncherContinuationItem> = emptyList(),
@@ -190,9 +221,20 @@ class HomeViewModel(
     private val historyDao: tv.own.owntv.core.database.dao.HistoryDao,
     private val progressDao: tv.own.owntv.core.database.dao.ProgressDao,
     private val metadata: MetadataRepository,
+    private val trendingDao: TrendingDao,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    init {
+        // Room invalidates this after the worker atomically replaces a snapshot, so Home updates even
+        // when the user stays on the screen throughout a background post-sync refresh.
+        viewModelScope.launch {
+            trendingDao.observeAllItems().collect {
+                currentProfileId()?.let { profileId -> loadHomeData(profileId) }
+            }
+        }
+    }
 
     // --- Batch 7: the single most-recent resumable item, for the shared top-bar Continue chip. ---
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -249,6 +291,34 @@ class HomeViewModel(
         _uiState.value = _uiState.value.copy(activeHeroIndex = index)
     }
 
+    fun navigateTrending(index: Int) {
+        val items = _uiState.value.trendingItems
+        if (index !in items.indices) return
+        _uiState.value = _uiState.value.copy(activeTrendingIndex = index)
+    }
+
+    /** Re-resolve the exact saved provider row immediately before an action in case a sync replaced it. */
+    suspend fun revalidateTrendingItem(item: TrendingHomeItem): TrendingHomeItem? = withContext(Dispatchers.IO) {
+        when (item) {
+            is TrendingHomeItem.Movie -> movieDao.getById(item.movie.id)
+                ?.takeIf { it.sourceId == item.snapshot.sourceId }
+                ?.let { item.copy(movie = it) }
+            is TrendingHomeItem.Series -> seriesDao.getSeriesById(item.series.id)
+                ?.takeIf { it.sourceId == item.snapshot.sourceId }
+                ?.let { item.copy(series = it) }
+        }
+    }
+
+    /** Load the same full cached TMDB payload used by Movies/Series details, using Trending's exact id. */
+    suspend fun resolveTrendingDetails(item: TrendingHomeItem): TrendingDetailsMetadata = withContext(Dispatchers.IO) {
+        val config = settings.metadataConfig()
+        val cache = when (item) {
+            is TrendingHomeItem.Movie -> metadata.resolveKnownMovie(item.movie, item.snapshot.tmdbId)
+            is TrendingHomeItem.Series -> metadata.resolveKnownSeries(item.series, item.snapshot.tmdbId)
+        }
+        TrendingDetailsMetadata(cache = cache, tmdbWins = config.mode.tmdbWins)
+    }
+
     fun onHeroUserNavigate(index: Int) {
         _lastHeroInteractionMs.value = System.currentTimeMillis()
         navigateHero(index)
@@ -300,6 +370,8 @@ class HomeViewModel(
         val previous = _uiState.value
         val state = withContext(Dispatchers.IO) {
             val config = settings.homeConfig(profileId).first()
+            val metadataConfig = settings.metadataConfig()
+            val preferredLanguage = metadataConfig.resolvedLanguage.substringBefore('-').ifBlank { "en" }.uppercase()
             // Active-playlist filter + per-section enabledScope: Home rails never show Off sections.
             val liveIds = activeSourceIds(settings, sourceDao, profileId, MediaType.LIVE).toSet()
             val movieIds = activeSourceIds(settings, sourceDao, profileId, MediaType.MOVIE).toSet()
@@ -308,6 +380,18 @@ class HomeViewModel(
 
             // Hidden items / hidden categories (per profile) never surface on Home either.
             val hidden = hiddenState(profileId, allIds.toList())
+            val trending = buildTrendingItems(
+                movieSourceIds = movieIds,
+                seriesSourceIds = seriesIds,
+                hidden = hidden,
+                sourceOrder = (movieIds + seriesIds).distinct().toList(),
+                metadataEnabled = metadataConfig.enabled,
+                preferredLanguage = preferredLanguage,
+            )
+            val trendingSeriesIds = trending.filterIsInstance<TrendingHomeItem.Series>().map { it.series.id }
+            val trendingSeasonCounts = if (trendingSeriesIds.isEmpty()) emptyMap() else {
+                seriesDao.storedSeasonCounts(trendingSeriesIds).associate { it.seriesId to it.seasonCount }
+            }
 
             val allItems = planner.buildContinuationItems(profileId)
             val items = allItems
@@ -341,6 +425,10 @@ class HomeViewModel(
             }
 
             HomeUiState(
+                trendingItems = trending,
+                activeTrendingIndex = previous.activeTrendingIndex.coerceIn(0, (trending.size - 1).coerceAtLeast(0)),
+                trendingPreferredLanguage = preferredLanguage,
+                trendingSeasonCounts = trendingSeasonCounts,
                 heroItems = heroItems,
                 activeHeroIndex = 0,
                 continueMovies = movies,
@@ -453,6 +541,83 @@ class HomeViewModel(
 
     private fun isChannelHidden(ch: ChannelEntity, h: HiddenState): Boolean =
         CustomizeKeys.channel(ch) in h.live.hiddenItems || (ch.categoryId != null && ch.categoryId in h.liveCats)
+
+    private suspend fun buildTrendingItems(
+        movieSourceIds: Set<Long>,
+        seriesSourceIds: Set<Long>,
+        hidden: HiddenState,
+        sourceOrder: List<Long>,
+        metadataEnabled: Boolean,
+        preferredLanguage: String,
+    ): List<TrendingHomeItem> {
+        if (!metadataEnabled) return emptyList()
+        val sourceIds = (movieSourceIds + seriesSourceIds).toList()
+        if (sourceIds.isEmpty()) return emptyList()
+        val snapshots = trendingDao.getItemsForSources(sourceIds)
+        if (snapshots.isEmpty()) return emptyList()
+
+        val movieRows = movieDao.getByIds(snapshots.filter { it.mediaType == MediaType.MOVIE }.map { it.providerItemId })
+            .associateBy { it.id }
+        val seriesRows = seriesDao.getSeriesByIds(snapshots.filter { it.mediaType == MediaType.SERIES }.map { it.providerItemId })
+            .associateBy { it.id }
+        val resolved = snapshots.mapNotNull { snapshot ->
+            when (snapshot.mediaType) {
+                MediaType.MOVIE -> movieRows[snapshot.providerItemId]
+                    ?.takeIf { it.sourceId in movieSourceIds }
+                    ?.takeUnless { CustomizeKeys.movie(it) in hidden.movie.hiddenItems || (it.categoryId != null && it.categoryId in hidden.movieCats) }
+                    ?.let { TrendingHomeItem.Movie(snapshot, it) }
+                MediaType.SERIES -> seriesRows[snapshot.providerItemId]
+                    ?.takeIf { it.sourceId in seriesSourceIds }
+                    ?.takeUnless { CustomizeKeys.series(it) in hidden.series.hiddenItems || (it.categoryId != null && it.categoryId in hidden.seriesCats) }
+                    ?.let { TrendingHomeItem.Series(snapshot, it) }
+                else -> null
+            }
+        }
+        val sourceRanks = sourceOrder.withIndex().associate { it.value to it.index }
+        val deduplicated = resolved
+            .groupBy { it.snapshot.mediaType to it.snapshot.tmdbId }
+            .values
+            .map { variants ->
+                variants.minWith(
+                    compareBy<TrendingHomeItem> { homeLanguageRank(it.snapshot.providerLanguage, preferredLanguage) }
+                        .thenByDescending { homeQualityRank(it.snapshot.advertisedQuality) }
+                        .thenBy { sourceRanks[it.snapshot.sourceId] ?: Int.MAX_VALUE }
+                        .thenBy { it.snapshot.position },
+                )
+            }
+        val movies = deduplicated.filter { it.snapshot.mediaType == MediaType.MOVIE }
+            .sortedBy { it.snapshot.trendingRank }
+            .take(TrendingMatcher.MAX_PER_MEDIA_TYPE)
+        val series = deduplicated.filter { it.snapshot.mediaType == MediaType.SERIES }
+            .sortedBy { it.snapshot.trendingRank }
+            .take(TrendingMatcher.MAX_PER_MEDIA_TYPE)
+        val seriesTarget = if (movies.size >= 5) 5 else TrendingMatcher.MAX_TOTAL - movies.size
+        val selectedSeries = series.take(seriesTarget)
+        val selectedMovies = movies.take(TrendingMatcher.MAX_TOTAL - selectedSeries.size)
+        val interleaved = buildList {
+            for (index in 0 until maxOf(selectedMovies.size, selectedSeries.size)) {
+                selectedMovies.getOrNull(index)?.let(::add)
+                selectedSeries.getOrNull(index)?.let(::add)
+            }
+        }.take(TrendingMatcher.MAX_TOTAL)
+        return interleaved.takeIf { it.size >= TrendingDao.MIN_ELIGIBLE_ITEMS }.orEmpty()
+    }
+
+    private fun homeLanguageRank(language: String?, preferred: String): Int = when {
+        language == preferred -> 0
+        language == "EN" -> 1
+        language == null -> 2
+        else -> 3
+    }
+
+    private fun homeQualityRank(quality: String?): Int = when (quality) {
+        "8K" -> 5
+        "4K", "4K UHD" -> 4
+        "FHD", "1080p FHD" -> 3
+        "HD", "720p HD" -> 2
+        "SD" -> 1
+        else -> 0
+    }
 
     private suspend fun isContinuationHidden(item: LauncherContinuationItem, h: HiddenState): Boolean {
         if (h.isEmpty) return false

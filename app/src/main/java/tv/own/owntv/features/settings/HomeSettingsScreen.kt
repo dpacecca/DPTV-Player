@@ -26,6 +26,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,6 +51,7 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: HomeSettingsViewModel = koinViewModel()
     val settingsVm: SettingsViewModel = koinViewModel()
     val config by vm.config.collectAsStateWithLifecycle()
+    val trendingAvailability by vm.trendingAvailability.collectAsStateWithLifecycle()
     val androidTvHomeEnabled by settingsVm.androidTvHomeEnabled.collectAsStateWithLifecycle()
     val tvHomeRefresh by settingsVm.tvHomeRefresh.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
@@ -116,6 +118,10 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     },
                     onToggleLiveMode = { mode -> vm.setLiveRowMode(row, mode.toggled()) },
                     firstButtonModifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                    statusText = if (row == HomeRow.TRENDING) trendingStatusText(
+                        hidden = row in config.hidden,
+                        availability = trendingAvailability,
+                    ) else null,
                 )
             }
 
@@ -206,6 +212,7 @@ private fun HomeRowCard(
     liveMode: HomeLiveRowMode?,
     onToggleLiveMode: (HomeLiveRowMode) -> Unit,
     firstButtonModifier: Modifier = Modifier,
+    statusText: String? = null,
 ) {
     val colors = OwnTVTheme.colors
 
@@ -225,7 +232,15 @@ private fun HomeRowCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (hidden) {
+            if (statusText != null) {
+                Text(
+                    statusText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            } else if (hidden) {
                 Text(
                     stringResource(R.string.settings_hidden),
                     style = MaterialTheme.typography.labelSmall,
@@ -259,4 +274,33 @@ private fun HomeRowCard(
             style = OwnTVButtonStyle.SECONDARY,
         )
     }
+}
+
+@Composable
+private fun trendingStatusText(hidden: Boolean, availability: TrendingAvailability): String = when {
+    hidden -> stringResource(R.string.settings_trending_status_off)
+    availability == TrendingAvailability.Building -> stringResource(R.string.settings_trending_status_building)
+    availability == TrendingAvailability.MetadataDisabled -> stringResource(R.string.settings_trending_status_metadata_disabled)
+    availability == TrendingAvailability.NoVodScope -> stringResource(R.string.settings_trending_status_no_vod)
+    availability == TrendingAvailability.Failed -> stringResource(R.string.settings_trending_status_failed)
+    availability == TrendingAvailability.WaitingForSync -> stringResource(R.string.settings_trending_status_waiting)
+    availability is TrendingAvailability.BelowThreshold && availability.matched == 0 -> stringResource(
+        R.string.settings_trending_status_no_matches,
+    )
+    availability is TrendingAvailability.BelowThreshold -> pluralStringResource(
+        R.plurals.settings_trending_status_below_threshold,
+        availability.matched,
+        availability.matched,
+    )
+    availability is TrendingAvailability.Showing && availability.refreshFailed -> pluralStringResource(
+        R.plurals.settings_trending_status_showing_refresh_failed,
+        availability.count,
+        availability.count,
+    )
+    availability is TrendingAvailability.Showing -> pluralStringResource(
+        R.plurals.settings_trending_status_showing,
+        availability.count,
+        availability.count,
+    )
+    else -> stringResource(R.string.settings_trending_status_waiting)
 }

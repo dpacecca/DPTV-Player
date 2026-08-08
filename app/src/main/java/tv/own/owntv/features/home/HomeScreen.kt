@@ -5,9 +5,12 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.BringIntoViewSpec
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,10 +31,13 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -51,6 +57,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
@@ -75,6 +86,8 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
+import tv.own.owntv.core.database.entity.MetadataCacheEntity
+import tv.own.owntv.core.database.dao.TrendingDao
 import tv.own.owntv.core.launcher.LauncherContinuationItem
 import tv.own.owntv.core.launcher.LauncherWatchNextType
 import tv.own.owntv.player.HeroPreviewEngine
@@ -84,6 +97,9 @@ import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
+import tv.own.owntv.ui.components.InAppToast
+import tv.own.owntv.ui.components.TrailerPlayerScreen
+import tv.own.owntv.ui.components.rememberInAppToast
 import tv.own.owntv.ui.components.PosterCard
 import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.roundedPanel
@@ -92,11 +108,17 @@ import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.format.localizedInteger
+import tv.own.owntv.features.shell.components.MediaDetailsScreen
+import tv.own.owntv.features.shell.components.MediaDetailsUi
+import tv.own.owntv.core.metadata.MetadataImages
+import tv.own.owntv.core.trending.ProviderVariantParser
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.compose.foundation.layout.widthIn
+import tv.own.owntv.ui.theme.PopupFontTheme
 import java.util.Calendar
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     vm: HomeViewModel,
@@ -104,13 +126,18 @@ fun HomeScreen(
     onPlayEpisode: (seriesId: Long, episodeId: Long, positionMs: Long) -> Unit,
     onPlayChannel: (channelId: Long, zapChannels: List<ChannelEntity>) -> Unit,
     onOpenGuide: () -> Unit,
+    onActivateTrending: (TrendingHomeItem, onUnavailable: () -> Unit) -> Unit,
+    onOpenTrendingSearch: (String) -> Unit,
     onChildFocused: () -> Unit,
     restoreFocus: Boolean = false,
+    restoreTrendingSearchFocus: Boolean = false,
     onRestored: () -> Unit = {},
     previewEnabled: Boolean = true,
+    firstRowFocusRequester: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
     val state by vm.uiState.collectAsStateWithLifecycle()
+    val trendingUnavailableMessage = stringResource(R.string.home_trending_unavailable)
     val heroPreviewEngine = koinInject<HeroPreviewEngine>()
     val engineState by heroPreviewEngine.state.collectAsStateWithLifecycle()
     val isPreviewActive by vm.isPreviewActive.collectAsStateWithLifecycle()
@@ -119,6 +146,16 @@ fun HomeScreen(
     val homeScope = rememberCoroutineScope()
     val heroFocus = remember { FocusRequester() }
     val fallbackFocus = remember { FocusRequester() }
+    val trendingPrimaryFocus = remember { FocusRequester() }
+    val trendingTrailerFocus = remember { FocusRequester() }
+    val trendingDetailsFocus = remember { FocusRequester() }
+    val trendingVersionsFocus = remember { FocusRequester() }
+    val trendingToast = rememberInAppToast()
+    var trailerVideoKey by remember { mutableStateOf<String?>(null) }
+    var detailsItem by remember { mutableStateOf<TrendingHomeItem?>(null) }
+    var detailsMetadata by remember { mutableStateOf<MetadataCacheEntity?>(null) }
+    var detailsTmdbWins by remember { mutableStateOf(false) }
+    val trendingRowFocused = remember { mutableStateOf(false) }
     val rowFirstFocusRequesters = remember {
         HomeRow.entries.associateWith { FocusRequester() }
     }
@@ -135,7 +172,10 @@ fun HomeScreen(
     val showAllHiddenState = orderedRows.isEmpty()
     val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty()
     val rowFocusRequester: (HomeRow) -> FocusRequester? = { row ->
-        when (row) {
+        if (row == renderRows.firstOrNull() && firstRowFocusRequester != null) {
+            firstRowFocusRequester
+        } else when (row) {
+            HomeRow.TRENDING -> trendingPrimaryFocus
             HomeRow.HERO -> when {
                 state.heroItems.isNotEmpty() -> heroFocus
                 showHeroFallback -> fallbackFocus
@@ -186,13 +226,14 @@ fun HomeScreen(
         onDispose { heroPreviewEngine.stop() }
     }
 
-    LaunchedEffect(orderedRows, state.heroItems, state.recentLive, state.favoriteLive, state.recentGuide, state.favoriteGuide, state.continueMovies, state.continueSeries, restoreFocus) {
+    LaunchedEffect(orderedRows, state.trendingItems, state.heroItems, state.recentLive, state.favoriteLive, state.recentGuide, state.favoriteGuide, state.continueMovies, state.continueSeries, restoreFocus, restoreTrendingSearchFocus) {
         if (orderedRows.isEmpty()) {
             if (restoreFocus) onRestored()
             return@LaunchedEffect
         }
 
         val targetRow = when {
+            restoreTrendingSearchFocus && state.trendingItems.isNotEmpty() -> HomeRow.TRENDING
             restoreFocus && heroVisible && state.heroItems.isNotEmpty() -> HomeRow.HERO
             restoreFocus && showHeroFallback -> HomeRow.HERO
             restoreFocus -> firstDataRow
@@ -203,11 +244,12 @@ fun HomeScreen(
 
         // Only pull focus INTO the Home content when returning from the player (restoreFocus). On a cold
         // start or a tab switch, leave focus on the sidebar's Home item so the nav is immediately navigable.
-        if (restoreFocus) {
+        if (restoreFocus || restoreTrendingSearchFocus) {
             kotlinx.coroutines.delay(60)
             val focusTarget = when {
-                heroVisible && state.heroItems.isNotEmpty() -> heroFocus
-                showHeroFallback -> fallbackFocus
+                restoreTrendingSearchFocus && state.trendingItems.isNotEmpty() -> trendingVersionsFocus
+                heroVisible && state.heroItems.isNotEmpty() -> rowFocusRequester(HomeRow.HERO)
+                showHeroFallback -> rowFocusRequester(HomeRow.HERO)
                 firstDataRow != null -> rowFocusRequester(firstDataRow)
                 else -> null
             }
@@ -235,8 +277,23 @@ fun HomeScreen(
     }
 
     val hero = state.heroItems.getOrNull(state.activeHeroIndex)
+    val defaultBringIntoViewSpec = LocalBringIntoViewSpec.current
+    val homeBringIntoViewSpec = remember(defaultBringIntoViewSpec) {
+        object : BringIntoViewSpec {
+            override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float =
+                if (trendingRowFocused.value) 0f
+                else defaultBringIntoViewSpec.calculateScrollDistance(offset, size, containerSize)
+        }
+    }
 
-    LazyColumn(
+    LaunchedEffect(trendingRowFocused.value) {
+        if (trendingRowFocused.value && renderRows.firstOrNull() == HomeRow.TRENDING) {
+            listState.animateScrollToItem(0, 0)
+        }
+    }
+
+    CompositionLocalProvider(LocalBringIntoViewSpec provides homeBringIntoViewSpec) {
+      LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .roundedPanel(fillColor = ContentPanelFill)
@@ -267,6 +324,48 @@ fun HomeScreen(
                 }
             }
             when (row) {
+                HomeRow.TRENDING -> if (state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS) {
+                    TrendingHeroSection(
+                        items = state.trendingItems,
+                        activeIndex = state.activeTrendingIndex,
+                        preferredLanguage = state.trendingPreferredLanguage,
+                        seasonCounts = state.trendingSeasonCounts,
+                        primaryFocusRequester = firstItemFocusRequester ?: trendingPrimaryFocus,
+                        trailerFocusRequester = trendingTrailerFocus,
+                        detailsFocusRequester = trendingDetailsFocus,
+                        versionsFocusRequester = trendingVersionsFocus,
+                        onNavigate = vm::navigateTrending,
+                        onActivate = { item ->
+                            onActivateTrending(item) {
+                                trendingToast.show(trendingUnavailableMessage)
+                                vm.refresh()
+                            }
+                        },
+                        onTrailer = { item ->
+                            vm.stopPreview()
+                            trailerVideoKey = item.snapshot.trailerKey
+                        },
+                        onDetails = { item ->
+                            vm.stopPreview()
+                            homeScope.launch {
+                                val current = vm.revalidateTrendingItem(item) ?: return@launch
+                                val resolved = vm.resolveTrendingDetails(current)
+                                detailsMetadata = resolved.cache
+                                detailsTmdbWins = resolved.tmdbWins
+                                detailsItem = current
+                            }
+                        },
+                        onAllVersions = { item ->
+                            vm.stopPreview()
+                            onOpenTrendingSearch(item.snapshot.canonicalTitle)
+                        },
+                        onFocus = onNonHeroFocused,
+                        onSectionFocusChanged = { trendingRowFocused.value = it },
+                        onContainerDown = onMoveToNextRow,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+
                 HomeRow.HERO -> {
                     if (state.heroItems.isNotEmpty()) {
                         HeroRowSection(
@@ -275,7 +374,7 @@ fun HomeScreen(
                             expandedIndex = expandedHeroIndex,
                             heroPreviewEngine = heroPreviewEngine,
                             engineState = engineState,
-                            heroFocusRequester = heroFocus,
+                            heroFocusRequester = firstItemFocusRequester ?: heroFocus,
                             heroMetadata = state.heroMetadata,
                             onHeroFocusChanged = { index, hasFocus ->
                                 if (hasFocus) {
@@ -303,7 +402,7 @@ fun HomeScreen(
                     } else {
                         HeroFallbackPane(
                             modifier = Modifier.fillMaxWidth(),
-                            focusRequester = fallbackFocus,
+                            focusRequester = firstItemFocusRequester ?: fallbackFocus,
                             onChildFocused = onNonHeroFocused,
                         )
                     }
@@ -364,6 +463,7 @@ fun HomeScreen(
                 }
             }
         }
+      }
     }
 
     // Video preview starts after the expanded card has settled, so 4K decoder setup does not compete with
@@ -386,9 +486,31 @@ fun HomeScreen(
 
         vm.startPreview(scheduledHero)
     }
+
+    trailerVideoKey?.let { key ->
+        TrailerPlayerScreen(videoKey = key) {
+            trailerVideoKey = null
+            homeScope.launch {
+                kotlinx.coroutines.delay(60)
+                runCatching { trendingTrailerFocus.requestFocus() }
+            }
+        }
+    }
+    detailsItem?.let { item ->
+        MediaDetailsScreen(details = item.toDetailsUi(detailsMetadata, detailsTmdbWins), onExit = {
+            detailsItem = null
+            detailsMetadata = null
+            homeScope.launch {
+                kotlinx.coroutines.delay(60)
+                runCatching { trendingDetailsFocus.requestFocus() }
+            }
+        })
+    }
+    InAppToast(trendingToast)
 }
 
 private fun rowHasData(row: HomeRow, state: HomeUiState): Boolean = when (row) {
+    HomeRow.TRENDING -> state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS
     HomeRow.HERO -> state.heroItems.isNotEmpty()
     HomeRow.RECENT_CHANNELS -> when (state.config.recentLiveMode) {
         HomeLiveRowMode.CARDS -> state.recentLive.isNotEmpty()
@@ -430,6 +552,487 @@ private fun expandedHeroPlot(item: HeroItem, metadata: HomeHeroMetadata?): Strin
     is HeroItem.MovieHero -> metadata?.plot ?: item.movie.plot?.takeIf { it.isNotBlank() }
     is HeroItem.SeriesHero -> metadata?.plot ?: item.episode.plot?.takeIf { it.isNotBlank() } ?: item.series.plot?.takeIf { it.isNotBlank() }
     is HeroItem.LiveHero -> null
+}
+
+@Composable
+private fun TrendingHeroSection(
+    items: List<TrendingHomeItem>,
+    activeIndex: Int,
+    preferredLanguage: String,
+    seasonCounts: Map<Long, Int>,
+    primaryFocusRequester: FocusRequester,
+    trailerFocusRequester: FocusRequester,
+    detailsFocusRequester: FocusRequester,
+    versionsFocusRequester: FocusRequester,
+    onNavigate: (Int) -> Unit,
+    onActivate: (TrendingHomeItem) -> Unit,
+    onTrailer: (TrendingHomeItem) -> Unit,
+    onDetails: (TrendingHomeItem) -> Unit,
+    onAllVersions: (TrendingHomeItem) -> Unit,
+    onFocus: () -> Unit,
+    onSectionFocusChanged: (Boolean) -> Unit,
+    onContainerDown: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OwnTVTheme.colors
+    val item = items.getOrNull(activeIndex) ?: return
+    val movieLabel = stringResource(R.string.home_trending_movie)
+    val seriesLabel = stringResource(R.string.home_trending_series)
+    val sectionLabel = stringResource(R.string.home_trending_section_label)
+    val providerMatchLabel = stringResource(R.string.home_trending_provider_match)
+    val whyLabel = stringResource(R.string.home_trending_why_label)
+    val playLabel = stringResource(R.string.home_trending_play)
+    val openEpisodesLabel = stringResource(R.string.home_trending_open_episodes)
+    val trailerLabel = stringResource(R.string.home_trending_trailer)
+    val detailsLabel = stringResource(R.string.home_trending_more_details)
+    val versionsLabel = stringResource(R.string.home_trending_all_versions)
+    val previousLabel = stringResource(R.string.home_trending_previous)
+    val pauseLabel = stringResource(R.string.home_trending_pause)
+    val resumeLabel = stringResource(R.string.home_trending_resume)
+    val nextLabel = stringResource(R.string.home_trending_next)
+    var manuallyPaused by remember { mutableStateOf(false) }
+    var actionButtonsFocused by remember { mutableStateOf(false) }
+    var resetClock by remember { mutableIntStateOf(0) }
+    var progress by remember { mutableFloatStateOf(0f) }
+    val intervalMs = 10_000L
+
+    fun navigate(delta: Int) {
+        if (items.isEmpty()) return
+        onNavigate((activeIndex + delta + items.size) % items.size)
+        progress = 0f
+        resetClock++
+    }
+
+    LaunchedEffect(activeIndex, manuallyPaused, actionButtonsFocused, resetClock, items.size) {
+        if (manuallyPaused || actionButtonsFocused || items.size < 2) return@LaunchedEffect
+        val startProgress = progress.coerceIn(0f, 1f)
+        val duration = (intervalMs * (1f - startProgress)).toLong().coerceAtLeast(1L)
+        val startedAt = System.nanoTime()
+        while (true) {
+            val elapsedMs = (System.nanoTime() - startedAt) / 1_000_000L
+            progress = (startProgress + (1f - startProgress) * elapsedMs.toFloat() / duration).coerceIn(0f, 1f)
+            if (elapsedMs >= duration) break
+            kotlinx.coroutines.delay(80L)
+        }
+        progress = 0f
+        onNavigate((activeIndex + 1) % items.size)
+    }
+
+    val snapshot = item.snapshot
+    val backdrop = MetadataImages.backdrop(snapshot.backdropPath, size = "w1280")
+        ?: when (item) {
+            is TrendingHomeItem.Movie -> item.movie.backdropUrl ?: item.movie.posterUrl
+            is TrendingHomeItem.Series -> item.series.backdropUrl ?: item.series.posterUrl
+        }
+    val poster = MetadataImages.poster(snapshot.posterPath, size = "w500")
+        ?: when (item) {
+            is TrendingHomeItem.Movie -> item.movie.posterUrl
+            is TrendingHomeItem.Series -> item.series.posterUrl
+        }
+    val displaySignals = ProviderVariantParser.displaySignals(snapshot.providerRawName)
+    val typeLabel = if (item is TrendingHomeItem.Movie) movieLabel else seriesLabel
+    val languageBadge = when {
+        snapshot.providerLanguage == preferredLanguage ->
+            stringResource(R.string.home_trending_language_choice, preferredLanguage)
+        snapshot.providerLanguage == "EN" -> stringResource(R.string.home_trending_english_fallback)
+        snapshot.providerLanguage == null -> stringResource(R.string.home_trending_untagged_fallback)
+        else -> stringResource(R.string.home_trending_other_fallback, snapshot.providerLanguage)
+    }
+    val reasonTitle = stringResource(R.string.home_trending_reason_title, snapshot.trendingRank, typeLabel)
+    val reasonCopy = when {
+        snapshot.providerLanguage == preferredLanguage -> stringResource(
+            R.string.home_trending_reason_preferred,
+            preferredLanguage,
+        )
+        snapshot.providerLanguage == "EN" -> stringResource(R.string.home_trending_reason_english, preferredLanguage)
+        snapshot.providerLanguage == null -> stringResource(R.string.home_trending_reason_untagged, preferredLanguage)
+        else -> stringResource(R.string.home_trending_reason_other)
+    }
+    val seasonCount = (item as? TrendingHomeItem.Series)?.let { seasonCounts[it.series.id] }
+
+    PopupFontTheme {
+      Column(
+          modifier = modifier
+              .height(538.dp)
+              .clip(RoundedCornerShape(18.dp))
+              .background(colors.surfaceContainerLowest)
+              .onFocusChanged {
+                  onSectionFocusChanged(it.hasFocus)
+                  if (it.hasFocus) onFocus()
+              }
+              .focusGroup(),
+      ) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            if (!backdrop.isNullOrBlank()) {
+                AsyncImage(
+                    model = backdrop,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            Box(
+                modifier = Modifier.fillMaxSize().background(
+                    Brush.horizontalGradient(
+                        0f to colors.surfaceContainerLowest.copy(alpha = 0.98f),
+                        0.58f to colors.surfaceContainerLowest.copy(alpha = 0.68f),
+                        1f to Color.Transparent,
+                    ),
+                ),
+            )
+            Box(
+                modifier = Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(0.58f to Color.Transparent, 1f to colors.surfaceContainerLowest),
+                ),
+            )
+
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 34.dp, vertical = 28.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier.width(190.dp).aspectRatio(2f / 3f).clip(RoundedCornerShape(14.dp))
+                        .background(colors.surfaceContainerHigh)
+                        .border(1.dp, Color.White.copy(alpha = 0.20f), RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (!poster.isNullOrBlank()) {
+                        AsyncImage(
+                            model = poster,
+                            contentDescription = snapshot.localizedTitle,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        OwnTVIcon(
+                            if (item is TrendingHomeItem.Movie) OwnTVIcon.MOVIES else OwnTVIcon.SERIES,
+                            tint = colors.onSurfaceVariant,
+                            modifier = Modifier.size(42.dp),
+                        )
+                    }
+                    Text(
+                        text = "#${activeIndex + 1}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.TopStart).padding(10.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(Color(0xDC030A08))
+                            .border(1.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(50))
+                            .padding(horizontal = 9.dp, vertical = 5.dp),
+                    )
+                }
+                Spacer(Modifier.width(28.dp))
+                Column(modifier = Modifier.weight(1.45f), verticalArrangement = Arrangement.Center) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(7.dp).clip(CircleShape).background(colors.primary))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = sectionLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colors.primary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                    Spacer(Modifier.height(15.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                        TrendingTypeBadge(typeLabel)
+                        snapshot.year?.let {
+                            Text(it.toString(), style = MaterialTheme.typography.titleSmall, color = Color(0xFFD4DED9))
+                        }
+                        Text("•", style = MaterialTheme.typography.titleSmall, color = Color(0xFFD4DED9))
+                        snapshot.rating?.let {
+                            Text(
+                                text = "★ %.1f".format(it),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Color(0xFFFFE071),
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = snapshot.localizedTitle,
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = colors.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    snapshot.overview?.takeIf { it.isNotBlank() }?.let { overview ->
+                        Spacer(Modifier.height(11.dp))
+                        Text(
+                            overview,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onSurfaceVariant,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 680.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(13.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                        TrendingMatchBadge("✓ $providerMatchLabel")
+                        Text(
+                            text = snapshot.providerRawName,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xFFC8D4CF),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Spacer(Modifier.height(13.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TrendingBadge(languageBadge, primary = true)
+                        displaySignals.quality.label?.let { TrendingBadge(it) }
+                        displaySignals.capabilities.forEach { TrendingBadge(it) }
+                        seasonCount?.let {
+                            TrendingBadge(pluralStringResource(R.plurals.home_trending_seasons, it, it))
+                        }
+                    }
+                    Spacer(Modifier.height(15.dp))
+                    Row(
+                        modifier = Modifier.onFocusChanged { actionButtonsFocused = it.hasFocus }.focusGroup(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TrendingActionButton(
+                            label = if (item is TrendingHomeItem.Movie) playLabel else openEpisodesLabel,
+                            onClick = { onActivate(item) },
+                            icon = if (item is TrendingHomeItem.Movie) OwnTVIcon.PLAY else OwnTVIcon.SERIES,
+                            primary = true,
+                            modifier = Modifier.focusRequester(primaryFocusRequester),
+                        )
+                        if (!snapshot.trailerKey.isNullOrBlank()) {
+                            TrendingActionButton(
+                                label = trailerLabel,
+                                onClick = { onTrailer(item) },
+                                icon = OwnTVIcon.PLAY,
+                                modifier = Modifier.focusRequester(trailerFocusRequester),
+                            )
+                        }
+                        TrendingActionButton(
+                            label = detailsLabel,
+                            onClick = { onDetails(item) },
+                            icon = OwnTVIcon.INFO,
+                            modifier = Modifier.focusRequester(detailsFocusRequester),
+                        )
+                        TrendingActionButton(
+                            label = versionsLabel,
+                            onClick = { onAllVersions(item) },
+                            icon = OwnTVIcon.SEARCH,
+                            modifier = Modifier.focusRequester(versionsFocusRequester),
+                        )
+                    }
+                }
+                Spacer(Modifier.width(26.dp))
+                Column(
+                    modifier = Modifier.width(310.dp).align(Alignment.Bottom)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0x75040C09))
+                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
+                        .padding(18.dp),
+                ) {
+                    Text(
+                        text = whyLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = reasonTitle,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = colors.onSurface,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(5.dp))
+                    Text(
+                        text = reasonCopy,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TrendingControlButton(OwnTVIcon.SKIP_PREVIOUS, previousLabel, onContainerDown) { navigate(-1) }
+            Spacer(Modifier.width(12.dp))
+            TrendingControlButton(if (manuallyPaused) OwnTVIcon.PLAY else OwnTVIcon.PAUSE, if (manuallyPaused) resumeLabel else pauseLabel, onContainerDown) {
+                manuallyPaused = !manuallyPaused
+                if (!manuallyPaused) {
+                    progress = 0f
+                    resetClock++
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            TrendingControlButton(OwnTVIcon.SKIP_NEXT, nextLabel, onContainerDown) { navigate(1) }
+        }
+        Box(modifier = Modifier.fillMaxWidth().height(3.dp).background(colors.surfaceContainerHigh)) {
+            Box(
+                modifier = Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).height(3.dp).background(colors.primary),
+            )
+        }
+      }
+    }
+}
+
+@Composable
+private fun TrendingTypeBadge(label: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelMedium,
+        color = Color(0xFFD4DED9),
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.11f))
+            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(50))
+            .padding(horizontal = 9.dp, vertical = 5.dp),
+    )
+}
+
+@Composable
+private fun TrendingMatchBadge(label: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        color = Color(0xFFBDECA5),
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(Color(0x3659AD2F))
+            .padding(horizontal = 9.dp, vertical = 5.dp),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+@Composable
+private fun TrendingBadge(label: String, primary: Boolean = false) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        color = if (primary) Color(0xFFD5F4C5) else Color(0xFFDCE6E2),
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(Color(0x8C06100D))
+            .border(
+                1.dp,
+                if (primary) Color(0x7A74CF42) else Color.White.copy(alpha = 0.16f),
+                RoundedCornerShape(7.dp),
+            )
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+@Composable
+private fun TrendingActionButton(
+    label: String,
+    icon: OwnTVIcon,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    primary: Boolean = false,
+) {
+    val colors = OwnTVTheme.colors
+    FocusableSurface(
+        onClick = onClick,
+        shape = RoundedCornerShape(9.dp),
+        unfocusedContainerColor = if (primary) colors.primary else Color.White.copy(alpha = 0.12f),
+        focusedContainerColor = if (primary) colors.primaryContainer else colors.surfaceContainerHigh,
+        modifier = modifier
+            .height(42.dp),
+    ) { focused ->
+        val contentColor = if (primary && !focused) Color(0xFF081205) else colors.onSurface
+        Row(
+            modifier = Modifier.padding(horizontal = 15.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OwnTVIcon(icon, tint = contentColor, modifier = Modifier.size(16.dp), filled = primary)
+            Text(label, style = MaterialTheme.typography.labelLarge, color = contentColor, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun TrendingControlButton(
+    icon: OwnTVIcon,
+    description: String,
+    onDown: (() -> Unit)?,
+    onClick: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    FocusableSurface(
+        onClick = onClick,
+        shape = CircleShape,
+        unfocusedContainerColor = colors.card,
+        focusedContainerColor = colors.primaryContainer,
+        modifier = Modifier
+            .size(40.dp)
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown && onDown != null) {
+                    onDown()
+                    true
+                } else false
+            },
+    ) { focused ->
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            OwnTVIcon(
+                icon,
+                tint = if (focused) colors.onPrimaryContainer else colors.onSurface,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrendingHomeItem.toDetailsUi(meta: MetadataCacheEntity?, tmdbWins: Boolean): MediaDetailsUi {
+    val snapshot = snapshot
+    val providerPoster = when (this) {
+        is TrendingHomeItem.Movie -> movie.posterUrl
+        is TrendingHomeItem.Series -> series.posterUrl
+    }
+    val providerBackdrop = when (this) {
+        is TrendingHomeItem.Movie -> movie.backdropUrl
+        is TrendingHomeItem.Series -> series.backdropUrl
+    }
+    val providerTitle = when (this) {
+        is TrendingHomeItem.Movie -> movie.name
+        is TrendingHomeItem.Series -> series.name
+    }
+    val providerPlot = when (this) {
+        is TrendingHomeItem.Movie -> movie.plot?.takeIf { it.isNotBlank() }
+        is TrendingHomeItem.Series -> series.plot?.takeIf { it.isNotBlank() }
+    }
+    val tmdbPlot = meta?.overview?.takeIf { it.isNotBlank() } ?: snapshot.overview
+    return MediaDetailsUi(
+        title = providerTitle,
+        subtitle = stringResource(if (this is TrendingHomeItem.Movie) R.string.home_trending_movie else R.string.home_trending_series),
+        backdropUrl = MetadataImages.backdrop(meta?.backdropPath ?: snapshot.backdropPath, size = "w1280") ?: providerBackdrop,
+        posterUrl = if (tmdbWins) {
+            MetadataImages.poster(meta?.posterPath ?: snapshot.posterPath, size = "w500") ?: providerPoster
+        } else {
+            providerPoster ?: MetadataImages.poster(meta?.posterPath ?: snapshot.posterPath, size = "w500")
+        },
+        metaLine = listOfNotNull(snapshot.year?.toString(), snapshot.rating?.let { "★ %.1f".format(it) }).joinToString(" · "),
+        genres = trendingJsonList(meta?.genresJson),
+        plot = if (tmdbWins) tmdbPlot ?: providerPlot else providerPlot ?: tmdbPlot,
+        cast = trendingJsonList(meta?.castJson),
+    )
+}
+
+private fun trendingJsonList(json: String?): List<String> {
+    if (json.isNullOrBlank()) return emptyList()
+    return runCatching {
+        val array = org.json.JSONArray(json)
+        (0 until array.length()).mapNotNull { array.optString(it).takeIf(String::isNotBlank) }
+    }.getOrDefault(emptyList())
 }
 
 @OptIn(ExperimentalFoundationApi::class)

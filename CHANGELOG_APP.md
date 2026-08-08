@@ -15,6 +15,7 @@
 
 - **🌍 OwnTV in 24 languages (community PR #108 by @codeVerine)**
 - **✨ Redesigned first-run setup with language choice**
+- **🔥 Now Trending on Home — provider-playable TMDB trends**
 - **🔐 Advanced Stalker device identification**
 - **🧪 Test HLS support — find out whether your provider really serves HLS before you turn it on**
 - **📐 Panel Width Adjustment can hide the preview or poster panel completely**

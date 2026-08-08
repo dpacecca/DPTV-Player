@@ -1,62 +1,149 @@
-/**
- * OwnTV TMDB caching proxy (Cloudflare Worker).
- *
- * This is the source of the default metadata server baked into OwnTV
- * (https://owntv-tmdb-meta.xiannero.workers.dev) — see future-plan/tmdb-metadata-plan.md §5.
- * It is committed here so the deployed Worker is version-controlled and so anyone can
- * self-host their own copy (OwnTV Settings → Metadata → custom metadata server URL).
- *
- * What it does:
- *  1. Accepts the same path/query shape as TMDB's /3/... API (e.g. /3/search/movie?query=...).
- *  2. Injects the TMDB API key from the Worker secret `TMDB_KEY` — the key never ships in the
- *     app APK and never appears in this repo.
- *  3. Edge-caches the JSON response for 30 days, keyed by path+query. Thousands of users opening
- *     the same title cost one real TMDB call.
- *  4. Returns the TMDB JSON unchanged, so the app parses Worker and direct-TMDB responses the
- *     same way.
- *
- * Images are NOT proxied — the app loads poster/backdrop art directly from image.tmdb.org,
- * which needs no API key. This Worker only ever sees small JSON lookups.
- */
-
-/** Edge-cache TTL for TMDB JSON. Metadata is near-static; stale posters are harmless. */
-const CACHE_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
+/** OwnTV's backwards-compatible TMDB v3 caching gateway. */
+const TMDB_ORIGIN = "https://api.themoviedb.org";
+const METADATA_FRESH_SECONDS = 30 * 24 * 60 * 60;
+const TRENDING_FRESH_SECONDS = 15 * 60;
+const METADATA_STALE_SECONDS = 90 * 24 * 60 * 60;
+const TRENDING_STALE_SECONDS = 24 * 60 * 60;
+const UPSTREAM_TIMEOUT_MS = 8_000;
+const MAX_ATTEMPTS = 2;
 
 export default {
-  async fetch(req, env) {
-    if (req.method !== "GET") {
-      return new Response("Method not allowed", { status: 405 });
+  async fetch(request, env, context) {
+    const requestId = crypto.randomUUID();
+    if (request.method !== "GET") {
+      return jsonError(405, "method_not_allowed", requestId, { Allow: "GET" });
+    }
+    if (!env.TMDB_KEY) {
+      return jsonError(503, "tmdb_key_not_configured", requestId);
     }
 
-    const url = new URL(req.url);
-
-    // Only the TMDB v3 API surface is proxied.
-    if (!url.pathname.startsWith("/3/")) {
-      return new Response("Not found", { status: 404 });
+    const incoming = new URL(request.url);
+    if (!incoming.pathname.startsWith("/3/")) {
+      return jsonError(404, "not_found", requestId);
     }
 
-    // Edge cache lookup, keyed by the full request path+query (without the api_key, which the
-    // client never sends on this tier).
+    // Client-supplied keys never affect auth or cache identity. Sorting also prevents equivalent
+    // query strings from creating separate cache entries.
+    incoming.searchParams.delete("api_key");
+    incoming.searchParams.sort();
+    const cacheKey = new Request(incoming.toString(), { method: "GET" });
     const cache = caches.default;
-    const cacheKey = new Request(url.toString(), { method: "GET" });
     const cached = await cache.match(cacheKey);
-    if (cached) return cached;
-
-    // Forward to TMDB with the server-side key injected.
-    const upstream = new URL("https://api.themoviedb.org" + url.pathname + url.search);
-    upstream.searchParams.set("api_key", env.TMDB_KEY);
-
-    const resp = await fetch(upstream.toString());
-
-    // Pass errors through uncached so a transient TMDB failure doesn't stick for 30 days.
-    if (!resp.ok) {
-      return new Response(resp.body, { status: resp.status, headers: resp.headers });
+    const policy = cachePolicy(incoming.pathname);
+    const cachedAge = cachedAgeSeconds(cached);
+    if (cached && cachedAge !== null && cachedAge <= policy.freshSeconds) {
+      return clientResponse(cached, policy.freshSeconds, requestId, "HIT");
     }
 
-    const out = new Response(resp.body, resp);
-    out.headers.set("Cache-Control", `public, max-age=${CACHE_TTL_SECONDS}`);
-    out.headers.set("Access-Control-Allow-Origin", "*");
-    await cache.put(cacheKey, out.clone());
-    return out;
+    const upstream = new URL(TMDB_ORIGIN + incoming.pathname + incoming.search);
+    upstream.searchParams.set("api_key", env.TMDB_KEY);
+    const result = await fetchWithRetry(upstream, requestId);
+    if (result.response?.ok && result.body !== null) {
+      const stored = new Response(result.body, {
+        status: result.response.status,
+        headers: result.response.headers,
+      });
+      stored.headers.set("Cache-Control", `public, max-age=${policy.staleSeconds}`);
+      stored.headers.set("X-OwnTV-Cached-At", Date.now().toString());
+      stored.headers.set("X-OwnTV-API-Version", "1");
+      applyCommonHeaders(stored.headers, requestId);
+      context.waitUntil(cache.put(cacheKey, stored.clone()));
+      return clientResponse(stored, policy.freshSeconds, requestId, "MISS");
+    }
+
+    // A stale successful TMDB payload is safer than hiding Trending during a brief outage.
+    if (cached) {
+      const stale = clientResponse(cached, 0, requestId, "STALE");
+      stale.headers.set("Warning", '110 - "TMDB response is stale"');
+      return stale;
+    }
+    if (result.response) {
+      const response = new Response(result.body, {
+        status: result.response.status,
+        headers: result.response.headers,
+      });
+      response.headers.set("Cache-Control", "no-store");
+      applyCommonHeaders(response.headers, requestId);
+      return response;
+    }
+    return jsonError(502, result.error || "tmdb_unavailable", requestId);
   },
 };
+
+async function fetchWithRetry(url, requestId) {
+  let lastError = "tmdb_unavailable";
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const response = await fetch(url.toString(), {
+        headers: { Accept: "application/json", "X-OwnTV-Request-Id": requestId },
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      });
+      const body = await response.text();
+      if (response.ok) {
+        try {
+          JSON.parse(body);
+        } catch {
+          return { response: null, body: null, error: "invalid_tmdb_json" };
+        }
+        return { response, body, error: null };
+      }
+      if (!retryable(response.status) || attempt === MAX_ATTEMPTS) {
+        return { response, body, error: null };
+      }
+      await delay(retryDelayMs(response, attempt));
+    } catch (error) {
+      lastError = error?.name === "TimeoutError" ? "tmdb_timeout" : "tmdb_unavailable";
+      if (attempt < MAX_ATTEMPTS) await delay(150 * attempt);
+    }
+  }
+  return { response: null, body: null, error: lastError };
+}
+
+function cachePolicy(pathname) {
+  const trending = /^\/3\/trending\/(movie|tv)\/day$/.test(pathname);
+  return trending
+    ? { freshSeconds: TRENDING_FRESH_SECONDS, staleSeconds: TRENDING_STALE_SECONDS }
+    : { freshSeconds: METADATA_FRESH_SECONDS, staleSeconds: METADATA_STALE_SECONDS };
+}
+
+function cachedAgeSeconds(response) {
+  if (!response) return null;
+  const cachedAt = Number(response.headers.get("X-OwnTV-Cached-At"));
+  return Number.isFinite(cachedAt) && cachedAt > 0 ? Math.max(0, (Date.now() - cachedAt) / 1000) : null;
+}
+
+function clientResponse(source, maxAge, requestId, cacheStatus) {
+  const response = new Response(source.body, source);
+  response.headers.set("Cache-Control", `public, max-age=${Math.max(0, maxAge)}`);
+  response.headers.set("X-OwnTV-Cache", cacheStatus);
+  response.headers.set("X-OwnTV-API-Version", "1");
+  applyCommonHeaders(response.headers, requestId);
+  return response;
+}
+
+function jsonError(status, code, requestId, extraHeaders = {}) {
+  const response = Response.json({ error: code, request_id: requestId }, { status, headers: extraHeaders });
+  response.headers.set("Cache-Control", "no-store");
+  applyCommonHeaders(response.headers, requestId);
+  return response;
+}
+
+function applyCommonHeaders(headers, requestId) {
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("X-OwnTV-Request-Id", requestId);
+  headers.set("Vary", "Accept-Encoding");
+}
+
+function retryable(status) {
+  return status === 429 || (status >= 500 && status <= 504);
+}
+
+function retryDelayMs(response, attempt) {
+  const retryAfter = Number(response.headers.get("Retry-After"));
+  if (Number.isFinite(retryAfter) && retryAfter >= 0) return Math.min(2_000, retryAfter * 1000);
+  return 150 * attempt;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

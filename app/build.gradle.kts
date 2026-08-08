@@ -134,7 +134,7 @@ android {
             optimization {
                 enable = true
                 keepRules {
-                    files("proguard-rules.pro")
+                    files.add(file("proguard-rules.pro"))
                 }
             }
             if (releaseKeystore != null) {
