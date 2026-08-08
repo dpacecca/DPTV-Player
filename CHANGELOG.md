@@ -59,6 +59,17 @@
 
 ### 🐛 Fixes
 
+- **A channel that is briefly full now waits and starts by itself, instead of dropping you on the error
+  screen.** Some providers answer a channel change with "too many connections right now, come back in N
+  seconds" — typically because the channel you just left is still counted as open. OwnTV treated that as a
+  dead channel, so you landed on the error screen and had to press **Retry** repeatedly until the
+  provider's own timer ran out. It now reads the waiting time the provider sends, keeps the loading
+  spinner up with a line saying why (for example *HTTP 429: Channel limit has been reached. Retrying in
+  10s.*) and counts down to an automatic retry. If the provider answers with a shorter time, the countdown
+  updates to it. The channel is re-requested exactly as before — same player, same stream format, same
+  address — so this never causes an unwanted switch to the compatibility player or to the other format.
+  Changing channel, stopping or leaving cancels the wait immediately, and an account that stays full still
+  reaches the normal error screen after a few attempts.
 - **Live channels that switch themselves to the compatibility player play again instead of turning
   black — this fixes a v4.1.7 regression.** When OwnTV decides by itself that a channel needs the
   compatibility player (no picture, an error before the first frame, audio the TV can't decode, a

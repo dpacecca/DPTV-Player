@@ -1458,11 +1458,26 @@ class LiveViewModel(
             // A pre-buffer is requested silence: 10s of it means the first frame is *supposed* to be ~10s
             // out, so the deadline has to move with it or every pre-buffered channel looks stuck.
             val openBudgetMs = EXO_OPEN_TIMEOUT_MS + previewEngine.activePrerollSecs.coerceAtLeast(0) * 1000L
-            val terminal = kotlinx.coroutines.withTimeoutOrNull(openBudgetMs) {
-                previewEngine.state.first {
-                    it == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
-                        it == tv.own.owntv.player.LivePreviewEngine.State.ERROR
+            // A provider back-off (HTTP 429 + Retry-After) is the panel naming the second at which this
+            // channel frees up, and the engine is counting it down behind the spinner. Expiring the budget
+            // in the middle of that would hand a perfectly good channel to TS/mpv over a wait we asked for
+            // — so the deadline restarts for as long as the countdown is running, and only a stream that
+            // goes quiet for a whole budget with nothing pending counts as "never opened".
+            var terminal: tv.own.owntv.player.LivePreviewEngine.State?
+            var waitsSeen = 0
+            while (true) {
+                terminal = kotlinx.coroutines.withTimeoutOrNull(openBudgetMs) {
+                    previewEngine.state.first {
+                        it == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
+                            it == tv.own.owntv.player.LivePreviewEngine.State.ERROR
+                    }
                 }
+                if (terminal != null) break
+                if (!isStill(channel)) return@launch
+                val waits = previewEngine.providerBackOffsSpent
+                // Nothing pending and no new wait since the last deadline → this really is a stuck open.
+                if (previewEngine.providerBackOff.value == null && waits == waitsSeen) break
+                waitsSeen = waits
             }
             if (!isStill(channel)) return@launch
             if (terminal == null) {

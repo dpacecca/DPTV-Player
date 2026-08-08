@@ -272,6 +272,12 @@ or **narrow the whole app to just one**.
   from whichever engine it opened on: ExoPlayer+HLS → ExoPlayer+TS → mpv+HLS → mpv+TS, or the same list led by
   mpv. With Prefer HLS off — or on a channel your playlist has no HLS version of — the HLS steps drop out and
   it is simply one engine to the other. Turn on **Detailed playback logging** to see each step it took.
+- ⏳ **A busy channel waits instead of failing**: if the provider answers a channel change with "too many
+  connections, come back in a few seconds" — usually because the channel you just left is still counted as
+  open — OwnTV keeps the spinner up, shows the reason with a **live countdown** (e.g. *HTTP 429: Channel limit
+  has been reached. Retrying in 10s.*) and **retries by itself** when the time is up. Don't press Retry; just
+  wait. Changing channel or pressing Back cancels it, and if the provider stays full you get the normal error
+  screen after a few attempts.
 - 📶 **Prefer HLS for Live TV (Xtream only)**: Xtream panels can serve a live channel either as raw MPEG‑TS or
   as an HLS playlist. OwnTV asks for **MPEG‑TS**, which is what most panels serve best — but if your provider's
   live channels are unstable, turn on **Prefer HLS for Live TV** when adding the source, or later in

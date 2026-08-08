@@ -231,6 +231,7 @@ fun PlayerHud(
     val buffering by player.buffering.collectAsStateWithLifecycle()
     val error by player.error.collectAsStateWithLifecycle()
     val errorInfo by player.errorInfo.collectAsStateWithLifecycle()
+    val providerBackOff by player.providerBackOff.collectAsStateWithLifecycle()
     val nav by player.nav.collectAsStateWithLifecycle()
     val volume by player.volume.collectAsStateWithLifecycle()
     val videoRes by player.videoRes.collectAsStateWithLifecycle()
@@ -656,7 +657,27 @@ fun PlayerHud(
                 Spacer(Modifier.height(18.dp))
                 OwnTVButton(stringResource(R.string.common_retry), onClick = { player.retry() }, icon = OwnTVIcon.PLAY, modifier = Modifier.focusRequester(retryFocus))
             }
-            buffering -> OwnTVSpinner(modifier = Modifier.align(Alignment.Center), sizeDp = 56)
+            // A provider wait looks like loading, because that is what it is: the channel is queued behind
+            // the panel's own countdown and the engine re-asks by itself. The line under the spinner says
+            // why nothing is happening yet, so nobody reaches for Retry (or thinks the channel is dead).
+            buffering -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                OwnTVSpinner(sizeDp = 56)
+                providerBackOff?.let { wait ->
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        stringResource(
+                            R.string.player_provider_retry_after,
+                            wait.httpCode,
+                            wait.message ?: stringResource(R.string.player_provider_busy),
+                            wait.secondsLeft,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.85f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(0.7f),
+                    )
+                }
+            }
         }
     }
     } // CompositionLocalProvider

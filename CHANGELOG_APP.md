@@ -20,6 +20,7 @@
 
 ### 🐛 Fixes
 
+- **A channel that is briefly full now waits and starts by itself, instead of dropping you on the error screen**
 - **Live channels that switch themselves to the compatibility player play again instead of turning black**
 - **Prefer HLS no longer applies to catch-up**
 - **Catch-up recordings now get both of their fallbacks instead of one**
