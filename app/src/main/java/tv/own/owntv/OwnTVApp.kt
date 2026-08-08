@@ -120,9 +120,19 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
      * below Coil's default ~25% — on a 4K TV every megabyte belongs to the video pipeline, not to
      * channel-logo bitmaps.
      */
-    override fun newImageLoader(context: PlatformContext): ImageLoader =
-        ImageLoader.Builder(context)
-            .components { add(OkHttpNetworkFetcherFactory(callFactory = { GlobalContext.get().get<OkHttpClient>() })) }
+    override fun newImageLoader(context: PlatformContext): ImageLoader {
+        // The shared client deliberately disables connection retries so catalog/EPG sync owns its retry
+        // policy. That setting is harmful for CDN images, though: hosts such as image.tmdb.org publish
+        // both IPv6 and IPv4, and some Android TV boxes resolve IPv6 first even when their IPv6 route is
+        // unusable. OkHttp then needs retryOnConnectionFailure to try the next resolved address (the TV's
+        // browser already does this fallback). Derive one long-lived client so Coil keeps the app-wide
+        // proxy, DNS, UA, TLS and connection-pool configuration while regaining alternate-route fallback.
+        val imageHttpClient = GlobalContext.get().get<OkHttpClient>()
+            .newBuilder()
+            .retryOnConnectionFailure(true)
+            .build()
+        return ImageLoader.Builder(context)
+            .components { add(OkHttpNetworkFetcherFactory(callFactory = { imageHttpClient })) }
             .memoryCache { MemoryCache.Builder().maxSizePercent(context, 0.10).build() }
             // Explicit bounded disk cache: posters/logos survive across sessions instead of
             // re-downloading, capped so a 220k-item catalog can't eat the box's storage.
@@ -137,6 +147,7 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
             .allowRgb565(true)
             .crossfade(true)
             .build()
+    }
 
     /**
      * ST6 — size the poster/logo disk cache against the storage the box actually has: 5% of free

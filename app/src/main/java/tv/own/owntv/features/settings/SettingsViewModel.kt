@@ -1253,9 +1253,13 @@ class SettingsViewModel(
                         port = if (port in 1..65535) port else 53,
                         dohUrl = doh,
                     )
-                    // Build a temporary DnsConfigHolder so we can resolve via the same backends
+                    // Test the selected backend strictly: seed it synchronously so the first lookup
+                    // cannot race the Flow collector, and do not let a failed custom server silently
+                    // succeed through the device's system DNS.
                     val holder = tv.own.owntv.core.network.DnsConfigHolder(
-                        kotlinx.coroutines.flow.flowOf(cfg),
+                        configFlow = kotlinx.coroutines.flow.emptyFlow(),
+                        initialConfig = cfg,
+                        fallbackToSystem = false,
                     )
                     val start = System.currentTimeMillis()
                     val addrs = holder.dns.lookup(testHost)

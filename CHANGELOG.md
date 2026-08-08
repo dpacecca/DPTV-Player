@@ -107,6 +107,18 @@
 
 ### 🐛 Fixes
 
+- **Posters and other remote artwork no longer stay blank on TVs with a broken IPv6 route.** Image
+  hosts such as TMDB publish both IPv6 and IPv4 addresses, but some Android TVs advertise IPv6 even
+  though they cannot actually reach it. OwnTV stopped after that first failed address while the TV's
+  browser quietly tried IPv4, so valid provider and TMDB artwork opened in a browser but not in the
+  app. Image downloads now try the next resolved address; playlist sync, EPG and playback keep their
+  existing network behaviour.
+- **Test DNS now tests the server you selected instead of sometimes reporting success through the
+  TV's normal DNS (#111).** The temporary check starts with the displayed Google, Cloudflare, Quad9
+  or custom address active immediately, and a failed custom resolver is no longer hidden by the
+  normal system-DNS fallback. The result still lists the addresses returned for `dns.google`, so
+  every working provider correctly shows the same Google destination addresses; success now means
+  the selected resolver actually answered.
 - **The top-bar Search and playlist controls are compact again.** A localization safety change made
   short labels expand to their maximum allowed widths, so the Search button looked like a text field and
   the playlist selector occupied too much of the right side. Both now size themselves to their content,
