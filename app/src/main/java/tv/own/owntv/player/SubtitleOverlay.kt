@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,6 +25,7 @@ import androidx.tv.material3.Text
 import org.koin.compose.koinInject
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.settings.data.SubtitleStyle
+import tv.own.owntv.ui.theme.LocalUiFontScaleFactor
 
 /**
  * App-drawn subtitles for the direct render path: the decoder owns the video surface there, so mpv
@@ -57,6 +59,8 @@ fun SubtitleOverlay(
         Color.Black.copy(alpha = 0.45f)
     }
     val anchor = if (styleOn) position else SubtitleStyle.Position.DEFAULT
+    // Font customization is UI-only. Subtitles keep their dedicated size control and system family.
+    val uiFontCompensation = 1f / LocalUiFontScaleFactor.current
 
     // Same six anchors the SubtitleView path uses, so a channel sits in the same place whether it
     // plays on mpv or ExoPlayer. Default keeps the historical bottom-centre placement.
@@ -87,8 +91,9 @@ fun SubtitleOverlay(
             textAlign = textAlign,
             style = TextStyle(
                 color = textColor,
-                fontSize = (24 * textScale * sizeScale).sp,
-                lineHeight = (30 * textScale * sizeScale).sp,
+                fontSize = (24 * textScale * sizeScale * uiFontCompensation).sp,
+                lineHeight = (30 * textScale * sizeScale * uiFontCompensation).sp,
+                fontFamily = FontFamily.SansSerif,
                 fontWeight = FontWeight.Medium,
                 shadow = Shadow(color = Color.Black, offset = Offset(0f, 2f), blurRadius = 6f),
             ),

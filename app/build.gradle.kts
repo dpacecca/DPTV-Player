@@ -131,12 +131,14 @@ android {
             isPseudoLocalesEnabled = true
         }
         release {
-            optimization {
-                enable = true
-                keepRules {
-                    files.add(file("proguard-rules.pro"))
-                }
-            }
+            // Stable AGP release optimization API. Keep both code and resource shrinking enabled;
+            // the optimized default rules are extended by OwnTV's project-specific keep rules.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             if (releaseKeystore != null) {
                 signingConfig = signingConfigs.getByName("release")
             }

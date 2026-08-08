@@ -32,7 +32,7 @@ import tv.own.owntv.ui.theme.PopupFontTheme
  * display band and lays the popup out inside it. This also works with TV keyboards which publish no
  * useful IME inset and ignore `adjustResize`.
  *
- * Popup chrome and Lora typography are reduced together here. Keeping the scale in the host means
+ * Popup chrome and the user-selected popup typography are reduced together here. Keeping the scale in the host means
  * nested popups (Rule builder -> Rule value) cannot silently return to full application size.
  */
 @Composable

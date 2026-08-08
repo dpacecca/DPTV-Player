@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -103,11 +104,15 @@ import tv.own.owntv.ui.theme.ALL_GLASS_SURFACES
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassConfig
 import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.ui.theme.AppFontFamily
+import tv.own.owntv.ui.theme.FontCustomization
 import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.player.displayText
 import tv.own.owntv.ui.theme.ThemeMode
+import tv.own.owntv.ui.theme.UiFontScale
 import tv.own.owntv.ui.theme.UiZoom
+import tv.own.owntv.ui.theme.asComposeFamily
 import kotlin.math.roundToInt
 import java.io.File
 import java.util.Locale
@@ -156,15 +161,21 @@ fun SettingsScreen(
     themeMode: ThemeMode,
     uiZoomPercent: Int,
     onSetZoom: (Int) -> Unit,
+    fontCustomization: FontCustomization,
+    onSetFontCustomization: (FontCustomization) -> Unit,
     onOpenPlaylist: () -> Unit,
     modifier: Modifier = Modifier,
     openEpgAdd: Boolean = false,
     onEpgAddConsumed: () -> Unit = {},
 ) {
-    var tab by remember { mutableStateOf(SettingsTab.ROOT) }
+    // A cross-script language change recreates the Activity so Android can apply the new script's
+    // shaping and font fallback. Keep the open settings sub-screen across that configuration change
+    // instead of dropping back to the Settings root/sidebar.
+    var tab by rememberSaveable { mutableStateOf(SettingsTab.ROOT) }
     // Deep-link from the Guide's "Add EPG" button: jump straight to EPG Sources in add mode.
     var consumeEpgAdd by remember { mutableStateOf(false) }
     var showZoom by remember { mutableStateOf(false) }
+    var showFontCustomization by remember { mutableStateOf(false) }
     var showTheme by remember { mutableStateOf(false) }
     var showAccent by remember { mutableStateOf(false) }
     var showFolderPicker by remember { mutableStateOf(false) }
@@ -203,6 +214,7 @@ fun SettingsScreen(
     val themeRowFocus = remember { FocusRequester() }
     val accentRowFocus = remember { FocusRequester() }
     val zoomRowFocus = remember { FocusRequester() }
+    val fontCustomizationRowFocus = remember { FocusRequester() }
     val updateRowFocus = remember { FocusRequester() }
     val aboutRowFocus = remember { FocusRequester() }
     val catchupRowFocus = remember { FocusRequester() }
@@ -220,13 +232,13 @@ fun SettingsScreen(
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
     val scrollState = rememberScrollState()
     var savedScroll by remember { mutableIntStateOf(0) }
-    val anyDialogOpen = showZoom || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showGlassEffect || showBrowsing
+    val anyDialogOpen = showZoom || showFontCustomization || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showGlassEffect || showBrowsing
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showGlassEffect, showBrowsing) {
+    LaunchedEffect(showZoom, showFontCustomization, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showGlassEffect, showBrowsing) {
         if (!anyDialogOpen) {
             // When a scrim dialog is torn down, Compose's focus re-search through the newly-exposed
             // scrollable Column resets its scroll to 0 and then bringIntoView-animates to wherever
@@ -308,7 +320,7 @@ fun SettingsScreen(
     }
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
-    var lastTab by remember { mutableStateOf<SettingsTab?>(null) }
+    var lastTab by rememberSaveable { mutableStateOf<SettingsTab?>(null) }
     val rowFocus = remember { mapOf(
         SettingsTab.LANGUAGE to FocusRequester(),
         SettingsTab.SOURCES to FocusRequester(),
@@ -582,6 +594,20 @@ fun SettingsScreen(
             modifier = Modifier.focusRequester(glassEffectRowFocus),
         )
         SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.PALETTE,
+            title = stringResource(R.string.settings_font_customization),
+            desc = stringResource(R.string.settings_font_customization_description),
+            chip = stringResource(R.string.common_percent, fontCustomization.sizePercent),
+            chipTone = TileTone.SECONDARY,
+            onClick = {
+                savedScroll = scrollState.value
+                dialogReturn = fontCustomizationRowFocus
+                showFontCustomization = true
+            },
+            showChevron = true,
+            modifier = Modifier.focusRequester(fontCustomizationRowFocus),
+        )
+        SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.ZOOM,
             title = stringResource(R.string.settings_ui_zoom), desc = stringResource(R.string.settings_ui_zoom_description),
             chip = stringResource(R.string.common_percent, uiZoomPercent), chipTone = TileTone.SECONDARY,
@@ -761,6 +787,15 @@ fun SettingsScreen(
                     chip = themeLabel(themeMode)) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showTheme = true },
                 SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_accent), stringResource(R.string.settings_search_keywords_accent), OwnTVIcon.PALETTE, TileTone.SECONDARY,
                     chip = if (customAccent.isNotBlank()) customAccent.uppercase() else stringResource(accent.labelRes), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAccent = true },
+                SettingsSearchEntry(
+                    stringResource(R.string.settings_group_appearance),
+                    stringResource(R.string.settings_font_customization),
+                    stringResource(R.string.settings_search_keywords_fonts),
+                    OwnTVIcon.PALETTE,
+                    TileTone.SECONDARY,
+                    chip = stringResource(R.string.common_percent, fontCustomization.sizePercent),
+                    chipTone = TileTone.SECONDARY,
+                ) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showFontCustomization = true },
                 SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ui_zoom), stringResource(R.string.settings_search_keywords_zoom), OwnTVIcon.ZOOM, TileTone.SECONDARY,
                     chip = stringResource(R.string.common_percent, uiZoomPercent), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showZoom = true },
                 SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_animations), stringResource(R.string.settings_search_keywords_animation), OwnTVIcon.THEME, TileTone.SECONDARY,
@@ -897,6 +932,16 @@ fun SettingsScreen(
     }
     if (showZoom) {
         ZoomDialog(current = uiZoomPercent, onSet = onSetZoom, onDismiss = { showZoom = false })
+    }
+    if (showFontCustomization) {
+        FontCustomizationDialog(
+            current = fontCustomization,
+            onApply = {
+                onSetFontCustomization(it)
+                showFontCustomization = false
+            },
+            onDismiss = { showFontCustomization = false },
+        )
     }
     if (showBrowsing) {
         BrowsingListsDialog(
@@ -1077,7 +1122,7 @@ private fun AccentPaletteDialog(
     // Keep the sliders and hex field in step whenever the HSV picker moves.
     fun syncHexFromPicker() { hexInput = pickedHex.removePrefix("#") }
 
-    // PopupFontTheme swaps in the Lora serif and applies the shared popup type scale.
+    // PopupFontTheme swaps in the selected popup family and applies the shared popup type scale.
     tv.own.owntv.ui.theme.PopupFontTheme {
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).imePadding().trapAllFocusExit().focusGroup(),
@@ -1520,6 +1565,240 @@ private fun ClearHistoryDialog(
     }
 }
 
+private enum class FontPickerTarget { MAIN, POPUP }
+
+@Composable
+private fun fontFamilyLabel(family: AppFontFamily): String = stringResource(
+    when (family) {
+        AppFontFamily.LORA -> R.string.settings_font_lora
+        AppFontFamily.SYSTEM_SANS -> R.string.settings_font_system_sans
+        AppFontFamily.PLAYFAIR_DISPLAY -> R.string.settings_font_playfair_display
+        AppFontFamily.DANCING_SCRIPT -> R.string.settings_font_dancing_script
+        AppFontFamily.POPPINS -> R.string.settings_font_poppins
+    },
+)
+
+/** Staged font editor: Back cancels; Apply commits size + both families atomically. */
+@Composable
+private fun FontCustomizationDialog(
+    current: FontCustomization,
+    onApply: (FontCustomization) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    var draft by remember(current) { mutableStateOf(current) }
+    var picker by remember { mutableStateOf<FontPickerTarget?>(null) }
+    var pickerReturn by remember { mutableStateOf<FontPickerTarget?>(null) }
+    val firstFocus = remember { FocusRequester() }
+    val mainFocus = remember { FocusRequester() }
+    val popupFocus = remember { FocusRequester() }
+
+    LaunchedEffect(picker) {
+        if (picker == null) {
+            val target = when (pickerReturn) {
+                FontPickerTarget.MAIN -> mainFocus
+                FontPickerTarget.POPUP -> popupFocus
+                null -> firstFocus
+            }
+            kotlinx.coroutines.delay(50)
+            runCatching { target.requestFocus() }
+        }
+    }
+    BackHandler {
+        if (picker != null) picker = null else onDismiss()
+    }
+
+    if (picker == null) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.72f)).trapAllFocusExit().focusGroup(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .dialogPanel(width = 600.dp, padding = 28.dp)
+                    .heightIn(max = 620.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    stringResource(R.string.settings_font_customization),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = colors.onSurface,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(R.string.settings_font_size_range, UiFontScale.MIN, UiFontScale.MAX),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    stringResource(R.string.settings_font_size),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    StepButton(
+                        stringResource(R.string.settings_decrease),
+                        dimmed = draft.sizePercent <= UiFontScale.MIN,
+                        modifier = Modifier.focusRequester(firstFocus),
+                    ) {
+                        draft = draft.copy(sizePercent = UiFontScale.clamp(draft.sizePercent - UiFontScale.STEP))
+                    }
+                    Text(
+                        stringResource(R.string.common_percent, draft.sizePercent),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = colors.primary,
+                        modifier = Modifier.width(120.dp),
+                        textAlign = TextAlign.Center,
+                    )
+                    StepButton(
+                        stringResource(R.string.settings_increase),
+                        dimmed = draft.sizePercent >= UiFontScale.MAX,
+                    ) {
+                        draft = draft.copy(sizePercent = UiFontScale.clamp(draft.sizePercent + UiFontScale.STEP))
+                    }
+                }
+                Spacer(Modifier.height(20.dp))
+                FontChoiceRow(
+                    title = stringResource(R.string.settings_main_interface_font),
+                    family = draft.mainFamily,
+                    modifier = Modifier.focusRequester(mainFocus),
+                ) {
+                    pickerReturn = FontPickerTarget.MAIN
+                    picker = FontPickerTarget.MAIN
+                }
+                Spacer(Modifier.height(10.dp))
+                FontChoiceRow(
+                    title = stringResource(R.string.settings_popup_font),
+                    family = draft.popupFamily,
+                    modifier = Modifier.focusRequester(popupFocus),
+                ) {
+                    pickerReturn = FontPickerTarget.POPUP
+                    picker = FontPickerTarget.POPUP
+                }
+                Spacer(Modifier.height(24.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OwnTVButton(
+                        stringResource(R.string.settings_reset),
+                        onClick = { draft = FontCustomization() },
+                        style = OwnTVButtonStyle.SECONDARY,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    OwnTVButton(stringResource(R.string.settings_apply), onClick = { onApply(draft) })
+                }
+            }
+        }
+    } else {
+        val target = picker ?: return
+        FontFamilyPickerDialog(
+            title = stringResource(
+                if (target == FontPickerTarget.MAIN) R.string.settings_main_interface_font
+                else R.string.settings_popup_font,
+            ),
+            selected = if (target == FontPickerTarget.MAIN) draft.mainFamily else draft.popupFamily,
+            onSelect = { family ->
+                draft = if (target == FontPickerTarget.MAIN) draft.copy(mainFamily = family)
+                else draft.copy(popupFamily = family)
+                picker = null
+            },
+            onDismiss = { picker = null },
+        )
+    }
+}
+
+@Composable
+private fun FontChoiceRow(
+    title: String,
+    family: AppFontFamily,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    FocusableSurface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().heightIn(min = 70.dp),
+        shape = RoundedCornerShape(16.dp),
+        surface = GlassSurface.DIALOGS,
+        contentAlignment = Alignment.CenterStart,
+    ) { _ ->
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, color = colors.onSurface, modifier = Modifier.weight(1f))
+            Text(
+                fontFamilyLabel(family),
+                style = MaterialTheme.typography.bodyLarge.copy(fontFamily = family.asComposeFamily()),
+                color = colors.primary,
+                maxLines = 1,
+            )
+            Spacer(Modifier.width(10.dp))
+            Text("›", style = MaterialTheme.typography.titleLarge, color = colors.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun FontFamilyPickerDialog(
+    title: String,
+    selected: AppFontFamily,
+    onSelect: (AppFontFamily) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val focus = remember { AppFontFamily.entries.associateWith { FocusRequester() } }
+    LaunchedEffect(Unit) { runCatching { focus.getValue(selected).requestFocus() } }
+    BackHandler { onDismiss() }
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.78f)).trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .dialogPanel(width = 640.dp, padding = 24.dp)
+                .heightIn(max = 640.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            Spacer(Modifier.height(6.dp))
+            Text(stringResource(R.string.settings_choose_font), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            Spacer(Modifier.height(14.dp))
+            AppFontFamily.entries.forEach { family ->
+                FocusableSurface(
+                    onClick = { onSelect(family) },
+                    selected = family == selected,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 76.dp)
+                        .focusRequester(focus.getValue(family)),
+                    shape = RoundedCornerShape(14.dp),
+                    surface = GlassSurface.DIALOGS,
+                    contentAlignment = Alignment.CenterStart,
+                ) { _ ->
+                    Column(Modifier.padding(horizontal = 18.dp, vertical = 10.dp)) {
+                        Text(
+                            fontFamilyLabel(family),
+                            style = MaterialTheme.typography.titleMedium.copy(fontFamily = family.asComposeFamily()),
+                            color = if (family == selected) colors.primary else colors.onSurface,
+                        )
+                        Text(
+                            stringResource(R.string.settings_font_preview),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = family.asComposeFamily()),
+                            color = colors.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
 /** A stepper for the global UI scale. Changes apply live (the whole UI re-scales as you adjust). */
 @Composable
 private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit) {
@@ -1667,7 +1946,7 @@ private fun GlassEffectDialog(
         modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
-        // Shared Lora popup font, matching the app's other dialogs.
+        // Shared user-selected popup font, matching the app's other dialogs.
         tv.own.owntv.ui.theme.PopupFontTheme {
         Column(
             modifier = Modifier.dialogPanel(width = 480.dp, padding = 28.dp),

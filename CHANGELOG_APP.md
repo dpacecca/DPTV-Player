@@ -13,6 +13,9 @@
 
 ### ✨ New features
 
+- **🔤 Separate interface and popup fonts**
+- **🔎 Adjustable app text size**
+- **💾 Font settings in backup and restore**
 - **🌍 OwnTV in 24 languages (community PR #108 by @codeVerine)**
 - **✨ Redesigned first-run setup with language choice**
 - **🔥 Now Trending on Home — provider-playable TMDB trends**
@@ -22,6 +25,7 @@
 
 ### 🐛 Fixes
 
+- **Language changes keep focus on the selected language**
 - **Posters and artwork load when a TV's IPv6 route is broken**
 - **Test DNS no longer succeeds through the TV's normal DNS (#111)**
 - **The top-bar Search and playlist controls are compact again**

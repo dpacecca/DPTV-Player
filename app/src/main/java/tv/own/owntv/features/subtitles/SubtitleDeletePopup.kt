@@ -44,7 +44,7 @@ import tv.own.owntv.ui.theme.PopupFontTheme
 
 /**
  * Per-item "Delete subtitles" popup opened from a movie/episode long-press (subtitle plan §11).
- * Lists that item's downloaded subtitles; tapping one deletes it individually. Shares the app's Lora
+ * Lists that item's downloaded subtitles; tapping one deletes it individually. Shares the app's selected
  * popup styling. [items] is re-supplied by the caller after each delete (empty → the caller closes).
  */
 @Composable

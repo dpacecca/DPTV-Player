@@ -50,7 +50,9 @@ import tv.own.owntv.ui.theme.BlurredBackdrop
 import tv.own.owntv.ui.theme.GlassConfig
 import tv.own.owntv.ui.theme.LocalBlurredBackdrop
 import tv.own.owntv.ui.theme.LocalGlass
+import tv.own.owntv.ui.theme.LocalUiFontScaleFactor
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.theme.UiFontScale
 import tv.own.owntv.ui.theme.UiZoom
 import tv.own.owntv.ui.theme.stackBlur
 import tv.own.owntv.ui.theme.supportsBackdropBlur
@@ -212,6 +214,7 @@ class MainActivity : ComponentActivity() {
             val accent by viewModel.accent.collectAsStateWithLifecycle()
             val customAccent by viewModel.customAccent.collectAsStateWithLifecycle()
             val uiZoomPercent by viewModel.uiZoomPercent.collectAsStateWithLifecycle()
+            val fontCustomization by viewModel.fontCustomization.collectAsStateWithLifecycle()
             val animationLevel by viewModel.animationLevel.collectAsStateWithLifecycle()
             val bgImagePath by viewModel.bgImagePath.collectAsStateWithLifecycle()
             val glassConfig by viewModel.glassConfig.collectAsStateWithLifecycle()
@@ -289,7 +292,15 @@ class MainActivity : ComponentActivity() {
                 if ((activeProfileId ?: -1L) >= 0L) viewModel.checkAutoRefresh(includeStartup = true)
             }
 
-            OwnTVTheme(themeMode = themeMode, accent = accent, systemInDarkTheme = isSystemInDarkTheme(), customAccent = customAccent, animationLevel = animationLevel) {
+            OwnTVTheme(
+                themeMode = themeMode,
+                accent = accent,
+                systemInDarkTheme = isSystemInDarkTheme(),
+                customAccent = customAccent,
+                animationLevel = animationLevel,
+                mainFontFamily = fontCustomization.mainFamily,
+                popupFontFamily = fontCustomization.popupFamily,
+            ) {
                 val base = LocalDensity.current
                 // Glass is "always on" (Option B): panels go translucent whenever at least one surface is
                 // scoped, independent of a background image. With a photo the glass frosts it; without one,
@@ -316,7 +327,11 @@ class MainActivity : ComponentActivity() {
                     value = produceBlurredBackdrop(path, rootSizePx)
                 }
                 CompositionLocalProvider(
-                    LocalDensity provides Density(base.density * UiZoom.factor(uiZoomPercent), base.fontScale),
+                    LocalDensity provides Density(
+                        base.density * UiZoom.factor(uiZoomPercent),
+                        base.fontScale * UiFontScale.factor(fontCustomization.sizePercent),
+                    ),
+                    LocalUiFontScaleFactor provides UiFontScale.factor(fontCustomization.sizePercent),
                     LocalGlass provides effectiveGlass,
                     LocalBlurredBackdrop provides blurred,
                 ) {
@@ -377,6 +392,8 @@ class MainActivity : ComponentActivity() {
                                 themeMode = themeMode,
                                 uiZoomPercent = uiZoomPercent,
                                 onSetZoom = viewModel::setUiZoom,
+                                fontCustomization = fontCustomization,
+                                onSetFontCustomization = viewModel::setFontCustomization,
                                 avatarId = avatarId,
                                 onSetAvatar = viewModel::setAvatar,
                                 profileName = profileName,

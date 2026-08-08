@@ -36,7 +36,9 @@ import tv.own.owntv.features.settings.data.EpgAutoRefresh
 import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.ui.theme.AccentColor
+import tv.own.owntv.ui.theme.FontCustomization
 import tv.own.owntv.ui.theme.ThemeMode
+import tv.own.owntv.ui.theme.UiFontScale
 import tv.own.owntv.ui.theme.UiZoom
 
 /** Top-level navigation destinations rendered in the Layer-1 sidebar. */
@@ -274,6 +276,9 @@ class ShellViewModel(
     val uiZoomPercent: StateFlow<Int> = settings.uiZoomPercent
         .stateIn(viewModelScope, SharingStarted.Eagerly, UiZoom.DEFAULT)
 
+    val fontCustomization: StateFlow<FontCustomization> = settings.fontCustomization
+        .stateIn(viewModelScope, SharingStarted.Eagerly, FontCustomization())
+
     val animationLevel: StateFlow<tv.own.owntv.ui.theme.AnimationLevel> = settings.animationLevel
         .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.ui.theme.AnimationLevel.FULL)
 
@@ -446,6 +451,12 @@ class ShellViewModel(
 
     fun setUiZoom(percent: Int) {
         viewModelScope.launch { settings.setUiZoomPercent(UiZoom.clamp(percent)) }
+    }
+
+    fun setFontCustomization(value: FontCustomization) {
+        viewModelScope.launch {
+            settings.setFontCustomization(value.copy(sizePercent = UiFontScale.clamp(value.sizePercent)))
+        }
     }
 
     fun setAccent(accent: AccentColor) {

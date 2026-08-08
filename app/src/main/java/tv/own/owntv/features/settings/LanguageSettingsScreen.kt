@@ -281,7 +281,13 @@ fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             searchFocus.requestFocus()
         }
     }
-    LaunchedEffect(Unit) { requestPreferredFocus() }
+    // Changing locale replaces the localized Compose subtree, and a cross-script change also
+    // recreates the Activity. Wait for the newly selected row to own selectedFocus, then restore
+    // focus there instead of allowing Compose's fallback search to land on the main sidebar.
+    LaunchedEffect(currentTag) {
+        kotlinx.coroutines.delay(80)
+        requestPreferredFocus()
+    }
     BackHandler { onBack() }
 
     Column(

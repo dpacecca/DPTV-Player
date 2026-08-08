@@ -2,6 +2,22 @@
 
 ## v4.2.0 — unreleased
 
+### 🔤 Font customization — size the whole interface and choose separate main and popup fonts
+
+- **A new Settings → Look & Feel → Font customization popup controls app text from one place.** Text
+  size adjusts from 60% to 140% in 5% steps, and separate selectors choose the font used by the main
+  interface and by popups. The five choices are System Sans, Lora, Playfair Display, Dancing Script,
+  and Poppins.
+- **The existing appearance remains the default:** 100% text size, System Sans for the main interface,
+  and Lora for popups. Changes are staged until **Apply** is pressed, **Reset** restores those defaults,
+  and **Back** closes the popup without saving its staged changes.
+- **Font customization is available in every supported interface language.** Characters supplied by the
+  chosen font use it, while Android safely falls back to a compatible system font for any missing script
+  glyphs. Subtitle text is intentionally excluded and remains controlled by the separate subtitle
+  appearance settings.
+- **The choices survive restarts and travel in backup and restore.** All bundled fonts are open-source,
+  and their license notices are included with the project.
+
 ### 🔐 Advanced Stalker device identification — support portals that require more than a MAC
 
 - **Stalker sources now accept four optional device-identification values:** Serial Number, Device ID,
@@ -107,6 +123,9 @@
 
 ### 🐛 Fixes
 
+- **Changing the interface language in Settings now keeps focus on the selected language.** OwnTV
+  also preserves the open Language screen when switching between writing systems requires Android to
+  refresh the Activity, instead of dropping focus back onto the main navigation menu.
 - **Posters and other remote artwork no longer stay blank on TVs with a broken IPv6 route.** Image
   hosts such as TMDB publish both IPv6 and IPv4 addresses, but some Android TVs advertise IPv6 even
   though they cannot actually reach it. OwnTV stopped after that first failed address while the TV's

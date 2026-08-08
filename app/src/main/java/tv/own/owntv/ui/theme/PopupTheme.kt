@@ -4,42 +4,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.unit.isUnspecified
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontVariation
-import androidx.compose.ui.text.font.FontWeight
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Typography
-import tv.own.owntv.R
 
 /**
- * Lora — a free, open-licensed serif (SIL OFL) chosen for OwnTV's popup menus; the rest of the
- * app keeps the sans-serif [OwnTVTypography]. Lora ships as a variable font (weight axis 400–700),
- * so each weight is a variation setting off the single upright/italic files (minSdk 26 supports
- * variable fonts).
+ * Popup typography is separate from the main interface. Lora remains the default, while the user
+ * may choose any bundled family without changing the popup host's established geometry scaling.
  */
-@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
-private fun loraUpright(weight: FontWeight) =
-    Font(R.font.lora_variable, weight, variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)))
-
-@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
-private fun loraItalic(weight: FontWeight) =
-    Font(R.font.lora_italic_variable, weight, FontStyle.Italic, variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)))
-
-val PopupFontFamily = FontFamily(
-    loraUpright(FontWeight.Normal),
-    loraUpright(FontWeight.Medium),
-    loraUpright(FontWeight.SemiBold),
-    loraUpright(FontWeight.Bold),
-    loraItalic(FontWeight.Normal),
-    loraItalic(FontWeight.Bold),
-)
-
 private val LocalPopupTypographyApplied = compositionLocalOf { false }
 
 /**
- * Wraps popup-menu content so every text style inside uses [PopupFontFamily]. [fontScale] shrinks
+ * Wraps popup-menu content so every text style uses [LocalPopupFontFamily]. [fontScale] shrinks
  * (or grows) all font sizes and line heights — 1f keeps the design sizes; the EPG match/review
  * popups pass 0.75f for a denser look.
  */
@@ -53,8 +28,9 @@ fun PopupFontTheme(fontScale: Float = 1f, content: @Composable () -> Unit) {
         return
     }
     val t = MaterialTheme.typography
+    val popupFamily = LocalPopupFontFamily.current
     fun androidx.compose.ui.text.TextStyle.popup() = copy(
-        fontFamily = PopupFontFamily,
+        fontFamily = popupFamily,
         fontSize = if (fontScale == 1f) fontSize else fontSize * fontScale,
         lineHeight = if (fontScale == 1f || lineHeight.isUnspecified) lineHeight else lineHeight * fontScale,
     )

@@ -71,7 +71,7 @@ data class RailCategory(
     /** Stable provider/category key. Synthetic rows keep their English key here for filtering and state. */
     val fullName: String,
     val icon: OwnTVIcon? = null,
-    @androidx.annotation.StringRes val labelRes: Int? = null,
+    @param:androidx.annotation.StringRes val labelRes: Int? = null,
     // Whether to show the genre hint dot. False for synthetic aggregates ("All Channels/Movies/Series")
     // that combine every provider category — those aren't a real provider genre, so no dot.
     val showGenreDot: Boolean = true,

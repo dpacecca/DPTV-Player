@@ -707,6 +707,13 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   Auto‑play · Check for update) flip the most‑used options without opening a sub‑menu.
 - 🧭 **Menu layout** — **Profiles** is the first row; **Live preview / Preview audio** are under
   **Playback**; **App startup** is under **App**; the **Home screen** page is under Content.
+- 🔤 **Font customization** (Look & Feel) — open one popup to set the app's text size from **60% to
+  140%** in 5% steps and choose separate fonts for the **main interface** and **popups**. Available fonts
+  are **System Sans, Lora, Playfair Display, Dancing Script, and Poppins**. Press **Apply** to save,
+  **Reset** to return to 100% / System Sans / Lora, or **Back** to discard staged changes. The setting
+  works with every interface language; Android supplies compatible fallback characters when a chosen
+  font does not contain a language's script. It is app-wide, survives restarts, and is included in
+  backup/restore. Subtitles are not changed here — use **Subtitle appearance** for those.
 - 🔀 **CH+- Key Paging** (Content) — page the category & item lists in Live/Movies/Series (and the
   category list in **Customize Categories & Items**) with the remote's **CH+ / CH−** keys. Separate skip
   counts per direction (typed or ±‑stepped), long‑press jumps to first/last, with an advisory warning

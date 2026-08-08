@@ -74,6 +74,8 @@ fun OwnTVTheme(
     systemInDarkTheme: Boolean,
     customAccent: String = "",
     animationLevel: AnimationLevel = AnimationLevel.FULL,
+    mainFontFamily: AppFontFamily = AppFontFamily.SYSTEM_SANS,
+    popupFontFamily: AppFontFamily = AppFontFamily.LORA,
     content: @Composable () -> Unit,
 ) {
     val useDark = when (themeMode) {
@@ -88,10 +90,12 @@ fun OwnTVTheme(
         LocalOwnTVColors provides colors,
         LocalThemeMode provides themeMode,
         LocalAnimationLevel provides animationLevel,
+        LocalMainFontFamily provides mainFontFamily.asComposeFamily(),
+        LocalPopupFontFamily provides popupFontFamily.asComposeFamily(),
     ) {
         MaterialTheme(
             colorScheme = schemeFrom(colors),
-            typography = OwnTVTypography,
+            typography = ownTVTypography(LocalMainFontFamily.current),
             content = content,
         )
     }

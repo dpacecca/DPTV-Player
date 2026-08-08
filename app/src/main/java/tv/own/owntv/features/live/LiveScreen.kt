@@ -95,7 +95,7 @@ import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
-import tv.own.owntv.ui.theme.PopupFontFamily
+import tv.own.owntv.ui.theme.LocalPopupFontFamily
 
 /** Layer 2–4 for Live TV: real category rail, Paging channel list, and a live preview pane. */
 @Composable
@@ -951,7 +951,7 @@ private fun MetaChipBadge(chip: MetaChip) {
             chip.text,
             style = MaterialTheme.typography.labelSmall,
             color = fg,
-            fontFamily = PopupFontFamily,   // Lora serif, matching the popup-menu font
+            fontFamily = LocalPopupFontFamily.current,
             fontWeight = FontWeight.Medium,
             maxLines = 1,                   // never wrap — keeps every chip the same height
             overflow = TextOverflow.Ellipsis,
@@ -1051,7 +1051,7 @@ private fun CatchupDialog(
     // Popup(focusable = true) is a hard focus boundary: a stray D-pad press or the Live screen's own
     // LaunchedEffect focus requests can no longer drop focus onto the channel grid behind the scrim
     // (same fix as EpgMatchDialog / ChannelContextMenu). trapAllFocusExit() additionally blocks
-    // directional exits through the scrim. PopupFontTheme swaps in the Lora serif + scales fonts to
+    // directional exits through the scrim. PopupFontTheme swaps in the selected popup family + scales fonts to
     // match the other popup menus (0.75f), and the box is shrunk to that same denser size.
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {

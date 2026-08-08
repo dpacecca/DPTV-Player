@@ -63,7 +63,7 @@ import tv.own.owntv.core.i18n.horizontalDirection
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.OwnTVTheme
-import tv.own.owntv.ui.theme.PopupFontFamily
+import tv.own.owntv.ui.theme.LocalPopupFontFamily
 
 /**
  * The wide "now-playing" bar shown in the top bar (left of the weather chip) while [PlayerMode.AUDIO]
@@ -211,7 +211,7 @@ fun AudioNowPlayingBar(
                         // no time to show, e.g. before duration is known.)
                         hasTime -> Text(
                             stringResource(R.string.player_time_progress, fmtTime(position), fmtTime(duration)),
-                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = PopupFontFamily),
+                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = LocalPopupFontFamily.current),
                             color = colors.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
