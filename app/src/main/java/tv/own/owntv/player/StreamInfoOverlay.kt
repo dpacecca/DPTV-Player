@@ -148,6 +148,7 @@ private fun StreamInfoValue.displayText(): String {
                 DecoderKind.NAMED -> {
                     name?.takeIf { it.isNotBlank() }?.let(::add)
                     if (hardware) add(stringResource(R.string.player_decoder_hardware))
+                    else if (software) add(stringResource(R.string.player_decoder_software))
                 }
             }
             if (direct) add(stringResource(R.string.player_decoder_direct))

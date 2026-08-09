@@ -63,7 +63,7 @@ import tv.own.owntv.ui.theme.glass
  * When [isPassword] is true, a show/hide eye button appears on the right of the field and is
  * independently D-pad focusable so the user can reveal the password without a keyboard.
  *
- * Liquid Glass: when [surface] is in scope the field frosts and gains a white glass rim on focus;
+ * Glass effect: when [surface] is in scope the field frosts and gains a white glass rim on focus;
  * otherwise it keeps its solid tonal fill + accent/outline border. Defaults to [GlassSurface.CARDS]
  * (most fields live on a panel); pass [GlassSurface.DIALOGS] for a field inside a popup/dialog.
  *

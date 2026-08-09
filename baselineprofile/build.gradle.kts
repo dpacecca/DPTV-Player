@@ -16,6 +16,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    packaging {
+        // Same reason as :app — androidx.benchmark's prebuilt .so are already stripped, so the strip
+        // step only ever printed "Unable to strip …" without changing a byte.
+        jniLibs {
+            keepDebugSymbols += "**/*.so"
+        }
+    }
+
     defaultConfig {
         // Macrobenchmark needs API 28+ to read the compilation state it drives.
         minSdk = 28

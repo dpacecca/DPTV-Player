@@ -2,7 +2,7 @@
 
 ## v4.2.0 — unreleased
 
-### 🫧 Liquid Glass material and focus overhaul — clearer presets, cleaner motion, lighter rendering
+### 🫧 Glass Effect material and focus overhaul — clearer presets, cleaner motion, lighter rendering
 
 - **Glass now has four appearance presets:** **Clear** (38% transparency / 62% frost), **Balanced**
   (56% / 78%, the recommended default), **Tinted** (74% / 88%), and **Custom**, which keeps the
@@ -202,6 +202,19 @@
   explains when a TV audio output fails and OwnTV switches the item to stereo, but repeated notices now
   replace one another instead of queuing. Stopping playback or opening another item clears the notice,
   and a late callback from the previous item cannot put the old message over the new video.
+- **Surround sound no longer switches itself off because of a small timing gap inside a file.** The
+  audio safety net treated every complaint from the audio output as proof that the output had failed.
+  One of those complaints only means the file's own audio timestamps jumped — the player re-syncs by
+  itself and carries on — but OwnTV read it as a failure, dropped the whole session to stereo and
+  restarted the item. Forcing stereo cannot repair timing that lives in the file, so the restarted item
+  reached the same spot and did it again: one imperfect film could interrupt playback several times and
+  leave a real 5.1 receiver in stereo for the rest of the session. Genuine faults — an output that
+  rejects the format, or produces no sound at all — are still caught exactly as before.
+- **The stream information overlay now names the decoder that is actually running.** It reported the
+  Hardware decoding *setting* rather than the decoder in use, so an item that had quietly fallen back to
+  a software decoder still read "hardware". The overlay now says hardware or software based on the
+  decoder itself, and a silent fallback is recorded in the playback log that the diagnostics export
+  collects — which is what makes a "picture is breaking up" report answerable.
 - **Changing the interface language in Settings now keeps focus on the selected language.** OwnTV
   also preserves the open Language screen when switching between writing systems requires Android to
   refresh the Activity, instead of dropping focus back onto the main navigation menu.
@@ -819,7 +832,7 @@
 
 - Backups are now written as **`owntv-backup.own`** instead of a plain `owntv-backup.json`. It is one
   container holding the backup itself plus any files that belong with it.
-- **Your background image travels with the backup.** The Liquid Glass wallpaper lives in OwnTV's own
+- **Your background image travels with the backup.** The Glass Effect wallpaper lives in OwnTV's own
   storage, and a backup only ever carried its file *path* — which means nothing on another TV, so the
   background silently came back blank after a restore. The picture's actual data now rides inside the
   `.own` file and is put back in place on restore. It's included whenever the **App settings** section
@@ -1144,7 +1157,7 @@
   locking those users out entirely. The portal only ever echoes the MAC back to itself, so there was no
   protocol reason to insist on hexadecimal. Any 12 letters/digits are now accepted, in any of the usual
   separator styles, which still catches typos and truncated pastes.
-- **Fixed: picking a new background image did nothing until the app was restarted.** In Liquid Glass
+- **Fixed: picking a new background image did nothing until the app was restarted.** In Glass Effect
   mode, choosing a second image of the same file type reused the same filename, so nothing detected a
   change and the previous picture stayed on screen. Each pick now lands under its own name and appears
   immediately; the old file is still cleaned up, so only one background is ever kept.
@@ -1185,12 +1198,12 @@
 
 ## v4.1.4 — 2026-07-24
 
-### 🧊 Liquid Glass — frosted translucent interface over your own background photo
+### 🧊 Glass Effect — frosted translucent interface over your own background photo
 
 - An opt-in **glass look**: content panels, sidebar, preview panes, dialogs, top bar, cards and the
   mini-player turn **translucent with a real frosted-blur backdrop** over an optional **background
   photo** — glassmorphism on TV. Everything lives in one **Settings → Glass Effect**
-  dialog: Liquid glass On/Off, the background image, a **Transparency** stepper (20–95%), a
+  dialog: Glass effect On/Off, the background image, a **Transparency** stepper (20–95%), a
   **Blur / Frost** stepper (0–100%), a **Surfaces** sub-menu, and **Reset**.
 - **Background image — Local or Remote.** **Local** picks a photo from USB/device storage (copied into
   app-private storage so unplugging the stick can't blank it). **Remote** sends one from your phone:

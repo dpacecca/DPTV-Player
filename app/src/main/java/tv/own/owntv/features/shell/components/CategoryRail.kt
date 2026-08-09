@@ -224,7 +224,7 @@ private fun RailPill(
     val focused by interaction.collectIsFocusedAsState()
     // Box-style corners (8.dp), close to the live-TV channel list item, not an over-rounded pill.
     val shape = if (expanded) RoundedCornerShape(8.dp) else CircleShape
-    // Liquid Glass: when the PANELS surface is glassy, the focused/active highlight renders as a
+    // Glass effect: when the PANELS surface is glassy, the focused/active highlight renders as a
     // frosted glass slice (via Modifier.glass) with a bright white rim, matching the sidebar.
     val panelsGlassy = LocalGlass.current.isGlassy(GlassSurface.PANELS)
     // Shared 4-state nav ladder (see NavLadder.kt) — identical treatment to the sidebar nav items so

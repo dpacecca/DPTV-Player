@@ -536,7 +536,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 |---|---|
 | **Subtitles** | Pick a subtitle track (incl. **image subtitles**) and set **subtitle delay**. Live channels with **embedded closed captions (CC)** — common on US channels — show a CC track on both engines; on mpv, selecting it briefly switches the channel to software decoding (≤1080p) and hardware decoding returns when CC is turned off. On raw `.ts` channels the CC entry always appears, even when the channel carries no captions. |
 | **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±50 ms** steps) — use this if surround makes lips drift. Available on movies/series and on live channels in **compatibility mode** (the standard live player can't shift audio, so it isn't offered there). |
-| **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · **audio out** · buffer. **Audio out** tells you whether your TV/receiver is decoding the sound (*passthrough*) or OwnTV is (*decoded in app*), whether surround is currently allowed, and why it fell back to stereo if it did. While it's open, a **share** button appears next to it: **Report this stream** saves that whole readout into the playback log, ready to export (see Settings). |
+| **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · **audio out** · buffer. **Decoder** names the decoder that is really in use and whether it is *hardware* or *software* — not what the Hardware decoding setting says — so you can see when a stream has quietly dropped to software. **Audio out** tells you whether your TV/receiver is decoding the sound (*passthrough*) or OwnTV is (*decoded in app*), whether surround is currently allowed, and why it fell back to stereo if it did. While it's open, a **share** button appears next to it: **Report this stream** saves that whole readout into the playback log, ready to export (see Settings). |
 | **Favorite** (♥) | Add or remove what you're watching from **Favorites** without leaving the stream — a live channel, a movie, or a series (an episode favorites its parent show). The heart fills when it's already a favorite. |
 | **Speed** | Playback speed (VOD). |
 | **MPV/EXO (⇄)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (shows the active engine; teal on the non‑default one). Flipping it briefly confirms "Switched to MPV/ExoPlayer" at the bottom. |
@@ -673,7 +673,7 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     **Balanced** is the recommended mix (56% / 78%), and **Tinted** gives stronger surface colour
     (74% / 88%). **Custom** uses your saved manual values. Changing either stepper selects Custom;
     **Reset** restores Balanced and enables every glass surface.
-  - The dialog also has **Liquid glass On/Off**, a **Background image** chooser, a **Transparency**
+  - The dialog also has **Glass effect On/Off**, a **Background image** chooser, a **Transparency**
     stepper (20–95%, higher = more solid), a **Blur / Frost** stepper (0–100%), and a **Surfaces** menu.
   - **Background image — Local or Remote.** **Local** browses USB/device storage for a JPG/PNG/WebP/BMP
     (it's copied into the app, so unplugging the stick can't blank it). **Remote** shows a **PIN + QR** —
@@ -821,8 +821,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   - **Surround** — send Dolby/DTS to a **real 5.1/7.1 receiver** to decode.
 
   Whichever you pick, OwnTV watches the audio output: if your equipment accepts the sound and then goes
-  silent, errors, or keeps stuttering, it **falls back to stereo on its own**, tells you, and gets sound
-  back in a few seconds. That safety net runs in **all three modes** and can't be switched off. Once it
+  silent, rejects the format, or keeps stuttering, it **falls back to stereo on its own**, tells you, and
+  gets sound back in a few seconds. A gap in a *file's own* audio timing doesn't count — the player
+  re‑syncs itself and you keep your surround. That safety net runs in **all three modes** and can't be
+  switched off. Once it
   has fired it stays on stereo for the rest of the session (so channel or player switches can't lose the
   sound again) — restart the app, or change this setting, to give your equipment another try.
 

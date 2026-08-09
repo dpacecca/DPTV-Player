@@ -138,11 +138,11 @@ object FrameRateController {
      *  3. The closest rate within that multiple.
      */
     private fun pickMode(activity: Activity, fps: Float): Display.Mode? {
-        val display: Display = activity.windowManager.defaultDisplay ?: return null
+        val display: Display = displayOf(activity) ?: return null
         val current = display.mode ?: return null
         val wanted = snapFps(fps)
         val seamless = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            current.alternativeRefreshRates?.toList().orEmpty()
+            current.alternativeRefreshRates.toList()
         } else {
             emptyList()
         }
@@ -217,7 +217,7 @@ object FrameRateController {
     fun betterRefreshRateFor(activity: Activity, fps: Float): Float? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || fps <= 0f) return null
         return runCatching {
-            val display: Display = activity.windowManager.defaultDisplay ?: return null
+            val display: Display = displayOf(activity) ?: return null
             val current = display.mode ?: return null
             // Snapped, like the mode choice itself: the prompt must judge the same rate [apply] will act on.
             if (multipleOf(current.refreshRate, snapFps(fps)) != null) return null // already clean
@@ -227,8 +227,21 @@ object FrameRateController {
 
     /** The refresh rate the display is on right now, or null if it can't be read. */
     fun currentRefreshRate(activity: Activity): Float? = runCatching {
-        activity.windowManager.defaultDisplay?.mode?.refreshRate
+        displayOf(activity)?.mode?.refreshRate
     }.getOrNull()
+
+    /**
+     * The display this activity is showing on. `Activity.getDisplay()` is the supported call from
+     * API 30 on; below that `WindowManager.getDefaultDisplay()` is the only way to ask, and on a TV
+     * (single display, no multi-window) the two answer the same thing.
+     */
+    private fun displayOf(activity: Activity): Display? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            activity.display
+        } else {
+            @Suppress("DEPRECATION")
+            activity.windowManager.defaultDisplay
+        }
 }
 
 /**

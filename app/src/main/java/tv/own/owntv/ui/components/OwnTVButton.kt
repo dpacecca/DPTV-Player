@@ -58,7 +58,7 @@ fun OwnTVButton(
         surface = surface,
         glassFrostScale = 0.9f,
         glassCornerRadius = 28.dp,
-        // Always-on glass edge so the pill reads as liquid glass even when unfocused.
+        // Always-on glass edge so the pill reads as glass even when unfocused.
         glassIdleRimAlpha = 0.18f,
     ) { focused ->
         val contentColor = when {

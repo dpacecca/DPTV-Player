@@ -60,6 +60,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -584,7 +585,7 @@ fun SettingsScreen(
             onClick = { savedScroll = scrollState.value; dialogReturn = accentRowFocus; showAccent = true }, showChevron = true,
             modifier = Modifier.focusRequester(accentRowFocus),
         )
-        // One consolidated "Glass Effect" entry: opens a dialog holding the Liquid-glass on/off toggle,
+        // One consolidated "Glass Effect" entry: opens a dialog holding the glass on/off toggle,
         // the background-image chooser, and the transparency stepper (see GlassEffectDialog).
         val glassOn = glassConfig.enabled
         SettingsRow(
@@ -1738,6 +1739,7 @@ private fun FontChoiceRow(
                 style = MaterialTheme.typography.bodyLarge.copy(fontFamily = family.asComposeFamily()),
                 color = colors.primary,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.width(10.dp))
             Text("›", style = MaterialTheme.typography.titleLarge, color = colors.onSurfaceVariant)
@@ -1794,6 +1796,7 @@ private fun FontFamilyPickerDialog(
                             style = MaterialTheme.typography.bodyMedium.copy(fontFamily = family.asComposeFamily()),
                             color = colors.onSurfaceVariant,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -1908,7 +1911,7 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
 }
 
 /**
- * A stepper for the Liquid Glass fill strength — how opaque the translucent panels are over the
+ * A stepper for the Glass effect fill strength — how opaque the translucent panels are over the
  * background photo. Higher = more solid (less see-through). Changes apply live. Range 20–95% in 5%
  * steps so panels can never go fully transparent (text would be unreadable) or fully solid (pointless).
  */
@@ -1964,9 +1967,9 @@ private fun GlassEffectDialog(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
             Spacer(Modifier.height(20.dp))
-            // Master on/off for the liquid glass (works with or without a background image).
+            // Master on/off for the glass (works with or without a background image).
             OwnTVButton(
-                if (glassOn) stringResource(R.string.settings_liquid_glass_on) else stringResource(R.string.settings_liquid_glass_off),
+                if (glassOn) stringResource(R.string.settings_glass_effect_on) else stringResource(R.string.settings_glass_effect_off),
                 onClick = onToggleGlass,
                 style = if (glassOn) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
                 icon = OwnTVIcon.THEME,

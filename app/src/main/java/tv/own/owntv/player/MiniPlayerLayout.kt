@@ -28,7 +28,7 @@ object MiniPlayerSize {
 }
 
 /** The six docking spots for the mini-player. */
-enum class MiniPlayerPosition(@StringRes val labelRes: Int) {
+enum class MiniPlayerPosition(@param:StringRes val labelRes: Int) {
     TOP_LEFT(R.string.player_mini_top_left),
     TOP_CENTER(R.string.player_mini_top_center),
     TOP_RIGHT(R.string.player_mini_top_right),

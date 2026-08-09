@@ -1561,7 +1561,7 @@ private fun DialogScaffold(
         // Compact glass popup matching the storage picker: smaller font + narrow box.
         tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.72f) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
-                // Liquid glass panel (same translucent chrome as the volume/timing dialogs) — the
+                // Glass effect panel (same translucent chrome as the volume/timing dialogs) — the
                 // inner LazyColumn manages its own scroll, so scroll = false.
                 Column(modifier = Modifier.dialogPanel(width = 260.dp, corner = 16.dp, padding = 14.dp, scroll = false)) {
                     Text(title, style = MaterialTheme.typography.titleSmall, color = colors.onSurface)

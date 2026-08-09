@@ -395,7 +395,7 @@ fun OwnTVShell(
         }
     }
 
-    // Liquid Glass: when a background image is active, the shell's own base paints must be transparent
+    // Glass effect: when a background image is active, the shell's own base paints must be transparent
     // so the full-bleed image (rendered in MainActivity behind this shell) shows through the gaps
     // between/around panels. Solid otherwise — the usual near-black base.
     val glass = LocalGlass.current
@@ -433,7 +433,7 @@ fun OwnTVShell(
                     .fillMaxSize()
                     // Phase 6 — unified panel surface: panels and content area share #102520 so the
                     // rounded borders define regions on one continuous dark-green surface.
-                    // Liquid Glass: transparent here (shellBase) when a background image is active, so
+                    // Glass effect: transparent here (shellBase) when a background image is active, so
                     // the image shows through the gaps between the content panels.
                     .background(shellBase),
             ) {

@@ -19,7 +19,7 @@ import tv.own.owntv.R
  * derived from a real ~3k-category sample so common non-English labels also classify instead of
  * silently falling to OTHER.
  */
-enum class ChannelGenre(@StringRes val displayLabelRes: Int, val canonicalLabel: String, val dot: Color) {
+enum class ChannelGenre(@param:StringRes val displayLabelRes: Int, val canonicalLabel: String, val dot: Color) {
     SPORT(R.string.content_genre_sport, "Sport", Color(0xFF4CAF50)),
     NEWS(R.string.content_genre_news, "News", Color(0xFFEF5350)),
     MOVIES(R.string.content_genre_movies, "Movies", Color(0xFFAB47BC)),

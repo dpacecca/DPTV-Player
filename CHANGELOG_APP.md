@@ -13,7 +13,7 @@
 
 ### ✨ New features
 
-- **🫧 Liquid Glass appearance presets and interaction-aware material**
+- **🫧 Glass Effect appearance presets and interaction-aware material**
 - **🔤 Separate interface and popup fonts**
 - **🔎 Adjustable app text size**
 - **💾 Font settings in backup and restore**
@@ -33,9 +33,11 @@
 - **TMDB trailers no longer stutter**
 - **The Home hero preview stops while a trailer is playing**
 - **Stalker imports no longer lose a whole category when the portal drops the connection**
-- **Liquid Glass focus no longer leaves dark trails during rapid navigation**
+- **Glass Effect focus no longer leaves dark trails during rapid navigation**
 - **Guide focus can now move into the docked mini-player (#112)**
 - **Stereo-fallback notices no longer remain over the next video**
+- **Surround sound no longer switches itself off because of a small timing gap inside a file**
+- **The stream information overlay now names the decoder that is actually running**
 - **Language changes keep focus on the selected language**
 - **Posters and artwork load when a TV's IPv6 route is broken**
 - **Test DNS no longer succeeds through the TV's normal DNS (#111)**
@@ -194,7 +196,7 @@
 
 ### ✨ New features
 
-- **🧊 Liquid Glass — frosted translucent interface over your own background photo (panels, dialogs, cards, rows, search bars & action buttons)**
+- **🧊 Glass Effect — frosted translucent interface over your own background photo (panels, dialogs, cards, rows, search bars & action buttons)**
 - **⭐ Favorite from the player — add to Favorites without leaving the stream (live, movies & series)**
 - **🗂️ Per-section sync scope — Now / Later / Off for Live, Movies & Series (#74)** (community PR #78)
 - **🎨 Accent color — full HSV picker (hue bar + saturation/brightness square) with live preview**

@@ -289,7 +289,7 @@ class ShellViewModel(
     val customAccent: StateFlow<String> = settings.customAccent
         .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
-    /** Liquid Glass background image path (app-private); blank = no background (panels solid). */
+    /** Glass effect background image path (app-private); blank = no background (panels solid). */
     val bgImagePath: StateFlow<String> = settings.bgImagePath
         .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 

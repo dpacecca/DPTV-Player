@@ -183,6 +183,18 @@ android {
         // reports are always generated, so there is nothing left to switch on here.
     }
 
+    packaging {
+        jniLibs {
+            // Every .so we package is a prebuilt from a dependency (libmpv/FFmpeg, libc++_shared,
+            // androidx graphics-path and datastore) and all of them are already stripped at the
+            // source — none carries a .debug_info or .symtab section. AGP's strip step therefore has
+            // nothing to remove, and on a machine without an NDK it can't run at all, which is where
+            // the "Unable to strip the following libraries, packaging them as they are" line on every
+            // release task came from. Skipping it packages byte-identical libraries without the noise.
+            keepDebugSymbols += "**/*.so"
+        }
+    }
+
     sourceSets["androidTest"].assets.directories.add("$projectDir/schemas")
 
     compileOptions {

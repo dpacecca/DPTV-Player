@@ -14,7 +14,7 @@ import tv.own.owntv.R
  * How much UI motion to render. A performance/comfort control: lower-end Android TV boxes can feel
  * laggy when moving quickly between menus, so the user can tone the animations down (or off).
  */
-enum class AnimationLevel(@StringRes val labelRes: Int) {
+enum class AnimationLevel(@param:StringRes val labelRes: Int) {
     // On = normal motion; Off = instant (no transitions). The fixed grid (v4.0.0) removed the old reason for
     // a middle "Reduced" tier, so this is now a simple On/Off reduce-motion toggle. (Legacy "REDUCED" values
     // fall back to On via the settings store's safe parse.)

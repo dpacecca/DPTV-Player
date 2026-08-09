@@ -138,7 +138,7 @@ fun SyncStatusPill(modifier: Modifier = Modifier) {
             .padding(bottom = 14.dp)
             .widthIn(max = 620.dp)
             .clip(shape)
-            // Liquid Glass: the pill is small chrome like the top-bar chips, so it frosts with
+            // Glass effect: the pill is small chrome like the top-bar chips, so it frosts with
             // TOPBAR and takes a lighter frost than a full panel. Off glass it falls back to the
             // same translucent fill it always had.
             .glass(

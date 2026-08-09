@@ -749,7 +749,7 @@ private fun TrendingHeroSection(
                         Text("•", style = MaterialTheme.typography.titleSmall, color = Color(0xFFD4DED9))
                         snapshot.rating?.let {
                             Text(
-                                text = "★ %.1f".format(it),
+                                text = stringResource(R.string.content_rating, it),
                                 style = MaterialTheme.typography.titleSmall,
                                 color = Color(0xFFFFE071),
                                 fontWeight = FontWeight.SemiBold,
@@ -1026,7 +1026,7 @@ private fun TrendingHomeItem.toDetailsUi(meta: MetadataCacheEntity?, tmdbWins: B
         } else {
             providerPoster ?: MetadataImages.poster(meta?.posterPath ?: snapshot.posterPath, size = "w500")
         },
-        metaLine = listOfNotNull(snapshot.year?.toString(), snapshot.rating?.let { "★ %.1f".format(it) }).joinToString(" · "),
+        metaLine = listOfNotNull(snapshot.year?.toString(), snapshot.rating?.let { stringResource(R.string.content_rating, it) }).joinToString(" · "),
         genres = trendingJsonList(meta?.genresJson),
         plot = if (tmdbWins) tmdbPlot ?: providerPlot else providerPlot ?: tmdbPlot,
         cast = trendingJsonList(meta?.castJson),

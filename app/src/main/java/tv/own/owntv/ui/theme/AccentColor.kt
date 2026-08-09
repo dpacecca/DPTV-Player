@@ -13,7 +13,7 @@ import tv.own.owntv.R
  * Neutrals (background, surface containers, text, outline) are theme-only and live in [OwnTVColors].
  */
 enum class AccentColor(
-    @StringRes val labelRes: Int,
+    @param:StringRes val labelRes: Int,
     private val primaryDark: Color,
     private val onPrimaryDark: Color,
     private val primaryContainerDark: Color,

@@ -494,7 +494,7 @@ class SettingsViewModel(
     val customAccent: StateFlow<String> = settings.customAccent.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setCustomAccent(hex: String) { viewModelScope.launch { settings.setCustomAccent(hex) } }
 
-    // --- Liquid Glass: background image + per-surface translucency ---
+    // --- Glass effect: background image + per-surface translucency ---
     val bgImagePath: StateFlow<String> = settings.bgImagePath.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val glassConfig: StateFlow<tv.own.owntv.ui.theme.GlassConfig> = settings.glassConfig.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.ui.theme.GlassConfig())
     fun setBgImagePath(path: String) { viewModelScope.launch { settings.setBgImagePath(path) } }

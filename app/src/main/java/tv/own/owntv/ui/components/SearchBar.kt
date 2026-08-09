@@ -57,7 +57,7 @@ import tv.own.owntv.ui.theme.glass
  * control — the keyboard only opens when the user presses OK on it (the inner text field is not
  * focusable until then), so focus can pass through / land on search without an IME popup.
  *
- * Liquid Glass: when [surface] is in scope the pill frosts (translucent fill + specular highlight)
+ * Glass effect: when [surface] is in scope the pill frosts (translucent fill + specular highlight)
  * and the focus ring becomes a bright white glass rim; otherwise it keeps its solid tonal fill +
  * accent/outline border. Defaults to [GlassSurface.CARDS] (most search bars live on a content panel);
  * pass [GlassSurface.DIALOGS] for one inside a popup.
@@ -87,7 +87,7 @@ fun SearchBar(
     val focused = pillFocused || editing
     // Glassy only when a surface is given and it's in the active glass scope (matches FocusableSurface).
     val glassy = surface != null && LocalGlass.current.isGlassy(surface)
-    // Liquid glass reads as glass because a bright hairline lenses the whole edge at all times, not
+    // The material reads as glass because a bright hairline lenses the whole edge at all times, not
     // just on focus. So when glassy: a faint white rim always, brightening on focus.
     val borderColor = when {
         glassy && focused -> Color.White.copy(alpha = 0.5f)

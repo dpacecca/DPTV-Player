@@ -41,7 +41,7 @@ val PreviewPanelFill: Color
  *
  * This is a VISUAL wrapper only — a plain [Box], no `clickable`/`selectable`/focus of its own.
  *
- * Liquid Glass: when a background image is active and [GlassSurface.PANELS] is in scope, the fill
+ * Glass effect: when a background image is active and [GlassSurface.PANELS] is in scope, the fill
  * becomes translucent (alpha from the user's transparency setting) and gains a soft specular
  * top-edge highlight. Callers that pass an explicit [fillColor] still go glassy — the explicit
  * colour is simply used as the translucent base, so per-region tints (ContentPanelFill etc.)

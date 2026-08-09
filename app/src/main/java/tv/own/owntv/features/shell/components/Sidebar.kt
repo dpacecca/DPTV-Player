@@ -335,7 +335,7 @@ private fun NavItem(
     val colors = OwnTVTheme.colors
     // A wide, short horizontal "button" (14.dp corners) — reads as a proper button, not a square box.
     val shape = RoundedCornerShape(14.dp)
-    // Liquid Glass: when the SIDEBAR surface is glassy the focused/active highlight renders as a
+    // Glass effect: when the SIDEBAR surface is glassy the focused/active highlight renders as a
     // frosted glass slice (via Modifier.glass) with a bright rim, instead of the flat tonal fill.
     val sidebarGlassy = LocalGlass.current.isGlassy(GlassSurface.SIDEBAR)
     // The nav surface itself is transparent + borderless; the shared 4-state nav ladder (NavLadder.kt)

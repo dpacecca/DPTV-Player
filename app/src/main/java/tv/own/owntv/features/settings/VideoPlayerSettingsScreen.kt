@@ -735,7 +735,7 @@ internal fun PickerDialog(
  * External player defaults, one independent toggle per section. Unlike [PickerDialog] these aren't
  * mutually exclusive, so the dialog stays open as rows are flipped and closes only on Close/Back.
  * Same chrome as every other settings popup — `dialogPanel` + `GlassSurface.DIALOGS`, so it follows
- * the Liquid Glass setting instead of hard-coding a solid panel.
+ * the Glass effect setting instead of hard-coding a solid panel.
  */
 @Composable
 private fun ExternalPlayerDialog(

@@ -30,7 +30,7 @@ import tv.own.owntv.ui.theme.glass
  * its own scrolling (typically by capping the inner LazyColumn's height and leaving the outer
  * column fixed). The clip + glass fill still apply.
  *
- * Liquid Glass: when [GlassSurface.DIALOGS] is in scope, the fill becomes translucent + gains the
+ * Glass effect: when [GlassSurface.DIALOGS] is in scope, the fill becomes translucent + gains the
  * specular highlight, so the background image reads through the popups too (Phase 1: all on).
  */
 @Composable

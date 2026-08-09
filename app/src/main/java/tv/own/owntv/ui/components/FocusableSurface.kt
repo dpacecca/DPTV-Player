@@ -57,7 +57,7 @@ fun FocusableSurface(
     glassFrostScale: Float = 1f,
     glassCornerRadius: Dp = Dimens.CardCorner,
     // When >0 AND this surface is glassy, an always-on faint white rim lenses the whole edge even when
-    // unfocused — the liquid-glass edge highlight. Focus still swaps to the brighter rim.
+    // unfocused — the glass edge highlight. Focus still swaps to the brighter rim.
     // Default 0 = no idle rim (unchanged for the 90+ existing callers); opt-in for discrete controls
     // like buttons where a permanent glass edge suits them.
     glassIdleRimAlpha: Float = 0f,

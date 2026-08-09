@@ -475,7 +475,7 @@ private fun BackgroundLayer(path: String) {
 }
 
 /**
- * Phase 4 — build the single shared blurred backdrop for the Liquid Glass frost. Decodes the
+ * Phase 4 — build the single shared blurred backdrop for the Glass effect frost. Decodes the
  * background file into a downscaled [Bitmap] (≈480px wide — enough detail to frost, tiny in memory),
  * blurs it with [stackBlur], and wraps it in a [BlurredBackdrop] that also carries the root viewport
  * size in px so glass panels can map their on-screen rect into the bitmap's coordinate space.

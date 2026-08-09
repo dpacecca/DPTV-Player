@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Liquid Glass — translucent frosted surface treatment.
+ * Glass effect — translucent frosted surface treatment.
  *
  * Each surface that can go glassy is tagged with a [GlassSurface]. When the feature is enabled
  * a panel whose surface is in [GlassConfig.scope] renders with a translucent fill and directional
