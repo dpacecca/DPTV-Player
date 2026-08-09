@@ -123,6 +123,14 @@
 
 ### 🐛 Fixes
 
+- **Guide focus can now move from a programme row into the docked mini-player (#112).** Opening
+  Picture-in-Picture from the Guide returns focus to the channel as before; Right moves to the whole
+  EPG row, and a second Right now reaches the mini-player controls instead of being swallowed by the
+  Guide. Per-programme timeline browsing keeps its existing Left/Right behaviour.
+- **The stereo-fallback notice no longer remains over the next video.** The surround safety net still
+  explains when a TV audio output fails and OwnTV switches the item to stereo, but repeated notices now
+  replace one another instead of queuing. Stopping playback or opening another item clears the notice,
+  and a late callback from the previous item cannot put the old message over the new video.
 - **Changing the interface language in Settings now keeps focus on the selected language.** OwnTV
   also preserves the open Language screen when switching between writing systems requires Android to
   refresh the Activity, instead of dropping focus back onto the main navigation menu.

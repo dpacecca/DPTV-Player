@@ -792,7 +792,9 @@ private fun GuideChannelRow(
                         Key.DirectionCenter, Key.Enter -> { if (!progs.isNullOrEmpty()) onEnterCell(); true }
                         // Physical by design: channel labels stay left of the timeline strip.
                         Key.DirectionLeft -> { runCatching { labelFR.requestFocus() }; true } // back to the channel
-                        Key.DirectionRight -> true // nothing further right — stay on the row
+                        // Let spatial focus navigation continue: a docked mini-player may be to the
+                        // right of the guide and must remain reachable from this whole-row stage.
+                        Key.DirectionRight -> false
                         else -> false
                     }
                 }

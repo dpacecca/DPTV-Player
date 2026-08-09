@@ -25,6 +25,8 @@
 
 ### 🐛 Fixes
 
+- **Guide focus can now move into the docked mini-player (#112)**
+- **Stereo-fallback notices no longer remain over the next video**
 - **Language changes keep focus on the selected language**
 - **Posters and artwork load when a TV's IPv6 route is broken**
 - **Test DNS no longer succeeds through the TV's normal DNS (#111)**
