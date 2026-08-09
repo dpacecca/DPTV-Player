@@ -179,10 +179,8 @@ android {
         // en-rGB is an intentional partial regional override of the canonical en-US source; its
         // omitted keys fall back to values/ and must not make every default string a lint error.
         disable += "MissingTranslation"
-        // Reports are what a failed CI run is inspected from.
-        htmlReport = true
-        xmlReport = true
-        textReport = true
+        // Reports are what a failed CI run is inspected from. Since AGP 9.3 the HTML/XML/text
+        // reports are always generated, so there is nothing left to switch on here.
     }
 
     sourceSets["androidTest"].assets.directories.add("$projectDir/schemas")

@@ -23,9 +23,16 @@
 - **🔐 Advanced Stalker device identification**
 - **🧪 Test HLS support — find out whether your provider really serves HLS before you turn it on**
 - **📐 Panel Width Adjustment can hide the preview or poster panel completely**
+- **⚡ Faster cold start**
+- **🧱 Refreshed playback and networking libraries**
 
 ### 🐛 Fixes
 
+- **Switching audio language mid-playback no longer makes the sound stutter**
+- **The stream information overlay now says correctly when your TV is decoding the audio**
+- **TMDB trailers no longer stutter**
+- **The Home hero preview stops while a trailer is playing**
+- **Stalker imports no longer lose a whole category when the portal drops the connection**
 - **Liquid Glass focus no longer leaves dark trails during rapid navigation**
 - **Guide focus can now move into the docked mini-player (#112)**
 - **Stereo-fallback notices no longer remain over the next video**

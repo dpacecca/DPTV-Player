@@ -148,24 +148,24 @@ fun TrailerPlayerScreen(videoKey: String, onExit: () -> Unit) {
         }
     }
 
-    // Same windowed treatment as the TMDB details popup (MediaDetailsScreen): a centred ~82% card over a
-    // dimmed scrim — a floating window, not a fullscreen takeover.
+    // Fullscreen and unclipped, unlike the windowed TMDB details popup this used to copy.
+    //
+    // The WebView only renders video on a hardware overlay when nothing forces it to be composited
+    // into the app's own layer. A rounded clip, a fractional size and a scrim behind it all did, and
+    // the result was that every decoded frame was copied through the GPU instead: playback filled the
+    // log with "no buffers currently available in the reader queue" / "CopySharedImage: Source shared
+    // image is not accessable" and dropped frames continuously. Decoding was never the problem — the
+    // Realtek AV1 hardware decoder kept up throughout.
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .modalScrim()
+            .background(Color.Black)
             .onKeyEvent(onSeekKey)
             .trapAllFocusExit()
             .focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.82f)
-                .fillMaxHeight(0.82f)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color.Black),
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
             AndroidView(factory = { playerView }, modifier = Modifier.fillMaxSize())
 
             // Minimal chrome: Exit + progress bar + time, bottom-aligned over the video.

@@ -9,7 +9,7 @@
 
 <p align="center">
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%20TV-3DDC84?logo=android&logoColor=white">
-  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.10-7F52FF?logo=kotlin&logoColor=white">
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.21-7F52FF?logo=kotlin&logoColor=white">
   <img alt="Compose for TV" src="https://img.shields.io/badge/Jetpack%20Compose-for%20TV-4285F4?logo=jetpackcompose&logoColor=white">
   <img alt="Player" src="https://img.shields.io/badge/engines-libmpv%20%2B%20ExoPlayer-FB8C00">
   <img alt="License" src="https://img.shields.io/badge/license-GPLv3-blue">
@@ -129,21 +129,22 @@ More in **[extras/screenshots/](extras/screenshots/)** — playlist management, 
 
 | Area | Choice |
 |------|--------|
-| Language | Kotlin 2.3.10 (AGP 9 **built-in Kotlin**, no `kotlin-android` plugin) |
-| Build | AGP 9.2.1 / Gradle 9.4.1, KSP2 2.3.9 |
-| UI | Jetpack Compose for TV (`androidx.tv:tv-material` 1.1.0), Compose BOM 2026.05.00 |
-| Media | **libmpv** (FFmpeg) — `dev.jdtech.mpv:libmpv` · **ExoPlayer/Media3** (Live TV + image subs) |
+| Language | Kotlin 2.3.21 (no `kotlin-android` plugin) |
+| Build | AGP 9.3.1 / Gradle 9.7.0, KSP2 2.3.11 |
+| UI | Jetpack Compose for TV (`androidx.tv:tv-material` 1.1.0), Compose BOM 2026.06.01 |
+| Media | **libmpv** (FFmpeg) — `dev.jdtech.mpv:libmpv` · **ExoPlayer/Media3** 1.11.0 (Live TV + image subs) |
 | Database | Room 2.8.4 + Paging 3.5.0 + FTS4 (WAL) |
 | DI | Koin 4.1.1 |
-| Networking | OkHttp |
+| Networking | OkHttp 5 (`okhttp-android`) |
 | Images | Coil 3.3.0 |
 | Preferences | DataStore |
 
 `minSdk 26`, `targetSdk 36`, `applicationId tv.own.owntv`.
 
-> **Build note:** Kotlin comes from AGP 9's built-in Kotlin (no `kotlin-android` plugin). KSP 2.3.6+
-> supports built-in Kotlin, so Room codegen works alongside it; the Compose compiler and KSP track
-> Kotlin 2.3.x.
+> **Build note:** there is no `kotlin-android` plugin. AGP 9 ships its own Kotlin, but the Compose
+> compiler plugin pulls the Kotlin Gradle plugin up to the `kotlin` version pinned in
+> `gradle/libs.versions.toml` — that is what actually compiles the app, so keep the Compose compiler
+> plugin on exactly that version. KSP must track the same Kotlin line for Room codegen to work.
 
 ## ⚙️ How it works (backend)
 

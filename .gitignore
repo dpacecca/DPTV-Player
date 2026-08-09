@@ -3,10 +3,8 @@
 .gradle-cache/
 .idea/
 .kotlin/
-/local.properties
 local.properties
 .DS_Store
-/build
 **/build/
 /captures
 .externalNativeBuild
@@ -34,6 +32,12 @@ future-plan/
 # i18n seed tool run state (batch inputs, IDs, raw results) — never committed
 /runs/
 
+# Logcat captures and diagnostic dumps written into the repo root while debugging
+# (`adb logcat … | Tee-Object -FilePath .\something.txt`). These routinely contain portal URLs,
+# MAC addresses, stream URLs and tokens, so they must never reach a commit. Root-scoped on
+# purpose: the baseline profiles under app/src/main/generated/ are .txt and ARE committed.
+/*.txt
+/*.log
 
 # JVM crash dumps from a Gradle daemon (never worth committing)
 hs_err_pid*.log

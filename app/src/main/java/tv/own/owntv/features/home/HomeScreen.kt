@@ -468,8 +468,14 @@ fun HomeScreen(
 
     // Video preview starts after the expanded card has settled, so 4K decoder setup does not compete with
     // the width animation. Until then the expanded card stays on the poster.
-    LaunchedEffect(isPreviewActive, hero, expandedHeroIndex, focusedHeroIndex, lastInteractionMs) {
-        if (!isPreviewActive || hero == null || expandedHeroIndex < 0 || focusedHeroIndex != expandedHeroIndex) {
+    // A trailer counts as "not previewing": the hero preview is hidden behind the trailer window, so
+    // leaving it decoding costs a second 4K video pipeline for a picture nobody can see — on a low-spec
+    // TV that is exactly the budget the trailer needs. The same reasoning as the 520ms delay below,
+    // applied to the one case that was missed.
+    LaunchedEffect(isPreviewActive, hero, expandedHeroIndex, focusedHeroIndex, lastInteractionMs, trailerVideoKey) {
+        if (!isPreviewActive || trailerVideoKey != null || hero == null || expandedHeroIndex < 0 ||
+            focusedHeroIndex != expandedHeroIndex
+        ) {
             heroPreviewEngine.stop()
             return@LaunchedEffect
         }

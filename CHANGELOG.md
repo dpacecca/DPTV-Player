@@ -146,8 +146,54 @@
   the panel is hidden. Trying to turn preview video back on shows where to restore the panel width and
   leaves the toggle off. The same rule is enforced when settings are restored from a backup.
 
+### ⚡ Faster cold start — OwnTV now tells Android what it needs before it needs it
+
+- **Opening the app from cold is about twice as fast.** OwnTV now ships a startup profile: a list of
+  the code paths used while the app is starting, which Android can prepare ahead of time instead of
+  working them out on every launch. Measured on a Realtek Android TV box with a full catalogue, cold
+  start went from roughly 1.0s to roughly 0.55s.
+- **The speed-up arrives on Android's schedule rather than immediately.** OwnTV hands the profile to
+  the system a few seconds after the first launch following an install or update, but Android does the
+  actual preparation during its own idle maintenance — normally overnight. The first launches after
+  updating still feel like the old version. Nothing has to be done to trigger it, and closing the app
+  early neither interrupts it nor makes it start over.
+
+### 🧱 Refreshed playback and networking libraries
+
+- **Playback moved to Media3 1.11.0**, bringing audio-output initialisation fixes, Live HLS timestamp
+  and playlist-refresh fixes, subtitle timing corrections, and DTS-HD support in MPEG-TS streams.
+- **Networking moved to OkHttp 5**, which now opens IPv4 and IPv6 connections in parallel and keeps
+  whichever answers first. On TVs that advertise an IPv6 route they cannot actually use, connections
+  no longer have to wait for the broken address to time out — the same class of problem as the artwork
+  fix below, now handled for every request rather than images alone.
+- Build toolchain refreshed alongside them: Gradle 9.7, AGP 9.3.1, Kotlin 2.3.21, KSP 2.3.11 and
+  Compose BOM 2026.06.01.
+
 ### 🐛 Fixes
 
+- **Switching audio language mid-playback no longer makes the sound stutter.** On soundtracks the TV
+  decodes itself — Dolby Digital, DTS and similar, passed through untouched — choosing a different
+  language left the audio output half-restarted, and the sound snapped and skipped for the rest of the
+  item. Selecting that very same track *before* playback started was always fine, and mpv was never
+  affected. OwnTV now re-primes the audio output once when it changes a passed-through track, costing
+  a brief re-buffer; soundtracks OwnTV decodes itself are untouched. Live TV gets the same fix, applied
+  only where the stream can be re-primed cheaply rather than reconnected.
+- **The stream information overlay now says correctly when your TV is decoding the audio.** Passthrough
+  was detected by looking for a decoder name that never appears on that path, so any soundtrack sent to
+  the TV untouched was described as decoded by OwnTV.
+- **TMDB trailers no longer stutter.** Trailers played inside a rounded, part-screen window, and that
+  containment forced every decoded frame to be copied through the graphics processor instead of going
+  straight to the screen — the picture dropped frames continuously even though the video itself was
+  being decoded in hardware without difficulty. Trailers now play full screen, which removes the
+  copying altogether.
+- **The Home hero preview stops while a trailer is playing.** It previously kept decoding behind the
+  trailer window, running a second video at once for a picture nobody could see.
+- **Stalker imports no longer lose a whole category when the portal drops the connection.** OwnTV
+  already retried a portal that answered "too busy", but treated a reset connection or a half-sent
+  reply as final — and because a category whose first page fails is left out of that import, the next
+  sync removed its items as though the provider had dropped them. Broken connections, timeouts and DNS
+  blips during paging are now retried the same way, while genuine refusals and malformed replies still
+  fail straight away.
 - **Guide focus can now move from a programme row into the docked mini-player (#112).** Opening
   Picture-in-Picture from the Guide returns focus to the channel as before; Right moves to the whole
   EPG row, and a second Right now reaches the mini-player controls instead of being swallowed by the

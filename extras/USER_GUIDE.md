@@ -480,7 +480,7 @@ or **narrow the whole app to just one**.
   cleaned provider title. The escape hatch when matching still gets a title wrong (or it's stuck in the
   7-day "no match" cache).
 - 🎞️ **Trailers:** long-press a movie or series → **Play Trailer** (shown only when TMDB has one). The trailer
-  plays in a floating window: **Back or Exit** closes it, **◀/▶** seeks ±10 seconds. If the built-in player
+  plays full screen: **Back or Exit** closes it, **◀/▶** seeks ±10 seconds. If the built-in player
   can't run on your box, OwnTV opens the trailer in the YouTube app instead.
 - **Attribution:** OwnTV uses the TMDB API but is not endorsed or certified by TMDB.
 
