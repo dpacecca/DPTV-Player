@@ -60,7 +60,7 @@ fun BackgroundImageChooserDialog(
 
     Box(
         Modifier.fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .modalScrim()
             .trapAllFocusExit()
             .focusGroup(),
         contentAlignment = Alignment.Center,
@@ -114,7 +114,7 @@ fun RemoteBackgroundDialog(
 
     Box(
         Modifier.fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .modalScrim()
             .trapAllFocusExit()
             .focusGroup(),
         contentAlignment = Alignment.Center,

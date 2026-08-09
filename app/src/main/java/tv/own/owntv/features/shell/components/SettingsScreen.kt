@@ -90,6 +90,7 @@ import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.displayText
@@ -103,6 +104,7 @@ import tv.own.owntv.ui.format.formatBestDateTime
 import tv.own.owntv.ui.theme.ALL_GLASS_SURFACES
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassConfig
+import tv.own.owntv.ui.theme.GlassPreset
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.AppFontFamily
 import tv.own.owntv.ui.theme.FontCustomization
@@ -588,7 +590,7 @@ fun SettingsScreen(
         SettingsRow(
             tone = TileTone.PRIMARY, icon = OwnTVIcon.THEME,
             title = stringResource(R.string.settings_glass_effect), desc = stringResource(R.string.settings_glass_description),
-            chip = if (glassOn) stringResource(R.string.common_on) else stringResource(R.string.common_off),
+            chip = if (glassOn) glassPresetLabel(glassConfig.preset) else stringResource(R.string.common_off),
             chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { savedScroll = scrollState.value; dialogReturn = glassEffectRowFocus; showGlassEffect = true }, showChevron = true,
             modifier = Modifier.focusRequester(glassEffectRowFocus),
@@ -959,12 +961,14 @@ fun SettingsScreen(
     if (showGlassEffect) {
         GlassEffectDialog(
             glassOn = glassConfig.enabled,
+            preset = glassConfig.preset,
             alphaPercent = (glassConfig.alpha * 100).roundToInt(),
             bgOn = bgImagePath.isNotBlank(),
             onToggleGlass = {
                 val on = glassConfig.enabled
                 settingsVm.setGlassScopeBitmask(if (on) 0 else GlassConfig(ALL_GLASS_SURFACES).toBitmask())
             },
+            onSetPreset = settingsVm::setGlassPreset,
             onSetAlpha = { settingsVm.setGlassAlphaPercent(it) },
             blurPercent = (glassConfig.blurStrength * 100).roundToInt(),
             onSetBlur = { settingsVm.setGlassBlurPercent(it) },
@@ -1125,7 +1129,7 @@ private fun AccentPaletteDialog(
     // PopupFontTheme swaps in the selected popup family and applies the shared popup type scale.
     tv.own.owntv.ui.theme.PopupFontTheme {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).imePadding().trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().imePadding().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -1225,7 +1229,7 @@ private fun AboutDialog(onDismiss: () -> Unit) {
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -1310,7 +1314,7 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
     BackHandler { onDismiss() }
     val dateContext = LocalContext.current
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         // scroll = false: the entries live in a LazyColumn, which manages its own scrolling. A plain
@@ -1432,7 +1436,7 @@ private fun AutoFrameRateWarningDialog(onEnable: () -> Unit, onDismiss: () -> Un
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.dialogPanel(width = 500.dp, padding = 28.dp)) {
@@ -1475,7 +1479,7 @@ private fun LivePreviewPanelHiddenDialog(onDismiss: () -> Unit) {
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.dialogPanel(width = 500.dp, padding = 28.dp)) {
@@ -1526,7 +1530,7 @@ private fun ClearHistoryDialog(
     LaunchedEffect(pending) { runCatching { firstFocus.requestFocus() } }
     BackHandler { if (pending != null) pending = null else onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -1610,7 +1614,7 @@ private fun FontCustomizationDialog(
 
     if (picker == null) {
         Box(
-            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.72f)).trapAllFocusExit().focusGroup(),
+            modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
             contentAlignment = Alignment.Center,
         ) {
             Column(
@@ -1753,7 +1757,7 @@ private fun FontFamilyPickerDialog(
     LaunchedEffect(Unit) { runCatching { focus.getValue(selected).requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.78f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -1812,7 +1816,7 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
     var pendingLowZoom by remember { mutableStateOf<Int?>(null) }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -1866,7 +1870,7 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
                 runCatching { firstFocus.requestFocus() }
             }
             Box(
-                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.8f)).trapAllFocusExit().focusGroup(),
+                modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(
@@ -1911,11 +1915,13 @@ private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit
 @Composable
 private fun GlassEffectDialog(
     glassOn: Boolean,
+    preset: GlassPreset,
     alphaPercent: Int,
     blurPercent: Int,
     bgOn: Boolean,
     scope: Set<GlassSurface>,
     onToggleGlass: () -> Unit,
+    onSetPreset: (GlassPreset) -> Unit,
     onSetAlpha: (Int) -> Unit,
     onSetBlur: (Int) -> Unit,
     onSetScope: (Int) -> Unit,
@@ -1932,18 +1938,16 @@ private fun GlassEffectDialog(
     val min = 20
     val max = 95
     val step = 5
-    val default = (GlassConfig.DEFAULT_GLASS_ALPHA * 100).roundToInt()
     fun clamp(v: Int) = v.coerceIn(min, max)
     // Backdrop blur ("frost") stepper — 0..100 in 10% steps. 0 keeps the Tier-1 translucency-only look;
     // only has an effect when a background image is set and the device supports it (API 31+).
     val blurMin = 0
     val blurMax = 100
     val blurStep = 10
-    val blurDefault = (GlassConfig.DEFAULT_BLUR_STRENGTH * 100).roundToInt()
     fun blurClamp(v: Int) = v.coerceIn(blurMin, blurMax)
     BackHandler { onDismiss() }
     if (!showSurfaces) Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         // Shared user-selected popup font, matching the app's other dialogs.
@@ -1979,6 +1983,31 @@ private fun GlassEffectDialog(
             )
             if (glassOn) {
                 Spacer(Modifier.height(22.dp))
+                Text(stringResource(R.string.settings_glass_preset_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    glassPresetDescription(preset),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                Spacer(Modifier.height(12.dp))
+                GlassPreset.entries.chunked(2).forEach { rowPresets ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        rowPresets.forEach { choice ->
+                            OwnTVButton(
+                                label = glassPresetLabel(choice),
+                                onClick = { onSetPreset(choice) },
+                                style = if (preset == choice) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                                compact = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+                if (preset == GlassPreset.CUSTOM) {
+                Spacer(Modifier.height(10.dp))
                 Text(stringResource(R.string.settings_transparency_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -2019,6 +2048,7 @@ private fun GlassEffectDialog(
                     )
                     StepButton(stringResource(R.string.settings_increase), dimmed = blurPercent >= blurMax) { onSetBlur(blurClamp(blurPercent + blurStep)) }
                 }
+                }
                 // Advanced: choose exactly which surfaces render as glass.
                 Spacer(Modifier.height(16.dp))
                 OwnTVButton(
@@ -2031,7 +2061,11 @@ private fun GlassEffectDialog(
             }
             Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (glassOn) OwnTVButton(stringResource(R.string.settings_reset), onClick = { onSetAlpha(default); onSetBlur(blurDefault); onSetScope(GlassConfig(ALL_GLASS_SURFACES).toBitmask()) }, style = OwnTVButtonStyle.SECONDARY)
+                if (glassOn) OwnTVButton(
+                    stringResource(R.string.settings_reset),
+                    onClick = { onSetPreset(GlassPreset.BALANCED); onSetScope(GlassConfig(ALL_GLASS_SURFACES).toBitmask()) },
+                    style = OwnTVButtonStyle.SECONDARY,
+                )
                 Spacer(Modifier.weight(1f))
                 OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss)
             }
@@ -2074,7 +2108,7 @@ private fun BrowsingListsDialog(
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         tv.own.owntv.ui.theme.PopupFontTheme {
@@ -2141,6 +2175,26 @@ private fun BrowsingGroupLabel(title: String, desc: String) {
     Spacer(Modifier.height(10.dp))
 }
 
+@Composable
+private fun glassPresetLabel(preset: GlassPreset): String = stringResource(
+    when (preset) {
+        GlassPreset.CLEAR -> R.string.settings_glass_preset_clear
+        GlassPreset.BALANCED -> R.string.settings_glass_preset_balanced
+        GlassPreset.TINTED -> R.string.settings_glass_preset_tinted
+        GlassPreset.CUSTOM -> R.string.settings_glass_preset_custom
+    },
+)
+
+@Composable
+private fun glassPresetDescription(preset: GlassPreset): String = stringResource(
+    when (preset) {
+        GlassPreset.CLEAR -> R.string.settings_glass_preset_clear_description
+        GlassPreset.BALANCED -> R.string.settings_glass_preset_balanced_description
+        GlassPreset.TINTED -> R.string.settings_glass_preset_tinted_description
+        GlassPreset.CUSTOM -> R.string.settings_glass_preset_custom_description
+    },
+)
+
 /** User-facing label for a glassable surface. */
 @Composable
 private fun glassSurfaceLabel(s: GlassSurface): String = stringResource(
@@ -2172,7 +2226,7 @@ private fun GlassSurfacesDialog(
     BackHandler { onDismiss() }
     fun toggled(s: GlassSurface): Int = GlassConfig(if (s in scope) scope - s else scope + s).toBitmask()
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         tv.own.owntv.ui.theme.PopupFontTheme {
@@ -2242,7 +2296,7 @@ private fun CatchupTimeDialog(
     BackHandler { onDismiss() }
     val manual = mode == SettingsRepository.CatchupTimezone.MANUAL
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -2333,7 +2387,7 @@ private fun EpgOffsetSettingDialog(
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -2440,6 +2494,11 @@ private fun SettingsRow(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         surface = GlassSurface.CARDS,
+        // Diagnostic + production-safe scrolling path: a full-width row must not move an aligned
+        // backdrop texture inside the scroll container. Focus still gets luminous tint and rim;
+        // the static parent panel retains real frost. This also avoids stale HWUI damage trails on
+        // affected Android TV GPUs.
+        glassFrostScale = 0f,
         contentAlignment = Alignment.CenterStart,
     ) { _ ->
         Row(

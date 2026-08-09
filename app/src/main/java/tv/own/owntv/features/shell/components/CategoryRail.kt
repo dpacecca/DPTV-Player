@@ -132,7 +132,7 @@ fun CategoryRail(
 
     // Fixed full-label column in the screen's Row — a real grid column (no overlay), so it takes its own
     // space and nothing reflows when focus enters/leaves it.
-    Box(modifier = modifier.fillMaxHeight().width(width).roundedPanel(fillColor = RailPanelFill)) {
+    Box(modifier = modifier.fillMaxHeight().width(width).roundedPanel(fillColor = RailPanelFill, surface = GlassSurface.SIDEBAR)) {
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -222,17 +222,21 @@ private fun RailPill(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    // Shared 4-state nav ladder (see NavLadder.kt) — identical treatment to the sidebar nav items so
-    // both panels read the same (#47): active+focused (full fill) → focused cursor (outline) →
-    // selected-idle (tonal fill + left accent bar) → idle.
-    val ladder = rememberNavLadderColors(selected = selected, focused = focused)
-    val activeSelected = selected && focused
-
     // Box-style corners (8.dp), close to the live-TV channel list item, not an over-rounded pill.
     val shape = if (expanded) RoundedCornerShape(8.dp) else CircleShape
     // Liquid Glass: when the PANELS surface is glassy, the focused/active highlight renders as a
     // frosted glass slice (via Modifier.glass) with a bright white rim, matching the sidebar.
     val panelsGlassy = LocalGlass.current.isGlassy(GlassSurface.PANELS)
+    // Shared 4-state nav ladder (see NavLadder.kt) — identical treatment to the sidebar nav items so
+    // both panels read the same (#47): active+focused (full fill) → focused cursor (outline) →
+    // selected-idle (tonal fill + left accent bar) → idle. Glass focus fills snap so an old category
+    // cannot leave a dark plate behind while LazyColumn brings the new one into view.
+    val ladder = rememberNavLadderColors(
+        selected = selected,
+        focused = focused,
+        snapFocusFill = panelsGlassy,
+    )
+    val activeSelected = selected && focused
     val highlighted = focused || selected
 
     Box(

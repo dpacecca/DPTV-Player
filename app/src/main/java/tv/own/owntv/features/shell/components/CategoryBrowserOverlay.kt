@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.KeyEventType
@@ -39,7 +38,11 @@ import tv.own.owntv.core.i18n.HorizontalDirection
 import tv.own.owntv.core.i18n.horizontalDirection
 import tv.own.owntv.core.database.entity.CategoryEntity
 import tv.own.owntv.ui.components.FocusableSurface
+import tv.own.owntv.ui.components.ContentPanelFill
+import tv.own.owntv.ui.components.modalScrim
+import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -72,13 +75,13 @@ fun CategoryBrowserOverlay(
 
     BackHandler { onDismiss() }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().modalScrim(strength = 0.58f)) {
         Column(
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .fillMaxHeight()
                 .width(380.dp)
-                .background(Color.Black.copy(alpha = 0.82f))
+                .roundedPanel(radius = 22.dp, fillColor = ContentPanelFill, surface = GlassSurface.DIALOGS)
                 .onPreviewKeyEvent { e ->
                     // Pushing outward from logical Start returns to the channel list.
                     if (e.type == KeyEventType.KeyDown &&
@@ -133,6 +136,7 @@ private fun CategoryRow(
         onClick = onClick,
         selected = isCurrent,
         modifier = modifier.fillMaxWidth(),
+        surface = GlassSurface.DIALOGS,
     ) { focused ->
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 10.dp),

@@ -58,6 +58,7 @@ import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.TextInputDialog
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -261,7 +262,7 @@ private fun BulkRenameChoicePopup(session: BulkRenameSession) {
     BackHandler { session.close() }
     PopupFontTheme {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -356,7 +357,7 @@ private fun BulkRuleBuilderDialog(session: BulkRenameSession) {
 
     PopupFontTheme {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.dialogPanel(width = 760.dp, padding = 24.dp)) {
@@ -544,7 +545,7 @@ private fun BulkReviewDialog(session: BulkRenameSession) {
         // Dense TV review: one-third smaller than the previous 0.75 scale.
         PopupFontTheme(fontScale = 0.50f) {
     Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)),
+        Modifier.fillMaxSize().modalScrim(),
         contentAlignment = Alignment.Center,
     ) {
         // scroll = false: this column holds a LazyColumn, which manages its own scrolling.
@@ -692,7 +693,7 @@ private fun BulkRestoreConfirmDialog(session: BulkRenameSession) {
     BackHandler { session.backToChoice() }
     PopupFontTheme {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.dialogPanel(width = 420.dp, padding = 24.dp)) {
@@ -723,7 +724,7 @@ private fun BulkRefusedDialog(session: BulkRenameSession) {
     BackHandler { session.dismissRefused() }
     PopupFontTheme {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.dialogPanel(width = 420.dp, padding = 24.dp)) {

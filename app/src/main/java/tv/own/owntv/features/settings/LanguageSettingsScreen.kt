@@ -67,6 +67,7 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVPopup
 import tv.own.owntv.ui.components.SearchBar
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.GlassSurface
@@ -186,7 +187,7 @@ private fun FirstRunLanguagePopup(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.7f))
+                .modalScrim()
                 .trapAllFocusExit()
                 .focusGroup(),
             contentAlignment = Alignment.Center,
@@ -395,7 +396,7 @@ private fun TranslationContributionDialog(onDismiss: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.75f))
+            .modalScrim()
             .trapAllFocusExit()
             .focusGroup(),
         contentAlignment = Alignment.Center,

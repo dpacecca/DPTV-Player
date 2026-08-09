@@ -42,6 +42,7 @@ import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ProfileEntity
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.OwnTVAvatar
 import tv.own.owntv.ui.components.OwnTVAvatars
 import tv.own.owntv.ui.components.OwnTVButton
@@ -64,7 +65,7 @@ internal fun ProfileScrim(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.75f)),
+                .modalScrim(),
             contentAlignment = Alignment.Center,
         ) {
             // Scrollable so small/low-res screens can still reach the lower controls (Kids

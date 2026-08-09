@@ -153,7 +153,7 @@ fun TrailerPlayerScreen(videoKey: String, onExit: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .modalScrim()
             .onKeyEvent(onSeekKey)
             .trapAllFocusExit()
             .focusGroup(),

@@ -67,7 +67,7 @@ fun TextInputDialog(
         }
         BackHandler { onDismiss() }
         Box(
-            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).trapAllFocusExit().focusGroup(),
+            modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
             contentAlignment = Alignment.Center,
         ) {
             Column(

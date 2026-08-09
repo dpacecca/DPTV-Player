@@ -1,32 +1,35 @@
 package tv.own.owntv.ui.theme
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.CacheDrawScope
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.node.DrawModifierNode
+import androidx.compose.ui.node.GlobalPositionAwareModifierNode
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.node.invalidateDraw
+import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -34,9 +37,9 @@ import androidx.compose.ui.unit.dp
  * Liquid Glass — translucent frosted surface treatment.
  *
  * Each surface that can go glassy is tagged with a [GlassSurface]. When the feature is enabled
- * (a background image is set), a panel whose surface is in [GlassConfig.scope] renders with a
- * translucent fill + specular top-edge highlight (Tier 1, all devices). Backdrop blur (Tier 2,
- * the real "frost") is layered on in Phase 4 via a separate cached blur.
+ * a panel whose surface is in [GlassConfig.scope] renders with a translucent fill and directional
+ * edge light. A wallpaper adds real cached backdrop frost; without one the same roles use a tonal
+ * ceramic-glass fallback so contrast remains predictable.
  *
  * The fullscreen player is intentionally NOT a [GlassSurface] — it covers the shell when visible,
  * so leaving it opaque is correct.
@@ -64,6 +67,31 @@ enum class GlassSurface {
     MINI_PLAYER,
 }
 
+/** User-facing material tuning. CUSTOM resolves to the separately persisted alpha/frost values. */
+enum class GlassPreset(val alpha: Float?, val blurStrength: Float?) {
+    CLEAR(alpha = 0.38f, blurStrength = 0.62f),
+    BALANCED(alpha = 0.56f, blurStrength = 0.78f),
+    TINTED(alpha = 0.74f, blurStrength = 0.88f),
+    CUSTOM(alpha = null, blurStrength = null);
+
+    fun resolveAlpha(custom: Float): Float = (alpha ?: custom).coerceIn(0f, 1f)
+    fun resolveBlur(custom: Float): Float = (blurStrength ?: custom).coerceIn(0f, 1f)
+
+    companion object {
+        /** Migration-safe: recognize old defaults/preset values; preserve every other old value as Custom. */
+        fun fromStored(name: String?, customAlpha: Float, customBlur: Float): GlassPreset {
+            name?.let { stored -> entries.firstOrNull { it.name == stored }?.let { return it } }
+            return entries.firstOrNull {
+                it != CUSTOM && kotlin.math.abs((it.alpha ?: 0f) - customAlpha) < 0.001f &&
+                    kotlin.math.abs((it.blurStrength ?: 0f) - customBlur) < 0.001f
+            } ?: CUSTOM
+        }
+    }
+}
+
+/** Surface interaction passed to the material renderer; only FOCUSED receives the rich light lens. */
+enum class GlassInteraction { IDLE, SELECTED, FOCUSED, PRESSED }
+
 /** Every surface that can be glassed. Used to implement the "All" master tick. */
 val ALL_GLASS_SURFACES: Set<GlassSurface> = GlassSurface.entries.toSet()
 
@@ -71,10 +99,10 @@ val ALL_GLASS_SURFACES: Set<GlassSurface> = GlassSurface.entries.toSet()
  * Resolved glass state.
  *
  * @param scope which surfaces are glassy. Empty = feature off (panels stay solid).
- * @param alpha panel fill alpha when glassed, in 0..1. Default 0.75 (the "nice preset").
+ * @param alpha panel fill alpha when glassed, in 0..1. Default 0.56 (Balanced).
  *   Pure 0 means fully transparent (image shows through unobstructed), 1 = opaque (no glass effect).
  * @param blurStrength how much real backdrop blur ("frost") to apply, in 0..1. 0 = Tier-1
- *   translucency only (sharp background reads through); 1 = fully frosted. Default 0.8. Only has an
+ *   translucency only (sharp background reads through); 1 = fully frosted. Default 0.78. Only has an
  *   effect on API 31+ ([supportsBackdropBlur]) and when a background image is present. The strength
  *   is the draw alpha of the single shared blurred-backdrop slice — O(1) to change, no re-blur.
  */
@@ -83,6 +111,9 @@ data class GlassConfig(
     val scope: Set<GlassSurface> = emptySet(),
     val alpha: Float = DEFAULT_GLASS_ALPHA,
     val blurStrength: Float = DEFAULT_BLUR_STRENGTH,
+    val preset: GlassPreset = GlassPreset.BALANCED,
+    /** Runtime-only environment flag supplied by MainActivity; it is not persisted in the bitmask. */
+    val hasBackdrop: Boolean = false,
 ) {
     /** Glass is "on" only when at least one surface is scoped. */
     val enabled: Boolean get() = scope.isNotEmpty()
@@ -98,12 +129,22 @@ data class GlassConfig(
     }
 
     companion object {
-        const val DEFAULT_GLASS_ALPHA: Float = 0.75f
-        const val DEFAULT_BLUR_STRENGTH: Float = 0.8f
+        const val DEFAULT_GLASS_ALPHA: Float = 0.56f
+        const val DEFAULT_BLUR_STRENGTH: Float = 0.78f
 
-        fun fromBitmask(bits: Int, alpha: Float = DEFAULT_GLASS_ALPHA, blurStrength: Float = DEFAULT_BLUR_STRENGTH): GlassConfig {
+        fun fromBitmask(
+            bits: Int,
+            alpha: Float = DEFAULT_GLASS_ALPHA,
+            blurStrength: Float = DEFAULT_BLUR_STRENGTH,
+            preset: GlassPreset = GlassPreset.CUSTOM,
+        ): GlassConfig {
             val scope = GlassSurface.entries.filter { (bits shr it.ordinal) and 1 == 1 }.toSet()
-            return GlassConfig(scope = scope, alpha = alpha, blurStrength = blurStrength)
+            return GlassConfig(
+                scope = scope,
+                alpha = preset.resolveAlpha(alpha),
+                blurStrength = preset.resolveBlur(blurStrength),
+                preset = preset,
+            )
         }
     }
 }
@@ -164,6 +205,8 @@ fun Modifier.glass(
     // Per-call frost multiplier (0..1) applied on top of the global blurStrength — lets small chrome
     // (e.g. top-bar chips) read as lighter glass than the big panels without changing the global setting.
     frostScale: Float = 1f,
+    interaction: GlassInteraction = GlassInteraction.IDLE,
+    idleRimAlpha: Float? = null,
 ): Modifier {
     val config = LocalGlass.current
     // Fully transparent fill = nothing to render (e.g. an idle nav/list item whose highlight fill
@@ -173,28 +216,71 @@ fun Modifier.glass(
     // No glass for this surface → keep the solid fill, no highlight, no frost.
     if (!config.isGlassy(surface)) return this.background(baseFill, shape)
 
-    val a = config.alpha.coerceIn(0f, 1f)
-    val translucent = baseFill.copy(alpha = a)
+    val roleAdjustment = when (surface) {
+        GlassSurface.DIALOGS -> 0.12f
+        GlassSurface.SIDEBAR -> 0.06f
+        GlassSurface.TOPBAR, GlassSurface.MINI_PLAYER -> 0.04f
+        GlassSurface.PREVIEW -> -0.05f
+        GlassSurface.CARDS -> -0.08f
+        GlassSurface.PANELS -> 0f
+    }
+    val interactionAdjustment = when (interaction) {
+        GlassInteraction.IDLE -> 0f
+        GlassInteraction.SELECTED -> 0.04f
+        GlassInteraction.FOCUSED -> -0.06f
+        GlassInteraction.PRESSED -> 0.02f
+    }
+    val tintAlpha = (config.alpha + roleAdjustment + interactionAdjustment).coerceIn(0.22f, 0.9f)
+    val resolvedIdleRim = idleRimAlpha ?: when (surface) {
+        GlassSurface.DIALOGS -> 0.18f
+        GlassSurface.SIDEBAR, GlassSurface.TOPBAR, GlassSurface.MINI_PLAYER -> 0.15f
+        GlassSurface.PANELS, GlassSurface.PREVIEW -> 0.11f
+        GlassSurface.CARDS -> 0.06f
+    }
 
     // Phase 4 — real backdrop blur. The single shared blurred bitmap (provided by MainActivity) is
     // drawn here as a slice aligned to this panel's on-screen position, so the frost matches the photo
     // region behind it. O(1) per panel: one textured draw.
     val blurred = LocalBlurredBackdrop.current
     val frostAlpha = (config.blurStrength * frostScale).coerceIn(0f, 1f)
-    // Capture this panel's rect in root coordinates (same approach as HomeScreen hero preview). Root
-    // space is correct: the background image lives in the same root Compose tree above the shell.
-    var bounds by remember { mutableStateOf(Rect.Zero) }
+    // Dense lists can contain many idle cards. Their material already reads from frost + tint; reserving
+    // the extra radial light and perimeter brushes for selected/focused states removes three GPU draws
+    // per idle item without changing the interaction users actually track with the D-pad.
+    val lightweightIdle = surface == GlassSurface.CARDS && interaction == GlassInteraction.IDLE
 
-    // No blurred backdrop (no image / pre-API 31 / blur off) → Tier 1: translucent fill + sheen only.
-    if (blurred == null || frostAlpha <= 0f) {
-        return this
-            .onGloballyPositioned { bounds = it.boundsInRoot() }
-            .background(translucent, shape)
-            .drawWithContent {
+    // No wallpaper is a deliberate tonal/ceramic material, not fake transparency over a flat colour.
+    if (!config.hasBackdrop) {
+        return this.drawWithCache {
+            val body = if (lightweightIdle) null else createLuminousBody(interaction = interaction, tonal = true)
+            val rim = if (lightweightIdle) null else createLuminousRim(cornerRadius = cornerRadius, interaction = interaction, idleAlpha = resolvedIdleRim)
+            onDrawWithContent {
+                drawRect(baseFill.copy(alpha = 0.94f))
+                body?.let(::drawLuminousBody)
                 drawContent()
-                drawSheen()
+                rim?.let(::drawLuminousRim)
             }
+        }
     }
+
+    // No cached blur (pre-API 31 / blur off) → translucent material over the real wallpaper. Idle
+    // cards deliberately use this lightweight path too: list scrolling no longer resamples the full
+    // backdrop texture for every visible tile; focus promotes just the active tile to real frost.
+    if (blurred == null || frostAlpha <= 0f || lightweightIdle) {
+        return this.drawWithCache {
+            val body = if (lightweightIdle) null else createLuminousBody(interaction = interaction, tonal = false)
+            val rim = if (lightweightIdle) null else createLuminousRim(cornerRadius = cornerRadius, interaction = interaction, idleAlpha = resolvedIdleRim)
+            onDrawWithContent {
+                drawRect(baseFill.copy(alpha = tintAlpha))
+                body?.let(::drawLuminousBody)
+                drawContent()
+                rim?.let(::drawLuminousRim)
+            }
+        }
+    }
+
+    // Capture this panel's rect only for the Tier-2 path that consumes it. Avoiding this remembered
+    // state entirely for solid/no-wallpaper/Tier-1 surfaces substantially reduces list bookkeeping.
+    val position = remember { GlassPositionState() }
 
     // Tier 2 — frost. Compose can't blur a node's own backdrop, so we approximate glassmorphism by
     // drawing the blurred slice OPAQUELY: it fully MASKS the sharp background photo that would
@@ -204,9 +290,16 @@ fun Modifier.glass(
     val rootH = blurred.rootSizePx.height
     val bmp = blurred.bitmap
     return this
-        .onGloballyPositioned { bounds = it.boundsInRoot() }
-        .drawWithContent {
-            if (rootW > 0f && rootH > 0f && bounds.width > 0f && bounds.height > 0f && bmp.width > 0 && bmp.height > 0) {
+        .then(GlassPositionElement(position))
+        .drawWithCache {
+            // Gradients depend only on this node's size and material inputs. Cache them across frames;
+            // the moving backdrop bounds stay in the draw lambda so scrolling does not rebuild them.
+            val body = createLuminousBody(interaction = interaction, tonal = false)
+            val rim = createLuminousRim(cornerRadius = cornerRadius, interaction = interaction, idleAlpha = resolvedIdleRim)
+            val resolvedTint = (tintAlpha + (1f - frostAlpha) * 0.16f).coerceIn(0f, 0.94f)
+            onDrawWithContent {
+                val bounds = position.bounds
+                if (rootW > 0f && rootH > 0f && bounds.width > 0f && bounds.height > 0f && bmp.width > 0 && bmp.height > 0) {
                 // Draw the WHOLE blurred bitmap scaled to the root viewport, translated so the slice that
                 // lands behind THIS panel is the one visible. The node is already clipped to `shape`
                 // (by the upstream .clip() in RoundedPanel/DialogPanel), so only the panel's region shows.
@@ -226,38 +319,153 @@ fun Modifier.glass(
                         drawImage(bmp, topLeft = Offset.Zero)
                     }
                 }
-                // Blend the frost (opaque) with the panel's tinted fill by strength: at frostAlpha=1 the
-                // pure frosted photo shows; below 1 the solid tint increasingly dominates. Also folds in
-                // the alpha (transparency) control so users can still let some background texture through.
-                val tintAlpha = (1f - frostAlpha) + frostAlpha * (1f - a)
-                if (tintAlpha > 0f) drawRect(baseFill.copy(alpha = tintAlpha.coerceIn(0f, 1f)))
-            } else {
-                // Bounds not resolved yet (first frame) → keep the panel readable with the solid fill.
-                drawRect(baseFill)
+                // The cached bitmap supplies the frost; the role/preset controls the coloured tint above it.
+                // A small extra tint at low frost keeps sharp detail from fighting text.
+                    drawRect(baseFill.copy(alpha = resolvedTint))
+                } else {
+                    // Bounds not resolved yet (first frame) → keep the panel readable with the solid fill.
+                    drawRect(baseFill)
+                }
+                drawLuminousBody(body)
+                drawContent()
+                drawLuminousRim(rim)
             }
-            drawContent()
-            drawSheen()
         }
 }
 
 /**
- * Specular top-edge highlight: a bright sweep near the top, like a glass bevel. Strength scales
- * *inversely* with surface size — small chrome (buttons, chips, search pills) is a small piece of
- * glass so it needs a brighter, glossier sheen to read; large panels stay subtle so they don't wash
- * out. This is what gives a button the polished "Liquid Glass" look instead of a flat tint.
+ * Position holder deliberately outside Compose snapshot state. A scrolling frost surface only needs
+ * a redraw when its root-space position changes; recomposition and cache rebuilding would be wasted.
  */
-private fun DrawScope.drawSheen() {
-    val minDim = size.minDimension
-    val sheenHeight = minDim * 0.4f
-    // ~140dp and below = button/chip scale (full gloss); ~600dp+ = large panel (subtle). Linear between.
-    val gloss = (1f - ((minDim / 140f.dp.toPx()) - 1f).coerceIn(0f, 1f))
-    val peak = 0.16f + 0.30f * gloss
-    drawRect(
-        brush = Brush.verticalGradient(
+private class GlassPositionState(var bounds: Rect = Rect.Zero)
+
+private data class GlassPositionElement(
+    val position: GlassPositionState,
+) : ModifierNodeElement<GlassPositionNode>() {
+    override fun create(): GlassPositionNode = GlassPositionNode(position)
+
+    override fun update(node: GlassPositionNode) {
+        node.position = position
+    }
+
+    override fun InspectorInfo.inspectableProperties() {
+        name = "glassPosition"
+    }
+}
+
+private class GlassPositionNode(
+    var position: GlassPositionState,
+) : Modifier.Node(), GlobalPositionAwareModifierNode, DrawModifierNode {
+    override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
+        val next = coordinates.boundsInRoot()
+        if (next != position.bounds) {
+            position.bounds = next
+            invalidateDraw()
+        }
+    }
+
+    override fun ContentDrawScope.draw() {
+        drawContent()
+    }
+}
+
+private data class LuminousBody(
+    val radial: Brush,
+    val focusSweep: Brush?,
+    val shade: Brush,
+)
+
+private data class LuminousRim(
+    val brush: Brush,
+    val topLeft: Offset,
+    val size: Size,
+    val cornerRadius: CornerRadius,
+    val stroke: Stroke,
+)
+
+/** Build size-dependent light resources once per draw-cache lifetime, not once per rendered frame. */
+private fun CacheDrawScope.createLuminousBody(interaction: GlassInteraction, tonal: Boolean): LuminousBody {
+    val compact = (1f - ((size.minDimension / 150f.dp.toPx()) - 1f).coerceIn(0f, 1f))
+    val focused = interaction == GlassInteraction.FOCUSED || interaction == GlassInteraction.PRESSED
+    val peak = when {
+        focused -> 0.30f + compact * 0.16f
+        interaction == GlassInteraction.SELECTED -> 0.10f
+        tonal -> 0.075f
+        else -> 0.055f + compact * 0.035f
+    }
+    return LuminousBody(
+        radial = Brush.radialGradient(
             colors = listOf(Color.White.copy(alpha = peak), Color.White.copy(alpha = 0f)),
-            startY = 0f,
-            endY = sheenHeight,
+            center = Offset(size.width * 0.14f, -size.height * 0.08f),
+            radius = size.maxDimension * 0.72f,
         ),
+        focusSweep = if (focused) {
+            Brush.linearGradient(
+                colorStops = arrayOf(
+                    0f to Color.Transparent,
+                    0.42f to Color.Transparent,
+                    0.56f to Color.White.copy(alpha = 0.07f),
+                    0.68f to Color.Transparent,
+                    1f to Color.Transparent,
+                ),
+                start = Offset.Zero,
+                end = Offset(size.width, size.height * 0.25f),
+            )
+        } else {
+            null
+        },
+        // A restrained lower/right shade implies material thickness without blackening the whole pane.
+        shade = Brush.verticalGradient(
+            colors = listOf(Color.Transparent, Color.Black.copy(alpha = if (tonal) 0.10f else 0.07f)),
+            startY = size.height * 0.58f,
+            endY = size.height,
+        ),
+    )
+}
+
+/** Localized light replaces the old full-width rectangular sheen. */
+private fun DrawScope.drawLuminousBody(body: LuminousBody) {
+    drawRect(brush = body.radial)
+    body.focusSweep?.let { drawRect(brush = it) }
+    drawRect(brush = body.shade)
+}
+
+/** Directional perimeter: brightest near the light source, never a uniform white focus box. */
+private fun CacheDrawScope.createLuminousRim(cornerRadius: Dp, interaction: GlassInteraction, idleAlpha: Float): LuminousRim {
+    val focused = interaction == GlassInteraction.FOCUSED || interaction == GlassInteraction.PRESSED
+    val selected = interaction == GlassInteraction.SELECTED
+    val peak = when {
+        focused -> 0.78f
+        selected -> 0.28f
+        else -> idleAlpha
+    }
+    val tail = when {
+        focused -> 0.22f
+        selected -> 0.10f
+        else -> idleAlpha * 0.45f
+    }
+    val stroke = if (focused) 1.5.dp.toPx() else 1.dp.toPx()
+    val inset = stroke / 2f
+    return LuminousRim(
+        brush = Brush.linearGradient(
+            colors = listOf(Color.White.copy(alpha = peak), Color.White.copy(alpha = tail), Color.White.copy(alpha = tail * 0.55f)),
+            start = Offset.Zero,
+            end = Offset(size.width, size.height),
+        ),
+        topLeft = Offset(inset, inset),
+        size = Size((size.width - stroke).coerceAtLeast(0f), (size.height - stroke).coerceAtLeast(0f)),
+        cornerRadius = CornerRadius((cornerRadius.toPx() - inset).coerceAtLeast(0f)),
+        stroke = Stroke(width = stroke),
+    )
+}
+
+private fun DrawScope.drawLuminousRim(rim: LuminousRim) {
+    drawRoundRect(
+        brush = rim.brush,
+        topLeft = rim.topLeft,
+        size = rim.size,
+        cornerRadius = rim.cornerRadius,
+        style = rim.stroke,
     )
 }
 

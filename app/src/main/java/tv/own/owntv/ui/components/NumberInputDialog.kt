@@ -93,7 +93,7 @@ fun NumberInputDialog(
     }
 
     tv.own.owntv.ui.theme.PopupFontTheme {
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
             Column(
                 modifier = Modifier.dialogPanel(width = 320.dp, corner = 16.dp, padding = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,

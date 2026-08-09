@@ -13,6 +13,7 @@
 
 ### ✨ New features
 
+- **🫧 Liquid Glass appearance presets and interaction-aware material**
 - **🔤 Separate interface and popup fonts**
 - **🔎 Adjustable app text size**
 - **💾 Font settings in backup and restore**
@@ -25,6 +26,7 @@
 
 ### 🐛 Fixes
 
+- **Liquid Glass focus no longer leaves dark trails during rapid navigation**
 - **Guide focus can now move into the docked mini-player (#112)**
 - **Stereo-fallback notices no longer remain over the next video**
 - **Language changes keep focus on the selected language**

@@ -307,7 +307,10 @@ class MainActivity : ComponentActivity() {
                 // panels are translucent over the solid app background (a subtler layered look). The bg
                 // image is a separate, optional layer rendered below the shell only when a path is set.
                 val glassActive = glassConfig.enabled
-                val effectiveGlass = if (glassActive) glassConfig else GlassConfig(scope = emptySet(), alpha = glassConfig.alpha, blurStrength = glassConfig.blurStrength)
+                val effectiveGlass = glassConfig.copy(
+                    scope = if (glassActive) glassConfig.scope else emptySet(),
+                    hasBackdrop = bgImagePath.isNotBlank(),
+                )
                 // Root viewport size in px — the area the background image fills and that the blurred
                 // backdrop stands in for. Captured here (top of the tree) so glass panels can map their
                 // own on-screen rect into the blurred bitmap's coordinate space.
@@ -466,7 +469,7 @@ private fun BackgroundLayer(path: String) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.25f)),
+                .background(Color.Black.copy(alpha = 0.16f)),
         )
     }
 }
@@ -492,7 +495,9 @@ private suspend fun produceBlurredBackdrop(path: String, rootSizePx: Size): Blur
             // ~8MB ARGB, ~9× fewer pixels through the CPU blur, and the same radius yields a much
             // deeper frost. (Full-res was a workaround for RGB blocks later proven to be a StackBlur
             // sign-wrap bug, since fixed — the upscale was never the culprit.)
-            val targetW = (rootW / 3f).toInt().coerceIn(480, 640)
+            // Frost is intentionally low-frequency. A 512–768 px texture is visually equivalent once
+            // blurred/upscaled, while cutting bitmap memory, CPU blur work and repeated GPU sampling.
+            val targetW = (rootW / 2.5f).toInt().coerceIn(512, 768)
             val targetH = (targetW / aspect).toInt().coerceAtLeast(2)
 
             // Decode bounds first, then sample down to roughly the target width.
@@ -525,22 +530,19 @@ private suspend fun produceBlurredBackdrop(path: String, rootSizePx: Size): Blur
                     val cropped = Bitmap.createBitmap(decoded, cx, cy, cw.coerceAtLeast(2), ch.coerceAtLeast(2))
                     if (cropped !== decoded) { decoded.recycle(); src = cropped }
                 }
-                // Downscale + pre-process in one canvas pass: a mild saturation lift (real glass pops
-                // color — the blur half of CSS `backdrop-filter: blur() saturate(…)` alone looks milky)
-                // and the SAME 25% black scrim BackgroundLayer paints over the photo, so the frost
-                // matches the brightness of the image around the panel instead of reading backlit.
+                // Downscale + pre-process in one canvas pass. A mild saturation lift keeps the blurred
+                // wallpaper from looking milky; the shell's lightweight scrim is rendered separately.
                 val scaled = Bitmap.createBitmap(targetW, targetH, Bitmap.Config.ARGB_8888)
                 android.graphics.Canvas(scaled).apply {
                     val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG).apply {
                         colorFilter = android.graphics.ColorMatrixColorFilter(
-                            android.graphics.ColorMatrix().apply { setSaturation(1.35f) },
+                            android.graphics.ColorMatrix().apply { setSaturation(1.18f) },
                         )
                     }
                     drawBitmap(src, null, android.graphics.Rect(0, 0, targetW, targetH), paint)
-                    drawColor(0x40000000) // 25% black — keep in lockstep with BackgroundLayer's scrim
                 }
                 src.recycle()
-                stackBlur(scaled, radius = 8).asImageBitmap()
+                stackBlur(scaled, radius = 10).asImageBitmap()
             } catch (t: Throwable) {
                 Log.w(BG_TAG, "blur: crop/scale/blur threw ${t.javaClass.simpleName}: ${t.message}")
                 decoded.recycle()

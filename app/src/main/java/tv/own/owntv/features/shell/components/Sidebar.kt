@@ -78,10 +78,6 @@ fun Sidebar(
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
-    // Liquid Glass: when the SIDEBAR surface is glassy, the rail stays fully transparent so the
-    // background (photo or base colour) shows straight through and the rail blends into it instead of
-    // reading as a separate filled panel. Solid colors.background when glass is off.
-    val sidebarGlassy = LocalGlass.current.isGlassy(GlassSurface.SIDEBAR)
     var hasFocus by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     // Phase 2 — the nav is a FIXED icon rail: it never expands or collapses, so the layout never jumps on
@@ -114,9 +110,6 @@ fun Sidebar(
             }
             .focusGroup()
             .width(Dimens.SidebarWidthCollapsed)
-            // Phase 6 — unified panel surface (solid). Transparent when glass is on so the rail melts
-            // into the background instead of appearing as a separate panel (see sidebarGlassy above).
-            .then(if (sidebarGlassy) Modifier else Modifier.background(colors.background))
             // Side inset (6.dp). Combined with the content area's start=0, this leaves a ~6.dp gap
             // between the nav pills and panel 1. Symmetric, so logo/profile stay centered.
             .padding(horizontal = 6.dp, vertical = 24.dp),
@@ -308,7 +301,7 @@ private fun AvatarButton(avatarId: Int, sizeDp: Int, onClick: () -> Unit, onLong
         onLongClick = onLongClick,
         modifier = Modifier.size(sizeDp.dp),
         shape = CircleShape,
-        focusedScale = 1.08f,
+        focusedScale = 1.02f,
         focusedContainerColor = OwnTVTheme.colors.surfaceContainerHighest,
         unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
         selectedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
@@ -357,10 +350,17 @@ private fun NavItem(
         focusedContainerColor = Color.Transparent,
         unfocusedContainerColor = Color.Transparent,
         selectedContainerColor = Color.Transparent,
+        // The visible fill is rendered by the inner nav ladder, but the outer focus owner still
+        // needs to know this is glass so it does not create a scale/shadow layer while scrolling.
+        surface = GlassSurface.SIDEBAR,
         showFocusBorder = false,
         contentAlignment = Alignment.Center,
     ) { focused ->
-        val ladder = rememberNavLadderColors(selected = active, focused = focused)
+        val ladder = rememberNavLadderColors(
+            selected = active,
+            focused = focused,
+            snapFocusFill = sidebarGlassy,
+        )
         val highlighted = focused || active
         Box(
             modifier = Modifier

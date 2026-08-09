@@ -103,6 +103,7 @@ import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.PreviewPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.gridFocusTarget
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
@@ -175,7 +176,7 @@ private fun SeriesContextMenu(
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f))
+        modifier = Modifier.fillMaxSize().modalScrim()
             .trapAllFocusExit().focusGroup()
             .longPressMenuGuard(),
         contentAlignment = Alignment.Center,
@@ -893,7 +894,7 @@ private fun EpisodeContextMenu(
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup().longPressMenuGuard(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup().longPressMenuGuard(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -1505,7 +1506,7 @@ private fun SeriesSortingDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.75f))
+            .modalScrim()
             .trapAllFocusExit()
             .focusGroup(),
         contentAlignment = Alignment.Center,

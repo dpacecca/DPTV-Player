@@ -669,8 +669,12 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     and continue, or **Back** to stay at 85%.
 - **Settings → Glass Effect**: a **frosted‑glass look** — panels turn translucent with a
   real blurred backdrop over an optional **background photo**.
-  - The dialog has **Liquid glass On/Off**, a **Background image** chooser, a **Transparency** stepper
-    (20–95%, higher = more solid), a **Blur / Frost** stepper (0–100%), a **Surfaces** menu, and **Reset**.
+  - Choose an **Appearance preset**: **Clear** shows more wallpaper (38% transparency / 62% frost),
+    **Balanced** is the recommended mix (56% / 78%), and **Tinted** gives stronger surface colour
+    (74% / 88%). **Custom** uses your saved manual values. Changing either stepper selects Custom;
+    **Reset** restores Balanced and enables every glass surface.
+  - The dialog also has **Liquid glass On/Off**, a **Background image** chooser, a **Transparency**
+    stepper (20–95%, higher = more solid), a **Blur / Frost** stepper (0–100%), and a **Surfaces** menu.
   - **Background image — Local or Remote.** **Local** browses USB/device storage for a JPG/PNG/WebP/BMP
     (it's copied into the app, so unplugging the stick can't blank it). **Remote** shows a **PIN + QR** —
     scan it with your phone on the same Wi‑Fi, enter the PIN, send a photo, and it applies instantly.
@@ -678,7 +682,12 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   - **Surfaces** toggles the glass per area — content panels, sidebar, preview panes, dialogs & popups,
     top bar, cards, mini‑player — or all at once. Turning everything off turns glass off.
   - The frost (blur) needs a background image and **Android 12+**; otherwise panels are simply
-    translucent. All glass settings are kept in backups.
+    translucent. With no background image, enabled surfaces use a solid ceramic‑glass treatment so text
+    stays readable instead of pretending to blur a flat colour.
+  - Focus is designed for TV navigation: the selected control gets a directional light lens and bright
+    glass rim immediately. During rapid scrolling OwnTV keeps the moving highlight lightweight, then adds
+    the full frost after focus settles, avoiding the dark trailing bands older builds could leave behind.
+    All glass settings are kept in backups.
 - **Settings → Panel Width Adjustment**: set how wide the three browse panels are — the **category rail**,
   the **item list/grid** and the **preview/poster** pane — separately for **Live TV**, **Movies** and
   **Series**.

@@ -43,6 +43,7 @@ import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -74,7 +75,7 @@ fun SubtitleSearchScreen(
         Box(
             modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.75f))
+                .modalScrim()
                 .trapAllFocusExit()
                 .focusGroup(),
             contentAlignment = Alignment.Center,

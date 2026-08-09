@@ -89,6 +89,7 @@ import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.PreviewPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.gridFocusTarget
 import tv.own.owntv.ui.format.rememberBestDateFormatter
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
@@ -485,7 +486,7 @@ fun LiveScreen(
                 modifier = Modifier
                     .then(if (panels != null) Modifier.width(panels.preview) else Modifier.weight(1f))
                     .fillMaxSize()
-                    .roundedPanel(fillColor = PreviewPanelFill)
+                    .roundedPanel(fillColor = PreviewPanelFill, surface = GlassSurface.PREVIEW)
                     .padding(Dimens.GapLarge),
             ) {
                 LivePreviewPane(
@@ -734,37 +735,105 @@ private fun ChannelContextMenu(
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     androidx.activity.compose.BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f))
+        modifier = Modifier.fillMaxSize().modalScrim()
             .trapAllFocusExit().focusGroup()
             .longPressMenuGuard(), // the long-press OK is still held — don't let it auto-click a menu item
         contentAlignment = Alignment.Center,
     ) {
         Column(
             modifier = Modifier.dialogPanel(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(channelName, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Spacer(Modifier.height(4.dp))
-            OwnTVButton(
-                if (isFavorite) stringResource(R.string.content_remove_favourite) else stringResource(R.string.content_add_favourite),
-                onClick = onToggleFavorite, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.FAVORITE,
+            Spacer(Modifier.height(8.dp))
+            ChannelMenuAction(
+                label = if (isFavorite) stringResource(R.string.content_remove_favourite) else stringResource(R.string.content_add_favourite),
+                onClick = onToggleFavorite,
+                icon = OwnTVIcon.FAVORITE,
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )
-            OwnTVButton(stringResource(R.string.content_rename), onClick = onRename, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            OwnTVButton(stringResource(R.string.content_hide_channel), onClick = onHide, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            OwnTVButton(stringResource(R.string.content_match_epg), onClick = onMatchEpg, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
-            OwnTVButton(stringResource(R.string.content_epg_time_offset), onClick = onEpgOffset, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG, modifier = Modifier.fillMaxWidth())
-            if (hasCatchup) OwnTVButton(stringResource(R.string.content_catchup), onClick = onCatchup, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            ChannelMenuAction(stringResource(R.string.content_rename), onRename, modifier = Modifier.fillMaxWidth())
+
+            ChannelMenuDivider()
+            ChannelMenuAction(stringResource(R.string.content_match_epg), onMatchEpg, OwnTVIcon.EPG, Modifier.fillMaxWidth())
+            ChannelMenuAction(stringResource(R.string.content_epg_time_offset), onEpgOffset, OwnTVIcon.EPG, Modifier.fillMaxWidth())
+            if (hasCatchup) ChannelMenuAction(stringResource(R.string.content_catchup), onCatchup, modifier = Modifier.fillMaxWidth())
             // Always offered, regardless of the Live TV external-player default — this is the per-channel
             // escape hatch for a stream neither in-app engine can open (same as Movies/Series/Downloads).
-            OwnTVButton(stringResource(R.string.content_play_external_short), onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.PLAY, modifier = Modifier.fillMaxWidth())
-            if (canMove) OwnTVButton(stringResource(R.string.content_move), onClick = onMove, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            if (canMove) OwnTVButton(stringResource(R.string.content_move_to_category), onClick = onMoveToCategory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            if (isHistory) OwnTVButton(stringResource(R.string.content_remove_history), onClick = onRemoveFromHistory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(4.dp))
-            OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+            ChannelMenuAction(stringResource(R.string.content_play_external_short), onPlayExternal, OwnTVIcon.PLAY, Modifier.fillMaxWidth())
+
+            if (canMove) {
+                ChannelMenuDivider()
+                ChannelMenuAction(stringResource(R.string.content_move), onMove, modifier = Modifier.fillMaxWidth())
+                ChannelMenuAction(stringResource(R.string.content_move_to_category), onMoveToCategory, modifier = Modifier.fillMaxWidth())
+            }
+
+            ChannelMenuDivider()
+            ChannelMenuAction(stringResource(R.string.content_hide_channel), onHide, modifier = Modifier.fillMaxWidth(), destructive = true)
+            if (isHistory) ChannelMenuAction(stringResource(R.string.content_remove_history), onRemoveFromHistory, modifier = Modifier.fillMaxWidth(), destructive = true)
+
+            ChannelMenuDivider()
+            ChannelMenuAction(stringResource(R.string.content_close), onDismiss, OwnTVIcon.CLOSE, Modifier.fillMaxWidth())
         }
     }
+}
+
+/** Quiet menu row: calm/transparent at rest, luminous material only on the focused action. */
+@Composable
+private fun ChannelMenuAction(
+    label: String,
+    onClick: () -> Unit,
+    icon: OwnTVIcon? = null,
+    modifier: Modifier = Modifier,
+    destructive: Boolean = false,
+) {
+    val colors = OwnTVTheme.colors
+    val danger = androidx.compose.ui.graphics.Color(0xFFFFB4AB)
+    FocusableSurface(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        focusedScale = 1.012f,
+        unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+        focusedContainerColor = if (destructive) androidx.compose.ui.graphics.Color(0xFF6E2B2B) else colors.primaryContainer,
+        selectedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+        surface = GlassSurface.DIALOGS,
+        glassFrostScale = 0.86f,
+        glassCornerRadius = 14.dp,
+        glassIdleRimAlpha = 0f,
+    ) { focused ->
+        val foreground = when {
+            destructive && !focused -> danger
+            destructive -> androidx.compose.ui.graphics.Color.White
+            focused -> colors.onPrimaryContainer
+            else -> colors.onSurface
+        }
+        Row(
+            Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (icon != null) OwnTVIcon(icon, foreground, Modifier.size(19.dp), filled = true)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = foreground,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChannelMenuDivider() {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .height(1.dp)
+            .background(OwnTVTheme.colors.outlineVariant.copy(alpha = 0.45f)),
+    )
 }
 
 @Composable
@@ -1057,7 +1126,7 @@ private fun CatchupDialog(
     tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
         Box(
             Modifier.fillMaxSize()
-                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f))
+                .modalScrim()
                 .trapAllFocusExit()
                 .focusGroup(),
             contentAlignment = Alignment.Center,
@@ -1141,7 +1210,7 @@ internal fun EpgMatchDialog(
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
     androidx.compose.foundation.layout.Box(
-        Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)).focusGroup(),
+        Modifier.fillMaxSize().modalScrim().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         // Same small-screen cap as CatchupDialog: search bar + buttons must stay reachable.
@@ -1225,7 +1294,7 @@ internal fun EpgOffsetDialog(
     androidx.compose.foundation.layout.Box(
         // trapAllFocusExit, like every other dialog here: a D-pad press at the edge of a row must not
         // walk out of the popup onto the screen behind the scrim.
-        Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f))
+        Modifier.fillMaxSize().modalScrim()
             .trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {

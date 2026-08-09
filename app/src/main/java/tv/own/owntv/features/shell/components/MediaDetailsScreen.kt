@@ -48,6 +48,7 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 
@@ -98,7 +99,7 @@ fun MediaDetailsScreen(details: MediaDetailsUi, onExit: () -> Unit, modifier: Mo
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f))
+            .modalScrim()
             .trapAllFocusExit()
             .focusGroup(),
         contentAlignment = Alignment.Center,

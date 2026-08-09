@@ -24,15 +24,15 @@ import tv.own.owntv.ui.theme.glass
 // Option A — Clean + Premium (owntv_panel_color_concepts_vertical.html)
 val RailPanelFill: Color
     @Composable @ReadOnlyComposable get() =
-        if (OwnTVTheme.colors.isDark) Color(0xFF141B19) else Color(0xFFE4ECE8)
+        if (OwnTVTheme.colors.isDark) Color(0xFF111C18) else Color(0xFFE6EEE9)
 
 val ContentPanelFill: Color
     @Composable @ReadOnlyComposable get() =
-        if (OwnTVTheme.colors.isDark) Color(0xFF0C1312) else Color(0xFFF0F6F3)
+        if (OwnTVTheme.colors.isDark) Color(0xFF0A1512) else Color(0xFFF2F7F4)
 
 val PreviewPanelFill: Color
     @Composable @ReadOnlyComposable get() =
-        if (OwnTVTheme.colors.isDark) Color(0xFF1B2320) else Color(0xFFDDE7E2)
+        if (OwnTVTheme.colors.isDark) Color(0xFF15201D) else Color(0xFFDEE9E3)
 
 /**
  * Phase 6 — a rounded visual container matching the new-shell mockup's "panel 2/3/4" look: large rounded
@@ -64,11 +64,15 @@ fun RoundedPanel(
     val colors = OwnTVTheme.colors
     val bg = fillColor ?: colors.surfaceContainerLowest
     val shape = RoundedCornerShape(radius)
+    val glassy = LocalGlass.current.isGlassy(surface)
+    val outline = colors.outlineVariant.copy(alpha = 0.66f)
     Box(
         modifier = modifier
             .clip(shape)
             .glass(surface = surface, baseFill = bg, shape = shape, cornerRadius = radius)
-            .border(width = 1.dp, color = colors.outlineVariant, shape = shape)
+            // glass() already draws the same 1dp/0.11 idle rim. Keep the explicit outline only for
+            // solid mode so every glass panel loses one redundant perimeter pass.
+            .then(if (glassy) Modifier else Modifier.border(width = 1.dp, color = outline, shape = shape))
             .padding(innerPadding),
     ) {
         content()
@@ -89,8 +93,10 @@ fun Modifier.roundedPanel(
     val colors = OwnTVTheme.colors
     val bg = fillColor ?: colors.surfaceContainerLowest
     val shape = RoundedCornerShape(radius)
+    val glassy = LocalGlass.current.isGlassy(surface)
+    val outline = colors.outlineVariant.copy(alpha = 0.66f)
     return this
         .clip(shape)
         .glass(surface = surface, baseFill = bg, shape = shape, cornerRadius = radius)
-        .border(width = 1.dp, color = colors.outlineVariant, shape = shape)
+        .then(if (glassy) Modifier else Modifier.border(width = 1.dp, color = outline, shape = shape))
 }

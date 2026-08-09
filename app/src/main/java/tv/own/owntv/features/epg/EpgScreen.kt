@@ -88,6 +88,7 @@ import tv.own.owntv.ui.components.SearchBar
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.trapVerticalFocusExit
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.features.epg.GuideGridDefaults
 import tv.own.owntv.features.epg.ProgrammeDetailDialog
 import tv.own.owntv.features.epg.ProgrammeStripCanvas
@@ -584,7 +585,7 @@ private fun EpgMatchReviewDialog(
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDone) {
     tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
     Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)),
+        Modifier.fillMaxSize().modalScrim(),
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.dialogPanel(width = 576.dp, corner = 18.dp, padding = 18.dp)) {
@@ -669,7 +670,7 @@ private fun EpgMatchChooserDialog(
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
 
     Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)).trapAllFocusExit().focusGroup()
+        Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup()
             .longPressMenuGuard(), // long-press OK is still held — don't auto-click the first option
         contentAlignment = Alignment.Center,
     ) {

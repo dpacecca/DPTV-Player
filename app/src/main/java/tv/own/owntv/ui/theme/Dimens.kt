@@ -42,7 +42,7 @@ object Dimens {
     val CornerLarge = 24.dp
     val CardCorner = 20.dp
 
-    val FocusBorderWidth = 2.5.dp
+    val FocusBorderWidth = 2.dp
 
     val HomeRowPaddingH = 20.dp
 

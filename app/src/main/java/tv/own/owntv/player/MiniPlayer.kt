@@ -118,7 +118,7 @@ private fun MiniBtn(icon: OwnTVIcon, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.size(34.dp),
         shape = CircleShape,
-        focusedScale = 1.12f,
+        focusedScale = 1.02f,
         focusedContainerColor = Color.White.copy(alpha = 0.28f),
         unfocusedContainerColor = Color.White.copy(alpha = 0.12f),
         selectedContainerColor = Color.White.copy(alpha = 0.12f),

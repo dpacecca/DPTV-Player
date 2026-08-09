@@ -37,6 +37,7 @@ import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.ui.components.FocusableSurface
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
@@ -60,7 +61,7 @@ fun PlaylistPickerDialog(
 
     tv.own.owntv.ui.theme.PopupFontTheme {
     Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).focusGroup(),
+        Modifier.fillMaxSize().modalScrim().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(

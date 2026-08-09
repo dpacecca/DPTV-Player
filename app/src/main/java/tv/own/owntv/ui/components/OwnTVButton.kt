@@ -49,7 +49,7 @@ fun OwnTVButton(
         modifier = modifier,
         enabled = enabled,
         shape = shape,
-        focusedScale = 1.04f,
+        focusedScale = 1.012f,
         // M3 tonal: PRIMARY keeps the primary fill; SECONDARY is a tonal surface that lifts to the
         // primary container on focus.
         unfocusedContainerColor = if (primary) colors.primary else colors.card,
@@ -57,6 +57,7 @@ fun OwnTVButton(
         selectedContainerColor = if (primary) colors.primary else colors.card,
         surface = surface,
         glassFrostScale = 0.9f,
+        glassCornerRadius = 28.dp,
         // Always-on glass edge so the pill reads as liquid glass even when unfocused.
         glassIdleRimAlpha = 0.18f,
     ) { focused ->

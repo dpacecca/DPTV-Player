@@ -54,6 +54,7 @@ import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -223,7 +224,7 @@ internal fun ProgrammeDetailDialog(
             // The dialog can be opened by a long-press on the programme cell; the OK key is often still
             // held when it appears, which would instantly fire the focused action. Swallow OK until it's
             // released once so the held long-press only reveals the dialog, then the user chooses.
-            Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f)).longPressMenuGuard(),
+            Modifier.fillMaxSize().modalScrim().longPressMenuGuard(),
             contentAlignment = Alignment.Center,
         ) {
             // Scrollable: long XMLTV descriptions can exceed a small screen's height. widthIn (not a
@@ -298,7 +299,7 @@ private fun CatchupPlayerChooser(
         BackHandler { onDismiss() }
         PopupFontTheme(fontScale = 0.7f) {
             Box(
-                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.75f))
+                Modifier.fillMaxSize().modalScrim()
                     .trapAllFocusExit().focusGroup(),
                 contentAlignment = Alignment.Center,
             ) {

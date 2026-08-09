@@ -334,7 +334,7 @@ private fun AudioBtn(
             .onFocusChanged { if (it.isFocused) onFocused(slot) }
             .focusProperties { canFocus = focusable && enabled },
         shape = CircleShape,
-        focusedScale = 1.12f,
+        focusedScale = 1.02f,
         glowElevation = 0,
         // Bare icons — no circle fill or glow behind them; focus shows only the accent ring + tint.
         focusedContainerColor = Color.Transparent,

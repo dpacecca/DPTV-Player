@@ -90,6 +90,7 @@ import tv.own.owntv.ui.components.TrailerPlayerScreen
 import tv.own.owntv.ui.components.chNavPaging
 import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.gridFocusTarget
 import androidx.compose.foundation.layout.width
 import tv.own.owntv.ui.components.SearchBar
@@ -717,7 +718,7 @@ private fun MovieContextMenu(
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     androidx.activity.compose.BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f))
+        modifier = Modifier.fillMaxSize().modalScrim()
             .trapAllFocusExit().focusGroup()
             .longPressMenuGuard(),
         contentAlignment = Alignment.Center,

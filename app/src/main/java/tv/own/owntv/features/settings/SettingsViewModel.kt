@@ -499,6 +499,7 @@ class SettingsViewModel(
     val glassConfig: StateFlow<tv.own.owntv.ui.theme.GlassConfig> = settings.glassConfig.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.ui.theme.GlassConfig())
     fun setBgImagePath(path: String) { viewModelScope.launch { settings.setBgImagePath(path) } }
     fun setGlassScopeBitmask(bits: Int) { viewModelScope.launch { settings.setGlassScopeBitmask(bits) } }
+    fun setGlassPreset(preset: tv.own.owntv.ui.theme.GlassPreset) { viewModelScope.launch { settings.setGlassPreset(preset) } }
     fun setGlassAlphaPercent(pct: Int) { viewModelScope.launch { settings.setGlassAlphaPercent(pct) } }
     fun setGlassBlurPercent(pct: Int) { viewModelScope.launch { settings.setGlassBlurPercent(pct) } }
 

@@ -2,6 +2,31 @@
 
 ## v4.2.0 — unreleased
 
+### 🫧 Liquid Glass material and focus overhaul — clearer presets, cleaner motion, lighter rendering
+
+- **Glass now has four appearance presets:** **Clear** (38% transparency / 62% frost), **Balanced**
+  (56% / 78%, the recommended default), **Tinted** (74% / 88%), and **Custom**, which keeps the
+  saved Transparency and Blur / Frost values. Changing either manual stepper automatically selects
+  Custom, while Reset restores Balanced with every glass surface enabled.
+- **The material responds to interaction instead of looking like one flat translucent layer.** Idle,
+  selected, focused, and pressed surfaces receive role-aware tint, directional edge light, a localized
+  focus lens, and restrained depth shading. Panels, sidebar, preview, dialogs, top bar, cards, list rows,
+  action buttons and the mini-player retain distinct readable strengths. Without a wallpaper, enabled
+  surfaces use an opaque ceramic-glass treatment instead of fake transparency over a flat background.
+- **Fixed dark focus plates trailing behind rapid D-pad navigation.** Full-width Settings rows, the main
+  sidebar, and Live/Movies/Series category rails now switch their moving glass fill immediately and avoid
+  the scale/shadow layer used by larger cards. Foreground colour can still ease, but the old row no longer
+  fades through the position it has just left.
+- **Glass navigation now does substantially less per-frame work.** Gradients and rim geometry are cached;
+  moving frost updates drawing without recomposing the surface; idle cards use a lightweight material;
+  duplicate panel/dialog borders are gone; and full backdrop frost is promoted only after focus settles,
+  while tint, lens and rim feedback remain immediate. The aligned backdrop stays correct while Settings
+  and category lists scroll.
+- **The new preset text and descriptions are available in all 24 packaged interface languages.** Existing
+  transparency/frost values migrate safely: values matching a preset adopt its name, while every other
+  combination remains Custom. Scope, preset, custom values and wallpaper continue to survive restarts and
+  backup/restore.
+
 ### 🔤 Font customization — size the whole interface and choose separate main and popup fonts
 
 - **A new Settings → Look & Feel → Font customization popup controls app text from one place.** Text

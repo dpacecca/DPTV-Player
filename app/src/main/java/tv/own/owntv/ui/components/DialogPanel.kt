@@ -1,5 +1,7 @@
 package tv.own.owntv.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -8,10 +10,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.glass
 
@@ -37,16 +41,31 @@ fun Modifier.dialogPanel(
     fill: Color? = null,
     scroll: Boolean = true,
 ): Modifier {
+    val shape = RoundedCornerShape(corner)
+    val glassy = LocalGlass.current.isGlassy(GlassSurface.DIALOGS)
+    val outline = OwnTVTheme.colors.outlineVariant.copy(alpha = 0.72f)
     val base = this
         .width(width)
-        .clip(RoundedCornerShape(corner))
+        .shadow(elevation = 16.dp, shape = shape, clip = false)
+        .clip(shape)
         .glass(
             surface = GlassSurface.DIALOGS,
             baseFill = fill ?: OwnTVTheme.colors.surfaceContainerHigh,
-            shape = RoundedCornerShape(corner),
+            shape = shape,
             cornerRadius = corner,
         )
+        // DIALOGS glass already supplies the same 1dp/0.18 idle rim. Preserve the explicit border
+        // only for solid mode and avoid compositing the identical perimeter twice.
+        .then(if (glassy) Modifier else Modifier.border(1.dp, outline, shape))
     // verticalScroll + a nested LazyColumn is an illegal same-direction nest; callers with an inner
     // LazyColumn pass scroll = false and cap the list height themselves.
     return if (scroll) base.verticalScroll(rememberScrollState()).padding(padding) else base.padding(padding)
+}
+
+/** Shared modal wash: glass keeps spatial context; solid mode remains stronger but avoids black slabs. */
+@Composable
+fun Modifier.modalScrim(strength: Float = 1f): Modifier {
+    val glassy = LocalGlass.current.isGlassy(GlassSurface.DIALOGS)
+    val alpha = (if (glassy) 0.42f else 0.58f) * strength.coerceIn(0f, 1.35f)
+    return background(Color.Black.copy(alpha = alpha.coerceAtMost(0.72f)))
 }
