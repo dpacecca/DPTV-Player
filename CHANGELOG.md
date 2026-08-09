@@ -135,9 +135,10 @@
 - **Test DNS now tests the server you selected instead of sometimes reporting success through the
   TV's normal DNS (#111).** The temporary check starts with the displayed Google, Cloudflare, Quad9
   or custom address active immediately, and a failed custom resolver is no longer hidden by the
-  normal system-DNS fallback. The result still lists the addresses returned for `dns.google`, so
-  every working provider correctly shows the same Google destination addresses; success now means
-  the selected resolver actually answered.
+  normal system-DNS fallback. A successful check now shows only **Test passed** and its response time,
+  instead of listing the Google destination addresses returned for the test hostname; success means
+  the selected resolver actually answered without presenting technical details that look like the
+  selected DNS server.
 - **The top-bar Search and playlist controls are compact again.** A localization safety change made
   short labels expand to their maximum allowed widths, so the Search button looked like a text field and
   the playlist selector occupied too much of the right side. Both now size themselves to their content,

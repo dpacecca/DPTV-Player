@@ -1214,7 +1214,7 @@ class SettingsViewModel(
     sealed interface DnsTestState {
         data object Idle : DnsTestState
         data object Testing : DnsTestState
-        data class Ok(val millis: Long, val resolvedIps: List<String>) : DnsTestState
+        data class Ok(val millis: Long) : DnsTestState
         data class Fail(val failure: DnsTestFailure) : DnsTestState
     }
 
@@ -1265,11 +1265,11 @@ class SettingsViewModel(
                     val addrs = holder.dns.lookup(testHost)
                     val ms = System.currentTimeMillis() - start
                     if (addrs.isEmpty()) throw DnsNoAddressesException(testHost)
-                    addrs.map { it.hostAddress ?: "?" } to ms
+                    ms
                 }
             }
             _dnsTest.value = result.fold(
-                onSuccess = { (ips, ms) -> DnsTestState.Ok(ms, ips) },
+                onSuccess = { DnsTestState.Ok(it) },
                 onFailure = { DnsTestState.Fail(classifyDnsError(it)) },
             )
         }
