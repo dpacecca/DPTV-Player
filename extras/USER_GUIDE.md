@@ -156,6 +156,10 @@ or **narrow the whole app to just one**.
   movies and five series, but either type fills unused places; at least four matches are required. The panel
   shows the TMDB rank, provider match, language choice/fallback, advertised quality/HDR/audio labels, and the
   number of seasons currently available from the provider.
+- **How often it changes:** the TMDB chart itself is re-downloaded only every five to eight days per playlist,
+  so the same titles stay for a few days at a time. Matching still runs after every sync, so anything new in
+  your provider's catalogue can join the row the same day. Changing the metadata language does not pull a
+  refresh forward — Trending switches language at its next download.
 - **Trending controls:** use **Play/Open Episodes**, **Trailer**, **More Details** (full plot, cast and genres),
   or **All Versions**. Previous/Pause/Next controls sit below the showcase. The timer pauses while focus is on
   one of the four main actions and continues on the three navigation controls unless you manually pause it.

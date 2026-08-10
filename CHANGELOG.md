@@ -83,9 +83,16 @@
 ### 🔥 Now Trending on Home — TMDB discovery that only recommends titles your provider can play
 
 - **Home can now open with a large Now Trending showcase built from the current TMDB movie and TV charts.**
-  OwnTV fetches 25 movie and 25 series candidates after a catalogue sync, then publishes up to 10 entries
-  only after matching them to exact, playable rows from the active provider. The target is an even five/five
-  mix, but either type can fill unused places; a result is shown from four matches upward.
+  OwnTV publishes up to 10 entries, only after matching TMDB's candidates to exact, playable rows from the
+  active provider. The target is an even five/five mix, but either type can fill unused places; a result is
+  shown from four matches upward.
+- **The chart is downloaded rarely; your row is rebuilt after every sync.** TMDB's trending list is the same
+  for everybody and changes slowly, so each playlist re-downloads it only once every five to eight days, and
+  playlists falling due on the same day share a single download. Matching runs again after every sync and
+  costs nothing, so a title that arrives in your provider's catalogue today can appear in Trending today. A
+  second page of candidates is fetched only when the first leaves places unfilled, and title details reuse
+  the metadata already cached for the detail screens. Changing the metadata language does not force an early
+  download either — the showcase adopts the new language at its next scheduled refresh.
 - **Matching is indexed, language-aware, and safe against remakes.** Provider titles are normalized and
   backfilled once, exact title/year candidates are checked before the narrow FTS fallback, and the final
   variant prefers the selected provider language, then English, then an untagged title. TMDB rank remains

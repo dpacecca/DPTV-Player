@@ -31,6 +31,14 @@ android {
         }
     }
 
+    // Signing credentials AND local-only build switches, kept in a standalone properties file OUTSIDE
+    // the repo. Gradle only reads gradle.properties from GRADLE_USER_HOME or the project dir, so this
+    // one is loaded by hand. Declared here because defaultConfig below already needs it.
+    val localSigningProps = Properties().apply {
+        val f = File("E:/local/OwnTV_Gradle/owntv-signing.properties")
+        if (f.isFile) f.inputStream().use { load(it) }
+    }
+
     defaultConfig {
         applicationId = "tv.own.owntv"
         minSdk = 26
@@ -51,6 +59,21 @@ android {
             "boolean",
             "DIAGNOSTIC_BUILD",
             (providers.gradleProperty("diagnosticBuild").orNull == "true").toString(),
+        )
+
+        // Maintainer-only tools (today: the "Rebuild Now Trending" button in Home settings, which
+        // bypasses the multi-day Trending fetch timer so a reported problem can be reproduced on the
+        // spot). Off unless `owntv.devTools=true` is set as a Gradle property or in the out-of-repo
+        // properties file, so CI and every published APK compile it out — R8 drops the dead branch.
+        buildConfigField(
+            "boolean",
+            "DEV_TOOLS",
+            (
+                (
+                    providers.gradleProperty("owntv.devTools").orNull
+                        ?: localSigningProps.getProperty("owntv.devTools")
+                    ) == "true"
+                ).toString(),
         )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -91,13 +114,7 @@ android {
     // release (`adb install -r`) and upgrade/migration testing works with real data.
     // When neither source is configured — fork CI, or a fresh clone — nothing here applies and
     // builds still succeed, just unsigned.
-    // Third source: a standalone properties file kept outside the repo entirely. Gradle only reads
-    // gradle.properties from GRADLE_USER_HOME or the project dir, so this one is loaded by hand.
-    val localSigningProps = Properties().apply {
-        val f = File("E:/local/OwnTV_Gradle/owntv-signing.properties")
-        if (f.isFile) f.inputStream().use { load(it) }
-    }
-
+    // Third source: the standalone out-of-repo properties file, loaded above defaultConfig.
     fun signingValue(env: String, property: String): String? =
         System.getenv(env)
             ?: providers.gradleProperty(property).orNull

@@ -26,12 +26,17 @@ import tv.own.owntv.core.database.entity.TrendingAttemptStatus
 import tv.own.owntv.core.database.entity.TrendingSnapshotEntity
 import tv.own.owntv.core.database.entity.TrendingSnapshotStatus
 import tv.own.owntv.core.sync.TrendingActivityTracker
+import tv.own.owntv.core.sync.work.CatalogSyncScheduler
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class HomeSettingsViewModel(
     private val settings: SettingsRepository,
     private val sourceDao: SourceDao,
     private val trendingDao: TrendingDao,
     private val trendingActivity: TrendingActivityTracker,
+    private val syncScheduler: CatalogSyncScheduler,
 ) : ViewModel() {
     val config: StateFlow<HomeConfig> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf(HomeConfig()) else settings.homeConfig(pid) }
@@ -83,6 +88,32 @@ class HomeSettingsViewModel(
             else -> TrendingAvailability.WaitingForSync
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TrendingAvailability.WaitingForSync)
+
+    private val _devRebuild = MutableStateFlow(DevRebuildState.IDLE)
+
+    /**
+     * Maintainer-only ("Rebuild Now Trending" in Home settings, compiled out unless
+     * `BuildConfig.DEV_TOOLS` is set). Normal rebuilds only re-download the trending list every few
+     * days; this forces one so a reported problem can be reproduced immediately. Deliberately
+     * unthrottled — it never reaches a normal build, and a maintainer chasing a bug needs to be able
+     * to press it as often as the bug requires.
+     */
+    fun rebuildTrendingNow() {
+        if (_devRebuild.value != DevRebuildState.IDLE) return
+        viewModelScope.launch {
+            val profileId = settings.activeProfileId.first()
+            val sourceIds = if (profileId < 0) emptyList() else sourceDao.sourceIdsForProfile(profileId)
+            if (sourceIds.isEmpty()) return@launch
+            sourceIds.forEach { syncScheduler.enqueueTrendingRefresh(it, force = true) }
+            _devRebuild.value = DevRebuildState.STARTED
+            delay(2_500)
+            _devRebuild.value = DevRebuildState.IDLE
+        }
+    }
+
+    val devRebuild: StateFlow<DevRebuildState> = _devRebuild.asStateFlow()
+
+    enum class DevRebuildState { IDLE, STARTED }
 
     fun setRowHidden(row: HomeRow, hidden: Boolean) {
         updateConfig { config -> config.copy(hidden = if (hidden) config.hidden + row else config.hidden - row) }
