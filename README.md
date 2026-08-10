@@ -14,6 +14,9 @@
   <img alt="Player" src="https://img.shields.io/badge/engines-libmpv%20%2B%20ExoPlayer-FB8C00">
   <img alt="License" src="https://img.shields.io/badge/license-GPLv3-blue">
   <img alt="Built with the help of AI" src="https://img.shields.io/badge/built%20with-the%20help%20of%20AI-8A2BE2">
+  <a href="https://hosted.weblate.org/engage/owntv/">
+    <img alt="Translation status" src="https://hosted.weblate.org/widget/owntv/svg-badge.svg">
+  </a>
 </p>
 
 <p align="center">
@@ -234,6 +237,12 @@ https://github.com/ahXN00/OwnTV/releases/latest/download/OwnTV.apk
 Contributions, bug reports, and ideas are welcome — open an issue or a pull request. Please keep the
 project's player-only, bring-your-own-source positioning, and match the existing code style.
 
+<!-- i18n-contribution:start -->
+## Help translate OwnTV
+
+If your language is already available, contribute interface translations across OwnTV's six Android resource components on [Hosted Weblate](https://hosted.weblate.org/projects/owntv/). If it is not listed, [open a language request ticket](https://github.com/ahXN00/OwnTV/issues/new?template=feature_request.yml&title=%5BLanguage%5D%20Add%20) first. A maintainer will review the request, register the locale, and prepare its base translation files on Hosted Weblate. Once the language appears on Hosted Weblate, you can start translating it there. See the [language contributor guide](tools/i18n/README.md) for identifiers, validation, and promotion policy.
+<!-- i18n-contribution:end -->
+
 ## 💛 Support the project
 
 OwnTV is — and will **always be** — completely **free, 100% open-source, and ad-free. Forever.** ❤️ No
@@ -298,9 +307,3 @@ GPLv3 and its source made available.
 ---
 
 <sub>OwnTV is an open-source, player-only project, built with the help of AI.</sub>
-
-<!-- i18n-contribution:start -->
-## Help translate OwnTV
-
-If your language is already available, contribute interface translations across OwnTV's six Android resource components on [Hosted Weblate](https://hosted.weblate.org/projects/owntv/). If it is not listed, [open a language request ticket](https://github.com/ahXN00/OwnTV/issues/new?template=feature_request.yml&title=%5BLanguage%5D%20Add%20) first. A maintainer will review the request, register the locale, and prepare its base translation files on Hosted Weblate. Once the language appears on Hosted Weblate, you can start translating it there. See the [language contributor guide](tools/i18n/README.md) for identifiers, validation, and promotion policy.
-<!-- i18n-contribution:end -->
