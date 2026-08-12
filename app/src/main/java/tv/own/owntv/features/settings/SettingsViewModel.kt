@@ -80,6 +80,7 @@ class SettingsViewModel(
     private val stalkerClient: tv.own.owntv.core.stalker.StalkerClient,
     private val xtreamClient: tv.own.owntv.core.parser.XtreamClient,
     private val companion: tv.own.owntv.core.companion.CompanionController,
+    private val vodEngineStore: tv.own.owntv.core.player.VodEngineStore,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OwnTVHome"
@@ -378,6 +379,18 @@ class SettingsViewModel(
 
     val vodPreferExo: StateFlow<Boolean> = settings.vodPreferExo.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setVodPreferExo(enabled: Boolean) { viewModelScope.launch { settings.setVodPreferExo(enabled) } }
+
+    /** How many movies/episodes are pinned to a specific engine — the row is only worth showing when
+     *  there is something to forget. Counts both directions: a pin to mpv and a pin to ExoPlayer both
+     *  override the setting above. */
+    val vodEnginePinCount: StateFlow<Int> =
+        combine(vodEngineStore.mpvUrls, vodEngineStore.exoUrls) { mpv, exo -> mpv.size + exo.size }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** Forget every per-item engine pin, so everything follows the "Movies & Series player" setting
+     *  again. Also the escape hatch for pins older builds wrote automatically after a decode failure —
+     *  those are stored identically to the user's own, so they can only be cleared wholesale. */
+    fun clearVodEnginePins() { viewModelScope.launch { vodEngineStore.clearAll() } }
 
     val measuredStreamStats: StateFlow<Boolean> = settings.measuredStreamStats.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setMeasuredStreamStats(enabled: Boolean) { viewModelScope.launch { settings.setMeasuredStreamStats(enabled) } }

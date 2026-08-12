@@ -9,7 +9,7 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
-## v4.2.0 — unreleased
+## v4.2.0 — 2026-08-12
 
 ### ✨ New features
 
@@ -27,9 +27,11 @@
 - **📐 Panel Width Adjustment can hide the preview or poster panel completely**
 - **⚡ Faster cold start**
 - **🧱 Refreshed playback and networking libraries**
+- **♻️ Reset saved player choices**
 
 ### 🐛 Fixes
 
+- **Your Movies & Series player choice is no longer overridden after a few failed streams**
 - **Switching audio language mid-playback no longer makes the sound stutter**
 - **The stream information overlay now says correctly when your TV is decoding the audio**
 - **TMDB trailers no longer stutter**

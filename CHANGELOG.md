@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.2.0 — unreleased
+## v4.2.0 — 2026-08-12
 
 ### 🫧 Complete interface and Glass Effect upgrade — unified panels, clearer presets, cleaner focus
 
@@ -188,6 +188,17 @@
 
 ### 🐛 Fixes
 
+- **Your Movies & Series player choice is no longer overridden after a few failed streams.** Once three
+  items in a row had fallen back from ExoPlayer to mpv, OwnTV switched the rest of the session to mpv —
+  and a run of dead links counted exactly as much as a file this TV genuinely cannot decode, so on a
+  large public playlist the setting could be retired within a minute of browsing. A decode failure also
+  saved a permanent, invisible player choice for that item. Both behaviours are gone: every movie and
+  episode now starts on the engine you picked, every time, and only that one playback falls back if it
+  actually fails. Live TV already rebuilt its full engine ladder for every channel and is unchanged.
+- **New — Settings → Video Player → Reset saved player choices.** Switching a single movie or episode
+  between mpv and ExoPlayer inside the player still saves that choice, for that one item only. Because
+  older builds could also write such choices automatically, this row shows how many are stored and
+  clears them all in one step; saved choices for live channels are kept.
 - **Switching audio language mid-playback no longer makes the sound stutter.** On soundtracks the TV
   decodes itself — Dolby Digital, DTS and similar, passed through untouched — choosing a different
   language left the audio output half-restarted, and the sound snapped and skipped for the rest of the

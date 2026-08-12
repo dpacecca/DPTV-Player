@@ -422,9 +422,9 @@ or **narrow the whole app to just one**.
 - 🔧 **Two playback engines with automatic fallback**: movies/episodes play on **mpv** by default (or
   **ExoPlayer** if you switched the **Movies & Series player** setting). If the chosen engine can't play an
   item, the **other engine is tried automatically** before any error. Each engine is given both its
-  hardware and its software decoder before the other is tried, so a video gets four chances in all. If an
-  item keeps failing on your preferred engine for a decoding reason, it is remembered and opens on the
-  other one from then on. You can also switch the **current**
+  hardware and its software decoder before the other is tried, so a video gets four chances in all. A
+  fallback is **never remembered** — the next item, and the same item next time, always starts on the
+  engine you chose. You can also switch the **current**
   movie/episode manually: bring up the controls and press the **engine toggle (the ⇄ MPV/EXO pill)** — it
   flips between mpv and ExoPlayer at the same position (the pill shows the active engine; teal while on
   ExoPlayer, and a small "Switched to MPV/ExoPlayer" note confirms it). Handy when one engine doesn't show a
@@ -804,8 +804,13 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   **mpv** (default — widest format support incl. DTS/TrueHD audio, plus the A/V sync fix) or
   **ExoPlayer** (try it **only if movies/episodes won't start** on your device — it can't decode
   DTS/TrueHD audio and has no A/V sync fix). Either way, if the chosen player fails, the other is
-  tried automatically before an error is shown. The player's **info overlay** shows which engine is
+  tried automatically before an error is shown. That fallback is **not remembered** — every movie and
+  episode starts on your chosen engine every time. The player's **info overlay** shows which engine is
   active.
+- ♻️ **Reset saved player choices** (Video Player Settings, right under the setting above) — flipping a
+  single movie/episode with the ⇄ MPV/EXO pill saves that choice for that one item. This row shows how
+  many are saved and clears them all, so everything follows the **Movies & Series player** setting
+  again. Live TV's per‑channel compatibility mode is a separate list and is kept.
 - 📊 **Measured stream stats** (Video Player Settings → Diagnostics) — on by default. When on, the
   player's **info overlay** measures live fps, bitrate and dropped frames for streams that don't
   declare them (most Xtream live TV). Turn it **off** only if a low‑end TV ever stutters — it affects
