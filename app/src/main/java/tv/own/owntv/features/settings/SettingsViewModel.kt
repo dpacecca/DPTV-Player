@@ -500,8 +500,19 @@ class SettingsViewModel(
     fun setBgImagePath(path: String) { viewModelScope.launch { settings.setBgImagePath(path) } }
     fun setGlassScopeBitmask(bits: Int) { viewModelScope.launch { settings.setGlassScopeBitmask(bits) } }
     fun setGlassPreset(preset: tv.own.owntv.ui.theme.GlassPreset) { viewModelScope.launch { settings.setGlassPreset(preset) } }
-    fun setGlassAlphaPercent(pct: Int) { viewModelScope.launch { settings.setGlassAlphaPercent(pct) } }
-    fun setGlassBlurPercent(pct: Int) { viewModelScope.launch { settings.setGlassBlurPercent(pct) } }
+    fun setGlassAlphaPercent(pct: Int, currentBlurPct: Int) {
+        viewModelScope.launch { settings.setGlassAlphaPercent(pct, currentBlurPct) }
+    }
+    fun setGlassBlurPercent(pct: Int, currentAlphaPct: Int) {
+        viewModelScope.launch { settings.setGlassBlurPercent(pct, currentAlphaPct) }
+    }
+    fun setGlassHighlightPercent(pct: Int) { viewModelScope.launch { settings.setGlassHighlightPercent(pct) } }
+    fun setGlassAllowFullTransparency(enabled: Boolean) {
+        viewModelScope.launch { settings.setGlassAllowFullTransparency(enabled) }
+    }
+    fun setGlassDepthEffects(enabled: Boolean) {
+        viewModelScope.launch { settings.setGlassDepthEffects(enabled) }
+    }
 
     // --- Nav menu customization (v4.3.0) ---
     /** STATIC (default): user picks which icons to hide. DYNAMIC: icons adapt to the active playlist. */
@@ -605,6 +616,14 @@ class SettingsViewModel(
     val animationLevel: StateFlow<tv.own.owntv.ui.theme.AnimationLevel> =
         settings.animationLevel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.ui.theme.AnimationLevel.FULL)
     fun setAnimationLevel(level: tv.own.owntv.ui.theme.AnimationLevel) { viewModelScope.launch { settings.setAnimationLevel(level) } }
+
+    val ambientGlowEnabled: StateFlow<Boolean> =
+        settings.ambientGlowEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    fun setAmbientGlowEnabled(enabled: Boolean) { viewModelScope.launch { settings.setAmbientGlowEnabled(enabled) } }
+
+    val ambientGlowPulse: StateFlow<Boolean> =
+        settings.ambientGlowPulse.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+    fun setAmbientGlowPulse(enabled: Boolean) { viewModelScope.launch { settings.setAmbientGlowPulse(enabled) } }
 
     // Weather chip: visibility toggle + manual location override (for VPN users).
     val weatherEnabled: StateFlow<Boolean> =

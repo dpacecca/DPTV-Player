@@ -13,7 +13,9 @@
 
 ### ✨ New features
 
-- **🫧 Glass Effect appearance presets and interaction-aware material**
+- **🫧 Complete interface and Glass Effect upgrade**
+- **✨ Unified browse panels and compact navigation rail**
+- **🌟 Optional Ambient Glow for the solid interface**
 - **🔤 Separate interface and popup fonts**
 - **🔎 Adjustable app text size**
 - **💾 Font settings in backup and restore**
@@ -34,6 +36,8 @@
 - **The Home hero preview stops while a trailer is playing**
 - **Stalker imports no longer lose a whole category when the portal drops the connection**
 - **Glass Effect focus no longer leaves dark trails during rapid navigation**
+- **Focused controls no longer paint a second rounded layer**
+- **Now Trending has a dedicated toggle and fixed top position**
 - **Guide focus can now move into the docked mini-player (#112)**
 - **Stereo-fallback notices no longer remain over the next video**
 - **Surround sound no longer switches itself off because of a small timing gap inside a file**
