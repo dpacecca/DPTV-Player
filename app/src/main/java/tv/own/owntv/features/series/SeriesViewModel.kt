@@ -313,13 +313,37 @@ class SeriesViewModel(
     private val _episodesLoading = MutableStateFlow(false)
     val episodesLoading: StateFlow<Boolean> = _episodesLoading.asStateFlow()
 
+    /**
+     * The queue item the player is actually on, pinned when it starts playing — the only thing a
+     * resume position may be written against.
+     *
+     * Progress used to be matched by searching the *opened* series' episode list for the player's
+     * current URL, and the profile was read at save time. Both were wrong: open a different series
+     * while an episode plays and the match silently stopped saving, a Stalker episode URL is minted
+     * per play and never matched at all, and switching profile mid-episode wrote the position into
+     * the new profile's Continue Watching.
+     */
+    private data class PlayingEpisodeRef(val episode: EpisodeEntity, val profileId: Long, val contentKey: String?)
+
+    private var playingEpisodeRef: PlayingEpisodeRef? = null
+
     init {
         // Periodically persist the playing episode's resume position (same cadence as movies).
         // Episodes were previously *read* on play but never saved — resume never actually worked.
+        // This is the crash backstop; the real saves are on pause and on leaving the player.
         viewModelScope.launch {
             while (isActive) {
                 delay(10_000)
                 saveEpisodeProgressNow()
+            }
+        }
+        // Save on pause too — pausing and walking away otherwise loses up to 10s, and everything
+        // since the last tick if the app is killed while paused.
+        viewModelScope.launch {
+            var wasPlaying = false
+            player.isPlaying.collect { playing ->
+                if (wasPlaying && !playing) saveEpisodeProgressNow()
+                wasPlaying = playing
             }
         }
         // Auto-play continuation across seasons: the player advances within a season itself, then signals
@@ -334,6 +358,12 @@ class SeriesViewModel(
             player.queueItemChanged.collect { index ->
                 val q = playingQueue ?: return@collect
                 val ep = q.episodes.getOrNull(index) ?: return@collect
+                // The auto-advanced episode is now the one progress is saved against. No flush of the
+                // outgoing one here: the player already loaded the new item, so its position has been
+                // reset and saving now would overwrite a finished episode with ~0.
+                playingEpisodeRef = PlayingEpisodeRef(
+                    ep, q.profileId, tv.own.owntv.core.player.enginePinKey(q.show.sourceId, "EPISODE", ep.remoteId),
+                )
                 subtitleController.setEpisode(q.profileId, q.show, ep, q.parentTmdbId)
             }
         }
@@ -362,17 +392,29 @@ class SeriesViewModel(
         playEpisode(nextEpisode)
     }
 
-    /** Saves the currently playing episode's position (matched by stream URL, so prev/next in the
-     *  player queue is tracked correctly even though the VM didn't initiate the switch). */
+    /**
+     * True while the player still holds the episode [ref] was pinned for. Matches on the stable engine
+     * pin key; rows with no `remoteId` have no such key and fall back to the stream URL, which for
+     * those rows is exactly as stable as it always was (see `enginePinKey`).
+     */
+    private fun playerIsOn(ref: PlayingEpisodeRef): Boolean =
+        if (ref.contentKey != null) player.currentMediaContentKey == ref.contentKey
+        else player.currentMediaUrl != null && player.currentMediaUrl == ref.episode.streamUrl
+
+    /** Saves the position of the episode the player is actually on — including one the player itself
+     *  switched to via prev/next or auto-advance, which re-pins the ref in [init]. */
     fun saveEpisodeProgressNow() {
-        if (player.isLiveContent || !player.isPlaying.value) return
-        val url = player.currentMediaUrl ?: return
-        val ep = episodes.value.firstOrNull { it.streamUrl == url } ?: return
+        val ref = playingEpisodeRef ?: return
+        val ep = ref.episode
+        if (player.isLiveContent || !playerIsOn(ref)) return
         val pos = player.position.value
         val dur = player.duration.value
         if (pos > 0 && dur > 0) {
             viewModelScope.launch {
+                // The position belongs to the profile that started playback. If the user switched
+                // profiles mid-episode, drop it rather than writing it into the new profile's list.
                 val pid = currentProfileId() ?: return@launch
+                if (pid != ref.profileId) return@launch
                 Log.d(TAG, "saveEpisodeProgressNow episodeId=${ep.id} profile=$pid positionMs=$pos durationMs=$dur")
                 runCatching {
                     progressDao.save(
@@ -784,6 +826,11 @@ class SeriesViewModel(
             // stored streamUrl is the season cmd (shared by the whole season), and the per-episode
             // create_link URL is short-lived, so next/prev/autoplay must each mint a fresh one.
             val needsResolve = streamUrlResolver.needsResolve(source)
+            playingEpisodeRef = pid?.let {
+                PlayingEpisodeRef(
+                    episode, it, tv.own.owntv.core.player.enginePinKey(show.sourceId, "EPISODE", episode.remoteId),
+                )
+            }
             player.playEpisodes(
                 items = queue.map { ep ->
                     PlaylistItem(
@@ -918,9 +965,15 @@ class SeriesViewModel(
             val idx = items.indexOfFirst { it.id == series.id }
             if (idx < 0) return@launch
             _moveState.value = SeriesMoveState(items, idx, contextKey)
+            // Manual order is only visible in playlist order, so Move switches the list to it — but that
+            // is a means, not a choice the user made. Remember what they had so Cancel can put it back.
+            sortBeforeMove = sortMode.value
             settings.setSortSeries(SettingsRepository.SortMode.PLAYLIST)
         }
     }
+
+    /** The sort the user was on before [enterMoveMode] switched the list to playlist order. */
+    private var sortBeforeMove: SettingsRepository.SortMode? = null
 
     fun moveUp() {
         val s = _moveState.value ?: return
@@ -943,6 +996,7 @@ class SeriesViewModel(
     fun commitMove() {
         val s = _moveState.value ?: return
         _moveState.value = null
+        sortBeforeMove = null // the new order IS playlist order — staying on it is the point
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             contentOrderDao.replaceContext(
@@ -956,7 +1010,15 @@ class SeriesViewModel(
         }
     }
 
-    fun cancelMove() { _moveState.value = null }
+    fun cancelMove() {
+        _moveState.value = null
+        // Cancel means nothing changed — including the sort Move switched away from.
+        val previous = sortBeforeMove ?: return
+        sortBeforeMove = null
+        if (previous != SettingsRepository.SortMode.PLAYLIST) {
+            viewModelScope.launch { settings.setSortSeries(previous) }
+        }
+    }
 
     /** Hide the series from all lists (undo via Settings → Customize Category → Hidden items). */
     fun hideSeries(series: SeriesEntity) {

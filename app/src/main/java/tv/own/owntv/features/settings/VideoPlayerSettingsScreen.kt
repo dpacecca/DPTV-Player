@@ -164,6 +164,9 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     }
 
     var dialog by remember { mutableStateOf(Dialog.NONE) }
+    /** Whether the Custom-latency stepper actually set a value this time round — the mode switch to
+     *  Custom, and the low-latency acknowledgement, both hang off that rather than off merely opening it. */
+    var customCommitted by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
     // Kick focus into the group; the group's onEnter (below) decides the actual target — first row on
     // a fresh open, or the OpenSubtitles row when we're returning from that sub-screen.
@@ -438,7 +441,9 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
         )
         Dialog.AUDIO_SYNC -> StepperDialog(
             title = stringResource(R.string.settings_audio_sync),
-            value = audioDelay, step = 50, min = -2000, max = 2000,
+            // ±5s, matching what the player itself accepts. The narrower ±2s here meant a delay set in the
+            // HUD could not be reproduced — or corrected — from Settings.
+            value = audioDelay, step = 50, min = -5000, max = 5000,
             format = { stringResource(R.string.settings_audio_delay, it) },
             onSet = { vm.setAudioDelayMs(it) },
             onReset = { vm.setAudioDelayMs(0) },
@@ -455,9 +460,11 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
                     // "Low latency" — warn before applying; Cancel leaves the current choice untouched.
                     tv.own.owntv.features.settings.data.LiveLatency.LOW ->
                         lowWarning = Pair({ vm.setLiveLatencyMode(mode) }, {})
-                    // "Custom" — enter the seconds; the below-Balanced warning fires when that dialog closes.
+                    // "Custom" — enter the seconds first. The mode is committed by the stepper itself, not
+                    // here: switching on open meant backing out of the number dialog still left the user on
+                    // Custom, with a value they never chose.
                     tv.own.owntv.features.settings.data.LiveLatency.CUSTOM -> {
-                        vm.setLiveLatencyMode(mode)
+                        customCommitted = false
                         dialog = Dialog.LIVE_CUSTOM
                     }
                     else -> vm.setLiveLatencyMode(mode)
@@ -472,12 +479,20 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             min = tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_MIN,
             max = tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_MAX,
             format = { stringResource(R.string.settings_live_buffer_seconds, it) },
-            onSet = { vm.setLiveLatencyCustomSecs(it) },
-            onReset = { vm.setLiveLatencyCustomSecs(tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_DEFAULT) },
+            onSet = {
+                vm.setLiveLatencyCustomSecs(it)
+                vm.setLiveLatencyMode(tv.own.owntv.features.settings.data.LiveLatency.CUSTOM)
+                customCommitted = true
+            },
+            onReset = {
+                vm.setLiveLatencyCustomSecs(tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_DEFAULT)
+                vm.setLiveLatencyMode(tv.own.owntv.features.settings.data.LiveLatency.CUSTOM)
+                customCommitted = true
+            },
             onDismiss = {
                 dialog = Dialog.NONE
                 // A below-Balanced custom value gets the same acknowledgement; Cancel reverts to Balanced.
-                if (tv.own.owntv.features.settings.data.LiveBuffer.isLowLatency(liveCustomSecs)) {
+                if (customCommitted && tv.own.owntv.features.settings.data.LiveBuffer.isLowLatency(liveCustomSecs)) {
                     lowWarning = Pair({}, { vm.setLiveLatencyMode(tv.own.owntv.features.settings.data.LiveLatency.BALANCED) })
                 }
             },

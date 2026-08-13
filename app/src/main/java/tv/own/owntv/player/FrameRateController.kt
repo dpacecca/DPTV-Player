@@ -101,10 +101,13 @@ object FrameRateController {
      */
     fun apply(activity: Activity, fps: Float) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || fps <= 0f) return
-        cancelPendingReset()
         cancelPendingApply()
         runCatching {
+            // The pending reset is cancelled only once a mode is actually going to be requested. Cancelling
+            // up front killed the restore-to-default even when nothing matched this item's frame rate — so
+            // leaving a 24p film for something the panel has no mode for kept the display at 24Hz.
             val target = pickMode(activity, fps) ?: return
+            cancelPendingReset()
             if (target.modeId == activity.window.attributes.preferredDisplayModeId) return
             val waitMs = MODE_CHANGE_COOLDOWN_MS - (android.os.SystemClock.uptimeMillis() - lastChangeAtMs)
             if (lastChangeAtMs != 0L && waitMs > 0) {

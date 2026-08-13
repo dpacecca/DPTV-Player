@@ -230,7 +230,9 @@ or **narrow the whole app to just one**.
   Guide's **Auto‑match review** popup (**Accept all / Skip all / Done**).
 - 🔄 **Move channels** (reorder within folders/Favorites): **long‑press OK** on a channel and choose **Move** —
   a full‑screen reorder overlay opens with the full list. Use **D‑pad Up/Down** to move the item, **OK** to save,
-  **Back** to cancel. Your reorder is saved across playlist re‑syncs and included in backups.
+  **Back** to cancel. Move switches the list to **Playlist order** while you reorder (that is the only order a
+  manual position is visible in); saving keeps it there, and **Back/cancel puts your previous sort back**. Your
+  reorder is saved across playlist re‑syncs and included in backups.
 - **Open a channel full‑screen**: press **OK**.
 - 🔀 **Page long lists with CH+ / CH−**: with hundreds of categories or thousands of channels, hold‑scrolling
   top‑to‑bottom is painful. **CH−** skips N items **down** (toward the last), **CH+** skips N items **up**
@@ -576,6 +578,18 @@ with the remaining time.
   **inside**. Now **Left/Right** move between the buttons and **OK** runs the highlighted one. Focus
   stays inside the bar — press **Back** to step out.
 - **Fullscreen** returns to full video; **close** (✕) stops playback.
+
+### "Audio only" — when the item itself has no picture
+
+Some items carry sound and nothing else: a radio station listed among your TV channels, or a
+music‑only file filed under Movies. That is not a fault, and OwnTV plays them normally — but a black
+screen with sound looks exactly like a broken player, so the player shows a small **Audio only**
+plate in the middle of the screen with a short line explaining it. It stays there for as long as the
+item plays, and shrinks to just the music icon in the docked mini‑player.
+
+If you see it, nothing is wrong and there is nothing to fix — the item simply has no video in it. It
+is different from Audio Mode above: that one is *you* switching the picture off, this one is the
+stream having none to begin with.
 
 ---
 

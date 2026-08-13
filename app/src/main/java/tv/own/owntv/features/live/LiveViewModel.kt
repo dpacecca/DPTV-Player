@@ -238,7 +238,10 @@ class LiveViewModel(
     val previewChannel: StateFlow<ChannelEntity?> = _previewChannel.asStateFlow()
 
     private data class CachedEpg(val at: Long, val data: EpgNowNext)
-    private val epgCache = HashMap<Long, CachedEpg>()
+    /** Written from the IO dispatcher (the now/next fetch) and cleared from Main (EPG mapping/shift
+     *  changes), so it cannot be a plain HashMap — concurrent structural modification of one is
+     *  undefined, up to a corrupt table or an infinite loop inside `get`. */
+    private val epgCache = java.util.concurrent.ConcurrentHashMap<Long, CachedEpg>()
 
     /** Bumped when a channel's EPG mapping changes so [nowNext] reloads for the same focused channel. */
     private val epgRefresh = MutableStateFlow(0)
@@ -671,6 +674,10 @@ class LiveViewModel(
     /** Heading for the left overlay — the name of the active playback browse context. */
     private val _zapListTitle = MutableStateFlow<String?>(null)
     val zapListTitle: StateFlow<String?> = _zapListTitle.asStateFlow()
+    /** The rail the zap list came from, for the built-in ones (Favorites / History / All) whose names are
+     *  UI strings rather than provider data and so can never appear in [zapListTitle]. */
+    private val _zapListKey = MutableStateFlow<LiveKey?>(null)
+    val zapListKey: StateFlow<LiveKey?> = _zapListKey.asStateFlow()
     /** Provider category selected in the in-player browser, or null for a synthetic/caller-owned rail. */
     private var zapCategoryId: Long? = null
     private var zapArmed = false
@@ -710,6 +717,7 @@ class LiveViewModel(
             // previously loaded category.
             _canZap.value = list.size > 1
             _zapListTitle.value = categoryDao.getById(categoryId)?.name
+            _zapListKey.value = null
             _showCategoryBrowser.value = false
         }
     }
@@ -743,6 +751,7 @@ class LiveViewModel(
             _zapChannels.value = list
             _canZap.value = list.size > 1
             _zapListTitle.value = (catId?.let { categoryDao.getById(it)?.name })?.takeIf { it.isNotBlank() }
+            _zapListKey.value = null
         }
     }
 
@@ -804,6 +813,9 @@ class LiveViewModel(
      *  playing (no stop) — just clears the flag so [playPreview] works again. */
     fun onFullscreenExited() {
         _liveOnExo.value = false
+        // Leaving full-screen ends the rewind: the archive stream is torn down with the player, and the
+        // 1 Hz "behind live" ticker would otherwise keep running against nothing for the rest of the session.
+        clearTimeshift()
         // With the in-pane preview enabled, the preview pane re-takes the ExoPlayer engine on the next
         // focus and re-applies the preview mute — so we can leave it running here. But when live preview
         // is OFF, nothing ever re-takes it, and the engine would keep decoding the (unmuted) channel's
@@ -837,6 +849,15 @@ class LiveViewModel(
      *  provider category is metadata (used by [previewCategoryName]); it must not replace Favorites,
      *  History, All, a custom category, or the provider folder the user is actually browsing. */
     fun watchFullscreen(channel: ChannelEntity, list: List<ChannelEntity>) {
+        // Opened with no browse list behind it — the catch-up programme dialog does exactly this. Without
+        // a zap list, CH+/CH− and the channel-list button are dead for the rest of the session, so rebuild
+        // the channel's own category the way the Guide/Search path does.
+        if (list.none { it.id == channel.id }) {
+            armZapList(channel)
+            _zapListKey.value = null
+            ensurePlaying(channel)
+            return
+        }
         zapListJob?.cancel()
         zapList = list
         _zapChannels.value = list
@@ -845,6 +866,9 @@ class LiveViewModel(
         zapCategoryId = (key as? LiveKey.Folder)?.id
         zapArmed = true
         _zapListTitle.value = railItems.value.firstOrNull { it.key == key }?.title
+        // Built-in rails (Favorites / History / All) carry no title — their labels are UI strings. Hand the
+        // key out so the overlay can name them properly instead of falling back to "All channels".
+        _zapListKey.value = key
         ensurePlaying(channel)
     }
 
@@ -1198,7 +1222,7 @@ class LiveViewModel(
         // History is still recorded, so the channel shows up in History/Recently watched either way.
         if (externalPlayerOn.value) { playExternal(channel); return }
         _previewChannel.value = channel
-        timeshiftJob?.cancel(); tickJob?.cancel(); _timeshiftOffsetSec.value = null // normal live = not timeshifted
+        clearTimeshift() // normal live = not timeshifted
         _catchupActive.value = false // tuning live ends any archive playback the HUD was showing
         // Self-learning routing: a channel the user pinned to mpv skips ExoPlayer entirely (no artifacts/silent
         // first), straight to the engine that plays it. Everyone else gets the fast ExoPlayer-first path.
@@ -1357,6 +1381,9 @@ class LiveViewModel(
         // the user is watching with the channel's CURRENT one. The HUD already hides this toggle during
         // catch-up (it offers the VOD engine toggle instead) — this is the belt-and-braces guard.
         if (_catchupActive.value) return
+        // Same reasoning while rewound into the live archive: swapping engines re-opens the channel at the
+        // live edge, throwing the user out of the rewind. The HUD hides the toggle then; this is the guard.
+        if (_timeshiftOffsetSec.value != null) return
         // Base the swap on the ACTUAL running engine, not the pin: after an auto-fallback to mpv the channel
         // runs on mpv while still unpinned, and the old pin-based logic then did nothing on click. Keying off
         // _liveOnExo makes every click flip the live engine, with the pin following the choice.
@@ -1406,6 +1433,7 @@ class LiveViewModel(
             zapCategoryId = null
             zapArmed = true
             _zapListTitle.value = null
+            _zapListKey.value = null
         }
         ensurePlaying(channel)
         return true
@@ -1675,6 +1703,7 @@ class LiveViewModel(
     /** Put [channel] on ExoPlayer, releasing mpv first when it currently holds the stream. mpv's stop is
      *  asynchronous, so on a one-session panel handing over too early makes us our own competitor. */
     private suspend fun switchToExo(channel: ChannelEntity) {
+        clearTimeshift() // this restarts the channel at the live edge — the rewind is over
         if (!_liveOnExo.value) {
             player.stopAndAwaitRelease()
             delay(500)
@@ -1689,6 +1718,7 @@ class LiveViewModel(
 
     private suspend fun fallbackToMpv(channel: ChannelEntity, reason: String, forceTs: Boolean = false) {
         engineLog("starting mpv for '${channel.name}' — reason=$reason")
+        clearTimeshift() // the live channel is being re-opened at the edge — the rewind is over
         // Preserve the format Exo actually discovered. Some panels redirect their advertised `.ts`
         // endpoint to HLS; handing that misleading URL to mpv traps FFmpeg at the manifest EOF.
         //
@@ -1821,7 +1851,8 @@ class LiveViewModel(
         val epgKey = (custom.value.epgMatches[CustomizeKeys.channel(ch)] ?: ch.epgChannelId)
             ?.trim()?.lowercase()?.takeIf { it.isNotEmpty() } ?: return@withContext emptyList()
         val now = System.currentTimeMillis()
-        val windowMs = (ch.catchupDays.coerceAtLeast(1) * 24L * 60 * 60 * 1000).coerceAtMost(CATCHUP_LOOKBACK_CAP_MS)
+        val days = ch.catchupDays.takeIf { it > 0 } ?: DEFAULT_CATCHUP_DAYS
+        val windowMs = (days * 24L * 60 * 60 * 1000).coerceAtMost(CATCHUP_LOOKBACK_CAP_MS)
         val ids = ctx.value.sourceIds + epgSourceStore.getAll().map { it.id }
         // Shifted guide → shifted window, and the rows come back on the corrected clock, so the
         // archive URL built from the picked programme asks for the time it really aired.
@@ -1895,6 +1926,10 @@ class LiveViewModel(
             clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
             // isLive=false → seekable archive; isArchive → mid-GOP tolerant (hardware first, software rescue).
             player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.displayLogoUrl, isLive = false, isArchive = true, userAgent = sourceUa, httpHeaders = ch.httpHeaders)
+            // Watching a programme from a channel's archive is watching that channel — the external
+            // catch-up path above has always recorded it, and this one silently did not, so the channel
+            // never reached History or Recently watched when catch-up played in-app.
+            recordLiveHistory(ch, immediate = true)
         }
     }
 
@@ -1925,17 +1960,30 @@ class LiveViewModel(
     fun scrubLive(deltaSec: Int) {
         val ch = _previewChannel.value ?: return
         if (!ch.catchup) return
-        val maxBack = (ch.catchupDays.takeIf { it > 0 } ?: 7) * 24 * 3600
+        val maxBack = (ch.catchupDays.takeIf { it > 0 } ?: DEFAULT_CATCHUP_DAYS) * 24 * 3600
         val next = ((_timeshiftOffsetSec.value ?: 0) + deltaSec).coerceIn(0, maxBack)
         if (next == 0) { goToLive(); return }
         _timeshiftOffsetSec.value = next
         scheduleTimeshiftLoad(ch, next)
     }
 
-    /** Jump back to the real-time live edge (back on the fast ExoPlayer engine). */
-    fun goToLive() {
+    /**
+     * Drop every trace of a live rewind: the pending archive load, the "behind live" ticker and the
+     * offset the HUD reads from.
+     *
+     * Anything that puts the channel back on a real-time stream has to call this. The rewind lived in
+     * its own state, apart from tune state, so an engine change (compatibility mode, a ladder fallback)
+     * threw the user back to the live edge while the counter kept ticking upward against a stream that
+     * was no longer the archive.
+     */
+    private fun clearTimeshift() {
         timeshiftJob?.cancel(); tickJob?.cancel()
         _timeshiftOffsetSec.value = null
+    }
+
+    /** Jump back to the real-time live edge (back on the fast ExoPlayer engine). */
+    fun goToLive() {
+        clearTimeshift()
         _previewChannel.value?.let { ensurePlaying(it) }
     }
 
@@ -1977,6 +2025,12 @@ class LiveViewModel(
             while (true) {
                 delay(1_000)
                 if (_timeshiftOffsetSec.value == null) break
+                // The archive failed: there is nothing left to count against, and leaving the offset set
+                // kept the rewind UI (and its "behind live" figure) alive over an error screen.
+                if (player.error.value != null) { clearTimeshift(); break }
+                // The stream is gone entirely (player stopped / another item took over). Stop ticking but
+                // leave the offset alone — a reload in flight still counts as the same rewind.
+                if (!player.hasActiveStream) break
                 val behindSec = ((System.currentTimeMillis() - (timeshiftStartWall + player.position.value)) / 1000)
                 _timeshiftOffsetSec.value = behindSec.toInt().coerceAtLeast(0)
             }
@@ -2181,9 +2235,15 @@ class LiveViewModel(
             val idx = items.indexOfFirst { it.id == channel.id }
             if (idx < 0) return@launch
             _moveState.value = ChannelMoveState(items, idx, contextKey)
+            // Manual order is only visible in playlist order, so Move switches the list to it — but that
+            // is a means, not a choice the user made. Remember what they had so Cancel can put it back.
+            sortBeforeMove = sortMode.value
             settings.setSortLive(SettingsRepository.SortMode.PLAYLIST)
         }
     }
+
+    /** The sort the user was on before [enterMoveMode] switched the list to playlist order. */
+    private var sortBeforeMove: SettingsRepository.SortMode? = null
 
     fun moveUp() {
         val s = _moveState.value ?: return
@@ -2206,6 +2266,7 @@ class LiveViewModel(
     fun commitMove() {
         val s = _moveState.value ?: return
         _moveState.value = null
+        sortBeforeMove = null // the new order IS playlist order — staying on it is the point
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             contentOrderDao.replaceContext(
@@ -2219,7 +2280,15 @@ class LiveViewModel(
         }
     }
 
-    fun cancelMove() { _moveState.value = null }
+    fun cancelMove() {
+        _moveState.value = null
+        // Cancel means nothing changed — including the sort Move switched away from.
+        val previous = sortBeforeMove ?: return
+        sortBeforeMove = null
+        if (previous != SettingsRepository.SortMode.PLAYLIST) {
+            viewModelScope.launch { settings.setSortLive(previous) }
+        }
+    }
 
     fun removeFromHistory(channelId: Long) {
         viewModelScope.launch {
@@ -2257,6 +2326,10 @@ class LiveViewModel(
             LiveRailItem(LiveKey.All),
         )
         const val CATCHUP_LOOKBACK_CAP_MS = 48L * 60 * 60 * 1000 // bounded by the EPG we retain (~2 days)
+        /** Archive window assumed when the playlist doesn't say how many days it keeps. One shared value:
+         *  the catch-up picker used to assume 1 day while live rewind assumed 7, so the same channel
+         *  offered a day of programmes in the list and a week of rewinding on the timeline. */
+        const val DEFAULT_CATCHUP_DAYS = 7
         const val ZAP_WINDOW_HALF = 50 // channels loaded on each side of the tuned channel for CH+/-
         /** How long ExoPlayer gets to reach a first frame (or an error) before the channel goes to mpv,
          *  *on top of* any requested pre-buffer. Past this it is not slow, it is stuck — see

@@ -303,8 +303,10 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setAutoPlayNext(enabled) }
     }
 
+    // Seeded with the repository's own default (DEVICE). MANUAL here made the chip open reading "Manual"
+    // for a frame before the stored value arrived — on a setting the user had never touched.
     val catchupTimezone: StateFlow<SettingsRepository.CatchupTimezone> = settings.catchupTimezone
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.CatchupTimezone.MANUAL)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.CatchupTimezone.DEVICE)
 
     val catchupOffsetMinutes: StateFlow<Int> = settings.catchupOffsetMinutes
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)

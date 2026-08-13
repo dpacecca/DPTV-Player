@@ -28,6 +28,7 @@ signing.properties
 
 # Internal planning documents — kept local, never committed
 future-plan/
+audit/
 
 # i18n seed tool run state (batch inputs, IDs, raw results) — never committed
 /runs/
