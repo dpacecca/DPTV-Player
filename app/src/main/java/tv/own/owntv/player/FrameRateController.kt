@@ -2,7 +2,6 @@ package tv.own.owntv.player
 
 import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
 import android.os.Build
 import android.util.Log
 import android.view.Display
@@ -10,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import tv.own.owntv.core.ui.findActivity
 import kotlin.math.abs
 
 /**
@@ -267,11 +267,3 @@ fun AutoFrameRateEffect(fps: Float?, enabled: Boolean) {
     }
 }
 
-private fun Context.findActivity(): Activity? {
-    var ctx: Context? = this
-    while (ctx is ContextWrapper) {
-        if (ctx is Activity) return ctx
-        ctx = ctx.baseContext
-    }
-    return null
-}

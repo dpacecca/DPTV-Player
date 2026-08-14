@@ -14,6 +14,10 @@
 ### ✨ New features
 
 - **🎧 "Audio only" — sound with no picture is now labelled, not mistaken for a fault**
+- **🔊 Zoom and volume are now remembered per item**
+- **Seek step**
+- **Live rewind step**
+- **Deinterlacing**
 
 ### 🐛 Fixes
 
@@ -35,6 +39,16 @@
 - **Audio focus is released while you are paused**
 - **Settings → Audio sync now covers the same ±5 seconds the player does**
 - **Custom DNS resolves IPv6-only hosts**
+- **One channel refusing a request no longer sends a whole provider down the slow path**
+- **Holding CH+ or CH− changes channel once**
+- **Subtitles stay on the picture when you zoom**
+- **A catch-up programme that never opens moves on instead of spinning**
+- **The "Match EPG" picker responds as you type**
+- **Audio sync moves in 25 ms steps**
+- **The volume dialog no longer traps the remote at 0%**
+- **Rename, move and delete in Customize return focus to the row you were on**
+- **A film or recorded programme that won't start on the hardware decoder recovers more reliably**
+- **Smaller player fixes**
 
 ## v4.2.0 — 2026-08-12
 

@@ -15,6 +15,32 @@
   picture" and treat it as a broken file. That check now stands down once it can see the item genuinely
   has no video track and the sound is playing — the same rule Live TV already used for radio channels.
 
+### 🔊 Zoom and volume are now remembered per item
+
+- **A zoom or a volume you set is kept for that film, episode or channel.** Stretch a 4:3 channel to
+  fill the screen, or push a quiet film up to 130%, and it opens that way every time from then on. It
+  is remembered per profile, and only for the item you changed — the channel next to it is untouched.
+  Only a change *you* make counts: the player lowering its own volume for a notification, or moving a
+  stream to the other engine, never teaches it a preference. Mute is deliberately not remembered, so a
+  channel can never open silent.
+- **Settings → Video player → Default volume** sets the starting level (0–150%) for everything you
+  haven't adjusted individually — useful if a whole provider runs quiet.
+- **Two separate resets, right below it.** **Reset saved zoom** and **Reset saved volume** each show how
+  many items they will clear and ask before clearing, and each leaves the other list alone.
+- Both lists are carried in **backup and restore**.
+
+### ✨ New features
+
+- **Seek step** (Settings → Video player) — how far the rewind/forward buttons and the seek bar move in
+  a film or episode: 5, 10, 15, 30 or 60 seconds. Default 10 seconds, exactly as before.
+- **Live rewind step** (Settings → Video player) — the same choice for the catch-up archive buttons on a
+  live channel: 10, 15, 30, 60 or 120 seconds. Default 30 seconds, as before. They are two separate
+  settings because stepping through a film and stepping back through a live archive are different jobs.
+- **Deinterlacing** (Settings → Video player, Off by default) — smooths the comb-shaped lines some old
+  interlaced channels show on movement. It only has an effect when OwnTV draws the picture itself
+  (hardware decoding off, or after a software fallback); on the normal direct-to-screen path the video
+  goes to the TV untouched and no filter can run. The setting says so where you turn it on.
+
 ### 🐛 Fixes
 
 - **Your resume position is saved reliably again — and never lands in someone else's profile.** OwnTV
@@ -86,11 +112,44 @@
 - **Custom DNS resolves IPv6-only hosts,** which the plain-DNS path could not (it asked for IPv4
   records only, while DNS-over-HTTPS asked for both), and each query now carries a random, verified
   identifier instead of a fixed one.
+- **One channel refusing a request no longer sends a whole provider down the slow path.** When a panel
+  answered "too many requests" during quick channel-hopping, OwnTV read that as "this channel has no
+  HLS version" and wrote it down — and after three channels it had condemned the entire playlist to the
+  slower format for the rest of the session. A refusal is now understood as a refusal: it never becomes
+  a lesson about the format, and what OwnTV *does* learn about a channel now stays with that channel.
+- **Holding CH+ or CH− changes channel once.** A held key repeated about six times a second and every
+  repeat opened a stream — thirteen channels opened in under four seconds, measured. Steps are now
+  gathered up and only the channel you land on is opened.
+- **Subtitles stay on the picture when you zoom.** On a zoomed live channel they were positioned against
+  the whole screen instead of against the video, so they drifted away from the image. Both players now
+  anchor them the same way.
+- **A catch-up programme that never opens moves on instead of spinning.** If the archive stalled without
+  ever actually failing, the spinner stayed indefinitely; the programme is now handed to the other
+  player, which is what every other stall already did.
+- **The "Match EPG" picker responds as you type.** On a large guide each keystroke took about two
+  seconds to produce a list; it is now immediate.
+- **Audio sync moves in 25 ms steps** in both the player and Settings — 50 ms could bracket a small
+  mismatch but never land on it. The setting now also states that it applies to the compatibility
+  player only, which was always true but never said.
+- **The volume dialog no longer traps the remote at 0%.** Muting from the dialog disabled the "−" button
+  while focus was still sitting on it, leaving the D-pad stuck there. Focus now moves to "+".
+- **Rename, move and delete in Customize return focus to the row you were on** instead of jumping back
+  to the top of the list.
+- **A film or recorded programme that won't start on the hardware decoder recovers more reliably.** Two
+  of the fallback paths reopened the item before the switch to software had actually taken effect — so
+  they retried on exactly the setup that had just failed.
+- **Smaller player fixes.** The still frame held over a player switch is released afterwards instead of
+  kept (tens of megabytes on a 4K stream), the live buffer readout no longer measures itself on the
+  interface thread, and now-playing information is only republished when it actually changes.
 
 ### Internal
 
 - Playback identity, request headers and recovery state are now carried on the restore records rather
   than rebuilt per layer — the structural cause behind most of the fixes above.
+- New `playback_prefs` table (database 31 → 32) holding the per-item zoom and volume above, keyed by the
+  same stable content key the engine pins use, so a re-sync doesn't lose them.
+- The player HUD and the Live TV screen are split into smaller files, the three mpv decode-rescue paths
+  now share one implementation, and a round of dead code and stale comments was removed.
 
 ## v4.2.0 — 2026-08-12
 

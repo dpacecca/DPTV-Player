@@ -543,15 +543,15 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 | Button | What it does |
 |---|---|
 | **Subtitles** | Pick a subtitle track (incl. **image subtitles**) and set **subtitle delay**. Live channels with **embedded closed captions (CC)** — common on US channels — show a CC track on both engines; on mpv, selecting it briefly switches the channel to software decoding (≤1080p) and hardware decoding returns when CC is turned off. On raw `.ts` channels the CC entry always appears, even when the channel carries no captions. |
-| **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±50 ms** steps) — use this if surround makes lips drift. Available on movies/series and on live channels in **compatibility mode** (the standard live player can't shift audio, so it isn't offered there). |
+| **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±25 ms** steps) — use this if surround makes lips drift. Available on movies/series and on live channels in **compatibility mode** (the standard live player can't shift audio, so it isn't offered there). |
 | **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · **audio out** · buffer. **Decoder** names the decoder that is really in use and whether it is *hardware* or *software* — not what the Hardware decoding setting says — so you can see when a stream has quietly dropped to software. **Audio out** tells you whether your TV/receiver is decoding the sound (*passthrough*) or OwnTV is (*decoded in app*), whether surround is currently allowed, and why it fell back to stereo if it did. While it's open, a **share** button appears next to it: **Report this stream** saves that whole readout into the playback log, ready to export (see Settings). |
 | **Favorite** (♥) | Add or remove what you're watching from **Favorites** without leaving the stream — a live channel, a movie, or a series (an episode favorites its parent show). The heart fills when it's already a favorite. |
 | **Speed** | Playback speed (VOD). |
 | **MPV/EXO (⇄)** | Live: **compatibility mode** — pin the channel to mpv. Movies/Series: **switch this item between mpv and ExoPlayer** (shows the active engine; teal on the non‑default one). Flipping it briefly confirms "Switched to MPV/ExoPlayer" at the bottom. |
-| **Aspect/Zoom** | Change aspect ratio / zoom (works in every render mode). Each channel/film starts from **Settings → Default zoom**; a zoom you set here applies to what's playing and doesn't carry over to the next channel. |
+| **Aspect/Zoom** | Change aspect ratio / zoom (works in every render mode). A zoom you set here is **remembered for that channel/film** and used every time you open it again; anything you haven't set starts from **Settings → Default zoom**. Clear the saved ones with **Settings → Video player → Reset saved zoom**. |
 | **PiP** | Picture‑in‑picture for live. |
 | **Headphones** | **Audio Mode** — see below. |
-| **Volume** | Quiet streams can be **boosted to 150%** — movies, series and Live TV alike, whichever player they end up on (where the player can't amplify by itself the boost comes from your TV's own audio effect; a TV that doesn't support it stays at 100%). |
+| **Volume** | Quiet streams can be **boosted to 150%** — movies, series and Live TV alike, whichever player they end up on (where the player can't amplify by itself the boost comes from your TV's own audio effect; a TV that doesn't support it stays at 100%). A level you set is **remembered for that channel/film**; everything else starts from **Settings → Video player → Default volume**. **Mute is not remembered**, so nothing ever opens silent. Clear the saved ones with **Reset saved volume**. |
 
 A few things that need no button:
 
@@ -825,6 +825,22 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   single movie/episode with the ⇄ MPV/EXO pill saves that choice for that one item. This row shows how
   many are saved and clears them all, so everything follows the **Movies & Series player** setting
   again. Live TV's per‑channel compatibility mode is a separate list and is kept.
+- 🔊 **Default volume** (Video Player Settings, 0–150%) — the level everything starts at. A volume you set
+  in the player is saved for **that** channel/film and wins over this; everything you haven't touched
+  follows this setting. Handy when a whole provider runs quiet. **Mute is never saved.**
+- ♻️ **Reset saved zoom / Reset saved volume** (Video Player Settings) — two separate rows, each showing
+  how many items it will clear and asking first. Each is paired with its own default (**Default zoom**,
+  **Default volume**), and clearing one leaves the other alone.
+- ⏩ **Seek step** (Video Player Settings) — how far the rewind/forward buttons and the seek bar jump in a
+  movie or episode: **5 / 10 / 15 / 30 / 60 s** (default 10 s).
+- ⏪ **Live rewind step** (Video Player Settings) — the same for the catch‑up archive buttons on a live
+  channel: **10 / 15 / 30 / 60 / 120 s** (default 30 s). Deliberately separate from Seek step — stepping
+  through a film and stepping back through a live archive are different jobs.
+- 🎞️ **Deinterlacing** (Video Player Settings, **Off** by default) — smooths the comb‑shaped lines some
+  old interlaced channels show on movement. **It only does something when OwnTV draws the picture
+  itself** — hardware decoding off, or after a software fallback. On the normal direct‑to‑screen path
+  the video reaches your TV untouched and no filter can run, so leave this off unless you have turned
+  hardware decoding off for a channel that needs it.
 - 📊 **Measured stream stats** (Video Player Settings → Diagnostics) — on by default. When on, the
   player's **info overlay** measures live fps, bitrate and dropped frames for streams that don't
   declare them (most Xtream live TV). Turn it **off** only if a low‑end TV ever stutters — it affects

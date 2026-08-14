@@ -90,6 +90,7 @@ val appModule = module {
             xtreamClient = get(),
             companion = get(),
             vodEngineStore = get(),
+            playbackPrefs = get(),
         )
     }
     viewModelOf(::HomeSettingsViewModel)

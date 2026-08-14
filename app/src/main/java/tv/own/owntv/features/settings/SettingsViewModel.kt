@@ -81,6 +81,7 @@ class SettingsViewModel(
     private val xtreamClient: tv.own.owntv.core.parser.XtreamClient,
     private val companion: tv.own.owntv.core.companion.CompanionController,
     private val vodEngineStore: tv.own.owntv.core.player.VodEngineStore,
+    private val playbackPrefs: tv.own.owntv.core.player.PlaybackPrefsStore,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OwnTVHome"
@@ -393,6 +394,35 @@ class SettingsViewModel(
      *  again. Also the escape hatch for pins older builds wrote automatically after a decode failure —
      *  those are stored identically to the user's own, so they can only be cleared wholesale. */
     fun clearVodEnginePins() { viewModelScope.launch { vodEngineStore.clearAll() } }
+
+    /** Volume every item starts at, before any per-item value the player remembered. */
+    val defaultVolume: StateFlow<Int> = settings.defaultVolume.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 100)
+    fun setDefaultVolume(percent: Int) { viewModelScope.launch { settings.setDefaultVolume(percent) } }
+
+    /** How many individual channels/films/episodes have a remembered zoom, and how many a volume.
+     *  Counted and reset separately — wanting every film back at the default aspect is not a request
+     *  to lose the levels set on the quiet ones. */
+    val savedZoomCount: StateFlow<Int> =
+        playbackPrefs.observeZoomCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    val savedVolumeCount: StateFlow<Int> =
+        playbackPrefs.observeVolumeCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    fun clearSavedZoom() { viewModelScope.launch { playbackPrefs.clearZoom() } }
+
+    fun clearSavedVolume() { viewModelScope.launch { playbackPrefs.clearVolume() } }
+
+    /** Rewind/forward step in a movie or episode, and the separate one for a live archive. */
+    val seekStepSec: StateFlow<Int> = settings.seekStepSec
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.SeekSteps.DEFAULT_SEEK_STEP_SEC)
+    fun setSeekStepSec(seconds: Int) { viewModelScope.launch { settings.setSeekStepSec(seconds) } }
+
+    val liveRewindStepSec: StateFlow<Int> = settings.liveRewindStepSec
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.SeekSteps.DEFAULT_LIVE_REWIND_STEP_SEC)
+    fun setLiveRewindStepSec(seconds: Int) { viewModelScope.launch { settings.setLiveRewindStepSec(seconds) } }
+
+    val deinterlace: StateFlow<Boolean> = settings.deinterlace.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    fun setDeinterlace(enabled: Boolean) { viewModelScope.launch { settings.setDeinterlace(enabled) } }
 
     val measuredStreamStats: StateFlow<Boolean> = settings.measuredStreamStats.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setMeasuredStreamStats(enabled: Boolean) { viewModelScope.launch { settings.setMeasuredStreamStats(enabled) } }
