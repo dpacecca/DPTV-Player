@@ -457,10 +457,11 @@ or **narrow the whole app to just one**.
   key means you're never affected by shared-server rate limits. Create one at
   [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api), paste it into **Settings →
   Metadata → TMDB API key (v3)**, and hit **Test lookup**.
-- 🌐 **Self-host your own metadata server (free):** the exact Cloudflare Worker OwnTV's shared server runs
-  is in the repo at [`worker/tmdb/`](../worker/tmdb/) — [`worker/tmdb/README.md`](../worker/tmdb/README.md) has the full
+- 🌐 **Self-host your own metadata server (free):** a ready-to-deploy Cloudflare Worker running the same
+  proxy logic as OwnTV's shared server is in the repo at [`worker/tmdb/`](worker/tmdb/) —
+  [`worker/tmdb/README.md`](worker/tmdb/README.md) has the full
   step-by-step (deploy with `wrangler`, set your TMDB key as a secret via
-  [`worker/tmdb/wrangler.toml`](../worker/tmdb/wrangler.toml) + `wrangler secret put TMDB_KEY`, then paste your
+  [`worker/tmdb/wrangler.toml`](worker/tmdb/wrangler.toml) + `wrangler secret put TMDB_KEY`, then paste your
   `https://….workers.dev` URL into **Settings → Metadata → Custom metadata server URL**). Your key stays
   on your Cloudflare account, and responses are edge-cached for 30 days.
 - **Movies/Series details:** focus a title to see enriched info in the side pane. **Long-press** a poster for
