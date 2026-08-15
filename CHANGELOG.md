@@ -2,7 +2,11 @@
 
 ## v4.2.2 — unreleased
 
-### 🧾 The metadata screen now reads like the OpenSubtitles one
+### 🧾 Dedicated Metadata and OpenSubtitles settings
+
+- **Metadata and OpenSubtitles now have separate, purpose-built settings pages.** OpenSubtitles sits directly below Metadata in the main Settings list instead of being buried under Video Player. Both pages use compact status cards and keep secondary setup inside shared, D-pad-safe popups.
+- **The shared metadata allowance is easier to read.** Built-in service users see separate minute, hourly and daily remaining cards plus the refill time. Personal keys and custom servers are identified as the active source without exposing a full key.
+- **Both services now support advanced custom access.** TMDB and OpenSubtitles each accept a personal API key or Worker/server URL in a compact popup; a URL takes priority over a key, while leaving both blank uses OwnTV's built-in service. OpenSubtitles custom access is included in Backup & Restore.
 
 - **Your daily share is laid out as a proper status panel.** Source, then the remaining lookups for
   each window and the refill time, each as a label on the left and a value on the right — the same
@@ -13,7 +17,9 @@
   screen; with a self-hosted server it shows the address. The daily-share rows appear only on the
   shared service, which is the only one that is metered.
 
-### 📱 Send your TMDB key from your phone
+### 📱 Send TMDB or OpenSubtitles access from your phone
+
+- **The Remote companion now accepts complete service access.** From either advanced popup, scan the QR code, enter the PIN, and send an API key plus an optional Worker/server URL from the phone. The TV fills the popup but waits for **Save**, so configuration never changes behind your back.
 
 - **A personal TMDB key no longer means typing 32 characters with a remote.** Under
   **Settings → Metadata → Advanced options** there is now **Get key from your phone**: the TV shows a

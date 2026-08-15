@@ -159,17 +159,6 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     // OpenSubtitles account lives as an in-place sub-screen of this tab (plan §15). These three
     // are declared before the early return so they survive while the sub-screen is shown — that's
     // what lets Back land focus on the row that opened it instead of the top of the list.
-    var showOpenSubAccount by remember { mutableStateOf(false) }
-    var returnedFromOpenSub by remember { mutableStateOf(false) }
-    val openSubRowFocus = remember { FocusRequester() }
-    if (showOpenSubAccount) {
-        OpenSubtitlesAccountScreen(
-            onBack = { showOpenSubAccount = false; returnedFromOpenSub = true },
-            modifier = modifier,
-        )
-        return
-    }
-
     var dialog by remember { mutableStateOf(Dialog.NONE) }
     /** Whether the Custom-latency stepper actually set a value this time round — the mode switch to
      *  Custom, and the low-latency acknowledgement, both hang off that rather than off merely opening it. */
@@ -237,10 +226,9 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
                         // so the popup-close restore still has a target to return to.
                         runCatching { dialogRowFocus.getValue(Dialog.LIVE_LATENCY).requestFocus() }
                     } else {
-                        val target = dialogReturn ?: if (returnedFromOpenSub) openSubRowFocus else firstFocus
-                        dialogReturn = null
-                        returnedFromOpenSub = false
-                        runCatching { target.requestFocus() }
+                    val target = dialogReturn ?: firstFocus
+                    dialogReturn = null
+                    runCatching { target.requestFocus() }
                     }
                 }
             }
@@ -362,13 +350,6 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             chip = langName(subLang), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SUB_LANG)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.SUB_LANG },
-        )
-        Row2(
-            icon = OwnTVIcon.SUBTITLE, title = stringResource(R.string.settings_open_subtitles),
-            desc = stringResource(R.string.settings_open_subtitles_description),
-            chevron = true,
-            modifier = Modifier.focusRequester(openSubRowFocus),
-            onClick = { showOpenSubAccount = true },
         )
 
         Divider()

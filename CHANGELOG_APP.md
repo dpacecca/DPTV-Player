@@ -13,8 +13,8 @@
 
 ### ✨ New features
 
-- **📱 Send your TMDB key from your phone**
-- **🧾 The metadata screen now reads like the OpenSubtitles one**
+- **🧾 Dedicated Metadata and OpenSubtitles settings**
+- **📱 Send TMDB or OpenSubtitles access from phone**
 
 ### 🐛 Fixes
 

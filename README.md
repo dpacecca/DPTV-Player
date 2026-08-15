@@ -66,7 +66,7 @@ Scan to join from your phone:
 ### 🎬 Playback
 - **Dual engine** — libmpv (FFmpeg) for max compatibility + ExoPlayer for instant Live TV; per-channel toggle and automatic VOD fallback between them
 - Zero-copy **4K HDR** direct rendering · opt-in **auto frame rate** (off by default; 24/25/50/60 fps display matching, with the rate measured when a live stream doesn't declare one) · **live buffering you control** (Live latency drives the real buffer, plus a Pre-buffer gate that can be set per playlist) · context-aware channel zapping (D-pad/CH± stays in Favorites, History, All or the opened category) · **self-correcting surround sound** (Auto/Stereo only/Surround, with an audio-output watchdog that falls back to stereo if your TV or soundbar can't actually play it) + 150% volume boost
-- **Subtitles** — text (SRT/ASS), image (PGS/VOBSUB/DVB), closed captions, plus OpenSubtitles search & local files with timing adjust; customisable size, colour, position and background transparency
+- **Subtitles** — text (SRT/ASS), image (PGS/VOBSUB/DVB), closed captions, plus OpenSubtitles search and local files; dedicated OpenSubtitles settings support account sign-in, a personal API key or custom Worker, including phone handover by QR + PIN
 - Resume prompts, next-episode auto-play, mini-player/PiP, **audio-only mode**, and a live codec/resolution/HDR stream-info overlay
 - **Behaves like a TV app** — remote/headset/assistant transport keys via a system media session, and audio focus that ducks for a notification instead of pausing your film
 - **Diagnostics you can send** — a playback log of failures *and* events, "Report this stream" from the info overlay, optional detailed trace, and a one-press export to `Download/owntv-playback-report.txt`
@@ -81,6 +81,7 @@ Scan to join from your phone:
 - Per-section panel widths for Live TV, Movies and Series, including a 0% option that completely hides
   the preview/poster panel while keeping the remaining panels at an exact 100% total
 - **TMDB** posters, plots, cast photos & trailers **in 40 languages**; scales to ~50k channels / ~168k movies with priority + incremental syncing
+- Dedicated **Metadata** settings show minute/hour/day shared allowance and support a personal TMDB key or self-hosted Worker, including phone handover over LAN (QR + PIN)
 - Bring your own **free TMDB key** for unlimited metadata — send it from your phone over LAN (QR + PIN) instead of typing 32 characters with a remote; the built-in shared service works with no setup and gives every device a fair daily share
 
 ### 📥 Sources & EPG

@@ -444,6 +444,8 @@ or **narrow the whole app to just one**.
 
 ## 🎬 TMDB metadata (posters, plots, cast, trailers)
 
+- **Current layout:** Metadata has its own page. The active source is shown at the top; built-in-service users get separate **minute, hour and day** allowance cards plus refill time. **Get advanced TMDB info via remote** opens a compact popup for a personal API key, Worker/server URL, or QR + PIN phone handover. A URL takes priority over a key, and leaving both blank uses OwnTV's shared service.
+
 - **Settings → Metadata (TMDB):** **Metadata source** opens a picker — *Provider only* (no TMDB),
   *Provider + TMDB* (default; your playlist's info wins, TMDB fills the blanks and adds
   cast/genres/backdrops), or *TMDB only* (prefer TMDB). Turn on **Advanced options** to use your own TMDB
@@ -607,6 +609,9 @@ stream having none to begin with.
 ---
 
 ## 💬 External subtitles (OpenSubtitles & local files)
+
+- **Settings → OpenSubtitles** is a dedicated main Settings page directly below Metadata. Account status, download allowance, search language, downloaded-subtitle cleanup and advanced access stay together there.
+- **Advanced access** opens a compact popup for OwnTV's built-in service, a personal OpenSubtitles API key, or a custom Worker/server URL. A URL takes priority over a key. The Remote row accepts both values from a phone through the existing QR + PIN companion, and custom access is included in Backup & Restore.
 
 For **movies and series episodes** (streamed or downloaded), the player's **Subtitles** menu has an
 **ADD SUBTITLES** section:

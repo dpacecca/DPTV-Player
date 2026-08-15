@@ -114,8 +114,12 @@ class SettingsViewModel(
 
     /** TMDB API keys handed over from a phone, so a 32-character key never has to be typed on a remote. */
     val remoteTmdbKeys get() = companion.tmdbKeys
+    val remoteTmdbConfigs get() = companion.tmdbConfigs
+    val remoteOpenSubtitlesConfigs get() = companion.openSubtitlesConfigs
 
     fun startRemoteTmdbKeyListener(port: Int) = companion.startForTmdbKey(port)
+    fun startRemoteTmdbConfigListener(port: Int) = companion.startForTmdbConfig(port)
+    fun startRemoteOpenSubtitlesConfigListener(port: Int) = companion.startForOpenSubtitlesConfig(port)
 
     // Semi-auto EPG: after a playlist import, if the playlist has a guide URL we offer to sync the EPG now
     // (instead of the old slow auto-sync). "Sync now" shows a live programme count, just like the import.
@@ -1380,6 +1384,14 @@ class SettingsViewModel(
     val metadataServerUrl: StateFlow<String> =
         settings.metadataServerUrl.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setMetadataServerUrl(url: String) { viewModelScope.launch { settings.setMetadataServerUrl(url) } }
+
+    val openSubtitlesApiKey: StateFlow<String> = settings.openSubtitlesApiKey
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    fun setOpenSubtitlesApiKey(key: String) { viewModelScope.launch { settings.setOpenSubtitlesApiKey(key) } }
+
+    val openSubtitlesServerUrl: StateFlow<String> = settings.openSubtitlesServerUrl
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    fun setOpenSubtitlesServerUrl(url: String) { viewModelScope.launch { settings.setOpenSubtitlesServerUrl(url) } }
 
     /** TMDB content language ("" = TMDB default en-US, "auto" = device locale, else an ISO 639-1 code). */
     val metadataLanguage: StateFlow<String> =
