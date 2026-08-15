@@ -1,5 +1,36 @@
 # Changelog
 
+## v4.2.2 — unreleased
+
+### 🧾 The metadata screen now reads like the OpenSubtitles one
+
+- **Your daily share is laid out as a proper status panel.** Source, then the remaining lookups for
+  each window and the refill time, each as a label on the left and a value on the right — the same
+  shape as the OpenSubtitles account panel, instead of a loose block of text wedged between two
+  settings.
+- **The active source is always shown, whichever one you use.** With your own TMDB key it shows the
+  key masked to its last four characters, so you can tell two keys apart without exposing one on
+  screen; with a self-hosted server it shows the address. The daily-share rows appear only on the
+  shared service, which is the only one that is metered.
+
+### 📱 Send your TMDB key from your phone
+
+- **A personal TMDB key no longer means typing 32 characters with a remote.** Under
+  **Settings → Metadata → Advanced options** there is now **Get key from your phone**: the TV shows a
+  QR code and a PIN, you scan it, sign in to TMDB on your phone where typing is easy, paste the key
+  and send it across. It lands in the key field on the TV; you still press Save, so nothing is
+  changed behind your back. This matters because a personal key is free and has practically no daily
+  limit, while the built-in shared service has to be rationed between everyone.
+- Uses the same Remote link as the existing phone features, with the same protection: the QR carries
+  only the address, never the PIN, and the listener closes as soon as the panel does.
+
+### 🐛 Fixes
+
+- **Turning "Advanced options" off now actually stops using your own key.** It previously just hid
+  the fields while quietly leaving the saved key in force, so the screen still reported "Your TMDB
+  key" with nothing on screen to explain why. It now asks for confirmation, then deletes the saved
+  key and server address and returns to the built-in shared service.
+
 ## v4.2.1 — 2026-08-15
 
 ### 🎧 "Audio only" — sound with no picture is now labelled, not mistaken for a fault

@@ -316,8 +316,9 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
     }
 }
 
+/** Label left, value right. Shared with the Metadata screen so both account panels read identically. */
 @Composable
-private fun InfoRow(label: String, value: String) {
+internal fun InfoRow(label: String, value: String) {
     val colors = OwnTVTheme.colors
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),

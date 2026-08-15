@@ -80,7 +80,8 @@ Scan to join from your phone:
   inline + global search, and a multi-playlist switcher
 - Per-section panel widths for Live TV, Movies and Series, including a 0% option that completely hides
   the preview/poster panel while keeping the remaining panels at an exact 100% total
-- **TMDB** posters, plots, cast & trailers **in 40 languages**; scales to ~50k channels / ~168k movies with priority + incremental syncing
+- **TMDB** posters, plots, cast photos & trailers **in 40 languages**; scales to ~50k channels / ~168k movies with priority + incremental syncing
+- Bring your own **free TMDB key** for unlimited metadata — send it from your phone over LAN (QR + PIN) instead of typing 32 characters with a remote; the built-in shared service works with no setup and gives every device a fair daily share
 
 ### 📥 Sources & EPG
 - **Xtream**, **M3U** (typed playlists), and **Stalker/Ministra** portals, including optional advanced device identification; add any source from your phone over LAN (QR + PIN)

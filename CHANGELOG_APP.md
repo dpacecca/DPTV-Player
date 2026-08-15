@@ -9,6 +9,17 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v4.2.2 — unreleased
+
+### ✨ New features
+
+- **📱 Send your TMDB key from your phone**
+- **🧾 The metadata screen now reads like the OpenSubtitles one**
+
+### 🐛 Fixes
+
+- **Turning "Advanced options" off now actually stops using your own key**
+
 ## v4.2.1 — 2026-08-15
 
 ### ✨ New features

@@ -444,29 +444,41 @@ or **narrow the whole app to just one**.
 
 ## 🎬 TMDB metadata (posters, plots, cast, trailers)
 
-- **Settings → Metadata (TMDB):** pick a **Metadata source** — *Provider only* (no TMDB), *Provider + TMDB*
-  (default; your playlist's info wins, TMDB fills the blanks and adds cast/genres/backdrops), or *TMDB only*
-  (prefer TMDB). Turn on **Advanced options** to use your own TMDB API key or a self-hosted server; otherwise
-  the built-in shared server is used with no setup. A "Test lookup" button verifies it works.
+- **Settings → Metadata (TMDB):** **Metadata source** opens a picker — *Provider only* (no TMDB),
+  *Provider + TMDB* (default; your playlist's info wins, TMDB fills the blanks and adds
+  cast/genres/backdrops), or *TMDB only* (prefer TMDB). Turn on **Advanced options** to use your own TMDB
+  API key or a self-hosted server; otherwise the built-in shared server is used with no setup. A
+  "Test lookup" button verifies it works. Switching **Advanced options** off asks for confirmation and
+  then deletes the saved key and server address, returning you to the shared service.
+- 📊 **Your daily share** (top of the screen) — the built-in metadata service is shared by everyone using
+  OwnTV, so each device gets its own allowance each day: **40 a minute, 150 an hour, 400 a day**, shown as
+  a single **Usage** line with the time it refills. Normal browsing uses a fraction of it. If you do run
+  out, posters and descriptions pause until it refills and OwnTV tells you once — your playlist's own
+  info keeps working as normal throughout. The rows appear only when you are on the shared service: your
+  own key or your own server is your resource and is never counted.
 - 🌍 **Language** — pick the language TMDB descriptions, titles and artwork come back in: **Default
-  (English)**, **Device language**, or one of 40 languages (the list is searchable). Changing it clears
-  the cached metadata so existing movies and series are re-fetched in the new language; your
-  title→TMDB matches are kept, so nothing has to be re-matched.
+  (English)**, **Device language**, or one of 40 languages (the list is searchable). Details are cached
+  **per language**, so switching to another language and back is instant and costs no re-downloads.
 - 💡 **Recommended: use your own TMDB API key** (free for personal / non-commercial use) or a self-hosted
-  server. TMDB keys are typically issued instantly — no waiting period or manual approval — and your own
-  key means you're never affected by shared-server rate limits. Create one at
-  [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api), paste it into **Settings →
-  Metadata → TMDB API key (v3)**, and hit **Test lookup**.
-- 🌐 **Self-host your own metadata server (free):** a ready-to-deploy Cloudflare Worker running the same
-  proxy logic as OwnTV's shared server is in the repo at [`worker/tmdb/`](worker/tmdb/) —
-  [`worker/tmdb/README.md`](worker/tmdb/README.md) has the full
-  step-by-step (deploy with `wrangler`, set your TMDB key as a secret via
-  [`worker/tmdb/wrangler.toml`](worker/tmdb/wrangler.toml) + `wrangler secret put TMDB_KEY`, then paste your
-  `https://….workers.dev` URL into **Settings → Metadata → Custom metadata server URL**). Your key stays
-  on your Cloudflare account, and responses are edge-cached for 30 days.
+  server. Keys are typically issued instantly — no waiting period or manual approval — and a personal key
+  has **practically no daily limit**, so you are never rationed. Create one at
+  [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api) and hit **Test lookup**.
+- 📱 **Get key from your phone** — a TMDB key is 32 characters, which is miserable to type with a remote
+  (and TMDB's own signup page is not designed for TV). Under **Advanced options**, pick **Get key from
+  your phone**: the TV shows a QR code and a PIN, you scan it with a phone on the same Wi-Fi, sign in to
+  TMDB there, paste the key and send it across. It lands in the key field on the TV — press **Save** to
+  use it. As with the other Remote features, the QR carries only the address, never the PIN.
+- 🌐 **Self-host your own metadata server (free):** a ready-to-deploy Cloudflare Worker is in the repo at
+  [`extras/worker/tmdb/`](worker/tmdb/) — [`extras/worker/tmdb/README.md`](worker/tmdb/README.md) has the
+  full step-by-step (deploy with `wrangler`, set your TMDB key as a secret via
+  [`extras/worker/tmdb/wrangler.toml`](worker/tmdb/wrangler.toml) + `wrangler secret put TMDB_KEY`, then
+  paste your `https://….workers.dev` URL into **Settings → Metadata → Self-host server URL**). Your key
+  stays on your Cloudflare account, responses are edge-cached for 30 days, and a server of your own is
+  never subject to the shared service's daily share.
 - **Movies/Series details:** focus a title to see enriched info in the side pane. **Long-press** a poster for
-  Favorite, Download and **TMDB Details** (a scrollable window with the backdrop, full plot, cast and genres;
-  press **Back** to close). **Single-press** plays.
+  Favorite, Download and **TMDB Details** — a scrollable window with the backdrop, full plot, genres and the
+  **cast as photos** (portraits with names, wrapping across as many rows as needed; actors TMDB has no photo
+  for show their initials). Press **Back** to close. **Single-press** plays.
 - 🙈 **Hide a movie or series:** long-press a title → **Hide** removes it everywhere at once — global Search,
   the section search, its category, the All list, Home rails (Continue Watching / Favourites), the Android TV
   Watch Next row, and Downloads. The downloaded file is kept, and the title comes back the moment you unhide it

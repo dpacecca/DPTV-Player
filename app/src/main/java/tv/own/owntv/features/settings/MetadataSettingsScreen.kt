@@ -1,8 +1,10 @@
 package tv.own.owntv.features.settings
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -20,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
@@ -37,7 +41,12 @@ import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVTextField
+import tv.own.owntv.ui.components.companionLockedText
+import tv.own.owntv.ui.components.dialogPanel
+import tv.own.owntv.ui.components.displayText
+import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.roundedPanel
+import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**
@@ -144,11 +153,29 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Advanced options are hidden by default. Auto-expand if the user already has a key/URL saved, so the
     // fields aren't silently hidden when they're actually in use.
     var showAdvanced by remember { mutableStateOf(false) }
+    var confirmClearAdvanced by remember { mutableStateOf(false) }
+    var showModePicker by remember { mutableStateOf(false) }
+    var showPhoneHandover by remember { mutableStateOf(false) }
     LaunchedEffect(storedKey, storedUrl) {
         if (!seeded) {
             key = storedKey; url = storedUrl
             if (storedKey.isNotBlank() || storedUrl.isNotBlank()) showAdvanced = true
             seeded = true
+        }
+    }
+
+    // A key handed over from the phone lands straight in the field. Saving stays a deliberate act:
+    // the user still presses Save, so an accidental send cannot silently replace a working key.
+    val keyReceivedMessage = stringResource(R.string.settings_metadata_key_received)
+    val toast = tv.own.owntv.ui.components.rememberInAppToast()
+    LaunchedEffect(showPhoneHandover) {
+        if (!showPhoneHandover) return@LaunchedEffect
+        vm.remoteTmdbKeys.collect { received ->
+            key = received
+            url = ""
+            showAdvanced = true
+            showPhoneHandover = false
+            toast.show(keyReceivedMessage)
         }
     }
 
@@ -174,70 +201,78 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Header(stringResource(R.string.settings_metadata), onBack)
         Spacer(Modifier.height(8.dp))
 
-        // Allowance first: it is status, not a setting, so it belongs at the top rather than buried
-        // between two settings. Shown ONLY on the shared default tier — an own key or a self-hosted
-        // server is the user's own resource and is never metered, so the row would be a lie there.
-        if (tier == MetadataConfig.Tier.DEFAULT_WORKER && mode.enrich) {
-            val budget by vm.metadataBudgetStatus.collectAsStateWithLifecycle()
-            LaunchedEffect(Unit) { vm.refreshMetadataBudget() }
+        // Status panel, laid out exactly like the OpenSubtitles account screen: label left, value
+        // right. Which source is active is always shown; the allowance rows only appear on the shared
+        // default tier, because an own key or a self-hosted server is the user's own resource and is
+        // never metered - showing a limit there would be a lie.
+        if (mode.enrich) {
             GroupLabel(stringResource(R.string.settings_metadata_allowance))
-            budget?.let { b ->
-                AllowanceRow(stringResource(R.string.settings_metadata_window_minute), b.remainingMinute, b.limitMinute)
-                AllowanceRow(stringResource(R.string.settings_metadata_window_hour), b.remainingHour, b.limitHour)
-                AllowanceRow(stringResource(R.string.settings_metadata_window_day), b.remainingDay, b.limitDay)
-                // Device clock format, so a 12-hour locale sees "2:32 PM" without a translated pattern.
-                val context = LocalContext.current
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    stringResource(
-                        R.string.settings_metadata_allowance_resets,
-                        android.text.format.DateFormat.getTimeFormat(context)
-                            .format(java.util.Date(b.resetAtMs)),
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.settings_metadata_fair_share),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
+            InfoRow(
+                stringResource(R.string.settings_metadata_source_label),
+                stringResource(metadataTierLabelRes(tier)),
             )
+            when (tier) {
+                // TMDB has no way to name the account behind a key - the key identifies the
+                // application, not a person, so there is nothing to show but the key itself. Masked to
+                // the last 4 characters: enough to tell two keys apart, useless to anyone reading it
+                // over a shoulder or in a screenshot.
+                MetadataConfig.Tier.OWN_KEY -> InfoRow(
+                    stringResource(R.string.settings_metadata_key_label),
+                    maskSecret(storedKey),
+                )
+                MetadataConfig.Tier.SELF_HOST -> InfoRow(
+                    stringResource(R.string.settings_metadata_server_label),
+                    storedUrl,
+                )
+                MetadataConfig.Tier.DEFAULT_WORKER -> {
+                    val budget by vm.metadataBudgetStatus.collectAsStateWithLifecycle()
+                    LaunchedEffect(Unit) { vm.refreshMetadataBudget() }
+                    budget?.let { b ->
+                        // All three windows on one line. Three separate rows pushed the actual
+                        // settings off the first screen, and these numbers are only ever glanced at.
+                        InfoRow(
+                            stringResource(R.string.settings_metadata_usage_label),
+                            stringResource(
+                                R.string.settings_metadata_usage_value,
+                                b.remainingMinute, b.limitMinute,
+                                b.remainingHour, b.limitHour,
+                                b.remainingDay, b.limitDay,
+                            ),
+                        )
+                        // Device clock format, so a 12-hour locale sees "2:32 PM" with no translated pattern.
+                        val context = LocalContext.current
+                        InfoRow(
+                            stringResource(R.string.settings_metadata_refills_label),
+                            android.text.format.DateFormat.getTimeFormat(context)
+                                .format(java.util.Date(b.resetAtMs)),
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.settings_metadata_fair_share),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+            }
             Spacer(Modifier.height(18.dp))
         }
 
-        GroupLabel(stringResource(R.string.settings_metadata_source))
-        Text(
-            stringResource(R.string.settings_metadata_source_description),
-            style = MaterialTheme.typography.bodySmall,
-            color = colors.onSurfaceVariant,
+        // One row + a picker, matching Metadata language below. Stacked as three rows these read as
+        // three separate settings rather than one choice, and they pushed everything else off screen.
+        Row2(
+            icon = OwnTVIcon.VIDEO,
+            title = stringResource(R.string.settings_metadata_source),
+            desc = stringResource(R.string.settings_metadata_source_description),
+            chip = stringResource(metadataModeLabelRes(mode)), chevron = true,
+            modifier = Modifier.focusRequester(firstFocus),
+            onClick = { showModePicker = true },
         )
-        Spacer(Modifier.height(8.dp))
-        tv.own.owntv.core.metadata.MetadataMode.entries.forEachIndexed { i, m ->
-            val selected = m == mode
-            Row2(
-                icon = if (m == tv.own.owntv.core.metadata.MetadataMode.PROVIDER) OwnTVIcon.PLAYLIST else OwnTVIcon.VIDEO,
-                title = stringResource(metadataModeLabelRes(m)),
-                desc = when (m) {
-                    tv.own.owntv.core.metadata.MetadataMode.PROVIDER -> stringResource(R.string.settings_metadata_provider_description)
-                    tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB -> stringResource(R.string.settings_metadata_provider_tmdb_description)
-                    tv.own.owntv.core.metadata.MetadataMode.TMDB_ONLY -> stringResource(R.string.settings_metadata_tmdb_only_description)
-                },
-                chip = if (selected) stringResource(R.string.settings_selected) else null, primaryChip = selected,
-                modifier = if (i == 0) Modifier.focusRequester(firstFocus) else Modifier,
-                onClick = { vm.setMetadataMode(m); vm.resetMetadataTest() },
-            )
-        }
 
         // The advanced TMDB tier fields only make sense when TMDB is on (mode != Provider).
         if (mode.enrich) {
         Spacer(Modifier.height(10.dp))
-        Text(
-            stringResource(R.string.settings_active_tmdb_source, stringResource(metadataTierLabelRes(tier))),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.primary,
-        )
 
 
         Spacer(Modifier.height(16.dp))
@@ -256,7 +291,18 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             title = stringResource(R.string.settings_advanced_options),
             desc = stringResource(R.string.settings_advanced_metadata_description),
             chip = if (showAdvanced) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = showAdvanced,
-            onClick = { showAdvanced = !showAdvanced },
+            // Turning this OFF used to hide the fields while quietly leaving the saved key in force, so
+            // the screen still reported "Your TMDB key" with nothing on screen to explain why. Off now
+            // means what it says: confirm, then delete the key and URL and fall back to the shared
+            // service. Confirmation because a key is real user data and a stray D-pad press must not
+            // destroy it.
+            onClick = {
+                if (showAdvanced && (storedKey.isNotBlank() || storedUrl.isNotBlank())) {
+                    confirmClearAdvanced = true
+                } else {
+                    showAdvanced = !showAdvanced
+                }
+            },
         )
         if (showAdvanced) {
             Spacer(Modifier.height(12.dp))
@@ -271,6 +317,16 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             // field and then at Save, so key -> URL -> Save is the order the user actually sees.
             val urlFieldFocus = remember { FocusRequester() }
             val saveFocus = remember { FocusRequester() }
+            // Typing a 32-character key with a D-pad is the real reason people stay on the shared
+            // service, so offer the phone handover directly above the field it fills.
+            Row2(
+                icon = OwnTVIcon.SETTINGS,
+                title = stringResource(R.string.settings_metadata_key_from_phone),
+                desc = stringResource(R.string.settings_metadata_key_from_phone_desc),
+                chevron = true,
+                onClick = { showPhoneHandover = true },
+            )
+            Spacer(Modifier.height(12.dp))
             OwnTVTextField(
                 value = key,
                 onValueChange = { key = it },
@@ -333,6 +389,56 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         )
     }
 
+    // Dialogs must come AFTER the scrolling Column: composition order is paint order, and
+    // declaring this above it drew the whole settings list on top of the dialog.
+    if (confirmClearAdvanced) {
+        ConfirmDialog(
+            title = stringResource(R.string.settings_metadata_clear_advanced_title),
+            message = stringResource(R.string.settings_metadata_clear_advanced_message),
+            onConfirm = {
+                key = ""
+                url = ""
+                vm.setTmdbApiKey("")
+                vm.setMetadataServerUrl("")
+                vm.resetMetadataTest()
+                showAdvanced = false
+                confirmClearAdvanced = false
+            },
+            onDismiss = { confirmClearAdvanced = false },
+        )
+    }
+
+    tv.own.owntv.ui.components.InAppToast(toast)
+
+    if (showPhoneHandover) {
+        CompanionKeyDialog(
+            state = vm.remoteState.collectAsStateWithLifecycle().value,
+            onStart = vm::startRemoteTmdbKeyListener,
+            onStop = vm::stopRemoteListener,
+            onDismiss = { showPhoneHandover = false },
+        )
+    }
+
+    if (showModePicker) {
+        PickerDialog(
+            title = stringResource(R.string.settings_metadata_source),
+            options = tv.own.owntv.core.metadata.MetadataMode.entries.map {
+                it.name to stringResource(metadataModeLabelRes(it))
+            },
+            selected = mode.name,
+            onSelect = { picked ->
+                tv.own.owntv.core.metadata.MetadataMode.entries.firstOrNull { it.name == picked }?.let {
+                    if (it != mode) {
+                        vm.setMetadataMode(it)
+                        vm.resetMetadataTest()
+                    }
+                }
+                showModePicker = false
+            },
+            onDismiss = { showModePicker = false },
+        )
+    }
+
     if (showLangPicker) {
         // searchable: the list is long enough that D-pad scrolling to e.g. Ukrainian is tedious.
         PickerDialog(
@@ -384,13 +490,120 @@ private fun MetadataTestLabel(state: SettingsViewModel.MetadataTestState) {
     }
 }
 
-/** One "Per minute: 38 of 40 left" line in the allowance list. Turns red once that window is spent. */
+/** Show only the tail of a secret: enough to tell two keys apart, useless to a shoulder-surfer. */
+private fun maskSecret(secret: String): String {
+    val trimmed = secret.trim()
+    if (trimmed.length <= 4) return "\u2022".repeat(4)
+    return "\u2022".repeat(8) + trimmed.takeLast(4)
+}
+
+/**
+ * QR + PIN panel for handing a TMDB key over from a phone.
+ *
+ * Deliberately a dialog rather than a screen: it is a short-lived side trip from the field it fills,
+ * and keeping it here avoids threading a new route through the settings navigation for something the
+ * user sees once.
+ *
+ * The QR encodes the LAN URL only — never the PIN, which is shown on the TV and typed on the phone.
+ * A photographed QR on its own therefore cannot push a key. The listener starts when the dialog opens
+ * and is stopped on dispose, so it never outlives the panel.
+ */
 @Composable
-private fun AllowanceRow(window: String, remaining: Int, limit: Int) {
+private fun CompanionKeyDialog(
+    state: tv.own.owntv.core.companion.CompanionServerState,
+    onStart: (Int) -> Unit,
+    onStop: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     val colors = OwnTVTheme.colors
-    Text(
-        stringResource(R.string.settings_metadata_allowance_row, window, remaining, limit),
-        style = MaterialTheme.typography.bodyMedium,
-        color = if (remaining <= 0) colors.favorite else colors.onSurfaceVariant,
-    )
+    val closeFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        onStart(tv.own.owntv.core.companion.CompanionLink.DEFAULT_PORT)
+        runCatching { closeFocus.requestFocus() }
+    }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { onStop() } }
+    BackHandler { onDismiss() }
+
+    Box(
+        Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier.dialogPanel(width = 520.dp, padding = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                stringResource(R.string.settings_metadata_key_from_phone),
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.onSurface,
+            )
+            Spacer(Modifier.height(10.dp))
+            when (state) {
+                tv.own.owntv.core.companion.CompanionServerState.Idle,
+                tv.own.owntv.core.companion.CompanionServerState.Starting,
+                -> Text(
+                    stringResource(R.string.settings_opening_server),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+                is tv.own.owntv.core.companion.CompanionServerState.Listening -> {
+                    Text(
+                        stringResource(R.string.settings_enter_pin_browser),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        state.pin,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        color = colors.primary,
+                        letterSpacing = androidx.compose.ui.unit.TextUnit(8f, androidx.compose.ui.unit.TextUnitType.Sp),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    state.qr?.let { qr ->
+                        androidx.compose.foundation.Image(
+                            bitmap = qr,
+                            contentDescription = stringResource(R.string.settings_companion_qr),
+                            modifier = Modifier
+                                .size(176.dp)
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                                .background(androidx.compose.ui.graphics.Color.White)
+                                .padding(9.dp),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                    }
+                    Text(
+                        stringResource(R.string.settings_open_url),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                    )
+                    state.urls.forEach {
+                        Text(it, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                    }
+                }
+                is tv.own.owntv.core.companion.CompanionServerState.Failed -> Text(
+                    state.failure.displayText(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.favorite,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+                tv.own.owntv.core.companion.CompanionServerState.Locked -> Text(
+                    tv.own.owntv.ui.components.companionLockedText(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.favorite,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
+            Spacer(Modifier.height(20.dp))
+            OwnTVButton(
+                stringResource(R.string.common_cancel),
+                onClick = onDismiss,
+                style = OwnTVButtonStyle.SECONDARY,
+                modifier = Modifier.focusRequester(closeFocus),
+            )
+        }
+    }
 }

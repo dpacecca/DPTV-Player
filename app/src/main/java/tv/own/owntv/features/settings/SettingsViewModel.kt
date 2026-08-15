@@ -112,6 +112,11 @@ class SettingsViewModel(
 
     fun startRemoteImageListener(port: Int) = companion.startForImageUpload(port)
 
+    /** TMDB API keys handed over from a phone, so a 32-character key never has to be typed on a remote. */
+    val remoteTmdbKeys get() = companion.tmdbKeys
+
+    fun startRemoteTmdbKeyListener(port: Int) = companion.startForTmdbKey(port)
+
     // Semi-auto EPG: after a playlist import, if the playlist has a guide URL we offer to sync the EPG now
     // (instead of the old slow auto-sync). "Sync now" shows a live programme count, just like the import.
     private var pendingEpgSource: SourceEntity? = null
