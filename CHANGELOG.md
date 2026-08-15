@@ -30,8 +30,61 @@
 - Uses the same Remote link as the existing phone features, with the same protection: the QR carries
   only the address, never the PIN, and the listener closes as soon as the panel does.
 
+### 🔐 Your data no longer leaves the TV without a backup password
+
+- **Android's automatic backup is switched off.** The app was letting Android copy its own database
+  and settings to Google Drive, and to a new device during setup transfer — including playlist
+  passwords, the proxy password and API keys, all in plain form, with no backup password anywhere in
+  the process. That directly contradicted the promise the app already made: without a backup password,
+  secrets are left out. **Settings → Backup & Restore is now the only way OwnTV data moves between
+  devices**, and it is explicit and encryptable. Device-to-device transfer is closed too — it keeps
+  running on Android 12 and newer even when Drive backup is off, so switching one off was not enough.
+- **Profile and Customize PINs are treated as secrets.** A PIN is stored as a scrambled value, but a
+  four-digit PIN has only ten thousand possibilities, so that value is trivially unscrambled by anyone
+  holding an unencrypted backup file. PINs now follow the same rule as every other secret: included
+  when you set a backup password, left out entirely when you don't. Restoring a passwordless backup
+  never *removes* a PIN you already have on the device — it simply doesn't carry one in.
+- **Per-channel "compatibility mode" settings stay out of an unencrypted backup when they identify a
+  stream by its address**, because provider addresses routinely contain the account's username and
+  password.
+
+### 🗃️ Backup & Restore now really does back up everything
+
+- **Two per-playlist settings were being lost.** **Prefer HLS** and the per-playlist **Pre-buffer**
+  override were never written into the backup, so a restore silently returned them to their defaults —
+  quietly reintroducing whatever streaming problem you had already fixed on that playlist.
+- **Downloaded subtitles are included, files and all.** Your saved subtitle choice per film or episode,
+  the timing offsets you nudged by hand, and the subtitle files themselves now travel in the backup, so
+  a restored film plays with the same subtitle, already in sync. Previously none of it was backed up:
+  the app remembered a subtitle whose file did not exist on the new device.
+- **The profile you were using is remembered.** A restore onto a fresh device used to land on whichever
+  profile happened to come first, which in a household with a kids profile could be the wrong one.
+- **Where you left off in each section is remembered**, for the sections whose position can be
+  meaningfully restored.
+- **The active profile now starts ticked when choosing what to back up.** Every section was selected by
+  default but every profile was not, so it was possible to tick "everything" and still produce a backup
+  containing no profile data at all.
+
 ### 🐛 Fixes
 
+- **Per-channel and per-item playback settings attached to the wrong playlist after a restore.**
+  "Compatibility mode" for a channel, and the zoom or volume boost you saved for a particular film,
+  are stored against the playlist the item came from. A restore was not translating that playlist's
+  internal number to its number on the restored device, so those settings either did nothing or —
+  when the number happened to belong to a different playlist — were applied to somebody else's
+  channels entirely.
+- **Restoring onto a device that already had the playlist discarded the backup's settings for it.**
+  Only credentials were applied; the playlist's name, its Live/Movies/Series scope, Prefer HLS and
+  Pre-buffer were left at whatever the device already had. The same applied to a guide feed already
+  present under the same address, which kept its local name and user agent.
+- **The default playlist could be repointed at an unrelated playlist.** When the backup's default
+  playlist was not part of the restore, its stored number was used as-is, and it matched whichever
+  unrelated playlist happened to hold that number on the device.
+- **Backup data belonging to playlists that were not part of the backup is no longer written into the
+  file**, where it could not be translated on restore and could collide with unrelated playlists.
+- **Startup screen and the Customize PIN lock were filed under "Sources".** Deselecting Sources —
+  described as playlists, guide feeds and credentials — silently dropped both. They now travel with
+  Settings, where they belong. Backups made by older versions still restore from either place.
 - **Turning "Advanced options" off now actually stops using your own key.** It previously just hid
   the fields while quietly leaving the saved key in force, so the screen still reported "Your TMDB
   key" with nothing on screen to explain why. It now asks for confirmation, then deletes the saved

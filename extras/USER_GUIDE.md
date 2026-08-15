@@ -696,7 +696,9 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     category lists are **grouped by provider** and each Customize row shows which provider it belongs to.
   - 🔒 **Optional PIN lock**: tap **Set PIN** at the top-right to lock this screen. Once set, opening
     Customize Categories & Items asks for the PIN each time, so nobody else can unhide items or change your category
-    setup. The PIN is per-profile and is **not** included in backups (so a restore can never lock you out).
+    setup. The PIN is per-profile. It rides in a backup **only when you set a backup password** — a
+    four-digit PIN is trivially recovered from an unencrypted file — so a passwordless backup simply
+    doesn't carry it, and restoring one never removes a lock you already have on the device.
     Change or remove it from the **Change PIN** / **Remove lock** buttons at the top-right.
 - **Settings → Theme / Accent colour / UI Zoom**: dark/AMOLED/light, a tint colour, and scale the whole UI.
   - The **Accent colour** dialog has quick presets plus a full colour picker: focus the **hue bar** or the
@@ -918,24 +920,37 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 - 🔄 **Check updates on startup** — get notified when a newer version is on GitHub Releases.
 - 💾 **Backup & Restore** — export/restore your profiles, sources, customizations, favorites, history,
   resume positions, **manual Move positions** and app settings. Export starts by asking **which
-  profiles** to include — the file contains only the selected profiles and their data. Including a
-  **PIN-locked profile** that isn't your current one requires entering its PIN; without the PIN it
-  simply stays out of the backup. Then choose the data sections as before. Backups are saved as a
+  profiles** to include — the file contains only the selected profiles and their data. Your **current
+  profile starts ticked**; add the others yourself. Including a **PIN-locked profile** that isn't your
+  current one requires entering its PIN; without the PIN it simply stays out of the backup. Then choose
+  the data sections as before. Backups are saved as a
   single **`owntv-backup.own`** file, which also carries your **background image** (with the App
   settings section) so the wallpaper comes back on the other TV instead of blank. On export you can set
   a **backup password**, which encrypts the **whole file** — playlists, profiles, history and the saved
-  secrets (source & proxy passwords, your own TMDB API key and each profile's **OpenSubtitles login**)
+  secrets (source & proxy passwords, your own TMDB and OpenSubtitles API keys, each profile's
+  **OpenSubtitles login**, and your **profile / Customize PINs**)
   — so nothing in it can be read without that password. **Keep it safe: a protected backup cannot be
   opened at all if you lose the password.** Without a password the file is not encrypted and those
-  secrets are simply left out. Restoring a protected `.own` asks for the password **first**, then shows
+  secrets are simply left out — so after restoring a passwordless backup you re-enter your playlist
+  and proxy passwords, and any profile PINs.
+
+  **OwnTV never uses Android's automatic backup.** Google Drive backup and device-to-device transfer
+  are both switched off for the app, because they would copy the raw database — playlist passwords and
+  API keys included — with no backup password anywhere in the process. This screen is the only way
+  OwnTV data moves between devices, which is what makes the password promise above meaningful. Restoring a protected `.own` asks for the password **first**, then shows
   what's inside; there is no Skip, since nothing can be restored without it. **Older `.json` backups
   still restore** — those ask for the password after you pick the sections, and **Skip** restores
   everything except the saved passwords, as before. **Restore merges — it never deletes your existing profiles or
   sources:** a profile with the same **name** as one already on the device is updated from the backup,
   profiles only in the backup are added, and everything else stays put (that's also why profile names
-  must be unique — the app matches by name). Backups also preserve your **per‑source Auto refresh** choices,
+  must be unique — the app matches by name). A playlist already on the device is updated from the
+  backup — its name, its Live/Movies/Series scope, **Prefer HLS** and its per‑playlist **Pre‑buffer**
+  all come across, not just the credentials. Backups also preserve your **per‑source Auto refresh** choices,
   your **default source**, any **compatibility‑mode / per‑item engine pins** (Live and Movies/Series),
-  your **custom TMDB names** (long‑press → Custom TMDB name) and recent searches,
+  your saved **per‑item zoom and volume**, your **downloaded subtitles** — the files themselves, which
+  subtitle you had chosen per film or episode, and any timing offsets you nudged by hand —
+  your **custom TMDB names** (long‑press → Custom TMDB name), recent searches, your **startup screen**,
+  and which **profile you were using**,
   so a restored setup behaves exactly like the original. Older backup files still restore fine — anything
   they don't contain just keeps its default. (An older OwnTV version cannot read a new `.own` file, so keep
   a `.json` backup if you plan to go back to one.) **Move a backup between TVs over Wi‑Fi:** choose **Restore

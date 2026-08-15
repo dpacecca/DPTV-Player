@@ -15,9 +15,15 @@
 
 - **🧾 Dedicated Metadata and OpenSubtitles settings**
 - **📱 Send TMDB or OpenSubtitles access from phone**
+- **🔐 Your data no longer leaves the TV without a backup password**
+- **🗃️ Backup & Restore now really does back up everything**
 
 ### 🐛 Fixes
 
+- **Per-channel and per-item playback settings attached to the wrong playlist after a restore**
+- **Restoring onto a device that already had the playlist discarded the backup's settings for it**
+- **The default playlist could be repointed at an unrelated playlist**
+- **Startup screen and the Customize PIN lock were filed under "Sources"**
 - **Turning "Advanced options" off now actually stops using your own key**
 
 ## v4.2.1 — 2026-08-15

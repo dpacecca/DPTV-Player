@@ -102,7 +102,7 @@ Scan to join from your phone:
   sidebar/category customization, adjustable panel widths, external player, weather chip
 - **Font customization** with 60%–140% app text sizing and separate main-interface/popup choices from five open-source fonts; settings are preserved in backup and restore, while subtitle styling remains independent
 - **24 complete interface languages** with System default, an in-app searchable language picker, RTL-aware navigation, and a language-first welcome flow on fresh installations
-- **Backup & Restore** locally or over Wi-Fi — a single `.own` file carrying your background image, optionally encrypted end to end with your own password (older `.json` backups still restore); in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
+- **Backup & Restore** locally or over Wi-Fi — a single `.own` file carrying your background image and your downloaded subtitles, optionally encrypted end to end with your own password (older `.json` backups still restore). Android's automatic backup is deliberately disabled, so app data only ever leaves the device through this screen — secrets ride only when you set a backup password. Plus in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
 
 📖 Full details: **[player reference →](extras/player.html)** · **[user guide →](extras/USER_GUIDE.md)**
 
