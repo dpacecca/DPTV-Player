@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.2.1 — unreleased
+## v4.2.1 — 2026-08-15
 
 ### 🎧 "Audio only" — sound with no picture is now labelled, not mistaken for a fault
 
