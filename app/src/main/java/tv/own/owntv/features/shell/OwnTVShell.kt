@@ -160,6 +160,20 @@ fun OwnTVShell(
     // Local subtitle-file picker (plan §7) — the same TV-safe in-app browser local M3U import uses.
     var showLocalSubPicker by remember { mutableStateOf(false) }
     val localSubToast = tv.own.owntv.ui.components.rememberInAppToast()
+    // Metadata allowance: tell the user ONCE per app start that their daily share of the shared
+    // metadata service is gone, rather than letting posters and plots quietly stop appearing. Lives in
+    // the shell because it can happen on any screen, and the shell is the one toast that is always
+    // composed. `remember` (not rememberSaveable) is the once-per-launch scope we want.
+    val metadataBudget = koinInject<tv.own.owntv.core.metadata.MetadataBudget>()
+    val budgetRefusedAt by metadataBudget.refusedAt.collectAsStateWithLifecycle()
+    var budgetNoticeShown by remember { mutableStateOf(false) }
+    val budgetNotice = androidx.compose.ui.res.stringResource(tv.own.owntv.R.string.settings_metadata_limit_reached)
+    LaunchedEffect(budgetRefusedAt) {
+        if (budgetRefusedAt > 0L && !budgetNoticeShown) {
+            budgetNoticeShown = true
+            localSubToast.show(budgetNotice)
+        }
+    }
     val mpvEngine = remember(player) { tv.own.owntv.player.MpvPlaybackEngine(player) }
     // Audio focus + MediaSession (F27). This is the only place that knows which engine currently owns
     // the speaker, so it hands that engine over and takes it back when the player closes.

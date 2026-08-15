@@ -29,6 +29,33 @@
   many items they will clear and ask before clearing, and each leaves the other list alone.
 - Both lists are carried in **backup and restore**.
 
+### 🎭 Cast photos in TMDB details
+
+- **Cast is now shown as photos, not just a list of names.** The full-screen TMDB details window
+  now shows each credited actor as a portrait with their name underneath, wrapping onto as many
+  rows as needed so the whole cast is reachable with the same up/down scrolling as the rest of the
+  window. Actors TMDB has no photo for show their initials instead of an empty box. The photos come
+  from TMDB's image server, which needs no API key and does not touch the shared metadata service,
+  so this costs nothing against anyone's allowance and adds no extra lookups — the photo
+  addresses were already arriving with the details the app downloads and were simply being discarded.
+
+### 🏷️ A fair daily share of the built-in metadata service
+
+- **Each device now has its own daily allowance, and can see it.** The built-in metadata service is
+  shared by everyone using OwnTV, and previously nothing stopped a single device consuming all of it.
+  Each installation now gets its own allowance, shown under **Settings → Metadata** along with the
+  time it refills. The row appears only when you are using the built-in service — your own TMDB
+  API key or your own server is your resource and is never counted.
+- **Running out now tells you, instead of failing silently.** If the allowance is used up, a message
+  appears once per app start explaining what happened and pointing at Settings → Metadata. Posters
+  and descriptions from your own playlist keep working exactly as before; only the extra TMDB
+  information pauses until the allowance refills.
+- **Far fewer lookups in the first place.** Scrolling through a grid no longer fires a lookup for
+  almost every card it passes — the app now waits until you settle on something. Downloaded details
+  are kept for 180 days instead of 60. And changing the metadata language no longer throws the whole
+  cache away: details are now stored per language, so switching language, or switching back, is
+  instant and costs no re-downloads at all.
+
 ### ✨ New features
 
 - **Seek step** (Settings → Video player) — how far the rewind/forward buttons and the seek bar move in

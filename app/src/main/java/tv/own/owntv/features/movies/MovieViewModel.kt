@@ -262,7 +262,10 @@ class MovieViewModel(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val selectedMovieMeta: StateFlow<MovieMeta?> = combine(_selectedMovie, _metaRefreshTick) { m, tick -> m to tick }
         .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
-        .debounce(350)
+        // 700 ms, not 350: sustained D-pad scrolling was firing a lookup per card it passed over, which
+        // made browsing the single biggest source of metadata traffic. At 700 ms a scroll produces one
+        // lookup when the user actually settles on something.
+        .debounce(tv.own.owntv.core.metadata.MetadataRepository.FOCUS_DEBOUNCE_MS)
         .mapLatest { (m, _) ->
             if (m == null) null
             else MovieMeta(m.id, runCatching { metadata.resolveMovie(m) }.getOrNull())

@@ -265,7 +265,8 @@ class SeriesViewModel(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val selectedSeriesMeta: StateFlow<SeriesMeta?> = combine(_selectedSeries, _seriesMetaTick) { s, tick -> s to tick }
         .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
-        .debounce(350)
+        // See MetadataRepository.FOCUS_DEBOUNCE_MS — 700 ms so scrolling past cards costs nothing.
+        .debounce(tv.own.owntv.core.metadata.MetadataRepository.FOCUS_DEBOUNCE_MS)
         .mapLatest { (s, _) ->
             if (s == null) null
             else SeriesMeta(s.id, runCatching { metadata.resolveSeries(s) }.getOrNull())
@@ -664,7 +665,8 @@ class SeriesViewModel(
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val selectedEpisodeMeta: StateFlow<EpisodeMeta?> = combine(_selectedEpisode, _episodeMetaTick) { ep, tick -> ep to tick }
         .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
-        .debounce(350)
+        // See MetadataRepository.FOCUS_DEBOUNCE_MS — episode lists are the fastest thing to scroll.
+        .debounce(tv.own.owntv.core.metadata.MetadataRepository.FOCUS_DEBOUNCE_MS)
         .mapLatest { (ep, _) ->
             val show = _openedSeries.value
             if (ep == null || show == null) null

@@ -13,6 +13,8 @@
 
 ### ✨ New features
 
+- **🎭 Cast photos in TMDB details**
+- **🏷️ A fair daily share of the built-in metadata service**
 - **🎧 "Audio only" — sound with no picture is now labelled, not mistaken for a fault**
 - **🔊 Zoom and volume are now remembered per item**
 - **Seek step**

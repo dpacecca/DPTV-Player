@@ -76,6 +76,7 @@ class SettingsViewModel(
     private val okHttpClient: okhttp3.OkHttpClient,
     private val metadataProvider: tv.own.owntv.core.metadata.MetadataProvider,
     private val metadataRepository: tv.own.owntv.core.metadata.MetadataRepository,
+    private val metadataBudget: tv.own.owntv.core.metadata.MetadataBudget,
     private val stalkerAuth: tv.own.owntv.core.stalker.StalkerAuthManager,
     private val stalkerClient: tv.own.owntv.core.stalker.StalkerClient,
     private val xtreamClient: tv.own.owntv.core.parser.XtreamClient,
@@ -1400,6 +1401,26 @@ class SettingsViewModel(
         settings.metadataConfigFlow
             .map { it.tier }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER)
+
+    /**
+     * This install's remaining metadata allowance, for the status row on the Metadata screen. Only
+     * meaningful on the shared default-Worker tier; the screen hides the row on the other two, which
+     * are the user's own resource and are never metered.
+     *
+     * Refreshed when the screen asks ([refreshMetadataBudget]) rather than continuously — it is a
+     * DataStore read and the number only moves while the user is browsing, not while they sit in
+     * Settings.
+     */
+    private val _metadataBudgetStatus =
+        MutableStateFlow<tv.own.owntv.core.metadata.MetadataBudgetStatus?>(null)
+    val metadataBudgetStatus: StateFlow<tv.own.owntv.core.metadata.MetadataBudgetStatus?> =
+        _metadataBudgetStatus.asStateFlow()
+
+    fun refreshMetadataBudget() {
+        viewModelScope.launch {
+            _metadataBudgetStatus.value = runCatching { metadataBudget.status() }.getOrNull()
+        }
+    }
 
     sealed interface MetadataTestState {
         data object Idle : MetadataTestState

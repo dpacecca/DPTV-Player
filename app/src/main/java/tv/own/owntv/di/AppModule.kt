@@ -85,6 +85,7 @@ val appModule = module {
             okHttpClient = get(),
             metadataProvider = get(),
             metadataRepository = get(),
+            metadataBudget = get(),
             stalkerAuth = get(),
             stalkerClient = get(),
             xtreamClient = get(),

@@ -79,6 +79,16 @@ android {
                 ).toString(),
         )
 
+        // Shared secret the default metadata Worker's edge rule requires (`x-owntv-key`). NEVER in the
+        // repo: env var (how CI injects the GitHub secret) > Gradle property > the out-of-repo properties
+        // file, exactly like the signing values below. Fork CI and fresh clones resolve "" and keep
+        // working — a blank key makes the app fall back to the unprotected workers.dev base URL.
+        val edgeKey = System.getenv("OWNTV_EDGE_KEY")
+            ?: providers.gradleProperty("owntv.edgeKey").orNull
+            ?: localSigningProps.getProperty("owntv.edgeKey")
+            ?: ""
+        buildConfigField("String", "TMDB_EDGE_KEY", "\"${edgeKey.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
