@@ -23,6 +23,8 @@
 
 ### 🐛 Fixes
 
+- **DNS choice now survives an app restart**
+- **“Audio only” no longer flashes on ordinary TV channels**
 - **Ambient Glow now stays dark-mode only and hides its ring when Pulse is off**
 - **Preferred subtitle language now turns matching subtitles on automatically**
 - **"Watch from start" needed two presses**

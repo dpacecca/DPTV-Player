@@ -618,9 +618,11 @@ with the remaining time.
 
 Some items carry sound and nothing else: a radio station listed among your TV channels, or a
 music‑only file filed under Movies. That is not a fault, and OwnTV plays them normally — but a black
-screen with sound looks exactly like a broken player, so the player shows a small **Audio only**
-plate in the middle of the screen with a short line explaining it. It stays there for as long as the
-item plays, and shrinks to just the music icon in the docked mini‑player.
+screen with sound looks exactly like a broken player. After the stream has played for a few seconds
+without announcing any video track, the player shows a small **Audio only** plate in the middle with
+a short explanation. Waiting avoids briefly labelling a normal channel when its provider announces
+audio before video. The plate stays for as long as a genuine audio‑only item plays, and shrinks to
+just the music icon in the docked mini‑player.
 
 If you see it, nothing is wrong and there is nothing to fix — the item simply has no video in it. It
 is different from Audio Mode above: that one is *you* switching the picture off, this one is the
@@ -791,6 +793,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   Auto‑play · Check for update) flip the most‑used options without opening a sub‑menu.
 - 🧭 **Menu layout** — **Profiles** is the first row; **Live preview / Preview audio** are under
   **Playback**; **App startup** is under **App**; the **Home screen** page is under Content.
+- 🌐 **Custom DNS** (Network → DNS) — use the TV’s normal DNS, choose Google, Cloudflare or Quad9,
+  or enter your own DNS server / DNS‑over‑HTTPS address. Your enabled state and selected server are
+  saved immediately and restored after restarting OwnTV. **Test DNS** checks the current entry before
+  you rely on it.
 - 🔤 **Font customization** (Look & Feel) — open one popup to set the app's text size from **60% to
   140%** in 5% steps and choose separate fonts for the **main interface** and **popups**. Available fonts
   are **System Sans, Monospace, Lora, Playfair Display, Dancing Script, and Poppins**. Press **Apply** to save,

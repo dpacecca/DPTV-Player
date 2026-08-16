@@ -117,6 +117,15 @@
 
 ### 🐛 Fixes
 
+- **Your DNS choice now survives an app restart.** Selecting Google, Cloudflare, Quad9 or entering a
+  custom DNS server was saved correctly, but the settings screen opened from an empty startup value
+  and never refreshed when that saved choice arrived. The screen now restores the saved server and
+  enabled state as soon as settings load, without overwriting normal editing.
+- **“Audio only” no longer flashes while an ordinary TV channel is starting.** Some providers announce
+  the audio track before the video track, so v4.2.1 briefly treated every channel as a radio station
+  and removed the message only when the picture arrived. OwnTV now waits for a ready stream to remain
+  audio-without-video for five seconds; any video announcement cancels the message immediately, while
+  genuine radio channels still receive the persistent explanation.
 - **Ambient Glow now appears only with the explicit Dark theme while Glass Effect is off.** Turning
   Slow pulse off leaves the soft glow in place without the distracting outline circle; turning it on
   adds the moving pulse ring.
