@@ -139,7 +139,45 @@
   keep following your setting. Live TV's per-channel choices travel in Backup & Restore alongside the
   Movies & Series ones.
 
+### 🔒 Protected (DRM) channels now play — Widevine and ClearKey (#115)
+
+- **OwnTV can now play channels and films protected with Widevine or ClearKey.** Some providers —
+  including self-hosted setups such as JioTV-Go — publish MPEG-DASH channels that are locked, with the
+  unlock address written into the playlist. Until now OwnTV threw that address away while reading the
+  playlist, so those channels simply failed with a general playback error and looked broken.
+- **Nothing to set up, and nothing to buy.** The unlocking is done by the component already built into
+  every Android TV and Fire TV device; OwnTV just has to ask it. There is no key to enter, no account,
+  and no licence for you to purchase — if your playlist carries the details, the channel plays.
+- **Protected channels always use ExoPlayer.** mpv has no way to request an unlock key, so a protected
+  channel goes straight to the player that can, without the usual switch between players first. The
+  compatibility-mode button is hidden for those channels, because its other position could only fail.
+  Everything else keeps following your engine settings exactly as before.
+- **Works for Live TV, Movies and Series**, and for both `.mpd` (DASH) and protected HLS streams.
+- **Two things are worth knowing.** Older or cheaper TV boxes may only be allowed to play protected
+  channels in standard definition — that is decided by the device, not by OwnTV. And a protected item
+  always plays inside OwnTV even if you have chosen an external player, because no external player can
+  be given the unlock address.
+
+### 📁 Send a playlist file from your computer with Remote
+
+- **The Remote page can now upload a playlist file.** Its M3U tab said “Playlist URL or local file” but
+  offered no way to choose a file — the wording came from the TV's own screen, where a file picker does
+  exist. There is now a real **Or upload a playlist file** button next to the address box.
+- **Useful when the playlist only exists on your computer**, with no web address to point at and no
+  wish to copy it onto a USB stick. Choose the file, press Send, then press Start Import on the TV as
+  usual. Typing an address still works exactly as before.
+- The uploaded playlist is kept on the TV until you import it, so there is no rush between sending it
+  and picking up the remote. Only the few most recent uploads are kept.
+
 ### 🐛 Fixes
+
+- **Restoring a backup no longer gives every Stalker playlist the same MAC address (#114).** Several
+  Stalker playlists usually share one portal address and have no username, so a restore treated them
+  all as the same playlist: they were merged onto one, each overwriting the previous one's MAC, and
+  their favourites, history and folder customizations were merged onto it too. Restore now also looks
+  at the MAC, and each saved playlist can only match one playlist on the device. A backup saved
+  *without* a password still carries no MAC at all — MACs are treated as secrets — so those restores
+  keep the MACs already on the device instead of duplicating the playlist.
 
 - **Your DNS choice now survives an app restart.** Selecting Google, Cloudflare, Quad9 or entering a
   custom DNS server was saved correctly, but the settings screen opened from an empty startup value

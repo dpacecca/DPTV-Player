@@ -490,7 +490,10 @@ class MovieViewModel(
             // in-app engine entirely. History is still recorded (recently-watched); resume position
             // and the playing-movie HUD/progress tick are intentionally not — the external app owns
             // playback and OwnTV can't observe it.
-            if (settings.externalPlayerMovies.first()) {
+            // #115 — a protected item cannot go to an external player: no standard intent extra
+            // carries a licence URL, so the other app would open it and fail on the first segment.
+            // Play it here instead, where the licence request can actually be made.
+            if (settings.externalPlayerMovies.first() && movie.drmConfig == null) {
                 Log.d(TAG, "play movieId=${movie.id} -> external player")
                 val url = resolvedUrlOrNull(movie) ?: return@launch
                 externalPlayerLauncher.launch(
@@ -530,6 +533,7 @@ class MovieViewModel(
                 startPositionMs = startPositionMs,
                 userAgent = sourceUa,
                 httpHeaders = movie.httpHeaders,
+                drmConfig = movie.drmConfig,
                 // P6 — engine pins key on this, not on playUrl (a Stalker playUrl is minted per play).
                 contentKey = pinKey,
                 // F12 — a Stalker create_link URL dies before a long film ends; give the player a way to

@@ -671,6 +671,7 @@ class LiveViewModel(
             userAgent = sourceUaMap[channel.sourceId],
             prerollSecsOverride = prerollFor(channel.sourceId),
             httpHeaders = channel.httpHeaders,
+            drmConfig = channel.drmConfig,
         )
     }
 
@@ -702,6 +703,7 @@ class LiveViewModel(
                 userAgent = source.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
+                drmConfig = channel.drmConfig,
             )
         }
     }
@@ -1299,7 +1301,9 @@ class LiveViewModel(
     private suspend fun playChannel(channel: ChannelEntity) {
         // Live TV set to play externally: hand the channel over instead of tuning an in-app engine.
         // History is still recorded, so the channel shows up in History/Recently watched either way.
-        if (externalPlayerOn.value) { playExternal(channel); return }
+        // #115 — a protected channel stays in-app whatever this setting says: no standard intent extra
+        // carries a licence URL, so the external player would open it and fail immediately.
+        if (externalPlayerOn.value && channel.drmConfig == null) { playExternal(channel); return }
         _previewChannel.value = channel
         clearTimeshift() // normal live = not timeshifted
         _catchupActive.value = false // tuning live ends any archive playback the HUD was showing
@@ -1316,16 +1320,24 @@ class LiveViewModel(
         // when the setting still allows both engines: in an "only" mode the user has ruled the other engine
         // out, and a lesson the app taught itself may not overturn that. A pin may, because the user made it.
         val refusing = pin == null && setting.allowsHandover && panelRefusesSegments(channel)
-        val onMpv = pin ?: (refusing || setting.startsOnMpv)
+        // #115 — a protected (Widevine/ClearKey) channel. mpv ships no CDM, so it cannot obtain a key
+        // from a licence server (it can only decrypt CENC from a key handed to it directly, which a
+        // playlist never provides). So this is not a preference to weigh against the others: it
+        // outranks the setting AND a per-channel pin, because handing such a channel to mpv can only
+        // produce a failure and a wasted handover.
+        val drmProtected = channel.drmConfig != null
+        val onMpv = if (drmProtected) false else pin ?: (refusing || setting.startsOnMpv)
         // A pin that contradicts an "only" setting re-opens the handover for this one channel. Without
         // that, the exception channel would be locked to the engine the user just said cannot play it,
         // with the ladder forbidden from ever reaching the one that can — a dead end of our own making.
         val preference = when {
+            drmProtected -> tv.own.owntv.player.EnginePreference.EXO_ONLY
             setting.allowsHandover -> tv.own.owntv.player.EnginePreference.firstOn(onMpv)
             onMpv == setting.startsOnMpv -> setting
             else -> tv.own.owntv.player.EnginePreference.firstOn(onMpv)
         }
         val reason = when {
+            drmProtected -> "exoplayer (drm)"
             pin != null -> "${if (onMpv) "mpv" else "exoplayer"} (pinned)"
             refusing -> "mpv (panel refuses segments)"
             else -> "${if (onMpv) "mpv" else "exoplayer"} (setting)"
@@ -1435,6 +1447,7 @@ class LiveViewModel(
                 userAgent = sourceUaMap[channel.sourceId] ?: source?.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
+                drmConfig = channel.drmConfig,
             )
         }
         watchExoOutcome(channel)
@@ -1464,6 +1477,7 @@ class LiveViewModel(
                 userAgent = source.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
+                drmConfig = channel.drmConfig,
             )
             watchExoOutcome(channel)
         }
@@ -1487,6 +1501,10 @@ class LiveViewModel(
         // Same reasoning while rewound into the live archive: swapping engines re-opens the channel at the
         // live edge, throwing the user out of the rewind. The HUD hides the toggle then; this is the guard.
         if (_timeshiftOffsetSec.value != null) return
+        // #115 — a protected channel has only one engine that can obtain its key. Swapping to mpv would
+        // trade a playing channel for a guaranteed failure, so the toggle does nothing here; the HUD
+        // hides it for such a channel, and this is the belt-and-braces guard.
+        if (channel.drmConfig != null) return
         // Base the swap on the ACTUAL running engine, not the pin: after an auto-fallback to mpv the channel
         // runs on mpv while still unpinned, and the old pin-based logic then did nothing on click. Keying off
         // _liveOnExo makes every click flip the live engine, with the pin following the choice.

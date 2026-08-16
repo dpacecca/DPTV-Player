@@ -52,6 +52,9 @@ the form on your phone instead.
 4. **Fill the form and tap “Send to TV.”** The details appear in the Add Source screen on the TV, with
    the matching type selected and the fields filled. The Stalker tab also carries optional Serial Number,
    Device ID, Device ID2, and Signature values for portals that require advanced device identification.
+   On the **M3U** tab you can either type a playlist address **or** press **Or upload a playlist file**
+   and pick an `.m3u` / `.m3u8` file from the computer — useful when the playlist only exists on that
+   machine. The file is sent to the TV and kept there until you import it.
 5. **Press Start Import on the TV** with the remote — the phone only fills the form; it never starts the
    import. Leave the Remote screen (Back) and the server stops automatically.
 
@@ -306,6 +309,15 @@ or **narrow the whole app to just one**.
   already know the second engine never works on your TV or with your provider, turning it off makes every
   failing channel give up quickly instead of stalling. **Only** still tries that engine's own two stream
   formats — what it drops is the other engine. A channel you pin by hand ignores the setting either way.
+- 🔒 **Protected (DRM) channels** — some providers publish channels locked with **Widevine** or
+  **ClearKey**, with the unlock address written into the playlist. These now play, with nothing for you
+  to set up: the unlocking is done by the component already built into your TV, so there is no key to
+  enter and no licence to buy. Such channels **always use ExoPlayer** (mpv cannot request an unlock
+  key), so the engine toggle is hidden for them and your engine setting does not apply. They also
+  always play inside OwnTV even if you have chosen an external player, because no external player can
+  be given the unlock address. Two caveats, both decided by the device rather than by OwnTV: older or
+  cheaper boxes may only be permitted to play protected channels in **standard definition**, and a few
+  will refuse them entirely.
   **A channel that won't play is worked through every combination.** With two engines and (when **Prefer HLS**
   is on) two stream formats there are four ways to open a channel, and one that defeats a given pairing is
   often fine on another. A failing channel now steps through them in a fixed order, each tried once, starting

@@ -800,7 +800,10 @@ class SeriesViewModel(
             // External player (global toggle): launch only the selected episode (external players are
             // single-item — no prev/next queue). History is still recorded; resume position and the
             // in-app HUD/progress tick are not, since OwnTV can't observe the external app.
-            if (settings.externalPlayerSeries.first()) {
+            // #115 — a protected item cannot go to an external player: no standard intent extra
+            // carries a licence URL, so the other app would open it and fail on the first segment.
+            // Play it here instead, where the licence request can actually be made.
+            if (settings.externalPlayerSeries.first() && episode.drmConfig == null) {
                 Log.d(TAG, "playEpisodeQueue seriesId=${show.id} episodeId=${episode.id} -> external player")
                 val url = resolvedEpisodeUrlOrNull(episode) ?: return@launch
                 externalPlayerLauncher.launch(
@@ -850,6 +853,7 @@ class SeriesViewModel(
                             { streamUrlResolver.resolve(source, ep.streamUrl, vod = true, episode = ep.episodeNumber) }
                         } else null,
                         httpHeaders = ep.httpHeaders,
+                        drmConfig = ep.drmConfig,
                     )
                 },
                 startIndex = startIndex,

@@ -915,7 +915,9 @@ fun OwnTVShell(
                     // Hidden while rewound into the archive (same `timeshiftOffset == null` rule direct
                     // tune follows above): switching engine restarts the channel at the live edge, which
                     // threw the user out of the rewind with the HUD still counting "behind live".
-                    onToggleCompatMode = if (isTunedLive && timeshiftOffset == null) liveVm::toggleForceMpv else null,
+                    // Also hidden for a protected channel (#115): only ExoPlayer can license it, so the
+                    // toggle's other position is not a compatibility choice but a guaranteed failure.
+                    onToggleCompatMode = if (isTunedLive && timeshiftOffset == null && previewChannel?.drmConfig == null) liveVm::toggleForceMpv else null,
                     // VOD engine toggle (movies/series only — live and catch-up channels keep their own
                     // engine handling above): flip the current item between mpv and ExoPlayer.
                     vodOnExo = if (!isLiveStream && !isTunedLive) vodExoActive else null,

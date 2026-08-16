@@ -86,13 +86,14 @@ Scan to join from your phone:
 
 ### 📥 Sources & EPG
 - App-wide **custom DNS** — System, Google, Cloudflare, Quad9, custom DNS or DNS-over-HTTPS; the selected resolver persists across restarts
-- **Xtream**, **M3U** (typed playlists), and **Stalker/Ministra** portals, including optional advanced device identification; add any source from your phone over LAN (QR + PIN)
+- **Xtream**, **M3U** (typed playlists), and **Stalker/Ministra** portals, including optional advanced device identification; add any source from your phone over LAN (QR + PIN) — including uploading an `.m3u` file straight from the computer
 - XMLTV **TV Guide** grid, **Catch-up TV** (up to 7 days) + live rewind, auto EPG matching, multiple guide sources
 - **Catch-up works without a guide** — a **Catch-up** category listing every channel with an archive, plus **Go back to…** to jump to a time (or an exact day/hour/minute) instead of holding rewind
 - **Clock in every player**, and while replaying a recording a second one showing when the programme originally aired, with a matching **Playing / Then** guide row
 - **Guide time offset** — correct a guide published in another time zone, globally or per channel
 - Optional **guide channel logos** — per EPG source, use that feed's own logos instead of your playlist's
 - M3U extras honoured: per-item HTTP headers on live, movie and series entries (`#EXTVLCOPT` / `#EXTHTTP` / `#KODIPROP` / URL suffix) and the `append` / `shift` / `flussonic` / `xc` catch-up styles
+- **Protected (DRM) channels** — Widevine and ClearKey over DASH/HLS, read from the playlist's `#KODIPROP` licence properties; uses the CDM built into the device, so there is nothing to configure and no licence to buy
 
 ### 👥 Profiles & Downloads
 - Multiple profiles with own favorites/history/resume, PIN locks, kids flag, "Who's watching?" gate

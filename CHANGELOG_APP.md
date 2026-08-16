@@ -21,9 +21,12 @@
 - **🗃️ Backup & Restore now really does back up everything**
 - **🔤 Subtitle font selection and Monospace**
 - **🎛️ Choose the playback engine — four options, for Live TV and for Movies & Series**
+- **🔒 Protected (DRM) channels now play — Widevine and ClearKey (#115)**
+- **📁 Send a playlist file from your computer with Remote**
 
 ### 🐛 Fixes
 
+- **Restoring a backup gave every Stalker playlist the same MAC address (#114)**
 - **DNS choice now survives an app restart**
 - **“Audio only” no longer flashes on ordinary TV channels**
 - **Ambient Glow now stays dark-mode only and hides its ring when Pulse is off**
