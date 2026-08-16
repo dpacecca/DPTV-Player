@@ -2,6 +2,46 @@
 
 ## v4.2.2 — unreleased
 
+### ⏪ Catch-up without a TV guide — a Catch-up category and "Go back to…"
+
+- **Live TV has a new Catch-up category**, between History and All, listing every channel your
+  provider keeps a recording for. It appears only if you actually have such channels, and it is a
+  filter over the channels you already have — nothing extra is downloaded, and it stays correct after
+  every playlist refresh. Sorting, the inline search and the in-player channel list all work in it.
+- **You can now jump straight to a time instead of holding rewind.** Catch-up channels get a
+  **Go back to…** button in the player, and the same list appears when you open Catch-up on a channel
+  with no guide data. It offers times counted back from now — 21:30, 19:00, `Sun 20:00` — so reaching
+  three hours back is one press instead of holding a key while a counter crawls. Times, not "3 hours
+  ago", because you are usually looking for the programme that started at a particular clock time.
+- **"Choose exact time…" reaches any moment your provider still holds.** The last row of that list
+  opens a day, hour and minute picker, so "yesterday at 10:31" is reachable and not just the round
+  offsets. Press **OK** on the day, hour or minute to step into it, change it with up and down, then
+  **OK** or **Back** to step out; left and right move between the three. The wheels stop at both ends
+  of your archive — you cannot scroll past the live edge into the future, and you cannot scroll off
+  the far end into a request that could only fail.
+- **None of this needs a TV guide.** Rewinding a channel never did, but the only thing named
+  "Catch-up" was the programme list, which does — so opening it without a guide produced a dead end
+  advising you to go and fix your EPG, and the feature looked missing. That screen now offers times.
+  With a guide, the programme list is still shown: it has titles, which is better.
+
+### 🕐 A clock in the player — and, on catch-up, the time the programme actually aired
+
+- **Every player now shows the time and date**, centred at the top: Live TV, Movies, Series and
+  catch-up alike. It sits in a band that was empty in every mode, so nothing else on screen moved to
+  make room for it.
+- **While you replay a recording, a second clock appears beside it.** The panel then reads
+  **Programme time** on the left — when what you are watching originally aired, counting forward as it
+  plays — and **Current time** on the right. Without the pair, a clock reading 10:00 over a picture
+  from yesterday afternoon would be worse than no clock at all. Both columns are labelled, so a lone
+  time is never mistaken for a wrong device clock.
+- **The guide card gains a matching row during catch-up.** Above the live programme it now shows
+  **Playing** and **Then** — what was on air at the moment being replayed, and what followed it — so
+  you can see what you are watching even when you jumped to a bare time. The live row stays where it
+  is, dimmed, and returns to full strength the moment you go back to live. Channels whose guide comes
+  only from the provider's now/next API get no archive row: that API cannot describe the past.
+- **The live guide labels now read "Live now" and "Live next"** rather than "Now" and "Next", so they
+  cannot be confused with the archive row sitting directly above them.
+
 ### 🧾 Dedicated Metadata and OpenSubtitles settings
 
 - **Metadata and OpenSubtitles now have separate, purpose-built settings pages.** OpenSubtitles sits directly below Metadata in the main Settings list instead of being buried under Video Player. Both pages use compact status cards and keep secondary setup inside shared, D-pad-safe popups.
@@ -66,6 +106,14 @@
   containing no profile data at all.
 
 ### 🐛 Fixes
+
+- **"Watch from start" needed two presses.** Opening a programme from the Guide or from the Live TV
+  catch-up list, the first press of **Watch from start** did nothing and only the second one played.
+  The dialog swallows OK until it knows the button that opened it has been released, so that a held
+  press cannot instantly trigger whatever is focused — but the press that opens the dialog is acted on
+  as the button goes *down*, so the release happened while the dialog was still appearing and was
+  never seen. It waited forever, and ate the next real press. It now also treats a moment's silence as
+  proof the button is up, which a held button cannot produce. Affects every dialog with that guard.
 
 - **Per-channel and per-item playback settings attached to the wrong playlist after a restore.**
   "Compatibility mode" for a channel, and the zoom or volume boost you saved for a particular film,

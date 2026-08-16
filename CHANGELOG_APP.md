@@ -13,6 +13,8 @@
 
 ### ✨ New features
 
+- **⏪ Catch-up without a TV guide — a Catch-up category and "Go back to…"**
+- **🕐 A clock in the player — and, on catch-up, the time the programme actually aired**
 - **🧾 Dedicated Metadata and OpenSubtitles settings**
 - **📱 Send TMDB or OpenSubtitles access from phone**
 - **🔐 Your data no longer leaves the TV without a backup password**
@@ -20,6 +22,7 @@
 
 ### 🐛 Fixes
 
+- **"Watch from start" needed two presses**
 - **Per-channel and per-item playback settings attached to the wrong playlist after a restore**
 - **Restoring onto a device that already had the playlist discarded the backup's settings for it**
 - **The default playlist could be repointed at an unrelated playlist**

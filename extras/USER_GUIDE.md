@@ -202,6 +202,9 @@ or **narrow the whole app to just one**.
 ## 📺 Live TV
 
 - **Categories** are in the second column. Long category names **wrap to two lines** so they're never cut off.
+- ⏪ **Catch-up category**: between **History** and **All** sits **Catch-up**, holding every channel your
+  provider keeps a recording for. It only appears if you have such channels. Sorting, the search box and
+  the in-player channel list all work inside it, like any other category.
 - **Live preview**: focus a channel and its video plays in the preview pane (with the **real stream
   resolution**, e.g. `1080p`/`4K`, so a mislabelled "4K" channel can't fool you). Toggle this in
   **Settings → Playback → Live preview**; sound for the preview is **Settings → Playback → Preview audio**.
@@ -324,6 +327,19 @@ or **narrow the whole app to just one**.
 - ⏪ **Catch‑up / rewind live**: on a channel that supports catch‑up (look for the marker, or use the
   long‑press **Catch‑up** menu), you can **rewind into the provider's archive** and play back from the past,
   then return to live.
+- 🕐 **Go back to…**: on those channels the bottom bar also has a **Go back to…** button. It lists times
+  counted back from now — `21:30`, `19:00`, `Sun 20:00` — so going three hours back is one press rather
+  than holding rewind. The last row, **Choose exact time…**, opens a **day / hour / minute** picker so
+  *yesterday at 10:31* is reachable: press **OK** on the day, hour or minute to step into it, change it
+  with **up / down**, then **OK** or **Back** to step out — left and right move between the three. The
+  picker stops at both ends of your archive, so you can't pick a time that doesn't exist.
+  **None of this needs a TV guide** — the same list appears if you open the long‑press **Catch‑up** menu on
+  a channel with no guide data, in place of the programme list.
+- 🕰️ **Clock, and the programme's own time**: the player shows the time and date at the top centre in every
+  mode. While you're replaying a recording it splits into two: **Programme time** (when what you're
+  watching originally aired, counting forward as it plays) and **Current time**. The guide card also gains
+  a **Playing / Then** row above the live one, showing what was on air at that moment and what followed —
+  so even after jumping to a bare time you can see what you landed on.
 
 ---
 
@@ -568,8 +584,12 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 | **Headphones** | **Audio Mode** — see below. |
 | **Volume** | Quiet streams can be **boosted to 150%** — movies, series and Live TV alike, whichever player they end up on (where the player can't amplify by itself the boost comes from your TV's own audio effect; a TV that doesn't support it stays at 100%). A level you set is **remembered for that channel/film**; everything else starts from **Settings → Video player → Default volume**. **Mute is not remembered**, so nothing ever opens silent. Clear the saved ones with **Reset saved volume**. |
 
+Catch‑up channels also get a **Go back to…** button (a small TV with a replay loop) — see Live TV above.
+
 A few things that need no button:
 
+- **The clock is always at the top centre** — time and date, in every player. On a recording it becomes
+  two: **Programme time** (when it originally aired) and **Current time**.
 - **Remote transport keys work** — play/pause, next and previous from the remote, a headset or a voice
   assistant reach the player. Next/previous move between episodes in a series. With the player closed
   they do nothing to OwnTV.

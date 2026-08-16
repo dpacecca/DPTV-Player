@@ -81,6 +81,9 @@ import tv.own.owntv.ui.components.OwnTVIcon
 sealed interface LiveKey {
     data object Favorites : LiveKey
     data object History : LiveKey
+    /** Every channel the provider says keeps an archive. A filter over ALL, not a stored category —
+     *  and independent of the guide, so it works for users with no EPG. */
+    data object Catchup : LiveKey
     data object All : LiveKey
     data class Folder(val id: Long) : LiveKey
     /** A user-created combined category (issue #87); [id] is its "custom:<uuid>" customization key. */
@@ -92,6 +95,7 @@ sealed interface LiveKey {
 fun LiveKey.serialize(): String = when (this) {
     LiveKey.Favorites -> "FAV"
     LiveKey.History -> "HIST"
+    LiveKey.Catchup -> "CATCHUP"
     LiveKey.All -> "ALL"
     is LiveKey.Folder -> "FOLDER:$id"
     is LiveKey.Custom -> "CUSTOM:$id"
@@ -100,6 +104,7 @@ fun LiveKey.serialize(): String = when (this) {
 fun parseLiveKey(s: String): LiveKey? = when {
     s == "FAV" -> LiveKey.Favorites
     s == "HIST" -> LiveKey.History
+    s == "CATCHUP" -> LiveKey.Catchup
     s == "ALL" -> LiveKey.All
     s.startsWith("FOLDER:") -> s.removePrefix("FOLDER:").toLongOrNull()?.let { LiveKey.Folder(it) }
     s.startsWith("CUSTOM:") -> LiveKey.Custom(s.removePrefix("CUSTOM:"))
@@ -249,11 +254,38 @@ class LiveViewModel(
     /** Bumped when a channel's EPG mapping changes so [nowNext] reloads for the same focused channel. */
     private val epgRefresh = MutableStateFlow(0)
 
+    // ---- "Watching" clock: the wall-clock instant actually on screen -------------------------------
+    // During archive playback the HUD clock alone is misleading — it reads 10:00 while the picture is
+    // yesterday at 13:00. This is that second time: the archive's own clock, advancing with playback.
+    // Null whenever the picture IS the present (live edge, or a movie/episode).
+    private val _watchingWallMs = MutableStateFlow<Long?>(null)
+    val watchingWallMs: StateFlow<Long?> = _watchingWallMs.asStateFlow()
+
+
     /** Now/next for the focused channel — fetched (debounced) from the Xtream `get_short_epg` API. */
     val nowNext: StateFlow<EpgNowNext?> = combine(_previewChannel, epgRefresh) { ch, tick -> ch to tick }
         .debounce(350)
         .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
         .mapLatest { (ch, _) -> ch?.let { epgReader.nowNext(it, custom.value, epgOffset.value) } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /**
+     * "PLAYING / THEN" — what was on air at the moment being replayed. Null unless an archive is on
+     * screen, so the HUD simply omits the card the rest of the time.
+     *
+     * Keyed on the watched instant rounded to the minute, not the raw value: [watchingWallMs] ticks
+     * every second, and the answer can only change when a programme boundary is crossed. Without that
+     * rounding this would hit the guide database once a second for the whole of a replay.
+     */
+    val archiveNowNext: StateFlow<EpgNowNext?> = combine(
+        _previewChannel,
+        _watchingWallMs.map { ms -> ms?.let { it / 60_000L } }.distinctUntilChanged(),
+        epgRefresh,
+    ) { ch, minute, _ -> Triple(ch, minute, Unit) }
+        .mapLatest { (ch, minute, _) ->
+            if (ch == null || minute == null) null
+            else epgReader.nowNextAt(ch, minute * 60_000L, custom.value, epgOffset.value)
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /**
@@ -360,12 +392,19 @@ class LiveViewModel(
     val railItems: StateFlow<List<LiveRailItem>> = ctx
         .flatMapLatest { c ->
             if (c.profileId < 0) flowOf(defaultRail)
-            else combine(categoryDao.observe(c.sourceIds, MediaType.LIVE), custom, sortMode) { cats, cust, sort ->
+            else combine(
+                categoryDao.observe(c.sourceIds, MediaType.LIVE),
+                custom,
+                sortMode,
+                // Catch-up sits between History and All, but ONLY when the provider actually advertises
+                // an archive — otherwise every user without catch-up gets a folder that can never fill.
+                channelDao.observeCatchupCount(c.sourceIds.ifEmpty { listOf(-1L) }).distinctUntilChanged(),
+            ) { cats, cust, sort, catchupCount ->
                 // A–Z also sorts the category folders (custom categories included); manually moved
                 // categories stay pinned first. Custom categories ride the SAME customization keys,
                 // so renames/hides/reorders apply to them with no extra code (#87).
                 val folders = cats.applyCustomizationsWithCustoms(cust, cust.customCategories, alphaRest = sort == SettingsRepository.SortMode.ALPHA)
-                defaultRail + folders.map { e ->
+                railWithCatchup(catchupCount > 0) + folders.map { e ->
                     LiveRailItem(
                         key = e.categoryId?.let { LiveKey.Folder(it) } ?: LiveKey.Custom(e.customId!!),
                         title = e.displayName,
@@ -1882,6 +1921,10 @@ class LiveViewModel(
             clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
             // isLive=false → seekable archive; isArchive → mid-GOP tolerant (hardware first, software rescue).
             player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.displayLogoUrl, isLive = false, isArchive = true, userAgent = sourceUa, httpHeaders = ch.httpHeaders)
+            // The picture is this programme's own airtime, not the present — drive the "watching" clock
+            // from its start, exactly as the rewind path does from the archive's start.
+            archiveBaseWall = programme.startMs
+            startWatchingTick()
             // Watching a programme from a channel's archive is watching that channel — the external
             // catch-up path above has always recorded it, and this one silently did not, so the channel
             // never reached History or Recently watched when catch-up played in-app.
@@ -1904,6 +1947,33 @@ class LiveViewModel(
     private var timeshiftJob: Job? = null
     private var tickJob: Job? = null
     private var timeshiftStartWall = 0L // wall-clock time of the loaded archive's start (for the live counter)
+
+    /** Wall-clock instant the loaded archive starts at, for both the rewind and the guide catch-up
+     *  paths. Set alongside [timeshiftStartWall] so [watchingWallMs] works for either. */
+    private var archiveBaseWall: Long? = null
+
+    private fun clearWatchingClock() {
+        watchingTickJob?.cancel()
+        archiveBaseWall = null
+        _watchingWallMs.value = null
+    }
+
+    private var watchingTickJob: Job? = null
+
+    /** Advance [watchingWallMs] with playback. Used by the guide catch-up path; the rewind path folds
+     *  the same update into its own "behind live" ticker rather than running a second loop. */
+    private fun startWatchingTick() {
+        watchingTickJob?.cancel()
+        watchingTickJob = viewModelScope.launch {
+            while (true) {
+                val base = archiveBaseWall ?: break
+                _watchingWallMs.value = base + player.position.value
+                delay(1_000)
+                // The archive ended or failed: stop claiming a time for a picture that is not there.
+                if (player.error.value != null || !player.hasActiveStream) { _watchingWallMs.value = null; break }
+            }
+        }
+    }
     /** Settings → Live rewind step (default 30 s), read live so a change applies without a restart. */
     private val rewindStepSec: StateFlow<Int> = settings.liveRewindStepSec
         .stateIn(
@@ -1914,6 +1984,52 @@ class LiveViewModel(
     /** One press of the archive rewind/forward buttons. */
     fun rewindLive() = scrubLive(rewindStepSec.value)
     fun forwardLive() = scrubLive(-rewindStepSec.value)
+
+    // ---- "Go back to…" — aim at a point in the archive instead of nudging toward it ----------------
+    // The rewind button moves 30 s a press, so three hours back is a held key and a crawling counter.
+    // These jump straight there. Same archive machinery ([scheduleTimeshiftLoad]), just a bigger offset,
+    // so nothing about how a stream is opened changes.
+
+    /** How deep [ch]'s archive is, in seconds — the bound every jump is clamped to. */
+    private fun catchupWindowSec(ch: ChannelEntity): Int =
+        (ch.catchupDays.takeIf { it > 0 } ?: DEFAULT_CATCHUP_DAYS) * 24 * 3600
+
+    /** Offsets offered for [ch], nearest first. Empty when the channel has no archive. */
+    fun catchupJumpOptions(ch: ChannelEntity): List<Int> =
+        if (!ch.catchup) emptyList() else CatchupJumps.optionsFor(catchupWindowSec(ch))
+
+    /** Offsets for the channel on screen — the player HUD's "Go back to…" list. */
+    fun currentJumpOptions(): List<Int> = _previewChannel.value?.let { catchupJumpOptions(it) } ?: emptyList()
+
+    /** Archive depth of [ch] / of the channel on screen, in seconds — the bound the exact-time picker
+     *  clamps its day and HH:MM wheels to. */
+    fun catchupWindowOf(ch: ChannelEntity): Int = if (!ch.catchup) 0 else catchupWindowSec(ch)
+    fun currentCatchupWindowSec(): Int = _previewChannel.value?.let { catchupWindowOf(it) } ?: 0
+
+    /** Jump the channel already on screen to [offsetSec] behind live (absolute, not relative — this is
+     *  aiming, so a second pick from the list must not stack on top of the first). */
+    fun jumpBackTo(offsetSec: Int) {
+        val ch = _previewChannel.value ?: return
+        if (!ch.catchup) return
+        val off = offsetSec.coerceIn(1, catchupWindowSec(ch))
+        _catchupActive.value = false // a live rewind, not a fixed programme: the HUD keeps its live chrome
+        _timeshiftOffsetSec.value = off
+        scheduleTimeshiftLoad(ch, off)
+    }
+
+    /** Open [ch] straight into its archive at [offsetSec] behind live, from the browse list — the
+     *  channel is not playing yet, so this also arms CH+/CH− and records the watch, exactly as tuning
+     *  it live would. Without that the channel-list overlay and zapping stay dead for the session. */
+    fun playCatchupAt(ch: ChannelEntity, offsetSec: Int) {
+        if (!ch.catchup) return
+        val off = offsetSec.coerceIn(1, catchupWindowSec(ch))
+        armZapList(ch)
+        _previewChannel.value = ch
+        _catchupActive.value = false
+        _timeshiftOffsetSec.value = off
+        scheduleTimeshiftLoad(ch, off)
+        recordLiveHistory(ch, immediate = true)
+    }
 
     /** Move [deltaSec] further back (+) or toward live (−) into the archive (also drives the timeline
      *  scrubber). Coalesced so holding a key scrubs freely and loads the archive once at the final point;
@@ -1940,6 +2056,7 @@ class LiveViewModel(
     private fun clearTimeshift() {
         timeshiftJob?.cancel(); tickJob?.cancel()
         _timeshiftOffsetSec.value = null
+        clearWatchingClock()
     }
 
     /** Jump back to the real-time live edge (back on the fast ExoPlayer engine). */
@@ -1974,6 +2091,7 @@ class LiveViewModel(
                 rewindStartMs = startMs,
             )
             timeshiftStartWall = startMs
+            archiveBaseWall = startMs
             startOffsetTick()
         }
     }
@@ -1994,6 +2112,7 @@ class LiveViewModel(
                 if (!player.hasActiveStream) break
                 val behindSec = ((System.currentTimeMillis() - (timeshiftStartWall + player.position.value)) / 1000)
                 _timeshiftOffsetSec.value = behindSec.toInt().coerceAtLeast(0)
+                archiveBaseWall?.let { _watchingWallMs.value = it + player.position.value }
             }
         }
     }
@@ -2058,7 +2177,8 @@ class LiveViewModel(
                 is LiveKey.Folder -> channelDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
                 is LiveKey.Custom -> customCategoryDao.snapshotChannels(pid, key.id, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
                 LiveKey.Favorites -> channelDao.snapshotFavoritesManual(pid, contextKey, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
-                LiveKey.History, LiveKey.All -> return@launch
+                // Catch-up joins History/All as a computed view: it has no stored order to move within.
+                LiveKey.History, LiveKey.All, LiveKey.Catchup -> return@launch
             }
             val idx = items.indexOfFirst { it.id == channel.id }
             if (idx < 0) return@launch
@@ -2148,6 +2268,14 @@ class LiveViewModel(
             LiveRailItem(LiveKey.History, icon = OwnTVIcon.HISTORY),
             LiveRailItem(LiveKey.All),
         )
+
+        /** [defaultRail] with the Catch-up entry inserted before All when [hasCatchup]. */
+        fun railWithCatchup(hasCatchup: Boolean): List<LiveRailItem> =
+            if (!hasCatchup) defaultRail
+            // CATCHUP (a TV with a replay loop), not EPG or a calendar: this rail is the guide-free
+            // route, and a calendar next to Favorites/History would read as "schedule" — the one thing
+            // it deliberately is not.
+            else defaultRail.dropLast(1) + LiveRailItem(LiveKey.Catchup, icon = OwnTVIcon.CATCHUP) + defaultRail.last()
         const val ZAP_WINDOW_HALF = 50 // channels loaded on each side of the tuned channel for CH+/-
         /** How long ExoPlayer gets to reach a first frame (or an error) before the channel goes to mpv,
          *  *on top of* any requested pre-buffer. Past this it is not slow, it is stuck — see

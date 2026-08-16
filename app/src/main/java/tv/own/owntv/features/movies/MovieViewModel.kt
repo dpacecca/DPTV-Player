@@ -773,7 +773,9 @@ class MovieViewModel(
         val rating = sort == SettingsRepository.SortMode.RATING
         val dateAdded = sort == SettingsRepository.SortMode.DATE_ADDED
         return if (query.isBlank()) when (key) {
-            LiveKey.All -> when {
+            // Catch-up is a Live TV-only rail (channels have archives, movies don't), but the rail model
+            // is shared across all three sections — so it degrades to All here rather than existing.
+            LiveKey.All, LiveKey.Catchup -> when {
                 rating -> movieDao.pagingAllRating(ids)
                 playlist -> movieDao.pagingAllOriginal(ids)
                 dateAdded -> movieDao.pagingAllDateAdded(ids)
@@ -794,7 +796,7 @@ class MovieViewModel(
                 }
             }
         } else when (key) {
-            LiveKey.All ->
+            LiveKey.All, LiveKey.Catchup ->
                 if (dateAdded) movieDao.searchAllDateAdded(query, ids)
                 else movieDao.searchAll(query, ids)
             LiveKey.Favorites -> movieDao.searchFavorites(query, c.profileId, ids)
@@ -809,7 +811,7 @@ class MovieViewModel(
     private fun countFlow(key: LiveKey, c: Ctx, hiddenCats: Set<Long>): Flow<Int> {
         val ids = c.sourceIds.ifEmpty { listOf(-1L) }
         return when (key) {
-            LiveKey.All ->
+            LiveKey.All, LiveKey.Catchup ->
                 if (hiddenCats.isEmpty()) movieDao.countAll(ids)
                 else movieDao.countAllExcluding(ids, hiddenCats.toList())
             LiveKey.Favorites -> movieDao.countFavorites(c.profileId, ids)

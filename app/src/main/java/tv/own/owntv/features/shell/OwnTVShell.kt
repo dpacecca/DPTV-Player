@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -234,6 +235,7 @@ fun OwnTVShell(
     val zapOverlayTitle = zapListTitle ?: when (zapListKey) {
         LiveKey.Favorites -> stringResource(R.string.content_category_favorites)
         LiveKey.History -> stringResource(R.string.content_category_history)
+        LiveKey.Catchup -> stringResource(R.string.content_catchup)
         else -> stringResource(R.string.content_category_all_channels)
     }
     val showCategoryBrowser by liveVm.showCategoryBrowser.collectAsStateWithLifecycle()
@@ -898,6 +900,12 @@ fun OwnTVShell(
                     onForwardLive = if (isTunedLive) liveVm::forwardLive else null,
                     onGoToLive = if (isTunedLive) liveVm::goToLive else null,
                     onScrubLive = if (isTunedLive && canRewindLive) liveVm::scrubLive else null,
+                    jumpBackOptions = if (isTunedLive && canRewindLive) liveVm::currentJumpOptions else null,
+                    onJumpBack = if (isTunedLive && canRewindLive) liveVm::jumpBackTo else null,
+                    jumpBackWindowSec = if (isTunedLive && canRewindLive) liveVm::currentCatchupWindowSec else null,
+                    // Non-null only while an archive is on screen, so movies, episodes and live TV get
+                    // the single real clock and catch-up gets the pair.
+                    watchingWallMs = liveVm.watchingWallMs.collectAsStateWithLifecycle().value,
                     timeshiftOffsetSec = if (isTunedLive) timeshiftOffset else null,
                     onTuneToNumber = if (directTuneEnabled && isTunedLive && isLiveStream && timeshiftOffset == null && previewChannel != null) liveVm::tuneByNumber else null,
                     directTuneContextKey = previewChannel?.id ?: 0L,
@@ -928,7 +936,27 @@ fun OwnTVShell(
                     liveEpgCard = if (isLiveChannel) {
                         {
                             val epg by liveVm.nowNext.collectAsStateWithLifecycle()
-                            tv.own.owntv.features.shell.components.LiveEpgCard(epg = epg)
+                            val archiveEpg by liveVm.archiveNowNext.collectAsStateWithLifecycle()
+                            val watching by liveVm.watchingWallMs.collectAsStateWithLifecycle()
+                            // Stacked: what was on air at the replayed moment, then what is on air now.
+                            // The live row is dimmed while an archive plays — it is context, not the
+                            // thing being watched — and returns to full strength back at the live edge.
+                            androidx.compose.foundation.layout.Column(
+                                horizontalAlignment = androidx.compose.ui.Alignment.End,
+                                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(7.dp),
+                            ) {
+                                if (watching != null) {
+                                    tv.own.owntv.features.shell.components.LiveEpgCard(
+                                        epg = archiveEpg,
+                                        variant = tv.own.owntv.features.shell.components.EpgCardVariant.ARCHIVE,
+                                        atMs = watching,
+                                    )
+                                }
+                                tv.own.owntv.features.shell.components.LiveEpgCard(
+                                    epg = epg,
+                                    modifier = if (watching == null) Modifier else Modifier.alpha(0.55f),
+                                )
+                            }
                         }
                     } else null,
                     modifier = Modifier.fillMaxSize(),
