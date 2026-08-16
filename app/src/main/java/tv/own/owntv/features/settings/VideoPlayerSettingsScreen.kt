@@ -60,6 +60,7 @@ import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.OwnTVButtonStyle
+import tv.own.owntv.player.EnginePreference
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
@@ -124,7 +125,8 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val colors = OwnTVTheme.colors
     val vm: SettingsViewModel = koinViewModel()
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
-    val vodExo by vm.vodPreferExo.collectAsStateWithLifecycle()
+    val vodEngine by vm.vodEnginePreference.collectAsStateWithLifecycle()
+    val liveEngine by vm.liveEnginePreference.collectAsStateWithLifecycle()
     val enginePins by vm.vodEnginePinCount.collectAsStateWithLifecycle()
     val defaultVolume by vm.defaultVolume.collectAsStateWithLifecycle()
     val savedZoom by vm.savedZoomCount.collectAsStateWithLifecycle()
@@ -259,10 +261,20 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onClick = { vm.setDeinterlace(!deinterlace) },
         )
         Row2(
+            icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_live_tv_player),
+            desc = stringResource(R.string.settings_live_player_description),
+            chip = engineLabel(liveEngine), chevron = true,
+            primaryChip = liveEngine != EnginePreference.EXO_FIRST,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_ENGINE)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_ENGINE },
+        )
+        Row2(
             icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_movies_series_player),
             desc = stringResource(R.string.settings_movies_player_description),
-            chip = stringResource(if (vodExo) R.string.settings_player_exoplayer else R.string.settings_player_mpv), primaryChip = !vodExo,
-            onClick = { vm.setVodPreferExo(!vodExo) },
+            chip = engineLabel(vodEngine), chevron = true,
+            primaryChip = vodEngine != EnginePreference.MPV_FIRST,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.VOD_ENGINE)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.VOD_ENGINE },
         )
         Row2(
             icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_reset_player_choices),
@@ -435,6 +447,20 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     }
 
     when (dialog) {
+        Dialog.LIVE_ENGINE -> PickerDialog(
+            title = stringResource(R.string.settings_live_tv_player),
+            options = engineOptions(default = EnginePreference.EXO_FIRST),
+            selected = liveEngine.name,
+            onSelect = { vm.setLiveEnginePreference(EnginePreference.valueOf(it)); dialog = Dialog.NONE },
+            onDismiss = { dialog = Dialog.NONE },
+        )
+        Dialog.VOD_ENGINE -> PickerDialog(
+            title = stringResource(R.string.settings_movies_series_player),
+            options = engineOptions(default = EnginePreference.MPV_FIRST),
+            selected = vodEngine.name,
+            onSelect = { vm.setVodEnginePreference(EnginePreference.valueOf(it)); dialog = Dialog.NONE },
+            onDismiss = { dialog = Dialog.NONE },
+        )
         Dialog.ZOOM -> PickerDialog(
             title = stringResource(R.string.settings_default_zoom),
             options = ZoomMode.entries.map { it.name to stringResource(it.labelRes) },
@@ -698,7 +724,39 @@ private fun ConfirmResetDialog(title: String, description: String, onConfirm: ()
     }
 }
 
-private enum class Dialog { NONE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS }
+private enum class Dialog { NONE, LIVE_ENGINE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS }
+
+/**
+ * Label for one engine preference — "ExoPlayer, then mpv", "mpv only", and so on.
+ *
+ * The engine names themselves are brands and never translated (`settings_player_*` are
+ * `translatable="false"`), so only the two sentence frames around them are, which is also why the same
+ * four labels serve both sections.
+ */
+@Composable
+internal fun engineLabel(preference: EnginePreference): String {
+    val exo = stringResource(R.string.settings_player_exoplayer)
+    val mpv = stringResource(R.string.settings_player_mpv)
+    return when (preference) {
+        EnginePreference.EXO_FIRST -> stringResource(R.string.settings_engine_order, exo, mpv)
+        EnginePreference.MPV_FIRST -> stringResource(R.string.settings_engine_order, mpv, exo)
+        EnginePreference.EXO_ONLY -> stringResource(R.string.settings_engine_only, exo)
+        EnginePreference.MPV_ONLY -> stringResource(R.string.settings_engine_only, mpv)
+    }
+}
+
+/** The four options for an engine picker, with [default] marked — Live TV and Movies & Series have
+ *  different defaults, so which line carries the mark depends on the section, not on the option. */
+@Composable
+private fun engineOptions(default: EnginePreference): List<Pair<String, String>> =
+    EnginePreference.entries.map { preference ->
+        val label = engineLabel(preference)
+        preference.name to if (preference == default) {
+            stringResource(R.string.settings_engine_default, label)
+        } else {
+            label
+        }
+    }
 
 /** Row chip for the External player row: "Off", "On" (all three), or the sections that are on. */
 @Composable

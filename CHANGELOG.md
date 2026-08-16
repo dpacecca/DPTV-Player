@@ -115,6 +115,30 @@
 - **Monospace is also available for the main interface and popup menus.** The subtitle-font choice
   survives restarts and is included in Backup & Restore with the other appearance settings.
 
+### 🎛️ Choose the playback engine — four options, for Live TV and for Movies & Series
+
+- **Settings → Video Player now has a Live TV player setting, and the Movies & Series player setting
+  has grown from a switch into the same four choices:** *ExoPlayer, then mpv* · *mpv, then ExoPlayer* ·
+  *ExoPlayer only* · *mpv only*. Each list marks its own default, because the two sections differ on
+  purpose: Live TV starts on ExoPlayer, which opens channels far faster and is the only engine with
+  live subtitles, while Movies & Series starts on mpv, which supports more formats. Nothing changes
+  for anyone who leaves them alone — the old Movies & Series switch carries its setting over.
+- **The two "only" choices stop the automatic switch between players.** Handing a channel from one
+  engine to the other costs a stop, a release and a re-open — several seconds of black screen — which
+  is wasted on a TV or a provider where the second engine was never going to work anyway. "Only" means
+  only: no switch after a decode failure, an account-busy refusal or anything OwnTV worked out for
+  itself. It still tries that engine's own `.m3u8` and `.ts` variants, which is what rescues most
+  channels; what it drops is the other engine.
+- **The compatibility-mode button in the player now stays where you put it.** Switching a live channel
+  back to ExoPlayer by hand could be undone by OwnTV about two seconds later, over and over, on TVs
+  where neither engine can decode a channel's audio — the button looked broken and there was no way to
+  remain on the chosen engine. Your choice now holds for that channel, and is remembered for next time
+  in both directions (previously only a choice of mpv was remembered).
+- **A channel or item you switch by hand always outranks the setting**, including the "only" choices,
+  so a single awkward channel never leaves you stuck: pick the other engine for that one and the rest
+  keep following your setting. Live TV's per-channel choices travel in Backup & Restore alongside the
+  Movies & Series ones.
+
 ### 🐛 Fixes
 
 - **Your DNS choice now survives an app restart.** Selecting Google, Cloudflare, Quad9 or entering a

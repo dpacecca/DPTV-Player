@@ -272,6 +272,9 @@ in with your own OpenSubtitles account and are subject to their terms and downlo
 - **[Media3 / ExoPlayer](https://github.com/androidx/media)** — the fast-start engine for Live TV
   preview and HLS.
 
+Which of the two starts a stream is yours to set, separately for Live TV and for Movies & Series
+(Settings → Video Player): either order, or one engine only with the automatic handover turned off.
+
 ### 🧩 Built with
 
 [Jetpack Compose for TV](https://developer.android.com/jetpack/compose) ·

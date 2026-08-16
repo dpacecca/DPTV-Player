@@ -20,6 +20,7 @@
 - **🔐 Your data no longer leaves the TV without a backup password**
 - **🗃️ Backup & Restore now really does back up everything**
 - **🔤 Subtitle font selection and Monospace**
+- **🎛️ Choose the playback engine — four options, for Live TV and for Movies & Series**
 
 ### 🐛 Fixes
 

@@ -293,10 +293,19 @@ or **narrow the whole app to just one**.
   **engine toggle (the ⇄ MPV/EXO pill)** — this **pins that channel to the mpv engine**. The pill always shows
   the engine that's **actually playing** (teal while on mpv, whether you pinned it or OwnTV auto‑switched), and
   **one tap always flips** the engine — a small "Switched to MPV/ExoPlayer" note confirms it. It's **remembered
-  per channel**, so that one channel always uses mpv while everything else stays fast.
-  Picking **ExoPlayer** on a channel that had auto‑switched to mpv is treated as your decision, and OwnTV
-  gives it a real try in both stream formats. If ExoPlayer genuinely can't play that channel at all, it ends
-  up back on mpv rather than leaving you on a spinner — press the toggle again whenever you want to retry.
+  per channel and in both directions**, so that one channel always uses the engine you chose while everything
+  else follows your setting.
+  Your choice **holds for the rest of that channel's playback** — OwnTV will not switch you back a couple of
+  seconds later — and the engine you picked is given a real try in **both stream formats**. The next time you
+  open the channel it starts on your engine again, this time with the full fallback available, so a channel
+  that engine genuinely cannot play still ends up somewhere that plays it instead of on a spinner.
+- 🏛️ **Which engine channels start on is up to you**: **Settings → Video Player → Live TV player**
+  offers **ExoPlayer, then mpv** (the default), **mpv, then ExoPlayer**, **ExoPlayer only** and **mpv only**.
+  The first two just change which engine gets the first go; the **only** choices switch off the automatic
+  handover altogether. That handover costs a few seconds of black screen every time it happens, so if you
+  already know the second engine never works on your TV or with your provider, turning it off makes every
+  failing channel give up quickly instead of stalling. **Only** still tries that engine's own two stream
+  formats — what it drops is the other engine. A channel you pin by hand ignores the setting either way.
   **A channel that won't play is worked through every combination.** With two engines and (when **Prefer HLS**
   is on) two stream formats there are four ways to open a channel, and one that defeats a given pairing is
   often fine on another. A failing channel now steps through them in a fixed order, each tried once, starting
@@ -437,9 +446,12 @@ or **narrow the whole app to just one**.
   immediately (Movies) or queue all cached episodes (Series). No need to open the detail pane.
 - 📤 **Play with external player via long‑press**: the same long‑press menu can open the movie/episode in an
   external app (VLC, MX Player, …) — one‑off, regardless of the global **External player** setting.
-- 🔧 **Two playback engines with automatic fallback**: movies/episodes play on **mpv** by default (or
-  **ExoPlayer** if you switched the **Movies & Series player** setting). If the chosen engine can't play an
-  item, the **other engine is tried automatically** before any error. Each engine is given both its
+- 🔧 **Two playback engines with automatic fallback**: movies/episodes play on **mpv** by default —
+  **Settings → Video Player → Movies & Series player** offers the same four choices as Live TV
+  (**mpv, then ExoPlayer** by default, **ExoPlayer, then mpv**, **ExoPlayer only**, **mpv only**). If the
+  chosen engine can't play an item, the **other engine is tried automatically** before any error — unless
+  you picked one of the **only** choices, which never switch engines. Note that **ExoPlayer only** cannot
+  play **DTS or TrueHD** audio at all; those files need mpv. Each engine is given both its
   hardware and its software decoder before the other is tried, so a video gets four chances in all. A
   fallback is **never remembered** — the next item, and the same item next time, always starts on the
   engine you chose. You can also switch the **current**

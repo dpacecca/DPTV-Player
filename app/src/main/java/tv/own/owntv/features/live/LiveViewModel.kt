@@ -164,6 +164,16 @@ class LiveViewModel(
     val forceMpvUrls: StateFlow<Set<String>> = forceMpvStore.urls
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
+    /** Channels pinned the other way — to ExoPlayer — by the same toggle. Only reachable once the global
+     *  setting starts channels on mpv, which is why this list did not exist before it. */
+    private val forceExoUrls: StateFlow<Set<String>> = forceMpvStore.exoUrls
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** Live TV's global engine order. Eagerly collected for the same reason as the pins: the routing
+     *  decision in [playChannel] is synchronous and must never read a stale default. */
+    val liveEnginePreference: StateFlow<tv.own.owntv.player.EnginePreference> = settings.liveEnginePreference
+        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.player.EnginePreference.EXO_FIRST)
+
     /** List ordering for this section (Playlist order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortLive
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.SortMode.PLAYLIST)
@@ -1293,24 +1303,36 @@ class LiveViewModel(
         _previewChannel.value = channel
         clearTimeshift() // normal live = not timeshifted
         _catchupActive.value = false // tuning live ends any archive playback the HUD was showing
-        // Self-learning routing: a channel the user pinned to mpv skips ExoPlayer entirely (no artifacts/silent
-        // first), straight to the engine that plays it. Everyone else gets the fast ExoPlayer-first path.
-        val pinned = isPinnedToMpv(channel)
-        // A new tune clears any "user chose ExoPlayer" override — that choice is per channel.
-        if (exoChosenByUser != channel.streamUrl) exoChosenByUser = null
+        // Three inputs, in descending authority: what the user pinned for THIS channel, the global engine
+        // setting, and what the app has learned about the panel.
+        val setting = liveEnginePreference.value
+        // Self-learning routing: a channel the user pinned skips the other engine entirely (no
+        // artifacts/silent first), straight to the one that plays it. A pin is a deliberate per-channel
+        // exception and therefore outranks the global setting — that is the whole point of the toggle.
+        val pin = enginePin(channel)
         // Same idea, learned instead of pinned: a panel already caught refusing its own signed segment
         // URLs can never be satisfied by ExoPlayer, so skip straight to mpv rather than replaying the
-        // detection (two dead 403s + the wait) on every further channel of that panel.
-        val refusing = !pinned && panelRefusesSegments(channel)
-        val reason = when {
-            pinned -> "mpv (pinned)"
-            refusing -> "mpv (panel refuses segments)"
-            else -> "exoplayer"
+        // detection (two dead 403s + the wait) on every further channel of that panel. Only ever consulted
+        // when the setting still allows both engines: in an "only" mode the user has ruled the other engine
+        // out, and a lesson the app taught itself may not overturn that. A pin may, because the user made it.
+        val refusing = pin == null && setting.allowsHandover && panelRefusesSegments(channel)
+        val onMpv = pin ?: (refusing || setting.startsOnMpv)
+        // A pin that contradicts an "only" setting re-opens the handover for this one channel. Without
+        // that, the exception channel would be locked to the engine the user just said cannot play it,
+        // with the ladder forbidden from ever reaching the one that can — a dead end of our own making.
+        val preference = when {
+            setting.allowsHandover -> tv.own.owntv.player.EnginePreference.firstOn(onMpv)
+            onMpv == setting.startsOnMpv -> setting
+            else -> tv.own.owntv.player.EnginePreference.firstOn(onMpv)
         }
-        engineLog("tune '${channel.name}' -> $reason")
-        val onMpv = pinned || refusing
-        armLadder(channel, startsOnMpv = onMpv)
-        if (onMpv) startOnMpv(channel) else startOnExo(channel)
+        val reason = when {
+            pin != null -> "${if (onMpv) "mpv" else "exoplayer"} (pinned)"
+            refusing -> "mpv (panel refuses segments)"
+            else -> "${if (onMpv) "mpv" else "exoplayer"} (setting)"
+        }
+        engineLog("tune '${channel.name}' -> $reason [${preference.name}]")
+        armLadder(channel, preference)
+        if (onMpv) startOnMpv(channel, reason) else startOnExo(channel)
         recordLiveHistory(channel)
     }
 
@@ -1355,15 +1377,22 @@ class LiveViewModel(
     private fun mpvPinKey(channel: ChannelEntity): String? =
         tv.own.owntv.core.player.enginePinKey(channel.sourceId, "LIVE", channel.remoteId)
 
-    /** Whether [channel] is pinned to mpv, honouring pins written by older builds under the stream
-     *  URL. A legacy hit is rewritten under the stable key so it survives the next re-sync/Stalker resolve. */
-    private fun isPinnedToMpv(channel: ChannelEntity): Boolean {
-        val pins = forceMpvUrls.value
+    /** The engine [channel] is pinned to — true = mpv, false = ExoPlayer, null = not pinned, follow the
+     *  setting. Honours pins written by older builds under the stream URL; a legacy hit is rewritten under
+     *  the stable key so it survives the next re-sync/Stalker resolve. */
+    private fun enginePin(channel: ChannelEntity): Boolean? {
         val key = mpvPinKey(channel)
-        if (key != null && key in pins) return true
-        if (channel.streamUrl !in pins) return false
+        val mpvPins = forceMpvUrls.value
+        val exoPins = forceExoUrls.value
+        if (key != null && key in mpvPins) return true
+        if (key != null && key in exoPins) return false
+        val legacy = when (channel.streamUrl) {
+            in mpvPins -> true
+            in exoPins -> false
+            else -> return null
+        }
         if (key != null) viewModelScope.launch { forceMpvStore.migrateKey(channel.streamUrl, key) }
-        return true
+        return legacy
     }
 
     /**
@@ -1372,13 +1401,13 @@ class LiveViewModel(
      *
      * The lesson is panel-wide and session-only, so the first channel of the session still pays the
      * detection and a provider that fixes its panel is back to the ExoPlayer-first path after the next
-     * app start. An explicit "use ExoPlayer" for this channel still wins — the user's choice is never
-     * overridden by a learned quirk. Stalker sources are excluded: their `streamUrl` is a cmd, not a
+     * app start. An explicit "use ExoPlayer" pin for this channel still wins, and so does an "only" engine
+     * setting — the caller does not consult this at all in either case, because a quirk the app taught
+     * itself may never overturn a choice the user made. Stalker sources are excluded: their `streamUrl` is a cmd, not a
      * URL, so there is no host to key on until it has been resolved (a network call this decision
      * must not make).
      */
     private suspend fun panelRefusesSegments(channel: ChannelEntity): Boolean {
-        if (exoChosenByUser == channel.streamUrl) return false
         val source = getSource(channel.sourceId)
         if (streamUrlResolver.needsResolve(source)) return false
         return LiveStreamQuirks.refusesSegments(channel.playStreamUrl(source))
@@ -1440,8 +1469,13 @@ class LiveViewModel(
         }
     }
 
-    /** Start [channel] on the full mpv engine (pinned "compatibility" channel, or an ExoPlayer fallback). */
-    private fun startOnMpv(channel: ChannelEntity) { viewModelScope.launch { fallbackToMpv(channel, "pinned to compatibility mode") } }
+    /** Start [channel] on the full mpv engine — a pinned "compatibility" channel, the engine setting
+     *  asking for mpv first, or an ExoPlayer fallback. [reason] rides into the diagnostics, so it must
+     *  say which of those it was: a log that calls every mpv start a pin makes a setting-driven start
+     *  look like a stray pin, which is exactly the confusion these lines exist to prevent. */
+    private fun startOnMpv(channel: ChannelEntity, reason: String) {
+        viewModelScope.launch { fallbackToMpv(channel, reason) }
+    }
 
     /** HUD "compatibility mode" toggle: pin/unpin the current channel to mpv and swap engines live. */
     fun toggleForceMpv() {
@@ -1459,18 +1493,19 @@ class LiveViewModel(
         val goToMpv = _liveOnExo.value // on Exo now → switch to mpv; on mpv now → switch to Exo
         engineLog("engine toggle '${channel.name}' -> ${if (goToMpv) "mpv" else "exoplayer"} (currentlyOnExo=${_liveOnExo.value})")
         viewModelScope.launch {
-            // Pin to mpv when choosing mpv; unpin when choosing Exo. Write the stable key, and clear
-            // any legacy URL-keyed entry too so an un-pin can't leave the old one behind (P6).
+            // Pin to the chosen engine. Write the stable key, and clear any legacy URL-keyed entry too so
+            // the pin can't be contradicted by an older one left behind (P6).
             val key = mpvPinKey(channel)
-            // Choosing ExoPlayer here is an explicit override: suppress the auto-fallback for this
-            // channel until the next tune, so it can't be undone a second later by watchExoOutcome.
-            exoChosenByUser = if (goToMpv) null else channel.streamUrl
-            forceMpvStore.set(key ?: channel.streamUrl, goToMpv)
-            if (key != null) forceMpvStore.set(channel.streamUrl, false)
-            // A manual engine choice restarts the ladder around that engine, so the chosen one gets both
-            // of its formats before the other is considered — and so a channel it turns out to be unable
-            // to play still ends up somewhere that plays it, instead of on a spinner.
-            armLadder(channel, startsOnMpv = goToMpv)
+            forceMpvStore.pin(key ?: channel.streamUrl, goToMpv)
+            if (key != null) forceMpvStore.forget(channel.streamUrl)
+            // A manual engine choice restarts the ladder around that engine — and, for this tune only, as
+            // an "only" mode. This is the click the user just made, on the engine they just named, while
+            // watching: bouncing them off it seconds later (as the undecodable-audio check did, over and
+            // over, on a box where neither engine has sound) makes the control look broken and leaves no
+            // way to stay put. The NEXT tune of the same channel reads the pin instead and gets the full
+            // ladder back, so a channel the chosen engine genuinely cannot play still ends up somewhere
+            // that plays it rather than stuck forever on one bad decision.
+            armLadder(channel, tv.own.owntv.player.EnginePreference.onlyOn(goToMpv))
             if (goToMpv) {
                 fallbackToMpv(channel, "user chose compatibility mode") // ExoPlayer → mpv now
             } else {                    // mpv → ExoPlayer now
@@ -1512,20 +1547,6 @@ class LiveViewModel(
      *  plays but ExoPlayer can decode **none of its audio** (e.g. an AC3/E-AC3/DTS movie file added via M3U,
      *  on a device without that decoder — it'd play silently). mpv (FFmpeg) decodes everything. */
     private var exoOutcomeJob: Job? = null
-
-    /**
-     * Stream URL of the channel the user explicitly switched BACK to ExoPlayer with the HUD toggle.
-     * Keeps a *learned* routing quirk from overriding the choice at tune time (see
-     * [panelRefusesSegments]) — the user asked for this engine, so this channel starts there. Cleared
-     * on the next tune, because the choice is per channel.
-     *
-     * It deliberately does **not** disable the fallback ladder any more. It used to, which meant
-     * toggling onto ExoPlayer for a channel ExoPlayer cannot play left a permanent spinner with no
-     * `.ts` retry and no way back — worse than the bounce it was written to prevent. The ladder is the
-     * better answer to that bounce: the chosen engine now gets *both* of its formats before anything
-     * hands the channel elsewhere.
-     */
-    private var exoChosenByUser: String? = null
 
     private fun watchExoOutcome(channel: ChannelEntity) {
         exoOutcomeJob?.cancel()
@@ -1662,9 +1683,9 @@ class LiveViewModel(
 
     /** Reset the ladder for a fresh tune of [channel]. Rungs already climbed are forgotten — a new tune
      *  is a new chance, including for a channel that ended the last one on its final rung. */
-    private suspend fun armLadder(channel: ChannelEntity, startsOnMpv: Boolean) {
+    private suspend fun armLadder(channel: ChannelEntity, preference: tv.own.owntv.player.EnginePreference) {
         forceTsForExo = null
-        ladder.arm(channel.streamUrl, startsOnMpv) { hasHlsAlternative(channel) }
+        ladder.arm(channel.streamUrl, preference) { hasHlsAlternative(channel) }
     }
 
     /** Whether "Prefer HLS" actually rewrote this channel's URL, i.e. whether an HLS rung differs from a

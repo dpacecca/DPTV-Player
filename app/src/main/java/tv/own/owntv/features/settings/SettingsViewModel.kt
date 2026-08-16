@@ -390,8 +390,17 @@ class SettingsViewModel(
     val hwDecoding: StateFlow<Boolean> = settings.hwDecoding.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setHwDecoding(enabled: Boolean) { viewModelScope.launch { settings.setHwDecoding(enabled) } }
 
-    val vodPreferExo: StateFlow<Boolean> = settings.vodPreferExo.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
-    fun setVodPreferExo(enabled: Boolean) { viewModelScope.launch { settings.setVodPreferExo(enabled) } }
+    val vodEnginePreference: StateFlow<tv.own.owntv.player.EnginePreference> = settings.vodEnginePreference
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.player.EnginePreference.MPV_FIRST)
+    fun setVodEnginePreference(preference: tv.own.owntv.player.EnginePreference) {
+        viewModelScope.launch { settings.setVodEnginePreference(preference) }
+    }
+
+    val liveEnginePreference: StateFlow<tv.own.owntv.player.EnginePreference> = settings.liveEnginePreference
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.player.EnginePreference.EXO_FIRST)
+    fun setLiveEnginePreference(preference: tv.own.owntv.player.EnginePreference) {
+        viewModelScope.launch { settings.setLiveEnginePreference(preference) }
+    }
 
     /** How many movies/episodes are pinned to a specific engine — the row is only worth showing when
      *  there is something to forget. Counts both directions: a pin to mpv and a pin to ExoPlayer both
