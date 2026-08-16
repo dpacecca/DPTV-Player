@@ -2,6 +2,31 @@
 
 ## v4.2.2 — unreleased
 
+### 👶 Kids profiles hide adult content
+
+- **Kids mode now hides adult provider categories and their items throughout OwnTV.** The same
+  profile rule covers Live TV, Movies, Series, Home, Search, the TV Guide, Catch-up, Downloads,
+  custom categories, Android TV recommendations and direct/deep-link playback. The Guide is hidden
+  completely for a kids profile. Normal profiles keep the provider's full catalogue.
+- **TMDB search now follows the active profile.** Adult TMDB results are excluded only while Kids
+  mode is on; a normal profile never has them silently removed.
+- **Adult folders are recognized from the names supplied by the IPTV provider**, using common
+  multilingual adult markers plus labels such as `18+` and `XXX`. `Adult Swim` is explicitly not
+  treated as adult content. IPTV formats do not provide a trustworthy universal adult flag, so
+  misleading or uncategorized provider content cannot be identified perfectly.
+
+### 🚀 Start OwnTV on a specific Live TV channel
+
+- **App startup has a new Specific channel choice for each profile.** Its D-pad-friendly picker has
+  a search bar, and the saved channel is resolved by the provider's stable ID, then its name, with
+  the local row ID as a final fallback. The choice is included in Backup & Restore.
+- **A single unlocked profile can start playing its chosen channel immediately.** Multiple profiles
+  still show “Who's watching?”, and a PIN-locked profile still waits for authentication before any
+  channel starts.
+- **Unavailable or restricted startup channels fail safely.** Hidden channels, channels blocked by
+  Kids mode and channels from a disconnected source are never auto-played. If the saved channel no
+  longer exists, OwnTV opens Home and explains what happened.
+
 ### ⏪ Catch-up without a TV guide — a Catch-up category and "Go back to…"
 
 - **Live TV has a new Catch-up category**, between History and All, listing every channel your

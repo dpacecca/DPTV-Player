@@ -96,7 +96,8 @@ Scan to join from your phone:
 - **Protected (DRM) channels** — Widevine and ClearKey over DASH/HLS, read from the playlist's `#KODIPROP` licence properties; uses the CDM built into the device, so there is nothing to configure and no licence to buy
 
 ### 👥 Profiles & Downloads
-- Multiple profiles with own favorites/history/resume, PIN locks, kids flag, "Who's watching?" gate
+- Multiple profiles with own favorites/history/resume, PIN locks, and a "Who's watching?" gate; Kids mode hides adult provider folders/items and TMDB adult results throughout browsing, Guide and playback, while normal profiles keep the full catalogue
+- Per-profile startup can open Home, resume last channel, enter Live Favorites, or immediately play a chosen Live channel selected with a searchable TV-friendly picker; profile selection and PIN locks are always respected
 - Offline movies & episodes — pause/resume/retry, queue groups + storage bar, live poster status strip
 
 ### 🎨 Settings & Robustness

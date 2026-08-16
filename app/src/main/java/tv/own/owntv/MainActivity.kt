@@ -262,7 +262,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(loadedProfileId != null) {
                 if (loadedProfileId != null) Perf.stamp("profile-id-loaded")
             }
-            val shouldShowProfileGate = profilesLoaded && (profiles.size > 1 || profiles.singleOrNull()?.pinHash != null)
+            val shouldShowProfileGate = profilesLoaded && tv.own.owntv.features.profiles.profileGateRequired(profiles)
             // Keep the pure launch policy in the actual composition path as well as in its unit
             // tests. The policy checks the Room list, active-id membership, and authentication as
             // one decision; a future branch must not accidentally make the shell depend on only

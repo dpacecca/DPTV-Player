@@ -805,7 +805,14 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     Movie and series posters re‑flow automatically, so a narrower list just shows fewer per row. Saved in
     backups.
 - **Settings → Animations**: turn interface motion **off** for a snappier feel on lower‑end TV boxes.
-- **Profiles** (Settings → Profiles): multiple viewers, a **Kids mode**, and **PIN locks**.
+- **Profiles** (Settings → Profiles): multiple viewers, a **Kids mode**, and **PIN locks**. Kids mode
+  hides adult provider categories and their items across Live TV, Movies, Series, Home, Search,
+  Catch-up, Downloads, custom categories, Android TV recommendations and direct playback; it also
+  hides the **Guide**. TMDB adult results are excluded only for Kids profiles, never for normal
+  profiles. OwnTV recognizes adult content from provider category/folder names using common
+  multilingual markers such as `18+` and `XXX` (`Adult Swim` is exempt). IPTV formats have no
+  dependable universal adult flag, so misleading or uncategorized provider items cannot always be
+  recognized.
 
 ---
 
@@ -832,8 +839,14 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   category list in **Customize Categories & Items**) with the remote's **CH+ / CH−** keys. Separate skip
   counts per direction (typed or ±‑stepped), long‑press jumps to first/last, with an advisory warning
   above 50. Turn it off here if your remote maps CH keys elsewhere.
-- 🚀 **App startup** — where each profile opens: **Home**, **Last channel** (auto‑plays the channel you last
-  watched), or **Live · Favorites** (lands you right inside your favourites list).
+- 🚀 **App startup** — where each profile opens: **Home**, **Last channel** (auto‑plays the channel
+  you last watched), **Live · Favorites** (lands you right inside the favourites list), or
+  **Specific channel**. The channel picker is searchable and D-pad friendly. OwnTV remembers a stable
+  profile-specific channel reference (provider ID, then name, then the local row as a fallback), and
+  Backup & Restore carries it to another device. With one unlocked profile, OwnTV starts the channel
+  immediately; with multiple profiles or a PIN lock, profile selection/authentication comes first.
+  A hidden, Kids-restricted, disconnected or missing channel is never auto-played; OwnTV opens Home
+  and shows a message instead.
 - 🗂️ **Browsing & lists** (Content) — six toggles, two for each of **Live TV / Movies / Series**.
   **Remember last category** (on) reopens the section on the category you left instead of *All*.
   **Remember last item** (off) makes each category keep its own scroll position instead of starting at

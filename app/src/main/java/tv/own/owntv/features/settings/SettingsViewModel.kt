@@ -12,6 +12,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -65,6 +67,8 @@ class SettingsViewModel(
     private val epgDao: tv.own.owntv.core.database.dao.EpgDao,
     private val importFinalizer: tv.own.owntv.core.sync.ImportFinalizer,
     private val channelDao: tv.own.owntv.core.database.dao.ChannelDao,
+    private val categoryDao: tv.own.owntv.core.database.dao.CategoryDao,
+    private val customizationStore: tv.own.owntv.core.customize.CustomizationStore,
     private val movieDao: tv.own.owntv.core.database.dao.MovieDao,
     private val seriesDao: tv.own.owntv.core.database.dao.SeriesDao,
     private val historyDao: tv.own.owntv.core.database.dao.HistoryDao,
@@ -478,6 +482,75 @@ class SettingsViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.StartupMode.HOME)
     fun setStartupMode(mode: tv.own.owntv.features.settings.data.StartupMode) {
         viewModelScope.launch { settings.setStartupMode(settings.activeProfileId.first(), mode) }
+    }
+
+    val startupChannel: StateFlow<tv.own.owntv.features.settings.data.StartupChannelRef?> =
+        settings.activeProfileId
+            .flatMapLatest { profileId ->
+                if (profileId < 0L) flowOf(null) else settings.startupChannel(profileId)
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    private val _startupChannelQuery = MutableStateFlow("")
+    val startupChannelQuery: StateFlow<String> = _startupChannelQuery.asStateFlow()
+    private val startupChannelRefresh = MutableStateFlow(0)
+
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    val startupChannelResults: StateFlow<List<tv.own.owntv.core.database.entity.ChannelEntity>> =
+        combine(
+            settings.activeProfileId,
+            _startupChannelQuery.debounce(180),
+            startupChannelRefresh,
+        ) { profileId, query, _ -> profileId to query }
+            .mapLatest { (profileId, query) -> loadStartupChannelResults(profileId, query) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun setStartupChannelQuery(query: String) { _startupChannelQuery.value = query }
+
+    fun refreshStartupChannelPicker() { startupChannelRefresh.value++ }
+
+    fun setStartupChannel(channel: tv.own.owntv.core.database.entity.ChannelEntity) {
+        viewModelScope.launch {
+            val profileId = settings.activeProfileId.first()
+            if (profileId < 0L) return@launch
+            settings.setSpecificStartupChannel(
+                profileId,
+                tv.own.owntv.features.settings.data.StartupChannelRef(
+                    sourceId = channel.sourceId,
+                    remoteId = channel.remoteId,
+                    name = channel.name,
+                    itemId = channel.id,
+                ),
+            )
+        }
+    }
+
+    private suspend fun loadStartupChannelResults(
+        profileId: Long,
+        query: String,
+    ): List<tv.own.owntv.core.database.entity.ChannelEntity> {
+        if (profileId < 0L) return emptyList()
+        val sources = sourceDao.observeForProfile(profileId).first().filter { it.syncLive }
+        val defaultSourceId = settings.defaultSourceId.first()
+        val sourceIds = if (defaultSourceId > 0L && sources.any { it.id == defaultSourceId }) {
+            listOf(defaultSourceId)
+        } else {
+            sources.map { it.id }
+        }
+        if (sourceIds.isEmpty()) return emptyList()
+        val customizations = customizationStore.observe(profileId, tv.own.owntv.core.model.MediaType.LIVE).first()
+        val isKids = profileDao.getById(profileId)?.isKids == true
+        val hiddenCategoryIds = tv.own.owntv.core.content.AdultCategoryClassifier.hiddenCategoryIds(
+            categoryDao.observe(sourceIds, tv.own.owntv.core.model.MediaType.LIVE).first(),
+            customizations.hiddenCategories,
+            isKids,
+        )
+        return channelDao.searchList(query.trim(), sourceIds, 500)
+            .asSequence()
+            .filter { tv.own.owntv.core.customize.CustomizeKeys.channel(it) !in customizations.hiddenItems }
+            .filter { it.categoryId == null || it.categoryId !in hiddenCategoryIds }
+            .take(300)
+            .toList()
     }
 
     val resumeMode: StateFlow<SettingsRepository.ResumeMode> =
@@ -1481,7 +1554,9 @@ class SettingsViewModel(
         }
         _metadataTest.value = MetadataTestState.Testing
         viewModelScope.launch {
-            val result = runCatching { metadataProvider.searchMovie(q) }
+            val profileId = settings.activeProfileId.first()
+            val includeAdult = tv.own.owntv.core.metadata.profileAllowsAdultMetadata(profileDao.getById(profileId)?.isKids)
+            val result = runCatching { metadataProvider.searchMovie(q, includeAdult = includeAdult) }
             _metadataTest.value = result.fold(
                 onSuccess = { hits ->
                     val top = hits?.firstOrNull()

@@ -199,9 +199,12 @@ class SeriesViewModel(
             if (c.profileId < 0) {
                 flowOf(emptySet())
             } else {
-                combine(categoryDao.observe(c.sourceIds, MediaType.SERIES), custom) { cats, cust ->
-                    if (cust.hiddenCategories.isEmpty()) emptySet()
-                    else cats.filter { CustomizeKeys.category(it) in cust.hiddenCategories }.map { it.id }.toSet()
+                combine(categoryDao.observe(c.sourceIds, MediaType.SERIES), custom, profileDao.observeById(c.profileId)) { cats, cust, profile ->
+                    tv.own.owntv.core.content.AdultCategoryClassifier.hiddenCategoryIds(
+                        cats,
+                        cust.hiddenCategories,
+                        profile?.isKids == true,
+                    )
                 }
             }
         }
@@ -436,11 +439,15 @@ class SeriesViewModel(
                 categoryDao.observe(c.sourceIds, MediaType.SERIES),
                 customize.observe(c.profileId, MediaType.SERIES),
                 sortMode,
-            ) { cats, cust, sort ->
+                profileDao.observeById(c.profileId),
+            ) { cats, cust, sort, profile ->
                 // A–Z also sorts the category folders (custom categories included); manually moved
                 // categories stay pinned first. Custom categories ride the SAME customization keys,
                 // so renames/hides/reorders apply to them with no extra code (#87).
-                val folders = cats.applyCustomizationsWithCustoms(cust, cust.customCategories, alphaRest = sort == SettingsRepository.SortMode.ALPHA)
+                val kids = profile?.isKids == true
+                val visibleCats = if (kids) cats.filterNot { tv.own.owntv.core.content.AdultCategoryClassifier.isAdult(it.name) } else cats
+                val visibleCustoms = if (kids) cust.customCategories.filterNot { tv.own.owntv.core.content.AdultCategoryClassifier.isAdult(it.name) } else cust.customCategories
+                val folders = visibleCats.applyCustomizationsWithCustoms(cust, visibleCustoms, alphaRest = sort == SettingsRepository.SortMode.ALPHA)
                 defaultRail + folders.map { e ->
                     LiveRailItem(
                         key = e.categoryId?.let { LiveKey.Folder(it) } ?: LiveKey.Custom(e.customId!!),
@@ -469,7 +476,7 @@ class SeriesViewModel(
                 if (cust.hiddenItems.isEmpty() && cust.itemNames.isEmpty() && cs.hiddenCats.isEmpty() && movedFrom.isEmpty()) paging
                 else paging.filter { s ->
                     CustomizeKeys.series(s) !in cust.hiddenItems &&
-                        (args.key is LiveKey.Custom || s.categoryId == null || s.categoryId !in cs.hiddenCats) &&
+                        (s.categoryId == null || s.categoryId !in cs.hiddenCats) &&
                         // Moved-out items leave ONLY their origin folder (they stay in All/search).
                         (movedFrom[CustomizeKeys.series(s)]?.let { origin ->
                             args.key !is LiveKey.Folder || origin != folderContextKeys.value[args.key.id]
@@ -715,6 +722,8 @@ class SeriesViewModel(
         val showId = if (seriesId > 0) seriesId else episode.seriesId
         val show = seriesDao.getSeriesById(showId) ?: return false
         if (episode.seriesId != show.id) return false
+        val pid = currentProfileId() ?: return false
+        if (!tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, show.categoryId, profileDao, categoryDao)) return false
         seriesRepository.loadEpisodes(show)
         val queue = seriesDao.episodesBySeries(show.id).first()
         if (queue.isEmpty()) return false
@@ -763,6 +772,7 @@ class SeriesViewModel(
         viewModelScope.launch {
             val pid = currentProfileId()
             val show = seriesDao.getSeriesById(episode.seriesId) ?: return@launch
+            if (pid != null && !tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, show.categoryId, profileDao, categoryDao)) return@launch
             Log.d(TAG, "playEpisodeExternal episodeId=${episode.id}")
             val url = resolvedEpisodeUrlOrNull(episode) ?: return@launch
             externalPlayerLauncher.launch(
@@ -797,6 +807,7 @@ class SeriesViewModel(
         _lastPlayedEpisodeId.value = episode.id
         viewModelScope.launch {
             val pid = currentProfileId()
+            if (pid != null && !tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, show.categoryId, profileDao, categoryDao)) return@launch
             // External player (global toggle): launch only the selected episode (external players are
             // single-item — no prev/next queue). History is still recorded; resume position and the
             // in-app HUD/progress tick are not, since OwnTV can't observe the external app.
@@ -911,6 +922,8 @@ class SeriesViewModel(
         val ext = episode.containerExt ?: StorageAccess.extOf(episode.streamUrl)
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
+            val actualShow = show ?: seriesDao.getSeriesById(episode.seriesId)
+            if (!tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, actualShow?.categoryId, profileDao, categoryDao)) return@launch
             downloadManager.enqueue(
                 profileId = pid,
                 mediaType = MediaType.EPISODE,
@@ -928,6 +941,7 @@ class SeriesViewModel(
         val showDir = StorageAccess.sanitize(series.name)
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
+            if (!tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, series.categoryId, profileDao, categoryDao)) return@launch
             seriesDao.episodesBySeries(series.id).first().forEach { ep ->
                 val ext = ep.containerExt ?: StorageAccess.extOf(ep.streamUrl)
                 downloadManager.enqueue(

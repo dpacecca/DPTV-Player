@@ -191,6 +191,7 @@ fun SettingsScreen(
     var showClearHistory by remember { mutableStateOf(false) }
     var showAnimations by remember { mutableStateOf(false) }
     var showStartup by remember { mutableStateOf(false) }
+    var showStartupChannelPicker by remember { mutableStateOf(false) }
     var showErrorLog by remember { mutableStateOf(false) }
     var showAfrWarning by remember { mutableStateOf(false) }
     var showLivePreviewPanelWarning by remember { mutableStateOf(false) }
@@ -239,13 +240,13 @@ fun SettingsScreen(
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
     val scrollState = rememberScrollState()
     var savedScroll by remember { mutableIntStateOf(0) }
-    val anyDialogOpen = showZoom || showFontCustomization || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showGlassEffect || showAmbientGlow || showBrowsing
+    val anyDialogOpen = showZoom || showFontCustomization || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showStartupChannelPicker || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showGlassEffect || showAmbientGlow || showBrowsing
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showFontCustomization, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showGlassEffect, showAmbientGlow, showBrowsing) {
+    LaunchedEffect(showZoom, showFontCustomization, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showStartupChannelPicker, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showGlassEffect, showAmbientGlow, showBrowsing) {
         if (!anyDialogOpen) {
             // When a scrim dialog is torn down, Compose's focus re-search through the newly-exposed
             // scrollable Column resets its scroll to 0 and then bringIntoView-animates to wherever
@@ -293,6 +294,9 @@ fun SettingsScreen(
     }
     val weatherEnabled by settingsVm.weatherEnabled.collectAsStateWithLifecycle()
     val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
+    val startupChannel by settingsVm.startupChannel.collectAsStateWithLifecycle()
+    val startupChannelQuery by settingsVm.startupChannelQuery.collectAsStateWithLifecycle()
+    val startupChannelResults by settingsVm.startupChannelResults.collectAsStateWithLifecycle()
     val navMenuMode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
     val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
     val rememberLastLive by settingsVm.rememberLastLive.collectAsStateWithLifecycle()
@@ -763,7 +767,9 @@ fun SettingsScreen(
         SettingsRow(
             tone = TileTone.SECONDARY, icon = OwnTVIcon.HOME,
             title = stringResource(R.string.settings_app_startup), desc = stringResource(R.string.settings_app_startup_description),
-            chip = startupLabel(startupMode), chipTone = TileTone.PRIMARY,
+            chip = if (startupMode == tv.own.owntv.features.settings.data.StartupMode.SPECIFIC_CHANNEL) {
+                startupChannel?.name ?: startupLabel(startupMode)
+            } else startupLabel(startupMode), chipTone = TileTone.PRIMARY,
             onClick = { savedScroll = scrollState.value; dialogReturn = startupRowFocus; showStartup = true }, showChevron = true,
             modifier = Modifier.focusRequester(startupRowFocus),
         )
@@ -942,8 +948,31 @@ fun SettingsScreen(
             title = stringResource(R.string.settings_app_startup_dialog),
             options = tv.own.owntv.features.settings.data.StartupMode.entries.map { it.name to startupLabel(it) },
             selected = startupMode.name,
-            onSelect = { settingsVm.setStartupMode(tv.own.owntv.features.settings.data.StartupMode.valueOf(it)); showStartup = false },
+            onSelect = {
+                val mode = tv.own.owntv.features.settings.data.StartupMode.valueOf(it)
+                showStartup = false
+                if (mode == tv.own.owntv.features.settings.data.StartupMode.SPECIFIC_CHANNEL) {
+                    settingsVm.setStartupChannelQuery("")
+                    settingsVm.refreshStartupChannelPicker()
+                    showStartupChannelPicker = true
+                } else {
+                    settingsVm.setStartupMode(mode)
+                }
+            },
             onDismiss = { showStartup = false },
+        )
+    }
+    if (showStartupChannelPicker) {
+        StartupChannelPickerDialog(
+            query = startupChannelQuery,
+            channels = startupChannelResults,
+            selected = startupChannel,
+            onQueryChange = settingsVm::setStartupChannelQuery,
+            onSelect = {
+                settingsVm.setStartupChannel(it)
+                showStartupChannelPicker = false
+            },
+            onDismiss = { showStartupChannelPicker = false },
         )
     }
     if (showAnimations) {
@@ -1101,6 +1130,113 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun StartupChannelPickerDialog(
+    query: String,
+    channels: List<tv.own.owntv.core.database.entity.ChannelEntity>,
+    selected: tv.own.owntv.features.settings.data.StartupChannelRef?,
+    onQueryChange: (String) -> Unit,
+    onSelect: (tv.own.owntv.core.database.entity.ChannelEntity) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val searchFocus = remember { FocusRequester() }
+    BackHandler(onBack = onDismiss)
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(80)
+        runCatching { searchFocus.requestFocus() }
+    }
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+        tv.own.owntv.ui.theme.PopupFontTheme {
+            Box(
+                Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(Modifier.dialogPanel(width = 600.dp, padding = 24.dp)) {
+                    Text(
+                        stringResource(R.string.settings_startup_specific_channel),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = colors.onSurface,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    tv.own.owntv.ui.components.SearchBar(
+                        query = query,
+                        onQueryChange = onQueryChange,
+                        modifier = Modifier.fillMaxWidth().focusRequester(searchFocus),
+                        placeholder = stringResource(R.string.common_search_hint),
+                        surface = GlassSurface.DIALOGS,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    if (channels.isEmpty()) {
+                        Text(
+                            if (query.isBlank()) stringResource(R.string.content_no_channels_here)
+                            else stringResource(R.string.content_no_channels_found, query),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                            textAlign = TextAlign.Center,
+                        )
+                    } else {
+                        LazyColumn(
+                            Modifier.fillMaxWidth().heightIn(max = 330.dp),
+                            verticalArrangement = Arrangement.spacedBy(5.dp),
+                        ) {
+                            items(channels, key = { it.id }) { channel ->
+                                val isSelected = selected?.let { ref ->
+                                    ref.sourceId == channel.sourceId &&
+                                        if (!ref.remoteId.isNullOrBlank() && !channel.remoteId.isNullOrBlank()) {
+                                            ref.remoteId == channel.remoteId
+                                        } else {
+                                            ref.name == channel.name
+                                        }
+                                } == true
+                                FocusableSurface(
+                                    onClick = { onSelect(channel) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    selected = isSelected,
+                                    shape = RoundedCornerShape(12.dp),
+                                    selectedContainerColor = colors.primaryContainer,
+                                    contentAlignment = Alignment.CenterStart,
+                                    surface = GlassSurface.DIALOGS,
+                                ) {
+                                    Row(
+                                        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        channel.number?.let {
+                                            Text(
+                                                it.toString(),
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = if (isSelected) colors.onPrimaryContainer else colors.primary,
+                                                modifier = Modifier.width(54.dp),
+                                            )
+                                        }
+                                        Text(
+                                            channel.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = if (isSelected) colors.onPrimaryContainer else colors.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        OwnTVButton(
+                            stringResource(R.string.content_close),
+                            onDismiss,
+                            style = OwnTVButtonStyle.SECONDARY,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun themeLabel(mode: ThemeMode): String = stringResource(
     when (mode) {
         ThemeMode.DARK -> R.string.settings_theme_dark
@@ -1115,6 +1251,7 @@ private fun startupLabel(mode: tv.own.owntv.features.settings.data.StartupMode):
         tv.own.owntv.features.settings.data.StartupMode.HOME -> R.string.settings_startup_home
         tv.own.owntv.features.settings.data.StartupMode.LAST_CHANNEL -> R.string.settings_startup_last_channel
         tv.own.owntv.features.settings.data.StartupMode.FAVORITES -> R.string.settings_startup_favorites
+        tv.own.owntv.features.settings.data.StartupMode.SPECIFIC_CHANNEL -> R.string.settings_startup_specific_channel
     },
 )
 

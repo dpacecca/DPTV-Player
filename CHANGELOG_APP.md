@@ -13,6 +13,9 @@
 
 ### ✨ New features
 
+- **👶 Kids profiles hide adult content across OwnTV**
+- **🚀 Start OwnTV on a searchable, profile-specific Live TV channel**
+
 - **⏪ Catch-up without a TV guide — a Catch-up category and "Go back to…"**
 - **🕐 A clock in the player — and, on catch-up, the time the programme actually aired**
 - **🧾 Dedicated Metadata and OpenSubtitles settings**
@@ -25,6 +28,8 @@
 - **📁 Send a playlist file from your computer with Remote**
 
 ### 🐛 Fixes
+
+- **Normal profiles no longer lose adult provider or TMDB results**
 
 - **Restoring a backup gave every Stalker playlist the same MAC address (#114)**
 - **DNS choice now survives an app restart**
