@@ -490,6 +490,10 @@ class SettingsViewModel(
     val subtitleScale: StateFlow<Float> = settings.subtitleScale.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SubtitleStyle.SCALE_DEFAULT)
     fun setSubtitleScale(scale: Float) { viewModelScope.launch { settings.setSubtitleScale(scale) } }
 
+    val subtitleFont: StateFlow<tv.own.owntv.ui.theme.AppFontFamily?> = settings.subtitleFont
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    fun setSubtitleFont(font: tv.own.owntv.ui.theme.AppFontFamily?) { viewModelScope.launch { settings.setSubtitleFont(font) } }
+
     val subtitleColor: StateFlow<String> = settings.subtitleColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SubtitleStyle.COLOR_DEFAULT)
     fun setSubtitleColor(hex: String) { viewModelScope.launch { settings.setSubtitleColor(hex) } }
 

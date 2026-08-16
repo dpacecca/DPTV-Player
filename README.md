@@ -66,7 +66,7 @@ Scan to join from your phone:
 ### 🎬 Playback
 - **Dual engine** — libmpv (FFmpeg) for max compatibility + ExoPlayer for instant Live TV; per-channel toggle and automatic VOD fallback between them
 - Zero-copy **4K HDR** direct rendering · opt-in **auto frame rate** (off by default; 24/25/50/60 fps display matching, with the rate measured when a live stream doesn't declare one) · **live buffering you control** (Live latency drives the real buffer, plus a Pre-buffer gate that can be set per playlist) · context-aware channel zapping (D-pad/CH± stays in Favorites, History, All or the opened category) · **self-correcting surround sound** (Auto/Stereo only/Surround, with an audio-output watchdog that falls back to stereo if your TV or soundbar can't actually play it) + 150% volume boost
-- **Subtitles** — text (SRT/ASS), image (PGS/VOBSUB/DVB), closed captions, plus OpenSubtitles search and local files; dedicated OpenSubtitles settings support account sign-in, a personal API key or custom Worker, including phone handover by QR + PIN
+- **Subtitles** — text (SRT/ASS), image (PGS/VOBSUB/DVB), closed captions, preferred-language auto-selection and independent font/style controls, plus OpenSubtitles search and local files; dedicated OpenSubtitles settings support account sign-in, a personal API key or custom Worker, including phone handover by QR + PIN
 - Resume prompts, next-episode auto-play, mini-player/PiP, **audio-only mode**, and a live codec/resolution/HDR stream-info overlay
 - **Behaves like a TV app** — remote/headset/assistant transport keys via a system media session, and audio focus that ducks for a notification instead of pausing your film
 - **Diagnostics you can send** — a playback log of failures *and* events, "Report this stream" from the info overlay, optional detailed trace, and a one-press export to `Download/owntv-playback-report.txt`
@@ -102,7 +102,7 @@ Scan to join from your phone:
   and interaction-aware **Glass Effect** with Ultra Clear/Clear/Balanced/Tinted/Opaque/Custom presets,
   adaptive readability and real frost levels over your own background photo; searchable settings,
   sidebar/category customization, adjustable panel widths, external player, weather chip
-- **Font customization** with 60%–140% app text sizing and separate main-interface/popup choices from five open-source fonts; settings are preserved in backup and restore, while subtitle styling remains independent
+- **Font customization** with 60%–140% app text sizing and separate main-interface/popup choices from the bundled font catalog plus system Monospace; settings are preserved in backup and restore, while subtitle font and styling remain independently configurable
 - **24 complete interface languages** with System default, an in-app searchable language picker, RTL-aware navigation, and a language-first welcome flow on fresh installations
 - **Backup & Restore** locally or over Wi-Fi — a single `.own` file carrying your background image and your downloaded subtitles, optionally encrypted end to end with your own password (older `.json` backups still restore). Android's automatic backup is deliberately disabled, so app data only ever leaves the device through this screen — secrets ride only when you set a backup password. Plus in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
 

@@ -66,6 +66,8 @@ import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.theme.AppFontFamily
+import tv.own.owntv.ui.theme.asComposeFamily
 
 /** Common language codes offered for the audio/subtitle preference. Display names resolve in Compose. */
 private val LANGUAGE_CODES = listOf("", "eng", "spa", "fra", "deu", "ita", "por", "nld", "rus", "ara", "hin", "zho", "jpn", "kor", "tur")
@@ -139,6 +141,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val zoom by vm.defaultZoom.collectAsStateWithLifecycle()
     val subStyleOn by vm.subtitleStyleEnabled.collectAsStateWithLifecycle()
     val subScale by vm.subtitleScale.collectAsStateWithLifecycle()
+    val subFont by vm.subtitleFont.collectAsStateWithLifecycle()
     val subColor by vm.subtitleColor.collectAsStateWithLifecycle()
     val subPosition by vm.subtitlePosition.collectAsStateWithLifecycle()
     val subBgOpacity by vm.subtitleBgOpacity.collectAsStateWithLifecycle()
@@ -447,14 +450,16 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.SUB_STYLE -> SubtitleAppearanceDialog(
-            enabled = subStyleOn,
-            scale = subScale,
-            color = subColor,
+                enabled = subStyleOn,
+                scale = subScale,
+                font = subFont,
+                color = subColor,
             position = subPosition,
             bgOpacity = subBgOpacity,
-            onToggle = { vm.setSubtitleStyleEnabled(it) },
-            onScale = { vm.setSubtitleScale(it) },
-            onColor = { vm.setSubtitleColor(it) },
+                onToggle = { vm.setSubtitleStyleEnabled(it) },
+                onScale = { vm.setSubtitleScale(it) },
+                onFont = { vm.setSubtitleFont(it) },
+                onColor = { vm.setSubtitleColor(it) },
             onPosition = { vm.setSubtitlePosition(it) },
             onBgOpacity = { vm.setSubtitleBgOpacity(it) },
             onDismiss = { dialog = Dialog.NONE },
@@ -1041,11 +1046,13 @@ private fun subtitlePositionName(position: SubtitleStyle.Position): String = str
 private fun SubtitleAppearanceDialog(
     enabled: Boolean,
     scale: Float,
+    font: AppFontFamily?,
     color: String,
     position: SubtitleStyle.Position,
     bgOpacity: Int,
     onToggle: (Boolean) -> Unit,
     onScale: (Float) -> Unit,
+    onFont: (AppFontFamily?) -> Unit,
     onColor: (String) -> Unit,
     onPosition: (SubtitleStyle.Position) -> Unit,
     onBgOpacity: (Int) -> Unit,
@@ -1072,18 +1079,29 @@ private fun SubtitleAppearanceDialog(
     // D-pad, and the popups that need one carry their own preview, so nothing is lost by hiding this.
     if (child != SubDialog.NONE) {
         val close = { child = SubDialog.NONE }
-        when (child) {
-            SubDialog.SIZE -> PickerDialog(
+            when (child) {
+                SubDialog.SIZE -> PickerDialog(
                 title = stringResource(R.string.settings_subtitle_size),
                 options = SUB_SIZES.map { it.first.toString() to stringResource(it.second) },
                 selected = nearestSubSize(scale).first.toString(),
                 onSelect = { onScale(it.toFloat()); close() },
-                onDismiss = close,
-            )
-            SubDialog.COLOR -> SubtitleColorDialog(color = color, onColor = onColor, onDismiss = close)
+                    onDismiss = close,
+                )
+                SubDialog.FONT -> PickerDialog(
+                    title = stringResource(R.string.settings_subtitle_font),
+                    options = listOf("" to stringResource(R.string.settings_subtitle_default)) +
+                        AppFontFamily.entries.map { it.name to subtitleFontFamilyLabel(it) },
+                    selected = font?.name.orEmpty(),
+                    onSelect = { selected ->
+                        onFont(AppFontFamily.entries.firstOrNull { it.name == selected })
+                        close()
+                    },
+                    onDismiss = close,
+                )
+                SubDialog.COLOR -> SubtitleColorDialog(color = color, onColor = onColor, onDismiss = close)
             SubDialog.POSITION -> SubtitlePositionDialog(position = position, onSelect = onPosition, onDismiss = close)
-            SubDialog.TRANSPARENCY -> SubtitleTransparencyDialog(
-                scale = scale, color = color, position = position,
+                SubDialog.TRANSPARENCY -> SubtitleTransparencyDialog(
+                    scale = scale, font = font, color = color, position = position,
                 bgOpacity = bgOpacity, onSet = onBgOpacity, onDismiss = close,
             )
             SubDialog.NONE -> Unit
@@ -1109,7 +1127,7 @@ private fun SubtitleAppearanceDialog(
 
                 // The overview sits above every row, including the master toggle, so the effect of a
                 // change is judged against a picture instead of guessed from a chip.
-                SubtitlePreview(enabled = enabled, scale = scale, color = color, position = position, bgOpacity = bgOpacity)
+        SubtitlePreview(enabled = enabled, scale = scale, font = font, color = color, position = position, bgOpacity = bgOpacity)
                 Spacer(Modifier.height(16.dp))
 
                 Row2(
@@ -1125,15 +1143,25 @@ private fun SubtitleAppearanceDialog(
                 if (enabled) {
                     val open = { target: SubDialog -> lastChild = target; child = target }
                     Spacer(Modifier.height(2.dp))
-                    Row2(
-                        icon = OwnTVIcon.SUBTITLE,
-                        title = stringResource(R.string.settings_subtitle_size),
+            Row2(
+                icon = OwnTVIcon.SUBTITLE,
+                title = stringResource(R.string.settings_subtitle_size),
                         desc = stringResource(R.string.settings_subtitle_size_description),
                         chip = subSizeName(scale), primaryChip = SubtitleStyle.hasScale(scale), chevron = true,
                         modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.SIZE)),
-                        onClick = { open(SubDialog.SIZE) },
-                    )
-                    Row2(
+                onClick = { open(SubDialog.SIZE) },
+            )
+            Row2(
+                icon = OwnTVIcon.SUBTITLE,
+                title = stringResource(R.string.settings_subtitle_font),
+                desc = stringResource(R.string.settings_choose_font),
+                chip = font?.let { subtitleFontFamilyLabel(it) } ?: stringResource(R.string.settings_subtitle_default),
+                primaryChip = font != null,
+                chevron = true,
+                modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.FONT)),
+                onClick = { open(SubDialog.FONT) },
+            )
+            Row2(
                         icon = OwnTVIcon.SUBTITLE,
                         title = stringResource(R.string.settings_subtitle_color_short),
                         desc = stringResource(R.string.settings_subtitle_color_description),
@@ -1165,8 +1193,9 @@ private fun SubtitleAppearanceDialog(
                     Spacer(Modifier.weight(1f))
                     if (enabled) {
                         OwnTVButton(stringResource(R.string.settings_subtitle_reset_all), style = OwnTVButtonStyle.SECONDARY, onClick = {
-                            onScale(SubtitleStyle.SCALE_DEFAULT)
-                            onColor(SubtitleStyle.COLOR_DEFAULT)
+                        onScale(SubtitleStyle.SCALE_DEFAULT)
+                        onFont(null)
+                        onColor(SubtitleStyle.COLOR_DEFAULT)
                             onPosition(SubtitleStyle.Position.DEFAULT)
                             onBgOpacity(SubtitleStyle.OPACITY_DEFAULT)
                         })
@@ -1178,7 +1207,19 @@ private fun SubtitleAppearanceDialog(
 }
 
 /** The four options of [SubtitleAppearanceDialog], each opening its own popup. */
-private enum class SubDialog { NONE, SIZE, COLOR, POSITION, TRANSPARENCY }
+private enum class SubDialog { NONE, SIZE, FONT, COLOR, POSITION, TRANSPARENCY }
+
+@Composable
+private fun subtitleFontFamilyLabel(family: AppFontFamily): String = stringResource(
+    when (family) {
+        AppFontFamily.LORA -> R.string.settings_font_lora
+        AppFontFamily.SYSTEM_SANS -> R.string.settings_font_system_sans
+        AppFontFamily.MONOSPACE -> R.string.settings_font_monospace
+        AppFontFamily.PLAYFAIR_DISPLAY -> R.string.settings_font_playfair_display
+        AppFontFamily.DANCING_SCRIPT -> R.string.settings_font_dancing_script
+        AppFontFamily.POPPINS -> R.string.settings_font_poppins
+    },
+)
 
 /**
  * Subtitle text color — the same D-pad-tuned picker the accent color uses (shared controls live in
@@ -1405,6 +1446,7 @@ private fun PositionCell(
 @Composable
 private fun SubtitleTransparencyDialog(
     scale: Float,
+    font: AppFontFamily?,
     color: String,
     position: SubtitleStyle.Position,
     bgOpacity: Int,
@@ -1436,8 +1478,8 @@ private fun SubtitleTransparencyDialog(
                     style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
-                SubtitlePreview(
-                    enabled = true, scale = scale, color = color, position = position,
+        SubtitlePreview(
+            enabled = true, scale = scale, font = font, color = color, position = position,
                     bgOpacity = bgOpacity, height = 92.dp,
                 )
                 Spacer(Modifier.height(14.dp))
@@ -1479,6 +1521,7 @@ private fun SubtitleTransparencyDialog(
 private fun SubtitlePreview(
     enabled: Boolean,
     scale: Float,
+    font: AppFontFamily? = null,
     color: String,
     position: SubtitleStyle.Position,
     bgOpacity: Int,
@@ -1510,6 +1553,8 @@ private fun SubtitlePreview(
             stringResource(R.string.settings_subtitle_preview_sample),
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontSize = MaterialTheme.typography.bodyLarge.fontSize * textScale,
+                fontFamily = if (enabled && font != null) font.asComposeFamily()
+                    else MaterialTheme.typography.bodyLarge.fontFamily,
             ),
             color = textColor,
             modifier = Modifier

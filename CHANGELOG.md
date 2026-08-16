@@ -105,7 +105,24 @@
   default but every profile was not, so it was possible to tick "everything" and still produce a backup
   containing no profile data at all.
 
+### 🔤 Subtitle font selection — plus Monospace throughout the app
+
+- **Subtitle typography can now be chosen independently in Settings → Video Player → Subtitle
+  appearance.** Choose Default, System Sans, Monospace, Lora, Playfair Display, Dancing Script or
+  Poppins. Default preserves the stream's authored or broadcaster styling.
+- **The selected font is applied consistently across both playback engines and app-drawn subtitle
+  overlays:** mpv, ExoPlayer/Media3 and the docked-player overlay all use the same preference.
+- **Monospace is also available for the main interface and popup menus.** The subtitle-font choice
+  survives restarts and is included in Backup & Restore with the other appearance settings.
+
 ### 🐛 Fixes
+
+- **Ambient Glow now appears only with the explicit Dark theme while Glass Effect is off.** Turning
+  Slow pulse off leaves the soft glow in place without the distracting outline circle; turning it on
+  adds the moving pulse ring.
+- **A preferred subtitle language now turns a matching subtitle track on automatically on both
+  players.** Language variants such as `eng`, `en` and `en-US` match correctly, including when the
+  audio uses the same language, while streams without a match do not enable an unrelated subtitle.
 
 - **"Watch from start" needed two presses.** Opening a programme from the Guide or from the Live TV
   catch-up list, the first press of **Watch from start** did nothing and only the second one played.

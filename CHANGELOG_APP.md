@@ -19,9 +19,12 @@
 - **📱 Send TMDB or OpenSubtitles access from phone**
 - **🔐 Your data no longer leaves the TV without a backup password**
 - **🗃️ Backup & Restore now really does back up everything**
+- **🔤 Subtitle font selection and Monospace**
 
 ### 🐛 Fixes
 
+- **Ambient Glow now stays dark-mode only and hides its ring when Pulse is off**
+- **Preferred subtitle language now turns matching subtitles on automatically**
 - **"Watch from start" needed two presses**
 - **Per-channel and per-item playback settings attached to the wrong playlist after a restore**
 - **Restoring onto a device that already had the playlist discarded the backup's settings for it**

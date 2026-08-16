@@ -288,8 +288,8 @@ fun SettingsScreen(
     val animationLevel by settingsVm.animationLevel.collectAsStateWithLifecycle()
     val ambientGlowEnabled by settingsVm.ambientGlowEnabled.collectAsStateWithLifecycle()
     val ambientGlowPulse by settingsVm.ambientGlowPulse.collectAsStateWithLifecycle()
-    LaunchedEffect(glassOn) {
-        if (glassOn) showAmbientGlow = false
+    LaunchedEffect(glassOn, themeMode) {
+        if (glassOn || themeMode != ThemeMode.DARK) showAmbientGlow = false
     }
     val weatherEnabled by settingsVm.weatherEnabled.collectAsStateWithLifecycle()
     val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
@@ -613,7 +613,7 @@ fun SettingsScreen(
             onClick = { savedScroll = scrollState.value; dialogReturn = glassEffectRowFocus; showGlassEffect = true }, showChevron = true,
             modifier = Modifier.focusRequester(glassEffectRowFocus),
         )
-        if (!glassOn) {
+            if (themeMode == ThemeMode.DARK && !glassOn) {
             SettingsRow(
                 tone = TileTone.PRIMARY, icon = OwnTVIcon.PALETTE,
                 title = stringResource(R.string.settings_ambient_glow),
@@ -819,7 +819,7 @@ fun SettingsScreen(
                     chip = themeLabel(themeMode)) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showTheme = true },
                 SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_accent), stringResource(R.string.settings_search_keywords_accent), OwnTVIcon.PALETTE, TileTone.SECONDARY,
                     chip = if (customAccent.isNotBlank()) customAccent.uppercase() else stringResource(accent.labelRes), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAccent = true },
-                if (!glassOn) SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ambient_glow), stringResource(R.string.settings_ambient_glow_description), OwnTVIcon.PALETTE, TileTone.PRIMARY,
+                if (themeMode == ThemeMode.DARK && !glassOn) SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ambient_glow), stringResource(R.string.settings_ambient_glow_description), OwnTVIcon.PALETTE, TileTone.PRIMARY,
                     chip = stringResource(if (ambientGlowEnabled) R.string.common_on else R.string.common_off), chipTone = if (ambientGlowEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAmbientGlow = true } else null,
                 SettingsSearchEntry(
                     stringResource(R.string.settings_group_appearance),
@@ -1623,6 +1623,7 @@ private fun fontFamilyLabel(family: AppFontFamily): String = stringResource(
     when (family) {
         AppFontFamily.LORA -> R.string.settings_font_lora
         AppFontFamily.SYSTEM_SANS -> R.string.settings_font_system_sans
+        AppFontFamily.MONOSPACE -> R.string.settings_font_monospace
         AppFontFamily.PLAYFAIR_DISPLAY -> R.string.settings_font_playfair_display
         AppFontFamily.DANCING_SCRIPT -> R.string.settings_font_dancing_script
         AppFontFamily.POPPINS -> R.string.settings_font_poppins

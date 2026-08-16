@@ -755,10 +755,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     glass rim immediately. During rapid scrolling OwnTV keeps the moving highlight lightweight, then adds
     the full frost after focus settles, avoiding the dark trailing bands older builds could leave behind.
     All glass settings are kept in backups.
-- **Settings → Ambient Glow** (shown only while Glass Effect is off): optionally adds the setup wizard's
-  soft teal aura to the normal solid interface. Glow is off by default. After turning it on, a separate
-  **Slow pulse** option appears so the aura can remain still or breathe gently; Animations Off freezes the
-  pulse. Enabling Glass hides this setting and disables the solid-interface effect.
+- **Settings → Ambient Glow** (shown only with the explicit **Dark** theme while Glass Effect is off):
+  optionally adds the setup wizard's soft teal aura to the normal solid interface. Glow is off by default.
+  With **Slow pulse** off, only the soft aura is shown; turning it on adds the animated circle. Animations
+  Off freezes that motion. Light/System themes and Glass Effect hide the setting and disable the effect.
 - **Updated shell layout:** Live TV, Movies and Series share one rounded browse container with their
   category, content and preview/poster areas inside it. The navigation rail has a matching background plate
   and compact selection beacon. The top bar and rail use less vertical space during normal browsing, then
@@ -793,7 +793,7 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   **Playback**; **App startup** is under **App**; the **Home screen** page is under Content.
 - 🔤 **Font customization** (Look & Feel) — open one popup to set the app's text size from **60% to
   140%** in 5% steps and choose separate fonts for the **main interface** and **popups**. Available fonts
-  are **System Sans, Lora, Playfair Display, Dancing Script, and Poppins**. Press **Apply** to save,
+  are **System Sans, Monospace, Lora, Playfair Display, Dancing Script, and Poppins**. Press **Apply** to save,
   **Reset** to return to 100% / System Sans / Lora, or **Back** to discard staged changes. The setting
   works with every interface language; Android supplies compatible fallback characters when a chosen
   font does not contain a language's script. It is app-wide, survives restarts, and is included in
@@ -886,15 +886,17 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   declare them (most Xtream live TV). Turn it **off** only if a low‑end TV ever stutters — it affects
   the diagnostic numbers only, never the actual video.
 - 🗣️ **Preferred audio / subtitle language** (Video Player Settings) — when a stream carries several
-  tracks, the one in this language is selected for you instead of whatever the provider listed first.
-  It applies on **both players** now, so it works on Live TV as well as movies and episodes, and a
-  change takes effect on what's already playing.
+  tracks, the matching language is selected instead of whichever track the provider listed first.
+  A preferred subtitle is now also turned on automatically across both players — even when the audio
+  uses that same language. Language variants such as English `eng`, `en`, and `en-US` match, while an
+  unrelated subtitle stays off when the preferred language is unavailable. Changes affect current playback.
 - 💬 **Subtitle appearance** (Video Player Settings) — a menu with a preview, a **Customize subtitles**
-  switch, and then **Size**, **Text color**, **Position** (six anchors: top/bottom × left/center/right)
-  and **Background transparency** (None → Solid in 10% steps). **Each one starts at "Default", and
-  Default leaves that aspect alone** — turning the switch on changes nothing until you pick something,
-  so you can set only the background and keep the stream's own colours, including the styling
-  broadcasters embed in Live TV captions. Subtitle size lives here now. Image subtitles
+  switch, and then **Font**, **Size**, **Text color**, **Position** (six anchors: top/bottom ×
+  left/center/right) and **Background transparency** (None → Solid in 10% steps). Font choices are
+  **Default, System Sans, Monospace, Lora, Playfair Display, Dancing Script, and Poppins**, and apply
+  across both players and app-drawn subtitle overlays. **Each option starts at "Default", and Default
+  leaves that aspect alone** — including authored font styling. If you set only the background, the
+  stream's own colours and broadcaster styling remain intact. Image subtitles
   (PGS/VOBSUB/DVB) are pictures and always render as authored.
 - 📤 **External player** (Video Player Settings) — opens a popup with **separate On/Off switches for
   Live TV, Movies and Series**, so you can send live channels to VLC (or MX Player, …) while keeping
