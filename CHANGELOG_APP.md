@@ -43,6 +43,7 @@
 - **"Watch from start" needed two presses**
 - **Per-channel and per-item playback settings attached to the wrong playlist after a restore**
 - **Restoring onto a device that already had the playlist discarded the backup's settings for it**
+- **Downloaded subtitles are now told apart, and subtitle timing changes the one you selected**
 - **The default playlist could be repointed at an unrelated playlist**
 - **Startup screen and the Customize PIN lock were filed under "Sources"**
 - **Turning "Advanced options" off now actually stops using your own key**

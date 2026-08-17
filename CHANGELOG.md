@@ -275,6 +275,19 @@
   key" with nothing on screen to explain why. It now asks for confirmation, then deletes the saved
   key and server address and returns to the built-in shared service.
 
+- **Downloaded subtitles are now told apart, and subtitle timing changes the one you selected.**
+  Every downloaded subtitle was named only by its language, so three Korean downloads appeared as
+  three identical rows — and because that name was also how OwnTV identified them internally, it
+  could only ever find the first. Selecting the second and adjusting its timing shifted the first
+  one's file and switched you to it, which made subtitle timing unusable whenever you had more than
+  one subtitle in a language. Downloads now read `OS_Korean · WEB-DL.NF`, showing the release they
+  came from, with locally imported files marked `LOCAL_` instead. Because the name is checked against
+  every subtitle already in the video, a track inside the file can no longer be mistaken for a
+  download either — previously it could be selected in place of the subtitle you just downloaded, be
+  labelled as coming from OpenSubtitles, or, on the mpv engine, stop your download from reappearing
+  at all when the film reloaded. Timing offsets you saved before this fix were stored against the
+  wrong subtitle; reset the timing once on those and it will stay correct.
+
 ## v4.2.1 — 2026-08-15
 
 ### 🎧 "Audio only" — sound with no picture is now labelled, not mistaken for a fault

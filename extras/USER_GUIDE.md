@@ -683,8 +683,13 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 - **Select local subtitle file** — no account or internet needed. Browse USB/internal storage for a
   `.srt` / `.ass` / `.ssa` / `.vtt` / `.webvtt` file. Non-UTF-8 files (Arabic, etc.) are converted
   automatically, and OwnTV keeps its own copy so the subtitle survives unplugging the USB.
+- **Naming in the Subtitles menu** — downloads are listed as `OS_Korean · WEB-DL.NF`: the source, the
+  language, and the release the subtitle came from, so several downloads in one language can be told
+  apart. Files you imported yourself start with `LOCAL_` instead. The video's own built-in subtitles
+  keep their original names, so they are never confused with your downloads.
 - **ADJUST → Subtitle timing** — nudge the active subtitle **earlier/later** in 0.1 s / 0.5 s steps
-  while the video plays. The offset is saved for that exact subtitle on that title.
+  while the video plays. The offset is saved for that exact subtitle on that title, so each download
+  keeps its own timing.
 - On **replay**, previously downloaded subtitles for the title are re-listed in the Subtitles menu
   (not auto-selected) — pick one and its saved timing comes back too.
 - **Deleting**: long-press a movie/episode → **Delete OpenSub subtitles**, or manage everything in
