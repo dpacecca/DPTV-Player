@@ -95,7 +95,7 @@ class SettingsViewModel(
         private const val STALKER_TEST_SOURCE_ID = -1L
     }
 
-    // ---- Remote (companion) add-source: a LAN web form fills the Add Source screen from a phone. ----
+    // ---- Remote (companion) add-source: a LAN web form fills the Add Source screen from another device. ----
     /** Server lifecycle (Idle / Starting / Listening with PIN+QR / Failed) for the Remote screen. */
     val remoteState get() = companion.state
 
@@ -109,14 +109,14 @@ class SettingsViewModel(
     fun stopRemoteListener() = companion.stop()
     fun consumeRemotePayload() = companion.consumePayload()
 
-    // ---- Remote background image: the phone uploads a photo over LAN (same PIN/QR companion flow). ----
+    // ---- Remote background image: another device uploads a photo over LAN (same PIN/QR companion flow). ----
 
-    /** Background images received from the phone in image-upload mode. */
+    /** Background images received from the remote device in image-upload mode. */
     val remoteImages get() = companion.images
 
     fun startRemoteImageListener(port: Int) = companion.startForImageUpload(port)
 
-    /** TMDB API keys handed over from a phone, so a 32-character key never has to be typed on a remote. */
+    /** TMDB API keys handed over from another device, so a 32-character key never has to be typed with the remote. */
     val remoteTmdbKeys get() = companion.tmdbKeys
     val remoteTmdbConfigs get() = companion.tmdbConfigs
     val remoteOpenSubtitlesConfigs get() = companion.openSubtitlesConfigs

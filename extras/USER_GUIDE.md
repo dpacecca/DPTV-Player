@@ -39,15 +39,15 @@ restarts, profile changes, and backup/restore. Missing strings safely fall back 
 
 ---
 
-## 📱 Add a playlist from your phone (Remote setup)
+## 📱 Add a playlist from another device (Remote setup)
 
 Typing an Xtream server or a long M3U URL with a TV remote is painful. **Remote setup** lets you fill
-the form on your phone instead.
+the form on another device instead.
 
 1. **Add source → Remote.** In the first‑run wizard or **Settings → Manage sources → Add source**, pick
    **Remote** (the other option, **Manual**, is the type‑it‑here form).
 2. **Open server.** The TV shows a **QR code**, a **URL**, and a **6‑digit PIN**.
-3. **On a phone or laptop on the same Wi‑Fi**, scan the QR (or open the URL). The page asks for the
+3. **On a phone, tablet or computer on the same Wi‑Fi**, scan the QR (or open the URL). The page asks for the
    **PIN** shown on the TV, then shows a form with **Xtream / M3U / Stalker** tabs.
 4. **Fill the form and tap “Send to TV.”** The details appear in the Add Source screen on the TV, with
    the matching type selected and the fields filled. The Stalker tab also carries optional Serial Number,
@@ -55,7 +55,7 @@ the form on your phone instead.
    On the **M3U** tab you can either type a playlist address **or** press **Or upload a playlist file**
    and pick an `.m3u` / `.m3u8` file from the computer — useful when the playlist only exists on that
    machine. The file is sent to the TV and kept there until you import it.
-5. **Press Start Import on the TV** with the remote — the phone only fills the form; it never starts the
+5. **Press Start Import on the TV** with the remote — the remote browser only fills the form; it never starts the
    import. Leave the Remote screen (Back) and the server stops automatically.
 
 *Security:* the QR contains only the URL, never the PIN; a fresh PIN is generated each time and every
@@ -484,7 +484,7 @@ or **narrow the whole app to just one**.
 
 ## 🎬 TMDB metadata (posters, plots, cast, trailers)
 
-- **Current layout:** Metadata has its own page. The active source is shown at the top; built-in-service users get separate **minute, hour and day** allowance cards plus refill time. **Get advanced TMDB info via remote** opens a compact popup for a personal API key, Worker/server URL, or QR + PIN phone handover. A URL takes priority over a key, and leaving both blank uses OwnTV's shared service.
+- **Current layout:** Metadata has its own page. The active source is shown at the top; built-in-service users get separate **minute, hour and day** allowance cards plus refill time. **Get advanced TMDB info via remote** opens a compact popup for a personal API key, Worker/server URL, or QR + PIN remote hand-over. A URL takes priority over a key, and leaving both blank uses OwnTV's shared service.
 
 - **Settings → Metadata (TMDB):** **Metadata source** opens a picker — *Provider only* (no TMDB),
   *Provider + TMDB* (default; your playlist's info wins, TMDB fills the blanks and adds
@@ -505,9 +505,9 @@ or **narrow the whole app to just one**.
   server. Keys are typically issued instantly — no waiting period or manual approval — and a personal key
   has **practically no daily limit**, so you are never rationed. Create one at
   [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api) and hit **Test lookup**.
-- 📱 **Get key from your phone** — a TMDB key is 32 characters, which is miserable to type with a remote
+- 📱 **Get key from another device** — a TMDB key is 32 characters, which is miserable to type with a remote
   (and TMDB's own signup page is not designed for TV). Under **Advanced options**, pick **Get key from
-  your phone**: the TV shows a QR code and a PIN, you scan it with a phone on the same Wi-Fi, sign in to
+  another device**: the TV shows a QR code and a PIN, you open it on a phone, tablet or computer on the same Wi-Fi, sign in to
   TMDB there, paste the key and send it across. It lands in the key field on the TV — press **Save** to
   use it. As with the other Remote features, the QR carries only the address, never the PIN.
 - 🌐 **Self-host your own metadata server (free):** a ready-to-deploy Cloudflare Worker is in the repo at
@@ -657,7 +657,17 @@ stream having none to begin with.
 ## 💬 External subtitles (OpenSubtitles & local files)
 
 - **Settings → OpenSubtitles** is a dedicated main Settings page directly below Metadata. Account status, download allowance, search language, downloaded-subtitle cleanup and advanced access stay together there.
-- **Advanced access** opens a compact popup for OwnTV's built-in service, a personal OpenSubtitles API key, or a custom Worker/server URL. A URL takes priority over a key. The Remote row accepts both values from a phone through the existing QR + PIN companion, and custom access is included in Backup & Restore.
+- **Sign in** first asks how you want to enter your details: **Remote** (fill them in on a phone, tablet
+  or computer on the same Wi-Fi, via the usual QR + PIN companion) or **Enter here** (type them with the
+  remote). Either way you end up on one compact panel holding your username, password, **Stay signed in**,
+  and — underneath, marked optional — a personal OpenSubtitles API key and a custom Worker/server URL.
+  A URL takes priority over a key; leaving both blank uses OwnTV's shared service. Pressing **Sign in**
+  saves the optional fields too, and custom access is included in Backup & Restore.
+- **Advanced options** appears as its own row only once you are signed in, for changing the key or URL
+  later without signing out.
+- If sign-in fails, the message now distinguishes a wrong username or password, a server that answered
+  and refused (it shows the error number), and a genuine connection problem — so "check your internet"
+  is only ever said when that really is the cause.
 
 For **movies and series episodes** (streamed or downloaded), the player's **Subtitles** menu has an
 **ADD SUBTITLES** section:
@@ -770,7 +780,7 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     movement. The main **Animations** setting also disables all of this motion when Animations is Off.
   - **Background image — Local or Remote.** **Local** browses USB/device storage for a JPG/PNG/WebP/BMP
     (it's copied into the app, so unplugging the stick can't blank it). **Remote** shows a **PIN + QR** —
-    scan it with your phone on the same Wi‑Fi, enter the PIN, send a photo, and it applies instantly.
+    open it on a phone, tablet or computer on the same Wi‑Fi, enter the PIN, send a photo, and it applies instantly.
     **Clear** removes the background.
   - **Surfaces** toggles the glass per area — content panels, sidebar, preview panes, dialogs & popups,
     top bar, cards, mini‑player — or all at once. Turning everything off turns glass off.
@@ -1019,7 +1029,7 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   so a restored setup behaves exactly like the original. Older backup files still restore fine — anything
   they don't contain just keeps its default. (An older OwnTV version cannot read a new `.own` file, so keep
   a `.json` backup if you plan to go back to one.) **Move a backup between TVs over Wi‑Fi:** choose **Restore
-  from another device** (also offered in the setup wizard) to show a PIN + QR — a phone or laptop on the
+  from another device** (also offered in the setup wizard) to show a PIN + QR — a phone, tablet or computer on the
   same network uploads a backup file straight to the TV, which then runs the normal restore. **Send to
   another device** does the reverse, serving the exported backup for a remote device to download. No USB
   stick or cloud needed; the local USB/file flows still work as before.

@@ -82,17 +82,29 @@
   screen; with a self-hosted server it shows the address. The daily-share rows appear only on the
   shared service, which is the only one that is metered.
 
-### 📱 Send TMDB or OpenSubtitles access from your phone
+### 📱 Send TMDB or OpenSubtitles access from another device
 
-- **The Remote companion now accepts complete service access.** From either advanced popup, scan the QR code, enter the PIN, and send an API key plus an optional Worker/server URL from the phone. The TV fills the popup but waits for **Save**, so configuration never changes behind your back.
+- **OpenSubtitles sign-in can be filled in from another device, password included.** Choose **Remote**
+  and the browser page now asks for your OpenSubtitles username and password as well as the optional
+  API key and Worker/server URL — so none of it has to be typed with the remote. The details land in
+  the sign-in panel on the TV and wait there; you still press **Sign in** yourself.
+- **Setting up OpenSubtitles is one screen instead of several.** **Sign in** first asks how you want to
+  enter your details — **Remote** or **Enter here** — and then shows a single compact panel holding your
+  username, password, "Stay signed in", and the optional API key and server URL underneath, marked
+  optional. The advanced fields are no longer a separate popup, and the duplicate "Advanced options"
+  row that appeared both on the screen and inside the form is gone.
+- **The Remote companion now accepts complete service access.** For TMDB, open Advanced options, scan
+  the QR code, enter the PIN, and send an API key plus an optional Worker/server URL from any browser
+  on the same Wi-Fi — phone, tablet or PC. The TV fills the fields but waits for **Save**, so
+  configuration never changes behind your back.
 
 - **A personal TMDB key no longer means typing 32 characters with a remote.** Under
-  **Settings → Metadata → Advanced options** there is now **Get key from your phone**: the TV shows a
-  QR code and a PIN, you scan it, sign in to TMDB on your phone where typing is easy, paste the key
+  **Settings → Metadata → Advanced options** there is now **Get key from another device**: the TV shows a
+  QR code and a PIN, you open it on a phone, tablet or computer where typing is easy, sign in to TMDB, paste the key
   and send it across. It lands in the key field on the TV; you still press Save, so nothing is
   changed behind your back. This matters because a personal key is free and has practically no daily
   limit, while the built-in shared service has to be rationed between everyone.
-- Uses the same Remote link as the existing phone features, with the same protection: the QR carries
+- Uses the same Remote link as the other remote-companion features, with the same protection: the QR carries
   only the address, never the PIN, and the listener closes as soon as the panel does.
 
 ### 🔐 Your data no longer leaves the TV without a backup password
@@ -195,6 +207,18 @@
   and picking up the remote. Only the few most recent uploads are kept.
 
 ### 🐛 Fixes
+
+- **"Couldn't reach OpenSubtitles" no longer blames your internet when the connection is fine.** Every
+  possible failure showed that one message — a refused request, a rate limit, a server error, and a
+  genuinely dead connection alike — which sent people looking in the wrong place. A server that answers
+  and declines now says so and shows its error number, and the cause of a real connection failure is
+  written to the log, so a report can actually be diagnosed instead of guessed at.
+- **OpenSubtitles sign-in now tries the server's other address.** OpenSubtitles is reached through an
+  address that resolves to both IPv4 and IPv6. On a network that advertises IPv6 but cannot route it,
+  the first attempt failed and OwnTV gave up instantly — so signing in was impossible while everything
+  else on the TV worked normally. Subtitle requests now fall back to the next address.
+- **The Remote companion is no longer described as a "phone" feature.** It works from any browser on the
+  same Wi-Fi, so the app, the guide and the setup pages now say phone, tablet or computer throughout.
 
 - **Restoring a backup no longer gives every Stalker playlist the same MAC address (#114).** Several
   Stalker playlists usually share one portal address and have no username, so a restore treated them

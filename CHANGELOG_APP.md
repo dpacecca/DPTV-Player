@@ -19,7 +19,8 @@
 - **⏪ Catch-up without a TV guide — a Catch-up category and "Go back to…"**
 - **🕐 A clock in the player — and, on catch-up, the time the programme actually aired**
 - **🧾 Dedicated Metadata and OpenSubtitles settings**
-- **📱 Send TMDB or OpenSubtitles access from phone**
+- **📱 Send TMDB or OpenSubtitles access from another device**
+- **🔑 Sign in to OpenSubtitles from another device, on one screen**
 - **🔐 Your data no longer leaves the TV without a backup password**
 - **🗃️ Backup & Restore now really does back up everything**
 - **🔤 Subtitle font selection and Monospace**
@@ -29,6 +30,9 @@
 
 ### 🐛 Fixes
 
+- **OpenSubtitles errors no longer blame your internet connection**
+- **OpenSubtitles sign-in now works on IPv6-advertising networks**
+- **Remote companion is no longer described as phone-only**
 - **Normal profiles no longer lose adult provider or TMDB results**
 
 - **Restoring a backup gave every Stalker playlist the same MAC address (#114)**
