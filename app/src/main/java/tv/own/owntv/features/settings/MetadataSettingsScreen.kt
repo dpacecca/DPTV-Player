@@ -583,7 +583,7 @@ private fun AdvancedMetadataPopup(
             Spacer(Modifier.height(12.dp))
             Row2(
                 icon = OwnTVIcon.SHARE,
-                title = stringResource(R.string.settings_metadata_remote_advanced),
+                title = stringResource(R.string.settings_metadata_key_from_phone),
                 desc = stringResource(R.string.settings_metadata_key_from_phone_desc),
                 chevron = true,
                 modifier = Modifier.focusRequester(firstFocus),

@@ -9,12 +9,13 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
-## v4.2.2 — unreleased
+## v4.2.2 — 2026-08-19
 
 ### ✨ New features
 
 - **🖼️ Episode grid — see a picture for every episode**
 - **⚡ A whole show's episode details now arrive in one request**
+- **🎯 Choose the colour and thickness of the focus highlight (#121)**
 - **👶 Kids profiles hide adult content across OwnTV**
 - **🚀 Start OwnTV on a searchable, profile-specific Live TV channel**
 
@@ -32,6 +33,7 @@
 
 ### 🐛 Fixes
 
+- **The advanced TMDB setting is no longer labelled “via remote”**
 - **Episode pictures no longer reload when returning to a season**
 - **Back from a show returns focus to that show, not the category sidebar**
 - **OpenSubtitles errors no longer blame your internet connection**

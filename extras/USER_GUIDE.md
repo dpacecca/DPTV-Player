@@ -772,6 +772,14 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   - ⚠️ Going **below 85% zoom** shows a warning first — lower zoom draws many more items at once, which can
     crash devices with limited memory (e.g. 2 GB TV sticks) with big playlists/EPG. Press **OK** to accept
     and continue, or **Back** to stay at 85%.
+- **Settings → Focus highlight**: the colour and thickness of the ring drawn around whatever your
+  remote is pointing at. Pick from **eight presets**, the full **palette**, or an exact **hex code**,
+  and choose **Thin / Normal / Thick / Extra thick**. A live sample in the dialog shows the result
+  before you commit; **Use this colour** saves and closes, **Reset** goes back to following the accent.
+  - The choice applies everywhere — Live TV, Movies, Series, Home, the TV Guide, Downloads, Search,
+    settings rows, the category column, the navigation rail, buttons, text fields and popups — and it
+    works with the **Glass Effect** on, where the frosted rim takes your colour. Thicker rings also
+    widen the glow around the focused item.
 - **Settings → Glass Effect**: a **frosted‑glass look** — panels turn translucent with a
   real blurred backdrop over an optional **background photo**.
   - Choose an **Appearance preset** from the six-step clarity ladder: **Ultra Clear** (24% tint / 35%

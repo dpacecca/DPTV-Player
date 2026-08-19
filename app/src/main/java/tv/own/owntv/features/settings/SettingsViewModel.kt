@@ -635,6 +635,12 @@ class SettingsViewModel(
     val customAccent: StateFlow<String> = settings.customAccent.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setCustomAccent(hex: String) { viewModelScope.launch { settings.setCustomAccent(hex) } }
 
+    /** Focus highlight (#121): ring color hex (blank = accent) and ring width in dp. */
+    val focusHighlight: StateFlow<String> = settings.focusHighlight.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    val focusHighlightWidth: StateFlow<Int> = settings.focusHighlightWidth.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 2)
+    fun setFocusHighlight(hex: String) { viewModelScope.launch { settings.setFocusHighlight(hex) } }
+    fun setFocusHighlightWidth(dp: Int) { viewModelScope.launch { settings.setFocusHighlightWidth(dp) } }
+
     // --- Glass effect: background image + per-surface translucency ---
     val bgImagePath: StateFlow<String> = settings.bgImagePath.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val glassConfig: StateFlow<tv.own.owntv.ui.theme.GlassConfig> = settings.glassConfig.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.ui.theme.GlassConfig())

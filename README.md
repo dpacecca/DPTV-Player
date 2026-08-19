@@ -104,7 +104,9 @@ Scan to join from your phone:
 - Offline movies & episodes — pause/resume/retry, queue groups + storage bar, live poster status strip
 
 ### 🎨 Settings & Robustness
-- Material 3 theming & accent, unified browse panels, compact navigation, optional solid-mode Ambient Glow,
+- Material 3 theming & accent, a user-chosen **Focus highlight** (colour via presets/palette/hex plus
+  four ring thicknesses, applied app-wide in both solid and glass materials), unified browse panels,
+  compact navigation, optional solid-mode Ambient Glow,
   and interaction-aware **Glass Effect** with Ultra Clear/Clear/Balanced/Tinted/Opaque/Custom presets,
   adaptive readability and real frost levels over your own background photo; searchable settings,
   sidebar/category customization, adjustable panel widths, external player, weather chip

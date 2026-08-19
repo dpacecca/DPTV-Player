@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.2.2 — unreleased
+## v4.2.2 — 2026-08-19
 
 ### 🖼️ Episode grid — see a picture for every episode
 
@@ -29,8 +29,29 @@
 - **Duplicate entries no longer pay twice.** IPTV catalogues routinely list the same show or film in
   several categories; the second copy now reuses the details the first one downloaded.
 
+### 🎯 Choose the colour and thickness of the focus highlight (#121)
+
+- **Settings → Appearance → Focus highlight sets the ring drawn around whatever the remote is
+  pointing at.** The old ring was a thin 2 dp accent line, which is easy to lose from sofa distance
+  on a wall of bright posters. Pick a colour from eight presets, from the full palette, or by typing
+  an exact hex code, and pick a thickness — Thin, Normal, Thick or Extra thick. A live sample inside
+  the dialog shows the result before you commit.
+- **One setting covers the whole app.** Live TV, Movies, Series, Home, the TV Guide, Downloads,
+  Search, Settings rows, the category column, the navigation rail, buttons, text fields and every
+  popup all follow it. Thicker rings also open up the surrounding glow, so *Extra thick* reads as a
+  halo rather than just a fatter line.
+- **It works with the Glass Effect on.** In glass mode the frosted rim is the focus ring, so the rim
+  now takes your colour and thickness instead of always being white.
+- **Only the highlight changes.** The accent colour still owns buttons, chips and panels, so a loud
+  focus colour does not repaint the rest of the interface. The default is unchanged, and the choice
+  is included in Backup & Restore.
+
 ### 🐛 Fixes
 
+- **The advanced TMDB setting is no longer labelled "via remote".** It was called *Get advanced TMDB
+  info via remote*, but you can equally type the key in on the TV, so the label described only half
+  of what it does. Inside it, the option that hands the details over from a phone or computer had the
+  same name as the panel it sat on; it is now *Get key from another device*.
 - **Episode pictures no longer reload when you return to a season you have already opened.** The
   cached information was being read one episode at a time, on the same thread that draws the screen —
   so it queued behind the very grid it was filling. Seasons now appear immediately.

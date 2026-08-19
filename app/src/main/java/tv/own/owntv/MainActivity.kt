@@ -217,6 +217,8 @@ class MainActivity : ComponentActivity() {
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
             val accent by viewModel.accent.collectAsStateWithLifecycle()
             val customAccent by viewModel.customAccent.collectAsStateWithLifecycle()
+            val focusHighlight by viewModel.focusHighlight.collectAsStateWithLifecycle()
+            val focusHighlightWidth by viewModel.focusHighlightWidth.collectAsStateWithLifecycle()
             val uiZoomPercent by viewModel.uiZoomPercent.collectAsStateWithLifecycle()
             val fontCustomization by viewModel.fontCustomization.collectAsStateWithLifecycle()
             val animationLevel by viewModel.animationLevel.collectAsStateWithLifecycle()
@@ -301,6 +303,8 @@ class MainActivity : ComponentActivity() {
                 accent = accent,
                 systemInDarkTheme = isSystemInDarkTheme(),
                 customAccent = customAccent,
+                focusHighlight = focusHighlight,
+                focusBorderWidthDp = focusHighlightWidth,
                 animationLevel = animationLevel,
                 mainFontFamily = fontCustomization.mainFamily,
                 popupFontFamily = fontCustomization.popupFamily,

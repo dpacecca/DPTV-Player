@@ -183,6 +183,7 @@ fun SettingsScreen(
     var showFontCustomization by remember { mutableStateOf(false) }
     var showTheme by remember { mutableStateOf(false) }
     var showAccent by remember { mutableStateOf(false) }
+    var showFocusHighlight by remember { mutableStateOf(false) }
     var showFolderPicker by remember { mutableStateOf(false) }
     var showUpdate by remember { mutableStateOf(false) }
     var showAbout by remember { mutableStateOf(false) }
@@ -220,6 +221,7 @@ fun SettingsScreen(
     val folderRowFocus = remember { FocusRequester() }
     val themeRowFocus = remember { FocusRequester() }
     val accentRowFocus = remember { FocusRequester() }
+    val focusHighlightRowFocus = remember { FocusRequester() }
     val zoomRowFocus = remember { FocusRequester() }
     val fontCustomizationRowFocus = remember { FocusRequester() }
     val updateRowFocus = remember { FocusRequester() }
@@ -283,6 +285,8 @@ fun SettingsScreen(
     val catchupPlayer by settingsVm.catchupPlayer.collectAsStateWithLifecycle()
     val accent by settingsVm.accent.collectAsStateWithLifecycle()
     val customAccent by settingsVm.customAccent.collectAsStateWithLifecycle()
+    val focusHighlight by settingsVm.focusHighlight.collectAsStateWithLifecycle()
+    val focusHighlightWidth by settingsVm.focusHighlightWidth.collectAsStateWithLifecycle()
     val bgImagePath by settingsVm.bgImagePath.collectAsStateWithLifecycle()
     val glassConfig by settingsVm.glassConfig.collectAsStateWithLifecycle()
     val glassOn = glassConfig.enabled
@@ -607,6 +611,15 @@ fun SettingsScreen(
             onClick = { savedScroll = scrollState.value; dialogReturn = accentRowFocus; showAccent = true }, showChevron = true,
             modifier = Modifier.focusRequester(accentRowFocus),
         )
+        SettingsRow(
+            tone = TileTone.SECONDARY, icon = OwnTVIcon.PALETTE,
+            title = stringResource(R.string.settings_focus_highlight),
+            desc = stringResource(R.string.settings_focus_highlight_description),
+            chip = focusHighlightChip(focusHighlight, focusHighlightWidth),
+            chipTone = TileTone.SECONDARY,
+            onClick = { savedScroll = scrollState.value; dialogReturn = focusHighlightRowFocus; showFocusHighlight = true }, showChevron = true,
+            modifier = Modifier.focusRequester(focusHighlightRowFocus),
+        )
         // One consolidated "Glass Effect" entry: opens a dialog holding the glass on/off toggle,
         // the background-image chooser, and the transparency stepper (see GlassEffectDialog).
         SettingsRow(
@@ -825,6 +838,8 @@ fun SettingsScreen(
                     chip = themeLabel(themeMode)) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showTheme = true },
                 SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_accent), stringResource(R.string.settings_search_keywords_accent), OwnTVIcon.PALETTE, TileTone.SECONDARY,
                     chip = if (customAccent.isNotBlank()) customAccent.uppercase() else stringResource(accent.labelRes), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAccent = true },
+                SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_focus_highlight), stringResource(R.string.settings_search_keywords_focus), OwnTVIcon.PALETTE, TileTone.SECONDARY,
+                    chip = focusHighlightChip(focusHighlight, focusHighlightWidth), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showFocusHighlight = true },
                 if (themeMode == ThemeMode.DARK && !glassOn) SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ambient_glow), stringResource(R.string.settings_ambient_glow_description), OwnTVIcon.PALETTE, TileTone.PRIMARY,
                     chip = stringResource(if (ambientGlowEnabled) R.string.common_on else R.string.common_off), chipTone = if (ambientGlowEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAmbientGlow = true } else null,
                 SettingsSearchEntry(
@@ -982,6 +997,15 @@ fun SettingsScreen(
             selected = animationLevel.name,
             onSelect = { settingsVm.setAnimationLevel(tv.own.owntv.ui.theme.AnimationLevel.valueOf(it)); showAnimations = false },
             onDismiss = { showAnimations = false },
+        )
+    }
+    if (showFocusHighlight) {
+        FocusHighlightDialog(
+            highlight = focusHighlight,
+            widthDp = focusHighlightWidth,
+            onPickColor = { settingsVm.setFocusHighlight(it) },
+            onPickWidth = { settingsVm.setFocusHighlightWidth(it) },
+            onDismiss = { showFocusHighlight = false },
         )
     }
     if (showAccent) {
@@ -1398,6 +1422,179 @@ private fun AccentPaletteDialog(
             }
         }
     }
+    }
+}
+
+
+/**
+ * Focus highlight presets (#121): the six accent presets plus gold and white, which are the two
+ * colors people actually ask for when they want the cursor to shout. Hex, so a preset and a
+ * hand-typed color are the same stored value — there is no second "preset" concept to keep in sync.
+ */
+private val FocusHighlightPresets: List<String> = listOf("#F5B400", "#FFFFFF") +
+    AccentPresetChoices.map { ac -> "#%06X".format(java.util.Locale.ROOT, ac.primary(true).toArgb() and 0xFFFFFF) }
+
+/** Row chip for the focus highlight, e.g. "#F5B400 · Thick" or "Default · Normal". */
+@Composable
+private fun focusHighlightChip(highlight: String, widthDp: Int): String = stringResource(
+    R.string.settings_focus_highlight_chip,
+    // Only the hex is uppercased — a translated "Default" must keep its own casing.
+    if (highlight.isBlank()) stringResource(R.string.settings_subtitle_default) else highlight.uppercase(),
+    focusWidthLabel(widthDp),
+)
+
+/** Short label for a focus ring width, for the chip on the row and the thickness buttons. */
+@Composable
+private fun focusWidthLabel(dp: Int): String = stringResource(
+    when (dp) {
+        1 -> R.string.settings_focus_width_thin
+        4 -> R.string.settings_focus_width_thick
+        6 -> R.string.settings_focus_width_extra
+        else -> R.string.settings_focus_width_normal
+    },
+)
+
+/**
+ * Focus highlight picker (#121): presets, hex field and the shared HSV palette pick the ring color;
+ * four buttons pick its width. A live sample sits under the controls because the dialog itself is
+ * still drawn with the *saved* values — without it you could not judge a color before committing.
+ * "Reset" clears the color back to the accent.
+ */
+@Composable
+private fun FocusHighlightDialog(
+    highlight: String,
+    widthDp: Int,
+    onPickColor: (String) -> Unit,
+    onPickWidth: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+
+    val hsv = remember {
+        FloatArray(3).also { out ->
+            val seed = tv.own.owntv.ui.theme.parseAccentHex(highlight)?.toArgb() ?: 0xFFF5B400.toInt()
+            android.graphics.Color.colorToHSV(seed, out)
+        }
+    }
+    var hue by remember { mutableStateOf(hsv[0]) }
+    var sat by remember { mutableStateOf(hsv[1]) }
+    var value by remember { mutableStateOf(hsv[2]) }
+    val pickedHex = tv.own.owntv.ui.components.hsvToHex(hue, sat, value)
+    var hexInput by remember { mutableStateOf(highlight.removePrefix("#")) }
+    var hexError by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+
+    // The sample follows whatever is currently picked, falling back to the saved/accent color.
+    val sampleColor = tv.own.owntv.ui.theme.parseAccentHex(pickedHex) ?: colors.focusBorder
+
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, fontScale = .50f) {
+        tv.own.owntv.ui.theme.PopupFontTheme {
+            Box(
+                Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(Modifier.dialogPanel(width = 640.dp, padding = 28.dp)) {
+                    Text(stringResource(R.string.settings_focus_highlight), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    Spacer(Modifier.height(4.dp))
+                    Text(stringResource(R.string.settings_focus_highlight_description), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(16.dp))
+
+                    Text(stringResource(R.string.settings_presets), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FocusHighlightPresets.forEachIndexed { i, hex ->
+                            tv.own.owntv.ui.components.ColorSwatch(
+                                color = tv.own.owntv.ui.theme.parseAccentHex(hex) ?: colors.primary,
+                                selected = highlight.equals(hex, ignoreCase = true),
+                                onClick = { onPickColor(hex) },
+                                sizeDp = 36,
+                                modifier = if (i == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+                    Text(stringResource(R.string.settings_hex_code), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    // Above the palette on purpose: the on-screen keyboard covers the lower half of
+                    // the screen, so the hex field has to stay high enough to remain visible.
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("#", style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
+                        tv.own.owntv.ui.components.OwnTVTextField(
+                            value = hexInput,
+                            onValueChange = { hexInput = it.take(6); hexError = false },
+                            label = stringResource(R.string.settings_hex),
+                            placeholder = "F5B400",
+                            modifier = Modifier.width(200.dp),
+                        )
+                        OwnTVButton(stringResource(R.string.settings_apply), onClick = {
+                            if (tv.own.owntv.ui.theme.parseAccentHex(hexInput) != null) {
+                                onPickColor("#" + hexInput.trim().removePrefix("#").uppercase())
+                            } else {
+                                hexError = true
+                            }
+                        })
+                    }
+                    if (hexError) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(stringResource(R.string.settings_hex_error), style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+                    Text(stringResource(R.string.settings_color_picker), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(10.dp))
+                    // Hue bar: OK to enter, ◀ ▶ to shift the hue, OK/Back to exit.
+                    tv.own.owntv.ui.components.HueBar(hue = hue) { h ->
+                        hue = h; hexInput = pickedHex.removePrefix("#"); hexError = false
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    // Saturation / Brightness square: OK to enter, D-pad to move the dot, OK/Back to exit.
+                    tv.own.owntv.ui.components.SatValSquare(hue = hue, sat = sat, value = value) { s, v ->
+                        sat = s; value = v; hexInput = pickedHex.removePrefix("#"); hexError = false
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+                    Text(stringResource(R.string.settings_focus_thickness), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        tv.own.owntv.ui.theme.FocusBorderWidthChoices.forEach { w ->
+                            OwnTVButton(
+                                focusWidthLabel(w),
+                                onClick = { onPickWidth(w) },
+                                style = if (w == widthDp) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(tv.own.owntv.ui.theme.Dimens.CardCorner))
+                            .background(colors.surfaceContainerHigh)
+                            .border(
+                                widthDp.dp,
+                                sampleColor,
+                                androidx.compose.foundation.shape.RoundedCornerShape(tv.own.owntv.ui.theme.Dimens.CardCorner),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(stringResource(R.string.settings_focus_highlight_sample), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OwnTVButton(stringResource(R.string.settings_reset), onClick = { onPickColor("") }, style = OwnTVButtonStyle.SECONDARY)
+                        Spacer(Modifier.weight(1f))
+                        OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                        OwnTVButton(stringResource(R.string.settings_use_color), onClick = { onPickColor(pickedHex); onDismiss() })
+                    }
+                }
+            }
+        }
     }
 }
 
