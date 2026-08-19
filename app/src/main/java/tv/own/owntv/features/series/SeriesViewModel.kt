@@ -683,6 +683,64 @@ class SeriesViewModel(
 
     data class EpisodeMeta(val episodeId: Long, val cache: tv.own.owntv.core.database.entity.MetadataCacheEntity?)
 
+    /** Whether the episode area draws as text rows or a wall of stills. Global, see SettingsRepository. */
+    val episodeViewMode: StateFlow<SettingsRepository.VodViewMode> = settings.episodeViewMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.VodViewMode.LIST)
+
+    fun setEpisodeViewMode(mode: SettingsRepository.VodViewMode) {
+        viewModelScope.launch { settings.setEpisodeViewMode(mode) }
+    }
+
+    /**
+     * TMDB rows for EVERY episode of the active season, keyed by local episode id — the grid needs all
+     * of them at once, unlike the list which only ever shows the focused episode's still.
+     *
+     * Only collected in grid mode, and only after [GRID_DWELL_MS]: opening a show and immediately
+     * pressing Back should cost nothing, and leaving cancels the fetch outright because `mapLatest`
+     * tears down the previous coroutine. One request covers the whole season (see
+     * `MetadataRepository.resolveSeasonEpisodes`).
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val seasonEpisodeMeta: StateFlow<Map<Long, tv.own.owntv.core.database.entity.MetadataCacheEntity>> =
+        combine(_openedSeries, _selectedSeason, episodes, episodeViewMode, _episodeMetaTick) { show, season, eps, mode, _ ->
+            if (show == null || mode != SettingsRepository.VodViewMode.GRID) {
+                null
+            } else {
+                // Mirror the screen's own fallback: a show whose seasons start at 0 or 2 displays its
+                // first season, and fetching the requested-but-absent season would leave the grid blank.
+                val available = eps.map { it.seasonNumber }.distinct().sorted()
+                val active = if (available.contains(season)) season else available.firstOrNull() ?: season
+                show to eps.filter { it.seasonNumber == active }
+            }
+        }
+            .distinctUntilChanged { a, b ->
+                a?.first?.id == b?.first?.id && a?.second?.map { it.id } == b?.second?.map { it.id }
+            }
+            .flatMapLatest { pair ->
+                kotlinx.coroutines.flow.flow {
+                    if (pair == null || pair.second.isEmpty()) {
+                        emit(emptyMap())
+                        return@flow
+                    }
+                    // 1. Whatever is already cached, immediately. Coming back to a season you have
+                    //    already opened must not blank the tiles while a timer runs — that reads as
+                    //    the pictures reloading, which is what the dwell used to cause on EVERY switch.
+                    val cached = runCatching { metadata.cachedSeasonEpisodes(pair.first, pair.second) }
+                        .getOrDefault(emptyMap())
+                    emit(cached)
+                    // 2. Nothing more to do when the season is already complete — no timer, no request.
+                    if (cached.size >= pair.second.size) return@flow
+                    // 3. Only an INCOMPLETE season waits out the dwell before going to the network, so
+                    //    a show opened by accident still costs nothing.
+                    kotlinx.coroutines.delay(GRID_DWELL_MS)
+                    emit(
+                        runCatching { metadata.resolveSeasonEpisodes(pair.first, pair.second) }
+                            .getOrDefault(cached),
+                    )
+                }
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
     fun openSeries(s: SeriesEntity) {
         _openedSeries.value = s
         _selectedSeason.value = 1 // reset season when opening a different show
@@ -1140,6 +1198,15 @@ class SeriesViewModel(
 
     private companion object {
         const val TAG = "OwnTVHome"
+
+        /**
+         * How long the user must stay on a season before the grid fetches its stills. Longer than the
+         * 700 ms focus debounce because this fires on *entering* a show rather than on scrolling, and a
+         * show opened by accident is backed out of well inside a second. Deliberately not longer: at a
+         * few seconds the grid sits empty long enough to look broken, and the user backs out and
+         * re-enters — which costs more requests than it saves.
+         */
+        const val GRID_DWELL_MS = 1_000L
         val defaultRail = listOf(
             LiveRailItem(LiveKey.Favorites, icon = OwnTVIcon.FAVORITE),
             LiveRailItem(LiveKey.History, icon = OwnTVIcon.HISTORY),

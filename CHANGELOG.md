@@ -2,6 +2,43 @@
 
 ## v4.2.2 — unreleased
 
+### 🖼️ Episode grid — see a picture for every episode
+
+- **A new Grid / List button in a show's episode view.** Grid replaces the text rows with a wall of
+  16:9 episode stills, so you pick an episode by what it looks like rather than by its number. The
+  choice is remembered globally and applies to every show, and List stays the default so nothing
+  changes until you switch.
+- **Episodes TMDB doesn't have still get a usable tile.** IPTV catalogues name episodes in ways TMDB
+  often can't match, and providers supply no episode artwork at all. Those tiles fall back to the
+  show's own wide banner (or its poster), with the episode number drawn large across the middle so
+  the grid stays navigable when every tile looks alike. In **Provider only** metadata mode every tile
+  uses the show's artwork this way, and no lookups are made.
+- **Watched ticks, the "last watched" badge and the part-watched progress bar all carry over** from
+  the list, so nothing is lost by switching layout.
+
+### ⚡ A whole show's episode details now arrive in one request
+
+- **Opening a series used to cost one metadata lookup per episode you scrolled past** — roughly 120
+  for a five-season show, and a third of the daily allowance for a single title. Details for every
+  season now arrive in **one** request, folded into the show lookup that already happens. A grid of
+  episode pictures is only affordable at all because of this.
+- **Switching between seasons is instant and free** once a show has been opened; only shows longer
+  than ten seasons fetch again, and only if you actually browse that far.
+- **The shared metadata service now remembers a title for six months instead of one**, matching how
+  long the app keeps it, and requests are grouped so one viewer's lookup serves everyone else's.
+- **Duplicate entries no longer pay twice.** IPTV catalogues routinely list the same show or film in
+  several categories; the second copy now reuses the details the first one downloaded.
+
+### 🐛 Fixes
+
+- **Episode pictures no longer reload when you return to a season you have already opened.** The
+  cached information was being read one episode at a time, on the same thread that draws the screen —
+  so it queued behind the very grid it was filling. Seasons now appear immediately.
+- **Back from a show now returns focus to that show, instead of jumping to the category sidebar.**
+  Only the poster-grid layout was being scrolled back into view, so in the list layout the show was
+  never on screen to receive focus. The identical fault in Movies — returning from a film in list
+  view — is fixed too.
+
 ### 👶 Kids profiles hide adult content
 
 - **Kids mode now hides adult provider categories and their items throughout OwnTV.** The same

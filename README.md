@@ -80,6 +80,9 @@ Scan to join from your phone:
   inline + global search, and a multi-playlist switcher
 - Per-section panel widths for Live TV, Movies and Series, including a 0% option that completely hides
   the preview/poster panel while keeping the remaining panels at an exact 100% total
+- **Episode grid** — browse a show by episode stills instead of text rows, with a show-artwork and
+  episode-number fallback for episodes TMDB can't match; a whole show's episode details arrive in a
+  single request
 - **TMDB** posters, plots, cast photos & trailers **in 40 languages**; scales to ~50k channels / ~168k movies with priority + incremental syncing
 - Dedicated **Metadata** settings show minute/hour/day shared allowance and support a personal TMDB key or self-hosted Worker, including remote hand-over over LAN (QR + PIN)
 - Bring your own **free TMDB key** for unlimited metadata — send it from another device (phone, tablet or PC) over LAN (QR + PIN) instead of typing 32 characters with the remote; the built-in shared service works with no setup and gives every device a fair daily share

@@ -425,6 +425,10 @@ or **narrow the whole app to just one**.
 
 - **Grid / List toggle**: switch the poster wall to a compact **List** view (top‑right button) to scan many
   titles at once.
+- 🖼️ **Episode Grid / List toggle**: inside a show, the same button (next to **Sorting**) swaps the episode
+  rows for a wall of **episode pictures**. Your choice applies to every show. Episodes the metadata service
+  doesn't recognise show the show's own artwork with the **episode number** across the middle, so the grid
+  stays readable; in **Provider only** mode every tile looks that way.
 - 🔀 **Page the grid/list with CH+ / CH‑** — see **Live TV** above. Works on the category column and the
   poster grid/list (and the episode list inside a series); long‑press jumps to first/last.
 - **Detail pane**: focus a title to see its **poster, rating, plot** and **Play/Resume · Favourite ·

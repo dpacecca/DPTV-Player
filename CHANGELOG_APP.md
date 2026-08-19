@@ -13,6 +13,8 @@
 
 ### ✨ New features
 
+- **🖼️ Episode grid — see a picture for every episode**
+- **⚡ A whole show's episode details now arrive in one request**
 - **👶 Kids profiles hide adult content across OwnTV**
 - **🚀 Start OwnTV on a searchable, profile-specific Live TV channel**
 
@@ -30,6 +32,8 @@
 
 ### 🐛 Fixes
 
+- **Episode pictures no longer reload when returning to a season**
+- **Back from a show returns focus to that show, not the category sidebar**
 - **OpenSubtitles errors no longer blame your internet connection**
 - **OpenSubtitles sign-in now works on IPv6-advertising networks**
 - **Remote companion is no longer described as phone-only**
