@@ -9,6 +9,14 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v4.2.3 — Unreleased
+
+### 🐛 Fixes
+
+- **"App not installed" when updating from inside OwnTV**
+- **An update that the system refuses now says why**
+- **The first-run "Add a playlist" screen no longer hides Stalker**
+
 ## v4.2.2 — 2026-08-19
 
 ### ✨ New features

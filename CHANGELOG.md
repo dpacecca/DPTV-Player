@@ -1,5 +1,24 @@
 # Changelog
 
+## v4.2.3 — Unreleased
+
+### 🐛 Fixes
+
+- **"App not installed" when updating from inside OwnTV.** The app downloaded the new version and
+  handed it straight to Android without checking anything, so a download that arrived incomplete —
+  easy on a TV that is low on storage or on a weak connection — was rejected by the system with a bare
+  "App not installed" and no way to tell why. OwnTV now checks there is room before it starts, checks
+  the download arrived whole, and checks Android can actually read the file as OwnTV before offering
+  it for installation. If any of those fail you get a plain message saying what to do — free up space,
+  or check your connection and try again — and the bad file is deleted rather than retried as-is.
+- **An update that the system refuses now says why.** Installing goes through Android's own installer
+  service instead of opening the downloaded file as a document, which means OwnTV can read back the
+  real reason a package was turned down (not enough space, a signing mismatch, a damaged file) and show
+  it. Cancelling the system's confirmation prompt is treated as a choice, not an error.
+- **The first-run "Add a playlist" screen no longer hides Stalker.** The **New** card described itself
+  as "Add an M3U or Xtream source" even though the form behind it has offered Stalker portals for
+  several releases. It now reads "Add an M3U, Xtream or Stalker source", in every language.
+
 ## v4.2.2 — 2026-08-19
 
 ### 🖼️ Episode grid — see a picture for every episode

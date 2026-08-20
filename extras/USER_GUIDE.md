@@ -1170,6 +1170,10 @@ http://your-server/series/st-s02e01.mkv
   **Prefer HLS for Live TV** on that source — some Xtream panels are far steadier over HLS. Press
   **Test HLS support** just above it first to see whether that provider serves HLS at all.
 - Audio out of sync on a VOD? **Audio → A/V sync** and nudge ± until lips match.
+- **Update says the download didn't finish, or there isn't enough space?** In‑app updates need room for
+  the new version twice over (about 120 MB free). Clear some storage and press Try again — OwnTV now
+  refuses a half‑finished download instead of handing it to Android, which used to show only
+  "App not installed".
 - **Guide looks blank when you first open it?** (especially with catch‑up channels) Try: **Settings → EPG** → tap Edit → delete your EPG source(s), then **add them again** and sync fresh. The v4.0.0 update changed how EPG loads, and old cached data needs to be cleared and reimported. Once done, the guide displays immediately.
 
 ---
