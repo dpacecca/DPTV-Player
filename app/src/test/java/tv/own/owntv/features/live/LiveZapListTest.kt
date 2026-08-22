@@ -37,11 +37,15 @@ class LiveZapListTest {
         var playing: Long? = null
         var windowBuilds = 0
         var releaseWindow = false // when true, the rebuild loader blocks until told to finish
+        var releaseArming = false // …and this one blocks the ordinary arming load the same way
 
         val zap = LiveZapList(
             scope = scope,
             playingChannelId = { playing },
-            loadForChannel = { category },
+            loadForChannel = {
+                while (releaseArming) delay(2)
+                category
+            },
             loadForCategory = { category },
             loadWindowAround = {
                 windowBuilds++
@@ -198,6 +202,52 @@ class LiveZapListTest {
         h.releaseWindow = false
         runBlocking { delay(40) }
         assertEquals(list, h.zap.channels.value)
+        h.stop()
+    }
+
+    /**
+     * The gap [cancelPendingRebuild] did not cover. Ordinary navigation goes through `ensurePlaying`,
+     * which cancels the rebuild first — but picking a category in the in-player browser does not, and
+     * it does not change the playing channel either, so both of the rebuild's guards still held: the
+     * generation was untouched and the tuned channel was still on screen. The window then landed on
+     * top of the category the user had just chosen, seconds after they chose it.
+     */
+    @Test
+    fun `choosing a category beats a direct-tune rebuild still in flight`() {
+        val far = channel(99)
+        val chosen = listOf(channel(50), channel(51))
+        val h = Harness(category = chosen, window = listOf(channel(98), far, channel(100)))
+        h.zap.armFromBrowse(list, title = null, key = null, categoryId = null)
+        h.playing = 1
+        h.releaseWindow = true
+        runBlocking { h.zap.directTune(currentChannelId = 1, tuned = far) { h.playing = it.id } }
+        // The user opens the category browser and picks a category while the window is still building.
+        var closed = false
+        h.zap.armForCategory(11) { closed = true }
+        h.await("the chosen category") { h.zap.channels.value == chosen }
+        h.releaseWindow = false // the older rebuild finishes now
+        runBlocking { delay(40) }
+        assertTrue(closed)
+        assertEquals(chosen, h.zap.channels.value)
+        assertEquals("Sports", h.zap.title.value)
+        h.stop()
+    }
+
+    /** The mirror image: a numeric tune takes ownership of the list, so an arming load that was
+     *  already in flight must not publish over the window it builds. */
+    @Test
+    fun `a slow arming load cannot land on top of a numeric tune`() {
+        val far = channel(99)
+        val rebuilt = listOf(channel(98), far, channel(100))
+        val h = Harness(category = list.take(2), window = rebuilt)
+        h.releaseArming = true
+        h.zap.armFor(channel(2)) // still loading when the user types a channel number
+        h.playing = 1
+        runBlocking { h.zap.directTune(currentChannelId = 1, tuned = far) { h.playing = it.id } }
+        h.await("the rebuilt window") { h.zap.channels.value == rebuilt }
+        h.releaseArming = false
+        runBlocking { delay(40) }
+        assertEquals(rebuilt, h.zap.channels.value)
         h.stop()
     }
 

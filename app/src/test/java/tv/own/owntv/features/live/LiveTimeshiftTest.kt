@@ -159,15 +159,24 @@ class LiveTimeshiftTest {
         h.stop()
     }
 
+    /**
+     * An archive that never opened must not leave the rewind standing. The offset used to survive a
+     * failed load, so the HUD reported "10 minutes behind live" over a picture that had never left the
+     * live edge, [LiveTimeshift.isRewound] stayed true (hiding the live engine toggle), and entering
+     * from the browse list named a channel that was never tuned. Failure now hands back to live.
+     */
     @Test
-    fun `a failed load leaves no ticker running`() {
+    fun `a failed load ends the rewind and returns to live`() {
         val h = Harness(loadSucceeds = false)
         h.timeshift.beginAt(channel, 600)
         h.await("the attempted load") { h.loads.isNotEmpty() }
         h.playback.positionMs = 300_000
+        h.await("the return to live") { h.liveEdgeRequests == 1 }
         runBlocking { delay(60) }
         assertNull(h.timeshift.watchingWallMs.value)
-        assertEquals(600, h.timeshift.offsetSec.value)
+        assertNull(h.timeshift.offsetSec.value)
+        assertFalse(h.timeshift.isRewound)
+        assertEquals(1, h.liveEdgeRequests) // once — not once per tick
         h.stop()
     }
 

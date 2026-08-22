@@ -70,8 +70,70 @@
   Live preview has had an off switch for a long time; this one did not. It does now, and on a low-memory
   TV it starts **off**, since that is where a second video pipeline costs the most.
 
+### ⏭️ Catch-up plays on to the next programme
+
+- **A finished catch-up programme no longer leaves a black screen.** Watching something from the guide
+  used to simply stop at the end of the programme, with nothing on screen and nothing to say why. It
+  now continues down the guide by itself, so an evening's catch-up plays through the way live
+  television would.
+- **Catching up with the present hands over to live.** If the programme that follows is the one on the
+  air right now, OwnTV tunes the live channel instead of asking the provider for a recording that is
+  only half made — that recording would end again within seconds and drop you straight back. Where the
+  guide has nothing after the programme, or a gap of more than three hours, playback stops as before.
+- **It uses the switch you already have.** *Settings → Video player → Auto-play next episode* now
+  governs catch-up as well as episodes, so turning it off turns this off too.
+
+### 🪟 Mini player is one popup instead of three screens
+
+- **Settings → Video player → Mini player is now a single panel.** It was a page of its own holding two
+  rows, and each row opened another box on top of it — three levels deep to set a size and a corner.
+  Size and position are now on one small popup and apply as you press, rather than after confirming.
+- **The position choices are laid out like the TV screen.** Six cells in two rows — top and bottom,
+  left/centre/right — so the option you highlight sits where the mini player will. **Reset** returns
+  both the size and the position to their defaults in one press.
+
 ### 🐛 Fixes
 
+- **Focus no longer slides across the screen when you leave a settings page.** Coming back from the
+  bigger panels — Glass Effect, About — the highlight appeared somewhere else for a moment and then
+  travelled to the row you had opened. The list was being scrolled out from under it while the
+  highlight was found again. It is now held still until focus has landed, on every settings screen.
+- **Two settings put the highlight in the wrong place afterwards.** Closing **Focus highlight**, or the
+  remote background-image picker, restored nothing at all — and left a marker set that sent focus to
+  the wrong row the *next* time you opened Settings from the sidebar.
+- **Back now goes back one level in Settings, not two.** In the per-playlist settings (Live TV player,
+  Live latency, Pre-buffer) you pick a playlist and then a value; Back from the value closed both and
+  left you two rows above where you started, so setting a second playlist meant beginning again.
+  Back — and choosing a value — now returns to the playlist list, where each playlist's current setting
+  is shown. The same applies to the background-image and OpenSubtitles sign-in steps.
+- **Every series re-sync used to leave a dead resume position behind, for ever.** After a re-sync the
+  app re-attaches your favorites, history and resume points to the content's new ids and drops the old
+  rows. The dropping step only ever considered channels, movies and shows — never *episodes*, which is
+  what almost every resume position and half the watch history actually is. So each re-sync added a
+  fresh row and kept the stale one, and the table grew for as long as you owned the app. The stale rows
+  are now dropped like every other kind; an episode that has not finished loading is still held safely
+  and re-attached when it arrives.
+- **A deleted profile's favorites can no longer surface in someone else's account.** When re-attaching
+  records after a sync or a restore, a record whose profile no longer existed was given to whichever
+  profile happened to be first — so deleting a profile could push its favorites, history and resume
+  points, including a Kids profile's, into another person's account. Such a record is now discarded.
+- **Rewinding a channel with no recording available now returns to live.** If the provider had nothing
+  to serve, OwnTV kept showing "behind live" and a rewind counter over a picture that had never left
+  the live edge, and hid the player's engine switch behind a rewind that did not exist. It now slips
+  back to live. Opening a catch-up programme that cannot be served tunes that channel live instead of
+  naming it over the previous channel's picture.
+- **Choosing a category right after typing a channel number sticks.** Entering a channel number
+  rebuilds the zap list in the background. If you opened the in-player category browser and picked a
+  category while that was still running, the older rebuild landed on top a second later and silently
+  replaced the category you had just chosen.
+- **Your audio sync survives a stream reconnecting.** A channel that dropped and recovered — or that
+  moved to the other decoder — reset the A/V-sync offset to the global default and only put your own
+  value back once it had been re-read from storage, which was audible as a sync jump. An adjustment you
+  had not asked OwnTV to remember was lost outright. Zoom and volume already survived a reconnect;
+  audio sync now behaves the same way.
+- **The offline warning reads the connection you are actually using.** On a TV with both an Ethernet
+  cable and Wi-Fi connected, a change on the idle one could publish its state over the working one,
+  showing an offline warning over a perfectly good connection until the next check corrected it.
 - **Auto frame rate now respects your TV's own "Match content frame rate" setting.** If you had
   turned frame-rate matching off in Android TV's display settings, OwnTV changed the display mode
   anyway — it was using an older method that the system does not police. Set to **Never**, OwnTV now

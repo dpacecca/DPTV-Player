@@ -121,7 +121,19 @@ class LiveZapList(
         publish(channels, categoryId = categoryId, title = title, key = key)
     }
 
+    /**
+     * Commit a new zap context. Any direct-tune rebuild still in flight is dropped first: it was
+     * started for a context the user has now left, and its guards (newest generation, tuned channel
+     * still playing) both still hold — picking a category does not change the channel — so it would
+     * otherwise land afterwards and replace the list the user just chose with a bounded window.
+     *
+     * Here rather than at the top of each arming method, because that is the moment a *replacement*
+     * actually happens: [armForCategory] loads first and publishes nothing when the category turns out
+     * empty, and killing a healthy rebuild for a category the user cannot even enter would leave CH±
+     * with neither a list nor an anchor.
+     */
     private fun publish(loaded: List<ChannelEntity>, categoryId: Long?, title: String?, key: LiveKey?) {
+        cancelPendingRebuild()
         this.categoryId = categoryId
         armed = true
         replace(loaded)
@@ -205,6 +217,9 @@ class LiveZapList(
         if (alreadyInList) return
 
         rebuildJob?.cancel()
+        // The tune takes ownership of the list, so an ordinary arming load still in flight must not
+        // land on top of the window — the mirror image of what [publish] guards against.
+        loadJob?.cancel()
         generation++
         val myGeneration = generation
 
@@ -235,9 +250,10 @@ class LiveZapList(
     }
 
     /** Cancel any in-flight background rebuild and discard its fallback anchor. Ordinary navigation
-     *  (CH±, the channel list, the Guide) does this before playing the new channel, so an obsolete
-     *  rebuild never publishes after the user has moved elsewhere. A direct tune deliberately does
-     *  not — it manages its own rebuild, which is what keeps its playback immediate. */
+     *  (CH±, the channel list, the Guide) does this before playing the new channel, and [publish] does
+     *  it for anything that arms a new context, so an obsolete rebuild never publishes after the user
+     *  has moved elsewhere. A direct tune deliberately does not — it manages its own rebuild, which is
+     *  what keeps its playback immediate. */
     fun cancelPendingRebuild() {
         rebuildJob?.cancel()
         rebuildJob = null

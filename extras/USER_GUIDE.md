@@ -209,6 +209,11 @@ or **narrow the whole app to just one**.
 - ⏪ **Catch-up category**: between **History** and **All** sits **Catch-up**, holding every channel your
   provider keeps a recording for. It only appears if you have such channels. Sorting, the search box and
   the in-player channel list all work inside it, like any other category.
+- ⏭️ **Catch-up plays on**: when a catch-up programme ends, the next one in the guide starts by itself,
+  so an evening's catch-up runs through like live television. Once you reach the programme that is on
+  the air **now**, OwnTV switches to the live channel — its recording is only half made. Where the guide
+  has nothing after it (or a gap over three hours) playback simply stops. Governed by
+  **Settings → Video player → Auto‑play next episode**; turning that off turns this off too.
 - **Live preview**: focus a channel and its video plays in the preview pane (with the **real stream
   resolution**, e.g. `1080p`/`4K`, so a mislabelled "4K" channel can't fool you). Toggle this in
   **Settings → Video player → Live TV → Live preview**; sound for the preview is **Preview audio**,
@@ -441,7 +446,8 @@ or **narrow the whole app to just one**.
 - **Resume**: partly‑watched titles offer **Resume** (vs. Play). Choose how this behaves in
   **Settings → Resume** — **Ask**, **Auto** (silently continues), or **Never**.
 - ⏭️ **Auto‑play next episode**: when an episode ends, the next one starts automatically — and it rolls into
-  the **next season** when the current one finishes. Toggle in **Settings → Auto‑play next episode**.
+  the **next season** when the current one finishes. The same switch also carries **catch-up** on to the
+  next programme in the guide (see Live TV). Toggle in **Settings → Video player → Auto‑play next episode**.
 - ⏳ **Next‑episode countdown**: in the last ~30 seconds of an episode a card counts down to the auto‑advance,
   with **Play now** (jump immediately) and **Cancel** (stop the auto‑advance for this episode).
 - Series **open on your last‑watched episode**.
@@ -949,9 +955,12 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   **Never** to keep trying — worth it only on a provider whose channels genuinely take that long to
   open. A wait the provider itself asks for ("account busy, try again in 20 s") is **not** counted
   against it, so a channel queued behind one is never mistaken for a dead one.
-- 🪟 **Mini‑player** (Settings → Playback) — set the docked live‑PiP window's **size** (percentage of screen
-  width) and **screen position** (four corners plus top/bottom centre). Both are also adjustable **on the
-  fly** from the mini‑player's own resize / move controls, and the window scales with your TV size and UI zoom.
+- 🪟 **Mini‑player** (Settings → Video player → Mini player) — **one popup** holding both settings: the
+  docked live‑PiP window's **size** (percentage of screen width, −/+ in 5% steps) and its **screen
+  position**, offered as a six‑cell grid laid out like the TV screen (top and bottom, left/centre/right)
+  so the cell you highlight is where the window will sit. Both apply as you press; **Reset** returns the
+  size and the position to their defaults together. Both are also adjustable **on the fly** from the
+  mini‑player's own resize / move controls, and the window scales with your TV size and UI zoom.
 - 🎬 **Movies & Series player** (Video Player Settings) — which engine plays movies/episodes first:
   **mpv** (default — widest format support incl. DTS/TrueHD audio, plus the A/V sync fix) or
   **ExoPlayer** (try it **only if movies/episodes won't start** on your device — it can't decode

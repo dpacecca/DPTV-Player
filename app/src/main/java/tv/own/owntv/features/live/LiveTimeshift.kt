@@ -27,9 +27,11 @@ class LiveTimeshift(
     private val scope: CoroutineScope,
     private val playback: Playback,
     /** Open [ChannelEntity]'s archive starting at the given wall-clock instant. Returns false when the
-     *  URL could not be built, or the user returned to live while it was being resolved. */
+     *  URL could not be built, or the user returned to live while it was being resolved. A false ends
+     *  the rewind — see [scheduleLoad]. */
     private val loadArchive: suspend (ChannelEntity, Long, Int) -> Boolean,
-    /** Scrubbing forward reached the live edge: the caller puts the real-time stream back on screen. */
+    /** Scrubbing forward reached the live edge — or an archive could not be opened at all: the caller
+     *  puts the real-time stream back on screen. */
     private val onLiveEdge: () -> Unit,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     private val coalesceMs: Long = 350,
@@ -129,7 +131,23 @@ class LiveTimeshift(
         loadJob = scope.launch {
             delay(coalesceMs) // coalesce rapid rewind/forward presses into one archive load
             val startMs = nowMs() - offsetSec * 1000L
-            if (!loadArchive(ch, startMs, offsetSec)) return@launch
+            if (!loadArchive(ch, startMs, offsetSec)) {
+                // No archive opened — the provider has no recording, or the URL could not be built.
+                // The offset used to survive that, so the HUD went on claiming the viewer was ten
+                // minutes behind live over a picture that had never left the live edge, and the engine
+                // toggle stayed hidden behind [isRewound] for a rewind that did not exist. Hand back to
+                // live instead: it is the one state that is honest whichever way the rewind was entered
+                // — including from the browse list, where the channel was never tuned at all.
+                //
+                // Skipped when the offset is already null, which is the other reason for a false: the
+                // user reached the live edge while this load was being resolved, and re-tuning would
+                // interrupt the stream they are already watching.
+                if (_offsetSec.value != null) {
+                    _offsetSec.value = null
+                    onLiveEdge()
+                }
+                return@launch
+            }
             archiveBaseWall = startMs
             startTick(rewinding = true)
         }

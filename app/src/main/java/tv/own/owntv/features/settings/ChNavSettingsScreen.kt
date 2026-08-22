@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,6 +31,7 @@ import tv.own.owntv.R
 import tv.own.owntv.features.settings.data.ChNavLimits
 import tv.own.owntv.ui.components.NumberInputDialog
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.restoreAfterDialogClose
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.format.localizedInteger
@@ -68,12 +70,11 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
 
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    val scrollState = rememberScrollState()
+    var savedScroll by remember { mutableIntStateOf(0) }
     LaunchedEffect(dialog) {
-        if (dialog != ChNavDialog.NONE) return@LaunchedEffect
-        dialogReturn?.let { opener ->
-            kotlinx.coroutines.delay(60)
-            runCatching { opener.requestFocus() }
-        }
+        if (dialog != ChNavDialog.NONE) { savedScroll = scrollState.value; return@LaunchedEffect }
+        restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
         dialogReturn = null
     }
     BackHandler { onBack() }
@@ -86,7 +87,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             // restore is owned by the LaunchedEffect above.
             .focusProperties { onEnter = { runCatching { firstFocus.requestFocus() } } }
             .focusGroup()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(horizontal = 40.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {

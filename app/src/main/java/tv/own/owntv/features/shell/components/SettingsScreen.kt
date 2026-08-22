@@ -38,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -124,7 +123,7 @@ import java.util.Locale
 
 private enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
-private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, VIDEO, MINI_PLAYER, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH }
+private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH }
 
 @Composable
 internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
@@ -240,25 +239,17 @@ fun SettingsScreen(
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
     val scrollState = rememberScrollState()
     var savedScroll by remember { mutableIntStateOf(0) }
-    val anyDialogOpen = showZoom || showFontCustomization || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showStartupChannelPicker || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showGlassEffect || showAmbientGlow || showBrowsing
+    val anyDialogOpen = showZoom || showFontCustomization || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showStartupChannelPicker || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showGlassEffect || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showFontCustomization, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showStartupChannelPicker, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showGlassEffect, showAmbientGlow, showBrowsing) {
+    LaunchedEffect(showZoom, showFontCustomization, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showStartupChannelPicker, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showGlassEffect, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote) {
         if (!anyDialogOpen) {
-            // When a scrim dialog is torn down, Compose's focus re-search through the newly-exposed
-            // scrollable Column resets its scroll to 0 and then bringIntoView-animates to wherever
-            // focus lands. We counter that by waiting one frame (so the scrim is fully gone), snapping
-            // the scroll back to where the user left it (scrollTo is instant — no animation), THEN
-            // requesting focus on the opener row, which is now already in view — so no animation.
-            withFrameNanos { }
-            runCatching { scrollState.scrollTo(savedScroll) }
-            dialogReturn?.let { row ->
-                kotlinx.coroutines.delay(80)
-                runCatching { row.requestFocus() }
-            }
+            // Focus back on the opener row, with the scroll offset held still the whole way — see
+            // [restoreAfterDialogClose] for why doing those two in sequence made the highlight travel.
+            tv.own.owntv.ui.components.restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
             dialogReturn = null
         }
     }
@@ -347,7 +338,6 @@ fun SettingsScreen(
         SettingsTab.PROFILES to FocusRequester(),
         SettingsTab.BACKUP to FocusRequester(),
         SettingsTab.VIDEO to FocusRequester(),
-        SettingsTab.MINI_PLAYER to FocusRequester(),
         SettingsTab.CUSTOMIZE to FocusRequester(),
         SettingsTab.HOME to FocusRequester(),
         SettingsTab.NETWORK to FocusRequester(),
@@ -359,13 +349,9 @@ fun SettingsScreen(
         SettingsTab.CH_NAV to FocusRequester(),
         SettingsTab.PANEL_WIDTH to FocusRequester(),
     ) }
-    // Which screen the Mini player sub-screen was opened from, so Back goes back there.
-    // Saveable like [tab] itself, or a restore while Mini player is open would send Back to the root
-    // instead of to the Video player screen the user opened it from.
-    var miniPlayerFrom by rememberSaveable { mutableStateOf(SettingsTab.ROOT) }
-    // Set on the way back, so Video player can put focus on its Mini player row instead of its first
-    // row. That screen does not survive the trip, so the flag has to live out here.
-    var miniPlayerReturn by rememberSaveable { mutableStateOf(false) }
+    // Mini player is a popup on the Video player screen, not a screen of its own. The settings search
+    // still lists it by name, so it needs a way to say "open that popup on arrival".
+    var openMiniPlayer by rememberSaveable { mutableStateOf(false) }
     val open: (SettingsTab) -> Unit = { lastTab = it; tab = it }
     // Restore focus to the row a sub-screen was opened from when the user navigates back. Fresh entry
     // intentionally does NOT grab focus here — every other main-menu section lets the shell/sidebar
@@ -388,25 +374,8 @@ fun SettingsScreen(
         SettingsTab.BACKUP -> { BackupScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.VIDEO -> {
             VideoPlayerSettingsScreen(
-                onBack = { tab = SettingsTab.ROOT; miniPlayerReturn = false },
-                // Video player lists every playback setting, so it links on to Mini player too. Back
-                // from there returns here rather than to the root, or the user is thrown two levels up
-                // from a row they opened one level down.
-                onOpenMiniPlayer = {
-                    miniPlayerFrom = SettingsTab.VIDEO; miniPlayerReturn = false
-                    tab = SettingsTab.MINI_PLAYER
-                },
-                startOnMiniPlayerRow = miniPlayerReturn,
-                modifier = modifier,
-            )
-            return
-        }
-        SettingsTab.MINI_PLAYER -> {
-            tv.own.owntv.features.settings.MiniPlayerSettingsScreen(
-                onBack = {
-                    miniPlayerReturn = miniPlayerFrom == SettingsTab.VIDEO
-                    tab = miniPlayerFrom; miniPlayerFrom = SettingsTab.ROOT
-                },
+                onBack = { tab = SettingsTab.ROOT; openMiniPlayer = false },
+                openMiniPlayer = openMiniPlayer,
                 modifier = modifier,
             )
             return
@@ -838,7 +807,7 @@ fun SettingsScreen(
                     chip = if (previewAudio) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewAudio(!previewAudio) },
                 SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_quick_channel_numbers), stringResource(R.string.settings_search_keywords_channel_numbers), OwnTVIcon.LIVE_TV, TileTone.PRIMARY,
                     chip = if (channelNumbers) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (channelNumbers) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setDirectTune(!channelNumbers) },
-                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_mini_player_root), stringResource(R.string.settings_search_keywords_mini), OwnTVIcon.PIP, TileTone.TERTIARY) { open(SettingsTab.MINI_PLAYER) },
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_mini_player_root), stringResource(R.string.settings_search_keywords_mini), OwnTVIcon.PIP, TileTone.TERTIARY) { openMiniPlayer = true; open(SettingsTab.VIDEO) },
                 SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_quick_hdr), stringResource(R.string.settings_search_keywords_hdr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
                     chip = if (hdr) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setHdrEnabled(!hdr) },
                 SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_auto_frame_rate), stringResource(R.string.settings_search_keywords_afr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
@@ -1103,7 +1072,7 @@ fun SettingsScreen(
                 }
                 showBgRemote = false
             },
-            onDismiss = { showBgRemote = false },
+            onDismiss = { showBgRemote = false; showBgImageChooser = true }, // back one level
         )
     }
     if (showBgPicker) {
@@ -1123,7 +1092,9 @@ fun SettingsScreen(
                 }
                 showBgPicker = false
             },
-            onDismiss = { showBgPicker = false },
+            // Back goes back one level, to the local/remote/clear chooser this was opened from —
+            // closing both left the user on the Glass Effect row two steps up.
+            onDismiss = { showBgPicker = false; showBgImageChooser = true },
         )
     }
 }

@@ -92,6 +92,7 @@ Scan to join from your phone:
 - **Xtream**, **M3U** (typed playlists), and **Stalker/Ministra** portals, including optional advanced device identification; add any source from another device (phone, tablet or PC) over LAN (QR + PIN) — including uploading an `.m3u` file straight from the computer
 - XMLTV **TV Guide** grid, **Catch-up TV** (up to 7 days) + live rewind, auto EPG matching, multiple guide sources
 - **Catch-up works without a guide** — a **Catch-up** category listing every channel with an archive, plus **Go back to…** to jump to a time (or an exact day/hour/minute) instead of holding rewind
+- **Catch-up plays on** — a finished programme continues to the next one in the guide, and hands over to the live channel once you have caught up with the present
 - **Clock in every player**, and while replaying a recording a second one showing when the programme originally aired, with a matching **Playing / Then** guide row
 - **Guide time offset** — correct a guide published in another time zone, globally or per channel
 - Optional **guide channel logos** — per EPG source, use that feed's own logos instead of your playlist's

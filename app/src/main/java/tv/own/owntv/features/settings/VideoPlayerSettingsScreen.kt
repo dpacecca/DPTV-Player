@@ -128,11 +128,8 @@ private fun liveLatencyLabelRes(mode: tv.own.owntv.features.settings.data.LiveLa
 @Composable
 fun VideoPlayerSettingsScreen(
     onBack: () -> Unit,
-    /** Opens the Mini player sub-screen — that setting is listed here as well as on the root. */
-    onOpenMiniPlayer: () -> Unit,
-    /** True when arriving back from the Mini player sub-screen: focus its row, not the first one.
-     *  This screen is torn down while that sub-screen is shown, so the caller has to remember it. */
-    startOnMiniPlayerRow: Boolean = false,
+    /** Open the Mini player popup straight away — the settings search lists that setting by name. */
+    openMiniPlayer: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -204,7 +201,7 @@ fun VideoPlayerSettingsScreen(
     // the two steps in the right order — scroll first, then focus the pending return row — so on this
     // one entry it is left to do the whole job.
     LaunchedEffect(Unit) {
-        if (!startOnMiniPlayerRow) runCatching { firstFocus.requestFocus() }
+        if (openMiniPlayer) dialog = Dialog.MINI_PLAYER else runCatching { firstFocus.requestFocus() }
     }
     BackHandler { onBack() }
 
@@ -212,14 +209,7 @@ fun VideoPlayerSettingsScreen(
     // request crosses INTO this screen's focus group from the dialog, so the group's onEnter
     // intercepts it — it consults dialogReturn first (and clears it) instead of hijacking.
     val dialogRowFocus = remember { Dialog.entries.associateWith { FocusRequester() } }
-    // The Mini player row opens a whole sub-screen rather than a dialog, but coming back from it is
-    // the same problem, so it rides the same return mechanism — seeded here because the caller is the
-    // only thing that survived the trip. Seeding it (rather than requesting focus directly) is what
-    // puts the scroll restore ahead of the focus request; see the initial LaunchedEffect above.
-    val miniPlayerRowFocus = remember { FocusRequester() }
-    var dialogReturn by remember {
-        mutableStateOf<FocusRequester?>(if (startOnMiniPlayerRow) miniPlayerRowFocus else null)
-    }
+    var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
     // Hoisted scroll state: snapshot at click time, restore on dialog close, so the list doesn't
     // visibly jump/scroll-animate when a scrim picker opens or closes over it (same fix as the
     // Settings root list — Compose resets the scrollable's offset when a scrim dialog tears down).
@@ -245,15 +235,9 @@ fun VideoPlayerSettingsScreen(
             dialogReturn = dialogRowFocus.getValue(Dialog.LIVE_LATENCY)
         } else {
             // Don't steal focus back to the row while the low-latency warning popup is up — it keeps
-            // focus itself. Restore only once it (and every dialog) is closed. First snap the scroll
-            // back to where the user was (one frame, so the scrim is gone) — then the opener row is
-            // already in view and requestFocus() won't animate.
-            withFrameNanos { }
-            runCatching { scrollState.scrollTo(savedScroll) }
-            dialogReturn?.let { row ->
-                kotlinx.coroutines.delay(80)
-                runCatching { row.requestFocus() }
-            }
+            // focus itself. Restore only once it (and every dialog) is closed, holding the scroll
+            // offset still while focus lands — see [restoreAfterDialogClose].
+            tv.own.owntv.ui.components.restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
         }
     }
 
@@ -454,8 +438,8 @@ fun VideoPlayerSettingsScreen(
             icon = OwnTVIcon.PIP, title = stringResource(R.string.settings_mini_player_root),
             desc = stringResource(R.string.settings_mini_player_root_description),
             chevron = true,
-            modifier = Modifier.focusRequester(miniPlayerRowFocus),
-            onClick = onOpenMiniPlayer,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.MINI_PLAYER)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.MINI_PLAYER },
         )
 
         Divider()
@@ -773,7 +757,7 @@ fun VideoPlayerSettingsScreen(
                 prerollSource = sources.firstOrNull { it.id.toString() == id }
                 dialog = if (prerollSource != null) Dialog.LIVE_PREROLL_SOURCE else Dialog.NONE
             },
-            onDismiss = { dialog = Dialog.NONE },
+            onDismiss = { prerollSource = null; dialog = Dialog.NONE },
         )
         // --- per-playlist Live TV engine: pick the playlist, then its value ---
         Dialog.LIVE_ENGINE_SOURCES -> PickerDialog(
@@ -790,7 +774,7 @@ fun VideoPlayerSettingsScreen(
                 engineSource = sources.firstOrNull { it.id.toString() == id }
                 dialog = if (engineSource != null) Dialog.LIVE_ENGINE_SOURCE else Dialog.NONE
             },
-            onDismiss = { dialog = Dialog.NONE },
+            onDismiss = { engineSource = null; dialog = Dialog.NONE },
         )
         Dialog.LIVE_ENGINE_SOURCE -> PickerDialog(
             title = engineSource?.name ?: stringResource(R.string.settings_live_tv_player),
@@ -799,10 +783,12 @@ fun VideoPlayerSettingsScreen(
             selected = engineSource?.liveEnginePreference ?: FOLLOW_GLOBAL,
             onSelect = { value ->
                 engineSource?.let { vm.setSourceLiveEngine(it.id, value.takeIf { v -> v != FOLLOW_GLOBAL }) }
-                engineSource = null
-                dialog = Dialog.NONE
+                dialog = Dialog.LIVE_ENGINE_SOURCES
             },
-            onDismiss = { engineSource = null; dialog = Dialog.NONE },
+            // Back goes back ONE level, to the playlist list — which is also where the value just set is
+            // shown. Closing both levels stranded the user on the row two steps above what they opened,
+            // and made configuring a second playlist a fresh trip from the top.
+            onDismiss = { dialog = Dialog.LIVE_ENGINE_SOURCES },
         )
         // --- per-playlist Live latency: pick the playlist, then its value (Custom opens the stepper) ---
         Dialog.LIVE_LATENCY_SOURCES -> PickerDialog(
@@ -822,7 +808,7 @@ fun VideoPlayerSettingsScreen(
                 latencySource = sources.firstOrNull { it.id.toString() == id }
                 dialog = if (latencySource != null) Dialog.LIVE_LATENCY_SOURCE else Dialog.NONE
             },
-            onDismiss = { dialog = Dialog.NONE },
+            onDismiss = { latencySource = null; dialog = Dialog.NONE },
         )
         Dialog.LIVE_LATENCY_SOURCE -> PickerDialog(
             title = latencySource?.name ?: stringResource(R.string.settings_live_latency),
@@ -835,7 +821,7 @@ fun VideoPlayerSettingsScreen(
                 when {
                     name == FOLLOW_GLOBAL -> {
                         src?.let { vm.setSourceLiveLatency(it.id, null, FOLLOW_GLOBAL_LATENCY_SECS) }
-                        latencySource = null
+                        dialog = Dialog.LIVE_LATENCY_SOURCES
                     }
                     // Same rules as the global picker: Low is acknowledged first, Custom asks for the
                     // seconds and is committed by the stepper rather than on opening it.
@@ -848,11 +834,14 @@ fun VideoPlayerSettingsScreen(
                         dialog = Dialog.LIVE_LATENCY_CUSTOM_SOURCE
                     else -> {
                         src?.let { vm.setSourceLiveLatency(it.id, name, FOLLOW_GLOBAL_LATENCY_SECS) }
-                        latencySource = null
+                        dialog = Dialog.LIVE_LATENCY_SOURCES
                     }
                 }
             },
-            onDismiss = { latencySource = null; dialog = Dialog.NONE },
+            // Back to the playlist list, one level. The Low/Custom branches above still close the chain:
+            // both hand over to another popup (the acknowledgement, the seconds stepper) that owns what
+            // happens next, and re-opening the list underneath them would fight for focus.
+            onDismiss = { dialog = Dialog.LIVE_LATENCY_SOURCES },
         )
         Dialog.LIVE_LATENCY_CUSTOM_SOURCE -> StepperDialog(
             title = stringResource(R.string.settings_custom_live_buffer),
@@ -863,11 +852,10 @@ fun VideoPlayerSettingsScreen(
             format = { stringResource(R.string.settings_live_buffer_seconds, it) },
             onSet = { secs ->
                 val src = latencySource
-                val commit = {
+                val commit: () -> Unit = {
                     src?.let {
                         vm.setSourceLiveLatency(it.id, tv.own.owntv.features.settings.data.LiveLatency.CUSTOM.name, secs)
                     }
-                    latencySource = null
                 }
                 // A below-Balanced number gets the same acknowledgement the global setting asks for.
                 if (tv.own.owntv.features.settings.data.LiveBuffer.isLowLatency(secs)) {
@@ -878,9 +866,8 @@ fun VideoPlayerSettingsScreen(
             },
             onReset = {
                 latencySource?.let { vm.setSourceLiveLatency(it.id, null, FOLLOW_GLOBAL_LATENCY_SECS) }
-                latencySource = null
             },
-            onDismiss = { latencySource = null; dialog = Dialog.NONE },
+            onDismiss = { dialog = Dialog.LIVE_LATENCY_SOURCE }, // back one level, to the mode picker
         )
         Dialog.LIVE_PREROLL_SOURCE -> PickerDialog(
             title = prerollSource?.name ?: stringResource(R.string.settings_sort_playlist),
@@ -891,11 +878,11 @@ fun VideoPlayerSettingsScreen(
             selected = (prerollSource?.livePrerollSecs ?: -1).toString(),
             onSelect = { value ->
                 prerollSource?.let { vm.setSourcePreroll(it.id, value.toIntOrNull() ?: -1) }
-                prerollSource = null
-                dialog = Dialog.NONE
+                dialog = Dialog.LIVE_PREROLL_SOURCES
             },
-            onDismiss = { prerollSource = null; dialog = Dialog.NONE },
+            onDismiss = { dialog = Dialog.LIVE_PREROLL_SOURCES }, // back one level, to the playlist list
         )
+        Dialog.MINI_PLAYER -> MiniPlayerSettingsDialog(onDismiss = { dialog = Dialog.NONE })
         Dialog.EXTERNAL_PLAYER -> ExternalPlayerDialog(
             live = externalLive, movies = externalMovies, series = externalSeries,
             onToggle = { section, enabled -> vm.setExternalPlayer(section, enabled) },
@@ -1027,7 +1014,7 @@ private fun ConfirmResetDialog(title: String, description: String, onConfirm: ()
     }
 }
 
-private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, AFR_WARNING, LIVE_PREVIEW_PANEL }
+private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, AFR_WARNING, LIVE_PREVIEW_PANEL, MINI_PLAYER }
 
 /**
  * Label for one engine preference — "ExoPlayer, then mpv", "mpv only", and so on.
@@ -1944,7 +1931,7 @@ private fun SubtitlePreview(
 }
 
 @Composable
-private fun StepBtn(label: String, enabled: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+internal fun StepBtn(label: String, enabled: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val colors = OwnTVTheme.colors
     FocusableSurface(
         onClick = onClick,

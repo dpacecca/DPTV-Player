@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -26,6 +27,7 @@ import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.TextInputDialog
+import tv.own.owntv.ui.components.restoreAfterDialogClose
 import tv.own.owntv.ui.components.roundedPanel
 
 /**
@@ -44,6 +46,8 @@ fun WeatherSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val locationRowFocus = remember { FocusRequester() }
     // The opener row for the location dialog, captured when the dialog opens and consumed when it
     // closes — so focus returns to the "Custom location" row, not the "Show weather" first row.
+    val scrollState = rememberScrollState()
+    var savedScroll by remember { mutableIntStateOf(0) }
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     LaunchedEffect(showLocation) {
@@ -51,12 +55,10 @@ fun WeatherSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         // Previously onEnter also read+cleared it, racing this effect — whoever fired first won and
         // the other no-op'd, so the restore sometimes landed on the wrong row.
         if (showLocation) {
+            savedScroll = scrollState.value
             dialogReturn = locationRowFocus
         } else {
-            dialogReturn?.let { row ->
-                kotlinx.coroutines.delay(80)
-                runCatching { row.requestFocus() }
-            }
+            restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
             dialogReturn = null
         }
     }
@@ -71,7 +73,7 @@ fun WeatherSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             // fire for programmatic requestFocus), so it must not consult dialogReturn.
             .focusProperties { onEnter = { runCatching { firstFocus.requestFocus() } } }
             .focusGroup()
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(horizontal = 40.dp, vertical = 28.dp),
     ) {
         Header(stringResource(R.string.settings_weather), onBack)

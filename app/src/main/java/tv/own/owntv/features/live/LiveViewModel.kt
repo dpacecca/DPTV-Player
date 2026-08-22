@@ -852,6 +852,7 @@ class LiveViewModel(
                 if (!_liveOnExo.value && previewEngine.currentUrl != null) previewEngine.setMuted(!on)
             }
         }
+        viewModelScope.launch { player.archiveEnded.collect { continueAfterCatchup() } }
     }
 
     /** Called when anything OTHER than a promoted live channel takes over full-screen (a movie/episode,
@@ -1919,6 +1920,10 @@ class LiveViewModel(
         }
     }
 
+    /** The archive programme on screen, for [continueAfterCatchup] to find the one after it. Null
+     *  whenever the picture is not a fixed catch-up programme. */
+    private var playingCatchupProgramme: tv.own.owntv.core.database.entity.EpgProgrammeEntity? = null
+
     /** Replay a past programme from the channel's archive (seekable, like the Guide's "Watch from start"). */
     fun playCatchupProgramme(ch: ChannelEntity, programme: tv.own.owntv.core.database.entity.EpgProgrammeEntity) {
         viewModelScope.launch {
@@ -1933,6 +1938,7 @@ class LiveViewModel(
             _previewChannel.value = ch
             clearTimeshift()                 // a fixed programme replaces any live rewind in progress
             _catchupActive.value = true      // HUD: VOD engine toggle, not the live compatibility toggle
+            playingCatchupProgramme = programme // …and the anchor auto-play continues from
             clearLiveOnExo() // catch-up is a VOD-style archive on mpv, not the live ExoPlayer channel
             // isLive=false → seekable archive; isArchive → mid-GOP tolerant (hardware first, software rescue).
             player.play(url, title = ch.name, subtitle = programme.title, logoUrl = ch.displayLogoUrl, isLive = false, isArchive = true, userAgent = sourceUa, httpHeaders = ch.httpHeaders)
@@ -1944,6 +1950,37 @@ class LiveViewModel(
             // catch-up path above has always recorded it, and this one silently did not, so the channel
             // never reached History or Recently watched when catch-up played in-app.
             recordLiveHistory(ch, immediate = true)
+        }
+    }
+
+    /**
+     * A catch-up programme played to its end and auto-play is on ("Auto-play next" in Settings, the
+     * same switch that carries a series from one episode to the next). Continue down the guide instead
+     * of leaving the black screen a finished archive used to leave.
+     *
+     * The player raises [OwnTVPlayer.archiveEnded] because it cannot know what "next" is — that lives
+     * in the guide. [CatchupContinue] decides between the next programme, the live stream and stopping;
+     * everything here is the lookup.
+     *
+     * Guarded on [_catchupActive] rather than on the remembered programme: that flag is the app's one
+     * answer to "is a fixed archive programme on screen", and it is already cleared by every path that
+     * puts something else there — tuning live, a rewind, leaving full-screen.
+     */
+    private fun continueAfterCatchup() {
+        if (!_catchupActive.value) return
+        val ch = _previewChannel.value ?: return
+        val ended = playingCatchupProgramme ?: return
+        viewModelScope.launch {
+            val next = epgReader.programmeAfter(ch, ended.stopMs, custom.value, epgOffset.value, ctx.value.sourceIds)
+            when (CatchupContinue.decide(next?.startMs, next?.stopMs, System.currentTimeMillis())) {
+                is CatchupContinue.Next.Programme -> next?.let { playCatchupProgramme(ch, it) }
+                CatchupContinue.Next.Live -> {
+                    // Caught up with the present: the next programme IS what is on air, so tune it.
+                    _catchupActive.value = false
+                    ensurePlaying(ch)
+                }
+                CatchupContinue.Next.Stop -> Unit // no guide beyond here — stop, as before
+            }
         }
     }
 
