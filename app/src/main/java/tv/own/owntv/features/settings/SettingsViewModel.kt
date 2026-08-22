@@ -755,6 +755,13 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setLivePrerollSecs(secs) }
     }
 
+    /** "Give up on a channel after": the whole-tune budget in seconds (0 = Never). */
+    val liveTuneTimeoutSecs: StateFlow<Int> =
+        settings.liveTuneTimeoutSecs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.player.LiveLadder.DEFAULT_BUDGET_SECS)
+    fun setLiveTuneTimeoutSecs(secs: Int) {
+        viewModelScope.launch { settings.setLiveTuneTimeoutSecs(secs) }
+    }
+
     /** Per-playlist override of the above. `-1` = follow the global value. */
     fun setSourcePreroll(sourceId: Long, secs: Int) {
         viewModelScope.launch { sourceDao.updateLivePreroll(sourceId, secs) }

@@ -106,6 +106,11 @@ private const val DIRECT_TUNE_FEEDBACK_MS = 1_500L
 private const val DIRECT_TUNE_PLAYBACK_WAIT_MS = 8_000L
 private const val MAX_DIRECT_TUNE_DIGITS = 5
 
+/** Re-poll for late-arriving audio/subtitle tracks while the track menu is open and still empty.
+ *  20 × 300 ms = 6 s, comfortably past the slowest observed HDR/DTS track report, then it stops. */
+private const val TRACK_POLL_MS = 300L
+private const val TRACK_POLL_TRIES = 20
+
 internal enum class HudDialog { NONE, AUDIO, SUBS, SPEED, ZOOM, VOLUME, SUB_TIMING, JUMP_BACK }
 
 /** What the top-left channel OSD shows for direct tune: the digits being typed, the channel a number
@@ -657,9 +662,19 @@ fun PlayerHud(
         // heavy HDR/DTS streams report their tracks late). Reading player.xxxTracks() directly in
         // composition handed the dialog a fresh list on every HUD recomposition, endlessly rebuilding
         // the rows and losing/yanking D-pad focus.
+        //
+        // The re-poll is BOUNDED: a stream that genuinely has no such track (most radio channels have
+        // no subtitles) would otherwise wake the CPU every 300 ms for as long as the menu stays open.
+        // Tracks that arrive later than TRACK_POLL_TRIES × 300 ms have never been observed.
         HudDialog.AUDIO -> {
             var audioTracks by remember { mutableStateOf(player.audioTracks()) }
-            LaunchedEffect(Unit) { while (audioTracks.isEmpty()) { delay(300); audioTracks = player.audioTracks() } }
+            LaunchedEffect(Unit) {
+                repeat(TRACK_POLL_TRIES) {
+                    if (audioTracks.isNotEmpty()) return@LaunchedEffect
+                    delay(TRACK_POLL_MS)
+                    audioTracks = player.audioTracks()
+                }
+            }
             TrackDialog(
                 stringResource(R.string.player_audio_track), audioTracks,
                 onSelect = { player.selectAudio(it.mpvId); dialog = HudDialog.NONE }, onOff = null,
@@ -672,7 +687,13 @@ fun PlayerHud(
         }
         HudDialog.SUBS -> {
             var subTracks by remember { mutableStateOf(player.textTracks()) }
-            LaunchedEffect(Unit) { while (subTracks.isEmpty()) { delay(300); subTracks = player.textTracks() } }
+            LaunchedEffect(Unit) {
+                repeat(TRACK_POLL_TRIES) {
+                    if (subTracks.isNotEmpty()) return@LaunchedEffect
+                    delay(TRACK_POLL_MS)
+                    subTracks = player.textTracks()
+                }
+            }
             TrackDialog(
                 stringResource(R.string.player_subtitles), subTracks,
                 onSelect = { player.selectSubtitle(it.mpvId); dialog = HudDialog.NONE },

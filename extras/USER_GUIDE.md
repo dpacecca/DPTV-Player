@@ -921,6 +921,13 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   that loads plenty of video but still never shows a picture (a provider-side timing fault, most often seen
   with **Prefer HLS** on) is now given up on after a few seconds rather than spinning, so it moves on to its
   original format or the compatibility player.
+- ⛔ **Give up on a channel after** (Video Player Settings → Live TV, **30 s** by default) — how long a
+  live channel may show nothing before OwnTV stops trying and tells you. Behind the scenes it works
+  through up to four player-and-format combinations, each with its own timeout, so a channel your
+  provider has removed used to sit on black for about a minute and a half. Choose **15 / 30 / 60 s**, or
+  **Never** to keep trying — worth it only on a provider whose channels genuinely take that long to
+  open. A wait the provider itself asks for ("account busy, try again in 20 s") is **not** counted
+  against it, so a channel queued behind one is never mistaken for a dead one.
 - 🪟 **Mini‑player** (Settings → Playback) — set the docked live‑PiP window's **size** (percentage of screen
   width) and **screen position** (four corners plus top/bottom centre). Both are also adjustable **on the
   fly** from the mini‑player's own resize / move controls, and the window scales with your TV size and UI zoom.
@@ -942,7 +949,8 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   how many items it will clear and asking first. Each is paired with its own default (**Default zoom**,
   **Default volume**), and clearing one leaves the other alone.
 - ⏩ **Seek step** (Video Player Settings) — how far the rewind/forward buttons and the seek bar jump in a
-  movie or episode: **5 / 10 / 15 / 30 / 60 s** (default 10 s).
+  movie or episode: **5 / 10 / 15 / 30 / 60 s** (default 10 s). It also applies to the skip buttons on a
+  **Bluetooth remote** and in the **system media notification**, which used to be fixed at 30 s.
 - ⏪ **Live rewind step** (Video Player Settings) — the same for the catch‑up archive buttons on a live
   channel: **10 / 15 / 30 / 60 / 120 s** (default 30 s). Deliberately separate from Seek step — stepping
   through a film and stepping back through a live archive are different jobs.

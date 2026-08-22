@@ -2,6 +2,22 @@
 
 ## v4.2.3 — Unreleased
 
+### ⏱️ A dead channel says so, instead of leaving you with a black screen
+
+- **New setting: Settings → Video player → Live TV → "Give up on a channel after".** A live channel
+  that will never play used to leave you looking at black for about a minute and a half, because
+  OwnTV silently worked through four different player-and-format combinations and each one had its
+  own long timeout. Nothing put a limit on the total. There is now a limit on the whole attempt —
+  **30 seconds by default**, with 15 and 60 also offered — and when it runs out you get the usual
+  error message instead of more black screen. **Never** keeps the old behaviour for a slow provider
+  that needs it.
+- **A wait your provider asks for is never counted against it.** When a panel answers "your account is
+  busy, try again in 20 seconds", OwnTV is counting that down behind the spinner on purpose. That time
+  is added back, so a channel queued behind a wait the app agreed to is never mistaken for a dead one.
+- **The error now actually appears.** A stream that opens its playlist and then sends nothing produces
+  no picture *and* no error, so nothing was there to show — the spinner simply stayed up forever once
+  the last combination had been tried. Whichever player is on screen is now told to show the failure.
+
 ### 🐛 Fixes
 
 - **"App not installed" when updating from inside OwnTV.** The app downloaded the new version and
@@ -18,6 +34,32 @@
 - **The first-run "Add a playlist" screen no longer hides Stalker.** The **New** card described itself
   as "Add an M3U or Xtream source" even though the form behind it has offered Stalker portals for
   several releases. It now reads "Add an M3U, Xtream or Stalker source", in every language.
+- **Fast-forward and rewind from a Bluetooth remote or the system media notification now use your Seek
+  step.** Those two routes had a fixed 30 seconds built in, so a remote's skip buttons moved by a
+  different amount than the on-screen ones — with Seek step set to 10 seconds, the buttons jumped 10
+  and the remote jumped 30. Both now read the setting.
+- **A frozen live channel moves to the other player about twice as fast.** The wait before handing a
+  stalled channel over was a flat 30 seconds, while the player underneath had already declared the feed
+  dead at 12 seconds and quietly retried twice in the meantime. The wait is now worked out from that
+  verdict — about 15 seconds — which leaves room for one genuine recovery and not for two that have
+  already failed.
+- **The offline warning now appears when the internet is actually unreachable.** OwnTV only checked
+  that a network interface claimed to carry internet, which an Ethernet cable plugged into a dead
+  router does forever. It now also requires Android's own confirmation that traffic reached the
+  outside, so unplugging the router shows the warning instead of silently failing every request.
+- **Online subtitle searching now filters correctly for seven more languages.** Bengali, Czech, Danish,
+  Malayalam, Norwegian, Polish and Swedish were missing from the code-conversion table, so choosing one
+  as your search language quietly returned unfiltered results.
+- **Track menus stop hunting for tracks that will never arrive.** Opening the audio or subtitle menu on
+  a stream that has none — a radio channel, most often — left OwnTV re-checking three times a second
+  for as long as the menu stayed open. It now stops after six seconds, which is well past the slowest
+  stream that has ever reported its tracks late.
+- **Less background work during playback, and less of it on weaker TVs.** Several separate timers
+  driving the progress readout, the stream-info panel and the frame-rate chip have been merged into a
+  single once-a-second tick, and on low-memory devices the "is this channel frozen?" check now runs
+  every 4 seconds instead of every 2.5 (reaching the same verdict in 12 seconds instead of 10). The
+  still picture shown while the app swaps video players is also captured at a fraction of its old size
+  — on a 4K stream it used to allocate about 33 MB for a placeholder shown for a quarter of a second.
 
 ## v4.2.2 — 2026-08-19
 

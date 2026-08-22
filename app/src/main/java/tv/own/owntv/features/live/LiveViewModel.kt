@@ -174,6 +174,12 @@ class LiveViewModel(
     val liveEnginePreference: StateFlow<tv.own.owntv.player.EnginePreference> = settings.liveEnginePreference
         .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.player.EnginePreference.EXO_FIRST)
 
+    /** Settings → "Give up after": the whole-tune budget in ms, or [LiveLadder.NO_BUDGET] for Never.
+     *  Eagerly collected for the same reason as the engine preference — the tune reads it synchronously. */
+    private val ladderBudgetMs: StateFlow<Long> = settings.liveTuneTimeoutSecs
+        .map { it * 1000L }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, LiveLadder.DEFAULT_BUDGET_SECS * 1000L)
+
     /** List ordering for this section (Playlist order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortLive
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.SortMode.PLAYLIST)
@@ -1637,6 +1643,10 @@ class LiveViewModel(
                 // Nothing pending and no new wait since the last deadline → this really is a stuck open.
                 if (previewEngine.providerBackOff.value == null && waits == waitsSeen) break
                 waitsSeen = waits
+                // The budget just spent was the panel's own countdown, not this channel failing to open,
+                // so give it back — otherwise the whole-tune deadline would abandon a channel that is
+                // simply queued behind a wait OwnTV agreed to.
+                ladder.postponeDeadline(openBudgetMs)
             }
             if (!isStill(channel)) return@launch
             if (terminal == null) {
@@ -1657,6 +1667,7 @@ class LiveViewModel(
             // support log shows the tune and then nothing at all, which reads identically whether the
             // channel played, wedged with the watchers still waiting, or the watcher itself never ran.
             engineLog("'${channel.name}' opened on ExoPlayer")
+            ladderOpened()
             // PLAYING: give the track list a moment to settle, then route silent (undecodable-audio) streams to mpv.
             delay(300)
             if (!isStill(channel)) return@launch
@@ -1726,7 +1737,61 @@ class LiveViewModel(
      *  is a new chance, including for a channel that ended the last one on its final rung. */
     private suspend fun armLadder(channel: ChannelEntity, preference: tv.own.owntv.player.EnginePreference) {
         forceTsForExo = null
-        ladder.arm(channel.streamUrl, preference) { hasHlsAlternative(channel) }
+        ladder.arm(
+            channel.streamUrl,
+            preference,
+            budgetMs = ladderBudgetMs.value,
+            nowMs = android.os.SystemClock.elapsedRealtime(),
+        ) { hasHlsAlternative(channel) }
+        startLadderDeadline(channel)
+    }
+
+    /** The alarm that ends a tune which never opened. Cancelled the moment a channel does open. */
+    private var ladderDeadlineJob: Job? = null
+
+    /**
+     * Wall-clock alarm for Settings → "Give up after", so the budget bounds the black screen itself rather
+     * than only the decision to climb another rung.
+     *
+     * Checking the deadline at rung boundaries alone is not enough: a rung entered at 24 s with a 35 s
+     * timeout of its own runs to 59 s before anyone asks the time. The alarm cuts in during the rung, so
+     * "30 seconds" means thirty seconds to the person watching the screen — which is what makes the
+     * setting built on top of it honest.
+     *
+     * The deadline is re-read on each pass instead of being captured once, so a provider back-off that
+     * bought the tune more time ([LiveLadder.postponeDeadline]) moves this alarm with it.
+     *
+     * A channel that OPENS cancels this job outright ([ladderOpened]), so a stream that plays and later
+     * stalls is never touched by it — that one belongs to [watchExoAfterFirstFrame], which is about
+     * recovery, not about opening.
+     */
+    private fun startLadderDeadline(channel: ChannelEntity) {
+        ladderDeadlineJob?.cancel()
+        ladderDeadlineJob = viewModelScope.launch {
+            while (ladder.owns(channel.streamUrl)) {
+                val left = (ladder.deadlineAt() ?: return@launch) - android.os.SystemClock.elapsedRealtime()
+                if (left <= 0) break
+                delay(left)
+            }
+            // Both gates matter. The ladder can still "own" a channel the user has walked away from, and
+            // this alarm stops the engine — on the mpv branch that is the shared full player, which by
+            // then may be showing a film. It may only ever act on the channel still on screen.
+            if (!ladder.owns(channel.streamUrl)) return@launch
+            if (!isStill(channel) && !isStillOnMpv(channel)) return@launch
+            val detail = "no picture within ${ladderBudgetMs.value / 1000}s of tuning"
+            engineLog("'${channel.name}' — giving up: $detail")
+            recordLadderEvent(tv.own.owntv.player.PlayerFailureReason.LIVE_NO_FALLBACK, channel, detail)
+            exoOutcomeJob?.cancel()
+            mpvOutcomeJob?.cancel()
+            mpvHandoffJob?.cancel()
+            abandonTune(channel, detail)
+        }
+    }
+
+    /** The channel produced a picture — the opening budget has been met, so stand the alarm down. */
+    private fun ladderOpened() {
+        ladderDeadlineJob?.cancel()
+        ladderDeadlineJob = null
     }
 
     /** Whether "Prefer HLS" actually rewrote this channel's URL, i.e. whether an HLS rung differs from a
@@ -1761,9 +1826,17 @@ class LiveViewModel(
         // *request* has said nothing about stream format, so nothing may be learned from it. The primary
         // gate is at the call sites, which do not step at all on a refusal — this one exists so a path
         // added later cannot silently reintroduce the false lesson.
-        val next = ladder.advance(failureWasAboutFormat = !isRequestRefusal(reason)) ?: run {
-            engineLog("'${channel.name}' — no fallback left ($reason)")
-            recordLadderEvent(tv.own.owntv.player.PlayerFailureReason.LIVE_NO_FALLBACK, channel, reason)
+        val nowMs = android.os.SystemClock.elapsedRealtime()
+        val outOfTime = ladder.expired(nowMs)
+        val next = ladder.advance(failureWasAboutFormat = !isRequestRefusal(reason), nowMs = nowMs) ?: run {
+            val detail = if (outOfTime) {
+                "$reason — gave up after ${ladderBudgetMs.value / 1000}s"
+            } else {
+                reason
+            }
+            engineLog("'${channel.name}' — no fallback left ($detail)")
+            recordLadderEvent(tv.own.owntv.player.PlayerFailureReason.LIVE_NO_FALLBACK, channel, detail)
+            abandonTune(channel, detail)
             return false
         }
         val label = ladder.label(next)
@@ -1785,6 +1858,20 @@ class LiveViewModel(
             switchToExo(channel)
         }
         return true
+    }
+
+    /**
+     * The ladder has nothing left for [channel] — either it ran out of rungs or it ran out of time. Put
+     * the failure on screen.
+     *
+     * Without this the spinner simply stays up: the engine that owns the screen may have nothing to
+     * report (a stream that opens its playlist and then delivers no segment produces no frame AND no
+     * error), so the honest answer has to be written by whoever decided to stop trying. Whichever engine
+     * is showing is the one told to give up, because that is the one the HUD is reading.
+     */
+    private fun abandonTune(channel: ChannelEntity, detail: String) {
+        val reason = "'${channel.name}': $detail"
+        if (_liveOnExo.value) previewEngine.abandon(reason) else player.abandonLive(reason)
     }
 
     /** Put [channel] on ExoPlayer, releasing mpv first when it currently holds the stream. mpv's stop is
@@ -1896,7 +1983,7 @@ class LiveViewModel(
             if (!isStillOnMpv(channel)) return@launch
             val reason = when {
                 failure == null -> "mpv never opened it (${MPV_OPEN_TIMEOUT_MS / 1000}s, no picture and no error)"
-                failure.first -> { engineLog("'${channel.name}' opened on mpv"); return@launch }
+                failure.first -> { engineLog("'${channel.name}' opened on mpv"); ladderOpened(); return@launch }
                 else -> "mpv couldn't play it: ${failure.second}"
             }
             advanceLadder(channel, reason)
@@ -2197,6 +2284,7 @@ class LiveViewModel(
 
     fun stopPreview() {
         setStalkerReconnect(null) // tearing down — no reconnect re-resolve should fire
+        ladderOpened() // nothing is tuning any more; the opening alarm must not fire on a torn-down channel
         previewEngine.stop()
         player.stop()
         _previewChannel.value = null
@@ -2354,11 +2442,26 @@ class LiveViewModel(
          *  legitimately spends several seconds on the first segment plus decoder setup, and bouncing those
          *  off the faster engine costs more than the extra seconds save. */
         const val EXO_OPEN_TIMEOUT_MS = 12_000L
-        /** How long a channel that HAS played may stay stalled before it goes to mpv — see
-         *  [watchExoAfterFirstFrame]. Sized to sit above a real recovery (the engine waits 12s to call a
-         *  buffer a stall, then reconnects after 1.5s, and a second attempt lands ~28s in) while ending
-         *  well short of the full ladder's two-plus minutes of frozen picture. */
-        const val EXO_STALL_HANDOFF_MS = 30_000L
+        /**
+         * How long a channel that HAS played may stay stalled before it goes to mpv — see
+         * [watchExoAfterFirstFrame].
+         *
+         * DERIVED from the engine's own death verdict rather than chosen independently. The two numbers
+         * had drifted badly apart: this was a flat 30s while the engine calls a stalled feed dead at 12s
+         * and reconnects at 13.5s, so the handoff sat through two of the engine's own reconnect attempts
+         * — fifteen seconds of frozen picture spent waiting for a recovery that had already been tried
+         * and failed.
+         *
+         * The grace on top is one reconnect's worth: the engine's first retry gets a fair chance to
+         * actually open before the channel is offered to the other player. Sitting through a SECOND one
+         * is what this no longer does.
+         */
+        val EXO_STALL_HANDOFF_MS =
+            tv.own.owntv.player.LivePreviewEngine.DEATH_VERDICT_MS + STALL_HANDOFF_GRACE_MS
+
+        /** Grace on top of the engine's own verdict: room for the engine's first reconnect to
+         *  open, not for a second one to be attempted. */
+        private const val STALL_HANDOFF_GRACE_MS = 2_000L
 
         /** How long mpv gets to produce a picture before the channel moves to the next rung of the
          *  ladder — see [watchMpvOutcome]. Looser than ExoPlayer's: mpv runs its own open watchdog

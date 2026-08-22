@@ -11,11 +11,21 @@
 
 ## v4.2.3 — Unreleased
 
+### ✨ New features
+
+- **⏱️ A dead channel says so, instead of leaving you with a black screen**
+
 ### 🐛 Fixes
 
 - **"App not installed" when updating from inside OwnTV**
 - **An update that the system refuses now says why**
 - **The first-run "Add a playlist" screen no longer hides Stalker**
+- **Fast-forward and rewind from a Bluetooth remote or the system media notification now use your Seek step**
+- **A frozen live channel moves to the other player about twice as fast**
+- **The offline warning now appears when the internet is actually unreachable**
+- **Online subtitle searching now filters correctly for seven more languages**
+- **Track menus stop hunting for tracks that will never arrive**
+- **Less background work during playback, and less of it on weaker TVs**
 
 ## v4.2.2 — 2026-08-19
 

@@ -154,6 +154,7 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val liveLatency by vm.liveLatencyMode.collectAsStateWithLifecycle()
     val liveCustomSecs by vm.liveLatencyCustomSecs.collectAsStateWithLifecycle()
     val livePreroll by vm.livePrerollSecs.collectAsStateWithLifecycle()
+    val liveTuneTimeout by vm.liveTuneTimeoutSecs.collectAsStateWithLifecycle()
     val sources by vm.sources.collectAsStateWithLifecycle()
     // The playlist whose per-playlist "Pre-buffer" override is being edited.
     var prerollSource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
@@ -408,6 +409,20 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_PREROLL)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_PREROLL },
         )
+        Row2(
+            icon = OwnTVIcon.LIVE_TV,
+            title = stringResource(R.string.settings_live_tune_timeout),
+            desc = stringResource(R.string.settings_live_tune_timeout_description),
+            chip = if (liveTuneTimeout <= 0) {
+                stringResource(R.string.common_never)
+            } else {
+                stringResource(R.string.settings_video_seconds, liveTuneTimeout)
+            },
+            primaryChip = liveTuneTimeout > 0,
+            chevron = true,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_TUNE_TIMEOUT)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_TUNE_TIMEOUT },
+        )
         if (sources.isNotEmpty()) {
             Row2(
                 icon = OwnTVIcon.LIVE_TV,
@@ -573,6 +588,15 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onSelect = { vm.setLivePrerollSecs(it.toIntOrNull() ?: 0); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
+        Dialog.LIVE_TUNE_TIMEOUT -> PickerDialog(
+            title = stringResource(R.string.settings_live_tune_timeout),
+            options = tv.own.owntv.player.LiveLadder.BUDGET_CHOICES_SECS.map {
+                it.toString() to if (it <= 0) stringResource(R.string.common_never) else stringResource(R.string.settings_video_seconds, it)
+            },
+            selected = liveTuneTimeout.toString(),
+            onSelect = { vm.setLiveTuneTimeoutSecs(it.toIntOrNull() ?: 0); dialog = Dialog.NONE },
+            onDismiss = { dialog = Dialog.NONE },
+        )
         Dialog.LIVE_PREROLL_SOURCES -> PickerDialog(
             title = stringResource(R.string.settings_live_preroll_playlist_picker),
             options = sources.map { src ->
@@ -724,7 +748,7 @@ private fun ConfirmResetDialog(title: String, description: String, onConfirm: ()
     }
 }
 
-private enum class Dialog { NONE, LIVE_ENGINE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS }
+private enum class Dialog { NONE, LIVE_ENGINE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS }
 
 /**
  * Label for one engine preference — "ExoPlayer, then mpv", "mpv only", and so on.
