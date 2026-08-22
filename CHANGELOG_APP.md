@@ -14,9 +14,13 @@
 ### ✨ New features
 
 - **⏱️ A dead channel says so, instead of leaving you with a black screen**
+- **🎛️ Every playback setting in one place**
 
 ### 🐛 Fixes
 
+- **Auto frame rate now respects your TV's own "Match content frame rate" setting**
+- **Live latency now admits what a 4K channel can actually buffer**
+- **A film with picture-based subtitles is less likely to be given up on early**
 - **"App not installed" when updating from inside OwnTV**
 - **An update that the system refuses now says why**
 - **The first-run "Add a playlist" screen no longer hides Stalker**

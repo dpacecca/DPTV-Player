@@ -127,7 +127,7 @@ private enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, VIDEO, MINI_PLAYER, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH }
 
 @Composable
-private fun surroundModeLabel(mode: SurroundMode): String = stringResource(
+internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
     when (mode) {
         SurroundMode.AUTO -> R.string.settings_auto
         SurroundMode.STEREO -> R.string.settings_surround_stereo
@@ -232,9 +232,7 @@ fun SettingsScreen(
     val animationsRowFocus = remember { FocusRequester() }
     val startupRowFocus = remember { FocusRequester() }
     val errorLogRowFocus = remember { FocusRequester() }
-    val afrRowFocus = remember { FocusRequester() }
     val livePreviewQuickFocus = remember { FocusRequester() }
-    val livePreviewRowFocus = remember { FocusRequester() }
     val glassEffectRowFocus = remember { FocusRequester() }
     val ambientGlowRowFocus = remember { FocusRequester() }
     // Hoisted scroll state for the root settings list. We snapshot its position the instant a row is
@@ -361,6 +359,13 @@ fun SettingsScreen(
         SettingsTab.CH_NAV to FocusRequester(),
         SettingsTab.PANEL_WIDTH to FocusRequester(),
     ) }
+    // Which screen the Mini player sub-screen was opened from, so Back goes back there.
+    // Saveable like [tab] itself, or a restore while Mini player is open would send Back to the root
+    // instead of to the Video player screen the user opened it from.
+    var miniPlayerFrom by rememberSaveable { mutableStateOf(SettingsTab.ROOT) }
+    // Set on the way back, so Video player can put focus on its Mini player row instead of its first
+    // row. That screen does not survive the trip, so the flag has to live out here.
+    var miniPlayerReturn by rememberSaveable { mutableStateOf(false) }
     val open: (SettingsTab) -> Unit = { lastTab = it; tab = it }
     // Restore focus to the row a sub-screen was opened from when the user navigates back. Fresh entry
     // intentionally does NOT grab focus here — every other main-menu section lets the shell/sidebar
@@ -381,8 +386,31 @@ fun SettingsScreen(
         SettingsTab.EPG -> { tv.own.owntv.features.settings.EpgSourcesScreen(onBack = { tab = SettingsTab.ROOT; consumeEpgAdd = false }, modifier = modifier, startOnAdd = consumeEpgAdd); return }
         SettingsTab.PROFILES -> { ManageProfilesScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.BACKUP -> { BackupScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.VIDEO -> { VideoPlayerSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.MINI_PLAYER -> { tv.own.owntv.features.settings.MiniPlayerSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+        SettingsTab.VIDEO -> {
+            VideoPlayerSettingsScreen(
+                onBack = { tab = SettingsTab.ROOT; miniPlayerReturn = false },
+                // Video player lists every playback setting, so it links on to Mini player too. Back
+                // from there returns here rather than to the root, or the user is thrown two levels up
+                // from a row they opened one level down.
+                onOpenMiniPlayer = {
+                    miniPlayerFrom = SettingsTab.VIDEO; miniPlayerReturn = false
+                    tab = SettingsTab.MINI_PLAYER
+                },
+                startOnMiniPlayerRow = miniPlayerReturn,
+                modifier = modifier,
+            )
+            return
+        }
+        SettingsTab.MINI_PLAYER -> {
+            tv.own.owntv.features.settings.MiniPlayerSettingsScreen(
+                onBack = {
+                    miniPlayerReturn = miniPlayerFrom == SettingsTab.VIDEO
+                    tab = miniPlayerFrom; miniPlayerFrom = SettingsTab.ROOT
+                },
+                modifier = modifier,
+            )
+            return
+        }
         SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.HOME -> { HomeSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.NETWORK -> { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
@@ -683,70 +711,6 @@ fun SettingsScreen(
         SectionDivider()
         GroupLabel(stringResource(R.string.settings_playback_group))
         SettingsRow(
-            tone = TileTone.TERTIARY, icon = OwnTVIcon.LIVE_TV,
-            title = stringResource(R.string.settings_quick_live_preview), desc = stringResource(R.string.settings_live_preview_description),
-            chip = if (livePreview) stringResource(R.string.common_on) else stringResource(R.string.common_off),
-            chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { toggleLivePreview(livePreviewRowFocus) },
-            modifier = Modifier.focusRequester(livePreviewRowFocus),
-        )
-        if (livePreview) {
-            SettingsRow(
-                tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
-                title = stringResource(R.string.settings_preview_audio), desc = stringResource(R.string.settings_preview_audio_description),
-                chip = if (previewAudio) stringResource(R.string.common_on) else stringResource(R.string.common_off),
-                chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY,
-                onClick = { settingsVm.setLivePreviewAudio(!previewAudio) },
-            )
-        }
-        SettingsRow(
-            tone = TileTone.TERTIARY, icon = OwnTVIcon.PIP,
-            title = stringResource(R.string.settings_mini_player_root), desc = stringResource(R.string.settings_mini_player_root_description),
-            onClick = { open(SettingsTab.MINI_PLAYER) }, showChevron = true,
-            modifier = Modifier.focusRequester(rowFocus.getValue(SettingsTab.MINI_PLAYER)),
-        )
-        SettingsRow(
-            tone = TileTone.PRIMARY, icon = OwnTVIcon.VIDEO,
-            title = stringResource(R.string.settings_quick_hdr), desc = stringResource(R.string.settings_hdr_description),
-            chip = if (hdr) stringResource(R.string.common_on) else stringResource(R.string.common_off),
-            chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setHdrEnabled(!hdr) },
-        )
-        SettingsRow(
-            tone = TileTone.PRIMARY, icon = OwnTVIcon.VIDEO,
-            title = stringResource(R.string.settings_auto_frame_rate),
-            desc = stringResource(R.string.settings_auto_frame_rate_description) +
-                if (afrNeedsWarning) " " + stringResource(R.string.settings_auto_frame_rate_warning_suffix) else "",
-            chip = if (autoFrameRate) stringResource(R.string.common_on) else stringResource(R.string.common_off),
-            chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY,
-            modifier = Modifier.focusRequester(afrRowFocus),
-            onClick = { toggleAutoFrameRate(afrRowFocus) },
-        )
-        SettingsRow(
-            tone = TileTone.SECONDARY, icon = OwnTVIcon.AUDIO,
-            title = stringResource(R.string.settings_surround_sound),
-            desc = when (surroundMode) {
-                SurroundMode.AUTO -> stringResource(R.string.settings_surround_auto_description)
-                SurroundMode.STEREO -> stringResource(R.string.settings_surround_stereo_description)
-                SurroundMode.SURROUND -> stringResource(R.string.settings_surround_forced_description)
-            },
-            chip = when (surroundMode) {
-                SurroundMode.AUTO -> stringResource(R.string.settings_auto)
-                SurroundMode.STEREO -> stringResource(R.string.settings_surround_stereo)
-                SurroundMode.SURROUND -> stringResource(R.string.settings_surround_sound)
-            },
-            chipTone = if (surroundMode == SurroundMode.STEREO) TileTone.SECONDARY else TileTone.PRIMARY,
-            onClick = { settingsVm.cycleSurroundMode() },
-        )
-        SettingsRow(
-            tone = TileTone.SECONDARY, icon = OwnTVIcon.SKIP_NEXT,
-            title = stringResource(R.string.settings_autoplay_next),
-            desc = stringResource(R.string.settings_autoplay_next_description),
-            chip = if (autoPlayNext) stringResource(R.string.common_on) else stringResource(R.string.common_off),
-            chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setAutoPlayNext(!autoPlayNext) },
-        )
-        SettingsRow(
             tone = TileTone.TERTIARY, icon = OwnTVIcon.VIDEO,
             title = stringResource(R.string.settings_video_player), desc = stringResource(R.string.settings_video_player_description),
             onClick = { open(SettingsTab.VIDEO) }, showChevron = true,
@@ -811,6 +775,17 @@ fun SettingsScreen(
             // Dialog-opening entries return focus to the search field on close (their normal row
             // isn't composed while searching). Toggle entries keep the results visible so the chip
             // updates live.
+            //
+            // Settings that live one level deeper name that screen too ("Playback › Video player ›
+            // HDR"), because the group alone would send the user to a list the setting is no longer
+            // on. Built from the same format string the row itself uses, so the separator and its
+            // spacing stay translated rather than hard-coded here. It also lands in the search
+            // haystack, so typing "video player" finds everything on that screen.
+            val videoPlayerGroup = stringResource(
+                R.string.settings_breadcrumb,
+                stringResource(R.string.settings_group_playback),
+                stringResource(R.string.settings_video_player),
+            )
             val entries = listOfNotNull(
                 SettingsSearchEntry(stringResource(R.string.settings_appearance_group), stringResource(R.string.settings_language), stringResource(R.string.settings_search_keywords_language), OwnTVIcon.LANGUAGE, TileTone.PRIMARY,
                     chip = languageChip, chipTone = TileTone.PRIMARY) { open(SettingsTab.LANGUAGE) },
@@ -857,20 +832,20 @@ fun SettingsScreen(
                     chip = stringResource(animationLevel.labelRes), chipTone = TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showAnimations = true },
                 SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_weather), stringResource(R.string.settings_search_keywords_weather), OwnTVIcon.EPG, TileTone.SECONDARY,
                     chip = if (weatherEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.WEATHER) },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_quick_live_preview), stringResource(R.string.settings_search_keywords_live_preview), OwnTVIcon.LIVE_TV, TileTone.TERTIARY,
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_quick_live_preview), stringResource(R.string.settings_search_keywords_live_preview), OwnTVIcon.LIVE_TV, TileTone.TERTIARY,
                     chip = if (livePreview) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { toggleLivePreview(searchFieldFocus) },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_preview_audio), stringResource(R.string.settings_search_keywords_sound), OwnTVIcon.AUDIO, TileTone.SECONDARY,
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_preview_audio), stringResource(R.string.settings_search_keywords_sound), OwnTVIcon.AUDIO, TileTone.SECONDARY,
                     chip = if (previewAudio) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewAudio(!previewAudio) },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_quick_channel_numbers), stringResource(R.string.settings_search_keywords_channel_numbers), OwnTVIcon.LIVE_TV, TileTone.PRIMARY,
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_quick_channel_numbers), stringResource(R.string.settings_search_keywords_channel_numbers), OwnTVIcon.LIVE_TV, TileTone.PRIMARY,
                     chip = if (channelNumbers) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (channelNumbers) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setDirectTune(!channelNumbers) },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_mini_player_root), stringResource(R.string.settings_search_keywords_mini), OwnTVIcon.PIP, TileTone.TERTIARY) { open(SettingsTab.MINI_PLAYER) },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_quick_hdr), stringResource(R.string.settings_search_keywords_hdr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_mini_player_root), stringResource(R.string.settings_search_keywords_mini), OwnTVIcon.PIP, TileTone.TERTIARY) { open(SettingsTab.MINI_PLAYER) },
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_quick_hdr), stringResource(R.string.settings_search_keywords_hdr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
                     chip = if (hdr) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setHdrEnabled(!hdr) },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_auto_frame_rate), stringResource(R.string.settings_search_keywords_afr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_auto_frame_rate), stringResource(R.string.settings_search_keywords_afr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
                     chip = if (autoFrameRate) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { toggleAutoFrameRate(searchFieldFocus) },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_surround_sound), stringResource(R.string.settings_search_keywords_surround), OwnTVIcon.AUDIO, TileTone.SECONDARY,
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_surround_sound), stringResource(R.string.settings_search_keywords_surround), OwnTVIcon.AUDIO, TileTone.SECONDARY,
                     chip = surroundModeLabel(surroundMode), chipTone = if (surroundMode == SurroundMode.STEREO) TileTone.SECONDARY else TileTone.PRIMARY, showChevron = false) { settingsVm.cycleSurroundMode() },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_autoplay_next), stringResource(R.string.settings_search_keywords_autoplay), OwnTVIcon.SKIP_NEXT, TileTone.SECONDARY,
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_autoplay_next), stringResource(R.string.settings_search_keywords_autoplay), OwnTVIcon.SKIP_NEXT, TileTone.SECONDARY,
                     chip = if (autoPlayNext) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoPlayNext(!autoPlayNext) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_catchup), stringResource(R.string.settings_search_keywords_catchup), OwnTVIcon.EPG, TileTone.SECONDARY,
                     chip = when (catchupTz) {
@@ -878,11 +853,11 @@ fun SettingsScreen(
                         SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
                     }) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showCatchupTime = true },
                 SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_video_player), stringResource(R.string.settings_search_keywords_video), OwnTVIcon.VIDEO, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_subtitle_appearance), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_live_latency), stringResource(R.string.settings_search_keywords_latency), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_live_preroll), stringResource(R.string.settings_search_keywords_live_preroll), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_subtitle_appearance), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_live_latency), stringResource(R.string.settings_search_keywords_latency), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_live_preroll), stringResource(R.string.settings_search_keywords_live_preroll), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_playback_error_log), stringResource(R.string.settings_search_keywords_errors), OwnTVIcon.HISTORY, TileTone.SECONDARY) { savedScroll = scrollState.value; dialogReturn = searchFieldFocus; showErrorLog = true },
-                SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_detailed_playback_logging), stringResource(R.string.settings_search_keywords_detailed_logging), OwnTVIcon.INFO, TileTone.SECONDARY) { open(SettingsTab.VIDEO) },
+                SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_detailed_playback_logging), stringResource(R.string.settings_search_keywords_detailed_logging), OwnTVIcon.INFO, TileTone.SECONDARY) { open(SettingsTab.VIDEO) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_network), stringResource(R.string.common_proxy), stringResource(R.string.settings_search_keywords_proxy), OwnTVIcon.SHARE, TileTone.SECONDARY) { open(SettingsTab.NETWORK) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_network), stringResource(R.string.settings_dns), stringResource(R.string.settings_search_keywords_dns), OwnTVIcon.SEARCH, TileTone.SECONDARY) { open(SettingsTab.DNS) },
                 SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_app_startup), stringResource(R.string.settings_search_keywords_startup), OwnTVIcon.HOME, TileTone.SECONDARY,
@@ -1811,7 +1786,7 @@ private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
  * be queried and a mode switch can trigger a visible HDMI re-handshake.
  */
 @Composable
-private fun AutoFrameRateWarningDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
+internal fun AutoFrameRateWarningDialog(onEnable: () -> Unit, onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -1854,7 +1829,7 @@ private fun AutoFrameRateWarningDialog(onEnable: () -> Unit, onDismiss: () -> Un
 }
 
 @Composable
-private fun LivePreviewPanelHiddenDialog(onDismiss: () -> Unit) {
+internal fun LivePreviewPanelHiddenDialog(onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }

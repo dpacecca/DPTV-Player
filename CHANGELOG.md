@@ -18,8 +18,42 @@
   no picture *and* no error, so nothing was there to show — the spinner simply stayed up forever once
   the last combination had been tried. Whichever player is on screen is now told to show the failure.
 
+### 🎛️ Every playback setting in one place
+
+- **Settings → Video player is now the complete list.** HDR, Auto frame rate, Surround sound,
+  Auto-play next, Live preview, Preview sound and Mini player used to live only on the main Settings
+  page, even though everything else about playback was one level down — so which screen a setting was
+  on came down to memory. They are all on Video player now, grouped with the settings they belong
+  next to: HDR and Auto frame rate beside Hardware decoding, Surround with the other audio settings,
+  Live preview at the top of Live TV.
+- **The main Settings page is shorter, and the quick chips still cover the common ones.** The
+  duplicated rows are gone from the Playback group, which now holds Video player and the Playback
+  error log. The chip row at the top of Settings still toggles Live preview, Preview sound, HDR and
+  Auto-play next in one press.
+- **Search tells you where a setting lives.** A result now reads *Playback › Video player › HDR*
+  rather than just *Playback › HDR*, and typing "video player" lists everything on that screen. You
+  can still flip a setting straight from the results without opening anything.
+- **The warnings still appear wherever you change the setting.** Turning on Auto frame rate below
+  Android 12 still asks first, and turning on Live preview while your layout has no room for the
+  preview panel still says so — from the new location and from search alike.
+
 ### 🐛 Fixes
 
+- **Auto frame rate now respects your TV's own "Match content frame rate" setting.** If you had
+  turned frame-rate matching off in Android TV's display settings, OwnTV changed the display mode
+  anyway — it was using an older method that the system does not police. Set to **Never**, OwnTV now
+  leaves your display alone and stops offering to switch; set to **Seamless only**, it restricts
+  itself to changes your TV can make without the brief black gap of an HDMI re-handshake. **Always**
+  behaves exactly as before, as does any TV on Android 11 or older, which has no such setting.
+- **Live latency now admits what a 4K channel can actually buffer.** Asking for a long buffer on a
+  very high-bitrate channel gives you less time than the number suggests, because there is a limit on
+  how much video can be held in memory at once. That was always true and correctly handled; the
+  setting simply never said so, which made it look broken. It now explains it.
+- **A film with picture-based subtitles is less likely to be given up on early.** The player waited 8
+  seconds for the first frame, measured from before it had even connected — inside the normal opening
+  time for a large 4K file on a slow provider. It now waits 12, the same as the Home screen preview
+  has always used, so a slow-starting film is no longer restarted or reported as "audio, no picture"
+  when it was about to play.
 - **"App not installed" when updating from inside OwnTV.** The app downloaded the new version and
   handed it straight to Android without checking anything, so a download that arrived incomplete —
   easy on a TV that is low on storage or on a weak connection — was rejected by the system with a bare

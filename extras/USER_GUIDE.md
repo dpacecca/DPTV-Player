@@ -210,7 +210,8 @@ or **narrow the whole app to just one**.
   the in-player channel list all work inside it, like any other category.
 - **Live preview**: focus a channel and its video plays in the preview pane (with the **real stream
   resolution**, e.g. `1080p`/`4K`, so a mislabelled "4K" channel can't fool you). Toggle this in
-  **Settings → Playback → Live preview**; sound for the preview is **Settings → Playback → Preview audio**.
+  **Settings → Video player → Live TV → Live preview**; sound for the preview is **Preview audio**,
+  just below it. Both are also on the quick-toggle chips at the top of Settings.
   If the Live Preview panel is hidden through Panel Width Adjustment, preview video stays off and the
   toggle explains that the panel needs a width above 0% before video can be enabled again.
 - 🖼️ **The preview pane is info-only now.** There are **no buttons** in it — Favorite, Rename, Hide,
@@ -846,11 +847,18 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 ## ⚙️ Settings worth knowing
 
 - 🔎 **Search settings** — type in the **"Search settings…"** box at the top to filter the whole screen to
-  matching rows; results show their group (e.g. `Playback › HDR`) and open the setting directly. **Back**
+  matching rows; results show where the setting lives (e.g. `Playback › Video player › HDR`) and open
+  it directly — or, for a simple on/off, flip it straight from the results. Typing `video player`
+  lists everything on that screen. **Back**
   clears the search first. Above it, one‑press **quick toggles** (Live preview · Preview sound · HDR ·
   Auto‑play · Check for update) flip the most‑used options without opening a sub‑menu.
-- 🧭 **Menu layout** — **Profiles** is the first row; **Live preview / Preview audio** are under
-  **Playback**; **App startup** is under **App**; the **Home screen** page is under Content.
+- 🧭 **Menu layout** — **Profiles** is the first row; **App startup** is under **App**; the
+  **Home screen** page is under Content.
+- 🎬 **Every playback setting is on one page.** **Settings → Video player** is the complete list —
+  HDR, Auto frame rate, Surround sound, Auto-play next, Live preview, Preview sound and Mini player
+  sit there alongside the decoder, zoom, volume, subtitle and Live TV settings, so you never have to
+  remember which of two screens a setting was on. The main Settings page keeps **Video player** and
+  the **Playback error log**; the quick-toggle chips above it still cover the most-used switches.
 - 🌐 **Custom DNS** (Network → DNS) — use the TV’s normal DNS, choose Google, Cloudflare or Quad9,
   or enter your own DNS server / DNS‑over‑HTTPS address. Your enabled state and selected server are
   saved immediately and restored after restarting OwnTV. **Test DNS** checks the current entry before
@@ -882,7 +890,7 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 - 🌈 **HDR** — use HDR output when the video and TV support it. Turn on for HDR/Dolby Vision content.
   It steers the **compatibility (mpv) player** only; the standard player hands HDR straight to your TV,
   which decides for itself.
-- 🎞️ **Auto frame rate** (Playback, off by default) — in full screen, asks the TV to switch to a refresh rate matching
+- 🎞️ **Auto frame rate** (Video player, off by default) — in full screen, asks the TV to switch to a refresh rate matching
   the video (24/25/30/50/60 fps) and hands the display back on exit, so 24fps films and 25/50fps
   broadcasts stop juddering on a 60Hz panel. Works for Live TV and VOD on both engines, and never
   changes resolution. Streams that don't declare a frame rate (most live channels) are now **measured**,
@@ -897,7 +905,11 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   can switch to smoothly, so a change can black the screen out for a second or two mid-programme: v4.2.0
   resets the setting to Off once on those devices, warns before you switch it back on, and never offers
   to enable it for a juddering channel there. Turning it on anyway is fine — that choice is then left
-  alone.
+  alone. **Your TV's own setting wins.** Android TV has its own *Match content frame rate* option
+  (Android 12+): set it to **Never** and OwnTV leaves the display alone whatever this setting says,
+  and stops offering to turn it on; set it to **Seamless only** and OwnTV restricts itself to changes
+  your TV can make without a visible black gap. **Always** — and any TV without the option — behaves
+  as described above.
 - 🧩 **Hardware decoder** (Video Player Settings) — hardware decoding is on for smooth 4K; switch to software
   only if a specific codec misbehaves. Turning it **off** now applies to **both players** (it used to
   reach only the compatibility one, which left normal Live TV on the hardware decoder anyway). The
@@ -910,6 +922,9 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   buffer on both (it used to be little more than a hint the standard player's stream type ignored).
   **Balanced** changes nothing (so it can't regress a working stream); picking **Low latency** or a
   below‑Balanced custom value warns first that a smaller buffer can stutter on weaker connections.
+  On a **very high-bitrate channel — 4K especially — you get less time than the number says**, because
+  there is a limit on how much video can be held in memory at once; the setting now says so rather
+  than looking as though it were ignored.
 - ⏱️ **Pre-buffer live streams** (Video Player Settings → Live TV, off by default) — collect this much
   video (2 / 5 / 10 s) before a channel starts, and again after a stutter, instead of starting on the
   first frame. It is an **amount of video, not a wait**: a fast provider delivers 10s of video in well

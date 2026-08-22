@@ -61,6 +61,10 @@ import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.player.EnginePreference
+import tv.own.owntv.features.shell.components.AutoFrameRateWarningDialog
+import tv.own.owntv.features.shell.components.LivePreviewPanelHiddenDialog
+import tv.own.owntv.features.shell.components.surroundModeLabel
+import tv.own.owntv.player.SurroundMode
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
@@ -121,7 +125,15 @@ private fun liveLatencyLabelRes(mode: tv.own.owntv.features.settings.data.LiveLa
  * value is persisted and applied to the shared mpv player (live where possible, otherwise next load).
  */
 @Composable
-fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun VideoPlayerSettingsScreen(
+    onBack: () -> Unit,
+    /** Opens the Mini player sub-screen — that setting is listed here as well as on the root. */
+    onOpenMiniPlayer: () -> Unit,
+    /** True when arriving back from the Mini player sub-screen: focus its row, not the first one.
+     *  This screen is torn down while that sub-screen is shown, so the caller has to remember it. */
+    startOnMiniPlayerRow: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
     val colors = OwnTVTheme.colors
     val vm: SettingsViewModel = koinViewModel()
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
@@ -155,6 +167,15 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     val liveCustomSecs by vm.liveLatencyCustomSecs.collectAsStateWithLifecycle()
     val livePreroll by vm.livePrerollSecs.collectAsStateWithLifecycle()
     val liveTuneTimeout by vm.liveTuneTimeoutSecs.collectAsStateWithLifecycle()
+    // The playback settings that also appear on the Settings root. They live here too so that Video
+    // player is the one complete list; the root rows are shortcuts to the same values (item 14).
+    val hdr by vm.hdrEnabled.collectAsStateWithLifecycle()
+    val autoFrameRate by vm.autoFrameRate.collectAsStateWithLifecycle()
+    val surroundMode by vm.surroundMode.collectAsStateWithLifecycle()
+    val autoPlayNext by vm.autoPlayNext.collectAsStateWithLifecycle()
+    val livePreview by vm.livePreviewEnabled.collectAsStateWithLifecycle()
+    val previewAudio by vm.livePreviewAudio.collectAsStateWithLifecycle()
+    val livePreviewPanelActive by vm.livePreviewPanelActive.collectAsStateWithLifecycle()
     val sources by vm.sources.collectAsStateWithLifecycle()
     // The playlist whose per-playlist "Pre-buffer" override is being edited.
     var prerollSource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
@@ -170,16 +191,30 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
      *  Custom, and the low-latency acknowledgement, both hang off that rather than off merely opening it. */
     var customCommitted by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
-    // Kick focus into the group; the group's onEnter (below) decides the actual target — first row on
-    // a fresh open, or the OpenSubtitles row when we're returning from that sub-screen.
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    // Kick focus into the group; the group's onEnter (below) decides the actual target.
+    //
+    // NOT when returning from the Mini player sub-screen. Requesting focus here would win the race
+    // against the scroll-restore effect below, which then snapped the list back to the top one frame
+    // later and left the highlight on a row that had scrolled off screen. That effect already does
+    // the two steps in the right order — scroll first, then focus the pending return row — so on this
+    // one entry it is left to do the whole job.
+    LaunchedEffect(Unit) {
+        if (!startOnMiniPlayerRow) runCatching { firstFocus.requestFocus() }
+    }
     BackHandler { onBack() }
 
     // Dialog-close focus return: closing a picker refocuses the row that opened it. The restore
     // request crosses INTO this screen's focus group from the dialog, so the group's onEnter
     // intercepts it — it consults dialogReturn first (and clears it) instead of hijacking.
     val dialogRowFocus = remember { Dialog.entries.associateWith { FocusRequester() } }
-    var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
+    // The Mini player row opens a whole sub-screen rather than a dialog, but coming back from it is
+    // the same problem, so it rides the same return mechanism — seeded here because the caller is the
+    // only thing that survived the trip. Seeding it (rather than requesting focus directly) is what
+    // puts the scroll restore ahead of the focus request; see the initial LaunchedEffect above.
+    val miniPlayerRowFocus = remember { FocusRequester() }
+    var dialogReturn by remember {
+        mutableStateOf<FocusRequester?>(if (startOnMiniPlayerRow) miniPlayerRowFocus else null)
+    }
     // Hoisted scroll state: snapshot at click time, restore on dialog close, so the list doesn't
     // visibly jump/scroll-animate when a scrim picker opens or closes over it (same fix as the
     // Settings root list — Compose resets the scrollable's offset when a scrim dialog tears down).
@@ -212,6 +247,29 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
                 kotlinx.coroutines.delay(80)
                 runCatching { row.requestFocus() }
             }
+        }
+    }
+
+    // Auto frame rate below Android 12 asks before turning ON: there is no way to query the display
+    // for the refresh rates it can reach without blanking it. Turning it off stays immediate. This is
+    // the same rule the root row follows, and both go through the same warning popup.
+    val afrNeedsWarning = android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S
+    val toggleAutoFrameRate = {
+        if (!autoFrameRate && afrNeedsWarning) {
+            savedScroll = scrollState.value; dialog = Dialog.AFR_WARNING
+        } else {
+            vm.setAutoFrameRate(!autoFrameRate)
+        }
+    }
+    // Turning Live preview ON while the layout leaves no room for the preview panel would do nothing
+    // visible, so say so rather than silently accepting it. Turning it off is always allowed.
+    val toggleLivePreview = {
+        if (livePreview) {
+            vm.setLivePreviewEnabled(false)
+        } else if (!livePreviewPanelActive) {
+            savedScroll = scrollState.value; dialog = Dialog.LIVE_PREVIEW_PANEL
+        } else {
+            vm.setLivePreviewEnabled(true)
         }
     }
 
@@ -260,6 +318,20 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             chip = if (deinterlace) stringResource(R.string.settings_auto) else stringResource(R.string.common_off),
             primaryChip = deinterlace,
             onClick = { vm.setDeinterlace(!deinterlace) },
+        )
+        Row2(
+            icon = OwnTVIcon.VIDEO, title = stringResource(R.string.settings_quick_hdr),
+            desc = stringResource(R.string.settings_hdr_description),
+            chip = stringResource(if (hdr) R.string.common_on else R.string.common_off), primaryChip = hdr,
+            onClick = { vm.setHdrEnabled(!hdr) },
+        )
+        Row2(
+            icon = OwnTVIcon.VIDEO, title = stringResource(R.string.settings_auto_frame_rate),
+            desc = stringResource(R.string.settings_auto_frame_rate_description) +
+                if (afrNeedsWarning) " " + stringResource(R.string.settings_auto_frame_rate_warning_suffix) else "",
+            chip = stringResource(if (autoFrameRate) R.string.common_on else R.string.common_off), primaryChip = autoFrameRate,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.AFR_WARNING)),
+            onClick = toggleAutoFrameRate,
         )
         Row2(
             icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_live_tv_player),
@@ -350,6 +422,19 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.RESUME)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.RESUME },
         )
+        Row2(
+            icon = OwnTVIcon.SKIP_NEXT, title = stringResource(R.string.settings_autoplay_next),
+            desc = stringResource(R.string.settings_autoplay_next_description),
+            chip = stringResource(if (autoPlayNext) R.string.common_on else R.string.common_off), primaryChip = autoPlayNext,
+            onClick = { vm.setAutoPlayNext(!autoPlayNext) },
+        )
+        Row2(
+            icon = OwnTVIcon.PIP, title = stringResource(R.string.settings_mini_player_root),
+            desc = stringResource(R.string.settings_mini_player_root_description),
+            chevron = true,
+            modifier = Modifier.focusRequester(miniPlayerRowFocus),
+            onClick = onOpenMiniPlayer,
+        )
 
         Divider()
         GroupLabel(stringResource(R.string.settings_subtitles))
@@ -378,6 +463,16 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onClick = { savedScroll = scrollState.value; dialog = Dialog.AUDIO_LANG },
         )
         Row2(
+            icon = OwnTVIcon.AUDIO, title = stringResource(R.string.settings_surround_sound),
+            desc = when (surroundMode) {
+                SurroundMode.AUTO -> stringResource(R.string.settings_surround_auto_description)
+                SurroundMode.STEREO -> stringResource(R.string.settings_surround_stereo_description)
+                SurroundMode.SURROUND -> stringResource(R.string.settings_surround_forced_description)
+            },
+            chip = surroundModeLabel(surroundMode), primaryChip = surroundMode != SurroundMode.STEREO,
+            onClick = { vm.cycleSurroundMode() },
+        )
+        Row2(
             icon = OwnTVIcon.AUDIO, title = stringResource(R.string.settings_audio_sync),
             desc = stringResource(R.string.settings_audio_sync_description),
             chip = stringResource(R.string.settings_audio_delay_value, audioDelay), chevron = true,
@@ -388,8 +483,28 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
         Divider()
         GroupLabel(stringResource(R.string.settings_live_tv))
         Row2(
+            icon = OwnTVIcon.LIVE_TV, title = stringResource(R.string.settings_quick_live_preview),
+            desc = stringResource(R.string.settings_live_preview_description),
+            chip = stringResource(if (livePreview) R.string.common_on else R.string.common_off), primaryChip = livePreview,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_PREVIEW_PANEL)),
+            onClick = toggleLivePreview,
+        )
+        if (livePreview) {
+            Row2(
+                icon = OwnTVIcon.AUDIO, title = stringResource(R.string.settings_preview_audio),
+                desc = stringResource(R.string.settings_preview_audio_description),
+                chip = stringResource(if (previewAudio) R.string.common_on else R.string.common_off), primaryChip = previewAudio,
+                onClick = { vm.setLivePreviewAudio(!previewAudio) },
+            )
+        }
+        Row2(
             icon = OwnTVIcon.LIVE_TV, title = stringResource(R.string.settings_live_latency),
-            desc = stringResource(R.string.settings_live_latency_description),
+            // The requested depth is a time, but the buffer is also capped in BYTES
+            // (`LiveBuffer.targetBufferBytes`), and on a 4K feed that cap is what binds. The code has
+            // always handled it; the user was never told, so a 60 s setting that behaved like far less
+            // looked like a bug rather than a memory limit.
+            desc = stringResource(R.string.settings_live_latency_description) + " " +
+                stringResource(R.string.settings_live_latency_bitrate_note),
             chip = if (liveLatency == tv.own.owntv.features.settings.data.LiveLatency.CUSTOM) stringResource(R.string.settings_live_buffer_seconds, liveCustomSecs) else stringResource(liveLatencyLabelRes(liveLatency)),
             chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_LATENCY)),
@@ -679,6 +794,11 @@ fun VideoPlayerSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             onConfirm = { vm.clearSavedVolume(); dialog = Dialog.NONE },
             onCancel = { dialog = Dialog.NONE },
         )
+        Dialog.AFR_WARNING -> AutoFrameRateWarningDialog(
+            onEnable = { vm.setAutoFrameRate(true); dialog = Dialog.NONE },
+            onDismiss = { dialog = Dialog.NONE },
+        )
+        Dialog.LIVE_PREVIEW_PANEL -> LivePreviewPanelHiddenDialog(onDismiss = { dialog = Dialog.NONE })
         Dialog.NONE -> Unit
     }
 
@@ -748,7 +868,7 @@ private fun ConfirmResetDialog(title: String, description: String, onConfirm: ()
     }
 }
 
-private enum class Dialog { NONE, LIVE_ENGINE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS }
+private enum class Dialog { NONE, LIVE_ENGINE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, AFR_WARNING, LIVE_PREVIEW_PANEL }
 
 /**
  * Label for one engine preference — "ExoPlayer, then mpv", "mpv only", and so on.
