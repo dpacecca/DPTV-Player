@@ -178,7 +178,8 @@ or **narrow the whole app to just one**.
 - The **Home** tab opens to a row of what you were watching — partly‑watched **movies, episodes and recent
   live channels**, newest first.
 - **Dwell to expand:** hold focus on a hero card for **3 seconds** and it widens to a big 16:9 preview and
-  starts a **muted video preview**. Quick D‑pad sweeps never expand, so browsing stays snappy. Press **OK**
+  starts a **muted video preview** — which you can turn off with **Play video in the hero row**
+  (Settings → Home screen → Keep Watching); it starts off on a low‑memory TV. Press **OK**
   to **resume right where you left off**. When **TMDB metadata** is available, the expanded hero shows a
   **landscape backdrop**, the show's **title logo**, a short **plot** and a **Play** action.
 - Below are more rows — **Favourite Channels**, **Continue Watching Movies/Series**, and an optional
@@ -310,6 +311,9 @@ or **narrow the whole app to just one**.
   already know the second engine never works on your TV or with your provider, turning it off makes every
   failing channel give up quickly instead of stalling. **Only** still tries that engine's own two stream
   formats — what it drops is the other engine. A channel you pin by hand ignores the setting either way.
+  **Live TV player per playlist** right below it applies a different choice to one provider only: pick
+  the playlist, then the value, with **Follow setting** as the default. Your own per-channel pin still
+  wins over it, and a protected (DRM) channel still plays on ExoPlayer whatever either setting says.
 - 🔒 **Protected (DRM) channels** — some providers publish channels locked with **Widevine** or
   **ClearKey**, with the unlock address written into the playlist. These now play, with nothing for you
   to set up: the unlocking is done by the component already built into your TV, so there is no key to
@@ -603,7 +607,7 @@ Bring up the controls in any full‑screen player (press OK / a direction). The 
 | Button | What it does |
 |---|---|
 | **Subtitles** | Pick a subtitle track (incl. **image subtitles**) and set **subtitle delay**. Live channels with **embedded closed captions (CC)** — common on US channels — show a CC track on both engines; on mpv, selecting it briefly switches the channel to software decoding (≤1080p) and hardware decoding returns when CC is turned off. On raw `.ts` channels the CC entry always appears, even when the channel carries no captions. |
-| **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±25 ms** steps) — use this if surround makes lips drift. Available on movies/series and on live channels in **compatibility mode** (the standard live player can't shift audio, so it isn't offered there). |
+| **Audio** | Pick an audio track, and **A/V sync** (audio delay, **±25 ms** steps) — use this if surround makes lips drift. **Remember this delay** keeps the correction for that one channel, film or episode; everything else keeps following the global setting. Available on movies/series and on live channels in **compatibility mode** (the standard live player can't shift audio, so it isn't offered there). |
 | **Info** (ⓘ) | Toggle the **stream info overlay**: codec · resolution · fps · HDR · bitrate · decoder · audio · **audio out** · buffer. **Decoder** names the decoder that is really in use and whether it is *hardware* or *software* — not what the Hardware decoding setting says — so you can see when a stream has quietly dropped to software. **Audio out** tells you whether your TV/receiver is decoding the sound (*passthrough*) or OwnTV is (*decoded in app*), whether surround is currently allowed, and why it fell back to stereo if it did. While it's open, a **share** button appears next to it: **Report this stream** saves that whole readout into the playback log, ready to export (see Settings). |
 | **Favorite** (♥) | Add or remove what you're watching from **Favorites** without leaving the stream — a live channel, a movie, or a series (an episode favorites its parent show). The heart fills when it's already a favorite. |
 | **Speed** | Playback speed (VOD). |
@@ -924,7 +928,9 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   below‑Balanced custom value warns first that a smaller buffer can stutter on weaker connections.
   On a **very high-bitrate channel — 4K especially — you get less time than the number says**, because
   there is a limit on how much video can be held in memory at once; the setting now says so rather
-  than looking as though it were ignored.
+  than looking as though it were ignored. **Live latency per playlist** right below it lets one
+  provider keep a deeper (or shallower) buffer than the rest — pick the playlist, then the value, with
+  **Follow setting** as the default.
 - ⏱️ **Pre-buffer live streams** (Video Player Settings → Live TV, off by default) — collect this much
   video (2 / 5 / 10 s) before a channel starts, and again after a stutter, instead of starting on the
   first frame. It is an **amount of video, not a wait**: a fast provider delivers 10s of video in well
@@ -1020,7 +1026,9 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   sound again) — restart the app, or change this setting, to give your equipment another try.
 
   Applies to **Live TV, Movies and Series on both players**. Changing it re-opens whatever is playing.
-  If sound and picture still drift, nudge it live with the player's **Audio → A/V sync**.
+  If sound and picture still drift, nudge it live with the player's **Audio → A/V sync**, and turn on
+  **Remember this delay** if that particular channel or film is always out. **Video Player Settings →
+  Reset saved audio sync** forgets them all again.
 - 🩺 **Playback log** (Playback) — the last 25 playback entries with their plain‑English reason, stream
   details and device info. It records **failures**, **events** (a decode rescue, a switch between
   players, the stereo safety net firing, a provider that only allows one stream) and any **report** you
@@ -1192,7 +1200,8 @@ http://your-server/series/st-s02e01.mkv
 - Live channels from one provider glitching every few seconds while another provider is fine? Try
   **Prefer HLS for Live TV** on that source — some Xtream panels are far steadier over HLS. Press
   **Test HLS support** just above it first to see whether that provider serves HLS at all.
-- Audio out of sync on a VOD? **Audio → A/V sync** and nudge ± until lips match.
+- Audio out of sync on a VOD? **Audio → A/V sync** and nudge ± until lips match — then **Remember this
+  delay** if it is always that title.
 - **Update says the download didn't finish, or there isn't enough space?** In‑app updates need room for
   the new version twice over (about 120 MB free). Clear some storage and press Try again — OwnTV now
   refuses a half‑finished download instead of handing it to Android, which used to show only

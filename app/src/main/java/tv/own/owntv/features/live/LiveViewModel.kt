@@ -71,6 +71,8 @@ import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.parser.XtEpgEntry
 import tv.own.owntv.core.parser.XtreamClient
 import tv.own.owntv.core.repository.activeProfileSources
+import tv.own.owntv.features.settings.data.LiveBuffer
+import tv.own.owntv.features.settings.data.LiveLatency
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.LiveLadder
 import tv.own.owntv.player.LiveStreamQuirks
@@ -223,6 +225,21 @@ class LiveViewModel(
      *  setting. Per-playlist because the periodic-rebuffer problem it solves belongs to a provider. */
     private fun prerollFor(sourceId: Long?): Int? =
         sourceId?.let { sourceById[it]?.livePrerollSecs }?.takeIf { it >= 0 }
+
+    /** This playlist's Live TV engine override, or null to follow the global setting. Same reasoning as
+     *  [prerollFor]: which engine copes is a property of the provider's stream format, not of the user. */
+    private fun enginePreferenceFor(sourceId: Long?): tv.own.owntv.player.EnginePreference? =
+        sourceId?.let { sourceById[it]?.liveEnginePreference }
+            ?.let { name -> tv.own.owntv.player.EnginePreference.entries.firstOrNull { it.name == name } }
+
+    /** This playlist's Live latency override, or null to follow the global setting. Resolved through the
+     *  same [LiveBuffer.effectiveSeconds] the global path uses, so a CUSTOM value is clamped identically
+     *  and Balanced still means "engine defaults" — for this playlist, rather than for all of them. */
+    private fun liveBufferFor(sourceId: Long?): LiveBuffer.Override? {
+        val source = sourceId?.let { sourceById[it] } ?: return null
+        val mode = source.liveLatencyMode ?: return null
+        return LiveBuffer.Override(LiveBuffer.effectiveSeconds(LiveLatency.fromName(mode), source.liveLatencyCustomSecs))
+    }
     private val ctx: StateFlow<Ctx> = activeProfileSources(settings, sourceDao)
         .map { aps ->
             sourceUaMap = aps.sources.associate { it.id to it.userAgent }
@@ -684,6 +701,7 @@ class LiveViewModel(
             meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, contentKey = mpvPinKey(channel)),
             userAgent = sourceUaMap[channel.sourceId],
             prerollSecsOverride = prerollFor(channel.sourceId),
+            liveBufferOverride = liveBufferFor(channel.sourceId),
             httpHeaders = channel.httpHeaders,
             drmConfig = channel.drmConfig,
         )
@@ -716,6 +734,7 @@ class LiveViewModel(
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, contentKey = mpvPinKey(channel)),
                 userAgent = source.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
+                liveBufferOverride = liveBufferFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
                 drmConfig = channel.drmConfig,
             )
@@ -1336,9 +1355,12 @@ class LiveViewModel(
         _previewChannel.value = channel
         clearTimeshift() // normal live = not timeshifted
         _catchupActive.value = false // tuning live ends any archive playback the HUD was showing
-        // Three inputs, in descending authority: what the user pinned for THIS channel, the global engine
+        // Three inputs, in descending authority: what the user pinned for THIS channel, the engine
         // setting, and what the app has learned about the panel.
-        val setting = liveEnginePreference.value
+        // The setting itself resolves per-item pin → per-playlist → global: a playlist override replaces
+        // the global choice for this provider's channels only, and is still outranked by a pin below and
+        // by the DRM rule further down, both of which are per-channel and therefore more specific.
+        val setting = enginePreferenceFor(channel.sourceId) ?: liveEnginePreference.value
         // Self-learning routing: a channel the user pinned skips the other engine entirely (no
         // artifacts/silent first), straight to the one that plays it. A pin is a deliberate per-channel
         // exception and therefore outranks the global setting — that is the whole point of the toggle.
@@ -1475,6 +1497,7 @@ class LiveViewModel(
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, contentKey = mpvPinKey(channel)),
                 userAgent = sourceUaMap[channel.sourceId] ?: source?.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
+                liveBufferOverride = liveBufferFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
                 drmConfig = channel.drmConfig,
             )
@@ -1505,6 +1528,7 @@ class LiveViewModel(
                 meta = tv.own.owntv.player.MediaMeta(title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, contentKey = mpvPinKey(channel)),
                 userAgent = source.userAgent,
                 prerollSecsOverride = prerollFor(channel.sourceId),
+                liveBufferOverride = liveBufferFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
                 drmConfig = channel.drmConfig,
             )
@@ -1943,7 +1967,7 @@ class LiveViewModel(
             if (_previewChannel.value?.streamUrl != channel.streamUrl) return // zapped away while resolving
             // C-3: mpv is now the active engine — install/clear the reconnect provider to match.
             setStalkerReconnect(if (isStalker) channel.streamUrl else null)
-            player.play(url, title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent, httpHeaders = channel.httpHeaders, contentKey = mpvPinKey(channel), livePrerollSecsOverride = prerollFor(channel.sourceId))
+            player.play(url, title = channel.name, subtitle = channelNumberLabel(channel), logoUrl = channel.displayLogoUrl, isLive = true, muted = false, userAgent = source?.userAgent, httpHeaders = channel.httpHeaders, contentKey = mpvPinKey(channel), livePrerollSecsOverride = prerollFor(channel.sourceId), liveBufferOverride = liveBufferFor(channel.sourceId))
             watchMpvOutcome(channel)
         } else {
             // The only way out of this function that leaves the shell on mpv's surface with nothing

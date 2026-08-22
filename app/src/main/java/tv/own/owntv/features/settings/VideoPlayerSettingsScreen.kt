@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import tv.own.owntv.core.database.entity.FOLLOW_GLOBAL_LATENCY_SECS
 import tv.own.owntv.R
 import tv.own.owntv.features.settings.data.SubtitleStyle
 import tv.own.owntv.player.ZoomMode
@@ -143,6 +144,7 @@ fun VideoPlayerSettingsScreen(
     val defaultVolume by vm.defaultVolume.collectAsStateWithLifecycle()
     val savedZoom by vm.savedZoomCount.collectAsStateWithLifecycle()
     val savedVolume by vm.savedVolumeCount.collectAsStateWithLifecycle()
+    val savedAudioDelay by vm.savedAudioDelayCount.collectAsStateWithLifecycle()
     val seekStep by vm.seekStepSec.collectAsStateWithLifecycle()
     val liveRewindStep by vm.liveRewindStepSec.collectAsStateWithLifecycle()
     val deinterlace by vm.deinterlace.collectAsStateWithLifecycle()
@@ -179,6 +181,9 @@ fun VideoPlayerSettingsScreen(
     val sources by vm.sources.collectAsStateWithLifecycle()
     // The playlist whose per-playlist "Pre-buffer" override is being edited.
     var prerollSource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
+    // Same, for the per-playlist Live TV engine and Live latency overrides.
+    var engineSource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
+    var latencySource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
     // Low-latency acknowledgement popup (shown for "Low latency" and below-Balanced custom values).
     // First lambda runs on "I understand", second on "Cancel".
     var lowWarning by remember { mutableStateOf<Pair<() -> Unit, () -> Unit>?>(null) }
@@ -228,6 +233,8 @@ fun VideoPlayerSettingsScreen(
                 Dialog.LIVE_CUSTOM -> Dialog.LIVE_LATENCY
                 // The per-playlist value picker belongs to the playlist row that opened it.
                 Dialog.LIVE_PREROLL_SOURCE -> Dialog.LIVE_PREROLL_SOURCES
+                Dialog.LIVE_ENGINE_SOURCE -> Dialog.LIVE_ENGINE_SOURCES
+                Dialog.LIVE_LATENCY_SOURCE, Dialog.LIVE_LATENCY_CUSTOM_SOURCE -> Dialog.LIVE_LATENCY_SOURCES
                 else -> dialog
             }
             dialogReturn = dialogRowFocus.getValue(returnRow)
@@ -341,6 +348,21 @@ fun VideoPlayerSettingsScreen(
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_ENGINE)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_ENGINE },
         )
+        if (sources.isNotEmpty()) {
+            Row2(
+                icon = OwnTVIcon.PLAY,
+                title = stringResource(R.string.settings_live_engine_per_playlist),
+                desc = stringResource(R.string.settings_live_engine_per_playlist_description),
+                chip = sources.count { it.liveEnginePreference != null }.let { count ->
+                    if (count == 0) stringResource(R.string.common_off)
+                    else pluralStringResource(R.plurals.settings_live_preroll_overrides, count, count)
+                },
+                primaryChip = sources.any { it.liveEnginePreference != null },
+                chevron = true,
+                modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_ENGINE_SOURCES)),
+                onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_ENGINE_SOURCES },
+            )
+        }
         Row2(
             icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_movies_series_player),
             desc = stringResource(R.string.settings_movies_player_description),
@@ -479,6 +501,15 @@ fun VideoPlayerSettingsScreen(
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.AUDIO_SYNC)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.AUDIO_SYNC },
         )
+        Row2(
+            icon = OwnTVIcon.AUDIO, title = stringResource(R.string.settings_reset_saved_audio_delay),
+            desc = stringResource(R.string.settings_reset_saved_audio_delay_description),
+            chip = if (savedAudioDelay == 0) stringResource(R.string.settings_reset_player_choices_none)
+            else pluralStringResource(R.plurals.settings_reset_player_choices_count, savedAudioDelay, savedAudioDelay),
+            primaryChip = savedAudioDelay > 0,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.RESET_SAVED_AUDIO_DELAY)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.RESET_SAVED_AUDIO_DELAY },
+        )
 
         Divider()
         GroupLabel(stringResource(R.string.settings_live_tv))
@@ -510,6 +541,21 @@ fun VideoPlayerSettingsScreen(
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_LATENCY)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_LATENCY },
         )
+        if (sources.isNotEmpty()) {
+            Row2(
+                icon = OwnTVIcon.LIVE_TV,
+                title = stringResource(R.string.settings_live_latency_per_playlist),
+                desc = stringResource(R.string.settings_live_latency_per_playlist_description),
+                chip = sources.count { it.liveLatencyMode != null }.let { count ->
+                    if (count == 0) stringResource(R.string.common_off)
+                    else pluralStringResource(R.plurals.settings_live_preroll_overrides, count, count)
+                },
+                primaryChip = sources.any { it.liveLatencyMode != null },
+                chevron = true,
+                modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_LATENCY_SOURCES)),
+                onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_LATENCY_SOURCES },
+            )
+        }
         Row2(
             icon = OwnTVIcon.LIVE_TV,
             title = stringResource(R.string.settings_live_preroll),
@@ -729,6 +775,113 @@ fun VideoPlayerSettingsScreen(
             },
             onDismiss = { dialog = Dialog.NONE },
         )
+        // --- per-playlist Live TV engine: pick the playlist, then its value ---
+        Dialog.LIVE_ENGINE_SOURCES -> PickerDialog(
+            title = stringResource(R.string.settings_live_preroll_playlist_picker),
+            options = sources.map { src ->
+                val value = src.liveEnginePreference
+                    ?.let { name -> EnginePreference.entries.firstOrNull { it.name == name } }
+                    ?.let { engineLabel(it) }
+                    ?: stringResource(R.string.settings_live_preroll_follow)
+                src.id.toString() to "${src.name}  ·  $value"
+            },
+            selected = engineSource?.id?.toString() ?: "",
+            onSelect = { id ->
+                engineSource = sources.firstOrNull { it.id.toString() == id }
+                dialog = if (engineSource != null) Dialog.LIVE_ENGINE_SOURCE else Dialog.NONE
+            },
+            onDismiss = { dialog = Dialog.NONE },
+        )
+        Dialog.LIVE_ENGINE_SOURCE -> PickerDialog(
+            title = engineSource?.name ?: stringResource(R.string.settings_live_tv_player),
+            options = listOf(FOLLOW_GLOBAL to stringResource(R.string.settings_live_preroll_follow)) +
+                EnginePreference.entries.map { it.name to engineLabel(it) },
+            selected = engineSource?.liveEnginePreference ?: FOLLOW_GLOBAL,
+            onSelect = { value ->
+                engineSource?.let { vm.setSourceLiveEngine(it.id, value.takeIf { v -> v != FOLLOW_GLOBAL }) }
+                engineSource = null
+                dialog = Dialog.NONE
+            },
+            onDismiss = { engineSource = null; dialog = Dialog.NONE },
+        )
+        // --- per-playlist Live latency: pick the playlist, then its value (Custom opens the stepper) ---
+        Dialog.LIVE_LATENCY_SOURCES -> PickerDialog(
+            title = stringResource(R.string.settings_live_preroll_playlist_picker),
+            options = sources.map { src ->
+                val mode = src.liveLatencyMode?.let { tv.own.owntv.features.settings.data.LiveLatency.fromName(it) }
+                val value = when {
+                    mode == null -> stringResource(R.string.settings_live_preroll_follow)
+                    mode == tv.own.owntv.features.settings.data.LiveLatency.CUSTOM ->
+                        stringResource(R.string.settings_live_buffer_seconds, sourceCustomSecs(src))
+                    else -> stringResource(liveLatencyLabelRes(mode))
+                }
+                src.id.toString() to "${src.name}  ·  $value"
+            },
+            selected = latencySource?.id?.toString() ?: "",
+            onSelect = { id ->
+                latencySource = sources.firstOrNull { it.id.toString() == id }
+                dialog = if (latencySource != null) Dialog.LIVE_LATENCY_SOURCE else Dialog.NONE
+            },
+            onDismiss = { dialog = Dialog.NONE },
+        )
+        Dialog.LIVE_LATENCY_SOURCE -> PickerDialog(
+            title = latencySource?.name ?: stringResource(R.string.settings_live_latency),
+            options = listOf(FOLLOW_GLOBAL to stringResource(R.string.settings_live_preroll_follow)) +
+                tv.own.owntv.features.settings.data.LiveLatency.entries.map { it.name to stringResource(liveLatencyLabelRes(it)) },
+            selected = latencySource?.liveLatencyMode ?: FOLLOW_GLOBAL,
+            onSelect = { name ->
+                val src = latencySource
+                dialog = Dialog.NONE
+                when {
+                    name == FOLLOW_GLOBAL -> {
+                        src?.let { vm.setSourceLiveLatency(it.id, null, FOLLOW_GLOBAL_LATENCY_SECS) }
+                        latencySource = null
+                    }
+                    // Same rules as the global picker: Low is acknowledged first, Custom asks for the
+                    // seconds and is committed by the stepper rather than on opening it.
+                    name == tv.own.owntv.features.settings.data.LiveLatency.LOW.name ->
+                        lowWarning = Pair(
+                            { src?.let { vm.setSourceLiveLatency(it.id, name, FOLLOW_GLOBAL_LATENCY_SECS) }; latencySource = null },
+                            { latencySource = null },
+                        )
+                    name == tv.own.owntv.features.settings.data.LiveLatency.CUSTOM.name ->
+                        dialog = Dialog.LIVE_LATENCY_CUSTOM_SOURCE
+                    else -> {
+                        src?.let { vm.setSourceLiveLatency(it.id, name, FOLLOW_GLOBAL_LATENCY_SECS) }
+                        latencySource = null
+                    }
+                }
+            },
+            onDismiss = { latencySource = null; dialog = Dialog.NONE },
+        )
+        Dialog.LIVE_LATENCY_CUSTOM_SOURCE -> StepperDialog(
+            title = stringResource(R.string.settings_custom_live_buffer),
+            value = latencySource?.let { sourceCustomSecs(it) } ?: tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_DEFAULT,
+            step = 1,
+            min = tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_MIN,
+            max = tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_MAX,
+            format = { stringResource(R.string.settings_live_buffer_seconds, it) },
+            onSet = { secs ->
+                val src = latencySource
+                val commit = {
+                    src?.let {
+                        vm.setSourceLiveLatency(it.id, tv.own.owntv.features.settings.data.LiveLatency.CUSTOM.name, secs)
+                    }
+                    latencySource = null
+                }
+                // A below-Balanced number gets the same acknowledgement the global setting asks for.
+                if (tv.own.owntv.features.settings.data.LiveBuffer.isLowLatency(secs)) {
+                    lowWarning = Pair(commit, { latencySource = null })
+                } else {
+                    commit()
+                }
+            },
+            onReset = {
+                latencySource?.let { vm.setSourceLiveLatency(it.id, null, FOLLOW_GLOBAL_LATENCY_SECS) }
+                latencySource = null
+            },
+            onDismiss = { latencySource = null; dialog = Dialog.NONE },
+        )
         Dialog.LIVE_PREROLL_SOURCE -> PickerDialog(
             title = prerollSource?.name ?: stringResource(R.string.settings_sort_playlist),
             options = listOf("-1" to stringResource(R.string.settings_live_preroll_follow)) +
@@ -792,6 +945,12 @@ fun VideoPlayerSettingsScreen(
             title = stringResource(R.string.settings_reset_saved_volume_confirm),
             description = stringResource(R.string.settings_reset_saved_volume_confirm_description),
             onConfirm = { vm.clearSavedVolume(); dialog = Dialog.NONE },
+            onCancel = { dialog = Dialog.NONE },
+        )
+        Dialog.RESET_SAVED_AUDIO_DELAY -> ConfirmResetDialog(
+            title = stringResource(R.string.settings_reset_saved_audio_delay_confirm),
+            description = stringResource(R.string.settings_reset_saved_audio_delay_confirm_description),
+            onConfirm = { vm.clearSavedAudioDelay(); dialog = Dialog.NONE },
             onCancel = { dialog = Dialog.NONE },
         )
         Dialog.AFR_WARNING -> AutoFrameRateWarningDialog(
@@ -868,7 +1027,7 @@ private fun ConfirmResetDialog(title: String, description: String, onConfirm: ()
     }
 }
 
-private enum class Dialog { NONE, LIVE_ENGINE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, AFR_WARNING, LIVE_PREVIEW_PANEL }
+private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, AFR_WARNING, LIVE_PREVIEW_PANEL }
 
 /**
  * Label for one engine preference — "ExoPlayer, then mpv", "mpv only", and so on.
@@ -888,6 +1047,15 @@ internal fun engineLabel(preference: EnginePreference): String {
         EnginePreference.MPV_ONLY -> stringResource(R.string.settings_engine_only, mpv)
     }
 }
+
+/** Picker key for "follow the global setting" — the state a null column reads as. */
+private const val FOLLOW_GLOBAL = ""
+
+/** A playlist's stored custom-latency seconds, falling back to the global default when it has none
+ *  yet (the `-1` sentinel), so the stepper always opens on a sensible number. */
+private fun sourceCustomSecs(src: tv.own.owntv.core.database.entity.SourceEntity): Int =
+    src.liveLatencyCustomSecs.takeIf { it >= tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_MIN }
+        ?: tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_DEFAULT
 
 /** The four options for an engine picker, with [default] marked — Live TV and Movies & Series have
  *  different defaults, so which line carries the mark depends on the section, not on the option. */

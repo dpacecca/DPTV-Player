@@ -37,6 +37,39 @@
   Android 12 still asks first, and turning on Live preview while your layout has no room for the
   preview panel still says so — from the new location and from search alike.
 
+### 🎚️ Per-playlist Live TV player and Live latency
+
+- **Settings → Video player → "Live TV player per playlist" and "Live latency per playlist".** Both
+  of these were one choice for everything, so a single provider that needed different treatment forced
+  the change on all of them. Each playlist can now have its own answer, chosen the same way the
+  per-playlist Pre-buffer already is: pick the playlist, then pick the value. Anything you have not
+  touched says **Follow setting** and behaves exactly as before.
+- **The order of precedence is unchanged where it matters.** A channel you pinned yourself still wins
+  over its playlist's choice, and a protected (DRM) channel still plays on ExoPlayer regardless — mpv
+  cannot obtain a licence, so that is not a preference to weigh but a fact.
+- **Both settings survive backup and restore**, and a backup made before this version restores as
+  "follow setting" on every playlist.
+
+### 🎧 Remember the audio sync for one channel or one film
+
+- **Player → Audio → "Remember this delay".** The A/V-sync nudge could already fix a stream whose
+  sound runs ahead of or behind the picture, but it was forgotten the moment you moved on — so a
+  channel that is always a quarter-second out had to be corrected every single time. You can now keep
+  the correction for that one channel, film or episode. Everything else still follows the global
+  setting, which is the point: lip-sync error belongs to the stream, not to you.
+- **Nudging further while it is remembered updates what is stored**, and turning it off both forgets
+  the value and puts playback back on the global setting immediately.
+- **Settings → Video player → "Reset saved audio sync"** clears them all at once, with a count of how
+  many are saved — the same shape as the existing saved-zoom and saved-volume rows, and reset
+  independently of them. Remembered delays are per profile and ride along with a backup.
+
+### 🏠 Turn off the video on the Home screen's big card
+
+- **Settings → Home screen → Keep Watching → "Play video in the hero row".** The highlighted item on
+  Home starts playing after a moment, which keeps a video player running the whole time you browse.
+  Live preview has had an off switch for a long time; this one did not. It does now, and on a low-memory
+  TV it starts **off**, since that is where a second video pipeline costs the most.
+
 ### 🐛 Fixes
 
 - **Auto frame rate now respects your TV's own "Match content frame rate" setting.** If you had
@@ -45,6 +78,12 @@
   leaves your display alone and stops offering to switch; set to **Seamless only**, it restricts
   itself to changes your TV can make without the brief black gap of an HDMI re-handshake. **Always**
   behaves exactly as before, as does any TV on Android 11 or older, which has no such setting.
+- **Nothing from the previous channel or film can survive into the next one.** Everything the player
+  had to forget when you changed channel was a long hand-written list, and anything left off such a
+  list bleeds into whatever you open next — a stale error, a stale resolution badge, a retry the new
+  channel had not actually used. Both players now forget in one step that cannot be half-done. The
+  distinction that matters is preserved: a silent retry of the *same* film still remembers what it has
+  already tried, or it would retry the same failing trick forever.
 - **Live latency now admits what a 4K channel can actually buffer.** Asking for a long buffer on a
   very high-bitrate channel gives you less time than the number suggests, because there is a limit on
   how much video can be held in memory at once. That was always true and correctly handled; the

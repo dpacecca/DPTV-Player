@@ -67,6 +67,10 @@ internal fun TrackDialog(
     onDismiss: () -> Unit,
     audioDelayMs: Int? = null,                 // non-null on the Audio dialog (VOD) → show the A/V-sync nudge
     onAdjustAudioDelay: ((Int) -> Unit)? = null,
+    // Whether this item already has a remembered A/V-sync offset, and the action that remembers or
+    // forgets it. Both accompany [onAdjustAudioDelay].
+    audioDelayRemembered: Boolean = false,
+    onToggleRememberAudioDelay: (() -> Unit)? = null,
     // Non-null on the Subtitles dialog for a movie/episode → an "ADD SUBTITLES" row that opens the
     // OpenSubtitles search (subtitle plan §4). Absent for Live TV and when no item context exists.
     onSearchSubtitles: (() -> Unit)? = null,
@@ -175,6 +179,17 @@ internal fun TrackDialog(
                         overflow = TextOverflow.Ellipsis,
                     )
                     StepButton(stringResource(R.string.common_plus), enabled = (audioDelayMs ?: 0) < 5_000) { onAdjustAudioDelay(AV_SYNC_STEP_MS) }
+                }
+            }
+            // Lip-sync error belongs to the stream, not to the user: this keeps the offset for THIS
+            // film or channel, so it comes back next time without following you onto anything else.
+            if (onToggleRememberAudioDelay != null) {
+                item {
+                    OptionRow(
+                        label = stringResource(R.string.player_av_sync_remember),
+                        selected = audioDelayRemembered,
+                        onClick = onToggleRememberAudioDelay,
+                    )
                 }
             }
         }

@@ -15,9 +15,13 @@
 
 - **⏱️ A dead channel says so, instead of leaving you with a black screen**
 - **🎛️ Every playback setting in one place**
+- **🎚️ Per-playlist Live TV player and Live latency**
+- **🎧 Remember the audio sync for one channel or one film**
+- **🏠 Turn off the video on the Home screen's big card**
 
 ### 🐛 Fixes
 
+- **Nothing from the previous channel or film can survive into the next one**
 - **Auto frame rate now respects your TV's own "Match content frame rate" setting**
 - **Live latency now admits what a 4K channel can actually buffer**
 - **A film with picture-based subtitles is less likely to be given up on early**

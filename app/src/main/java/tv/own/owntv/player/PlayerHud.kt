@@ -200,6 +200,7 @@ fun PlayerHud(
     val engineChip by player.engineChip.collectAsStateWithLifecycle()
     val audioCount by player.audioCount.collectAsStateWithLifecycle()
     val audioDelayMs by player.audioDelayMs.collectAsStateWithLifecycle()
+    val audioDelayRemembered by player.audioDelayRemembered.collectAsStateWithLifecycle()
     val subCount by player.subCount.collectAsStateWithLifecycle()
     val zoomMode by player.zoomMode.collectAsStateWithLifecycle()
     val speed by player.speed.collectAsStateWithLifecycle()
@@ -683,6 +684,8 @@ fun PlayerHud(
                 // stream can arrive with the provider's own drift baked in). Hidden on ExoPlayer (F19e).
                 audioDelayMs = if (player.audioDelayAvailable()) audioDelayMs else null,
                 onAdjustAudioDelay = if (player.audioDelayAvailable()) ({ d -> player.adjustAudioDelay(d) }) else null,
+                audioDelayRemembered = audioDelayRemembered,
+                onToggleRememberAudioDelay = if (player.audioDelayAvailable()) ({ player.toggleRememberAudioDelay() }) else null,
             )
         }
         HudDialog.SUBS -> {

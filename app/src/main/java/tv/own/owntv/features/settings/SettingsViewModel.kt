@@ -435,6 +435,12 @@ class SettingsViewModel(
 
     fun clearSavedVolume() { viewModelScope.launch { playbackPrefs.clearVolume() } }
 
+    /** Same again for the per-item A/V-sync offsets (DB v35). */
+    val savedAudioDelayCount: StateFlow<Int> =
+        playbackPrefs.observeAudioDelayCount().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    fun clearSavedAudioDelay() { viewModelScope.launch { playbackPrefs.clearAudioDelay() } }
+
     /** Rewind/forward step in a movie or episode, and the separate one for a live archive. */
     val seekStepSec: StateFlow<Int> = settings.seekStepSec
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.SeekSteps.DEFAULT_SEEK_STEP_SEC)
@@ -765,6 +771,16 @@ class SettingsViewModel(
     /** Per-playlist override of the above. `-1` = follow the global value. */
     fun setSourcePreroll(sourceId: Long, secs: Int) {
         viewModelScope.launch { sourceDao.updateLivePreroll(sourceId, secs) }
+    }
+
+    /** Per-playlist Live TV engine override; `null` = follow the global setting. */
+    fun setSourceLiveEngine(sourceId: Long, preference: String?) {
+        viewModelScope.launch { sourceDao.updateLiveEnginePreference(sourceId, preference) }
+    }
+
+    /** Per-playlist Live latency override; `null` mode = follow the global setting. */
+    fun setSourceLiveLatency(sourceId: Long, mode: String?, customSecs: Int) {
+        viewModelScope.launch { sourceDao.updateLiveLatency(sourceId, mode, customSecs) }
     }
 
     val animationLevel: StateFlow<tv.own.owntv.ui.theme.AnimationLevel> =
