@@ -33,6 +33,8 @@
 - **The offline warning now appears when the internet is actually unreachable**
 - **Online subtitle searching now filters correctly for seven more languages**
 - **Track menus stop hunting for tracks that will never arrive**
+- **The in-player channel list no longer mislabels itself**
+- **One less timer running while you watch a recording**
 - **Less background work during playback, and less of it on weaker TVs**
 
 ## v4.2.2 — 2026-08-19

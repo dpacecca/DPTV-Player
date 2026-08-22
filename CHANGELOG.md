@@ -127,6 +127,13 @@
   a stream that has none — a radio channel, most often — left OwnTV re-checking three times a second
   for as long as the menu stayed open. It now stops after six seconds, which is well past the slowest
   stream that has ever reported its tracks late.
+- **The in-player channel list no longer mislabels itself.** Opening a channel from the catch-up
+  programme dialog reset the list's heading to "All channels" while the list underneath was still
+  showing Favorites, History or whatever rail you came from. The heading now always names what is
+  actually in the list.
+- **One less timer running while you watch a recording.** Rewinding a live channel after watching a
+  catch-up programme left two identical once-a-second counters running side by side for the rest of the
+  session, both working out the same thing. There is one now.
 - **Less background work during playback, and less of it on weaker TVs.** Several separate timers
   driving the progress readout, the stream-info panel and the frame-rate chip have been merged into a
   single once-a-second tick, and on low-memory devices the "is this channel frozen?" check now runs
