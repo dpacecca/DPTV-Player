@@ -94,6 +94,8 @@ fun AudioNowPlayingBar(
     onExpand: () -> Unit,
     onClose: () -> Unit,
     focusable: Boolean,
+    /** Focus target for "enter the audio session" from the sidebar's Now Playing item. Lands on stage 1. */
+    entryFocusRequester: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -253,6 +255,7 @@ fun AudioNowPlayingBar(
             modifier = Modifier
                 .matchParentSize()
                 .focusRequester(pillFocus)
+                .then(entryFocusRequester?.let { Modifier.focusRequester(it) } ?: Modifier)
                 .focusProperties { canFocus = focusable && !active },
             shape = RoundedCornerShape(18.dp),
             focusedScale = 1.03f,
@@ -282,9 +285,12 @@ private fun LiveRow(dotColor: Color) {
     }
 }
 
-/** Bars that dance while [playing] and freeze flat when paused (Audio Mode plan §3/§6). */
+/**
+ * Bars that dance while [playing] and freeze flat when paused (Audio Mode plan §3/§6). Also stands in
+ * for the missing picture on the sidebar's Now Playing item while Audio Mode is running.
+ */
 @Composable
-private fun Equalizer(playing: Boolean, color: Color, modifier: Modifier) {
+internal fun Equalizer(playing: Boolean, color: Color, modifier: Modifier) {
     val bars = 5
     val transition = rememberInfiniteTransition(label = "eq")
     val heights = (0 until bars).map { i ->

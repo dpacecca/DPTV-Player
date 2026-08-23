@@ -79,6 +79,10 @@ import tv.own.owntv.ui.theme.asComposeFamily
 
 /** Common language codes offered for the audio/subtitle preference. Display names resolve in Compose. */
 private val LANGUAGE_CODES = listOf("", "eng", "spa", "fra", "deu", "ita", "por", "nld", "rus", "ara", "hin", "zho", "jpn", "kor", "tur")
+/** Backdrop for both subtitle previews: a busy-ish frame, because a flat panel makes even a solid box look harmless. */
+private val SUB_PREVIEW_BRUSH = androidx.compose.ui.graphics.Brush.linearGradient(
+    listOf(Color(0xFF2E4A6B), Color(0xFF7A5C3E), Color(0xFF3B6B4A)),
+)
 private val SUB_SIZES = listOf(0.8f to R.string.settings_subtitle_small, 1.0f to R.string.settings_subtitle_normal, 1.3f to R.string.settings_subtitle_large, 1.6f to R.string.settings_subtitle_extra_large)
 
 @Composable
@@ -105,10 +109,22 @@ private fun langName(code: String): String = stringResource(
 
 private fun nearestSubSize(scale: Float) = SUB_SIZES.minByOrNull { kotlin.math.abs(it.first - scale) } ?: SUB_SIZES[1]
 
+/** The next size in the four-step table, wrapping Extra large back to Small — the size rows cycle. */
+private fun nextSubSize(scale: Float): Float =
+    SUB_SIZES[(SUB_SIZES.indexOf(nearestSubSize(scale)) + 1) % SUB_SIZES.size].first
+
 @Composable
 private fun subSizeName(scale: Float): String = stringResource(
     SUB_SIZES.minByOrNull { kotlin.math.abs(it.first - scale) }?.second ?: R.string.settings_subtitle_normal,
 )
+
+/** Chip for the one "Subtitle size" row now that there are two values: "Normal · Large", ExoPlayer first. */
+@Composable
+private fun subSizePairName(scaleExo: Float, scaleMpv: Float): String {
+    val exo = subSizeName(scaleExo)
+    val mpv = subSizeName(scaleMpv)
+    return if (exo == mpv) exo else "$exo · $mpv"
+}
 
 private fun resumeModeLabelRes(mode: tv.own.owntv.features.settings.data.SettingsRepository.ResumeMode): Int = when (mode) {
     tv.own.owntv.features.settings.data.SettingsRepository.ResumeMode.AUTO -> R.string.settings_resume_always
@@ -155,7 +171,8 @@ fun VideoPlayerSettingsScreen(
     val externalSeries by vm.externalPlayerSeries.collectAsStateWithLifecycle()
     val zoom by vm.defaultZoom.collectAsStateWithLifecycle()
     val subStyleOn by vm.subtitleStyleEnabled.collectAsStateWithLifecycle()
-    val subScale by vm.subtitleScale.collectAsStateWithLifecycle()
+    val subScaleExo by vm.subtitleScaleExo.collectAsStateWithLifecycle()
+    val subScaleMpv by vm.subtitleScaleMpv.collectAsStateWithLifecycle()
     val subFont by vm.subtitleFont.collectAsStateWithLifecycle()
     val subColor by vm.subtitleColor.collectAsStateWithLifecycle()
     val subPosition by vm.subtitlePosition.collectAsStateWithLifecycle()
@@ -639,13 +656,15 @@ fun VideoPlayerSettingsScreen(
         )
         Dialog.SUB_STYLE -> SubtitleAppearanceDialog(
                 enabled = subStyleOn,
-                scale = subScale,
+                scaleExo = subScaleExo,
+                scaleMpv = subScaleMpv,
                 font = subFont,
                 color = subColor,
             position = subPosition,
             bgOpacity = subBgOpacity,
                 onToggle = { vm.setSubtitleStyleEnabled(it) },
-                onScale = { vm.setSubtitleScale(it) },
+                onScaleExo = { vm.setSubtitleScaleExo(it) },
+                onScaleMpv = { vm.setSubtitleScaleMpv(it) },
                 onFont = { vm.setSubtitleFont(it) },
                 onColor = { vm.setSubtitleColor(it) },
             onPosition = { vm.setSubtitlePosition(it) },
@@ -1407,13 +1426,15 @@ private fun subtitlePositionName(position: SubtitleStyle.Position): String = str
 @Composable
 private fun SubtitleAppearanceDialog(
     enabled: Boolean,
-    scale: Float,
+    scaleExo: Float,
+    scaleMpv: Float,
     font: AppFontFamily?,
     color: String,
     position: SubtitleStyle.Position,
     bgOpacity: Int,
     onToggle: (Boolean) -> Unit,
-    onScale: (Float) -> Unit,
+    onScaleExo: (Float) -> Unit,
+    onScaleMpv: (Float) -> Unit,
     onFont: (AppFontFamily?) -> Unit,
     onColor: (String) -> Unit,
     onPosition: (SubtitleStyle.Position) -> Unit,
@@ -1442,12 +1463,9 @@ private fun SubtitleAppearanceDialog(
     if (child != SubDialog.NONE) {
         val close = { child = SubDialog.NONE }
             when (child) {
-                SubDialog.SIZE -> PickerDialog(
-                title = stringResource(R.string.settings_subtitle_size),
-                options = SUB_SIZES.map { it.first.toString() to stringResource(it.second) },
-                selected = nearestSubSize(scale).first.toString(),
-                onSelect = { onScale(it.toFloat()); close() },
-                    onDismiss = close,
+                SubDialog.SIZE -> SubtitleSizeDialog(
+                    scaleExo = scaleExo, scaleMpv = scaleMpv, font = font, color = color,
+                    bgOpacity = bgOpacity, onScaleExo = onScaleExo, onScaleMpv = onScaleMpv, onDismiss = close,
                 )
                 SubDialog.FONT -> PickerDialog(
                     title = stringResource(R.string.settings_subtitle_font),
@@ -1463,7 +1481,7 @@ private fun SubtitleAppearanceDialog(
                 SubDialog.COLOR -> SubtitleColorDialog(color = color, onColor = onColor, onDismiss = close)
             SubDialog.POSITION -> SubtitlePositionDialog(position = position, onSelect = onPosition, onDismiss = close)
                 SubDialog.TRANSPARENCY -> SubtitleTransparencyDialog(
-                    scale = scale, font = font, color = color, position = position,
+                    scale = scaleExo, font = font, color = color, position = position,
                 bgOpacity = bgOpacity, onSet = onBgOpacity, onDismiss = close,
             )
             SubDialog.NONE -> Unit
@@ -1489,7 +1507,7 @@ private fun SubtitleAppearanceDialog(
 
                 // The overview sits above every row, including the master toggle, so the effect of a
                 // change is judged against a picture instead of guessed from a chip.
-        SubtitlePreview(enabled = enabled, scale = scale, font = font, color = color, position = position, bgOpacity = bgOpacity)
+        SubtitlePreview(enabled = enabled, scale = scaleExo, font = font, color = color, position = position, bgOpacity = bgOpacity)
                 Spacer(Modifier.height(16.dp))
 
                 Row2(
@@ -1509,7 +1527,9 @@ private fun SubtitleAppearanceDialog(
                 icon = OwnTVIcon.SUBTITLE,
                 title = stringResource(R.string.settings_subtitle_size),
                         desc = stringResource(R.string.settings_subtitle_size_description),
-                        chip = subSizeName(scale), primaryChip = SubtitleStyle.hasScale(scale), chevron = true,
+                        chip = subSizePairName(scaleExo, scaleMpv),
+                        primaryChip = SubtitleStyle.hasScale(scaleExo) || SubtitleStyle.hasScale(scaleMpv),
+                        chevron = true,
                         modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.SIZE)),
                 onClick = { open(SubDialog.SIZE) },
             )
@@ -1555,7 +1575,8 @@ private fun SubtitleAppearanceDialog(
                     Spacer(Modifier.weight(1f))
                     if (enabled) {
                         OwnTVButton(stringResource(R.string.settings_subtitle_reset_all), style = OwnTVButtonStyle.SECONDARY, onClick = {
-                        onScale(SubtitleStyle.SCALE_DEFAULT)
+                        onScaleExo(SubtitleStyle.SCALE_DEFAULT)
+                        onScaleMpv(SubtitleStyle.SCALE_DEFAULT)
                         onFont(null)
                         onColor(SubtitleStyle.COLOR_DEFAULT)
                             onPosition(SubtitleStyle.Position.DEFAULT)
@@ -1802,6 +1823,110 @@ private fun PositionCell(
 }
 
 /**
+ * Subtitle size — one row per engine, because mpv and Media3's SubtitleView draw the same multiplier
+ * at visibly different sizes. There is no conversion between them worth guessing at, so the user gets
+ * a control for each and sets them once against a preview that shows both at the same time.
+ *
+ * OK cycles a row through the four sizes in place rather than opening a picker: a third popup on top
+ * of a popup on top of a dialog is two extra Back presses, and with a live preview a four-value
+ * control reads better as a cycle. Same pattern as the transparency popup below.
+ */
+@Composable
+private fun SubtitleSizeDialog(
+    scaleExo: Float,
+    scaleMpv: Float,
+    font: AppFontFamily?,
+    color: String,
+    bgOpacity: Int,
+    onScaleExo: (Float) -> Unit,
+    onScaleMpv: (Float) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val firstRow = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstRow.requestFocus() } }
+    BackHandler { onDismiss() }
+    tv.own.owntv.ui.theme.PopupFontTheme {
+        Box(
+            modifier = Modifier.fillMaxSize().modalScrim()
+                .trapAllFocusExit().focusGroup(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(modifier = Modifier.dialogPanel(width = 520.dp, corner = 16.dp, padding = 18.dp, scroll = false)) {
+                Text(stringResource(R.string.settings_subtitle_size), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.settings_subtitle_size_description),
+                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                SubtitleSizePreview(
+                    scaleExo = scaleExo, scaleMpv = scaleMpv, font = font, color = color, bgOpacity = bgOpacity,
+                )
+                Spacer(Modifier.height(14.dp))
+                Row2(
+                    icon = OwnTVIcon.SUBTITLE,
+                    title = stringResource(R.string.settings_player_exoplayer),
+                    chip = subSizeName(scaleExo), primaryChip = SubtitleStyle.hasScale(scaleExo),
+                    modifier = Modifier.focusRequester(firstRow),
+                    onClick = { onScaleExo(nextSubSize(scaleExo)) },
+                )
+                Row2(
+                    icon = OwnTVIcon.SUBTITLE,
+                    title = stringResource(R.string.settings_player_mpv),
+                    chip = subSizeName(scaleMpv), primaryChip = SubtitleStyle.hasScale(scaleMpv),
+                    onClick = { onScaleMpv(nextSubSize(scaleMpv)) },
+                )
+                Spacer(Modifier.height(14.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
+                }
+            }
+        }
+    }
+}
+
+/** Both engines' sizes on one stand-in frame — the whole point of the setting is seeing the difference. */
+@Composable
+private fun SubtitleSizePreview(
+    scaleExo: Float,
+    scaleMpv: Float,
+    font: AppFontFamily?,
+    color: String,
+    bgOpacity: Int,
+) {
+    val textColor = if (SubtitleStyle.hasColor(color)) Color(SubtitleStyle.colorArgb(color)) else Color.White
+    val boxColor = if (SubtitleStyle.hasOpacity(bgOpacity)) {
+        Color(SubtitleStyle.backgroundArgb(bgOpacity))
+    } else {
+        Color.Black.copy(alpha = 0.45f)
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(SUB_PREVIEW_BRUSH)
+            .padding(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        listOf(
+            stringResource(R.string.settings_player_exoplayer) to scaleExo,
+            stringResource(R.string.settings_player_mpv) to scaleMpv,
+        ).forEach { (engine, scale) ->
+            Text(engine, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.75f))
+            Text(
+                stringResource(R.string.settings_subtitle_preview_sample),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = MaterialTheme.typography.bodyLarge.fontSize * scale,
+                    fontFamily = font?.asComposeFamily() ?: MaterialTheme.typography.bodyLarge.fontFamily,
+                ),
+                color = textColor,
+                modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(boxColor)
+                    .padding(horizontal = 10.dp, vertical = 3.dp),
+            )
+        }
+    }
+}
+
+/**
  * Background transparency — a ±10% stepper. "Default" is its own state rather than a value in the
  * range: it means the box is left to the renderer (and, on Live TV, to the broadcaster).
  */
@@ -1903,12 +2028,7 @@ private fun SubtitlePreview(
             .fillMaxWidth()
             .height(height)
             .clip(RoundedCornerShape(12.dp))
-            // A busy-ish backdrop: a flat panel would make even a solid box look harmless.
-            .background(
-                androidx.compose.ui.graphics.Brush.linearGradient(
-                    listOf(Color(0xFF2E4A6B), Color(0xFF7A5C3E), Color(0xFF3B6B4A)),
-                ),
-            ),
+            .background(SUB_PREVIEW_BRUSH),
         contentAlignment = anchor.alignment(),
     ) {
         Text(

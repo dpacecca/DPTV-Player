@@ -645,6 +645,12 @@ A few things that need no button:
 - **A notification or a system sound won't pause your film** — the sound dips for a moment and comes
   back. Only another app taking the audio for good pauses playback.
 - **Subtitles show in the docked mini‑player too**, sized to the small window.
+- **Getting back into the docked mini‑player**, three ways, from any screen: a **Now Playing** item
+  appears at the top of the side menu while something is docked (or Audio Mode is running) — press
+  **OK** on it to move into the window; **hold BACK** to jump straight in, and hold it again to return;
+  or just press **Play/Pause** on the remote, which acts on the docked window without going near it
+  (CH+/CH− change its channel too, unless the screen you are on already uses those keys). **Back** from
+  inside the window puts you back on the exact control you came from.
 
 ---
 
@@ -868,12 +874,20 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 
 ## ⚙️ Settings worth knowing
 
-- 🔎 **Search settings** — type in the **"Search settings…"** box at the top to filter the whole screen to
-  matching rows; results show where the setting lives (e.g. `Playback › Video player › HDR`) and open
-  it directly — or, for a simple on/off, flip it straight from the results. Typing `video player`
-  lists everything on that screen. **Back**
-  clears the search first. Above it, one‑press **quick toggles** (Live preview · Preview sound · HDR ·
-  Auto‑play · Check for update) flip the most‑used options without opening a sub‑menu.
+- 🧱 **Two columns: sections on the left, their settings on the right.** Up/Down picks a section (each
+  shows its icon and how many settings it holds), **Right** moves into the settings, **Left** comes back
+  to the section you were in. Settings opens on the section you used last. Values line up in a column
+  down the right‑hand edge, and an **arrow at the end of a row means it opens another screen** — rows
+  without one open a popup or flip in place. Both columns scroll, so nothing is out of reach at high UI
+  zoom.
+- ⚡ **Quick** — the first section in the left column, holding the six most‑used switches (Live preview ·
+  Preview sound · Channel numbers · HDR · Auto‑play · Check for update). Press **OK** on a row to flip
+  it; the value changes without leaving the row.
+- 🔎 **Search settings** — press **OK** on the **search pill** at the top right to open the box, then OK
+  again to type. It filters the whole screen to matching rows; results show where the setting lives
+  (e.g. `Playback › Video player › HDR`) and open it directly — or, for a simple on/off, flip it
+  straight from the results. Typing `video player` lists everything on that screen. **Back** clears
+  what you typed; **Back** again puts search away.
 - 🧭 **Menu layout** — **Profiles** is the first row; **App startup** is under **App**; the
   **Home screen** page is under Content.
 - 🎬 **Every playback setting is on one page.** **Settings → Video player** is the complete list —
@@ -1012,7 +1026,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   unrelated subtitle stays off when the preferred language is unavailable. Changes affect current playback.
 - 💬 **Subtitle appearance** (Video Player Settings) — a menu with a preview, a **Customize subtitles**
   switch, and then **Font**, **Size**, **Text color**, **Position** (six anchors: top/bottom ×
-  left/center/right) and **Background transparency** (None → Solid in 10% steps). Font choices are
+  left/center/right) and **Background transparency** (None → Solid in 10% steps). **Size holds one row
+  per player** — ExoPlayer and MPV — above a preview showing both at once, because the two draw the same
+  size differently and one shared value can never suit both; **OK** on a row steps it through Small →
+  Normal → Large → Extra large. Upgrading keeps your old size on both until you change one. Font choices are
   **Default, System Sans, Monospace, Lora, Playfair Display, Dancing Script, and Poppins**, and apply
   across both players and app-drawn subtitle overlays. **Each option starts at "Default", and Default
   leaves that aspect alone** — including authored font styling. If you set only the background, the

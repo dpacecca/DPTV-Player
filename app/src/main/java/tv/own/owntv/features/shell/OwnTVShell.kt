@@ -2,6 +2,7 @@ package tv.own.owntv.features.shell
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,7 +29,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.text.style.TextOverflow
+import tv.own.owntv.core.epg.displayLogoUrl
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -157,6 +168,15 @@ fun OwnTVShell(
     val ambientGlowPulse by settingsRepo.ambientGlowPulse.collectAsStateWithLifecycle(initialValue = true)
     val shellAnimationLevel by settingsRepo.animationLevel.collectAsStateWithLifecycle(initialValue = tv.own.owntv.ui.theme.AnimationLevel.FULL)
     val miniPos = tv.own.owntv.player.MiniPlayerPosition.fromName(miniPosName)
+    // §8 "Reaching the mini player" — the mini window floats above the content panel, so D-pad focus
+    // search has no spatial path into it from most screens. These are the three deliberate ways in:
+    // the rail's Now Playing item, long-press Back, and the media keys.
+    val miniEntryFocus = remember { FocusRequester() }
+    val audioEntryFocus = remember { FocusRequester() }
+    // The browse UI is one focus group with a restorer, so handing focus back to it after the mini
+    // player returns to the exact control the user left rather than to the top of the screen.
+    val shellContentFocus = remember { FocusRequester() }
+    var miniHasFocus by remember { mutableStateOf(false) }
     val subtitleController = koinInject<tv.own.owntv.core.subtitles.SubtitleController>()
     val subtitleContext by subtitleController.current.collectAsStateWithLifecycle()
     var showSubtitleSearch by remember { mutableStateOf(false) }
@@ -411,6 +431,34 @@ fun OwnTVShell(
         Unit
     }
 
+    // Whichever engine is on the speaker right now — what the rail item pictures and what the media
+    // keys act on while the window is docked.
+    val dockedEngine = if (liveOnExo) liveVm.previewEngine else mpvEngine
+    val dockedPlaying by dockedEngine.isPlaying.collectAsStateWithLifecycle()
+    val nowPlayingRail = when (playerMode) {
+        PlayerMode.MINI, PlayerMode.AUDIO -> tv.own.owntv.features.shell.components.NowPlayingRail(
+            // Only a live channel has a logo to show; a movie or an episode falls back to the play mark.
+            logoUrl = if (zapSource == MainSection.LIVE_TV) previewChannel?.displayLogoUrl else null,
+            audioMode = playerMode == PlayerMode.AUDIO,
+            playing = dockedPlaying,
+        )
+        else -> null
+    }
+    // OK on the rail item moves focus INTO the window (it is not a section and navigates nowhere).
+    val enterNowPlaying = {
+        when (playerMode) {
+            PlayerMode.MINI -> runCatching { miniEntryFocus.requestFocus() }
+            PlayerMode.AUDIO -> runCatching { audioEntryFocus.requestFocus() }
+            else -> Unit
+        }
+        Unit
+    }
+    // Long-press Back toggles: into the window, and back out to the control you came from.
+    val toggleNowPlayingFocus = {
+        if (miniHasFocus) runCatching { shellContentFocus.requestFocus() } else enterNowPlaying()
+        Unit
+    }
+
     LaunchedEffect(Unit) { tv.own.owntv.Perf.stamp("shell-composed"); runCatching { sidebarFocus.requestFocus() } }
 
     LaunchedEffect(pendingDeepLink, activeProfileId) {
@@ -485,11 +533,69 @@ fun OwnTVShell(
     // normal browsing, and restored to the taller reservation while Audio Mode shows its player controls.
     val shellTopBarHeight = if (playerMode == PlayerMode.AUDIO) Dimens.TopBarHeight else Dimens.TopBarCompactHeight
 
+    // Long-press Back (§8 tier 2). Deliberately timed from the FIRST KeyDown rather than counted from
+    // key repeats: several TVs re-fire KeyDown while a key is held, so a repeat-counting version fires
+    // the long-press the instant Back is touched. Short Back is never consumed, so every existing Back
+    // handler — HUD hide, search clear, dialog dismiss, direct-tune cancel — behaves exactly as before.
+    var backHoldJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    var backLongFired by remember { mutableStateOf(false) }
+    val longPressBackArmed = playerMode == PlayerMode.MINI && !showExit && !showAvatarPicker && !showPlaylistPicker
+    // Media keys (§8 tier 3) act on the docked window wherever focus is — but only if nothing nearer
+    // claimed them first, which is why this is a bubbling handler: a focused browse list still gets its
+    // CH+/CH− paging, and the full-screen HUD still owns zapping.
+    val dockedZap: ((Int) -> Unit)? = when {
+        playerMode != PlayerMode.MINI -> null
+        zapSource == MainSection.LIVE_TV && liveCanZap && (liveOnExo || player.isLiveContent) -> liveVm::zap
+        else -> null
+    }
+
     CompositionLocalProvider(LocalContentScrolled provides contentScrolled) {
-    Box(modifier = modifier.fillMaxSize().background(shellBase)) {
+    Box(
+        modifier = modifier.fillMaxSize().background(shellBase)
+            .onPreviewKeyEvent { e ->
+                if (e.key != Key.Back) return@onPreviewKeyEvent false
+                when (e.type) {
+                    KeyEventType.KeyDown -> {
+                        if (longPressBackArmed && backHoldJob == null) {
+                            backLongFired = false
+                            backHoldJob = scope.launch {
+                                kotlinx.coroutines.delay(600)
+                                backLongFired = true
+                                toggleNowPlayingFocus()
+                            }
+                        }
+                        false
+                    }
+                    KeyEventType.KeyUp -> {
+                        backHoldJob?.cancel()
+                        backHoldJob = null
+                        val fired = backLongFired
+                        backLongFired = false
+                        fired // consume ONLY when the long-press already acted, so Back isn't run twice
+                    }
+                    else -> false
+                }
+            }
+            .onKeyEvent { e ->
+                if (e.type != KeyEventType.KeyDown || playerMode != PlayerMode.MINI) return@onKeyEvent false
+                when (e.key) {
+                    Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> { dockedEngine.togglePlayPause(); true }
+                    Key.ChannelUp -> dockedZap?.let { it(1); true } ?: false
+                    Key.ChannelDown -> dockedZap?.let { it(-1); true } ?: false
+                    else -> false
+                }
+            },
+    ) {
       // Browse UI — hidden while the player is fullscreen (stays visible behind the docked mini-player).
       if (playerMode != PlayerMode.FULLSCREEN) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+                // One group with a restorer: leaving for the mini player and coming back lands on the
+                // exact control that was focused, without every screen having to remember its own.
+                .focusRequester(shellContentFocus)
+                .focusRestorer()
+                .focusGroup(),
+        ) {
           if (isOffline) OfflineBanner()
           Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
             Sidebar(
@@ -511,6 +617,8 @@ fun OwnTVShell(
                 selectedItemFocusRequester = sidebarFocus,
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
                 topInset = shellTopBarHeight,
+                nowPlaying = nowPlayingRail,
+                onNowPlaying = enterNowPlaying,
             )
 
             Column(
@@ -608,6 +716,7 @@ fun OwnTVShell(
                                 // nav panel like the other chips, because its own D-pad trap keeps focus
                                 // inside once entered and Back is the only way out.
                                 focusable = true,
+                                entryFocusRequester = audioEntryFocus,
                             )
                         }
                     } else null,
@@ -1084,7 +1193,9 @@ fun OwnTVShell(
                     onCycleSize = { scope.launch { settingsRepo.setMiniPlayerSizePct(tv.own.owntv.player.MiniPlayerSize.next(miniSizePct)) } },
                     onCyclePosition = { scope.launch { settingsRepo.setMiniPlayerPosition(miniPos.next().name) } },
                     onAudioMode = toAudioMode,
-                    modifier = Modifier.fillMaxSize(),
+                    entryFocusRequester = miniEntryFocus,
+                    onBack = { runCatching { shellContentFocus.requestFocus() }; Unit },
+                    modifier = Modifier.fillMaxSize().onFocusChanged { miniHasFocus = it.hasFocus },
                 )
             }
         }

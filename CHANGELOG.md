@@ -2,6 +2,63 @@
 
 ## v4.2.3 — Unreleased
 
+### 🗂️ Settings is a spine and a sheet, with your quick switches at the top of it
+
+- **The section list on the left is now a proper column of its own.** Each of the nine groups carries
+  its icon and how many settings it holds, and the selected one gets an accent bar down its leading
+  edge with the highlight fading away from it — so the left column visibly points at the rows on the
+  right. It sits on the same panel the settings do, instead of floating loose beside them.
+- **The settings themselves are one sheet, not 34 floating cards.** The group is named at the top with
+  a one-line summary of what is in it, and every value (`Dark`, `Teal`, `100%`, `On`) lines up in a
+  column down the right-hand side as quiet text rather than a filled badge. The highlighted row gets a
+  slim accent stripe on its left and a soft wash, which is what separates the rows — there are no rules
+  between them.
+- **"Quick" is now the first entry in the section list.** The six most-used switches — Live preview,
+  Preview sound, Channel numbers, HDR, Auto-play, Check for update — moved out of the strip that used
+  to sit across the top of Settings and became ordinary rows you flip with OK. Nothing was lost and
+  nothing needs setting up; the header they vacated is now a single line, which is where the extra room
+  for the settings came from.
+- **Search is a small pill in that header.** Press OK on it and it opens into the field you already
+  know; Back clears what you typed, and Back again puts it away. Results still name where each setting
+  lives and still open it directly.
+- **Arrows now only appear on rows that actually open another screen.** A row that opens a popup, or
+  flips in place, no longer promises a page that isn't there.
+- **Everything still scrolls.** At 150% UI zoom on a large screen the columns are narrower and taller
+  lists scroll, so no setting can ever be out of reach.
+- **Coming back from a setting no longer changes the section you were in.** Pressing Left out of the
+  settings used to land on whichever section happened to be level with your row — and because the
+  highlight *is* the selection there, that quietly switched groups on you. It now always returns you to
+  the group you were inside.
+
+### 🪟 You can reach the docked mini player again
+
+- **A "Now Playing" item appears at the top of the side menu** whenever a video is docked in the corner
+  or Audio Mode is running. Press OK on it and the remote moves into that little window. It shows the
+  channel's logo (or the equalizer in Audio Mode) inside a gently pulsing accent ring, and it disappears
+  the moment there is nothing playing.
+- **Hold BACK from anywhere to jump into the mini player, and hold it again to come back.** Short
+  presses of Back are completely unchanged everywhere in the app.
+- **Back from inside the mini player returns you to the exact control you left**, instead of dropping
+  you somewhere arbitrary.
+- **Play/Pause on the remote works on the docked window wherever you are.** CH+/CH− change its channel
+  too, except where those keys already have a job — in a browse list they still page the list, and in
+  full screen the player still owns them.
+- Why this was needed: the mini window floats above the content panel, so the remote's directional
+  focus had no path into it from most screens. It was reachable by luck from some, and not at all from
+  Settings.
+
+### 💬 A separate subtitle size for each of the two players
+
+- **Settings → Video player → Subtitle appearance → Subtitle size now holds two rows**, one for
+  ExoPlayer and one for MPV, above a preview that shows both sizes at once so you can see the
+  difference. Press OK on a row to step it through Small → Normal → Large → Extra large; the preview
+  follows as you go.
+- **Why:** the two players draw the same size setting differently — ExoPlayer's text is noticeably
+  bigger — so a single shared setting could never be right for both. "Small" read as medium on one and
+  tiny on the other.
+- **Nothing changes on upgrade.** Whatever size you had is kept for *both* players until you decide to
+  move one of them, and the setting still travels in backup and restore.
+
 ### ⏱️ A dead channel says so, instead of leaving you with a black screen
 
 - **New setting: Settings → Video player → Live TV → "Give up on a channel after".** A live channel

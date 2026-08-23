@@ -23,6 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -47,6 +50,10 @@ fun MiniPlayer(
     onCycleSize: () -> Unit = {},
     onCyclePosition: () -> Unit = {},
     onAudioMode: () -> Unit = {},
+    /** Focus target for "enter the mini player" (the rail's Now Playing item, long-press Back). */
+    entryFocusRequester: FocusRequester? = null,
+    /** Back while the mini player holds focus — the shell returns focus to wherever it came from. */
+    onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isPlaying by player.isPlaying.collectAsStateWithLifecycle()
@@ -57,6 +64,9 @@ fun MiniPlayer(
     // mini-player lands focus on a button and reveals them.
     var focused by remember { mutableStateOf(false) }
     val controlsAlpha by animateFloatAsState(if (focused) 1f else 0f, label = "miniControls")
+    // Back from inside the window hands focus back to the control the user came from — without this
+    // entering the mini player stranded you, which is half of why it was unreachable in the first place.
+    if (focused && onBack != null) BackHandler { onBack() }
     Box(modifier = modifier.onFocusChanged { focused = it.hasFocus }.focusGroup()) {
         // Title (top-left, on a slight scrim). Padded left to clear the Audio-Mode button and right so
         // it never sits under the window controls in the top-right corner.
@@ -103,7 +113,10 @@ fun MiniPlayer(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            MiniBtn(if (isPlaying) OwnTVIcon.PAUSE else OwnTVIcon.PLAY) { player.togglePlayPause() }
+            MiniBtn(
+                if (isPlaying) OwnTVIcon.PAUSE else OwnTVIcon.PLAY,
+                modifier = entryFocusRequester?.let { Modifier.focusRequester(it) } ?: Modifier,
+            ) { player.togglePlayPause() }
             // Single mute/unmute toggle — volume icon (not the audio-track icon).
             MiniBtn(if (volume <= 0) OwnTVIcon.VOLUME_MUTE else OwnTVIcon.VOLUME_HIGH, onClick = { player.toggleMute() })
             MiniBtn(OwnTVIcon.EXPAND, onClick = onExpand)
@@ -113,10 +126,10 @@ fun MiniPlayer(
 }
 
 @Composable
-private fun MiniBtn(icon: OwnTVIcon, onClick: () -> Unit) {
+private fun MiniBtn(icon: OwnTVIcon, modifier: Modifier = Modifier, onClick: () -> Unit) {
     FocusableSurface(
         onClick = onClick,
-        modifier = Modifier.size(34.dp),
+        modifier = modifier.size(34.dp),
         shape = CircleShape,
         focusedScale = 1.02f,
         focusedContainerColor = Color.White.copy(alpha = 0.28f),

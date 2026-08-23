@@ -13,6 +13,9 @@
 
 ### ✨ New features
 
+- **🗂️ Settings is a spine and a sheet, with your quick switches at the top of it**
+- **🪟 You can reach the docked mini player again**
+- **💬 A separate subtitle size for each of the two players**
 - **⏱️ A dead channel says so, instead of leaving you with a black screen**
 - **🎛️ Every playback setting in one place**
 - **🎚️ Per-playlist Live TV player and Live latency**
