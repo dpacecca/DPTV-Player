@@ -1111,6 +1111,11 @@ class SeriesViewModel(
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             historyDao.remove(pid, MediaType.SERIES, seriesId)
+            // A show is watched one episode at a time, so its trace lives in the EPISODE rows too:
+            // the resume positions Home's Continue watching row is built from, and the episode
+            // history the Continue chip reads. Without these the removed show came straight back.
+            historyDao.removeSeriesEpisodes(pid, seriesId)
+            progressDao.clearSeriesEpisodes(pid, seriesId)
             refreshList() // the History category uses a manual PagingSource — force a rebuild
         }
     }

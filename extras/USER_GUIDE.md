@@ -568,7 +568,8 @@ or **narrow the whole app to just one**.
 
 - Browse **recently watched movies, series and channels**.
 - ✂️ **Remove single item**: **long‑press OK** on any history item and choose **Remove from History** to
-  delete just that entry (keeps the rest).
+  delete just that entry (keeps the rest). For a **series** this also clears where you had got to in its
+  episodes, so the show leaves the Home screen's Continue Watching row and opens at episode 1 next time.
 - 🧹 **Clear entire history** (by type): Settings → Content → **Clear watch history** — wipe all recently‑watched
   items, or just **Live TV, Movies or Series**. Playlists, Favorites and Downloads are untouched.
 

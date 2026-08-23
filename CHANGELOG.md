@@ -113,6 +113,17 @@
   fresh row and kept the stale one, and the table grew for as long as you owned the app. The stale rows
   are now dropped like every other kind; an episode that has not finished loading is still held safely
   and re-attached when it arrives.
+- **Removing a series from Continue watching now removes it from the Home screen too.** A show is
+  watched one episode at a time, so what the Home screen's Continue watching row actually shows is the
+  episode you stopped in the middle of — not the show's history entry. Removing the show cleared only
+  the history entry, so the episode stayed on Home and the top-bar Continue chip still offered it.
+  Both now go with it. Shows removed before this version need removing once more to clear the leftover;
+  and because the resume points go too, the show opens at episode 1 again afterwards.
+- **The "watch next episode" box no longer pops up for the wrong episode.** Clicking *Continue* at the
+  end of an episode started the next one and immediately offered the episode after that — and resuming
+  a part-watched episode sometimes showed the box straight away as well. The player was still reporting
+  the previous item's elapsed time and length for a second or so after a new one began, which reads as
+  "eight seconds from the end". Each new item now starts on a clean clock.
 - **A deleted profile's favorites can no longer surface in someone else's account.** When re-attaching
   records after a sync or a restore, a record whose profile no longer existed was given to whichever
   profile happened to be first — so deleting a profile could push its favorites, history and resume

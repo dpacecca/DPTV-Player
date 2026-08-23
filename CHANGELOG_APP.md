@@ -27,6 +27,8 @@
 - **Two settings put the highlight in the wrong place afterwards**
 - **Back now goes back one level in Settings, not two**
 - **Every series re-sync used to leave a dead resume position behind, for ever**
+- **Removing a series from Continue watching now removes it from the Home screen too**
+- **The "watch next episode" box no longer pops up for the wrong episode**
 - **A deleted profile's favorites can no longer surface in someone else's account**
 - **Rewinding a channel with no recording available now returns to live**
 - **Choosing a category right after typing a channel number sticks**
