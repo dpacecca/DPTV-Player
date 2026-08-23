@@ -40,15 +40,15 @@ import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
+import androidx.compose.ui.focus.onFocusChanged
+import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.format.localizedDecimal
 
 /**
- * Shared HUD primitives: the accent colour, the two time formatters, the button vocabulary and the two
+ * Shared HUD primitives: the two time formatters, the button vocabulary and the two
  * scrub bars. Split out of [PlayerHud] — behaviour unchanged; the declarations the other HUD files reach
  * for are `internal` rather than file-private for that reason alone.
  */
-
-internal val TEAL = Color(0xFF52DBC8)
 
 @Composable
 internal fun formatTime(ms: Long): String = tv.own.owntv.ui.components.formatTimestamp(ms)
@@ -76,10 +76,10 @@ internal fun CircleButton(icon: OwnTVIcon, size: Int, primary: Boolean = false, 
 }
 
 @Composable
-internal fun SpeedButton(label: String, active: Boolean, onClick: () -> Unit) {
+internal fun SpeedButton(label: String, active: Boolean, name: String? = null, onName: (String?) -> Unit = {}, onClick: () -> Unit) {
     FocusableSurface(
         onClick = onClick,
-        modifier = Modifier.heightIn(min = 44.dp),
+        modifier = Modifier.heightIn(min = 44.dp).onFocusChanged { if (it.isFocused) onName(name) },
         shape = RoundedCornerShape(12.dp),
         focusedContainerColor = Color.White.copy(alpha = 0.16f),
         unfocusedContainerColor = Color.Transparent,
@@ -89,7 +89,7 @@ internal fun SpeedButton(label: String, active: Boolean, onClick: () -> Unit) {
         // The rate itself is the icon — the extra ">>" glyph read as a seek control next to the real
         // rewind/forward buttons, and "1.0x" already says everything the button does.
         Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, style = MaterialTheme.typography.labelLarge, color = if (active) TEAL else if (focused) Color.White else Color.White.copy(alpha = 0.78f), fontWeight = FontWeight.SemiBold)
+            Text(label, style = MaterialTheme.typography.labelLarge, color = if (active) OwnTVTheme.colors.accentOnVideo else if (focused) Color.White else Color.White.copy(alpha = 0.78f), fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -101,13 +101,13 @@ internal fun formatSpeed(speed: Double): String = if (speed == 1.0) {
     stringResource(R.string.player_speed, localizedDecimal(speed))
 }
 
-/** The MPV/EXO engine toggle: a one-line pill showing the active engine, flipped on click. Teal while on
- *  the non-default engine (ExoPlayer for VOD; mpv "compatibility" pin for Live). Mirrors [SpeedButton]. */
+/** The MPV/EXO engine toggle: a one-line pill showing the active engine, flipped on click. Accent-coloured
+ *  while on the non-default engine (ExoPlayer for VOD; mpv "compatibility" pin for Live). Mirrors [SpeedButton]. */
 @Composable
-internal fun EngineToggle(label: String, active: Boolean, onClick: () -> Unit) {
+internal fun EngineToggle(label: String, active: Boolean, name: String? = null, onName: (String?) -> Unit = {}, onClick: () -> Unit) {
     FocusableSurface(
         onClick = onClick,
-        modifier = Modifier.heightIn(min = 44.dp),
+        modifier = Modifier.heightIn(min = 44.dp).onFocusChanged { if (it.isFocused) onName(name) },
         shape = RoundedCornerShape(12.dp),
         focusedContainerColor = Color.White.copy(alpha = 0.16f),
         unfocusedContainerColor = Color.Transparent,
@@ -119,17 +119,17 @@ internal fun EngineToggle(label: String, active: Boolean, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            OwnTVIcon(OwnTVIcon.SWAP, tint = if (active) TEAL else if (focused) Color.White else Color.White.copy(alpha = 0.78f), filled = true, modifier = Modifier.size(16.dp))
-            Text(label, style = MaterialTheme.typography.labelLarge, color = if (active) TEAL else if (focused) Color.White else Color.White.copy(alpha = 0.78f), fontWeight = FontWeight.SemiBold)
+            OwnTVIcon(OwnTVIcon.SWAP, tint = if (active) OwnTVTheme.colors.accentOnVideo else if (focused) Color.White else Color.White.copy(alpha = 0.78f), filled = true, modifier = Modifier.size(16.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge, color = if (active) OwnTVTheme.colors.accentOnVideo else if (focused) Color.White else Color.White.copy(alpha = 0.78f), fontWeight = FontWeight.SemiBold)
         }
     }
 }
 
 @Composable
-internal fun CtrlButton(icon: OwnTVIcon, badge: Int? = null, active: Boolean = false, onClick: () -> Unit) {
+internal fun CtrlButton(icon: OwnTVIcon, badge: Int? = null, active: Boolean = false, name: String? = null, onName: (String?) -> Unit = {}, onClick: () -> Unit) {
     FocusableSurface(
         onClick = onClick,
-        modifier = Modifier.size(44.dp),
+        modifier = Modifier.size(44.dp).onFocusChanged { if (it.isFocused) onName(name) },
         shape = RoundedCornerShape(12.dp),
         focusedContainerColor = Color.White.copy(alpha = 0.16f),
         unfocusedContainerColor = Color.Transparent,
@@ -137,13 +137,13 @@ internal fun CtrlButton(icon: OwnTVIcon, badge: Int? = null, active: Boolean = f
         contentAlignment = Alignment.Center,
     ) { focused ->
         Box(contentAlignment = Alignment.Center) {
-            OwnTVIcon(icon, tint = if (active) TEAL else if (focused) Color.White else Color.White.copy(alpha = 0.78f), filled = true, modifier = Modifier.size(22.dp))
+            OwnTVIcon(icon, tint = if (active) OwnTVTheme.colors.accentOnVideo else if (focused) Color.White else Color.White.copy(alpha = 0.78f), filled = true, modifier = Modifier.size(22.dp))
             if (badge != null) {
                 Box(
-                    Modifier.align(Alignment.TopEnd).size(15.dp).clip(CircleShape).background(TEAL),
+                    Modifier.align(Alignment.TopEnd).size(15.dp).clip(CircleShape).background(OwnTVTheme.colors.accentOnVideo),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(stringResource(R.string.common_number_grouped, badge), style = MaterialTheme.typography.labelSmall, color = Color(0xFF003730), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.common_number_grouped, badge), style = MaterialTheme.typography.labelSmall, color = OwnTVTheme.colors.onAccentOnVideo, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -172,11 +172,11 @@ internal fun SeekBar(positionMs: Long, durationMs: Long, stepMs: Long, onSeek: (
         contentAlignment = Alignment.CenterStart,
     ) {
         Box(Modifier.fillMaxWidth().height(if (focused) 6.dp else 4.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = if (focused) 0.4f else 0.22f))) {
-            Box(Modifier.fillMaxWidth(frac).fillMaxHeight().clip(RoundedCornerShape(50)).background(TEAL))
+            Box(Modifier.fillMaxWidth(frac).fillMaxHeight().clip(RoundedCornerShape(50)).background(OwnTVTheme.colors.accentOnVideo))
         }
         if (focused) {
             Box(Modifier.fillMaxWidth(frac), contentAlignment = Alignment.CenterEnd) {
-                Box(Modifier.size(14.dp).clip(CircleShape).background(TEAL))
+                Box(Modifier.size(14.dp).clip(CircleShape).background(OwnTVTheme.colors.accentOnVideo))
             }
             // Time-remaining bubble above the thumb (elapsed is shown at the bar's left, total at the right,
             // so the bubble shows what's LEFT: "-12:34"). Uses a negative offset (not bottom padding) so it
@@ -224,7 +224,7 @@ internal fun LiveTimelineBar(offsetSec: Int, onScrub: (Int) -> Unit) {
         contentAlignment = Alignment.CenterStart,
     ) {
         Box(Modifier.fillMaxWidth().height(if (focused) 6.dp else 4.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = if (focused) 0.4f else 0.22f))) {
-            Box(Modifier.fillMaxWidth(frac).fillMaxHeight().clip(RoundedCornerShape(50)).background(TEAL))
+            Box(Modifier.fillMaxWidth(frac).fillMaxHeight().clip(RoundedCornerShape(50)).background(OwnTVTheme.colors.accentOnVideo))
         }
         // Live-edge marker (red dot) at the far right.
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
@@ -232,7 +232,7 @@ internal fun LiveTimelineBar(offsetSec: Int, onScrub: (Int) -> Unit) {
         }
         if (focused) {
             Box(Modifier.fillMaxWidth(frac), contentAlignment = Alignment.CenterEnd) {
-                Box(Modifier.size(14.dp).clip(CircleShape).background(TEAL))
+                Box(Modifier.size(14.dp).clip(CircleShape).background(OwnTVTheme.colors.accentOnVideo))
             }
             Box(Modifier.fillMaxWidth(frac), contentAlignment = Alignment.CenterEnd) {
                 Box(Modifier.padding(bottom = 30.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp)) {

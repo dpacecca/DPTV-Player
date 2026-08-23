@@ -153,7 +153,10 @@ fun PlayerHud(
     onJumpBack: ((Int) -> Unit)? = null,
     // Archive depth of the current channel, for the exact-time picker's day/HH:MM bounds.
     jumpBackWindowSec: (() -> Int)? = null,
-    timeshiftOffsetSec: Int? = null,
+    // Read as a lambda, not a value: the offset ticks once a second, and taking it as a plain Int?
+    // made the shell (the caller) recompose on every tick just to hand it over. Invoked below, so the
+    // per-second read lands in the HUD's own scope, which already recomposes with the position clock.
+    timeshiftOffsetSec: (() -> Int?)? = null,
     // Direct tune: enter a provider channel number to switch channels. Null = disabled (not live / no channel).
     onTuneToNumber: (suspend (Int) -> DirectTuneResult)? = null,
     // Channel identity key for direct tune: changing this cancels any in-flight submission.
@@ -182,9 +185,12 @@ fun PlayerHud(
     liveEpgCard: (@Composable () -> Unit)? = null,
     // The archive's own wall-clock instant while catch-up/rewind is playing; null means the picture is
     // the present, and only the real clock shows. Drives the second, framed clock at top centre.
-    watchingWallMs: Long? = null,
+    // Lambda for the same reason as [timeshiftOffsetSec]: this instant advances every second too.
+    watchingWallMs: (() -> Long?)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val timeshiftOffset = timeshiftOffsetSec?.invoke()
+    val watchingWall = watchingWallMs?.invoke()
     val layoutDirection = LocalLayoutDirection.current
     val isPlaying by player.isPlaying.collectAsStateWithLifecycle()
     val position by player.position.collectAsStateWithLifecycle()
@@ -523,14 +529,14 @@ fun PlayerHud(
                 // Hidden behind an error overlay along with the rest of the chrome: a clock ticking
                 // over a failure message just draws the eye to the wrong thing.
                 centre = if (error == null) {
-                    { PlayerClock(watchingMs = watchingWallMs) }
+                    { PlayerClock(watchingMs = watchingWall) }
                 } else null,
             )
 
             // Hide the transport (play/seek/prev/next) and bottom bar while an error is up — the error
             // overlay owns the screen with its own Retry, so the play/rewind/forward must not show behind it.
             if (error == null) {
-                CenterControls(player, nav, isPlaying, isLive, onRewindLive, onForwardLive, onGoToLive, timeshiftOffsetSec, playFocus, modifier = Modifier.align(Alignment.Center))
+                CenterControls(player, nav, isPlaying, isLive, onRewindLive, onForwardLive, onGoToLive, timeshiftOffset, playFocus, modifier = Modifier.align(Alignment.Center))
 
                 val reportPosition = formatTime(position)
                 val reportDuration = duration.takeIf { it > 0 }?.let { formatTime(it) }
@@ -540,7 +546,7 @@ fun PlayerHud(
                     player = player, isLive = isLive, position = position, duration = duration,
                     volume = volume, audioCount = audioCount, subCount = subCount, zoomMode = zoomMode,
                     speedLabel = formatSpeed(speed),
-                    onScrubLive = onScrubLive, timeshiftOffsetSec = timeshiftOffsetSec,
+                    onScrubLive = onScrubLive, timeshiftOffsetSec = timeshiftOffset,
                     onOpenJumpBack = if (onJumpBack != null) { { dialog = HudDialog.JUMP_BACK } } else null,
                     compatMode = compatMode, onToggleCompatMode = toggleCompat,
                     vodOnExo = vodOnExo, onToggleVodEngine = toggleVod,

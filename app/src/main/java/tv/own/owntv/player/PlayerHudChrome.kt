@@ -1,5 +1,6 @@
 package tv.own.owntv.player
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -26,12 +27,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -49,6 +53,7 @@ import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.theme.ownTvTween
 
 /**
  * The HUD's chrome: the top strip, the channel/direct-tune OSD cards, the centre transport and the
@@ -227,6 +232,8 @@ internal fun ChannelNumberCard(digits: String, error: String? = null, modifier: 
         label = "tuneCaretAlpha",
     )
     val countdown = remember { Animatable(0f) }
+    // Captured before the draw lambda: a DrawScope is not a composable, so it can't read the theme.
+    val accent = OwnTVTheme.colors.accentOnVideo
     LaunchedEffect(digits, error) {
         if (error != null) { countdown.snapTo(0f); return@LaunchedEffect }
         countdown.snapTo(1f)
@@ -240,14 +247,14 @@ internal fun ChannelNumberCard(digits: String, error: String? = null, modifier: 
                 val barHeight = 3.dp.toPx()
                 val top = Offset(0f, size.height - barHeight)
                 drawRect(Color.White.copy(alpha = 0.08f), topLeft = top, size = Size(size.width, barHeight))
-                drawRect(TEAL, topLeft = top, size = Size(size.width * countdown.value, barHeight))
+                drawRect(accent, topLeft = top, size = Size(size.width * countdown.value, barHeight))
             }
             .padding(bottom = 3.dp),
     ) {
         Column(Modifier.padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp)) {
             Text(
                 stringResource(R.string.player_channel_label),
-                style = MaterialTheme.typography.labelSmall, color = TEAL, fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelSmall, color = accent, fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp,
             )
             Row(verticalAlignment = Alignment.Bottom) {
@@ -259,7 +266,7 @@ internal fun ChannelNumberCard(digits: String, error: String? = null, modifier: 
                 if (error == null) {
                     Box(
                         Modifier.padding(start = 4.dp, bottom = 4.dp).width(3.dp).height(22.dp)
-                            .clip(RoundedCornerShape(2.dp)).background(TEAL.copy(alpha = caretAlpha)),
+                            .clip(RoundedCornerShape(2.dp)).background(accent.copy(alpha = caretAlpha)),
                     )
                 }
             }
@@ -287,7 +294,7 @@ internal fun CenterControls(
             Text(
                 if (timeshiftOffsetSec <= 1) stringResource(R.string.player_at_live_edge) else stringResource(R.string.player_behind_live, mmss(timeshiftOffsetSec)),
                 style = MaterialTheme.typography.labelLarge,
-                color = OwnTVTheme.colors.accent,
+                color = OwnTVTheme.colors.accentOnVideo,
             )
             Spacer(Modifier.height(12.dp))
         }
@@ -324,6 +331,9 @@ internal fun BottomBar(
     onOpenDialog: (HudDialog) -> Unit, onPip: (() -> Unit)?, onAudioMode: (() -> Unit)?, onBack: () -> Unit, modifier: Modifier = Modifier,
 ) {
     val seekStep by player.seekStepMs.collectAsStateWithLifecycle() // Settings -> Seek step
+    // The name of whichever button currently holds focus. Twelve unlabelled glyphs is a lot to identify
+    // by pressing, and one of them (the engine toggle) restarts the stream when pressed.
+    var focusedName by remember { mutableStateOf<String?>(null) }
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp)) {
         when {
             // Catch-up live channel → a scrubbable live timeline (last LIVE_WINDOW up to the live edge).
@@ -342,44 +352,64 @@ internal fun BottomBar(
                 Spacer(Modifier.height(10.dp))
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().focusGroup()) {
+        // Height reserved whether or not there is a name to show, so the bar never shifts under the
+        // user's thumb as focus enters or leaves the row. Crossfade follows the Animations setting, so
+        // with motion Off the name simply appears.
+        Box(Modifier.fillMaxWidth().height(18.dp), contentAlignment = Alignment.CenterStart) {
+            Crossfade(focusedName, animationSpec = ownTvTween(150), label = "hudControlName") { name ->
+                Text(
+                    name.orEmpty(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.82f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().focusGroup()
+                // Clear the name when focus leaves the whole row, not per button: a button reporting
+                // its own unfocus would wipe the name the next button had just set.
+                .onFocusChanged { if (!it.hasFocus) focusedName = null },
+        ) {
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                CtrlButton(volumeIcon(volume)) { onOpenDialog(HudDialog.VOLUME) }
-                SpeedButton(label = speedLabel, active = speedLabel != stringResource(R.string.player_speed_normal_short)) { onOpenDialog(HudDialog.SPEED) }
-                CtrlButton(OwnTVIcon.SUBTITLE, badge = subCount.takeIf { it > 0 }) { onOpenDialog(HudDialog.SUBS) }
-                CtrlButton(OwnTVIcon.AUDIO, badge = audioCount.takeIf { it > 1 }) { onOpenDialog(HudDialog.AUDIO) }
+                CtrlButton(volumeIcon(volume), name = stringResource(R.string.player_volume), onName = { focusedName = it }) { onOpenDialog(HudDialog.VOLUME) }
+                SpeedButton(label = speedLabel, active = speedLabel != stringResource(R.string.player_speed_normal_short), name = stringResource(R.string.settings_playback_speed), onName = { focusedName = it }) { onOpenDialog(HudDialog.SPEED) }
+                CtrlButton(OwnTVIcon.SUBTITLE, badge = subCount.takeIf { it > 0 }, name = stringResource(R.string.player_subtitles), onName = { focusedName = it }) { onOpenDialog(HudDialog.SUBS) }
+                CtrlButton(OwnTVIcon.AUDIO, badge = audioCount.takeIf { it > 1 }, name = stringResource(R.string.player_audio_track), onName = { focusedName = it }) { onOpenDialog(HudDialog.AUDIO) }
                 // Favorite the current channel/movie/series without leaving the stream (teal heart = on).
-                if (onToggleFavorite != null) CtrlButton(OwnTVIcon.FAVORITE, active = favorite) { onToggleFavorite() }
+                if (onToggleFavorite != null) CtrlButton(OwnTVIcon.FAVORITE, active = favorite, name = stringResource(R.string.content_favorite), onName = { focusedName = it }) { onToggleFavorite() }
                 // "Go back to…" — jump straight to a time in this channel's archive. Only on catch-up
                 // channels. CATCHUP (a TV with a replay loop): REWIND is already the transport button
                 // beside it, and a plain clock would not say which of the two time controls this is.
-                if (onOpenJumpBack != null) CtrlButton(OwnTVIcon.CATCHUP) { onOpenJumpBack() }
+                if (onOpenJumpBack != null) CtrlButton(OwnTVIcon.CATCHUP, name = stringResource(R.string.content_catchup_jump), onName = { focusedName = it }) { onOpenJumpBack() }
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 // Live "compatibility mode" (Live TV + channels opened from the Guide): pin this channel
                 // to mpv. The pill shows the active engine and flips on click (teal while pinned to mpv).
                 if (onToggleCompatMode != null) {
-                    EngineToggle(label = stringResource(if (compatMode == true) R.string.player_engine_mpv else R.string.player_engine_exo), active = compatMode == true) { onToggleCompatMode() }
+                    EngineToggle(label = stringResource(if (compatMode == true) R.string.player_engine_mpv else R.string.player_engine_exo), active = compatMode == true, name = stringResource(R.string.player_control_engine), onName = { focusedName = it }) { onToggleCompatMode() }
                 }
                 // VOD engine toggle (Movies/Series): flip THIS movie/episode between mpv and ExoPlayer.
                 // The pill shows the active engine (teal while ExoPlayer owns playback).
                 if (onToggleVodEngine != null) {
-                    EngineToggle(label = stringResource(if (vodOnExo == true) R.string.player_engine_exo else R.string.player_engine_mpv), active = vodOnExo == true) { onToggleVodEngine() }
+                    EngineToggle(label = stringResource(if (vodOnExo == true) R.string.player_engine_exo else R.string.player_engine_mpv), active = vodOnExo == true, name = stringResource(R.string.player_control_engine), onName = { focusedName = it }) { onToggleVodEngine() }
                 }
                 // Aspect/zoom works in every mode now — direct mode resizes the surface view itself
                 // (see MpvVideoSurface), GL mode scales internally.
-                CtrlButton(OwnTVIcon.ASPECT, active = zoomMode != ZoomMode.FIT) { onOpenDialog(HudDialog.ZOOM) }
-                if (onPip != null) CtrlButton(OwnTVIcon.PIP) { onPip() }
-                if (onAudioMode != null) CtrlButton(OwnTVIcon.HEADPHONES) { onAudioMode() }
+                CtrlButton(OwnTVIcon.ASPECT, active = zoomMode != ZoomMode.FIT, name = stringResource(R.string.settings_player_zoom), onName = { focusedName = it }) { onOpenDialog(HudDialog.ZOOM) }
+                if (onPip != null) CtrlButton(OwnTVIcon.PIP, name = stringResource(R.string.settings_mini_player), onName = { focusedName = it }) { onPip() }
+                if (onAudioMode != null) CtrlButton(OwnTVIcon.HEADPHONES, name = stringResource(R.string.player_audio_only_title), onName = { focusedName = it }) { onAudioMode() }
                 // Stream technical info (codec/res/HDR/bitrate/decoder/audio/buffer) — toggles the overlay.
                 // Parked at the far right, where the redundant exit-fullscreen button used to sit (Back
                 // already leaves the player, so that button never did anything the remote couldn't).
-                if (onInfo != null) CtrlButton(OwnTVIcon.INFO, active = infoOn) { onInfo() }
+                if (onInfo != null) CtrlButton(OwnTVIcon.INFO, active = infoOn, name = stringResource(R.string.player_stream_info), onName = { focusedName = it }) { onInfo() }
                 // "Report this stream": copies the readout the user is looking at into the playback log,
                 // so a "this channel judders" complaint carries the codec/decoder/bitrate that caused it.
                 // Only offered while the info overlay is open — there is nothing to report otherwise, and
                 // the bar stays as short as it was for everyone who never needs this.
-                if (infoOn && onReport != null) CtrlButton(OwnTVIcon.SHARE) { onReport() }
+                if (infoOn && onReport != null) CtrlButton(OwnTVIcon.SHARE, name = stringResource(R.string.player_reason_stream_report), onName = { focusedName = it }) { onReport() }
             }
         }
     }
@@ -413,7 +443,7 @@ internal fun NextEpisodeCard(
         Text(
             stringResource(R.string.player_next_episode, seconds),
             style = MaterialTheme.typography.labelLarge,
-            color = colors.primary,
+            color = colors.accentOnVideo,
             fontWeight = FontWeight.Bold,
         )
         Spacer(Modifier.height(4.dp))

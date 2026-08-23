@@ -92,6 +92,34 @@
   left/centre/right — so the option you highlight sits where the mini player will. **Reset** returns
   both the size and the position to their defaults in one press.
 
+### 🏷️ The player's buttons tell you what they are
+
+- **Every button on the player bar names itself when you highlight it.** The bar can hold twelve
+  unlabelled icons, and some of them were only identifiable by pressing — including the engine
+  toggle, which restarts the stream. The name now appears just above the row as you move along it.
+  The line is always there, so the bar never jumps as focus arrives or leaves, and with **Reduce
+  Animations** on the name appears instantly instead of fading.
+- **Nothing moved.** The buttons are in exactly the same order and the same left/right groups as
+  before.
+
+### 🎨 The player follows your accent colour
+
+- **The player was always teal, whatever accent you had chosen.** Pick violet and you got a violet
+  app with a teal player: the seek bar, the active buttons, the speed and engine pills, the subtitle
+  count badge and the channel-number card were all a fixed colour. They now use your accent, the same
+  as the rest of the app. Custom hex accents are included.
+- **It stays readable on the light theme.** The player's controls sit on dark video, so they use the
+  brighter version of your accent rather than the deeper one the light theme uses on its own pages.
+
+### ⚡ Settings opens faster, and catch-up stops redrawing the screen
+
+- **The Settings page only builds the rows you can see.** It used to build all forty rows and headings
+  every time it opened, and again on every change. Everything is where it was; it just arrives
+  quicker, which is most noticeable on a slower TV.
+- **A rewound catch-up programme no longer redraws the whole screen once a second.** The two clocks in
+  the player tick every second, and the entire screen behind them was being rebuilt each tick just to
+  move them along. Only the clocks update now.
+
 ### 🐛 Fixes
 
 - **Focus no longer slides across the screen when you leave a settings page.** Coming back from the

@@ -267,7 +267,7 @@ internal fun VolumeDialog(player: PlaybackEngine, onDismiss: () -> Unit) {
                 Spacer(Modifier.height(20.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     StepButton(stringResource(R.string.common_minus), enabled = volume > 0, modifier = Modifier.focusRequester(steppers.minus)) { player.adjustVolumeByUser(-5) }
-                    Text(stringResource(R.string.player_percent, volume), style = MaterialTheme.typography.headlineLarge, color = TEAL, modifier = Modifier.width(120.dp), textAlign = TextAlign.Center)
+                    Text(stringResource(R.string.player_percent, volume), style = MaterialTheme.typography.headlineLarge, color = colors.accent, modifier = Modifier.width(120.dp), textAlign = TextAlign.Center)
                     StepButton(stringResource(R.string.common_plus), enabled = volume < 150, modifier = Modifier.focusRequester(steppers.plus)) { player.adjustVolumeByUser(5) }
                 }
                 Spacer(Modifier.height(22.dp))
@@ -298,7 +298,7 @@ internal fun SubtitleTimingDialog(player: PlaybackEngine, onDismiss: () -> Unit)
                 Column(Modifier.dialogPanel(width = 560.dp, padding = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(stringResource(R.string.player_subtitle_timing), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     Spacer(Modifier.height(10.dp))
-                    Text(formatSubDelay(delay), style = MaterialTheme.typography.headlineLarge, color = TEAL)
+                    Text(formatSubDelay(delay), style = MaterialTheme.typography.headlineLarge, color = colors.accent)
                     Spacer(Modifier.height(4.dp))
                     Text(
                         when {

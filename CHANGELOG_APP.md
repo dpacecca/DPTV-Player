@@ -20,6 +20,9 @@
 - **🏠 Turn off the video on the Home screen's big card**
 - **⏭️ Catch-up plays on to the next programme**
 - **🪟 Mini player is one popup instead of three screens**
+- **🏷️ The player's buttons tell you what they are**
+- **🎨 The player follows your accent colour**
+- **⚡ Settings opens faster, and catch-up stops redrawing the screen**
 
 ### 🐛 Fixes
 

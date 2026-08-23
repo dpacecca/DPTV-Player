@@ -611,6 +611,9 @@ or **narrow the whole app to just one**.
 
 Bring up the controls in any full‑screen player (press OK / a direction). The bottom bar has:
 
+As you move along the row, **the highlighted button's name appears just above it**, so you never have
+to press one to find out what it is.
+
 | Button | What it does |
 |---|---|
 | **Subtitles** | Pick a subtitle track (incl. **image subtitles**) and set **subtitle delay**. Live channels with **embedded closed captions (CC)** — common on US channels — show a CC track on both engines; on mpv, selecting it briefly switches the channel to software decoding (≤1080p) and hardware decoding returns when CC is turned off. On raw `.ts` channels the CC entry always appears, even when the channel carries no captions. |
@@ -781,6 +784,8 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   - The **Accent colour** dialog has quick presets plus a full colour picker: focus the **hue bar** or the
     **saturation/brightness square**, press **OK** to step in (it glows amber), move with the **D-pad**, then
     **OK/Back** to step out. A live preview shows the result. You can also type an exact **hex code** and **Apply**.
+  - The accent applies inside the **player** too — the seek bar, the active buttons and the badges. On the
+    light theme the player uses the brighter version of your colour, because its controls sit on dark video.
   - ⚠️ Going **below 85% zoom** shows a warning first — lower zoom draws many more items at once, which can
     crash devices with limited memory (e.g. 2 GB TV sticks) with big playlists/EPG. Press **OK** to accept
     and continue, or **Back** to stay at 85%.

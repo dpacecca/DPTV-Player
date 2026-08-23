@@ -32,7 +32,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import tv.own.owntv.R
@@ -220,7 +222,15 @@ fun OwnTVShell(
     }
     // Live rewind / timeshift: whether the live channel supports catch-up, and how far behind live we are.
     val canRewindLive by liveVm.canRewindLive.collectAsStateWithLifecycle()
-    val timeshiftOffset by liveVm.timeshiftOffsetSec.collectAsStateWithLifecycle()
+    // The offset itself ticks once a second while an archive plays. Held as State and deliberately NOT
+    // read here — reading it in the shell's own scope invalidated the whole shell body every second.
+    // It is handed to the HUD as a lambda, so only the HUD reads the ticking value; the shell needs
+    // just the on/off fact, which changes when the user enters or leaves the rewind and no oftener.
+    val timeshiftOffsetState = liveVm.timeshiftOffsetSec.collectAsStateWithLifecycle()
+    val watchingWallState = liveVm.watchingWallMs.collectAsStateWithLifecycle()
+    val timeshifted by remember(liveVm) {
+        liveVm.timeshiftOffsetSec.map { it != null }.distinctUntilChanged()
+    }.collectAsStateWithLifecycle(false)
     // Which section armed the current fullscreen stream — picks whose channel list CH+/CH- step through.
     var zapSource by remember { mutableStateOf<MainSection?>(null) }
     // In-player channel-list overlay (Left while controls hidden, live only).
@@ -938,19 +948,19 @@ fun OwnTVShell(
                     jumpBackWindowSec = if (isTunedLive && canRewindLive) liveVm::currentCatchupWindowSec else null,
                     // Non-null only while an archive is on screen, so movies, episodes and live TV get
                     // the single real clock and catch-up gets the pair.
-                    watchingWallMs = liveVm.watchingWallMs.collectAsStateWithLifecycle().value,
-                    timeshiftOffsetSec = if (isTunedLive) timeshiftOffset else null,
-                    onTuneToNumber = if (directTuneEnabled && isTunedLive && isLiveStream && timeshiftOffset == null && previewChannel != null) liveVm::tuneByNumber else null,
+                    watchingWallMs = { watchingWallState.value },
+                    timeshiftOffsetSec = if (isTunedLive) { { timeshiftOffsetState.value } } else null,
+                    onTuneToNumber = if (directTuneEnabled && isTunedLive && isLiveStream && !timeshifted && previewChannel != null) liveVm::tuneByNumber else null,
                     directTuneContextKey = previewChannel?.id ?: 0L,
                     // Show the ACTUAL running engine (mpv when pinned OR auto-fallen-back), not just the pin —
                     // otherwise an auto-fallback to mpv still read "EXO". true = on mpv (pill shows MPV, teal).
                     compatMode = if (isTunedLive) !liveOnExo else null,
-                    // Hidden while rewound into the archive (same `timeshiftOffset == null` rule direct
+                    // Hidden while rewound into the archive (same `!timeshifted` rule direct
                     // tune follows above): switching engine restarts the channel at the live edge, which
                     // threw the user out of the rewind with the HUD still counting "behind live".
                     // Also hidden for a protected channel (#115): only ExoPlayer can license it, so the
                     // toggle's other position is not a compatibility choice but a guaranteed failure.
-                    onToggleCompatMode = if (isTunedLive && timeshiftOffset == null && previewChannel?.drmConfig == null) liveVm::toggleForceMpv else null,
+                    onToggleCompatMode = if (isTunedLive && !timeshifted && previewChannel?.drmConfig == null) liveVm::toggleForceMpv else null,
                     // VOD engine toggle (movies/series only — live and catch-up channels keep their own
                     // engine handling above): flip the current item between mpv and ExoPlayer.
                     vodOnExo = if (!isLiveStream && !isTunedLive) vodExoActive else null,

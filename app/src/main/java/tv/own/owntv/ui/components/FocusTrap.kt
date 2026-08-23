@@ -2,6 +2,7 @@ package tv.own.owntv.ui.components
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.runtime.Composable
@@ -76,6 +77,32 @@ suspend fun restoreAfterDialogClose(
         if (scrollState != null && scrollState.value != scrollOffset) {
             // scrollTo takes the scroll mutex, so it also cancels a bringIntoView animation in flight.
             runCatching { scrollState.scrollTo(scrollOffset) }
+        }
+        if (!landed) landed = opener != null && runCatching { opener.requestFocus() }.isSuccess
+        if (landed && ++settled > RESTORE_SETTLE_FRAMES) return
+    }
+}
+
+/**
+ * [restoreAfterDialogClose] for a lazy list, where a position is an item index plus an offset into it.
+ *
+ * Same two jobs, one extra consequence: an opener row that is scrolled out of view is not composed at
+ * all, so its [FocusRequester] is unattached and the request is dropped. Re-asserting the position
+ * every frame therefore both holds the list still AND is what puts the row back on screen for the
+ * focus request to land on.
+ */
+suspend fun restoreAfterDialogClose(
+    opener: FocusRequester?,
+    listState: LazyListState,
+    index: Int,
+    offset: Int,
+) {
+    var landed = opener == null
+    var settled = 0
+    repeat(RESTORE_MAX_FRAMES) {
+        withFrameNanos { }
+        if (listState.firstVisibleItemIndex != index || listState.firstVisibleItemScrollOffset != offset) {
+            runCatching { listState.scrollToItem(index, offset) }
         }
         if (!landed) landed = opener != null && runCatching { opener.requestFocus() }.isSuccess
         if (landed && ++settled > RESTORE_SETTLE_FRAMES) return
