@@ -120,6 +120,39 @@
   the player tick every second, and the entire screen behind them was being rebuilt each tick just to
   move them along. Only the clocks update now.
 
+### 🗂️ Settings is two columns, and grouped the way you'd look for things
+
+- **The sections are on the left, their settings on the right.** Settings used to be one long column
+  you scrolled through — everything from Profiles down to About in a single list. It is now the same
+  shape as the rest of the app: pick a section on the left, and only that section's settings show on
+  the right. Nothing is hidden and nothing moved to a different place; there is just far less
+  scrolling to reach anything.
+- **Nine sections instead of six.** The old grouping had one very large "Appearance" bucket and put
+  unrelated things together. The sections are now Profile, Sources & guide, Appearance, Layout &
+  navigation, Content & metadata, Playback, Network, Data & backup, and App. Every row kept its own
+  wording, chip and behaviour — only which heading it sits under changed.
+- **Coming back from a settings page returns you to the exact row**, in the right section, the way it
+  always did.
+- **Search is unchanged.** Typing in the search box still replaces the page with a flat list of
+  matches, each labelled with the section it came from.
+
+### 🎨 Icons that match what they do
+
+- **Eighteen settings rows got the right icon.** Several rows were sharing a picture with something
+  unrelated — Catch-up showed the guide icon, DNS showed a magnifying glass, Weather showed the guide
+  icon, Network showed a share arrow, Refresh now showed a clock. Ten new pictures were drawn for the
+  rows that had nothing suitable to point at: weather, network, text size, backup, refresh, power,
+  motion, glow, warning and list layout. The search results show the same icon as the row they open.
+- **Settings pages keep their colour.** A row's icon used to change colour the moment you opened it —
+  Weather was a grey tile on the settings list and a coloured one inside. Each page's rows now use the
+  colour of the row that opened it, so nothing changes underneath you.
+- **One mark for "make this bigger".** The mini player and the settings list were using two different
+  pictures for the same action. There is now one.
+- **The favourite heart is the same colour everywhere.** It was coral on posters and in Live TV, your
+  accent colour in Movies, Series and Search, and your accent colour again in the player. It is coral
+  in all five places now, so one colour always means "favourite".
+- **The Backup screen's buttons have icons**, like the buttons everywhere else.
+
 ### 🐛 Fixes
 
 - **Focus no longer slides across the screen when you leave a settings page.** Coming back from the

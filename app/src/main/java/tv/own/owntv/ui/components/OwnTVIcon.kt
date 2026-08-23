@@ -22,10 +22,11 @@ enum class OwnTVIcon {
     LIVE_TV, MOVIES, SERIES, DOWNLOADS, MENU, STAR, PLAY, SEARCH, HOME, HISTORY,
     PERSON, ADD, SETTINGS, PALETTE, THEME, ZOOM, PLAYLIST, EPG, VIDEO, SHARE, CHEVRON, FAVORITE,
     PAUSE, REWIND, FORWARD, AUDIO, SUBTITLE, SKIP_NEXT, SKIP_PREVIOUS,
-    BACK, VOLUME_HIGH, VOLUME_LOW, VOLUME_MUTE, ASPECT, FULLSCREEN, FULLSCREEN_EXIT, PIP, CLOSE,
+    BACK, VOLUME_HIGH, VOLUME_LOW, VOLUME_MUTE, ASPECT, PIP, CLOSE,
     SORT, SWAP, HEADPHONES, EXPAND,
     IMAGE, INFO, LANGUAGE, GEAR, SPARKLE,
     CATCHUP,
+    WEATHER, NETWORK, TEXT_SIZE, BACKUP, REFRESH, POWER, MOTION, GLOW, WARNING, LIST_GRID,
 }
 
 @Composable
@@ -345,12 +346,6 @@ fun OwnTVIcon(
                 drawLineStroke(p(17f, 13f), p(17f, 15f), tint, stroke)
                 drawLineStroke(p(17f, 15f), p(15f, 15f), tint, stroke)
             }
-            OwnTVIcon.FULLSCREEN -> {
-                drawLineStroke(p(4f, 9f), p(4f, 4f), tint, stroke); drawLineStroke(p(4f, 4f), p(9f, 4f), tint, stroke)
-                drawLineStroke(p(20f, 9f), p(20f, 4f), tint, stroke); drawLineStroke(p(20f, 4f), p(15f, 4f), tint, stroke)
-                drawLineStroke(p(4f, 15f), p(4f, 20f), tint, stroke); drawLineStroke(p(4f, 20f), p(9f, 20f), tint, stroke)
-                drawLineStroke(p(20f, 15f), p(20f, 20f), tint, stroke); drawLineStroke(p(20f, 20f), p(15f, 20f), tint, stroke)
-            }
             OwnTVIcon.EXPAND -> { // ⤢ open-in-full: diagonal with arrowheads at both ends
                 drawLineStroke(p(6f, 18f), p(18f, 6f), tint, stroke)
                 drawLineStroke(p(18f, 6f), p(12.5f, 6f), tint, stroke)
@@ -366,12 +361,6 @@ fun OwnTVIcon(
                 drawLineStroke(p(9.5f, 12f), p(13f, 15f), tint, stroke)
                 drawLineStroke(p(13f, 15f), p(16f, 11f), tint, stroke)
                 drawLineStroke(p(16f, 11f), p(19.5f, 18f), tint, stroke)
-            }
-            OwnTVIcon.FULLSCREEN_EXIT -> {
-                drawLineStroke(p(9f, 4f), p(9f, 9f), tint, stroke); drawLineStroke(p(9f, 9f), p(4f, 9f), tint, stroke)
-                drawLineStroke(p(15f, 4f), p(15f, 9f), tint, stroke); drawLineStroke(p(15f, 9f), p(20f, 9f), tint, stroke)
-                drawLineStroke(p(9f, 20f), p(9f, 15f), tint, stroke); drawLineStroke(p(9f, 15f), p(4f, 15f), tint, stroke)
-                drawLineStroke(p(15f, 20f), p(15f, 15f), tint, stroke); drawLineStroke(p(15f, 15f), p(20f, 15f), tint, stroke)
             }
             OwnTVIcon.PIP -> {
                 drawRoundRectStroke(p(3f, 5f), p(21f, 19f), 2.5f * s, tint, stroke)
@@ -424,6 +413,84 @@ fun OwnTVIcon(
             }
             drawPath(sparkle, tint, style = Fill)
         }
+            OwnTVIcon.WEATHER -> {
+                // Sun behind a cloud. Lighter than the 2f default: a sun, its rays and a three-lobe
+                // cloud is the busiest glyph in the set, and the rays close up at settings-row size.
+                val thin = Stroke(width = 1.7f * s, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                drawCircleStroke(p(8.2f, 7.2f), 2.8f * s, tint, thin)
+                drawLineStroke(p(8.2f, 2f), p(8.2f, 3.3f), tint, thin)
+                drawLineStroke(p(2.9f, 7.2f), p(4.2f, 7.2f), tint, thin)
+                drawLineStroke(p(4.5f, 3.5f), p(5.4f, 4.4f), tint, thin)
+                drawLineStroke(p(11.9f, 3.5f), p(11f, 4.4f), tint, thin)
+                // The cloud is three arcs plus a flat bottom rather than one Path: the round caps make
+                // the joins continuous, and it keeps the whole shape in the same drawArc vocabulary the
+                // rest of this file uses.
+                drawLineStroke(p(8.5f, 20f), p(17f, 20f), tint, thin)
+                drawArc(tint, 90f, -180f, false, p(13.8f, 13.6f), Size(6.4f * s, 6.4f * s), style = thin)
+                drawArc(tint, -28.4f, -138.6f, false, p(7.98f, 11.08f), Size(9.6f * s, 9.6f * s), style = thin)
+                drawArc(tint, -79.4f, -150f, false, p(4.9f, 14.75f), Size(5.4f * s, 5.4f * s), style = thin)
+            }
+            OwnTVIcon.NETWORK -> {
+                // Globe: equator + two latitudes + one meridian. A share graph reads as "send to".
+                val thin = Stroke(width = 1.7f * s, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                drawCircleStroke(p(12f, 12f), 9f * s, tint, thin)
+                drawLineStroke(p(3.3f, 9f), p(20.7f, 9f), tint, thin)
+                drawLineStroke(p(3.3f, 15f), p(20.7f, 15f), tint, thin)
+                val meridian = Path().apply {
+                    moveTo(p(12f, 3f).x, p(12f, 3f).y)
+                    cubicTo(p(9f, 7f).x, p(9f, 7f).y, p(9f, 17f).x, p(9f, 17f).y, p(12f, 21f).x, p(12f, 21f).y)
+                    cubicTo(p(15f, 17f).x, p(15f, 17f).y, p(15f, 7f).x, p(15f, 7f).y, p(12f, 3f).x, p(12f, 3f).y)
+                }
+                drawPath(meridian, tint, style = thin)
+            }
+            OwnTVIcon.TEXT_SIZE -> { // Big A + small a — a typeface, not a colour.
+                drawLineStroke(p(2f, 19f), p(7f, 5f), tint, stroke)
+                drawLineStroke(p(7f, 5f), p(12f, 19f), tint, stroke)
+                drawLineStroke(p(3.7f, 14.6f), p(10.3f, 14.6f), tint, stroke)
+                drawLineStroke(p(14.5f, 19f), p(17.7f, 11f), tint, stroke)
+                drawLineStroke(p(17.7f, 11f), p(21f, 19f), tint, stroke)
+                drawLineStroke(p(15.6f, 16.2f), p(19.8f, 16.2f), tint, stroke)
+            }
+            OwnTVIcon.BACKUP -> { // Archive box: lid, body, handle. A backup is not a download.
+                drawRoundRectStroke(p(3f, 4f), p(21f, 8.5f), 1.5f * s, tint, stroke)
+                // The body's top edge lands exactly on the lid's bottom edge, so the two coincide
+                // instead of drawing a second line.
+                drawRoundRectStroke(p(5f, 8.5f), p(19f, 20.8f), 1.8f * s, tint, stroke)
+                drawLineStroke(p(9.8f, 12.6f), p(14.2f, 12.6f), tint, stroke)
+            }
+            OwnTVIcon.REFRESH -> { // Circular arrow, head drawn as the usual corner marker.
+                drawArc(tint, 0f, 314.1f, false, p(3.5f, 3.5f), Size(17f * s, 17f * s), style = stroke)
+                drawLineStroke(p(20.8f, 3.6f), p(20.8f, 8.6f), tint, stroke)
+                drawLineStroke(p(20.8f, 8.6f), p(15.8f, 8.6f), tint, stroke)
+            }
+            OwnTVIcon.POWER -> {
+                drawLineStroke(p(12f, 3f), p(12f, 11.5f), tint, stroke)
+                drawArc(tint, -127.3f, -285.4f, false, p(4.4f, 5.05f), Size(15.2f * s, 15.2f * s), style = stroke)
+            }
+            OwnTVIcon.MOTION -> { // A body sweeping round, with speed lines trailing behind it.
+                drawArc(tint, -117.1f, 282.8f, false, p(5.15f, 4.52f), Size(16f * s, 16f * s), style = stroke)
+                drawLineStroke(p(2.5f, 8.5f), p(7.5f, 8.5f), tint, stroke)
+                drawLineStroke(p(1.6f, 12.4f), p(6.6f, 12.4f), tint, stroke)
+                drawLineStroke(p(2.8f, 16.3f), p(6.8f, 16.3f), tint, stroke)
+            }
+            OwnTVIcon.GLOW -> { // Light spilling from a centre: a solid core inside two pairs of arcs.
+                drawCircle(tint, 3.2f * s, p(12f, 12f))
+                drawArc(tint, -134.2f, -91.6f, false, p(5.89f, 6f), Size(12f * s, 12f * s), style = stroke)
+                drawArc(tint, -45.8f, 91.6f, false, p(6.12f, 6f), Size(12f * s, 12f * s), style = stroke)
+                drawArc(tint, -134.6f, -90.8f, false, p(1.51f, 1.6f), Size(20.8f * s, 20.8f * s), style = stroke)
+                drawArc(tint, -45.4f, 90.8f, false, p(1.69f, 1.6f), Size(20.8f * s, 20.8f * s), style = stroke)
+            }
+            OwnTVIcon.WARNING -> { // A clock read as "history" on the error log; a triangle cannot.
+                drawPath(triangle(p(12f, 3.6f), p(21.8f, 20.4f), p(2.2f, 20.4f)), tint, style = stroke)
+                drawLineStroke(p(12f, 10f), p(12f, 14.6f), tint, stroke)
+                drawCircle(tint, 1.2f * s, p(12f, 17.8f))
+            }
+            OwnTVIcon.LIST_GRID -> { // Four tiles — the browsing lists themselves.
+                drawRoundRectStroke(p(3f, 4f), p(10.5f, 10.5f), 1.5f * s, tint, stroke)
+                drawRoundRectStroke(p(13.5f, 4f), p(21f, 10.5f), 1.5f * s, tint, stroke)
+                drawRoundRectStroke(p(3f, 13.5f), p(10.5f, 20f), 1.5f * s, tint, stroke)
+                drawRoundRectStroke(p(13.5f, 13.5f), p(21f, 20f), 1.5f * s, tint, stroke)
+            }
     }
     }
 }

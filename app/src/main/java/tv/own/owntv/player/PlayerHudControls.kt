@@ -126,7 +126,17 @@ internal fun EngineToggle(label: String, active: Boolean, name: String? = null, 
 }
 
 @Composable
-internal fun CtrlButton(icon: OwnTVIcon, badge: Int? = null, active: Boolean = false, name: String? = null, onName: (String?) -> Unit = {}, onClick: () -> Unit) {
+internal fun CtrlButton(
+    icon: OwnTVIcon,
+    badge: Int? = null,
+    active: Boolean = false,
+    // The favourite heart stays coral here instead of taking the accent, so one colour means
+    // "favourite" everywhere in the app — browse rows, posters and the player alike.
+    activeTint: Color = OwnTVTheme.colors.accentOnVideo,
+    name: String? = null,
+    onName: (String?) -> Unit = {},
+    onClick: () -> Unit,
+) {
     FocusableSurface(
         onClick = onClick,
         modifier = Modifier.size(44.dp).onFocusChanged { if (it.isFocused) onName(name) },
@@ -137,7 +147,7 @@ internal fun CtrlButton(icon: OwnTVIcon, badge: Int? = null, active: Boolean = f
         contentAlignment = Alignment.Center,
     ) { focused ->
         Box(contentAlignment = Alignment.Center) {
-            OwnTVIcon(icon, tint = if (active) OwnTVTheme.colors.accentOnVideo else if (focused) Color.White else Color.White.copy(alpha = 0.78f), filled = true, modifier = Modifier.size(22.dp))
+            OwnTVIcon(icon, tint = if (active) activeTint else if (focused) Color.White else Color.White.copy(alpha = 0.78f), filled = true, modifier = Modifier.size(22.dp))
             if (badge != null) {
                 Box(
                     Modifier.align(Alignment.TopEnd).size(15.dp).clip(CircleShape).background(OwnTVTheme.colors.accentOnVideo),

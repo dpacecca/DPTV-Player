@@ -228,7 +228,7 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             if (androidTvHomeEnabled) {
                 item {
                     Row2(
-                        icon = OwnTVIcon.SHARE,
+                        icon = OwnTVIcon.REFRESH,
                         title = stringResource(R.string.settings_refresh_now),
                         desc = stringResource(R.string.settings_refresh_description),
                         chip = when (tvHomeRefresh) {

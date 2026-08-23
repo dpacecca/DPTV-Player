@@ -66,6 +66,8 @@ import tv.own.owntv.features.shell.components.AutoFrameRateWarningDialog
 import tv.own.owntv.features.shell.components.LivePreviewPanelHiddenDialog
 import tv.own.owntv.features.shell.components.surroundModeLabel
 import tv.own.owntv.player.SurroundMode
+import tv.own.owntv.features.shell.components.LocalSettingsRowTone
+import tv.own.owntv.features.shell.components.colors
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
@@ -1135,10 +1137,13 @@ internal fun Row2(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // Tile tone comes from the sub-screen, not the row, so these match the root row that
+            // opened the screen instead of always being the accent.
+            val (tileBg, tileOn) = LocalSettingsRowTone.current.colors()
             Box(
-                modifier = Modifier.size(Dimens.IconTileSize).clip(RoundedCornerShape(Dimens.IconTileCorner)).background(colors.primaryContainer),
+                modifier = Modifier.size(Dimens.IconTileSize).clip(RoundedCornerShape(Dimens.IconTileCorner)).background(tileBg),
                 contentAlignment = Alignment.Center,
-            ) { OwnTVIcon(icon = icon, tint = colors.onPrimaryContainer, modifier = Modifier.size(22.dp)) }
+            ) { OwnTVIcon(icon = icon, tint = tileOn, modifier = Modifier.size(22.dp)) }
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                 if (desc != null) Text(desc, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)

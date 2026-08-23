@@ -42,6 +42,7 @@ import tv.own.owntv.core.backup.BackupManager
 import tv.own.owntv.ui.components.BrowseMode
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
+import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -157,8 +158,8 @@ fun BackupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(24.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OwnTVButton(stringResource(R.string.settings_backup_export_button), onClick = { dialogReturn = firstFocus; showExportChooser = true }, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(firstFocus))
-            OwnTVButton(stringResource(R.string.settings_backup_restore_button), onClick = { dialogReturn = restoreBtnFocus; showRestoreChooser = true }, style = OwnTVButtonStyle.SECONDARY, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(restoreBtnFocus))
+            OwnTVButton(stringResource(R.string.settings_backup_export_button), onClick = { dialogReturn = firstFocus; showExportChooser = true }, icon = OwnTVIcon.BACKUP, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(firstFocus))
+            OwnTVButton(stringResource(R.string.settings_backup_restore_button), onClick = { dialogReturn = restoreBtnFocus; showRestoreChooser = true }, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.REFRESH, enabled = state != BackupViewModel.State.Working, modifier = Modifier.focusRequester(restoreBtnFocus))
         }
         Spacer(Modifier.height(20.dp))
 

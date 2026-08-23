@@ -1035,7 +1035,7 @@ private fun MovieListRow(
                 }
             }
             if (isFavorite) {
-                OwnTVIcon(OwnTVIcon.FAVORITE, tint = colors.primary, modifier = Modifier.size(18.dp))
+                OwnTVIcon(OwnTVIcon.FAVORITE, tint = colors.favorite, filled = true, modifier = Modifier.size(18.dp))
             }
         }
     }

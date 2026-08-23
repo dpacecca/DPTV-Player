@@ -23,6 +23,8 @@
 - **🏷️ The player's buttons tell you what they are**
 - **🎨 The player follows your accent colour**
 - **⚡ Settings opens faster, and catch-up stops redrawing the screen**
+- **🗂️ Settings is two columns, and grouped the way you'd look for things**
+- **🎨 Icons that match what they do**
 
 ### 🐛 Fixes
 

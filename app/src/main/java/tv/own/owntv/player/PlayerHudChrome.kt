@@ -378,8 +378,9 @@ internal fun BottomBar(
                 SpeedButton(label = speedLabel, active = speedLabel != stringResource(R.string.player_speed_normal_short), name = stringResource(R.string.settings_playback_speed), onName = { focusedName = it }) { onOpenDialog(HudDialog.SPEED) }
                 CtrlButton(OwnTVIcon.SUBTITLE, badge = subCount.takeIf { it > 0 }, name = stringResource(R.string.player_subtitles), onName = { focusedName = it }) { onOpenDialog(HudDialog.SUBS) }
                 CtrlButton(OwnTVIcon.AUDIO, badge = audioCount.takeIf { it > 1 }, name = stringResource(R.string.player_audio_track), onName = { focusedName = it }) { onOpenDialog(HudDialog.AUDIO) }
-                // Favorite the current channel/movie/series without leaving the stream (teal heart = on).
-                if (onToggleFavorite != null) CtrlButton(OwnTVIcon.FAVORITE, active = favorite, name = stringResource(R.string.content_favorite), onName = { focusedName = it }) { onToggleFavorite() }
+                // Favorite the current channel/movie/series without leaving the stream (coral heart = on,
+                // the same colour the marker has on posters and in browse rows).
+                if (onToggleFavorite != null) CtrlButton(OwnTVIcon.FAVORITE, active = favorite, activeTint = OwnTVTheme.colors.favorite, name = stringResource(R.string.content_favorite), onName = { focusedName = it }) { onToggleFavorite() }
                 // "Go back to…" — jump straight to a time in this channel's archive. Only on catch-up
                 // channels. CATCHUP (a TV with a replay loop): REWIND is already the transport button
                 // beside it, and a plain clock would not say which of the two time controls this is.

@@ -81,21 +81,21 @@ fun WeatherSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         GroupLabel(stringResource(R.string.settings_top_bar_weather))
         Row2(
-            icon = OwnTVIcon.EPG, title = stringResource(R.string.settings_show_weather),
+            icon = OwnTVIcon.WEATHER, title = stringResource(R.string.settings_show_weather),
             desc = stringResource(R.string.settings_show_weather_description),
             chip = if (enabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = enabled,
             modifier = Modifier.focusRequester(firstFocus),
             onClick = { vm.setWeatherEnabled(!enabled) },
         )
         Row2(
-            icon = OwnTVIcon.EPG, title = stringResource(R.string.settings_custom_location),
+            icon = OwnTVIcon.WEATHER, title = stringResource(R.string.settings_custom_location),
             desc = stringResource(R.string.settings_custom_location_description),
             chip = location.ifBlank { stringResource(R.string.settings_auto) }, primaryChip = false, chevron = true,
             modifier = Modifier.focusRequester(locationRowFocus),
             onClick = { showLocation = true },
         )
         Row2(
-            icon = OwnTVIcon.EPG, title = stringResource(R.string.settings_temperature_unit),
+            icon = OwnTVIcon.WEATHER, title = stringResource(R.string.settings_temperature_unit),
             desc = stringResource(R.string.settings_temperature_description),
             chip = stringResource(if (fahrenheit) R.string.settings_degree_fahrenheit else R.string.settings_degree_celsius), primaryChip = true,
             onClick = { vm.setWeatherFahrenheit(!fahrenheit) },

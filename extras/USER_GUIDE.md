@@ -11,6 +11,12 @@ obvious at first glance — once you know them, the app is a lot faster to live 
 > column is the **navigation panel** (Search · Home · Live TV · Movies · Series · Downloads · Guide ·
 > Settings). Press **Left** from a content list to jump back to it.
 
+> Inside **Settings**, the sections are their own column on the left — Profile · Sources & guide ·
+> Appearance · Layout & navigation · Content & metadata · Playback · Network · Data & backup · App.
+> Move **Up/Down** to pick a section (the settings on the right change as you go), then **Right** to
+> reach them, and **Left** to come back to the sections. The search box at the top searches every
+> setting in every section at once.
+
 ---
 
 ## 🌍 App language & first-run setup

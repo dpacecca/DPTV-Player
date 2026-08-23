@@ -106,7 +106,7 @@ fun MiniPlayer(
             MiniBtn(if (isPlaying) OwnTVIcon.PAUSE else OwnTVIcon.PLAY) { player.togglePlayPause() }
             // Single mute/unmute toggle — volume icon (not the audio-track icon).
             MiniBtn(if (volume <= 0) OwnTVIcon.VOLUME_MUTE else OwnTVIcon.VOLUME_HIGH, onClick = { player.toggleMute() })
-            MiniBtn(OwnTVIcon.FULLSCREEN, onClick = onExpand)
+            MiniBtn(OwnTVIcon.EXPAND, onClick = onExpand)
             MiniBtn(OwnTVIcon.CLOSE, onClick = onClose)
         }
     }
