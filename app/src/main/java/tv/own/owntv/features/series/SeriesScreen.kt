@@ -88,6 +88,9 @@ import tv.own.owntv.ui.components.InAppToast
 import tv.own.owntv.ui.components.rememberInAppToast
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
+import tv.own.owntv.ui.components.ContentMenu
+import tv.own.owntv.ui.components.MenuAction
+import tv.own.owntv.ui.components.arranged
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.PosterCard
@@ -193,28 +196,33 @@ private fun SeriesContextMenu(
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
-            OwnTVButton(
-                if (isFavorite) stringResource(R.string.content_remove_favourite) else stringResource(R.string.content_add_favourite),
-                onClick = onToggleFavorite, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.FAVORITE,
-                modifier = Modifier.fillMaxWidth().focusRequester(focus),
-            )
-            if (canMove) OwnTVButton(stringResource(R.string.content_move), onClick = onMove, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            if (canMove) OwnTVButton(stringResource(R.string.content_move_to_category), onClick = onMoveToCategory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            if (isHistory) OwnTVButton(stringResource(R.string.content_remove_history), onClick = onRemoveFromHistory, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            OwnTVButton(stringResource(R.string.common_hide), onClick = onHide, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            OwnTVButton(stringResource(R.string.content_download_all_episodes), onClick = onDownload, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.DOWNLOADS, modifier = Modifier.fillMaxWidth())
-            if (hasTmdbDetails) {
-                OwnTVButton(stringResource(R.string.content_tmdb_details), onClick = onShowDetails, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.MENU, modifier = Modifier.fillMaxWidth())
+            // The menu as data: same actions, same gating, same order as the buttons that used to be
+            // written out here one by one. Close is not in the list — it stays pinned last.
+            val actions = buildList {
+                add(MenuAction("favourite", if (isFavorite) stringResource(R.string.content_remove_favourite) else stringResource(R.string.content_add_favourite), OwnTVIcon.FAVORITE, onClick = onToggleFavorite))
+                if (canMove) add(MenuAction("move", stringResource(R.string.content_move), onClick = onMove))
+                if (canMove) add(MenuAction("move_to_category", stringResource(R.string.content_move_to_category), onClick = onMoveToCategory))
+                if (isHistory) add(MenuAction("remove_history", stringResource(R.string.content_remove_history), onClick = onRemoveFromHistory))
+                add(MenuAction("hide", stringResource(R.string.common_hide), onClick = onHide))
+                add(MenuAction("download", stringResource(R.string.content_download_all_episodes), OwnTVIcon.DOWNLOADS, onClick = onDownload))
+                if (hasTmdbDetails) add(MenuAction("tmdb_details", stringResource(R.string.content_tmdb_details), OwnTVIcon.MENU, onClick = onShowDetails))
+                // Play Trailer (§7.3 U4) — only when TMDB actually has a trailer for this show (§11.1 gating).
+                trailerKey?.let { key -> add(MenuAction("play_trailer", stringResource(R.string.content_play_trailer)) { onPlayTrailer(key) }) }
+                // Refetch TMDB details (§11.2 U5a) — clear a wrong/stale match (or a 7-day "no match" cache) and re-search.
+                if (canRefetchTmdb) {
+                    add(MenuAction("refetch_tmdb", stringResource(R.string.content_refetch_tmdb), onClick = onRefetch))
+                    // Set TMDB name (§11.2 U5b) — hand-type the exact TMDB title when the auto-match is wrong.
+                    add(MenuAction("set_tmdb_name", stringResource(R.string.content_set_tmdb_name), onClick = onSetTmdbName))
+                }
             }
-            // Play Trailer (§7.3 U4) — only when TMDB actually has a trailer for this show (§11.1 gating).
-            trailerKey?.let { key ->
-                OwnTVButton(stringResource(R.string.content_play_trailer), onClick = { onPlayTrailer(key) }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            }
-            // Refetch TMDB details (§11.2 U5a) — clear a wrong/stale match (or a 7-day "no match" cache) and re-search.
-            if (canRefetchTmdb) {
-                OwnTVButton(stringResource(R.string.content_refetch_tmdb), onClick = onRefetch, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-                // Set TMDB name (§11.2 U5b) — hand-type the exact TMDB title when the auto-match is wrong.
-                OwnTVButton(stringResource(R.string.content_set_tmdb_name), onClick = onSetTmdbName, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+            arranged(ContentMenu.SERIES, actions).forEachIndexed { index, action ->
+                OwnTVButton(
+                    action.label,
+                    onClick = action.onClick,
+                    style = OwnTVButtonStyle.SECONDARY,
+                    icon = action.icon,
+                    modifier = Modifier.fillMaxWidth().then(if (index == 0) Modifier.focusRequester(focus) else Modifier),
+                )
             }
             Spacer(Modifier.height(4.dp))
             OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, modifier = Modifier.fillMaxWidth())
@@ -945,29 +953,28 @@ private fun EpisodeContextMenu(
         ) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
-            OwnTVButton(stringResource(R.string.content_download), onClick = onDownload, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.DOWNLOADS, modifier = Modifier.fillMaxWidth().focusRequester(focus))
-            // Phase B: one-off external playback, independent of the global "External player" toggle.
-            OwnTVButton(
-                stringResource(R.string.content_play_external), onClick = onPlayExternal, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.PLAY,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            // Manual override of the ≥95% auto-detected watched state (option 2 of the design pass).
-            OwnTVButton(
-                if (watched) stringResource(R.string.content_mark_unwatched) else stringResource(R.string.content_mark_watched),
-                onClick = onToggleWatched,
-                style = OwnTVButtonStyle.SECONDARY,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            if (hasTmdbDetails) {
-                OwnTVButton(stringResource(R.string.content_tmdb_details), onClick = onShowDetails, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.MENU, modifier = Modifier.fillMaxWidth())
+            // The menu as data: same actions, same gating, same order as the buttons that used to be
+            // written out here one by one. Close is not in the list — it stays pinned last.
+            val actions = buildList {
+                add(MenuAction("download", stringResource(R.string.content_download), OwnTVIcon.DOWNLOADS, onClick = onDownload))
+                // Phase B: one-off external playback, independent of the global "External player" toggle.
+                add(MenuAction("play_external", stringResource(R.string.content_play_external), OwnTVIcon.PLAY, onClick = onPlayExternal))
+                // Manual override of the ≥95% auto-detected watched state (option 2 design pass).
+                add(MenuAction("mark_watched", if (watched) stringResource(R.string.content_mark_unwatched) else stringResource(R.string.content_mark_watched), onClick = onToggleWatched))
+                if (hasTmdbDetails) add(MenuAction("tmdb_details", stringResource(R.string.content_tmdb_details), OwnTVIcon.MENU, onClick = onShowDetails))
+                // Refetch TMDB details (§11.2 U5a) — clears this episode's cache AND its show's match, then re-searches.
+                if (canRefetchTmdb) add(MenuAction("refetch_tmdb", stringResource(R.string.content_refetch_tmdb), onClick = onRefetch))
+                // Delete subtitles — only when this episode has downloaded OpenSubtitles subs (§11).
+                onDeleteSubtitles?.let { add(MenuAction("delete_subtitles", stringResource(R.string.content_delete_subtitles), OwnTVIcon.SUBTITLE, onClick = it)) }
             }
-            // Refetch TMDB details (§11.2 U5a) — clear this episode's cache AND its show's match, then re-search.
-            if (canRefetchTmdb) {
-                OwnTVButton(stringResource(R.string.content_refetch_tmdb), onClick = onRefetch, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            }
-            // Delete subtitles — only when this episode has downloaded OpenSubtitles subs (§11).
-            onDeleteSubtitles?.let {
-                OwnTVButton(stringResource(R.string.content_delete_subtitles), onClick = it, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.SUBTITLE, modifier = Modifier.fillMaxWidth())
+            arranged(ContentMenu.EPISODE, actions).forEachIndexed { index, action ->
+                OwnTVButton(
+                    action.label,
+                    onClick = action.onClick,
+                    style = OwnTVButtonStyle.SECONDARY,
+                    icon = action.icon,
+                    modifier = Modifier.fillMaxWidth().then(if (index == 0) Modifier.focusRequester(focus) else Modifier),
+                )
             }
             Spacer(Modifier.height(4.dp))
             OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, modifier = Modifier.fillMaxWidth())        }

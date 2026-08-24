@@ -14,6 +14,8 @@
 ### ✨ New features
 
 - **🗂️ Settings is a spine and a sheet, with your quick switches at the top of it**
+- **🔀 Arrange the long-press menus yourself**
+- **▶️ The player's transport buttons sit in one pill**
 - **🪟 You can reach the docked mini player again**
 - **💬 A separate subtitle size for each of the two players**
 - **⏱️ A dead channel says so, instead of leaving you with a black screen**

@@ -84,6 +84,9 @@ import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.ChannelGenre
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
+import tv.own.owntv.ui.components.ContentMenu
+import tv.own.owntv.ui.components.MenuAction
+import tv.own.owntv.ui.components.arranged
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.SearchBar
@@ -786,31 +789,36 @@ private fun ChannelContextMenu(
         ) {
             Text(channelName, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             Spacer(Modifier.height(8.dp))
-            ChannelMenuAction(
-                label = if (isFavorite) stringResource(R.string.content_remove_favourite) else stringResource(R.string.content_add_favourite),
-                onClick = onToggleFavorite,
-                icon = OwnTVIcon.FAVORITE,
-                modifier = Modifier.fillMaxWidth().focusRequester(focus),
-            )
-            ChannelMenuAction(stringResource(R.string.content_rename), onRename, modifier = Modifier.fillMaxWidth())
-
-            ChannelMenuDivider()
-            ChannelMenuAction(stringResource(R.string.content_match_epg), onMatchEpg, OwnTVIcon.EPG, Modifier.fillMaxWidth())
-            ChannelMenuAction(stringResource(R.string.content_epg_time_offset), onEpgOffset, OwnTVIcon.EPG, Modifier.fillMaxWidth())
-            if (hasCatchup) ChannelMenuAction(stringResource(R.string.content_catchup), onCatchup, modifier = Modifier.fillMaxWidth())
-            // Always offered, regardless of the Live TV external-player default — this is the per-channel
-            // escape hatch for a stream neither in-app engine can open (same as Movies/Series/Downloads).
-            ChannelMenuAction(stringResource(R.string.content_play_external_short), onPlayExternal, OwnTVIcon.PLAY, Modifier.fillMaxWidth())
-
-            if (canMove) {
-                ChannelMenuDivider()
-                ChannelMenuAction(stringResource(R.string.content_move), onMove, modifier = Modifier.fillMaxWidth())
-                ChannelMenuAction(stringResource(R.string.content_move_to_category), onMoveToCategory, modifier = Modifier.fillMaxWidth())
+            // The menu as data: same actions, same gating, same order as the buttons that used to be
+            // written out here one by one. Close is not in the list — it stays pinned last.
+            val actions = buildList {
+                add(MenuAction("favourite", if (isFavorite) stringResource(R.string.content_remove_favourite) else stringResource(R.string.content_add_favourite), OwnTVIcon.FAVORITE, group = 0, onClick = onToggleFavorite))
+                add(MenuAction("rename", stringResource(R.string.content_rename), group = 0, onClick = onRename))
+                add(MenuAction("match_epg", stringResource(R.string.content_match_epg), OwnTVIcon.EPG, group = 1, onClick = onMatchEpg))
+                add(MenuAction("epg_offset", stringResource(R.string.content_epg_time_offset), OwnTVIcon.EPG, group = 1, onClick = onEpgOffset))
+                if (hasCatchup) add(MenuAction("catchup", stringResource(R.string.content_catchup), group = 1, onClick = onCatchup))
+                // Always offered, regardless of the Live TV external-player default — this is the per-channel
+                // escape hatch for a stream neither in-app engine can open (same as Movies/Series/Downloads).
+                add(MenuAction("play_external", stringResource(R.string.content_play_external_short), OwnTVIcon.PLAY, group = 1, onClick = onPlayExternal))
+                if (canMove) {
+                    add(MenuAction("move", stringResource(R.string.content_move), group = 2, onClick = onMove))
+                    add(MenuAction("move_to_category", stringResource(R.string.content_move_to_category), group = 2, onClick = onMoveToCategory))
+                }
+                add(MenuAction("hide", stringResource(R.string.content_hide_channel), destructive = true, group = 3, onClick = onHide))
+                if (isHistory) add(MenuAction("remove_history", stringResource(R.string.content_remove_history), destructive = true, group = 3, onClick = onRemoveFromHistory))
             }
-
-            ChannelMenuDivider()
-            ChannelMenuAction(stringResource(R.string.content_hide_channel), onHide, modifier = Modifier.fillMaxWidth(), destructive = true)
-            if (isHistory) ChannelMenuAction(stringResource(R.string.content_remove_history), onRemoveFromHistory, modifier = Modifier.fillMaxWidth(), destructive = true)
+            var previousGroup: Int? = null
+            arranged(ContentMenu.LIVE, actions).forEachIndexed { index, action ->
+                if (previousGroup != null && action.group != previousGroup) ChannelMenuDivider()
+                previousGroup = action.group
+                ChannelMenuAction(
+                    label = action.label,
+                    onClick = action.onClick,
+                    icon = action.icon,
+                    modifier = Modifier.fillMaxWidth().then(if (index == 0) Modifier.focusRequester(focus) else Modifier),
+                    destructive = action.destructive,
+                )
+            }
 
             ChannelMenuDivider()
             ChannelMenuAction(stringResource(R.string.content_close), onDismiss, OwnTVIcon.CLOSE, Modifier.fillMaxWidth())

@@ -476,6 +476,17 @@ class SettingsViewModel(
         settings.updateCheckOnStart.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setUpdateCheckOnStart(enabled: Boolean) { viewModelScope.launch { settings.setUpdateCheckOnStart(enabled) } }
 
+    /** The Settings rows pinned to the Quick group, in display order. */
+    val quickPinnedKeys: StateFlow<List<String>> =
+        settings.quickPinnedKeys.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    fun setQuickPinnedKeys(keys: List<String>) { viewModelScope.launch { settings.setQuickPinnedKeys(keys) } }
+
+    /** The saved order of one long-press content menu; empty = the order the app ships with. */
+    fun menuOrder(menu: tv.own.owntv.ui.components.ContentMenu) = settings.menuOrder(menu.name.lowercase())
+    fun setMenuOrder(menu: tv.own.owntv.ui.components.ContentMenu, keys: List<String>) {
+        viewModelScope.launch { settings.setMenuOrder(menu.name.lowercase(), keys) }
+    }
+
     val resumeLastChannel: StateFlow<Boolean> =
         settings.resumeLastChannel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setResumeLastChannel(enabled: Boolean) { viewModelScope.launch { settings.setResumeLastChannel(enabled) } }

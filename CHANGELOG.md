@@ -2,6 +2,29 @@
 
 ## v4.2.3 — Unreleased
 
+### 🔀 Arrange the long-press menus yourself
+
+- **Settings → Layout → Long-press menus** lets you set the order of the actions in the four long-press
+  menus — channel, movie, series and episode — each one on its own. Pick a menu and the exact popup you
+  see while browsing opens, holding the same actions in the same style.
+- **Hold OK on an action to pick it up**, then Up and Down to carry it, then OK to drop it. A ↕ sign marks
+  the action you are carrying, and the row stays highlighted so you can see where it lands. Nothing is
+  saved until you press Save; Cancel or Back leaves the menu as it was.
+- **Reset puts every menu back the way it ships**, and there is a Reset on each menu as well as one for all
+  four at once.
+- **An order you set now survives later updates.** An action added by a future version appears at the end
+  of your arrangement rather than being lost, and an action that goes away is simply skipped — you never
+  have to redo the order after an update. **Close** is always last and cannot be moved.
+
+### ▶️ The player's transport buttons sit in one pill
+
+- **Play, pause, skip and the two seek buttons are now grouped inside a single rounded dark pill** in the
+  middle of the screen instead of floating loose over the picture, and they are slightly smaller so the
+  group reads as one control.
+- **The button you are on fills with your accent colour** and gets a thin white outline. The icon inside
+  switches between dark and light to stay readable, so a very dark or very bright custom accent still
+  shows the symbol clearly.
+
 ### 🗂️ Settings is a spine and a sheet, with your quick switches at the top of it
 
 - **The section list on the left is now a proper column of its own.** Each of the nine groups carries

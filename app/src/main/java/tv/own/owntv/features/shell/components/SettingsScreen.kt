@@ -36,6 +36,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
@@ -49,8 +50,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -61,11 +63,16 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
@@ -105,6 +112,7 @@ import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.BackgroundImageChooserDialog
 import tv.own.owntv.ui.components.ingestBackgroundImage
 import tv.own.owntv.ui.components.trapAllFocusExit
+import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.format.formatBestDateTime
 import tv.own.owntv.ui.theme.ALL_GLASS_SURFACES
 import tv.own.owntv.ui.theme.Dimens
@@ -141,7 +149,7 @@ internal val LocalSettingsRowTone = staticCompositionLocalOf { TileTone.PRIMARY 
 private fun Toned(tone: TileTone, content: @Composable () -> Unit) =
     CompositionLocalProvider(LocalSettingsRowTone provides tone, content = content)
 
-private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH }
+private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH, CONTENT_MENUS }
 
 @Composable
 internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
@@ -293,6 +301,7 @@ fun SettingsScreen(
     val autoPlayNext by settingsVm.autoPlayNext.collectAsStateWithLifecycle()
     val updateCheckOnStart by settingsVm.updateCheckOnStart.collectAsStateWithLifecycle()
     val channelNumbers by settingsVm.directTune.collectAsStateWithLifecycle()
+    val quickPinned by settingsVm.quickPinnedKeys.collectAsStateWithLifecycle()
     val catchupTz by settingsVm.catchupTimezone.collectAsStateWithLifecycle()
     val catchupOffset by settingsVm.catchupOffsetMinutes.collectAsStateWithLifecycle()
     val epgOffset by settingsVm.epgOffsetMinutes.collectAsStateWithLifecycle()
@@ -373,12 +382,21 @@ fun SettingsScreen(
         SettingsTab.WEATHER to FocusRequester(),
         SettingsTab.NAV_MENU to FocusRequester(),
         SettingsTab.CH_NAV to FocusRequester(),
+        SettingsTab.CONTENT_MENUS to FocusRequester(),
         SettingsTab.PANEL_WIDTH to FocusRequester(),
     ) }
     // Mini player is a popup on the Video player screen, not a screen of its own. The settings search
     // still lists it by name, so it needs a way to say "open that popup on arrival".
     var openMiniPlayer by rememberSaveable { mutableStateOf(false) }
-    val open: (SettingsTab) -> Unit = { lastTab = it; tab = it }
+    // A Quick shortcut into Video player settings: which section to show, which row to focus there,
+    // and — for the way back — which Quick row it was.
+    var videoSection by rememberSaveable { mutableStateOf<Int?>(null) }
+    var videoRowKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var deepReturnKey by rememberSaveable { mutableStateOf<String?>(null) }
+    val deepRowFocus = remember { FocusRequester() }
+    // Opening a sub-screen the ordinary way cancels any pending Quick-shortcut return, or the Back
+    // from it would aim at the shortcut instead of the row just used.
+    val open: (SettingsTab) -> Unit = { lastTab = it; deepReturnKey = null; videoSection = null; videoRowKey = null; tab = it }
     LaunchedEffect(openEpgAdd) {
         if (openEpgAdd) { consumeEpgAdd = true; open(SettingsTab.EPG); onEpgAddConsumed() }
     }
@@ -392,8 +410,15 @@ fun SettingsScreen(
         SettingsTab.VIDEO -> {
             Toned(TileTone.TERTIARY) {
                 VideoPlayerSettingsScreen(
-                    onBack = { tab = SettingsTab.ROOT; openMiniPlayer = false },
+                    onBack = {
+                        tab = SettingsTab.ROOT
+                        openMiniPlayer = false
+                        videoSection = null
+                        videoRowKey = null
+                    },
                     openMiniPlayer = openMiniPlayer,
+                    openSection = videoSection,
+                    focusRowKey = videoRowKey,
                     modifier = modifier,
                 )
             }
@@ -408,6 +433,7 @@ fun SettingsScreen(
         SettingsTab.WEATHER -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }; return }
         SettingsTab.NAV_MENU -> { tv.own.owntv.features.settings.NavMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+        SettingsTab.CONTENT_MENUS -> { tv.own.owntv.features.settings.ContentMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.ROOT -> Unit
     }
@@ -616,6 +642,13 @@ fun SettingsScreen(
             onClick = { open(SettingsTab.HOME) },
         ),
         RootRow(
+            tabRowKey(SettingsTab.CONTENT_MENUS), TileTone.PRIMARY, OwnTVIcon.MENU,
+            title = stringResource(R.string.settings_content_menus_title),
+            desc = stringResource(R.string.settings_content_menus_description),
+            focus = rowFocus.getValue(SettingsTab.CONTENT_MENUS),
+            onClick = { open(SettingsTab.CONTENT_MENUS) },
+        ),
+        RootRow(
             tabRowKey(SettingsTab.CH_NAV), TileTone.PRIMARY, OwnTVIcon.SKIP_NEXT,
             title = stringResource(R.string.settings_ch_paging), desc = stringResource(R.string.settings_ch_paging_description),
             chip = if (chNavEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off),
@@ -736,13 +769,55 @@ fun SettingsScreen(
     // icon, chip and click of every row. Here it is only *sliced* into (heading, its rows) so the
     // left column can list the headings and the right column only the selected group's rows. Adding
     // a row anywhere above needs no change here.
-    val categories: List<Pair<RootGroup, List<RootRow>>> = remember(rootItems) {
-        buildList {
+    // Quick is the one group whose contents are not positional: it is whatever the user pinned, in the
+    // order they pinned it. Its rows are still defined above like every other row, so a pinned row and
+    // its home-group twin are the same object and stay in step automatically.
+    // Rows that live inside Video player settings can be pinned too, and they have no twin on the root
+    // to borrow from — Playback must not list them a second time. Quick materialises those from the
+    // catalogue next to the real rows, and each one reopens that screen on the row it came from.
+    val videoDeepRows: Map<String, RootRow> = tv.own.owntv.features.settings.VIDEO_QUICK_ROWS
+        .filter { it.key in quickPinned }
+        .associate { ref ->
+        // The pin is a copy of the row, not just a link to it: it shows the same value, and a row that
+        // is a plain toggle flips here without leaving Quick. The rest still open the screen on the row.
+        val binding = androidx.compose.runtime.key(ref.key) {
+            tv.own.owntv.features.settings.videoQuickBinding(ref.key, settingsVm)
+        }
+        val jump = {
+            lastTab = null
+            deepReturnKey = ref.key
+            videoSection = ref.section
+            videoRowKey = ref.key
+            tab = SettingsTab.VIDEO
+        }
+        ref.key to RootRow(
+            key = ref.key,
+            tone = TileTone.TERTIARY,
+            icon = ref.icon,
+            title = stringResource(ref.titleRes),
+            desc = ref.descRes?.let { stringResource(it) },
+            chip = binding?.chip,
+            chipTone = if (binding?.primaryChip == true) TileTone.PRIMARY else TileTone.SECONDARY,
+            chevron = binding?.onToggle == null,
+            focus = if (ref.key == deepReturnKey) deepRowFocus else null,
+            onClick = binding?.onToggle ?: jump,
+        )
+    }
+    val categories: List<Pair<RootGroup, List<RootRow>>> = remember(rootItems, quickPinned, deepReturnKey, videoDeepRows) {
+        val sliced: List<Pair<RootGroup, List<RootRow>>> = buildList {
             rootItems.forEach { item ->
                 when (item) {
                     is RootGroup -> add(item to mutableListOf<RootRow>())
                     is RootRow -> (lastOrNull()?.second as? MutableList<RootRow>)?.add(item)
                 }
+            }
+        }
+        val byKey = sliced.flatMap { it.second }.associateBy { it.key }
+        sliced.map { (group, rows) ->
+            if (group.key == "group_quick") {
+                group to quickPinned.mapNotNull { byKey[it] ?: videoDeepRows[it] }
+            } else {
+                group to rows
             }
         }
     }
@@ -760,15 +835,39 @@ fun SettingsScreen(
     }
     var selectedGroup by rememberSaveable { mutableIntStateOf(0) }
     val selectedRows = categories.getOrNull(selectedGroup)?.second.orEmpty()
+    val spineState = rememberLazyListState()
+    // Which column has the cursor, so the sheet's count tag can go accent and say so.
+    var sheetFocused by remember { mutableStateOf(false) }
     // Requester on the *selected* category, so a directional entry from the sidebar lands on the
     // group the user last used rather than on whatever row happens to be nearest.
     val selectedCategoryFocus = remember { FocusRequester() }
+    // The row whose hold-OK menu is open, or null.
+    var menuRow by remember { mutableStateOf<RootRow?>(null) }
+    // Closing the menu leaves focus nowhere, so the row it belonged to asks for it back.
+    var menuReturnKey by remember { mutableStateOf<String?>(null) }
+    /** Where focus goes instead when the menu just removed its own row from Quick. */
+    var unpinReturnKey by remember { mutableStateOf<String?>(null) }
+    val menuReturnFocus = remember { FocusRequester() }
+    LaunchedEffect(menuReturnKey) {
+        if (menuReturnKey == null) return@LaunchedEffect
+        kotlinx.coroutines.delay(60)
+        // Unpinning removes the row from Quick, so its requester may no longer be attached to
+        // anything — then the group column takes focus rather than nothing at all.
+        if (runCatching { menuReturnFocus.requestFocus() }.isFailure) {
+            runCatching { selectedCategoryFocus.requestFocus() }
+        }
+    }
     // Back on the empty search field collapses it back to a chip and hands focus to the spine.
     // Deliberately NOT tied to the field losing focus: the field hands focus to its own inner editor
     // when OK opens the keyboard, so a focus-loss rule would slam it shut on the very keypress that
     // starts typing.
     BackHandler(enabled = tab == SettingsTab.ROOT && searchExpanded && searchQuery.isBlank()) {
         searchExpanded = false
+        runCatching { selectedCategoryFocus.requestFocus() }
+    }
+    // Back inside the rows goes up a level to the groups rather than out of Settings — the same step
+    // Left makes, so whichever the user reaches for does the same thing.
+    BackHandler(enabled = tab == SettingsTab.ROOT && sheetFocused && searchQuery.isBlank()) {
         runCatching { selectedCategoryFocus.requestFocus() }
     }
     // A new group starts at its first row — otherwise a short group inherits a tall group's offset.
@@ -779,18 +878,40 @@ fun SettingsScreen(
     // own initial focus, and Settings stays consistent with them. This block only exists while the
     // root list is showing, so coming back from a sub-screen is exactly when it runs.
     LaunchedEffect(Unit) {
-        val tab = lastTab ?: return@LaunchedEffect
-        val target = rowFocus[tab] ?: return@LaunchedEffect
+        // Either the row that opened a sub-screen, or the Quick shortcut that jumped inside one.
+        val deep = deepReturnKey
+        val key: String
+        val target: FocusRequester
+        if (deep != null) {
+            key = deep
+            target = deepRowFocus
+        } else {
+            val tab = lastTab ?: return@LaunchedEffect
+            key = tabRowKey(tab)
+            target = rowFocus[tab] ?: return@LaunchedEffect
+        }
         // The row may belong to a group other than the one showing — select it first, or it is not
         // composed at all and the restore lands nowhere.
-        val group = groupOfKey[tabRowKey(tab)] ?: return@LaunchedEffect
+        val group = groupOfKey[key] ?: return@LaunchedEffect
         selectedGroup = group
         kotlinx.coroutines.delay(60)
-        val index = categories[group].second.indexOfFirst { it.key == tabRowKey(tab) }
+        val index = categories[group].second.indexOfFirst { it.key == key }
         if (index >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == index }) {
             runCatching { listState.scrollToItem(index) }
         }
-        runCatching { target.requestFocus() }
+        // The row is in a lazy list that has just been told to change groups and possibly to scroll, so
+        // the first attempt can land before it exists. Keep asking briefly rather than settling for the
+        // group column — coming back from a sub-screen should put the cursor back on the row you left.
+        repeat(10) {
+            if (runCatching { target.requestFocus() }.isSuccess) {
+                // One more, a beat later: entering the panel directionally aims at the group column, and
+                // that can arrive after the first request and take the cursor off the row again.
+                kotlinx.coroutines.delay(80)
+                runCatching { target.requestFocus() }
+                return@LaunchedEffect
+            }
+            kotlinx.coroutines.delay(40)
+        }
     }
 
         // Batch 4 · search results — flat, group-context-prefixed rows ("Playback › HDR").
@@ -911,28 +1032,33 @@ fun SettingsScreen(
                 }
             }
             .focusGroup()
-            .padding(horizontal = 40.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 10.dp),
     ) {
-        // One-line header spanning both columns: the title on the left, and search as a chip on the
-        // right that opens into the field on OK. The quick toggles are no longer here — they sit at
-        // the foot of the spine until they become the Quick group.
+        // The panel head, spanning both columns: the title and what the two columns do, then search —
+        // a chip that opens into the real field on OK.
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.headlineSmall,
-                color = colors.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                // Indented onto the spine's own text column, so the title heads the spine instead of
-                // hanging off the panel's edge on its own.
-                modifier = Modifier.padding(start = 20.dp),
-            )
-            Spacer(Modifier.weight(1f))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.settings_title),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = stringResource(R.string.settings_header_hint),
+                    fontSize = 12.sp,
+                    color = colors.outline,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 3.dp),
+                )
+            }
             if (searchExpanded || searchQuery.isNotBlank()) {
                 // Sized, not stretched: a field spanning the whole header reads as the subject of the
                 // screen, which it is not. Capped, and it gives way at 150% UI Zoom.
@@ -943,52 +1069,66 @@ fun SettingsScreen(
                     label = "",
                     placeholder = stringResource(R.string.settings_search_hint),
                     focusRequester = searchFieldFocus,
-                    corner = 26.dp,
-                    modifier = Modifier.weight(1f, fill = false).widthIn(max = 320.dp),
+                    corner = 13.dp,
+                    // The mockup's `flex:0 1 440px`: a fixed 440 dp measured before the title column,
+                    // so the field always ends flush with the right edge of the header instead of
+                    // splitting the width with the title and opening from the middle.
+                    modifier = Modifier.width(440.dp),
                 )
             } else {
                 SearchChip(onClick = { searchExpanded = true })
             }
         }
-        if (searchQuery.isBlank()) {
-          BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            // 240 dp is the design width, but at 150% UI Zoom the whole panel is not much wider than
-            // that — so it gives way rather than squeezing the sheet into a strip.
-            val spineWidth = minOf(240.dp, maxWidth * 0.34f)
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            // 294 dp is the design width, but at 150% UI Zoom the whole panel is not much wider than
+            // that — so it gives way rather than squeezing the sheet into a strip. The value column
+            // gives way with it, for the same reason.
+            val spineWidth = minOf(SettingsSkin.SpineWidth, maxWidth * 0.34f)
+            val valueColumn = minOf(SettingsSkin.ValueColumn, maxWidth * 0.22f)
             Row(
                 modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // --- The spine: Quick, then the nine groups, each with its icon and how many rows it
-                // holds. It carries its OWN plate, the same one the sheet has — the two columns are a
-                // pair, and a bare list beside a panelled one reads as unfinished. Focus selects, so
-                // one Right press lands in the rows already showing; the list stays lazy so a tenth
-                // group and 150% UI Zoom together cannot clip it.
-                val spineShape = RoundedCornerShape(20.dp)
+                // --- The spine: Quick, then the nine groups, each with its icon, its one-line summary
+                // and how many rows it holds. It carries its OWN plate, the same one the sheet has —
+                // the two columns are a pair, and a bare list beside a panelled one reads as
+                // unfinished. Focus selects, so one Right press lands in the rows already showing.
+                // While searching it steps back rather than disappearing, so the shape of the screen
+                // does not change under the user mid-keystroke.
+                val paneShape = SettingsSkin.PaneShape
+                val searching = searchQuery.isNotBlank()
                 LazyColumn(
+                    state = spineState,
                     modifier = Modifier
                         .width(spineWidth)
                         .fillMaxHeight()
-                        .clip(spineShape)
-                        .glass(surface = GlassSurface.CARDS, baseFill = colors.surfaceContainerLow, shape = spineShape)
-                        .padding(vertical = 8.dp)
+                        .alpha(if (searching) 0.4f else 1f)
+                        .clip(paneShape)
+                        .glass(surface = GlassSurface.CARDS, baseFill = colors.surfaceContainerLow, shape = paneShape)
+                        .border(1.dp, colors.outlineVariant, paneShape)
+                        .settingsScrollbar(spineState)
+                        .padding(start = 8.dp, end = 8.dp, top = 10.dp, bottom = 8.dp)
                         // Coming back from the sheet must land on the group whose rows you were just
                         // in — spatial focus search would otherwise pick whichever item happens to sit
                         // level with the row you left, silently changing the selected group.
                         .focusProperties {
+                            canFocus = !searching
                             onEnter = { runCatching { selectedCategoryFocus.requestFocus() } }
                         }
                         .focusGroup(),
                 ) {
+                    item(key = "spine_head") { SpineHeader() }
                     itemsIndexed(categories, key = { _, (g, _) -> g.key }) { i, (group, rows) ->
                         // Quick is group zero and belongs to the user, not to the nine; a hairline
                         // keeps it recognisably apart from them.
-                        if (i == 1) SheetSeparator()
+                        if (i == 1) SpineSeparator()
                         SpineItem(
                             label = group.label,
+                            summary = group.summary,
                             icon = group.icon,
                             count = rows.size,
                             selected = i == selectedGroup,
+                            active = rows.any { it.chip != null && it.chipTone != TileTone.SECONDARY },
                             onFocused = { selectedGroup = i },
                             modifier = if (i == selectedGroup) {
                                 Modifier.focusRequester(selectedCategoryFocus)
@@ -997,56 +1137,144 @@ fun SettingsScreen(
                             },
                         )
                     }
+                    item(key = "spine_foot") { SpineFooter() }
                 }
-                // --- The sheet: ONE container holding the selected group's rows, separated by
-                // hairlines rather than 34 floating cards with gaps between them.
-                val sheetShape = RoundedCornerShape(20.dp)
+                // --- The sheet: ONE container holding the selected group's rows — or, while
+                // searching, every match wherever it lives, with the path it came from.
+                val group = categories.getOrNull(selectedGroup)?.first
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clip(sheetShape)
-                        .glass(surface = GlassSurface.CARDS, baseFill = colors.surfaceContainerLow, shape = sheetShape),
+                        .clip(paneShape)
+                        .glass(surface = GlassSurface.CARDS, baseFill = colors.surfaceContainerLow, shape = paneShape)
+                        .border(1.dp, colors.outlineVariant, paneShape),
                 ) {
-                    categories.getOrNull(selectedGroup)?.first?.let { group ->
-                        SheetHeader(title = group.label, summary = group.summary)
-                        SheetSeparator()
-                    }
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxWidth().weight(1f).focusGroup(),
-                    ) {
-                        // No rules between rows: the focus wash already separates them, and 34 hairlines
-                        // down one sheet ruled it like a spreadsheet. The header keeps its divider.
-                        items(selectedRows, key = { it.key }) { RootItemContent(it) }
-                    }
-                }
-            }
-          }
-        } else if (searchResults.isEmpty()) {
-            Text(
-                text = stringResource(R.string.settings_no_settings_match, searchQuery.trim()),
-                style = MaterialTheme.typography.bodyLarge,
-                color = colors.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp),
-            )
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxWidth().weight(1f).focusGroup(),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                items(searchResults, key = { it.group + it.title }) { e ->
-                    SettingsRow(
-                        tone = e.tone, icon = e.icon,
-                        title = stringResource(R.string.settings_breadcrumb, e.group, e.title),
-                        chip = e.chip, chipTone = e.chipTone,
-                        showChevron = e.showChevron,
-                        onClick = e.onClick,
+                    SheetHeader(
+                        title = if (searching) stringResource(R.string.settings_results_title) else group?.label.orEmpty(),
+                        summary = if (searching) stringResource(R.string.settings_results_summary) else group?.summary.orEmpty(),
+                        tag = when {
+                            searching -> pluralStringResource(R.plurals.settings_match_count, searchResults.size, searchResults.size)
+                            group?.key == "group_quick" -> pluralStringResource(R.plurals.settings_pinned_count, selectedRows.size, selectedRows.size)
+                            else -> pluralStringResource(R.plurals.settings_setting_count, selectedRows.size, selectedRows.size)
+                        },
+                        tagHot = sheetFocused,
                     )
+                    if (searching && searchResults.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.settings_no_settings_match, searchQuery.trim()),
+                            fontSize = 13.sp,
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                        )
+                    } else if (!searching && selectedRows.isEmpty()) {
+                        // Only Quick can be empty, and only because the user emptied it.
+                        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+                            Text(
+                                text = stringResource(R.string.settings_quick_empty_title),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.onSurface,
+                            )
+                            Text(
+                                text = stringResource(R.string.settings_quick_empty_hint),
+                                fontSize = 12.5.sp,
+                                lineHeight = 17.sp,
+                                color = colors.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .settingsScrollbar(listState)
+                                .onFocusChanged { sheetFocused = it.hasFocus }
+                                // Left is the way back to the groups. Spatial search would normally find
+                                // them, but a full-width row has no neighbour to its left once the ring
+                                // is inside the sheet's own plate — so the sheet says it explicitly.
+                                .onPreviewKeyEvent { e ->
+                                    if (e.type == KeyEventType.KeyDown && e.key == Key.DirectionLeft && !searching) {
+                                        runCatching { selectedCategoryFocus.requestFocus() }.isSuccess
+                                    } else {
+                                        false
+                                    }
+                                }
+                                .focusGroup(),
+                            contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            if (searching) {
+                                items(searchResults, key = { it.group + it.title }) { e ->
+                                    SettingsRow(
+                                        dense = true,
+                                        valueColumn = valueColumn,
+                                        tone = e.tone, icon = e.icon,
+                                        title = stringResource(R.string.settings_breadcrumb, e.group, e.title),
+                                        chip = e.chip, chipTone = e.chipTone,
+                                        showChevron = e.showChevron,
+                                        onClick = e.onClick,
+                                    )
+                                }
+                            } else {
+                                items(selectedRows, key = { it.key }) { row ->
+                                    RootItemContent(
+                                        row,
+                                        valueColumn,
+                                        // Inside Quick every row is pinned by definition — the dot there
+                                        // would say nothing. It only marks the copy in its home group.
+                                        pinned = group?.key != "group_quick" && row.key in quickPinned,
+                                        onLongClick = { menuRow = row },
+                                        focus = if (row.key == menuReturnKey) menuReturnFocus else null,
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+
+    menuRow?.let { row ->
+        val at = quickPinned.indexOf(row.key)
+        // Order is a property of the Quick list, so it is only offered where that list is on screen.
+        // In a row's home group the only thing the menu can usefully say is whether it is pinned.
+        val inQuick = categories.getOrNull(selectedGroup)?.first?.key == "group_quick"
+        SettingsRowMenu(
+            title = row.title,
+            pinned = at >= 0,
+            canMoveUp = inQuick && at > 0,
+            canMoveDown = inQuick && at >= 0 && at < quickPinned.size - 1,
+            onPinToggle = {
+                // Unpinning from inside Quick takes the row out from under the cursor, so hand focus
+                // to the row that slides into its place — the one below, or the one above when it was
+                // last. Without this the sheet has nothing focused and the highlight drops to the spine.
+                if (at >= 0 && inQuick) {
+                    unpinReturnKey = quickPinned.getOrNull(at + 1) ?: quickPinned.getOrNull(at - 1)
+                }
+                settingsVm.setQuickPinnedKeys(
+                    if (at >= 0) quickPinned - row.key else quickPinned + row.key,
+                )
+            },
+            onMoveUp = {
+                settingsVm.setQuickPinnedKeys(
+                    quickPinned.toMutableList().apply { add(at - 1, removeAt(at)) },
+                )
+            },
+            onMoveDown = {
+                settingsVm.setQuickPinnedKeys(
+                    quickPinned.toMutableList().apply { add(at + 1, removeAt(at)) },
+                )
+            },
+            onDismiss = {
+                menuReturnKey = unpinReturnKey ?: row.key
+                unpinReturnKey = null
+                menuRow = null
+            },
+        )
     }
 
     if (showUpdate) {
@@ -3174,6 +3402,8 @@ private data class RootRow(
     val desc: String? = null,
     val chip: String? = null,
     val chipTone: TileTone = TileTone.PRIMARY,
+    /** Set only by pinned Video player rows, which decide row by row whether they open a screen. */
+    val chevron: Boolean? = null,
     val focus: FocusRequester? = null,
     val onClick: () -> Unit,
 ) : RootItem {
@@ -3181,18 +3411,29 @@ private data class RootRow(
      * Honest chevrons: the arrow promises another screen, so only the rows that open one carry it.
      * Derived from the key rather than declared per row — [tabRowKey] is used by exactly the rows that
      * push a [SettingsTab], so a new sub-screen row gets its chevron with no extra flag to forget.
+     * Rows pinned to Quick from inside Video player settings are the exception and say so themselves
+     * in [chevron]: the ones that toggle in place must not promise a screen they never open.
      */
-    val showChevron: Boolean get() = key.startsWith("tab_")
+    val showChevron: Boolean get() = chevron ?: key.startsWith("tab_")
 }
 
 /** The list key of the row that opens [tab], so a Back from that sub-screen can find its index. */
 private fun tabRowKey(tab: SettingsTab) = "tab_${tab.name}"
 
 @Composable
-private fun RootItemContent(item: RootRow) {
+private fun RootItemContent(
+    item: RootRow,
+    valueColumn: Dp,
+    pinned: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    /** Takes precedence over the row's own requester: used to give focus back after its menu closes. */
+    focus: FocusRequester? = null,
+) {
     SettingsRow(
-        shape = androidx.compose.ui.graphics.RectangleShape,
         dense = true,
+        valueColumn = valueColumn,
+        pinned = pinned,
+        onLongClick = onLongClick,
         tone = item.tone,
         icon = item.icon,
         title = item.title,
@@ -3201,7 +3442,123 @@ private fun RootItemContent(item: RootRow) {
         chipTone = item.chipTone,
         showChevron = item.showChevron,
         onClick = item.onClick,
-        modifier = if (item.focus != null) Modifier.focusRequester(item.focus) else Modifier,
+        modifier = (focus ?: item.focus)?.let { Modifier.focusRequester(it) } ?: Modifier,
+    )
+}
+
+// ---------------------------------------------------------------------------------------------
+// The Settings surface, built to audit/OwnTV_Settings_Final_Mockup.html. Every number below is the
+// mockup's own CSS value read as dp. The pieces are deliberately hand-drawn rather than inherited
+// from FocusableSurface's tonal ladder: the mockup designs Glass OFF as its own solid pass, not as
+// the frosted pass with the blur removed, so both material modes must land on the *same* silhouette.
+// ---------------------------------------------------------------------------------------------
+
+/** The value column, the count badges and the eyebrows. Fixed on purpose — see [SettingsMono]. */
+private val SettingsMono = FontFamily(Font(R.font.jetbrains_mono_semibold, FontWeight.SemiBold))
+
+/**
+ * Design tokens, straight from the mockup's `:root`. `veil`/`veil2` are the neutral washes an idle
+ * icon tile and a hovered row sit on; everything accent-tinted is derived from [primary] so a custom
+ * accent reaches all of it.
+ *
+ * This is also the fix for "some icons take the accent and some don't": the old rows tinted their
+ * tile from [TileTone], and only `PRIMARY` maps to a container that follows the accent —
+ * `secondaryContainer`/`tertiaryContainer` are fixed palette constants. Tiles now have exactly two
+ * states, neutral and accent, and the accent one is always the real accent.
+ */
+internal object SettingsSkin {
+    val RowShape = RoundedCornerShape(14.dp)
+    val TileShape = RoundedCornerShape(11.dp)
+    val PaneShape = RoundedCornerShape(18.dp)
+    val TileSize = 34.dp
+    val GlyphSize = 17.dp
+    val RowMinHeight = 63.dp
+    val NavMinHeight = 57.dp
+    val ValueColumn = 170.dp
+    val SpineWidth = 294.dp
+
+    val veil: Color @Composable get() = OwnTVTheme.colors.onSurface.copy(alpha = 0.055f)
+    val veil2: Color @Composable get() = OwnTVTheme.colors.onSurface.copy(alpha = 0.030f)
+    /** The focus wash — `rgb(var(--rgb)/.09)` in the mockup. */
+    val focusWash: Color @Composable get() = OwnTVTheme.colors.primary.copy(alpha = 0.09f)
+    /** An active or focused icon tile — `rgb(var(--rgb)/.16)`. */
+    val tileHot: Color @Composable get() = OwnTVTheme.colors.primary.copy(alpha = 0.16f)
+}
+
+/**
+ * The focus ring: `box-shadow:0 0 0 2px var(--ring)` plus the accent wash under it. Drawn here rather
+ * than by [FocusableSurface] so the ring is identical with Glass on and off, and so it still honours
+ * the user's Focus highlight colour and width.
+ */
+@Composable
+internal fun Modifier.settingsFocusRing(focused: Boolean, shape: androidx.compose.ui.graphics.Shape): Modifier {
+    if (!focused) return this
+    val colors = OwnTVTheme.colors
+    return this
+        .background(SettingsSkin.focusWash, shape)
+        .border(tv.own.owntv.ui.theme.LocalFocusBorderWidth.current, colors.focusBorder, shape)
+}
+
+/**
+ * A thin thumb down the inner edge of a scrolling column. Both columns scroll, and both have to be
+ * *seen* to scroll: a hidden scrollbar on a ten-group spine reads as "that is all there is" from the
+ * sofa, which is precisely the complaint this screen was rebuilt to answer.
+ */
+@Composable
+private fun Modifier.settingsScrollbar(state: androidx.compose.foundation.lazy.LazyListState): Modifier {
+    val idle = OwnTVTheme.colors.onSurfaceVariant.copy(alpha = 0.20f)
+    return this.drawWithContent {
+        drawContent()
+        val info = state.layoutInfo
+        val total = info.totalItemsCount
+        val visible = info.visibleItemsInfo.size
+        if (total == 0 || visible == 0 || visible >= total) return@drawWithContent
+        val inset = 4.dp.toPx()
+        val trackHeight = size.height - inset * 2
+        val thumbHeight = (trackHeight * visible / total).coerceAtLeast(28.dp.toPx())
+        val first = info.visibleItemsInfo.first().index.toFloat()
+        val progress = (first / (total - visible).coerceAtLeast(1)).coerceIn(0f, 1f)
+        drawRoundRect(
+            color = idle,
+            topLeft = androidx.compose.ui.geometry.Offset(size.width - 6.dp.toPx(), inset + (trackHeight - thumbHeight) * progress),
+            size = androidx.compose.ui.geometry.Size(4.dp.toPx(), thumbHeight),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()),
+        )
+    }
+}
+
+/** The 34 dp rounded square every row and nav item leads with. Neutral, or accent when it matters. */
+@Composable
+internal fun SettingsIconTile(icon: OwnTVIcon, hot: Boolean, size: Dp = SettingsSkin.TileSize) {
+    val colors = OwnTVTheme.colors
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(SettingsSkin.TileShape)
+            .background(if (hot) SettingsSkin.tileHot else SettingsSkin.veil),
+        contentAlignment = Alignment.Center,
+    ) {
+        OwnTVIcon(
+            icon = icon,
+            tint = if (hot) colors.primary else colors.onSurfaceVariant,
+            modifier = Modifier.size(SettingsSkin.GlyphSize),
+        )
+    }
+}
+
+/** A mono label: the count badges, the sheet tag, the spine eyebrow. */
+@Composable
+internal fun MonoText(text: String, size: androidx.compose.ui.unit.TextUnit, color: Color, letterSpacing: androidx.compose.ui.unit.TextUnit = 0.sp, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        fontFamily = SettingsMono,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = size,
+        letterSpacing = letterSpacing,
+        color = color,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
     )
 }
 
@@ -3209,128 +3566,256 @@ private fun RootItemContent(item: RootRow) {
  * One group on the spine. Focus *is* the selection here — the TV pattern used by every other rail in
  * the app — so [onFocused] swaps the sheet while the user is still on the left. The selected item
  * keeps its highlight after focus moves right, which is what tells the user which group the rows on
- * the right belong to; the accent bar sits on the spine's INNER edge, pointing at those rows.
+ * the right belong to.
  */
 @Composable
-private fun SpineItem(
+internal fun SpineItem(
     label: String,
+    summary: String,
     icon: OwnTVIcon,
     count: Int,
     selected: Boolean,
+    active: Boolean,
     onFocused: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
-    val shape = RoundedCornerShape(12.dp)
+    val shape = SettingsSkin.RowShape
+    var focused by remember { mutableStateOf(false) }
+    val hot = focused || selected || active
     FocusableSurface(
         onClick = onFocused,
         selected = selected,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 1.dp)
-            .onFocusChanged { if (it.isFocused) onFocused() },
+            .padding(vertical = 1.5.dp)
+            .onFocusChanged {
+                focused = it.isFocused
+                if (it.isFocused) onFocused()
+            },
         shape = shape,
-        surface = GlassSurface.CARDS,
-        glassFrostScale = 0f,
-        // The selected group is painted below as a gradient, so the surface stays out of the way.
+        focusedContainerColor = Color.Transparent,
+        unfocusedContainerColor = Color.Transparent,
         selectedContainerColor = Color.Transparent,
+        focusedScale = 1f,
+        showFocusBorder = false,
         renderSelectionContainer = false,
         contentAlignment = Alignment.CenterStart,
     ) { _ ->
-        Box(
+        // The selected group's plate: `rgb(var(--rgb)/.12)` with a `.28` hairline and the 4 dp accent
+        // bar on the inner edge, pointing at the rows it owns.
+        if (selected) {
+            Box(
+                Modifier.matchParentSize()
+                    .background(colors.primary.copy(alpha = 0.12f), shape)
+                    .border(1.dp, colors.primary.copy(alpha = 0.28f), shape),
+            )
+        }
+        Box(Modifier.matchParentSize().settingsFocusRing(focused, shape))
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(shape)
-                .then(
-                    // Selection fades away from the accent bar rather than sitting in a flat block —
-                    // it reads as the group leaning toward the rows it owns.
-                    if (selected) {
-                        Modifier.background(
-                            Brush.horizontalGradient(
-                                listOf(colors.primary.copy(alpha = 0.24f), colors.primary.copy(alpha = 0.04f)),
-                            ),
-                        )
-                    } else {
-                        Modifier
-                    },
-                ),
+                .heightIn(min = SettingsSkin.NavMinHeight)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                OwnTVIcon(
-                    icon = icon,
-                    tint = if (selected) colors.primary else colors.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
+            SettingsIconTile(icon, hot = hot)
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (selected) colors.onSurface else colors.onSurfaceVariant,
+                    fontSize = 15.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+                    color = colors.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = count.toString(),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (selected) colors.primary else colors.outline,
+                    text = summary,
+                    fontSize = 11.5.sp,
+                    lineHeight = 14.sp,
+                    color = colors.outline,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
-            if (selected) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .width(3.dp)
-                        .height(24.dp)
-                        .clip(RoundedCornerShape(topEnd = 3.dp, bottomEnd = 3.dp))
-                        .background(colors.primary),
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 24.dp)
+                    .widthIn(min = 26.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (hot) colors.primary.copy(alpha = 0.15f) else SettingsSkin.veil2)
+                    .padding(horizontal = 7.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                MonoText(count.toString(), 11.5.sp, if (hot) colors.primary else colors.onSurfaceVariant)
+            }
+        }
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(vertical = 9.dp)
+                    .fillMaxHeight()
+                    .width(4.dp)
+                    .clip(RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
+                    .background(colors.primary),
+            )
+        }
+    }
+}
+
+/**
+ * The head of a stacked spine: where you came from, above the screen you are in, with the arrow that
+ * takes you back there. Sits where the root spine's heading sits, so the column keeps its shape.
+ */
+@Composable
+internal fun SpineBackRow(from: String, title: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = OwnTVTheme.colors
+    val shape = SettingsSkin.RowShape
+    var focused by remember { mutableStateOf(false) }
+    FocusableSurface(
+        onClick = onBack,
+        modifier = modifier.fillMaxWidth().padding(bottom = 8.dp).onFocusChanged { focused = it.isFocused },
+        shape = shape,
+        focusedContainerColor = Color.Transparent,
+        unfocusedContainerColor = Color.Transparent,
+        focusedScale = 1f,
+        showFocusBorder = false,
+        contentAlignment = Alignment.CenterStart,
+    ) { _ ->
+        Box(Modifier.matchParentSize().background(SettingsSkin.veil2, shape).border(1.dp, colors.outlineVariant, shape))
+        Box(Modifier.matchParentSize().settingsFocusRing(focused, shape))
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SettingsIconTile(OwnTVIcon.BACK, hot = focused)
+            Column(modifier = Modifier.weight(1f)) {
+                MonoText(from.uppercase(), 11.sp, colors.outline, letterSpacing = 1.1.sp)
+                Text(
+                    text = title,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }
     }
 }
 
-/** The sheet's own heading: the group the rows below belong to, and one line saying what is in it. */
+/** The spine's own heading, above the groups. */
 @Composable
-private fun SheetHeader(title: String, summary: String) {
+private fun SpineHeader() {
     val colors = OwnTVTheme.colors
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp)) {
-        Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Column(modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 12.dp)) {
+        MonoText(
+            stringResource(R.string.settings_spine_eyebrow).uppercase(),
+            10.5.sp,
+            colors.outline,
+            letterSpacing = 1.8.sp,
+        )
         Text(
-            summary,
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurfaceVariant,
+            stringResource(R.string.settings_spine_title),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = colors.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 7.dp),
+        )
+        Text(
+            stringResource(R.string.settings_spine_hint),
+            fontSize = 11.5.sp,
+            lineHeight = 17.sp,
+            color = colors.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 5.dp),
         )
     }
 }
 
-/** Collapsed search: a chip beside the title that opens into the real field on OK. */
+/**
+ * The sheet's own heading: the group the rows below belong to, one line saying what is in it, and the
+ * count tag on the right — which goes accent while focus is in the rows, so the sheet says out loud
+ * which of the two columns has the cursor.
+ */
+@Composable
+internal fun SheetHeader(title: String, summary: String, tag: String, tagHot: Boolean) {
+    val colors = OwnTVTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                summary,
+                fontSize = 12.5.sp,
+                lineHeight = 18.sp,
+                color = colors.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .heightIn(min = 26.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background(if (tagHot) colors.primary.copy(alpha = 0.15f) else SettingsSkin.veil)
+                .border(1.dp, if (tagHot) colors.primary.copy(alpha = 0.30f) else colors.outlineVariant, RoundedCornerShape(9.dp))
+                .padding(horizontal = 11.dp, vertical = 4.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            MonoText(tag, 11.sp, if (tagHot) colors.primary else colors.onSurfaceVariant)
+        }
+    }
+}
+
+/** Collapsed search: the `.sbtn` chip beside the title that opens into the real field on OK. */
 @Composable
 private fun SearchChip(onClick: () -> Unit) {
     val colors = OwnTVTheme.colors
+    val shape = RoundedCornerShape(13.dp)
+    var focused by remember { mutableStateOf(false) }
     FocusableSurface(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
-        surface = GlassSurface.CARDS,
+        modifier = Modifier.onFocusChanged { focused = it.isFocused },
+        shape = shape,
+        focusedContainerColor = Color.Transparent,
+        unfocusedContainerColor = Color.Transparent,
+        focusedScale = 1f,
+        showFocusBorder = false,
         contentAlignment = Alignment.Center,
     ) { _ ->
+        Box(
+            Modifier.matchParentSize()
+                .background(SettingsSkin.veil, shape)
+                .border(1.dp, if (focused) colors.primary else colors.outlineVariant, shape),
+        )
+        Box(Modifier.matchParentSize().settingsFocusRing(focused, shape))
         Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier = Modifier.heightIn(min = 41.dp).padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            OwnTVIcon(icon = OwnTVIcon.SEARCH, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
+            OwnTVIcon(
+                icon = OwnTVIcon.SEARCH,
+                tint = if (focused) colors.primary else colors.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
             Text(
                 stringResource(R.string.settings_search_label),
-                style = MaterialTheme.typography.labelLarge,
-                color = colors.onSurfaceVariant,
+                fontSize = 13.sp,
+                color = if (focused) colors.onSurface else colors.onSurfaceVariant,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -3339,16 +3824,36 @@ private fun SearchChip(onClick: () -> Unit) {
     }
 }
 
-/** The sheet's hairline: what replaces the 2 dp gap between 34 separately rounded cards. */
+/** The one hairline on the spine: Quick belongs to the user, the nine groups below it do not. */
 @Composable
-private fun SheetSeparator() {
+private fun SpineSeparator() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp)
+            .padding(horizontal = 12.dp, vertical = 7.dp)
             .height(1.dp)
             .background(OwnTVTheme.colors.outlineVariant),
     )
+}
+
+/** The spine's foot: one quiet line saying the accent you are seeing is following your cursor. */
+@Composable
+private fun SpineFooter() {
+    val colors = OwnTVTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 14.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(Modifier.size(5.dp).clip(RoundedCornerShape(50)).background(colors.primary))
+        Text(
+            stringResource(R.string.settings_spine_foot),
+            fontSize = 11.5.sp,
+            color = colors.outline,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable
@@ -3363,11 +3868,21 @@ private fun SettingsRow(
     showChevron: Boolean = false,
     /** Square inside the sheet (one container, hairline separators); rounded as a standalone card. */
     shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
-    /** Sheet rows are tighter than standalone cards — the tallest group has to fit without scrolling. */
+    /** A row on the sheet, drawn to the mockup; false is the plain card used elsewhere. */
     dense: Boolean = false,
+    /** The mockup's fixed value column, narrowed by the caller when the panel is tight. */
+    valueColumn: Dp = SettingsSkin.ValueColumn,
+    /** Marks the row with the accent dot that says "this one is also in Quick". */
+    pinned: Boolean = false,
+    /** Hold OK: opens the row menu. Null on rows that have nothing to offer there. */
+    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
 ) {
+    if (dense) {
+        SheetRow(icon, title, desc, chip, chipTone, soon, showChevron, valueColumn, pinned, onLongClick, modifier, onClick)
+        return
+    }
     val colors = OwnTVTheme.colors
     FocusableSurface(
         onClick = onClick,
@@ -3379,40 +3894,23 @@ private fun SettingsRow(
         // the static parent panel retains real frost. This also avoids stale HWUI damage trails on
         // affected Android TV GPUs.
         glassFrostScale = 0f,
-        // Inside the sheet the focus ring would box a row that has no edges of its own; the leading
-        // accent bar and wash below say the same thing without drawing a card that isn't there.
-        showFocusBorder = !dense,
         contentAlignment = Alignment.CenterStart,
-    ) { focused ->
-        if (dense && focused) {
-            Box(
-                Modifier.matchParentSize().background(
-                    Brush.horizontalGradient(
-                        listOf(colors.primary.copy(alpha = 0.16f), Color.Transparent),
-                    ),
-                ),
-            )
-            Box(
-                Modifier.fillMaxHeight().width(3.dp).background(colors.primary),
-            )
-        }
+    ) { _ ->
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = if (dense) 18.dp else 16.dp, vertical = if (dense) 7.dp else 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(if (dense) 12.dp else 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Tonal icon tile
             val (tileBg, tileOn) = tone.colors()
             Box(
                 modifier = Modifier
-                    .size(if (dense) 30.dp else Dimens.IconTileSize)
+                    .size(Dimens.IconTileSize)
                     .clip(RoundedCornerShape(Dimens.IconTileCorner))
                     .background(tileBg),
                 contentAlignment = Alignment.Center,
             ) {
-                OwnTVIcon(icon = icon, tint = tileOn, modifier = Modifier.size(if (dense) 18.dp else 22.dp))
+                OwnTVIcon(icon = icon, tint = tileOn, modifier = Modifier.size(22.dp))
             }
 
             Column(modifier = Modifier.weight(1f)) {
@@ -3426,7 +3924,7 @@ private fun SettingsRow(
                 if (desc != null) {
                     Text(
                         desc,
-                        style = if (dense) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = colors.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -3435,23 +3933,184 @@ private fun SettingsRow(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Values live in a fixed column so scanning down a group gives a tidy readout instead
-                // of chips ragged against the titles. Wider values push it out rather than clipping.
                 Box(modifier = Modifier.widthIn(min = 78.dp), contentAlignment = Alignment.CenterEnd) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (soon) {
-                            SoonChip()
-                        }
-                        if (chip != null) {
-                            // In the sheet a value is a value, not a badge: 34 filled pills down one
-                            // column shout over the titles they belong to. Accent when the setting is
-                            // doing something, muted when it is on its default or off.
-                            if (dense) ValueText(chip, chipTone) else ValueChip(chip, chipTone)
-                        }
+                        if (soon) SoonChip()
+                        if (chip != null) ValueChip(chip, chipTone)
                     }
                 }
                 if (showChevron) {
                     OwnTVIcon(icon = OwnTVIcon.CHEVRON, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * One row on the sheet, to the mockup: 34 dp tile · title and description · the value column · the
+ * chevron. Three things go accent together — the tile, the value and the chevron — and they do it
+ * both when the setting is *doing* something and when the row has focus. Nothing that is off or on
+ * its default is ever accent, so scanning the column tells you what you have changed.
+ */
+@Composable
+private fun SheetRow(
+    icon: OwnTVIcon,
+    title: String,
+    desc: String?,
+    chip: String?,
+    chipTone: TileTone,
+    soon: Boolean,
+    showChevron: Boolean,
+    valueColumn: Dp,
+    pinned: Boolean,
+    onLongClick: (() -> Unit)?,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val shape = SettingsSkin.RowShape
+    var focused by remember { mutableStateOf(false) }
+    // A held OK on the remote raises the long press while the key is still down, and a plain click when
+    // it is finally released — so without this the menu would open and the row would fire underneath it.
+    var longAt by remember { mutableLongStateOf(0L) }
+    // "Doing something" is already encoded: every row that is off or on its default sends SECONDARY.
+    val active = chip != null && chipTone != TileTone.SECONDARY
+    FocusableSurface(
+        onClick = { if (android.os.SystemClock.uptimeMillis() - longAt > 800) onClick() },
+        onLongClick = onLongClick?.let { handler -> { longAt = android.os.SystemClock.uptimeMillis(); handler() } },
+        modifier = modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
+        shape = shape,
+        focusedContainerColor = Color.Transparent,
+        unfocusedContainerColor = Color.Transparent,
+        focusedScale = 1f,
+        showFocusBorder = false,
+        contentAlignment = Alignment.CenterStart,
+    ) { _ ->
+        Box(Modifier.matchParentSize().settingsFocusRing(focused, shape))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = SettingsSkin.RowMinHeight)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            SettingsIconTile(icon, hot = focused || active)
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        title,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    // The dot the mockup puts beside a title that is also sitting in Quick.
+                    if (pinned) {
+                        Box(
+                            Modifier
+                                .size(6.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(colors.primary),
+                        )
+                    }
+                }
+                if (desc != null) {
+                    Text(
+                        desc,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        color = colors.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 3.dp),
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.width(valueColumn),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (soon) SoonChip()
+                if (chip != null) ValueText(chip, active)
+            }
+            Box(modifier = Modifier.size(18.dp), contentAlignment = Alignment.Center) {
+                if (showChevron) {
+                    OwnTVIcon(
+                        icon = OwnTVIcon.CHEVRON,
+                        tint = when {
+                            focused -> colors.primary
+                            active -> colors.primary.copy(alpha = 0.75f)
+                            else -> colors.outline
+                        },
+                        modifier = Modifier.size(15.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Hold OK on a sheet row: pin it to Quick, take it back out, or move it within Quick. Actions that
+ * cannot apply are left out rather than greyed — a focusable row that refuses to do anything is worse
+ * on a remote than one that is simply not there.
+ */
+@Composable
+internal fun SettingsRowMenu(
+    title: String,
+    pinned: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onPinToggle: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    BackHandler { onDismiss() }
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, fontScale = .50f) {
+        Box(
+            Modifier.fillMaxSize().longPressMenuGuard().modalScrim().trapAllFocusExit().focusGroup(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(Modifier.dialogPanel(width = 420.dp, padding = 16.dp)) {
+                MonoText(
+                    text = title.uppercase(),
+                    size = 10.sp,
+                    color = colors.onSurfaceVariant,
+                    letterSpacing = 1.5.sp,
+                )
+                Spacer(Modifier.height(10.dp))
+                tv.own.owntv.features.settings.Row2(
+                    icon = OwnTVIcon.SPARKLE,
+                    title = stringResource(
+                        if (pinned) R.string.settings_row_menu_unpin else R.string.settings_row_menu_pin,
+                    ),
+                    onClick = { onPinToggle(); onDismiss() },
+                )
+                if (canMoveUp) {
+                    Spacer(Modifier.height(6.dp))
+                    tv.own.owntv.features.settings.Row2(
+                        icon = OwnTVIcon.CHEVRON_UP,
+                        title = stringResource(R.string.settings_row_menu_move_up),
+                        onClick = { onMoveUp(); onDismiss() },
+                    )
+                }
+                if (canMoveDown) {
+                    Spacer(Modifier.height(6.dp))
+                    tv.own.owntv.features.settings.Row2(
+                        icon = OwnTVIcon.CHEVRON_DOWN,
+                        title = stringResource(R.string.settings_row_menu_move_down),
+                        onClick = { onMoveDown(); onDismiss() },
+                    )
                 }
             }
         }
@@ -3491,17 +4150,19 @@ private class SettingsSearchEntry(
 }
 
 /**
- * A sheet value: plain text, accent when the row is set to something, muted on its default/off state.
- * [TileTone.SECONDARY] is what every row already uses for "off" or "default", so it needs no new flag.
+ * A sheet value: monospaced so the whole column lines up under itself, accent when the row is set to
+ * something and muted on its default/off state.
  */
 @Composable
-private fun ValueText(text: String, tone: TileTone) {
+private fun ValueText(text: String, active: Boolean) {
     val colors = OwnTVTheme.colors
     Text(
         text = text,
-        style = MaterialTheme.typography.labelLarge,
+        fontFamily = SettingsMono,
         fontWeight = FontWeight.SemiBold,
-        color = if (tone == TileTone.SECONDARY) colors.onSurfaceVariant else colors.primary,
+        fontSize = 13.sp,
+        letterSpacing = 0.13.sp,
+        color = if (active) colors.primary else colors.onSurfaceVariant,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )

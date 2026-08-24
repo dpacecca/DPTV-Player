@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
  */
 enum class OwnTVIcon {
     LIVE_TV, MOVIES, SERIES, DOWNLOADS, MENU, STAR, PLAY, SEARCH, HOME, HISTORY,
-    PERSON, ADD, SETTINGS, PALETTE, THEME, ZOOM, PLAYLIST, EPG, VIDEO, SHARE, CHEVRON, FAVORITE,
+    PERSON, ADD, SETTINGS, PALETTE, THEME, ZOOM, PLAYLIST, EPG, VIDEO, SHARE, CHEVRON, CHEVRON_UP, CHEVRON_DOWN, FAVORITE,
     PAUSE, REWIND, FORWARD, AUDIO, SUBTITLE, SKIP_NEXT, SKIP_PREVIOUS,
     BACK, VOLUME_HIGH, VOLUME_LOW, VOLUME_MUTE, ASPECT, PIP, CLOSE,
     SORT, SWAP, HEADPHONES, EXPAND,
@@ -238,6 +238,14 @@ fun OwnTVIcon(
             OwnTVIcon.CHEVRON -> {
                 drawLineStroke(p(9f, 5f), p(16f, 12f), tint, stroke)
                 drawLineStroke(p(16f, 12f), p(9f, 19f), tint, stroke)
+            }
+            OwnTVIcon.CHEVRON_UP -> {
+                drawLineStroke(p(5f, 15f), p(12f, 8f), tint, stroke)
+                drawLineStroke(p(12f, 8f), p(19f, 15f), tint, stroke)
+            }
+            OwnTVIcon.CHEVRON_DOWN -> {
+                drawLineStroke(p(5f, 9f), p(12f, 16f), tint, stroke)
+                drawLineStroke(p(12f, 16f), p(19f, 9f), tint, stroke)
             }
             OwnTVIcon.PAUSE -> {
                 drawRect(tint, topLeft = p(8f, 5f), size = Size(2.6f * s, 14f * s))

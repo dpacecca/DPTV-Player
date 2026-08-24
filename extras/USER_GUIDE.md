@@ -730,6 +730,14 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 
 ## 🎨 Personalize (make it yours)
 
+- 🔀 **Settings → Layout → Long-press menus**: set the order of the actions in the four long-press
+  menus — **channel, movie, series and episode** — each one separately. Pick a menu and the same popup you
+  see while browsing opens. **Hold OK** on an action to pick it up (a ↕ marks it), **Up / Down** to move it,
+  **OK** to drop it, then **Save** — nothing is written until you do, and Back or Cancel discards. **Reset**
+  restores the shipped order, per menu or for all four at once. **Close** always stays last.
+  An order you set keeps working after an update: a new action is added at the end and a removed one is
+  simply skipped.
+
 - **Settings → Customize Categories & Items**: **hide, rename and reorder** categories, plus **unhide**
   individual channels, movies and series from one place. Pick a section at the top (Live TV / Movies /
   Series) — hidden items are listed first, each with an **Unhide** button, and your categories follow below.

@@ -1,12 +1,15 @@
 package tv.own.owntv.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -61,18 +64,50 @@ internal fun mmss(sec: Int): String = tv.own.owntv.ui.components.formatTimestamp
 
 @Composable
 internal fun CircleButton(icon: OwnTVIcon, size: Int, primary: Boolean = false, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    // Focus fills the button with the accent and rings it in a white hairline. The glyph takes
+    // onAccentOnVideo rather than a fixed dark, so a deep custom accent still gets a readable icon —
+    // that role is already derived from the seed's luminance, which is the check this needs.
+    val accent = OwnTVTheme.colors.accentOnVideo
     FocusableSurface(
         onClick = onClick,
         modifier = modifier.size(size.dp),
         shape = CircleShape,
         focusedScale = 1.1f,
-        focusedContainerColor = if (primary) Color.White else Color.White.copy(alpha = 0.22f),
+        focusedContainerColor = accent,
         unfocusedContainerColor = if (primary) Color.White.copy(alpha = 0.95f) else Color.White.copy(alpha = 0.10f),
         selectedContainerColor = Color.White.copy(alpha = 0.10f),
         contentAlignment = Alignment.Center,
-    ) { _ ->
-        OwnTVIcon(icon, tint = if (primary) Color(0xFF0E1513) else Color.White, filled = true, modifier = Modifier.size((size * 0.42f).dp))
+    ) { focused ->
+        if (focused) {
+            Box(Modifier.matchParentSize().border(1.dp, Color.White.copy(alpha = 0.9f), CircleShape))
+        }
+        OwnTVIcon(
+            icon,
+            tint = when {
+                focused -> OwnTVTheme.colors.onAccentOnVideo
+                primary -> Color(0xFF0E1513)
+                else -> Color.White
+            },
+            filled = true,
+            modifier = Modifier.size((size * 0.42f).dp),
+        )
     }
+}
+
+/** The transport buttons live in one frosted capsule instead of floating loose over the video. */
+@Composable
+internal fun TransportCapsule(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier
+            .clip(RoundedCornerShape(44.dp))
+            .background(Color.Black.copy(alpha = 0.55f))
+            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(44.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .focusGroup(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        content = content,
+    )
 }
 
 @Composable
@@ -207,7 +242,6 @@ internal fun SeekBar(positionMs: Long, durationMs: Long, stepMs: Long, onSeek: (
     }
 }
 
-private const val LIVE_WINDOW_SEC = 2 * 3600   // the live timeline shows the last 2 hours up to the edge
 private const val LIVE_SCRUB_STEP_SEC = 60     // per Left/Right press (hold to scrub fast); buttons stay 30 s
 
 /** Scrubbable live timeline for a catch-up channel: spans the last [LIVE_WINDOW_SEC] up to the live edge.
@@ -218,7 +252,7 @@ private const val LIVE_SCRUB_STEP_SEC = 60     // per Left/Right press (hold to 
 internal fun LiveTimelineBar(offsetSec: Int, onScrub: (Int) -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val frac = (1f - offsetSec.toFloat() / LIVE_WINDOW_SEC).coerceIn(0f, 1f) // 1 = live edge, 0 = far edge
+    val frac = offsetFrac(offsetSec) // 1 = live edge, 0 = far edge
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
     Box(
         modifier = Modifier.fillMaxWidth().height(24.dp)
