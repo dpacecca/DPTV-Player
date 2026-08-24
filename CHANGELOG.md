@@ -2,6 +2,42 @@
 
 ## v4.2.3 — Unreleased
 
+### 🪟 The corner player carries one floating strip of buttons
+
+- **The mini player's controls are now a single rounded pill floating just above the bottom of the little
+  window**, instead of a row of buttons welded to its edge. Play leads the group as a large circle in your
+  accent colour; everything else is a small dark tile, with hairlines separating sound (volume, audio mode)
+  from window (size, corner) from exit (fullscreen, close).
+- **Shrink the window and the strip thins itself out before anything can be cut off.** At the smallest size
+  it keeps play, volume, fullscreen and close, and tucks the rest behind a **⋯** tile you press to swap them
+  in and out. Nothing ever spills outside the window.
+- **The window's progress line moved to its top edge**, so it no longer runs behind the buttons. Live
+  channels have no progress and simply don't show it.
+- **The window itself lights up with an accent outline while the remote is inside it**, and the title still
+  appears — and scrolls, if it is long — only while it holds focus.
+
+### 🎵 The music bar opens up when you move to it
+
+- **The now-playing bar at the top grows when the remote reaches it, and the page below slides down with
+  it** rather than being covered. Left alone it is exactly the thin strip it always was.
+- **Opened, it shows artwork** — the station's logo when there is one, otherwise a coloured tile with the
+  dancing bars in it — plus the station name and whether you are live or how far into a recording you are.
+- **Seven controls, not five.** A **favourite heart** was added — it toggles the same favourite as the full
+  player and stays coral when set — and **Close** now ends Audio Mode from here, so Back is free to simply
+  step out of the bar.
+- **The two outer buttons say what they will actually do.** On a live radio channel they change channel; on
+  a recording they rewind and fast-forward. Same place, different job.
+
+### ✨ Focus that reads like light, and icons that stop sharing
+
+- **Buttons over the picture now take focus as light**: a thin accent rim, a soft wash of the same colour
+  and a gentle glow behind it. With Reduce animations turned up the glow goes and the rim stays, so the
+  focus is never lost.
+- **Nine settings that used to share a symbol with something else now have their own.** DNS, Channel paging,
+  Panel width, Focus highlight and Auto-play next each got a drawn mark of their own, and Zoom and the TV
+  guide were redrawn to look like what they do. The live dot in the player is now the same mark everywhere
+  it appears — the badge, the Go live button and the marker at the end of the timeline.
+
 ### 🔀 Arrange the long-press menus yourself
 
 - **Settings → Layout → Long-press menus** lets you set the order of the actions in the four long-press

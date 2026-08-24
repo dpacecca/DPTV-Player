@@ -248,6 +248,7 @@ fun OwnTVShell(
     // just the on/off fact, which changes when the user enters or leaves the rewind and no oftener.
     val timeshiftOffsetState = liveVm.timeshiftOffsetSec.collectAsStateWithLifecycle()
     val watchingWallState = liveVm.watchingWallMs.collectAsStateWithLifecycle()
+    val timelineProgrammes by liveVm.timelineProgrammes.collectAsStateWithLifecycle()
     val timeshifted by remember(liveVm) {
         liveVm.timeshiftOffsetSec.map { it != null }.distinctUntilChanged()
     }.collectAsStateWithLifecycle(false)
@@ -277,6 +278,24 @@ fun OwnTVShell(
     val movieFavoriteIds by movieVm.favoriteIds.collectAsStateWithLifecycle()
     val playingSeries by seriesVm.playingSeries.collectAsStateWithLifecycle()
     val seriesFavoriteIds by seriesVm.favoriteIds.collectAsStateWithLifecycle()
+    // Favorite toggle for whatever is playing: the live channel, the movie, or the series (episodes
+    // favorite their parent series). Picked by the section that armed the stream. Hoisted here because
+    // the audio capsule in the top bar carries the same control as the fullscreen HUD.
+    val favToggle: (() -> Unit)? = when (zapSource) {
+        MainSection.LIVE_TV -> previewChannel?.let { ch -> { liveVm.toggleFavorite(ch) } }
+        MainSection.MOVIES -> playingMovie?.let { m -> { movieVm.toggleFavorite(m) } }
+        MainSection.SERIES -> playingSeries?.let { s -> { seriesVm.toggleFavorite(s) } }
+        else -> null
+    }
+    // The audio capsule grows when it takes focus; the top strip grows with it so the content panel
+    // is pushed down rather than covered.
+    var audioBarExpanded by remember { mutableStateOf(false) }
+    val favActive = when (zapSource) {
+        MainSection.LIVE_TV -> previewChannel?.let { liveFavoriteIds.contains(it.id) } ?: false
+        MainSection.MOVIES -> playingMovie?.let { movieFavoriteIds.contains(it.id) } ?: false
+        MainSection.SERIES -> playingSeries?.let { seriesFavoriteIds.contains(it.id) } ?: false
+        else -> false
+    }
     // Current programme per channel for the in-player channel list overlay (small subtitle under each row).
     // Only resolved while the overlay is actually open. Keyed on the channel set so a zap-list change re-resolves.
     val overlayNowPlaying by produceState<Map<Long, String>>(emptyMap(), showChannelList, zapChannels) {
@@ -692,6 +711,7 @@ fun OwnTVShell(
                     },
                     // Audio Mode: the now-playing bar, left of the weather chip. Present only while
                     // PlayerMode.AUDIO; focusable only while the nav panel holds focus (same rule as Search).
+                    audioBarExpanded = audioBarExpanded,
                     audioBar = if (playerMode == PlayerMode.AUDIO) {
                         {
                             val isLiveStream = liveOnExo || player.isLiveContent
@@ -717,6 +737,9 @@ fun OwnTVShell(
                                 // inside once entered and Back is the only way out.
                                 focusable = true,
                                 entryFocusRequester = audioEntryFocus,
+                                favorite = favActive,
+                                onToggleFavorite = favToggle,
+                                onExpandedChange = { audioBarExpanded = it },
                             )
                         }
                     } else null,
@@ -1022,20 +1045,6 @@ fun OwnTVShell(
                 // position on the other engine) rather than Live TV's compatibility toggle, which would
                 // re-tune the live stream and jump the user to the current programme.
                 val isTunedLive = isLiveChannel && !catchupActive
-                // Favorite toggle for whatever is playing: the live channel, the movie, or the series
-                // (episodes favorite their parent series). Picked by the section that armed the stream.
-                val favToggle: (() -> Unit)? = when {
-                    isLiveChannel -> previewChannel?.let { ch -> { liveVm.toggleFavorite(ch) } }
-                    zapSource == MainSection.MOVIES -> playingMovie?.let { m -> { movieVm.toggleFavorite(m) } }
-                    zapSource == MainSection.SERIES -> playingSeries?.let { s -> { seriesVm.toggleFavorite(s) } }
-                    else -> null
-                }
-                val favActive = when {
-                    isLiveChannel -> previewChannel?.let { liveFavoriteIds.contains(it.id) } ?: false
-                    zapSource == MainSection.MOVIES -> playingMovie?.let { movieFavoriteIds.contains(it.id) } ?: false
-                    zapSource == MainSection.SERIES -> playingSeries?.let { seriesFavoriteIds.contains(it.id) } ?: false
-                    else -> false
-                }
                 PlayerHud(
                     player = if (liveOnExo) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
                     onBack = exitPlayer,
@@ -1052,6 +1061,8 @@ fun OwnTVShell(
                     onForwardLive = if (isTunedLive) liveVm::forwardLive else null,
                     onGoToLive = if (isTunedLive) liveVm::goToLive else null,
                     onScrubLive = if (isTunedLive && canRewindLive) liveVm::scrubLive else null,
+                    // Only collected where there is a timeline to draw them on.
+                    liveProgrammes = if (isTunedLive && canRewindLive) timelineProgrammes else emptyList(),
                     jumpBackOptions = if (isTunedLive && canRewindLive) liveVm::currentJumpOptions else null,
                     onJumpBack = if (isTunedLive && canRewindLive) liveVm::jumpBackTo else null,
                     jumpBackWindowSec = if (isTunedLive && canRewindLive) liveVm::currentCatchupWindowSec else null,

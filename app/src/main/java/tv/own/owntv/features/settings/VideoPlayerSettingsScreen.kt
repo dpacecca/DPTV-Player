@@ -138,7 +138,7 @@ internal val VIDEO_QUICK_ROWS: List<VideoQuickRef> = listOf(
     VideoQuickRef("vp_sub_style", SECTION_SUBTITLES, OwnTVIcon.SUBTITLE, R.string.settings_subtitle_appearance, R.string.settings_subtitle_appearance_description),
     VideoQuickRef("vp_sub_lang", SECTION_SUBTITLES, OwnTVIcon.SUBTITLE, R.string.settings_preferred_subtitle_language, R.string.settings_preferred_language_description),
     VideoQuickRef("vp_resume", SECTION_EPISODES, OwnTVIcon.PLAY, R.string.settings_resume_playback, R.string.settings_resume_playback_description),
-    VideoQuickRef("vp_autoplay", SECTION_EPISODES, OwnTVIcon.SKIP_NEXT, R.string.settings_autoplay_next, R.string.settings_autoplay_next_description),
+    VideoQuickRef("vp_autoplay", SECTION_EPISODES, OwnTVIcon.AUTOPLAY_NEXT, R.string.settings_autoplay_next, R.string.settings_autoplay_next_description),
     VideoQuickRef("vp_mini", SECTION_EPISODES, OwnTVIcon.PIP, R.string.settings_mini_player_root, R.string.settings_mini_player_root_description),
     VideoQuickRef("vp_measured_stats", SECTION_DIAGNOSTICS, OwnTVIcon.VIDEO, R.string.settings_measured_stats, R.string.settings_measured_stats_description),
     VideoQuickRef("vp_logging", SECTION_DIAGNOSTICS, OwnTVIcon.INFO, R.string.settings_detailed_playback_logging, R.string.settings_detailed_playback_logging_description),
@@ -916,7 +916,7 @@ fun VideoPlayerSettingsScreen(
         )
         Row2(
             quickKey = "vp_autoplay",
-            icon = OwnTVIcon.SKIP_NEXT, title = stringResource(R.string.settings_autoplay_next),
+            icon = OwnTVIcon.AUTOPLAY_NEXT, title = stringResource(R.string.settings_autoplay_next),
             desc = stringResource(R.string.settings_autoplay_next_description),
             chip = stringResource(if (autoPlayNext) R.string.common_on else R.string.common_off), primaryChip = autoPlayNext,
             onClick = { vm.setAutoPlayNext(!autoPlayNext) },

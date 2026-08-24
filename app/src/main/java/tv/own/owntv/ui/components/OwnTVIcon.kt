@@ -27,6 +27,9 @@ enum class OwnTVIcon {
     IMAGE, INFO, LANGUAGE, GEAR, SPARKLE,
     CATCHUP,
     WEATHER, NETWORK, TEXT_SIZE, BACKUP, REFRESH, POWER, MOTION, GLOW, WARNING, LIST_GRID,
+    // Marks that exist so one glyph stops doing two jobs: NETWORK was both proxy and DNS, EXPAND was
+    // both panel width and focus highlight, SKIP_NEXT was both channel paging and autoplay-next.
+    DNS, PANEL_WIDTH, FOCUS_HIGHLIGHT, CH_NAV, AUTOPLAY_NEXT, LIVE_DOT, SEEK_BACK, SEEK_FORWARD, MORE,
 }
 
 @Composable
@@ -194,11 +197,14 @@ fun OwnTVIcon(
                 )
             }
             OwnTVIcon.ZOOM -> {
+                // A frame with ⤢ inside — scale the whole picture. ASPECT keeps the corner marks, so
+                // the two stopped being the same drawing.
                 drawRoundRectStroke(p(4f, 5f), p(20f, 19f), 2f * s, tint, stroke)
-                drawLineStroke(p(7f, 9f), p(7f, 7f), tint, stroke)
-                drawLineStroke(p(7f, 7f), p(9f, 7f), tint, stroke)
-                drawLineStroke(p(17f, 15f), p(17f, 17f), tint, stroke)
-                drawLineStroke(p(17f, 17f), p(15f, 17f), tint, stroke)
+                drawLineStroke(p(9f, 15f), p(15f, 9f), tint, stroke)
+                drawLineStroke(p(15f, 9f), p(11.4f, 9f), tint, stroke)
+                drawLineStroke(p(15f, 9f), p(15f, 12.6f), tint, stroke)
+                drawLineStroke(p(9f, 15f), p(12.6f, 15f), tint, stroke)
+                drawLineStroke(p(9f, 15f), p(9f, 11.4f), tint, stroke)
             }
             OwnTVIcon.PLAYLIST -> {
                 drawLineStroke(p(4f, 7f), p(16f, 7f), tint, stroke)
@@ -213,10 +219,17 @@ fun OwnTVIcon(
                 drawPath(tri, tint, style = Fill)
             }
             OwnTVIcon.EPG -> {
+                // A time axis across the top with programme blocks of differing lengths staggered
+                // under it — a schedule, where the even grid it used to draw was just LIST_GRID again.
                 drawRoundRectStroke(p(3f, 4f), p(21f, 20f), 2f * s, tint, stroke)
                 drawLineStroke(p(3f, 9f), p(21f, 9f), tint, stroke)
-                drawLineStroke(p(9f, 9f), p(9f, 20f), tint, stroke)
-                drawLineStroke(p(15f, 9f), p(15f, 20f), tint, stroke)
+                drawLineStroke(p(7f, 4f), p(7f, 9f), tint, stroke)
+                drawLineStroke(p(13f, 4f), p(13f, 9f), tint, stroke)
+                drawLineStroke(p(19f, 4f), p(19f, 9f), tint, stroke)
+                drawRect(tint, topLeft = p(4.6f, 11f), size = Size(6.4f * s, 2.4f * s))
+                drawRect(tint, topLeft = p(12.4f, 11f), size = Size(7f * s, 2.4f * s))
+                drawRect(tint, topLeft = p(4.6f, 15.6f), size = Size(10.2f * s, 2.4f * s))
+                drawRect(tint, topLeft = p(17.2f, 15.6f), size = Size(3.4f * s, 2.4f * s))
             }
             OwnTVIcon.VIDEO -> {
                 drawRoundRectStroke(p(3f, 6f), p(21f, 18f), 2.5f * s, tint, stroke)
@@ -498,6 +511,74 @@ fun OwnTVIcon(
                 drawRoundRectStroke(p(13.5f, 4f), p(21f, 10.5f), 1.5f * s, tint, stroke)
                 drawRoundRectStroke(p(3f, 13.5f), p(10.5f, 20f), 1.5f * s, tint, stroke)
                 drawRoundRectStroke(p(13.5f, 13.5f), p(21f, 20f), 1.5f * s, tint, stroke)
+            }
+            OwnTVIcon.DNS -> {
+                // The same globe as NETWORK but wearing a name tag: DNS is the address book, the proxy
+                // is the plain globe. Drawn small and offset so the tag has room in the lower corner.
+                val thin = Stroke(width = 1.7f * s, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                drawCircleStroke(p(10.5f, 10.5f), 7.5f * s, tint, thin)
+                drawLineStroke(p(3.2f, 8.2f), p(17.8f, 8.2f), tint, thin)
+                drawLineStroke(p(3.2f, 12.8f), p(15.6f, 12.8f), tint, thin)
+                val meridian = Path().apply {
+                    moveTo(p(10.5f, 3f).x, p(10.5f, 3f).y)
+                    cubicTo(p(8f, 6.5f).x, p(8f, 6.5f).y, p(8f, 14.5f).x, p(8f, 14.5f).y, p(10.5f, 18f).x, p(10.5f, 18f).y)
+                    cubicTo(p(13f, 14.5f).x, p(13f, 14.5f).y, p(13f, 6.5f).x, p(13f, 6.5f).y, p(10.5f, 3f).x, p(10.5f, 3f).y)
+                }
+                drawPath(meridian, tint, style = thin)
+                drawRoundRectStroke(p(13.5f, 15.5f), p(22f, 21.5f), 1.5f * s, tint, thin)
+                drawLineStroke(p(15.5f, 18.5f), p(20f, 18.5f), tint, thin)
+            }
+            OwnTVIcon.PANEL_WIDTH -> { // Two walls with a two-headed arrow between them.
+                drawLineStroke(p(4f, 5f), p(4f, 19f), tint, stroke)
+                drawLineStroke(p(20f, 5f), p(20f, 19f), tint, stroke)
+                drawLineStroke(p(8f, 12f), p(16f, 12f), tint, stroke)
+                drawLineStroke(p(8f, 12f), p(10.6f, 9.6f), tint, stroke)
+                drawLineStroke(p(8f, 12f), p(10.6f, 14.4f), tint, stroke)
+                drawLineStroke(p(16f, 12f), p(13.4f, 9.6f), tint, stroke)
+                drawLineStroke(p(16f, 12f), p(13.4f, 14.4f), tint, stroke)
+            }
+            OwnTVIcon.FOCUS_HIGHLIGHT -> { // A row with light spilling off its rim — the focus ring itself.
+                drawRoundRectStroke(p(5.5f, 7f), p(18.5f, 17f), 3f * s, tint, stroke)
+                drawLineStroke(p(3f, 10.5f), p(3f, 13.5f), tint, stroke)
+                drawLineStroke(p(12f, 3.4f), p(12f, 5.2f), tint, stroke)
+                drawLineStroke(p(5.6f, 5.2f), p(6.9f, 6.4f), tint, stroke)
+                drawLineStroke(p(18.4f, 5.2f), p(17.1f, 6.4f), tint, stroke)
+                drawLineStroke(p(2.4f, 17.6f), p(3.6f, 18.8f), tint, stroke)
+            }
+            OwnTVIcon.CH_NAV -> { // A TV screen with page arrows inside: paging channels, not skipping a track.
+                drawRoundRectStroke(p(3f, 5f), p(21f, 19f), 2.5f * s, tint, stroke)
+                drawLineStroke(p(8f, 10f), p(11f, 12f), tint, stroke)
+                drawLineStroke(p(11f, 12f), p(8f, 14f), tint, stroke)
+                drawLineStroke(p(13f, 10f), p(16f, 12f), tint, stroke)
+                drawLineStroke(p(16f, 12f), p(13f, 14f), tint, stroke)
+                drawLineStroke(p(18.6f, 9.5f), p(18.6f, 14.5f), tint, stroke)
+            }
+            OwnTVIcon.AUTOPLAY_NEXT -> { // Play-to-bar with a loop arcing over it: it goes on by itself.
+                drawPath(triangle(p(4f, 6f), p(12f, 12f), p(4f, 18f)), tint, style = Fill)
+                drawRect(tint, topLeft = p(13.4f, 6f), size = Size(2f * s, 12f * s))
+                drawArc(tint, -60f, 150f, false, p(13f, 4f), Size(10f * s, 10f * s), style = stroke)
+            }
+            OwnTVIcon.LIVE_DOT -> { // A lit core with two pairs of arcs spilling off it — "on the air".
+                drawCircle(tint, 3.4f * s, p(12f, 12f))
+                drawArc(tint, -120f, 90f, false, p(5.5f, 5.5f), Size(13f * s, 13f * s), style = stroke)
+                drawArc(tint, 60f, 90f, false, p(5.5f, 5.5f), Size(13f * s, 13f * s), style = stroke)
+                drawArc(tint, -125f, 100f, false, p(1.8f, 1.8f), Size(20.4f * s, 20.4f * s), style = stroke)
+                drawArc(tint, 55f, 100f, false, p(1.8f, 1.8f), Size(20.4f * s, 20.4f * s), style = stroke)
+            }
+            OwnTVIcon.MORE -> { // ⋯ — the rest of the controls, when the window is too small for them.
+                drawCircle(tint, 1.7f * s, p(5.5f, 12f))
+                drawCircle(tint, 1.7f * s, p(12f, 12f))
+                drawCircle(tint, 1.7f * s, p(18.5f, 12f))
+            }
+            OwnTVIcon.SEEK_BACK -> { // REFRESH's circular arrow, mirrored: jump back through the stream.
+                drawArc(tint, 180f, -314.1f, false, p(3.5f, 3.5f), Size(17f * s, 17f * s), style = stroke)
+                drawLineStroke(p(3.2f, 3.6f), p(3.2f, 8.6f), tint, stroke)
+                drawLineStroke(p(3.2f, 8.6f), p(8.2f, 8.6f), tint, stroke)
+            }
+            OwnTVIcon.SEEK_FORWARD -> {
+                drawArc(tint, 0f, 314.1f, false, p(3.5f, 3.5f), Size(17f * s, 17f * s), style = stroke)
+                drawLineStroke(p(20.8f, 3.6f), p(20.8f, 8.6f), tint, stroke)
+                drawLineStroke(p(20.8f, 8.6f), p(15.8f, 8.6f), tint, stroke)
             }
     }
     }

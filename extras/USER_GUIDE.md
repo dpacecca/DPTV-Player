@@ -645,6 +645,12 @@ A few things that need no button:
 - **A notification or a system sound won't pause your film** — the sound dips for a moment and comes
   back. Only another app taking the audio for good pauses playback.
 - **Subtitles show in the docked mini‑player too**, sized to the small window.
+- **The mini‑player's controls sit in one floating strip** just above the bottom of the little window:
+  play as a large circle in your accent colour, then volume and audio mode, then size and corner, then
+  fullscreen and close. Its **progress line runs along the top edge**, and the window takes an accent
+  outline while the remote is inside it. **On a small window the strip thins itself out** — it keeps
+  play, volume, fullscreen and close, and tucks the rest behind a **⋯** tile you press to swap them in
+  and out, so nothing is ever cut off.
 - **Getting back into the docked mini‑player**, three ways, from any screen: a **Now Playing** item
   appears at the top of the side menu while something is docked (or Audio Mode is running) — press
   **OK** on it to move into the window; **hold BACK** to jump straight in, and hold it again to return;
@@ -658,16 +664,21 @@ A few things that need no button:
 
 Audio Mode plays the **sound only** and stops video decoding entirely, so you can browse the app
 while the current channel, movie or episode keeps playing. A compact **now‑playing bar** appears in
-the top bar — an animated equaliser, the title, and controls (play/pause, previous, next, volume,
-fullscreen, close). Live shows a pulsing **LIVE** badge; movies/episodes show a slim progress line
-with the remaining time.
+the top bar — an animated equaliser, the title, and a slim progress line on a recording.
+
+**The bar opens up when you move onto it**, and the page below slides down rather than being covered.
+Opened it shows **artwork** (the station's logo when there is one, otherwise a coloured tile with the
+equaliser in it), the station name, and a pulsing **LIVE** badge or how far into the recording you are.
+It carries **seven controls**: back, play/pause, forward, **favourite** (the same heart as the full
+player, coral when set), volume, fullscreen and **close**. The two outer buttons **change channel on a
+live stream and rewind/fast‑forward on a recording**.
 
 - **Turn it on** with the **headphones button** on the full‑screen player controls, or on the docked
   mini‑player.
 - **Using the bar (D‑pad):** move focus onto it and the whole bar highlights; press **OK** to step
   **inside**. Now **Left/Right** move between the buttons and **OK** runs the highlighted one. Focus
   stays inside the bar — press **Back** to step out.
-- **Fullscreen** returns to full video; **close** (✕) stops playback.
+- **Fullscreen** returns to full video; **close** (✕) stops playback — **Back** only steps out of the bar.
 
 ### "Audio only" — when the item itself has no picture
 

@@ -75,6 +75,7 @@ import tv.own.owntv.features.settings.data.LiveBuffer
 import tv.own.owntv.features.settings.data.LiveLatency
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.player.LiveLadder
+import tv.own.owntv.player.LiveProgramme
 import tv.own.owntv.player.LiveStreamQuirks
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -336,6 +337,19 @@ class LiveViewModel(
             else epgReader.nowNextAt(ch, minute * 60_000L, custom.value, epgOffset.value)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /**
+     * The playing channel's guide entries, for the player's live timeline: they become the programme
+     * boundary ticks drawn on the bar and the name the scrub bubble reads out. Keyed on the channel
+     * alone — scrubbing must not re-query the guide, the whole two-hour window is already here.
+     */
+    val timelineProgrammes: StateFlow<List<LiveProgramme>> =
+        combine(_previewChannel, epgRefresh) { ch, tick -> ch to tick }
+            .distinctUntilChanged { a, b -> a.first?.id == b.first?.id && a.second == b.second }
+            .mapLatest { (ch, _) ->
+                ch?.let { catchupProgrammes(it).map { p -> LiveProgramme(p.startMs, p.stopMs, p.title) } }.orEmpty()
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /**
      * The focused channel's REAL category name — resolved from its `categoryId`, NOT from whatever rail

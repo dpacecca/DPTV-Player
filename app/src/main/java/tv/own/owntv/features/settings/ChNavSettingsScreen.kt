@@ -124,7 +124,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             modifier = Modifier.focusRequester(upSkipFocus),
         )
         Row2(
-            icon = OwnTVIcon.SKIP_NEXT,
+            icon = OwnTVIcon.CH_NAV,
             title = stringResource(R.string.settings_ch_nav_down),
             desc = stringResource(R.string.settings_ch_nav_down_description),
             chip = localizedInteger(downSkip, grouping = false),

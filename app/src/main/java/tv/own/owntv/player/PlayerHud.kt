@@ -146,6 +146,8 @@ fun PlayerHud(
     onForwardLive: (() -> Unit)? = null,
     onGoToLive: (() -> Unit)? = null,
     onScrubLive: ((Int) -> Unit)? = null, // timeline scrub: +sec = back, −sec = toward live
+    // The playing channel's guide, for the timeline's programme ticks and the scrub bubble's name.
+    liveProgrammes: List<LiveProgramme> = emptyList(),
     // "Go back to…": aim at a point in the archive instead of nudging toward it with rewind. Null =
     // not a catch-up channel. [jumpBackOptions] is read when the list opens so its clock times are
     // computed against the moment the user asked, not the moment the HUD was composed.
@@ -536,7 +538,7 @@ fun PlayerHud(
             // Hide the transport (play/seek/prev/next) and bottom bar while an error is up — the error
             // overlay owns the screen with its own Retry, so the play/rewind/forward must not show behind it.
             if (error == null) {
-                CenterControls(player, nav, isPlaying, isLive, onRewindLive, onForwardLive, onGoToLive, timeshiftOffset, playFocus, modifier = Modifier.align(Alignment.Center))
+                CenterControls(player, nav, isPlaying, isLive, onRewindLive, onForwardLive, timeshiftOffset, playFocus, modifier = Modifier.align(Alignment.Center))
 
                 val reportPosition = formatTime(position)
                 val reportDuration = duration.takeIf { it > 0 }?.let { formatTime(it) }
@@ -546,7 +548,8 @@ fun PlayerHud(
                     player = player, isLive = isLive, position = position, duration = duration,
                     volume = volume, audioCount = audioCount, subCount = subCount, zoomMode = zoomMode,
                     speedLabel = formatSpeed(speed),
-                    onScrubLive = onScrubLive, timeshiftOffsetSec = timeshiftOffset,
+                    onScrubLive = onScrubLive, timeshiftOffsetSec = timeshiftOffset, onGoToLive = onGoToLive,
+                    liveProgrammes = liveProgrammes,
                     onOpenJumpBack = if (onJumpBack != null) { { dialog = HudDialog.JUMP_BACK } } else null,
                     compatMode = compatMode, onToggleCompatMode = toggleCompat,
                     vodOnExo = vodOnExo, onToggleVodEngine = toggleVod,

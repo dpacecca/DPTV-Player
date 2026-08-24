@@ -13,6 +13,9 @@
 
 ### ✨ New features
 
+- **🪟 The corner player carries one floating strip of buttons**
+- **🎵 The music bar opens up when you move to it**
+- **✨ Focus that reads like light, and icons that stop sharing**
 - **🗂️ Settings is a spine and a sheet, with your quick switches at the top of it**
 - **🔀 Arrange the long-press menus yourself**
 - **▶️ The player's transport buttons sit in one pill**
