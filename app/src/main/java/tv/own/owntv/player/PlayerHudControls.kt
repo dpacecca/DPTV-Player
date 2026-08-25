@@ -187,7 +187,7 @@ internal fun LiveStateBadge(offsetSec: Int?) {
             modifier = Modifier.size(10.dp),
         )
         Text(
-            if (behind) stringResource(R.string.player_live_offset, mmss(offsetSec!!)) else stringResource(R.string.player_live),
+            if (behind) stringResource(R.string.player_live_offset, mmss(offsetSec)) else stringResource(R.string.player_live),
             style = MaterialTheme.typography.labelSmall.copy(textDirection = TextDirection.Content),
             color = Color.White,
             fontWeight = FontWeight.Bold,

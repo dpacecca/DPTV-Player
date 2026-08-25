@@ -50,6 +50,7 @@ import tv.own.owntv.features.settings.data.ChNavLimits
 import tv.own.owntv.features.settings.data.EpgAutoRefresh
 import tv.own.owntv.features.settings.data.PanelSection
 import tv.own.owntv.features.settings.data.PanelShares
+import tv.own.owntv.features.settings.data.GuideWidthShares
 import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
 import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.settings.data.SubtitleStyle
@@ -628,6 +629,14 @@ class SettingsViewModel(
 
     fun setPanelWidths(s: PanelSection, enabled: Boolean, shares: PanelShares) {
         viewModelScope.launch { settings.setPanelWidths(s, enabled, shares) }
+    }
+
+    val guideWidthEnabled: StateFlow<Boolean> = settings.guideWidthEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    val guideWidthShares: StateFlow<GuideWidthShares?> = settings.guideWidthShares
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    fun setGuideWidths(enabled: Boolean, shares: GuideWidthShares) {
+        viewModelScope.launch { settings.setGuideWidths(enabled, shares) }
     }
 
     val preferredAudioLang: StateFlow<String> = settings.preferredAudioLang.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")

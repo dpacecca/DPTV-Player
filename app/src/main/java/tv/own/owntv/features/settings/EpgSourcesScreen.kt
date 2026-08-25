@@ -497,6 +497,7 @@ private fun PlaylistEpgPicker(
     onPick: (EpgSourcesViewModel.PlaylistEpg) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     val colors = OwnTVTheme.colors
     val options by produceState<List<EpgSourcesViewModel.PlaylistEpg>?>(initialValue = null) { value = runCatching { load() }.getOrDefault(emptyList()) }
     val firstFocus = remember { FocusRequester() }
@@ -533,5 +534,6 @@ private fun PlaylistEpgPicker(
                 OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
             }
         }
+    }
     }
 }

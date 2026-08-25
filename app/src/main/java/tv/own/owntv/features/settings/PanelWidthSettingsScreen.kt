@@ -424,10 +424,12 @@ private fun PanelWidthDiagram(shares: PanelShares) {
 
 /** One panel's row: label, then − value + in [PanelWidthLimits.STEP] increments. */
 @Composable
-private fun StepRow(
+internal fun StepRow(
     label: String,
     value: Int,
     minimum: Int = PanelWidthLimits.MIN,
+    maximum: Int = PanelWidthLimits.MAX,
+    step: Int = PanelWidthLimits.STEP,
     onSet: (Int) -> Unit,
 ) {
     val colors = OwnTVTheme.colors
@@ -441,7 +443,7 @@ private fun StepRow(
         // drop it, and focus is trapped in this dialog — the D-pad would go dead (the bug fixed in
         // StepperDialog). They just stop moving the value and dim instead.
         StepBtn("–", atLimit = value <= minimum) {
-            onSet((value - PanelWidthLimits.STEP).coerceAtLeast(minimum))
+            onSet((value - step).coerceAtLeast(minimum))
         }
         Text(
             stringResource(R.string.common_percent, value),
@@ -450,8 +452,8 @@ private fun StepRow(
             textAlign = TextAlign.Center,
             modifier = Modifier.width(64.dp),
         )
-        StepBtn("+", atLimit = value >= PanelWidthLimits.MAX) {
-            onSet((value + PanelWidthLimits.STEP).coerceAtMost(PanelWidthLimits.MAX))
+        StepBtn("+", atLimit = value >= maximum) {
+            onSet((value + step).coerceAtMost(maximum))
         }
     }
 }

@@ -13,6 +13,13 @@
 
 ### ✨ New features
 
+- **🏷️ Every merged library says which provider an item came from**
+- **🔎 Customize can show All, Visible or Hidden entries**
+- **⏪ Four remote buttons can page long browse lists**
+- **🕰️ The Guide keeps the present in view**
+- **↔️ Choose how much of Guide belongs to channels and programmes**
+- **🪟 Popup boxes and popup text finally size independently**
+- **✨ Glass Effect is now a complete settings screen**
 - **🪟 The corner player carries one floating strip of buttons**
 - **🎵 The music bar opens up when you move to it**
 - **✨ Focus that reads like light, and icons that stop sharing**

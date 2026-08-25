@@ -9,6 +9,7 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -123,6 +124,8 @@ import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.glass
 import tv.own.owntv.ui.theme.AppFontFamily
 import tv.own.owntv.ui.theme.FontCustomization
+import tv.own.owntv.ui.theme.PopupFontScale
+import tv.own.owntv.ui.theme.PopupSizeScale
 import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.player.displayText
@@ -149,7 +152,7 @@ internal val LocalSettingsRowTone = staticCompositionLocalOf { TileTone.PRIMARY 
 private fun Toned(tone: TileTone, content: @Composable () -> Unit) =
     CompositionLocalProvider(LocalSettingsRowTone provides tone, content = content)
 
-private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH, CONTENT_MENUS }
+private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, VIDEO, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS }
 
 @Composable
 internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
@@ -205,6 +208,7 @@ fun SettingsScreen(
     // Deep-link from the Guide's "Add EPG" button: jump straight to EPG Sources in add mode.
     var consumeEpgAdd by remember { mutableStateOf(false) }
     var showZoom by remember { mutableStateOf(false) }
+    var showPopupSize by remember { mutableStateOf(false) }
     var showFontCustomization by remember { mutableStateOf(false) }
     var showTheme by remember { mutableStateOf(false) }
     var showAccent by remember { mutableStateOf(false) }
@@ -224,7 +228,6 @@ fun SettingsScreen(
     var showBgImageChooser by remember { mutableStateOf(false) }
     var showBgPicker by remember { mutableStateOf(false) }
     var showBgRemote by remember { mutableStateOf(false) }
-    var showGlassEffect by remember { mutableStateOf(false) }
     var showAmbientGlow by remember { mutableStateOf(false) }
     var showBrowsing by remember { mutableStateOf(false) }
     val browsingRowFocus = remember { FocusRequester() }
@@ -250,6 +253,7 @@ fun SettingsScreen(
     val accentRowFocus = remember { FocusRequester() }
     val focusHighlightRowFocus = remember { FocusRequester() }
     val zoomRowFocus = remember { FocusRequester() }
+    val popupSizeRowFocus = remember { FocusRequester() }
     val fontCustomizationRowFocus = remember { FocusRequester() }
     val updateRowFocus = remember { FocusRequester() }
     val aboutRowFocus = remember { FocusRequester() }
@@ -260,7 +264,6 @@ fun SettingsScreen(
     val startupRowFocus = remember { FocusRequester() }
     val errorLogRowFocus = remember { FocusRequester() }
     val livePreviewQuickFocus = remember { FocusRequester() }
-    val glassEffectRowFocus = remember { FocusRequester() }
     val ambientGlowRowFocus = remember { FocusRequester() }
     // Hoisted list state for the root settings list. We snapshot its position the instant a row is
     // clicked (in onClick, before any recomposition) and restore it on dialog close, so the list
@@ -273,13 +276,13 @@ fun SettingsScreen(
         savedIndex = listState.firstVisibleItemIndex
         savedOffset = listState.firstVisibleItemScrollOffset
     }
-    val anyDialogOpen = showZoom || showFontCustomization || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showStartupChannelPicker || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showGlassEffect || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote
+    val anyDialogOpen = showZoom || showPopupSize || showFontCustomization || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showStartupChannelPicker || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showFontCustomization, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showStartupChannelPicker, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showGlassEffect, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote) {
+    LaunchedEffect(showZoom, showPopupSize, showFontCustomization, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showStartupChannelPicker, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote) {
         if (!anyDialogOpen) {
             // Focus back on the opener row, with the scroll offset held still the whole way — see
             // [restoreAfterDialogClose] for why doing those two in sequence made the highlight travel.
@@ -338,6 +341,7 @@ fun SettingsScreen(
     val panelWidthMovies by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.features.settings.data.PanelSection.MOVIES).collectAsStateWithLifecycle()
     val panelWidthSeries by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.features.settings.data.PanelSection.SERIES).collectAsStateWithLifecycle()
     val panelWidthCustom = panelWidthLive || panelWidthMovies || panelWidthSeries
+    val guideWidthCustom by settingsVm.guideWidthEnabled.collectAsStateWithLifecycle()
 
     // Auto frame rate is the one toggle that can make the picture visibly worse on the wrong hardware:
     // below Android 12 there is no way to ask the display which refresh rates it can reach without
@@ -383,7 +387,9 @@ fun SettingsScreen(
         SettingsTab.NAV_MENU to FocusRequester(),
         SettingsTab.CH_NAV to FocusRequester(),
         SettingsTab.CONTENT_MENUS to FocusRequester(),
-        SettingsTab.PANEL_WIDTH to FocusRequester(),
+            SettingsTab.PANEL_WIDTH to FocusRequester(),
+            SettingsTab.GUIDE_WIDTH to FocusRequester(),
+            SettingsTab.GLASS_EFFECT to FocusRequester(),
     ) }
     // Mini player is a popup on the Video player screen, not a screen of its own. The settings search
     // still lists it by name, so it needs a way to say "open that popup on arrival".
@@ -434,8 +440,10 @@ fun SettingsScreen(
         SettingsTab.NAV_MENU -> { tv.own.owntv.features.settings.NavMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.CONTENT_MENUS -> { tv.own.owntv.features.settings.ContentMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.ROOT -> Unit
+            SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+            SettingsTab.GUIDE_WIDTH -> { tv.own.owntv.features.settings.GuideWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+            SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+            SettingsTab.ROOT -> Unit
     }
 
     val colors = OwnTVTheme.colors
@@ -560,15 +568,14 @@ fun SettingsScreen(
             focus = focusHighlightRowFocus,
             onClick = { saveScroll(); dialogReturn = focusHighlightRowFocus; showFocusHighlight = true },
         ),
-        // One consolidated "Glass Effect" entry: opens a dialog holding the glass on/off toggle,
-        // the background-image chooser, and the transparency stepper (see GlassEffectDialog).
+        // Glass Effect has enough controls to be a full settings screen; the root row only summarizes it.
         RootRow(
-            "glass_effect", TileTone.PRIMARY, OwnTVIcon.SPARKLE,
+            tabRowKey(SettingsTab.GLASS_EFFECT), TileTone.PRIMARY, OwnTVIcon.SPARKLE,
             title = stringResource(R.string.settings_glass_effect), desc = stringResource(R.string.settings_glass_description),
             chip = if (glassOn) glassPresetLabel(glassConfig.preset) else stringResource(R.string.common_off),
             chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY,
-            focus = glassEffectRowFocus,
-            onClick = { saveScroll(); dialogReturn = glassEffectRowFocus; showGlassEffect = true },
+            focus = rowFocus.getValue(SettingsTab.GLASS_EFFECT),
+            onClick = { open(SettingsTab.GLASS_EFFECT) },
         ),
         if (themeMode == ThemeMode.DARK && !glassOn) RootRow(
             "ambient_glow", TileTone.PRIMARY, OwnTVIcon.GLOW,
@@ -587,6 +594,15 @@ fun SettingsScreen(
             chipTone = TileTone.SECONDARY,
             focus = fontCustomizationRowFocus,
             onClick = { saveScroll(); dialogReturn = fontCustomizationRowFocus; showFontCustomization = true },
+        ),
+        RootRow(
+            "popup_size", TileTone.SECONDARY, OwnTVIcon.ZOOM,
+            title = stringResource(R.string.settings_popup_size),
+            desc = stringResource(R.string.settings_popup_size_description),
+            chip = stringResource(R.string.common_percent, fontCustomization.popupSizePercent),
+            chipTone = TileTone.SECONDARY,
+            focus = popupSizeRowFocus,
+            onClick = { saveScroll(); dialogReturn = popupSizeRowFocus; showPopupSize = true },
         ),
         RootRow(
             "ui_zoom", TileTone.SECONDARY, OwnTVIcon.ZOOM,
@@ -628,6 +644,15 @@ fun SettingsScreen(
             chipTone = if (panelWidthCustom) TileTone.PRIMARY else TileTone.SECONDARY,
             focus = rowFocus.getValue(SettingsTab.PANEL_WIDTH),
             onClick = { open(SettingsTab.PANEL_WIDTH) },
+        ),
+        RootRow(
+            tabRowKey(SettingsTab.GUIDE_WIDTH), TileTone.PRIMARY, OwnTVIcon.EPG,
+            title = stringResource(R.string.settings_guide_width),
+            desc = stringResource(R.string.settings_guide_width_description),
+            chip = if (guideWidthCustom) stringResource(R.string.settings_live_latency_custom) else stringResource(R.string.settings_subtitle_default),
+            chipTone = if (guideWidthCustom) TileTone.PRIMARY else TileTone.SECONDARY,
+            focus = rowFocus.getValue(SettingsTab.GUIDE_WIDTH),
+            onClick = { open(SettingsTab.GUIDE_WIDTH) },
         ),
         RootRow(
             "browsing_lists", TileTone.PRIMARY, OwnTVIcon.LIST_GRID,
@@ -946,7 +971,9 @@ fun SettingsScreen(
                 chip = if (chNavEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_panel_width), stringResource(R.string.settings_search_keywords_panel_width), OwnTVIcon.PANEL_WIDTH, TileTone.PRIMARY,
                 chip = if (panelWidthCustom) stringResource(R.string.settings_live_latency_custom) else stringResource(R.string.settings_subtitle_default), chipTone = if (panelWidthCustom) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.PANEL_WIDTH) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_browsing_lists), stringResource(R.string.settings_search_keywords_browsing), OwnTVIcon.LIST_GRID, TileTone.PRIMARY) { saveScroll(); dialogReturn = browsingRowFocus; showBrowsing = true },
+        SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_guide_width), stringResource(R.string.settings_search_keywords_guide_width), OwnTVIcon.EPG, TileTone.PRIMARY,
+            chip = if (guideWidthCustom) stringResource(R.string.settings_live_latency_custom) else stringResource(R.string.settings_subtitle_default), chipTone = if (guideWidthCustom) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.GUIDE_WIDTH) },
+        SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_browsing_lists), stringResource(R.string.settings_search_keywords_browsing), OwnTVIcon.LIST_GRID, TileTone.PRIMARY) { saveScroll(); dialogReturn = browsingRowFocus; showBrowsing = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_home_root), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
             SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_metadata), stringResource(R.string.settings_search_keywords_metadata), OwnTVIcon.IMAGE, TileTone.PRIMARY) { open(SettingsTab.METADATA) },
             SettingsSearchEntry(stringResource(R.string.settings_group_data), stringResource(R.string.settings_download_folder), stringResource(R.string.settings_search_keywords_download), OwnTVIcon.DOWNLOADS, TileTone.TERTIARY,
@@ -961,16 +988,25 @@ fun SettingsScreen(
                 chip = focusHighlightChip(focusHighlight, focusHighlightWidth), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showFocusHighlight = true },
             if (themeMode == ThemeMode.DARK && !glassOn) SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ambient_glow), stringResource(R.string.settings_ambient_glow_description), OwnTVIcon.GLOW, TileTone.PRIMARY,
                 chip = stringResource(if (ambientGlowEnabled) R.string.common_on else R.string.common_off), chipTone = if (ambientGlowEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAmbientGlow = true } else null,
-            SettingsSearchEntry(
-                stringResource(R.string.settings_group_appearance),
-                stringResource(R.string.settings_font_customization),
+        SettingsSearchEntry(
+            stringResource(R.string.settings_group_appearance),
+            stringResource(R.string.settings_font_customization),
                 stringResource(R.string.settings_search_keywords_fonts),
                 OwnTVIcon.TEXT_SIZE,
                 TileTone.SECONDARY,
                 chip = stringResource(R.string.common_percent, fontCustomization.sizePercent),
-                chipTone = TileTone.SECONDARY,
-            ) { saveScroll(); dialogReturn = searchFieldFocus; showFontCustomization = true },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ui_zoom), stringResource(R.string.settings_search_keywords_zoom), OwnTVIcon.ZOOM, TileTone.SECONDARY,
+            chipTone = TileTone.SECONDARY,
+        ) { saveScroll(); dialogReturn = searchFieldFocus; showFontCustomization = true },
+        SettingsSearchEntry(
+            stringResource(R.string.settings_group_appearance),
+            stringResource(R.string.settings_popup_size),
+            stringResource(R.string.settings_popup_size_description),
+            OwnTVIcon.ZOOM,
+            TileTone.SECONDARY,
+            chip = stringResource(R.string.common_percent, fontCustomization.popupSizePercent),
+            chipTone = TileTone.SECONDARY,
+        ) { saveScroll(); dialogReturn = searchFieldFocus; showPopupSize = true },
+        SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_ui_zoom), stringResource(R.string.settings_search_keywords_zoom), OwnTVIcon.ZOOM, TileTone.SECONDARY,
                 chip = stringResource(R.string.common_percent, uiZoomPercent), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showZoom = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_animations), stringResource(R.string.settings_search_keywords_animation), OwnTVIcon.MOTION, TileTone.SECONDARY,
                 chip = stringResource(animationLevel.labelRes), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAnimations = true },
@@ -1278,10 +1314,12 @@ fun SettingsScreen(
     }
 
     if (showUpdate) {
-        UpdateDialog(onDismiss = { showUpdate = false }, checkOnOpen = true)
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showUpdate = false }) {
+            UpdateDialog(onDismiss = { showUpdate = false }, checkOnOpen = true)
+        }
     }
     if (showCatchupTime) {
-        CatchupTimeDialog(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showCatchupTime = false }) { CatchupTimeDialog(
             mode = catchupTz,
             offsetMinutes = catchupOffset,
             offsetRange = settingsVm.catchupOffsetRangeMinutes,
@@ -1290,25 +1328,27 @@ fun SettingsScreen(
             player = catchupPlayer,
             onSetPlayer = settingsVm::setCatchupPlayer,
             onDismiss = { showCatchupTime = false },
-        )
+        ) }
     }
     if (showEpgOffset) {
-        EpgOffsetSettingDialog(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showEpgOffset = false }) { EpgOffsetSettingDialog(
             offsetMinutes = epgOffset,
             offsetRange = settingsVm.epgOffsetRangeMinutes,
             onAdjust = settingsVm::adjustEpgOffset,
             onReset = { settingsVm.setEpgOffsetMinutes(0) },
             onDismiss = { showEpgOffset = false },
-        )
+        ) }
     }
     if (showAbout) {
-        AboutDialog(onDismiss = { showAbout = false })
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAbout = false }) {
+            AboutDialog(onDismiss = { showAbout = false })
+        }
     }
     if (showClearHistory) {
-        ClearHistoryDialog(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showClearHistory = false }) { ClearHistoryDialog(
             onClear = { type -> settingsVm.clearWatchHistory(type); showClearHistory = false },
             onDismiss = { showClearHistory = false },
-        )
+        ) }
     }
     if (showTheme) {
         tv.own.owntv.features.settings.PickerDialog(
@@ -1370,29 +1410,38 @@ fun SettingsScreen(
         )
     }
     if (showAccent) {
-        AccentPaletteDialog(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAccent = false }) { AccentPaletteDialog(
             accent = accent,
             customAccent = customAccent,
             onPickPreset = { settingsVm.setAccent(it) },
             onPickCustom = { settingsVm.setCustomAccent(it) },
             onDismiss = { showAccent = false },
-        )
+        ) }
     }
     if (showZoom) {
-        ZoomDialog(current = uiZoomPercent, onSet = onSetZoom, onDismiss = { showZoom = false })
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showZoom = false }) {
+            ZoomDialog(current = uiZoomPercent, onSet = onSetZoom, onDismiss = { showZoom = false })
+        }
+    }
+    if (showPopupSize) {
+        PopupSizeDialog(
+            current = fontCustomization.popupSizePercent,
+            onSet = { onSetFontCustomization(fontCustomization.copy(popupSizePercent = it)) },
+            onDismiss = { showPopupSize = false },
+        )
     }
     if (showFontCustomization) {
-        FontCustomizationDialog(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showFontCustomization = false }) { FontCustomizationDialog(
             current = fontCustomization,
             onApply = {
                 onSetFontCustomization(it)
                 showFontCustomization = false
             },
             onDismiss = { showFontCustomization = false },
-        )
+        ) }
     }
     if (showBrowsing) {
-        BrowsingListsDialog(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showBrowsing = false }) { BrowsingListsDialog(
             catLive = rememberCatLive, catMovies = rememberCatMovies, catSeries = rememberCatSeries,
             itemLive = rememberLastLive, itemMovies = rememberLastMovies, itemSeries = rememberLastSeries,
             onToggleCatLive = { settingsVm.setRememberCategoryLive(!rememberCatLive) },
@@ -1402,55 +1451,32 @@ fun SettingsScreen(
             onToggleItemMovies = { settingsVm.setRememberLastMovies(!rememberLastMovies) },
             onToggleItemSeries = { settingsVm.setRememberLastSeries(!rememberLastSeries) },
             onDismiss = { showBrowsing = false },
-        )
-    }
-    if (showGlassEffect) {
-        GlassEffectDialog(
-            glassOn = glassConfig.enabled,
-            preset = glassConfig.preset,
-            alphaPercent = (glassConfig.alpha * 100).roundToInt(),
-            highlightPercent = (glassConfig.highlightStrength * 100).roundToInt(),
-            allowFullTransparency = glassConfig.allowFullTransparency,
-            depthEffects = glassConfig.depthEffects,
-            bgOn = bgImagePath.isNotBlank(),
-            onToggleGlass = {
-                val on = glassConfig.enabled
-                settingsVm.setGlassScopeBitmask(if (on) 0 else GlassConfig(ALL_GLASS_SURFACES).toBitmask())
-            },
-            onSetPreset = settingsVm::setGlassPreset,
-            onSetAlpha = { settingsVm.setGlassAlphaPercent(it, (glassConfig.blurStrength * 100).roundToInt()) },
-            blurPercent = (glassConfig.blurStrength * 100).roundToInt(),
-            onSetBlur = { settingsVm.setGlassBlurPercent(it, (glassConfig.alpha * 100).roundToInt()) },
-            onSetHighlight = { settingsVm.setGlassHighlightPercent(it) },
-            onSetAllowFullTransparency = settingsVm::setGlassAllowFullTransparency,
-            onSetDepthEffects = settingsVm::setGlassDepthEffects,
-            scope = glassConfig.scope,
-            onSetScope = { settingsVm.setGlassScopeBitmask(it) },
-            // Hand off to the existing background-image chooser; on close it returns to the Glass Effect row.
-            onOpenBackground = { showGlassEffect = false; dialogReturn = glassEffectRowFocus; showBgImageChooser = true },
-            onDismiss = { showGlassEffect = false },
-        )
+        ) }
     }
     if (showAmbientGlow) {
-        AmbientGlowDialog(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAmbientGlow = false }) { AmbientGlowDialog(
             glowEnabled = ambientGlowEnabled,
             pulseEnabled = ambientGlowPulse,
             onToggleGlow = { settingsVm.setAmbientGlowEnabled(!ambientGlowEnabled) },
             onTogglePulse = { settingsVm.setAmbientGlowPulse(!ambientGlowPulse) },
             onDismiss = { showAmbientGlow = false },
-        )
+        ) }
     }
     if (showErrorLog) {
-        PlaybackErrorLogDialog(onDismiss = { showErrorLog = false })
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showErrorLog = false }) {
+            PlaybackErrorLogDialog(onDismiss = { showErrorLog = false })
+        }
     }
     if (showAfrWarning) {
-        AutoFrameRateWarningDialog(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAfrWarning = false }) { AutoFrameRateWarningDialog(
             onEnable = { settingsVm.setAutoFrameRate(true); showAfrWarning = false },
             onDismiss = { showAfrWarning = false },
-        )
+        ) }
     }
     if (showLivePreviewPanelWarning) {
-        LivePreviewPanelHiddenDialog(onDismiss = { showLivePreviewPanelWarning = false })
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showLivePreviewPanelWarning = false }) {
+            LivePreviewPanelHiddenDialog(onDismiss = { showLivePreviewPanelWarning = false })
+        }
     }
     if (showFolderPicker) {
         StorageBrowser(
@@ -1461,13 +1487,13 @@ fun SettingsScreen(
         )
     }
     if (showBgImageChooser) {
-        BackgroundImageChooserDialog(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showBgImageChooser = false }) { BackgroundImageChooserDialog(
             hasImage = bgImagePath.isNotBlank(),
             onPickLocal = { showBgImageChooser = false; showBgPicker = true },
             onPickRemote = { showBgImageChooser = false; showBgRemote = true },
             onClear = { settingsVm.setBgImagePath(""); showBgImageChooser = false },
             onDismiss = { showBgImageChooser = false },
-        )
+        ) }
     }
     if (showBgRemote) {
         val context = LocalContext.current
@@ -2364,9 +2390,7 @@ private fun FontCustomizationDialog(
         ) {
             Column(
                 modifier = Modifier
-                    .dialogPanel(width = 600.dp, padding = 28.dp)
-                    .heightIn(max = 620.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .dialogPanel(width = 600.dp, panelHeight = 620.dp, padding = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
@@ -2409,9 +2433,52 @@ private fun FontCustomizationDialog(
                     ) {
                         draft = draft.copy(sizePercent = UiFontScale.clamp(draft.sizePercent + UiFontScale.STEP))
                     }
-                }
-                Spacer(Modifier.height(20.dp))
-                FontChoiceRow(
+        }
+        Spacer(Modifier.height(20.dp))
+        Text(
+            stringResource(R.string.settings_popup_font_size),
+            style = MaterialTheme.typography.labelLarge,
+            color = colors.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            stringResource(R.string.settings_popup_font_size_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            StepButton(
+                stringResource(R.string.settings_decrease),
+                dimmed = draft.popupFontSizePercent <= PopupFontScale.MIN,
+            ) {
+                draft = draft.copy(
+                    popupFontSizePercent = PopupFontScale.clamp(
+                        draft.popupFontSizePercent - PopupFontScale.STEP,
+                    ),
+                )
+            }
+            Text(
+                stringResource(R.string.common_percent, draft.popupFontSizePercent),
+                style = MaterialTheme.typography.headlineLarge,
+                color = colors.primary,
+                modifier = Modifier.width(120.dp),
+                textAlign = TextAlign.Center,
+            )
+            StepButton(
+                stringResource(R.string.settings_increase),
+                dimmed = draft.popupFontSizePercent >= PopupFontScale.MAX,
+            ) {
+                draft = draft.copy(
+                    popupFontSizePercent = PopupFontScale.clamp(
+                        draft.popupFontSizePercent + PopupFontScale.STEP,
+                    ),
+                )
+            }
+        }
+        Spacer(Modifier.height(20.dp))
+        FontChoiceRow(
                     title = stringResource(R.string.settings_main_interface_font),
                     family = draft.mainFamily,
                     modifier = Modifier.focusRequester(mainFocus),
@@ -2430,11 +2497,13 @@ private fun FontCustomizationDialog(
                 }
                 Spacer(Modifier.height(24.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OwnTVButton(
-                        stringResource(R.string.settings_reset),
-                        onClick = { draft = FontCustomization() },
-                        style = OwnTVButtonStyle.SECONDARY,
-                    )
+            OwnTVButton(
+                stringResource(R.string.settings_reset),
+                onClick = {
+                    draft = FontCustomization(popupSizePercent = draft.popupSizePercent)
+                },
+                style = OwnTVButtonStyle.SECONDARY,
+            )
                     Spacer(Modifier.weight(1f))
                     OwnTVButton(stringResource(R.string.settings_apply), onClick = { onApply(draft) })
                 }
@@ -2507,10 +2576,8 @@ private fun FontFamilyPickerDialog(
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier
-                .dialogPanel(width = 640.dp, padding = 24.dp)
-                .heightIn(max = 640.dp)
-                .verticalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .dialogPanel(width = 640.dp, panelHeight = 640.dp, padding = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
@@ -2545,6 +2612,69 @@ private fun FontFamilyPickerDialog(
                     }
                 }
                 Spacer(Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+/** A stepper for shared popup geometry. Changes apply live to this dialog too. */
+@Composable
+private fun PopupSizeDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+        Box(
+            Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                Modifier.dialogPanel(width = 460.dp, panelHeight = 270.dp, padding = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    stringResource(R.string.settings_popup_size),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = colors.onSurface,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(R.string.settings_popup_size_range, PopupSizeScale.MIN, PopupSizeScale.MAX),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(20.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    StepButton(
+                        stringResource(R.string.settings_decrease),
+                        dimmed = current <= PopupSizeScale.MIN,
+                        modifier = Modifier.focusRequester(firstFocus),
+                    ) { onSet(PopupSizeScale.clamp(current - PopupSizeScale.STEP)) }
+                    Text(
+                        stringResource(R.string.common_percent, current),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = colors.primary,
+                        modifier = Modifier.width(120.dp),
+                        textAlign = TextAlign.Center,
+                    )
+                    StepButton(
+                        stringResource(R.string.settings_increase),
+                        dimmed = current >= PopupSizeScale.MAX,
+                    ) { onSet(PopupSizeScale.clamp(current + PopupSizeScale.STEP)) }
+                }
+                Spacer(Modifier.height(24.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OwnTVButton(
+                        stringResource(R.string.settings_reset),
+                        onClick = { onSet(PopupSizeScale.DEFAULT) },
+                        style = OwnTVButtonStyle.SECONDARY,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss)
+                }
             }
         }
     }
@@ -2673,10 +2803,10 @@ private fun AmbientGlowDialog(
     ) {
         tv.own.owntv.ui.theme.PopupFontTheme {
             Column(
-                modifier = Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(stringResource(R.string.settings_ambient_glow), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                    modifier = Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(stringResource(R.string.settings_ambient_glow), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(6.dp))
                 Text(
                     stringResource(R.string.settings_ambient_glow_dialog_description),
@@ -2722,8 +2852,104 @@ private fun AmbientGlowDialog(
  * background photo. Higher = more solid (less see-through). Changes apply live. Range 20–95% in 5%
  * steps so panels can never go fully transparent (text would be unreadable) or fully solid (pointless).
  */
+/** Dedicated Glass Effect settings destination. Background selection stays nested here, so Back returns here. */
 @Composable
-private fun GlassEffectDialog(
+private fun GlassEffectSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val settingsVm: SettingsViewModel = koinViewModel()
+    val glassConfig by settingsVm.glassConfig.collectAsStateWithLifecycle()
+    val bgImagePath by settingsVm.bgImagePath.collectAsStateWithLifecycle()
+    var showBackgroundChooser by remember { mutableStateOf(false) }
+    var showLocalPicker by remember { mutableStateOf(false) }
+    var showRemotePicker by remember { mutableStateOf(false) }
+    val ingestScope = rememberCoroutineScope()
+
+    GlassEffectDesignedScreen(
+        glassOn = glassConfig.enabled,
+        preset = glassConfig.preset,
+        alphaPercent = (glassConfig.alpha * 100).roundToInt(),
+        blurPercent = (glassConfig.blurStrength * 100).roundToInt(),
+        highlightPercent = (glassConfig.highlightStrength * 100).roundToInt(),
+        allowFullTransparency = glassConfig.allowFullTransparency,
+        depthEffects = glassConfig.depthEffects,
+        bgOn = bgImagePath.isNotBlank(),
+        scope = glassConfig.scope,
+        onToggleGlass = {
+            settingsVm.setGlassScopeBitmask(
+                if (glassConfig.enabled) 0 else GlassConfig(ALL_GLASS_SURFACES).toBitmask(),
+            )
+        },
+        onSetPreset = settingsVm::setGlassPreset,
+        onSetAlpha = {
+            settingsVm.setGlassAlphaPercent(it, (glassConfig.blurStrength * 100).roundToInt())
+        },
+        onSetBlur = {
+            settingsVm.setGlassBlurPercent(it, (glassConfig.alpha * 100).roundToInt())
+        },
+        onSetHighlight = settingsVm::setGlassHighlightPercent,
+        onSetAllowFullTransparency = settingsVm::setGlassAllowFullTransparency,
+        onSetDepthEffects = settingsVm::setGlassDepthEffects,
+        onSetScope = settingsVm::setGlassScopeBitmask,
+        onOpenBackground = { showBackgroundChooser = true },
+        onBack = onBack,
+        modifier = modifier,
+    )
+
+    if (showBackgroundChooser) {
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showBackgroundChooser = false }) {
+            BackgroundImageChooserDialog(
+                hasImage = bgImagePath.isNotBlank(),
+                onPickLocal = { showBackgroundChooser = false; showLocalPicker = true },
+                onPickRemote = { showBackgroundChooser = false; showRemotePicker = true },
+                onClear = { settingsVm.setBgImagePath(""); showBackgroundChooser = false },
+                onDismiss = { showBackgroundChooser = false },
+            )
+        }
+    }
+    if (showRemotePicker) {
+        val context = LocalContext.current
+        val remoteState by settingsVm.remoteState.collectAsStateWithLifecycle()
+        tv.own.owntv.ui.components.RemoteBackgroundDialog(
+            state = remoteState,
+            images = settingsVm.remoteImages,
+            onStart = settingsVm::startRemoteImageListener,
+            onStop = settingsVm::stopRemoteListener,
+            onImageReceived = { file ->
+                val destDir = File(context.filesDir, "backgrounds")
+                ingestScope.launch {
+                    val path = withContext(Dispatchers.IO) {
+                        runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
+                            .also { runCatching { file.delete() } }
+                    }
+                    if (path != null) settingsVm.setBgImagePath(path)
+                }
+                showRemotePicker = false
+            },
+            onDismiss = { showRemotePicker = false; showBackgroundChooser = true },
+        )
+    }
+    if (showLocalPicker) {
+        val context = LocalContext.current
+        StorageBrowser(
+            title = stringResource(R.string.settings_pick_background_title),
+            mode = BrowseMode.FILE,
+            fileExtensions = setOf("png", "jpg", "jpeg", "webp", "bmp"),
+            onPick = { file ->
+                val destDir = File(context.filesDir, "backgrounds")
+                ingestScope.launch {
+                    val path = withContext(Dispatchers.IO) {
+                        runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
+                    }
+                    if (path != null) settingsVm.setBgImagePath(path)
+                }
+                showLocalPicker = false
+            },
+            onDismiss = { showLocalPicker = false; showBackgroundChooser = true },
+        )
+    }
+}
+
+@Composable
+private fun GlassEffectDesignedScreen(
     glassOn: Boolean,
     preset: GlassPreset,
     alphaPercent: Int,
@@ -2742,7 +2968,353 @@ private fun GlassEffectDialog(
     onSetDepthEffects: (Boolean) -> Unit,
     onSetScope: (Int) -> Unit,
     onOpenBackground: () -> Unit,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OwnTVTheme.colors
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    BackHandler { onBack() }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .roundedPanel()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 32.dp, vertical = 24.dp),
+    ) {
+        tv.own.owntv.features.settings.Header(
+            title = stringResource(R.string.settings_glass_effect_title),
+            onBack = onBack,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            stringResource(R.string.settings_glass_screen_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+            modifier = Modifier.padding(start = 56.dp),
+        )
+        Spacer(Modifier.height(14.dp))
+        GlassEffectPreview()
+        Spacer(Modifier.height(14.dp))
+        tv.own.owntv.features.settings.Row2(
+            icon = OwnTVIcon.SPARKLE,
+            title = stringResource(R.string.settings_glass_effect),
+            desc = stringResource(R.string.settings_glass_master_description),
+            chip = stringResource(if (glassOn) R.string.common_on else R.string.common_off),
+            primaryChip = glassOn,
+            modifier = Modifier.fillMaxWidth().focusRequester(firstFocus),
+            onClick = onToggleGlass,
+        )
+
+        if (glassOn) {
+            Spacer(Modifier.height(12.dp))
+            GlassSettingsSection(stringResource(R.string.settings_glass_section_appearance)) {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val compact = maxWidth < 650.dp
+                    val background: @Composable (Modifier) -> Unit = { itemModifier ->
+                        GlassActionTile(
+                            title = stringResource(R.string.settings_glass_background_image),
+                            description = stringResource(R.string.settings_glass_background_action_description),
+                            selected = bgOn,
+                            modifier = itemModifier,
+                            onClick = onOpenBackground,
+                        )
+                    }
+                    val presets: @Composable (Modifier) -> Unit = { itemModifier ->
+                        Column(itemModifier, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            GlassPreset.entries.chunked(3).forEach { choices ->
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                    choices.forEach { choice ->
+                                        OwnTVButton(
+                                            label = glassPresetLabel(choice),
+                                            onClick = { onSetPreset(choice) },
+                                            style = OwnTVButtonStyle.SECONDARY,
+                                            selected = preset == choice,
+                                            compact = true,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (compact) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            background(Modifier.fillMaxWidth())
+                            presets(Modifier.fillMaxWidth())
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            background(Modifier.weight(0.75f).height(86.dp))
+                            presets(Modifier.weight(1.25f))
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+            GlassSettingsSection(stringResource(R.string.settings_glass_section_fine_tuning)) {
+                GlassTuningRow(
+                    title = stringResource(R.string.settings_glass_surface_transparency_title),
+                    description = stringResource(R.string.settings_glass_transparency_short_description),
+                    value = alphaPercent,
+                    minimum = 20,
+                    maximum = 100,
+                    step = 5,
+                    onSet = onSetAlpha,
+                )
+                GlassSectionDivider()
+                GlassTuningRow(
+                    title = stringResource(R.string.settings_glass_background_blur_title),
+                    description = stringResource(R.string.settings_glass_blur_short_description),
+                    value = blurPercent,
+                    minimum = 0,
+                    maximum = 100,
+                    step = 10,
+                    onSet = onSetBlur,
+                )
+                GlassSectionDivider()
+                GlassTuningRow(
+                    title = stringResource(R.string.settings_glass_highlight_title),
+                    description = stringResource(R.string.settings_glass_highlight_short_description),
+                    value = highlightPercent,
+                    minimum = 0,
+                    maximum = 100,
+                    step = 5,
+                    onSet = onSetHighlight,
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+            GlassSettingsSection(stringResource(R.string.settings_glass_section_behavior)) {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val compact = maxWidth < 650.dp
+                    val fullTransparencyTile: @Composable (Modifier) -> Unit = { itemModifier ->
+                        GlassActionTile(
+                            title = stringResource(R.string.settings_glass_full_transparency_short),
+                            description = stringResource(R.string.settings_glass_full_transparency_short_description),
+                            selected = allowFullTransparency,
+                            modifier = itemModifier,
+                            onClick = { onSetAllowFullTransparency(!allowFullTransparency) },
+                        )
+                    }
+                    val depthTile: @Composable (Modifier) -> Unit = { itemModifier ->
+                        GlassActionTile(
+                            title = stringResource(R.string.settings_glass_depth_effects_short),
+                            description = stringResource(R.string.settings_glass_depth_effects_short_description),
+                            selected = depthEffects,
+                            modifier = itemModifier,
+                            onClick = { onSetDepthEffects(!depthEffects) },
+                        )
+                    }
+                    if (compact) {
+                        Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                            fullTransparencyTile(Modifier.fillMaxWidth())
+                            depthTile(Modifier.fillMaxWidth())
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                            fullTransparencyTile(Modifier.weight(1f))
+                            depthTile(Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+            GlassSettingsSection(stringResource(R.string.settings_glass_apply_to)) {
+                val allSelected = scope == ALL_GLASS_SURFACES
+                val choices = listOf<Pair<String, GlassSurface?>>(stringResource(R.string.settings_glass_surface_all) to null) +
+                    GlassSurface.entries.map { glassSurfaceLabel(it) to it }
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val columns = if (maxWidth < 650.dp) 2 else 4
+                    Column {
+                        choices.chunked(columns).forEachIndexed { rowIndex, rowChoices ->
+                            if (rowIndex > 0) Spacer(Modifier.height(7.dp))
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                rowChoices.forEach { (label, surface) ->
+                                    val selected = if (surface == null) allSelected else surface in scope
+                                    OwnTVButton(
+                                        label = label,
+                                        onClick = {
+                                            if (surface == null) {
+                                                onSetScope(GlassConfig(ALL_GLASS_SURFACES).toBitmask())
+                                            } else {
+                                                val next = if (surface in scope) scope - surface else scope + surface
+                                                onSetScope(GlassConfig(next).toBitmask())
+                                            }
+                                        },
+                                        style = OwnTVButtonStyle.SECONDARY,
+                                        selected = selected,
+                                        compact = true,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                                repeat(columns - rowChoices.size) { Spacer(Modifier.weight(1f)) }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+            Row(Modifier.fillMaxWidth()) {
+                Spacer(Modifier.weight(1f))
+                OwnTVButton(
+                    stringResource(R.string.settings_glass_reset_balanced),
+                    onClick = {
+                        onSetPreset(GlassPreset.BALANCED)
+                        onSetHighlight((GlassConfig.DEFAULT_HIGHLIGHT_STRENGTH * 100).roundToInt())
+                        onSetAllowFullTransparency(false)
+                        onSetDepthEffects(true)
+                        onSetScope(GlassConfig(ALL_GLASS_SURFACES).toBitmask())
+                    },
+                    style = OwnTVButtonStyle.SECONDARY,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GlassSettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+    val colors = OwnTVTheme.colors
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(colors.surfaceContainerLow)
+            .border(1.dp, colors.outlineVariant.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+            .padding(14.dp),
+    ) {
+        Text(title, style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+        Spacer(Modifier.height(10.dp))
+        content()
+    }
+}
+
+@Composable
+private fun GlassActionTile(
+    title: String,
+    description: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    FocusableSurface(
+        onClick = onClick,
+        selected = selected,
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        surface = GlassSurface.CARDS,
+        contentAlignment = Alignment.CenterStart,
+    ) { _ ->
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+                Text(description, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            }
+            Text(
+                stringResource(if (selected) R.string.common_on else R.string.common_off),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) colors.primary else colors.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GlassTuningRow(
+    title: String,
+    description: String,
+    value: Int,
+    minimum: Int,
+    maximum: Int,
+    step: Int,
+    onSet: (Int) -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val fraction = ((value - minimum).toFloat() / (maximum - minimum).coerceAtLeast(1)).coerceIn(0f, 1f)
+    FocusableSurface(
+        onClick = { onSet((value + step).let { if (it > maximum) minimum else it }) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (event.key) {
+                    Key.DirectionLeft -> { onSet((value - step).coerceAtLeast(minimum)); true }
+                    Key.DirectionRight -> { onSet((value + step).coerceAtMost(maximum)); true }
+                    else -> false
+                }
+            },
+        shape = RoundedCornerShape(11.dp),
+        surface = GlassSurface.CARDS,
+        contentAlignment = Alignment.CenterStart,
+    ) { _ ->
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
+                Text(description, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            }
+            Box(
+                Modifier.width(210.dp).height(6.dp).clip(RoundedCornerShape(3.dp))
+                    .background(colors.outlineVariant.copy(alpha = 0.55f)),
+            ) {
+                Box(
+                    Modifier.fillMaxWidth(fraction).fillMaxHeight()
+                        .background(colors.primary, RoundedCornerShape(3.dp)),
+                )
+            }
+            Text(
+                stringResource(R.string.settings_surface_transparency, value),
+                style = MaterialTheme.typography.titleSmall,
+                color = colors.primary,
+                textAlign = TextAlign.End,
+                modifier = Modifier.width(58.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun GlassSectionDivider() {
+    Box(
+        Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(1.dp)
+            .background(OwnTVTheme.colors.outlineVariant.copy(alpha = 0.45f)),
+    )
+}
+
+@Composable
+private fun GlassEffectContentScreen(
+    glassOn: Boolean,
+    preset: GlassPreset,
+    alphaPercent: Int,
+    blurPercent: Int,
+    highlightPercent: Int,
+    allowFullTransparency: Boolean,
+    depthEffects: Boolean,
+    bgOn: Boolean,
+    scope: Set<GlassSurface>,
+    onToggleGlass: () -> Unit,
+    onSetPreset: (GlassPreset) -> Unit,
+    onSetAlpha: (Int) -> Unit,
+    onSetBlur: (Int) -> Unit,
+    onSetHighlight: (Int) -> Unit,
+    onSetAllowFullTransparency: (Boolean) -> Unit,
+    onSetDepthEffects: (Boolean) -> Unit,
+    onSetScope: (Int) -> Unit,
+    onOpenBackground: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
     val firstFocus = remember { FocusRequester() }
@@ -2763,41 +3335,51 @@ private fun GlassEffectDialog(
     fun blurClamp(v: Int) = v.coerceIn(blurMin, blurMax)
     val highlightStep = 5
     fun highlightClamp(v: Int) = v.coerceIn(0, 100)
-    BackHandler { onDismiss() }
-    if (!showSurfaces) Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        // Shared user-selected popup font, matching the app's other dialogs.
-        tv.own.owntv.ui.theme.PopupFontTheme {
+    BackHandler { onBack() }
+    if (!showSurfaces) {
         Column(
-            modifier = Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = modifier
+                .fillMaxSize()
+                .roundedPanel()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 40.dp, vertical = 28.dp),
         ) {
-            Text(stringResource(R.string.settings_glass_effect_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+            tv.own.owntv.features.settings.Header(
+                title = stringResource(R.string.settings_glass_effect_title),
+                onBack = onBack,
+            )
             Spacer(Modifier.height(6.dp))
             Text(
                 stringResource(R.string.settings_glass_effect_description),
                 style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(14.dp))
+            Text(
+                stringResource(R.string.settings_glass_live_preview),
+                style = MaterialTheme.typography.labelLarge,
+                color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(6.dp))
+            GlassEffectPreview()
+            Spacer(Modifier.height(14.dp))
             // Master on/off for the glass (works with or without a background image).
-            OwnTVButton(
-                if (glassOn) stringResource(R.string.settings_glass_effect_on) else stringResource(R.string.settings_glass_effect_off),
-                onClick = onToggleGlass,
-                style = if (glassOn) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+            tv.own.owntv.features.settings.Row2(
                 icon = OwnTVIcon.THEME,
+                title = stringResource(R.string.settings_glass_effect),
+                desc = stringResource(R.string.settings_glass_description),
+                chip = stringResource(if (glassOn) R.string.common_on else R.string.common_off),
+                primaryChip = glassOn,
+                onClick = onToggleGlass,
                 modifier = Modifier.fillMaxWidth().focusRequester(firstFocus),
             )
             if (glassOn) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
                 // Wallpaper belongs to Glass mode and stays hidden until Glass is enabled.
-                OwnTVButton(
-                    if (bgOn) stringResource(R.string.settings_background_on) else stringResource(R.string.settings_background_off),
-                    onClick = onOpenBackground,
-                    style = OwnTVButtonStyle.SECONDARY,
+                tv.own.owntv.features.settings.Row2(
                     icon = OwnTVIcon.IMAGE,
+                    title = stringResource(if (bgOn) R.string.settings_background_on else R.string.settings_background_off),
+                    chevron = true,
+                    onClick = onOpenBackground,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(22.dp))
@@ -2927,40 +3509,6 @@ private fun GlassEffectDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(Modifier.height(18.dp))
-                Text(stringResource(R.string.settings_glass_live_preview), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    Modifier.fillMaxWidth().height(46.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    // Display-only samples: a row, a focused card, and a focused chrome chip.
-                    Box(
-                        Modifier.weight(1.35f).fillMaxHeight().clip(RoundedCornerShape(12.dp)).glass(
-                            surface = GlassSurface.PANELS,
-                            baseFill = colors.surfaceContainerHighest,
-                            shape = RoundedCornerShape(12.dp),
-                            interaction = GlassInteraction.SELECTED,
-                        ),
-                    )
-                    Box(
-                        Modifier.weight(0.8f).fillMaxHeight().clip(RoundedCornerShape(12.dp)).glass(
-                            surface = GlassSurface.CARDS,
-                            baseFill = colors.surfaceContainerHighest,
-                            shape = RoundedCornerShape(12.dp),
-                            interaction = GlassInteraction.FOCUSED,
-                        ),
-                    )
-                    Box(
-                        Modifier.weight(0.85f).height(30.dp).clip(RoundedCornerShape(15.dp)).glass(
-                            surface = GlassSurface.TOPBAR,
-                            baseFill = colors.surfaceContainerHighest,
-                            shape = RoundedCornerShape(15.dp),
-                            interaction = GlassInteraction.FOCUSED,
-                        ),
-                    )
-                }
                 // Advanced: choose exactly which surfaces render as glass.
                 Spacer(Modifier.height(16.dp))
                 OwnTVButton(
@@ -2971,9 +3519,9 @@ private fun GlassEffectDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (glassOn) OwnTVButton(
+            if (glassOn) {
+                Spacer(Modifier.height(24.dp))
+                OwnTVButton(
                     stringResource(R.string.settings_reset),
                     onClick = {
                         onSetPreset(GlassPreset.BALANCED)
@@ -2983,15 +3531,59 @@ private fun GlassEffectDialog(
                         onSetScope(GlassConfig(ALL_GLASS_SURFACES).toBitmask())
                     },
                     style = OwnTVButtonStyle.SECONDARY,
+                    modifier = Modifier.fillMaxWidth(),
                 )
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss)
             }
-        }
         }
     }
     if (showSurfaces) {
         GlassSurfacesDialog(scope = scope, onSetScope = onSetScope, onDismiss = { showSurfaces = false })
+    }
+}
+
+/** Compact always-visible sample of the same panel/card/top-bar surfaces controlled below. */
+@Composable
+private fun GlassEffectPreview() {
+    val colors = OwnTVTheme.colors
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(92.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(colors.secondaryContainer.copy(alpha = 0.42f))
+            .padding(horizontal = 24.dp, vertical = 18.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier.weight(1.5f).fillMaxHeight().clip(RoundedCornerShape(12.dp)).glass(
+                    surface = GlassSurface.PANELS,
+                    baseFill = colors.surfaceContainerHighest,
+                    shape = RoundedCornerShape(12.dp),
+                    interaction = GlassInteraction.SELECTED,
+                ),
+            )
+            Box(
+                Modifier.weight(0.9f).fillMaxHeight().clip(RoundedCornerShape(12.dp)).glass(
+                    surface = GlassSurface.CARDS,
+                    baseFill = colors.surfaceContainerHighest,
+                    shape = RoundedCornerShape(12.dp),
+                    interaction = GlassInteraction.FOCUSED,
+                ),
+            )
+            Box(
+                Modifier.weight(1f).height(34.dp).clip(RoundedCornerShape(17.dp)).glass(
+                    surface = GlassSurface.TOPBAR,
+                    baseFill = colors.surfaceContainerHighest,
+                    shape = RoundedCornerShape(17.dp),
+                    interaction = GlassInteraction.FOCUSED,
+                ),
+            )
+        }
     }
 }
 

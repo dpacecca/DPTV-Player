@@ -53,6 +53,7 @@ import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.theme.PopupFontTheme
 import java.io.File
 
 /**
@@ -371,6 +372,7 @@ private fun RemoteLocalChooserDialog(
     onLocal: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    PopupFontTheme {
     val colors = OwnTVTheme.colors
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
@@ -390,6 +392,7 @@ private fun RemoteLocalChooserDialog(
             }
         }
     }
+    }
 }
 
 /** A single-secret prompt with a confirm (encrypt/restore), a skip (no passwords) and cancel. */
@@ -404,6 +407,7 @@ private fun BackupPasswordDialog(
     onSkip: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    PopupFontTheme {
     val colors = OwnTVTheme.colors
     var password by remember { mutableStateOf("") }
     val firstFocus = remember { FocusRequester() }
@@ -446,6 +450,7 @@ private fun BackupPasswordDialog(
  * The active profile needs no PIN to include, so pre-ticking it reveals nothing a locked profile
  * was protecting.
  */
+    }
 @Composable
 private fun ProfilePickerDialog(
     profiles: List<tv.own.owntv.core.database.entity.ProfileEntity>,
@@ -454,6 +459,7 @@ private fun ProfilePickerDialog(
     onConfirm: (Set<Long>) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    PopupFontTheme {
     val colors = OwnTVTheme.colors
     var ticked by remember(activeId) {
         mutableStateOf(if (profiles.any { it.id == activeId }) setOf(activeId) else emptySet())
@@ -516,6 +522,7 @@ private fun ProfilePickerDialog(
 }
 
 /** PIN prompt for including a locked, non-active profile in the backup. */
+    }
 @Composable
 private fun ProfilePinDialog(
     profileName: String,
@@ -523,6 +530,7 @@ private fun ProfilePinDialog(
     onUnlocked: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    PopupFontTheme {
     val colors = OwnTVTheme.colors
     var pin by remember { mutableStateOf("") }
     var wrong by remember { mutableStateOf(false) }
@@ -564,6 +572,7 @@ private fun ProfilePinDialog(
     }
 }
 
+    }
 private fun sectionLabelRes(section: BackupManager.Section): Int = when (section) {
     BackupManager.Section.SOURCES -> R.string.settings_backup_section_sources
     BackupManager.Section.CUSTOMIZE -> R.string.settings_backup_section_customize
@@ -594,6 +603,7 @@ private fun SectionPickerDialog(
     onConfirm: (Set<BackupManager.Section>) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    PopupFontTheme {
     val colors = OwnTVTheme.colors
     var selected by remember { mutableStateOf(initial) }
     val firstFocus = remember { FocusRequester() }
@@ -632,6 +642,7 @@ private fun SectionPickerDialog(
     }
 }
 
+    }
 @Composable
 private fun CheckRow(
     label: String,

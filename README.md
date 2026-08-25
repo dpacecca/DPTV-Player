@@ -77,9 +77,12 @@ Scan to join from your phone:
   can actually play, with trailers, full cast/details, provider language/quality/season signals, and flexible
   movie/series balancing; a dedicated Home setting turns it on/off, and it stays first when enabled
 - Per-profile customizable rows, Favorites & History, bulk rename rules, custom combined categories,
-  inline + global search, and a multi-playlist switcher
+  All/Visible/Hidden customization filters, inline + global search, and a multi-playlist switcher;
+  when several playlists are merged, compact provider labels identify categories and items throughout
+  Live TV, Movies, Series, the Guide and player channel overlays
 - Per-section panel widths for Live TV, Movies and Series, including a 0% option that completely hides
-  the preview/poster panel while keeping the remaining panels at an exact 100% total
+  the preview/poster panel, plus an independent 10–90% channel/timeline split for the Guide; every custom
+  layout must keep an exact 100% total
 - **Episode grid** — browse a show by episode stills instead of text rows, with a show-artwork and
   episode-number fallback for episodes TMDB can't match; a whole show's episode details arrive in a
   single request
@@ -90,7 +93,8 @@ Scan to join from your phone:
 ### 📥 Sources & EPG
 - App-wide **custom DNS** — System, Google, Cloudflare, Quad9, custom DNS or DNS-over-HTTPS; the selected resolver persists across restarts
 - **Xtream**, **M3U** (typed playlists), and **Stalker/Ministra** portals, including optional advanced device identification; add any source from another device (phone, tablet or PC) over LAN (QR + PIN) — including uploading an `.m3u` file straight from the computer
-- XMLTV **TV Guide** grid, **Catch-up TV** (up to 7 days) + live rewind, auto EPG matching, multiple guide sources
+- XMLTV **TV Guide** grid with a live-refreshing amber Now marker positioned around 37.5% across the view,
+  **Catch-up TV** (up to 7 days) + live rewind, auto EPG matching, multiple guide sources
 - **Catch-up works without a guide** — a **Catch-up** category listing every channel with an archive, plus **Go back to…** to jump to a time (or an exact day/hour/minute) instead of holding rewind
 - **Catch-up plays on** — a finished programme continues to the next one in the guide, and hands over to the live channel once you have caught up with the present
 - **Clock in every player**, and while replaying a recording a second one showing when the programme originally aired, with a matching **Playing / Then** guide row
@@ -108,10 +112,13 @@ Scan to join from your phone:
 - Material 3 theming & accent, a user-chosen **Focus highlight** (colour via presets/palette/hex plus
   four ring thicknesses, applied app-wide in both solid and glass materials), unified browse panels,
   compact navigation, optional solid-mode Ambient Glow,
-  and interaction-aware **Glass Effect** with Ultra Clear/Clear/Balanced/Tinted/Opaque/Custom presets,
-  adaptive readability and real frost levels over your own background photo; searchable settings,
+  and interaction-aware **Glass Effect** with a dedicated preview-led settings page, Ultra
+  Clear/Clear/Balanced/Tinted/Opaque/Custom presets, one-press All-surface selection, adaptive readability
+  and real frost levels over your own background photo; searchable settings,
   sidebar/category customization, adjustable panel widths, external player, weather chip
-- **Font customization** with 60%–140% app text sizing and separate main-interface/popup choices from the bundled font catalog plus system Monospace; settings are preserved in backup and restore, while subtitle font and styling remain independently configurable
+- **Font customization** with 60%–140% main-app text sizing, independent 50%–120% popup text and popup-box
+  sizing, and separate main-interface/popup choices from the bundled font catalog plus system Monospace;
+  settings are preserved in backup and restore, while subtitle font and styling remain independently configurable
 - **24 complete interface languages** with System default, an in-app searchable language picker, RTL-aware navigation, and a language-first welcome flow on fresh installations
 - **Backup & Restore** locally or over Wi-Fi — a single `.own` file carrying your background image and your downloaded subtitles, optionally encrypted end to end with your own password (older `.json` backups still restore). Android's automatic backup is deliberately disabled, so app data only ever leaves the device through this screen — secrets ride only when you set a backup password. Plus in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
 

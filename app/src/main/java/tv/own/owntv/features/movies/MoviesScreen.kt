@@ -92,6 +92,7 @@ import tv.own.owntv.ui.components.MenuAction
 import tv.own.owntv.ui.components.arranged
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.PosterCard
+import tv.own.owntv.ui.components.ProviderChip
 import tv.own.owntv.ui.components.ResumeDialog
 import tv.own.owntv.ui.components.SetTmdbNameDialog
 import tv.own.owntv.ui.components.TrailerPlayerScreen
@@ -128,6 +129,7 @@ fun MoviesScreen(
     val refetchingTmdbMessage = stringResource(R.string.content_refetching_tmdb)
     val researchingTmdbMessage = stringResource(R.string.content_researching_tmdb)
     val railItems by vm.railItems.collectAsStateWithLifecycle()
+    val providerNames by vm.providerNames.collectAsStateWithLifecycle()
     val selectedKey by vm.selectedKey.collectAsStateWithLifecycle()
     val count by vm.count.collectAsStateWithLifecycle()
     val favoriteIds by vm.favoriteIds.collectAsStateWithLifecycle()
@@ -331,7 +333,14 @@ fun MoviesScreen(
     ) {
         CategoryRail(
             width = panels?.category ?: Dimens.RailWidthFixed,
-            categories = railItems.map { RailCategory(it.displayLabel(R.string.content_category_all_movies), it.icon, showGenreDot = it.key is LiveKey.Folder) },
+            categories = railItems.map {
+                RailCategory(
+                    it.displayLabel(R.string.content_category_all_movies),
+                    it.icon,
+                    showGenreDot = it.key is LiveKey.Folder,
+                    providerName = it.providerName,
+                )
+            },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             listState = catListState,
@@ -477,6 +486,7 @@ fun MoviesScreen(
                                 movie = movie,
                                 isFavorite = favoriteIds.contains(movie.id),
                                 completed = prog?.let { vm.isMovieCompleted(it) } == true,
+                                providerName = providerNames[movie.sourceId],
                                 modifier = Modifier.gridFocusTarget(
                                     itemId = movie.id, index = index,
                                     contextId = contextMovieId, contextFocus = contextFocus,
@@ -514,6 +524,7 @@ fun MoviesScreen(
                                 progressFraction = if (done || prog == null || prog.durationMs <= 0) null
                                     else (prog.positionMs.toFloat() / prog.durationMs).takeIf { it > 0f },
                                 isFavorite = favoriteIds.contains(movie.id),
+                                providerName = providerNames[movie.sourceId],
                                 modifier = Modifier.gridFocusTarget(
                                     itemId = movie.id, index = index,
                                     contextId = contextMovieId, contextFocus = contextFocus,
@@ -571,7 +582,7 @@ fun MoviesScreen(
         // TMDB Details is shown only when enrichment is on AND a confident match resolved for THIS movie.
         val cacheForM = selectedMovieMeta?.takeIf { it.movieId == m.id }?.cache
         val watched = selectedProgress?.takeIf { selectedMovie?.id == m.id }?.let { vm.isMovieCompleted(it) } ?: false
-        MovieContextMenu(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { contextMovie = null }) { MovieContextMenu(
             title = m.name,
             isFavorite = favoriteIds.contains(m.id),
             watched = watched,
@@ -617,7 +628,7 @@ fun MoviesScreen(
             onPlayTrailer = { key -> contextMovie = null; trailerVideoKey = key },
             onDeleteSubtitles = if (contextMovieSubs.isNotEmpty()) ({ showDeleteSubs = true }) else null,
             onDismiss = { contextMovie = null },
-        )
+        ) }
     }
 
     // Move to… a combined category (issue #87), incl. the "＋ New category…" name prompt.
@@ -983,6 +994,7 @@ private fun MovieListRow(
     movie: MovieEntity,
     isFavorite: Boolean,
     completed: Boolean = false,
+    providerName: String? = null,
     onFocus: () -> Unit,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
@@ -1041,6 +1053,7 @@ private fun MovieListRow(
             if (isFavorite) {
                 OwnTVIcon(OwnTVIcon.FAVORITE, tint = colors.favorite, filled = true, modifier = Modifier.size(18.dp))
             }
+            providerName?.let { ProviderChip(name = it) }
         }
     }
 }

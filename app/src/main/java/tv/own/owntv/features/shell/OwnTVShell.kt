@@ -272,6 +272,7 @@ fun OwnTVShell(
     val showCategoryBrowser by liveVm.showCategoryBrowser.collectAsStateWithLifecycle()
     val browserCategories by liveVm.browserCategories.collectAsStateWithLifecycle()
     val previewChannel by liveVm.previewChannel.collectAsStateWithLifecycle()
+    val liveProviderNames by liveVm.providerNames.collectAsStateWithLifecycle()
     // Favorite state for the player HUD's in-stream favorite toggle (live channel / movie / series).
     val liveFavoriteIds by liveVm.favoriteIds.collectAsStateWithLifecycle()
     val playingMovie by movieVm.playingMovie.collectAsStateWithLifecycle()
@@ -1177,7 +1178,8 @@ fun OwnTVShell(
                             showNumbers = directTuneEnabled,
                             onSelect = { liveVm.ensurePlaying(it); showChannelList = false },
                             onDismiss = { showChannelList = false },
-                            onOpenCategories = { liveVm.showCategories() },
+                    onOpenCategories = { liveVm.showCategories() },
+                    providerNames = liveProviderNames,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -1188,7 +1190,8 @@ fun OwnTVShell(
                         channels = historyChannels,
                         currentId = previewChannel?.id,
                         nowPlaying = historyNowPlaying,
-                        title = stringResource(R.string.content_history),
+                title = stringResource(R.string.content_history),
+                providerNames = liveProviderNames,
                         showNumbers = directTuneEnabled,
                         alignEnd = true,
                         onSelect = { liveVm.ensurePlaying(it); showHistoryList = false },
@@ -1212,43 +1215,49 @@ fun OwnTVShell(
         }
       }
 
-        if (showExit) {
+    if (showExit) {
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showExit = false }) {
             ExitDialog(onConfirm = onExitApp, onDismiss = { showExit = false })
         }
-        if (showAvatarPicker) {
-            AvatarPickerDialog(
+    }
+    if (showAvatarPicker) {
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAvatarPicker = false }) { AvatarPickerDialog(
                 selectedId = avatarId,
                 onSelect = onSetAvatar,
                 onDismiss = { showAvatarPicker = false },
-            )
-        }
-        if (showPlaylistPicker) {
-            PlaylistPickerDialog(
+        ) }
+    }
+    if (showPlaylistPicker) {
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showPlaylistPicker = false }) { PlaylistPickerDialog(
                 playlists = playlists,
                 activeId = activePlaylistId,
                 onSelect = onSelectPlaylist,
                 onDismiss = { showPlaylistPicker = false },
             )
         }
+    }
 
-        // Automatic update check (GitHub Releases) shortly after launch, once per session: a small
+    // Automatic update check (GitHub Releases) shortly after launch, once per session: a small
         // top-right status card shows "Checking… / up to date" (auto-hides) or stays with
         // Update now / Later when a release is newer. Hidden while in Settings (its manual
         // "Check for updates" dialog drives the same state machine) and during playback.
         // Interrupted restore (B2): the marker outlives the process, so if it's still set at launch
         // the last restore didn't complete. Acknowledging clears it.
         val restoreSettings = koinInject<tv.own.owntv.features.settings.data.SettingsRepository>()
-        val incompleteRestore by restoreSettings.restoreInProgress.collectAsStateWithLifecycle(initialValue = null)
-        var restoreNoticeDismissed by remember { mutableStateOf(false) }
-        incompleteRestore?.takeIf { !restoreNoticeDismissed }?.let { description ->
+    val incompleteRestore by restoreSettings.restoreInProgress.collectAsStateWithLifecycle(initialValue = null)
+    var restoreNoticeDismissed by remember { mutableStateOf(false) }
+    incompleteRestore?.takeIf { !restoreNoticeDismissed }?.let { description ->
+        val dismissRestoreNotice: () -> Unit = {
+            restoreNoticeDismissed = true
+            scope.launch { restoreSettings.clearRestoreMarker() }
+        }
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = dismissRestoreNotice) {
             IncompleteRestoreDialog(
                 description = description,
-                onDismiss = {
-                    restoreNoticeDismissed = true
-                    scope.launch { restoreSettings.clearRestoreMarker() }
-                },
+                onDismiss = dismissRestoreNotice,
             )
         }
+    }
 
         val updateManager = koinInject<UpdateManager>()
         var showStartupToast by remember { mutableStateOf(false) }
@@ -1265,7 +1274,14 @@ fun OwnTVShell(
         if (showChangelog) {
             // Full "What's New" changelog (same dialog the manual Settings check uses), shown when
             // the startup card's "What's New" is pressed. No re-check — the release is already loaded.
-            UpdateDialog(onDismiss = { showChangelog = false; showStartupToast = false; updateManager.reset() }, checkOnOpen = false)
+            val dismissChangelog: () -> Unit = {
+                showChangelog = false
+                showStartupToast = false
+                updateManager.reset()
+            }
+            tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = dismissChangelog) {
+                UpdateDialog(onDismiss = dismissChangelog, checkOnOpen = false)
+            }
         } else if (showStartupToast && selectedSection != MainSection.SETTINGS && playerMode == PlayerMode.NONE) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
                 UpdateStatusToast(
@@ -1294,9 +1310,8 @@ private fun OfflineBanner() {
             stringResource(R.string.content_offline_banner),
             style = MaterialTheme.typography.labelLarge,
             color = colors.onTertiaryContainer,
-        )
+        ) }
     }
-}
 
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {

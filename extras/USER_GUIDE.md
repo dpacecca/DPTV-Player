@@ -154,6 +154,9 @@ or **narrow the whole app to just one**.
 - **What the filter affects:** categories, channels, movies, series, the guide, search results, and the
   **Favourites** and **History** rails inside each section all respect the selected playlist. Nothing is deleted
   or re‑imported — it's only a view filter, so switching back to **All** brings everything right back.
+- **Know which playlist an item belongs to:** when two or more playlists are active for a section, a compact
+  provider label appears beside its categories and items in Live TV, Movies, Series and Guide. The same label
+  follows Live channels into the full-screen channel/history overlays. With one playlist, the labels stay hidden.
 - Your selected default is included in **Backup & Restore** (Sources section).
 
 ---
@@ -253,15 +256,16 @@ or **narrow the whole app to just one**.
   manual position is visible in); saving keeps it there, and **Back/cancel puts your previous sort back**. Your
   reorder is saved across playlist re‑syncs and included in backups.
 - **Open a channel full‑screen**: press **OK**.
-- 🔀 **Page long lists with CH+ / CH−**: with hundreds of categories or thousands of channels, hold‑scrolling
-  top‑to‑bottom is painful. **CH−** skips N items **down** (toward the last), **CH+** skips N items **up**
-  (toward the first) — in whichever panel has focus (the category column **or** the channel list). **Long‑press
-  CH−** jumps straight to the **last** item, **long‑press CH+** to the **first**. Skips are clamped at the ends,
+- 🔀 **Page long lists with CH+/Rewind and CH−/Fast-forward**: with hundreds of categories or thousands of
+  channels, hold‑scrolling top‑to‑bottom is painful. **CH− or Fast-forward** skips N items **down** (toward the
+  last), while **CH+ or Rewind** skips N items **up** (toward the first) — in whichever panel has focus (the
+  category column **or** the channel list). A **long press** jumps straight to the matching last/first item.
+  Skips are clamped at the ends,
   so a short list reaches the end in one press for free. (Long‑press is disabled on the built‑in **All**
   list — jumping to the 170,000th item is pointless — but short‑press skipping still works there.) Set the
-  skip counts or turn it off in **Settings → Content → CH+- Key Paging** (default: on, 10 items per press).
-  Same shortcut works in **Movies**, **Series** (grid + episode list), and the category list in
-  **Settings → Customize Categories & Items**.
+  skip counts or turn it off in **Settings → Content → CH+/RW · CH−/FF Key Paging** (default: on, 10 items
+  per press). The same shortcut works in **Movies**, **Series** (grid + episode list), and both the category
+  and item lists in **Settings → Customize Categories & Items**.
 
 ### Inside the full‑screen live player
 - 🗓️ **Top bar**: bring up the controls (press OK) and one strip across the top shows **back · channel
@@ -387,9 +391,15 @@ or **narrow the whole app to just one**.
 - ▶️ **Play catch‑up from the guide**: move **Right** into the timeline to a **past programme**, press
   **OK** to open its details, then choose **"Watch from start"** to replay it from the archive. Scroll
   **Left/Right** along the timeline to pick the programme you want.
-- 📍 **"Now" line & Jump to Now**: a red vertical line marks the current time across the grid; the
-  **Jump to Now** button (top‑right) scrolls the timeline back to now — handy after browsing the
-  catch‑up archive.
+- 📍 **Live "NOW" marker & Jump to Now**: Guide opens with the current time around **37.5% across the
+  timeline**, rather than tight against the channel list, and immediately includes two recent hours so the
+  current programme has readable context on its left. An amber **NOW · time** badge sits in the ruler and a
+  matching line fades down every programme row. Both update every 30 seconds while Guide stays open.
+  **Jump to Now** (top‑right) returns to that same live position after browsing the catch‑up archive.
+- ↔️ **Resize Guide's two columns:** **Settings → Layout → Guide Column Widths** adjusts the pinned channel
+  list and EPG timeline from **10% to 90%** in 5% steps. Their total must be exactly **100%** before Save works.
+  Turning customization off restores the standard **10% channels / 90% timeline** split without forgetting
+  your values; the setting is included in Backup & Restore.
 - ↻ **Catch‑up & genre hints**: programmes you can rewind from show a ↻ badge, and each channel label
   carries a small colour dot hinting at its **genre**, based on the channel's **category name**:
   🟢 green = sport · 🔴 red = news · 🟣 violet = movies/film/cinema · 🟡 amber = kids/animation ·
@@ -751,8 +761,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 
 - **Settings → Customize Categories & Items**: **hide, rename and reorder** categories, plus **unhide**
   individual channels, movies and series from one place. Pick a section at the top (Live TV / Movies /
-  Series) — hidden items are listed first, each with an **Unhide** button, and your categories follow below.
-  With a long provider category list, use **CH+ / CH−** to page it (long‑press = first/last folder).
+  Series). Use **Filter: All / Visible / Hidden** on the category screen or inside a category to inspect only
+  the entries you need without changing them; a new section/category starts on All. Hidden entries carry an
+  **Unhide/Show** button. With a long provider list, use **CH+/Rewind or CH−/Fast-forward** to page it
+  (long‑press = first/last entry).
   - 🗂️ **Open a category's items**: focus a category **name** and press **OK** — every channel, movie or
     series in it opens as its own list (paged, so even a huge category opens instantly). Hidden items
     show up there marked **Hidden**, with a **Show** button; each Live channel row also has **Rename**,
@@ -828,16 +840,16 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     settings rows, the category column, the navigation rail, buttons, text fields and popups — and it
     works with the **Glass Effect** on, where the frosted rim takes your colour. Thicker rings also
     widen the glow around the focused item.
-- **Settings → Glass Effect**: a **frosted‑glass look** — panels turn translucent with a
-  real blurred backdrop over an optional **background photo**.
+- **Settings → Glass Effect**: a dedicated settings page for the **frosted‑glass look** — a compact live
+  preview stays at the top, and the controls below appear only while Glass Effect is on. Panels turn
+  translucent with a real blurred backdrop over an optional **background photo**.
   - Choose an **Appearance preset** from the six-step clarity ladder: **Ultra Clear** (24% tint / 35%
     frost), **Clear** (38% / 62%), **Balanced** (56% / 78%), **Tinted** (74% / 88%), **Opaque**
     (92% / 100%), or **Custom** for saved manual values. Changing Transparency or Frost selects
     Custom; **Reset** restores Balanced, 55% Highlight strength, and every glass surface.
-  - The dialog also has **Glass effect On/Off**, a **Background image** chooser, a **Transparency**
-    stepper (20–100%, higher = more solid), a **Blur / Frost** stepper (0–100%), a **Highlight
-    strength** stepper (0–100%), a live row/card/chip preview, and a **Surfaces** menu. Frost uses ten
-    real blur levels rather than changing only opacity.
+  - The page keeps **Glass effect On/Off**, the **Background image** chooser, **Transparency** (20–100%,
+    higher = more solid), **Blur / Frost** (0–100%), **Highlight strength** (0–100%), full-transparency
+    protection and depth effects. Frost uses ten real blur levels rather than changing only opacity.
   - The readability floor automatically strengthens floating and container glass over bright or busy
     wallpaper. **Allow full transparency** disables that protection when the clearest look matters more
     than guaranteed text contrast.
@@ -847,8 +859,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
     (it's copied into the app, so unplugging the stick can't blank it). **Remote** shows a **PIN + QR** —
     open it on a phone, tablet or computer on the same Wi‑Fi, enter the PIN, send a photo, and it applies instantly.
     **Clear** removes the background.
-  - **Surfaces** toggles the glass per area — content panels, sidebar, preview panes, dialogs & popups,
-    top bar, cards, mini‑player — or all at once. Turning everything off turns glass off.
+  - **Apply glass to** toggles content panels, sidebar, preview panes, dialogs & popups, top bar, cards and
+    mini‑player inline. **All** is selected when every surface is active; pressing it always enables the
+    complete set, while individual changes update All automatically. **Reset to Balanced** restores the
+    Balanced preset, default highlight/depth behavior and every surface.
   - The frost (blur) needs a background image and **Android 12+**; otherwise panels are simply
     translucent. With no background image, enabled surfaces use a solid ceramic‑glass treatment so text
     stays readable instead of pretending to blur a flat colour.
@@ -879,6 +893,9 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   - **Reset** returns a section to the standard widths; leaving a section **Off** keeps today's layout.
     Movie and series posters re‑flow automatically, so a narrower list just shows fewer per row. Saved in
     backups.
+- **Settings → Guide Column Widths**: independently divide the TV Guide between its pinned **Channel list**
+  and scrolling **EPG timeline**. Each stays between 10% and 90%, moves in 5% steps, and the pair must total
+  exactly 100% to save. Off uses the standard 10% / 90% split while keeping your custom values for later.
 - **Settings → Animations**: turn interface motion **off** for a snappier feel on lower‑end TV boxes.
 - **Profiles** (Settings → Profiles): multiple viewers, a **Kids mode**, and **PIN locks**. Kids mode
   hides adult provider categories and their items across Live TV, Movies, Series, Home, Search,
@@ -918,15 +935,18 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   or enter your own DNS server / DNS‑over‑HTTPS address. Your enabled state and selected server are
   saved immediately and restored after restarting OwnTV. **Test DNS** checks the current entry before
   you rely on it.
-- 🔤 **Font customization** (Look & Feel) — open one popup to set the app's text size from **60% to
-  140%** in 5% steps and choose separate fonts for the **main interface** and **popups**. Available fonts
-  are **System Sans, Monospace, Lora, Playfair Display, Dancing Script, and Poppins**. Press **Apply** to save,
+- 🔤 **Font customization** (Appearance) — open one popup to set main-app text from **60% to 140%** and
+  popup text independently from **50% to 120%**, both in 5% steps, then choose separate fonts for the
+  **main interface** and **popups**. The separate **Popup size** row scales dialog/menu boxes from **50% to
+  120%** without changing their text; oversized text scrolls inside the panel instead of resizing it.
+  Available fonts are **System Sans, Monospace, Lora, Playfair Display, Dancing Script, and Poppins**.
+  Press **Apply** to save,
   **Reset** to return to 100% / System Sans / Lora, or **Back** to discard staged changes. The setting
   works with every interface language; Android supplies compatible fallback characters when a chosen
   font does not contain a language's script. It is app-wide, survives restarts, and is included in
   backup/restore. Subtitles are not changed here — use **Subtitle appearance** for those.
-- 🔀 **CH+- Key Paging** (Content) — page the category & item lists in Live/Movies/Series (and the
-  category list in **Customize Categories & Items**) with the remote's **CH+ / CH−** keys. Separate skip
+- 🔀 **CH+/RW · CH−/FF Key Paging** (Content) — page the category & item lists in Live/Movies/Series and
+  both levels of **Customize Categories & Items** with **CH+ or Rewind** / **CH− or Fast-forward**. Separate skip
   counts per direction (typed or ±‑stepped), long‑press jumps to first/last, with an advisory warning
   above 50. Turn it off here if your remote maps CH keys elsewhere.
 - 🚀 **App startup** — where each profile opens: **Home**, **Last channel** (auto‑plays the channel

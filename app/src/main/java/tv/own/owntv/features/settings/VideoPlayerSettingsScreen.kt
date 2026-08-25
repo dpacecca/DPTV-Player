@@ -1430,11 +1430,15 @@ fun VideoPlayerSettingsScreen(
             onConfirm = { vm.clearSavedAudioDelay(); dialog = Dialog.NONE },
             onCancel = { dialog = Dialog.NONE },
         )
-        Dialog.AFR_WARNING -> AutoFrameRateWarningDialog(
-            onEnable = { vm.setAutoFrameRate(true); dialog = Dialog.NONE },
-            onDismiss = { dialog = Dialog.NONE },
-        )
-        Dialog.LIVE_PREVIEW_PANEL -> LivePreviewPanelHiddenDialog(onDismiss = { dialog = Dialog.NONE })
+        Dialog.AFR_WARNING -> tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { dialog = Dialog.NONE }) {
+            AutoFrameRateWarningDialog(
+                onEnable = { vm.setAutoFrameRate(true); dialog = Dialog.NONE },
+                onDismiss = { dialog = Dialog.NONE },
+            )
+        }
+        Dialog.LIVE_PREVIEW_PANEL -> tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { dialog = Dialog.NONE }) {
+            LivePreviewPanelHiddenDialog(onDismiss = { dialog = Dialog.NONE })
+        }
         Dialog.NONE -> Unit
     }
 
@@ -1708,6 +1712,7 @@ internal fun PickerDialog(
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
     searchable: Boolean = false,
+    trailingLabels: Map<String, String> = emptyMap(),
 ) {
     val colors = OwnTVTheme.colors
     val fr = remember { FocusRequester() }
@@ -1760,8 +1765,16 @@ internal fun PickerDialog(
                         surface = GlassSurface.DIALOGS,
                     ) { _ ->
                         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(label, style = MaterialTheme.typography.bodyMedium, color = if (isSel) colors.onPrimaryContainer else colors.onSurface, modifier = Modifier.weight(1f))
-                            if (isSel) OwnTVIcon(OwnTVIcon.STAR, tint = colors.onPrimaryContainer, filled = true, modifier = Modifier.size(14.dp))
+                        Text(label, style = MaterialTheme.typography.bodyMedium, color = if (isSel) colors.onPrimaryContainer else colors.onSurface, modifier = Modifier.weight(1f))
+                        trailingLabels[value]?.let {
+                            tv.own.owntv.ui.components.ProviderChip(
+                                name = it,
+                                maxWidth = 92.dp,
+                                compact = true,
+                                modifier = Modifier.padding(end = 8.dp),
+                            )
+                        }
+                        if (isSel) OwnTVIcon(OwnTVIcon.STAR, tint = colors.onPrimaryContainer, filled = true, modifier = Modifier.size(14.dp))
                         }
                     }
                 }

@@ -2,6 +2,70 @@
 
 ## v4.2.3 — Unreleased
 
+### 🏷️ Every merged library says which provider an item came from
+
+- **When two or more playlists are active, Live TV, Movies, Series and the TV Guide now place a compact
+  provider label beside each category and item.** The label also appears on poster cards, list rows, Guide
+  channel rows, the Guide category picker, and the full-screen channel/history overlays, so identical names
+  from different services are no longer a guessing game.
+- **Single-playlist browsing stays exactly as clean as before.** Provider labels appear only when they are
+  useful; with zero or one active source, OwnTV leaves the existing layouts unchanged.
+
+### 🔎 Customize can show All, Visible or Hidden entries
+
+- **Both the category screen and a category's item screen now have a Filter control.** Choose All, Visible
+  or Hidden to narrow the working list without changing anything, making it practical to audit what has
+  already been hidden or bring selected entries back.
+- **Changing section or opening another category starts from All again**, and the list returns to its first
+  row when the filter changes so D-pad focus and range actions have a predictable starting point.
+
+### ⏪ Four remote buttons can page long browse lists
+
+- **Rewind now does the same job as CH+, and Fast-forward does the same job as CH−**, in every browse panel
+  that supports key paging: categories, channel/title lists, poster grids, series episodes, and both levels
+  of Customize. A short press uses the saved skip count; a long press still jumps to the first or last item.
+- **Settings now names all four keys consistently** as **CH+/RW · CH−/FF**, including the title, switch,
+  descriptions and help notes, so remotes without dedicated channel buttons are no longer left out of the
+  instructions.
+
+### 🕰️ The Guide keeps the present in view
+
+- **The Guide now opens with the current time around 37.5% across the timeline**, leaving useful programme
+  title space on both sides instead of pinning the live edge against the channel list. It loads two recent
+  hours as part of the immediate view while older catch-up history continues to fill in behind it.
+- **The live marker updates every 30 seconds without leaving and reopening Guide.** Its old solid red rule is
+  now an amber line that fades down each programme row, with a matching amber **NOW · time** badge in the
+  time ruler. Jump to Now uses the same live clock.
+
+### ↔️ Choose how much of Guide belongs to channels and programmes
+
+- **Settings → Layout → Guide Column Widths adds an independent two-column split for the TV Guide.** The
+  pinned channel list and scrollable EPG timeline can each be adjusted from 10% to 90% in 5% steps, with a
+  live diagram showing the result.
+- **The two shares must total exactly 100% before Save works.** Turning customization off restores the
+  standard 10% / 90% layout without discarding the saved values, and the setting is included in Backup &
+  Restore.
+
+### 🪟 Popup boxes and popup text finally size independently
+
+- **Appearance now has separate controls for popup geometry and popup text.** Popup size scales dialog and
+  menu boxes from 50% to 120%, while Popup font size changes only their text from 50% to 120%; changing the
+  main app font size no longer makes popup panels physically grow or shrink.
+- **Large popup text remains reachable by scrolling inside the fixed panel**, and the shared popup treatment
+  now covers the previously independent source, backup, EPG, update, player-warning, metadata-name and
+  browsing menus while deliberately dense or full-screen panels keep their own base dimensions.
+
+### ✨ Glass Effect is now a complete settings screen
+
+- **Glass Effect moved out of an oversized popup and into a proper Settings page.** A compact live preview
+  stays at the top; turning Glass off hides the controls below it, while turning it on reveals Appearance,
+  Fine tuning, Behavior and Apply glass to sections without losing any existing function.
+- **All six presets, background-image choices, transparency, blur, highlight, full-transparency protection,
+  depth effects and per-surface choices remain available.** Panels, Sidebar, Preview, Dialogs, Top bar,
+  Cards and Mini player can be toggled inline, and the new **All** button both reflects the complete set and
+  enables every surface in one press. **Reset to Balanced** also restores the default highlight, depth and
+  all-surface selection.
+
 ### 🪟 The corner player carries one floating strip of buttons
 
 - **The mini player's controls are now a single rounded pill floating just above the bottom of the little

@@ -94,6 +94,7 @@ import tv.own.owntv.ui.components.arranged
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.PosterCard
+import tv.own.owntv.ui.components.ProviderChip
 import tv.own.owntv.ui.components.ProgressRing
 import tv.own.owntv.ui.components.ResumeDialog
 import tv.own.owntv.ui.components.formatTimestamp
@@ -242,6 +243,7 @@ private fun SeriesGrid(
     val refetchingTmdbMessage = stringResource(R.string.content_refetching_tmdb)
     val researchingTmdbMessage = stringResource(R.string.content_researching_tmdb)
     val railItems by vm.railItems.collectAsStateWithLifecycle()
+    val providerNames by vm.providerNames.collectAsStateWithLifecycle()
     val selectedKey by vm.selectedKey.collectAsStateWithLifecycle()
     val count by vm.count.collectAsStateWithLifecycle()
     val favoriteIds by vm.favoriteIds.collectAsStateWithLifecycle()
@@ -408,7 +410,14 @@ private fun SeriesGrid(
     ) {
         CategoryRail(
             width = panels?.category ?: Dimens.RailWidthFixed,
-            categories = railItems.map { RailCategory(it.displayLabel(R.string.content_category_all_series), it.icon, showGenreDot = it.key is LiveKey.Folder) },
+            categories = railItems.map {
+                RailCategory(
+                    it.displayLabel(R.string.content_category_all_series),
+                    it.icon,
+                    showGenreDot = it.key is LiveKey.Folder,
+                    providerName = it.providerName,
+                )
+            },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             listState = catListState,
@@ -536,6 +545,7 @@ private fun SeriesGrid(
                             SeriesListRow(
                                 series = s,
                                 isFavorite = favoriteIds.contains(s.id),
+                                providerName = providerNames[s.sourceId],
                                 modifier = Modifier.gridFocusTarget(
                                     itemId = s.id, index = index,
                                     contextId = contextSeriesId, contextFocus = contextFocus,
@@ -568,6 +578,7 @@ private fun SeriesGrid(
                                 title = s.name,
                                 rating = s.rating,
                                 isFavorite = favoriteIds.contains(s.id),
+                                providerName = providerNames[s.sourceId],
                                 modifier = Modifier.gridFocusTarget(
                                     itemId = s.id, index = index,
                                     contextId = contextSeriesId, contextFocus = contextFocus,
@@ -671,7 +682,7 @@ private fun SeriesGrid(
     // Long-press a series → context menu.
     contextSeries?.let { s ->
         val cacheForS = selectedSeriesMeta?.takeIf { it.seriesId == s.id }?.cache
-        SeriesContextMenu(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { contextSeries = null }) { SeriesContextMenu(
             title = s.name,
             isFavorite = favoriteIds.contains(s.id),
             canMove = selectedKey is LiveKey.Folder || selectedKey is LiveKey.Custom || selectedKey == LiveKey.Favorites,
@@ -704,7 +715,7 @@ private fun SeriesGrid(
             onSetTmdbName = { contextSeries = null; setTmdbNameSeries = s },
             onPlayTrailer = { key -> contextSeries = null; trailerVideoKey = key },
             onDismiss = { contextSeries = null },
-        )
+        ) }
     }
 
     // Move to… a combined category (issue #87), incl. the "＋ New category…" name prompt.
@@ -1362,7 +1373,7 @@ private fun EpisodeView(
     contextEpisode?.let { ep ->
         val cacheForEp = selectedEpisodeMeta?.takeIf { it.episodeId == ep.id }?.cache
         val alreadyDownloaded = downloads[ep.id] != null
-        EpisodeContextMenu(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { contextEpisode = null }) { EpisodeContextMenu(
             title = stringResource(R.string.content_season_episode_title, ep.seasonNumber, ep.episodeNumber, episodeDisplayTitle(ep)),
             watched = ep.id in completedIds,
             hasTmdbDetails = metadataMode.enrich && cacheForEp != null,
@@ -1386,17 +1397,17 @@ private fun EpisodeView(
             },
             onDeleteSubtitles = if (contextEpisodeSubs.isNotEmpty()) ({ showEpisodeDeleteSubs = true }) else null,
             onDismiss = { contextEpisode = null },
-        )
+        ) }
     }
 
     // Season/episode order popup for this series. Applies immediately; stays open so both rows can
     // be set in one visit.
     if (showSorting) {
-        SeriesSortingDialog(
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showSorting = false }) { SeriesSortingDialog(
             order = seriesOrder,
             onChange = { seasonsDesc, episodesDesc -> vm.setSeriesOrder(seasonsDesc, episodesDesc) },
             onDismiss = { showSorting = false },
-        )
+        ) }
     }
 
     // Per-episode "Delete subtitles" popup (§11) — individual deletion; closes when none remain.
@@ -1671,6 +1682,7 @@ private fun EpisodeRow(
 private fun SeriesListRow(
     series: SeriesEntity,
     isFavorite: Boolean,
+    providerName: String? = null,
     onFocus: () -> Unit,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
@@ -1720,6 +1732,7 @@ private fun SeriesListRow(
             if (isFavorite) {
                 OwnTVIcon(OwnTVIcon.FAVORITE, tint = colors.favorite, filled = true, modifier = Modifier.size(18.dp))
             }
+            providerName?.let { ProviderChip(name = it) }
         }
     }
 }

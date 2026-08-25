@@ -167,7 +167,7 @@ fun FocusableSurface(
     )
     val container by animateColorAsState(
         when {
-            focused && lit -> focusLight!!.copy(alpha = 0.22f)
+            focused && lit -> focusLight.copy(alpha = 0.22f)
             focused && useSolidTonalLadder -> solidFocusedContainer
             visuallySelected && useSolidTonalLadder -> solidSelectedContainer
             focused -> focusedContainerColor
@@ -217,7 +217,7 @@ fun FocusableSurface(
                     elevation = (10 * glowScale).dp,
                     shape = shape,
                     clip = false,
-                    ambientColor = focusLight!!,
+                    ambientColor = focusLight,
                     spotColor = focusLight,
                 ) else if (focused && !glassy && !compactFocusableRow) Modifier.shadow(
                     elevation = (glowElevation * glowScale).dp,
@@ -251,7 +251,7 @@ fun FocusableSurface(
             )
             .then(
                 when {
-                    showBorder && focused && lit -> Modifier.border(1.6.dp, focusLight!!, shape)
+                    showBorder && focused && lit -> Modifier.border(1.6.dp, focusLight, shape)
                     showBorder && focused && !glassy -> Modifier.border(
                         focusBorderWidth,
                         borderColor,

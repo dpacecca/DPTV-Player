@@ -88,6 +88,7 @@ import tv.own.owntv.ui.components.ContentMenu
 import tv.own.owntv.ui.components.MenuAction
 import tv.own.owntv.ui.components.arranged
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.ProviderChip
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.SearchBar
 import tv.own.owntv.ui.components.SortChip
@@ -119,6 +120,7 @@ fun LiveScreen(
 ) {
     val vm: LiveViewModel = koinViewModel()
     val railItems by vm.railItems.collectAsStateWithLifecycle()
+    val providerNames by vm.providerNames.collectAsStateWithLifecycle()
     val selectedKey by vm.selectedKey.collectAsStateWithLifecycle()
     val count by vm.count.collectAsStateWithLifecycle()
     val favoriteIds by vm.favoriteIds.collectAsStateWithLifecycle()
@@ -345,7 +347,14 @@ fun LiveScreen(
     ) {
         CategoryRail(
             width = panels?.category ?: Dimens.RailWidthFixed,
-            categories = railItems.map { RailCategory(it.displayLabel(), it.icon, showGenreDot = it.key is LiveKey.Folder) },
+            categories = railItems.map {
+                RailCategory(
+                    it.displayLabel(),
+                    it.icon,
+                    showGenreDot = it.key is LiveKey.Folder,
+                    providerName = it.providerName,
+                )
+            },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             // Focusing a folder stops the in-pane preview — but only when a preview is actually running.
@@ -492,8 +501,9 @@ fun LiveScreen(
                             ChannelRow(
                                 channel = channel,
                                 isFavorite = favoriteIds.contains(channel.id),
-                                nowTitle = nowPlaying[channel.id],
-                                showNumber = showChannelNumbers,
+                            nowTitle = nowPlaying[channel.id],
+                            showNumber = showChannelNumbers,
+                            providerName = providerNames[channel.sourceId],
                                 modifier = Modifier.gridFocusTarget(
                                     itemId = channel.id, index = index,
                                     contextId = contextChannelId, contextFocus = contextFocus,
@@ -689,6 +699,7 @@ private fun ChannelRow(
     onLongClick: (() -> Unit)? = null,
     nowTitle: String? = null,
     showNumber: Boolean = true,
+    providerName: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val colors = OwnTVTheme.colors
@@ -748,6 +759,7 @@ private fun ChannelRow(
             if (isFavorite) {
                 OwnTVIcon(OwnTVIcon.FAVORITE, tint = colors.favorite, filled = true, modifier = Modifier.size(20.dp))
             }
+            providerName?.let { ProviderChip(name = it) }
         }
     }
 }
