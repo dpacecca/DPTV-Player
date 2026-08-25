@@ -270,6 +270,11 @@ fun SettingsScreen(
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
     // A lazy list carries its position as item index + offset into that item, so both are saved.
     val listState = rememberLazyListState()
+    // These belong to the two-pane Settings root, but stay remembered while a detail screen replaces
+    // it. Otherwise Back briefly rebuilds Quick at row zero before restoring the real group/row.
+    var selectedGroup by rememberSaveable { mutableIntStateOf(0) }
+    var displayedGroup by rememberSaveable { mutableIntStateOf(0) }
+    val spineState = rememberLazyListState()
     var savedIndex by remember { mutableIntStateOf(0) }
     var savedOffset by remember { mutableIntStateOf(0) }
     val saveScroll = {
@@ -858,9 +863,7 @@ fun SettingsScreen(
             runCatching { searchFieldFocus.requestFocus() }
         }
     }
-    var selectedGroup by rememberSaveable { mutableIntStateOf(0) }
     val selectedRows = categories.getOrNull(selectedGroup)?.second.orEmpty()
-    val spineState = rememberLazyListState()
     // Which column has the cursor, so the sheet's count tag can go accent and say so.
     var sheetFocused by remember { mutableStateOf(false) }
     // Requester on the *selected* category, so a directional entry from the sidebar lands on the
@@ -895,47 +898,55 @@ fun SettingsScreen(
     BackHandler(enabled = tab == SettingsTab.ROOT && sheetFocused && searchQuery.isBlank()) {
         runCatching { selectedCategoryFocus.requestFocus() }
     }
-    // A new group starts at its first row — otherwise a short group inherits a tall group's offset.
-    LaunchedEffect(selectedGroup) { runCatching { listState.scrollToItem(0) } }
+    // A genuinely new group starts at its first row. Recreating the root after a sub-screen does not:
+    // its group and list position were kept above the sub-screen dispatch, so leave them untouched.
+    LaunchedEffect(selectedGroup) {
+        if (displayedGroup != selectedGroup) {
+            runCatching { listState.scrollToItem(0) }
+            displayedGroup = selectedGroup
+        }
+    }
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back. Fresh entry
     // intentionally does NOT grab focus here — every other main-menu section lets the shell/sidebar
     // own initial focus, and Settings stays consistent with them. This block only exists while the
     // root list is showing, so coming back from a sub-screen is exactly when it runs.
+    val returningRowFocus = when {
+        searchQuery.isNotBlank() && (deepReturnKey != null || lastTab != null) -> searchFieldFocus
+        deepReturnKey != null -> deepRowFocus
+        else -> lastTab?.let { rowFocus[it] }
+    }
     LaunchedEffect(Unit) {
         // Either the row that opened a sub-screen, or the Quick shortcut that jumped inside one.
         val deep = deepReturnKey
-        val key: String
-        val target: FocusRequester
-        if (deep != null) {
-            key = deep
-            target = deepRowFocus
-        } else {
-            val tab = lastTab ?: return@LaunchedEffect
-            key = tabRowKey(tab)
-            target = rowFocus[tab] ?: return@LaunchedEffect
+        val key = deep ?: lastTab?.let(::tabRowKey)
+        val target = returningRowFocus ?: return@LaunchedEffect
+        val group = key?.let(groupOfKey::get)
+        if (searchQuery.isBlank() && group != null) {
+            selectedGroup = group
         }
-        // The row may belong to a group other than the one showing — select it first, or it is not
-        // composed at all and the restore lands nowhere.
-        val group = groupOfKey[key] ?: return@LaunchedEffect
-        selectedGroup = group
-        kotlinx.coroutines.delay(60)
-        val index = categories[group].second.indexOfFirst { it.key == key }
-        if (index >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == index }) {
-            runCatching { listState.scrollToItem(index) }
-        }
-        // The row is in a lazy list that has just been told to change groups and possibly to scroll, so
-        // the first attempt can land before it exists. Keep asking briefly rather than settling for the
-        // group column — coming back from a sub-screen should put the cursor back on the row you left.
+        // Wait by frames rather than showing another focus target for fixed delays. A lazy row may need
+        // a layout pass after its group is selected; once it lands, hold it for a few frames so a late
+        // focus-group entry cannot move the cursor to the category column.
+        var settledFrames = 0
         repeat(10) {
-            if (runCatching { target.requestFocus() }.isSuccess) {
-                // One more, a beat later: entering the panel directionally aims at the group column, and
-                // that can arrive after the first request and take the cursor off the row again.
-                kotlinx.coroutines.delay(80)
-                runCatching { target.requestFocus() }
-                return@LaunchedEffect
+            withFrameNanos { }
+            if (searchQuery.isBlank() && group != null && key != null) {
+                val index = categories[group].second.indexOfFirst { it.key == key }
+                if (index >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == index }) {
+                    runCatching { listState.scrollToItem(index) }
+                }
             }
-            kotlinx.coroutines.delay(40)
+            if (runCatching { target.requestFocus() }.getOrDefault(false)) {
+                settledFrames++
+                if (settledFrames >= 3) {
+                    lastTab = null
+                    deepReturnKey = null
+                    return@LaunchedEffect
+                }
+            } else {
+                settledFrames = 0
+            }
         }
     }
 
@@ -1063,8 +1074,10 @@ fun SettingsScreen(
             // press then reaches the rows.
             .focusProperties {
                 onEnter = {
-                    val target = if (searchQuery.isBlank()) selectedCategoryFocus else searchFieldFocus
-                    runCatching { target.requestFocus() }
+                    val target = returningRowFocus
+                        ?: if (searchQuery.isBlank()) selectedCategoryFocus else searchFieldFocus
+                    val landed = runCatching { target.requestFocus() }.getOrDefault(false)
+                    if (!landed && returningRowFocus != null) cancelFocusChange()
                 }
             }
             .focusGroup()
