@@ -307,8 +307,11 @@ fun AudioNowPlayingBar(
             // out below the row — that way the strip at rest is exactly the height it always was.
             if (hasTime) {
                 val frac = (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
-                Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(1.5.dp)) {
-                    Box(Modifier.fillMaxWidth(frac).fillMaxHeight().background(colors.primary))
+                // A normal fillMaxWidth child makes this wrap-content card request the complete
+                // top-bar width. Match the card after it has been measured so the hairline overlays
+                // its bottom edge without stretching the capsule or pushing other chips off-screen.
+                Box(Modifier.matchParentSize(), contentAlignment = Alignment.BottomStart) {
+                    Box(Modifier.fillMaxWidth(frac).height(1.5.dp).background(colors.primary))
                 }
             }
         }

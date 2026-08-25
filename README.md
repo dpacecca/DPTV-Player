@@ -119,6 +119,10 @@ Scan to join from your phone:
 - **Font customization** with 60%–140% main-app text sizing, independent 50%–120% popup text and popup-box
   sizing, and separate main-interface/popup choices from the bundled font catalog plus system Monospace;
   settings are preserved in backup and restore, while subtitle font and styling remain independently configurable
+- Dedicated **Remote Shortcuts** — assign short or long presses of spare colour, number, channel and media
+  keys to 25 navigation, browsing and playback actions. Essential D-pad/Back/OK/volume/Home/power controls
+  stay protected, fullscreen number entry still changes channels, and the shipped CH+/−/Rewind/Fast-forward
+  paging setup remains the default
 - **24 complete interface languages** with System default, an in-app searchable language picker, RTL-aware navigation, and a language-first welcome flow on fresh installations
 - **Backup & Restore** locally or over Wi-Fi — a single `.own` file carrying your background image and your downloaded subtitles, optionally encrypted end to end with your own password (older `.json` backups still restore). Android's automatic backup is deliberately disabled, so app data only ever leaves the device through this screen — secrets ride only when you set a backup password. Plus in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
 

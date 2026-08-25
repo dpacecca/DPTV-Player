@@ -263,8 +263,8 @@ or **narrow the whole app to just one**.
   Skips are clamped at the ends,
   so a short list reaches the end in one press for free. (Long‑press is disabled on the built‑in **All**
   list — jumping to the 170,000th item is pointless — but short‑press skipping still works there.) Set the
-  skip counts or turn it off in **Settings → Content → CH+/RW · CH−/FF Key Paging** (default: on, 10 items
-  per press). The same shortcut works in **Movies**, **Series** (grid + episode list), and both the category
+  skip counts or change these assignments in **Settings → Content → Remote Shortcuts** (default: on, 10 items
+  per press). The same actions work in **Movies**, **Series** (grid + episode list), and both the category
   and item lists in **Settings → Customize Categories & Items**.
 
 ### Inside the full‑screen live player
@@ -749,6 +749,38 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
 
 ---
 
+## 🎛️ Remote shortcuts
+
+Open **Settings → Content → Remote Shortcuts** to give spare buttons on your particular TV remote a useful
+job. Choose **Add shortcut**, press or hold the button you want, then select its action. Short and long
+presses are separate assignments, and the list marks them with compact badges beside a symbol for the
+physical key. Coloured buttons appear as matching coloured keycaps.
+
+Available actions include:
+
+- **Open somewhere:** Home, Live TV, Movies, Series, Downloads, Guide, Global Search or Settings.
+- **Switch or continue:** profile switcher, playlist switcher or the last item you watched.
+- **Control Now Playing:** focus the mini player or Audio Mode bar automatically, expand to fullscreen,
+  move fullscreen playback into the mini player, switch to Audio Mode, or play/pause.
+- **Browse the focused panel:** page toward the first/last items or jump directly to the first/last item.
+  This follows focus across Live TV, Movies, Series and Customize. Jump to last remains unavailable on a
+  huge built-in **All** list so the app does not try to load tens of thousands of entries at once.
+- **Player-only actions:** return to live, subtitle controls, audio-track controls, aspect-ratio controls
+  and playback information. These do nothing when the current playback does not support them.
+
+OwnTV ships with the familiar paging assignments: **CH+ or Rewind** pages toward the first items and jumps
+to the first item when held; **CH− or Fast-forward** pages toward the last items and jumps to the last item
+when held. The two skip counts sit at the bottom of the same screen. **Restore default shortcuts** restores
+these assignments, while **Use remote shortcuts** temporarily disables every custom assignment without
+deleting it.
+
+Safety rules keep the app controllable: **Back, D-pad, OK, volume, Home and power cannot be reassigned**, and
+holding **Back** always focuses Now Playing. Number buttons can run shortcuts while browsing, but in the
+fullscreen Live TV player they keep their normal numeric channel-entry job. Remote shortcut assignments are
+included in **Backup & Restore**.
+
+---
+
 ## 🎨 Personalize (make it yours)
 
 - 🔀 **Settings → Layout → Long-press menus**: set the order of the actions in the four long-press
@@ -945,10 +977,10 @@ For **movies and series episodes** (streamed or downloaded), the player's **Subt
   works with every interface language; Android supplies compatible fallback characters when a chosen
   font does not contain a language's script. It is app-wide, survives restarts, and is included in
   backup/restore. Subtitles are not changed here — use **Subtitle appearance** for those.
-- 🔀 **CH+/RW · CH−/FF Key Paging** (Content) — page the category & item lists in Live/Movies/Series and
-  both levels of **Customize Categories & Items** with **CH+ or Rewind** / **CH− or Fast-forward**. Separate skip
-  counts per direction (typed or ±‑stepped), long‑press jumps to first/last, with an advisory warning
-  above 50. Turn it off here if your remote maps CH keys elsewhere.
+- 🎛️ **Remote Shortcuts** (Content) — assign short or long presses of spare colour, number, channel and
+  media keys to 25 app, browsing and player actions. The default CH+/Rewind and CH−/Fast-forward paging
+  setup and its two skip counts live here; essential navigation remains protected, and assignments travel
+  with Backup & Restore. See **Remote shortcuts** above for the complete action and safety list.
 - 🚀 **App startup** — where each profile opens: **Home**, **Last channel** (auto‑plays the channel
   you last watched), **Live · Favorites** (lands you right inside the favourites list), or
   **Specific channel**. The channel picker is searchable and D-pad friendly. OwnTV remembers a stable

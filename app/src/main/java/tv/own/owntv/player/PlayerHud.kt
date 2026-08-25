@@ -50,6 +50,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import tv.own.owntv.R
 import tv.own.owntv.core.i18n.HorizontalDirection
 import tv.own.owntv.core.i18n.horizontalDirection
+import tv.own.owntv.features.settings.data.RemoteShortcutAction
+import tv.own.owntv.features.settings.data.RemoteShortcutPress
+import tv.own.owntv.ui.components.LocalRemoteShortcuts
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
@@ -105,6 +108,7 @@ internal const val DIRECT_TUNE_TIMEOUT_MS = 2_000L
 private const val DIRECT_TUNE_FEEDBACK_MS = 1_500L
 private const val DIRECT_TUNE_PLAYBACK_WAIT_MS = 8_000L
 private const val MAX_DIRECT_TUNE_DIGITS = 5
+private const val PLAYER_SHORTCUT_LONG_PRESS_MS = 600L
 
 /** Re-poll for late-arriving audio/subtitle tracks while the track menu is open and still empty.
  *  20 × 300 ms = 6 s, comfortably past the slowest observed HDR/DTS track report, then it stops. */
@@ -393,9 +397,22 @@ fun PlayerHud(
 
     // The player sits over opaque video (never a glass surface — see Glass.kt), so its HUD buttons
     // stay flat regardless of glass mode: opt out of the DIALOGS default explicitly.
+    val remoteShortcuts = LocalRemoteShortcuts.current
+    var shortcutKeyCode by remember { mutableIntStateOf(android.view.KeyEvent.KEYCODE_UNKNOWN) }
+    var shortcutPressedAt by remember { mutableStateOf(0L) }
+    val dispatchPlayerShortcut: (RemoteShortcutAction) -> Unit = { action ->
+        when (action) {
+            RemoteShortcutAction.OPEN_SUBTITLE_CONTROLS -> { controlsVisible = true; dialog = HudDialog.SUBS }
+            RemoteShortcutAction.OPEN_AUDIO_CONTROLS -> { controlsVisible = true; dialog = HudDialog.AUDIO }
+            RemoteShortcutAction.OPEN_ASPECT_CONTROLS -> { controlsVisible = true; dialog = HudDialog.ZOOM }
+            RemoteShortcutAction.TOGGLE_PLAYBACK_INFO -> showInfo = !showInfo
+            else -> remoteShortcuts.dispatch(action)
+        }
+    }
     CompositionLocalProvider(LocalActionSurface provides null) {
     Box(
-        modifier = modifier.fillMaxSize().onPreviewKeyEvent { e ->
+        modifier = modifier.fillMaxSize()
+            .onPreviewKeyEvent { e ->
             // ---- Direct-tune digit capture (before the existing KeyDown guard) ----
             // Number keys are consumed globally here, HUD visible or not: on a TV remote a digit press
             // during live playback can only mean "tune to this channel", and swallowing both KeyDown and
@@ -433,6 +450,41 @@ fun PlayerHud(
                     digitBuffer = ""
                     if (num != null) { submissionRequest = num; submissionTick++ }
                     return@onPreviewKeyEvent true
+                }
+            }
+            // Configured player shortcuts run inside this original, stable preview handler. Direct
+            // tune above has first priority, so number keys keep changing live channels fullscreen.
+            if (remoteShortcuts.enabled && !inert && dialog == HudDialog.NONE && !digitsActive) {
+                val keyCode = e.nativeKeyEvent.keyCode
+                val keyBindings = remoteShortcuts.bindings.filter {
+                    it.keyCode == keyCode &&
+                        it.action != RemoteShortcutAction.PAGE_TOWARD_FIRST &&
+                        it.action != RemoteShortcutAction.PAGE_TOWARD_LAST &&
+                        it.action != RemoteShortcutAction.JUMP_TO_FIRST &&
+                        it.action != RemoteShortcutAction.JUMP_TO_LAST
+                }
+                if (keyBindings.isNotEmpty()) {
+                    when (e.type) {
+                        KeyEventType.KeyDown -> {
+                            if (shortcutKeyCode != keyCode) {
+                                shortcutKeyCode = keyCode
+                                shortcutPressedAt = e.nativeKeyEvent.eventTime
+                            }
+                            return@onPreviewKeyEvent true
+                        }
+                        KeyEventType.KeyUp -> if (shortcutKeyCode == keyCode) {
+                            val heldLong = e.nativeKeyEvent.eventTime - shortcutPressedAt >= PLAYER_SHORTCUT_LONG_PRESS_MS
+                            val binding = if (heldLong) {
+                                keyBindings.firstOrNull { it.press == RemoteShortcutPress.LONG }
+                                    ?: keyBindings.firstOrNull { it.press == RemoteShortcutPress.SHORT }
+                            } else {
+                                keyBindings.firstOrNull { it.press == RemoteShortcutPress.SHORT }
+                            }
+                            shortcutKeyCode = android.view.KeyEvent.KEYCODE_UNKNOWN
+                            binding?.let { dispatchPlayerShortcut(it.action) }
+                            return@onPreviewKeyEvent true
+                        }
+                    }
                 }
             }
             // ---- Existing key handling (unchanged, but skip for digit KeyUp already consumed above) ----

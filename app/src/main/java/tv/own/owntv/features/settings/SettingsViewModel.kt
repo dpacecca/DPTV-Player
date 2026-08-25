@@ -617,6 +617,19 @@ class SettingsViewModel(
     fun setChNavUpSkip(n: Int) { viewModelScope.launch { settings.setChNavUpSkip(n) } }
     val chNavDownSkip: StateFlow<Int> = settings.chNavDownSkip.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ChNavLimits.DEFAULT_SKIP)
     fun setChNavDownSkip(n: Int) { viewModelScope.launch { settings.setChNavDownSkip(n) } }
+    val remoteShortcutBindings: StateFlow<List<tv.own.owntv.features.settings.data.RemoteShortcutBinding>> =
+        settings.remoteShortcutBindings.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            tv.own.owntv.features.settings.data.RemoteShortcutBindings.defaults,
+        )
+    fun setRemoteShortcutBinding(binding: tv.own.owntv.features.settings.data.RemoteShortcutBinding) {
+        viewModelScope.launch { settings.setRemoteShortcutBinding(binding) }
+    }
+    fun removeRemoteShortcutBinding(keyCode: Int, press: tv.own.owntv.features.settings.data.RemoteShortcutPress) {
+        viewModelScope.launch { settings.removeRemoteShortcutBinding(keyCode, press) }
+    }
+    fun resetRemoteShortcutBindings() { viewModelScope.launch { settings.resetRemoteShortcutBindings() } }
 
     // --- Manual panel widths: one StateFlow per section, so Live/Movies/Series each read their own ---
     private fun <T> panelFlows(source: (PanelSection) -> kotlinx.coroutines.flow.Flow<T>, initial: T): Map<PanelSection, StateFlow<T>> =

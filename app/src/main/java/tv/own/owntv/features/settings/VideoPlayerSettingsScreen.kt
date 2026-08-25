@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -1643,6 +1645,11 @@ internal fun Row2(
     chip: String? = null,
     primaryChip: Boolean = true,
     chevron: Boolean = false,
+    iconTint: Color? = null,
+    iconBadge: String? = null,
+    accentIconBadge: Boolean = false,
+    keycapColor: Color? = null,
+    keycapLabel: String? = null,
     /** Its key in [VIDEO_QUICK_ROWS]. Present = a held OK offers to pin this row to Quick. */
     quickKey: String? = null,
     modifier: Modifier = Modifier,
@@ -1671,10 +1678,58 @@ internal fun Row2(
             // Tile tone comes from the sub-screen, not the row, so these match the root row that
             // opened the screen instead of always being the accent.
             val (tileBg, tileOn) = LocalSettingsRowTone.current.colors()
-            Box(
-                modifier = Modifier.size(Dimens.IconTileSize).clip(RoundedCornerShape(Dimens.IconTileCorner)).background(tileBg),
-                contentAlignment = Alignment.Center,
-            ) { OwnTVIcon(icon = icon, tint = tileOn, modifier = Modifier.size(22.dp)) }
+            Box {
+                Box(
+                    modifier = Modifier.size(Dimens.IconTileSize).clip(RoundedCornerShape(Dimens.IconTileCorner)).background(tileBg),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (keycapColor != null) {
+                        val keycapShape = RoundedCornerShape(6.dp)
+                        Box(
+                            modifier = Modifier
+                                .width(30.dp)
+                                .height(18.dp)
+                                .clip(keycapShape)
+                                .background(keycapColor)
+                                .border(1.5.dp, Color.White.copy(alpha = .78f), keycapShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            keycapLabel?.let {
+                                Text(
+                                    it,
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, lineHeight = 8.sp),
+                                    fontWeight = FontWeight.ExtraBold,
+                                )
+                            }
+                        }
+                    } else {
+                        OwnTVIcon(icon = icon, tint = iconTint ?: tileOn, modifier = Modifier.size(22.dp))
+                    }
+                }
+                iconBadge?.let {
+                    val badgeBackground = if (accentIconBadge) colors.primary else colors.onSurface
+                    val badgeForeground = if (accentIconBadge) colors.onPrimary else colors.surface
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = 5.dp, y = 5.dp)
+                            .size(19.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(badgeBackground)
+                            .border(2.dp, colors.surface, androidx.compose.foundation.shape.CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            it,
+                            color = badgeForeground,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 9.sp),
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -1713,6 +1768,7 @@ internal fun PickerDialog(
     onDismiss: () -> Unit,
     searchable: Boolean = false,
     trailingLabels: Map<String, String> = emptyMap(),
+    leadingIcons: Map<String, OwnTVIcon> = emptyMap(),
 ) {
     val colors = OwnTVTheme.colors
     val fr = remember { FocusRequester() }
@@ -1765,6 +1821,13 @@ internal fun PickerDialog(
                         surface = GlassSurface.DIALOGS,
                     ) { _ ->
                         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        leadingIcons[value]?.let { icon ->
+                            OwnTVIcon(
+                                icon,
+                                tint = if (isSel) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                                modifier = Modifier.padding(end = 8.dp).size(18.dp),
+                            )
+                        }
                         Text(label, style = MaterialTheme.typography.bodyMedium, color = if (isSel) colors.onPrimaryContainer else colors.onSurface, modifier = Modifier.weight(1f))
                         trailingLabels[value]?.let {
                             tv.own.owntv.ui.components.ProviderChip(

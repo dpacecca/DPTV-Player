@@ -19,14 +19,26 @@
 - **Changing section or opening another category starts from All again**, and the list returns to its first
   row when the filter changes so D-pad focus and range actions have a predictable starting point.
 
-### ⏪ Four remote buttons can page long browse lists
+### 🎛️ Spare remote buttons can do exactly what you choose
 
-- **Rewind now does the same job as CH+, and Fast-forward does the same job as CH−**, in every browse panel
-  that supports key paging: categories, channel/title lists, poster grids, series episodes, and both levels
-  of Customize. A short press uses the saved skip count; a long press still jumps to the first or last item.
-- **Settings now names all four keys consistently** as **CH+/RW · CH−/FF**, including the title, switch,
-  descriptions and help notes, so remotes without dedicated channel buttons are no longer left out of the
-  instructions.
+- **Settings → Content → Remote Shortcuts replaces the old fixed CH+/RW · CH−/FF paging page.** Press or
+  hold a spare key, choose one of 25 navigation, browsing and playback actions, and edit or delete that
+  assignment later. Short and long presses are independent; one master switch disables every custom
+  assignment without deleting it, and Restore default shortcuts puts the shipped paging controls back.
+- **The familiar paging behavior remains the default.** CH+ and Rewind page toward the first items and
+  jump to the first item when held; CH− and Fast-forward do the same toward the last items. The two skip
+  counts remain adjustable, and Jump to last stays blocked on enormous All lists.
+- **Shortcuts can open every top-level destination, Search, profile or playlist switching; continue the
+  last watched item; control or move Now Playing between fullscreen, mini-player and Audio Mode; page or
+  jump through the focused browse panel; and open contextual player controls.** Focus Now Playing chooses
+  the mini player or Audio Mode bar intelligently, while Play/Pause works on the current playback.
+- **Essential remote navigation cannot be reassigned.** Back, D-pad, OK, volume, Home and power remain
+  protected; long-press Back still focuses Now Playing. Number shortcuts work while browsing, but
+  fullscreen number entry keeps priority for channel navigation. Assignments are included in Backup &
+  Restore.
+- **The assignment list now looks like the physical remote.** Rewind, Fast-forward and Channel+/− have
+  distinct key symbols, short and long presses carry compact badges, coloured keys look like coloured
+  keycaps, and the two skip-count rows use clear first/last paging illustrations.
 
 ### 🕰️ The Guide keeps the present in view
 
@@ -97,7 +109,7 @@
 - **Buttons over the picture now take focus as light**: a thin accent rim, a soft wash of the same colour
   and a gentle glow behind it. With Reduce animations turned up the glow goes and the rim stays, so the
   focus is never lost.
-- **Nine settings that used to share a symbol with something else now have their own.** DNS, Channel paging,
+- **Nine settings that used to share a symbol with something else now have their own.** DNS, Remote shortcuts,
   Panel width, Focus highlight and Auto-play next each got a drawn mark of their own, and Zoom and the TV
   guide were redrawn to look like what they do. The live dot in the player is now the same mark everywhere
   it appears — the badge, the Go live button and the marker at the end of the timeline.
@@ -337,8 +349,14 @@
 
 - **Focus no longer slides across the screen when you leave a settings page.** Coming back from the
   bigger panels — Glass Effect, About — the highlight appeared somewhere else for a moment and then
-  travelled to the row you had opened. The list was being scrolled out from under it while the
-  highlight was found again. It is now held still until focus has landed, on every settings screen.
+  travelled to the row you had opened. Full settings pages such as Playlists had the same visible jump:
+  the two-column Settings screen briefly rebuilt its first section before restoring the row you left.
+  Both return paths now keep their section and list position still until focus has landed directly on
+  the opener row.
+- **Home's Now Trending showcase no longer follows the popup controls.** Trending is part of the main
+  interface, but it was wrapped in the popup styling, so Popup size resized the entire showcase and
+  Popup font size changed its text while the general font setting was ignored. It now follows the
+  general interface font and size, while popup controls affect only actual popups.
 - **Two settings put the highlight in the wrong place afterwards.** Closing **Focus highlight**, or the
   remote background-image picker, restored nothing at all — and left a marker set that sent focus to
   the wrong row the *next* time you opened Settings from the sidebar.

@@ -30,6 +30,7 @@ enum class OwnTVIcon {
     // Marks that exist so one glyph stops doing two jobs: NETWORK was both proxy and DNS, EXPAND was
     // both panel width and focus highlight, SKIP_NEXT was both channel paging and autoplay-next.
     DNS, PANEL_WIDTH, FOCUS_HIGHLIGHT, CH_NAV, AUTOPLAY_NEXT, LIVE_DOT, SEEK_BACK, SEEK_FORWARD, MORE,
+    REMOTE_CHANNEL_UP, REMOTE_CHANNEL_DOWN, PAGE_TOWARD_FIRST, PAGE_TOWARD_LAST,
 }
 
 @Composable
@@ -259,6 +260,36 @@ fun OwnTVIcon(
             OwnTVIcon.CHEVRON_DOWN -> {
                 drawLineStroke(p(5f, 9f), p(12f, 16f), tint, stroke)
                 drawLineStroke(p(12f, 16f), p(19f, 9f), tint, stroke)
+            }
+            OwnTVIcon.REMOTE_CHANNEL_UP -> {
+                drawLineStroke(p(5f, 10f), p(12f, 4f), tint, stroke)
+                drawLineStroke(p(12f, 4f), p(19f, 10f), tint, stroke)
+                drawLineStroke(p(12f, 4f), p(12f, 18f), tint, stroke)
+                drawLineStroke(p(4f, 21f), p(20f, 21f), tint, stroke)
+            }
+            OwnTVIcon.REMOTE_CHANNEL_DOWN -> {
+                drawLineStroke(p(5f, 14f), p(12f, 20f), tint, stroke)
+                drawLineStroke(p(12f, 20f), p(19f, 14f), tint, stroke)
+                drawLineStroke(p(12f, 20f), p(12f, 6f), tint, stroke)
+                drawLineStroke(p(4f, 3f), p(20f, 3f), tint, stroke)
+            }
+            OwnTVIcon.PAGE_TOWARD_FIRST -> {
+                val thin = Stroke(width = 1.6f * s, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                drawRoundRectStroke(p(9f, 3f), p(15f, 12f), 1.2f * s, tint.copy(alpha = .38f), thin)
+                drawRoundRectStroke(p(12f, 5f), p(18f, 14f), 1.2f * s, tint.copy(alpha = .66f), thin)
+                drawRoundRectStroke(p(15f, 7f), p(21f, 16f), 1.2f * s, tint, thin)
+                drawLineStroke(p(10f, 19f), p(3f, 19f), tint, stroke)
+                drawLineStroke(p(3f, 19f), p(6.5f, 15.5f), tint, stroke)
+                drawLineStroke(p(3f, 19f), p(6.5f, 22.5f), tint, stroke)
+            }
+            OwnTVIcon.PAGE_TOWARD_LAST -> {
+                val thin = Stroke(width = 1.6f * s, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                drawRoundRectStroke(p(9f, 3f), p(15f, 12f), 1.2f * s, tint.copy(alpha = .38f), thin)
+                drawRoundRectStroke(p(6f, 5f), p(12f, 14f), 1.2f * s, tint.copy(alpha = .66f), thin)
+                drawRoundRectStroke(p(3f, 7f), p(9f, 16f), 1.2f * s, tint, thin)
+                drawLineStroke(p(14f, 19f), p(21f, 19f), tint, stroke)
+                drawLineStroke(p(21f, 19f), p(17.5f, 15.5f), tint, stroke)
+                drawLineStroke(p(21f, 19f), p(17.5f, 22.5f), tint, stroke)
             }
             OwnTVIcon.PAUSE -> {
                 drawRect(tint, topLeft = p(8f, 5f), size = Size(2.6f * s, 14f * s))

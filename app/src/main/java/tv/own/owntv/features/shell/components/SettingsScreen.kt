@@ -931,7 +931,7 @@ fun SettingsScreen(
         var settledFrames = 0
         repeat(10) {
             withFrameNanos { }
-            if (searchQuery.isBlank() && group != null && key != null) {
+            if (searchQuery.isBlank() && group != null) {
                 val index = categories[group].second.indexOfFirst { it.key == key }
                 if (index >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == index }) {
                     runCatching { listState.scrollToItem(index) }

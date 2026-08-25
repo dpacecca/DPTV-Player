@@ -22,8 +22,10 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,6 +72,8 @@ import tv.own.owntv.features.search.SearchViewModel
 import tv.own.owntv.features.home.TrendingHomeItem
 import tv.own.owntv.features.series.SeriesScreen
 import tv.own.owntv.features.series.SeriesViewModel
+import tv.own.owntv.features.settings.data.RemoteShortcutAction
+import tv.own.owntv.features.settings.data.RemoteShortcutBindings
 import tv.own.owntv.player.MiniPlayer
 import tv.own.owntv.player.MpvVideoSurface
 import tv.own.owntv.player.OwnTVPlayer
@@ -90,6 +94,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.compose.ui.res.stringResource
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.LocalRemoteShortcuts
+import tv.own.owntv.ui.components.RemoteShortcutEnvironment
 import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.GlassSurface
 import tv.own.owntv.ui.theme.LocalContentScrolled
@@ -162,6 +168,10 @@ fun OwnTVShell(
     // Docked mini-player size (% of screen width) + position, configurable in Settings and from the
     // mini-player's own controls. Read straight from settings so both entry points stay in sync.
     val settingsRepo = koinInject<tv.own.owntv.features.settings.data.SettingsRepository>()
+    val remoteShortcutsEnabled by settingsRepo.chNavEnabled.collectAsStateWithLifecycle(initialValue = true)
+    val remoteShortcutBindings by settingsRepo.remoteShortcutBindings.collectAsStateWithLifecycle(
+        initialValue = RemoteShortcutBindings.defaults,
+    )
     val miniSizePct by settingsRepo.miniPlayerSizePct.collectAsStateWithLifecycle(initialValue = tv.own.owntv.player.MiniPlayerSize.DEFAULT)
     val miniPosName by settingsRepo.miniPlayerPosition.collectAsStateWithLifecycle(initialValue = tv.own.owntv.player.MiniPlayerPosition.DEFAULT.name)
     val ambientGlowEnabled by settingsRepo.ambientGlowEnabled.collectAsStateWithLifecycle(initialValue = false)
@@ -479,7 +489,87 @@ fun OwnTVShell(
         Unit
     }
 
-    LaunchedEffect(Unit) { tv.own.owntv.Perf.stamp("shell-composed"); runCatching { sidebarFocus.requestFocus() } }
+    val continueLastWatched = {
+        continueTarget?.let { target ->
+            scope.launch {
+                when (target.kind) {
+                    tv.own.owntv.features.home.ContinueKind.LIVE ->
+                        if (liveVm.ensurePlayingByIdAsync(target.channelId)) openFullscreen(MainSection.LIVE_TV)
+                    tv.own.owntv.features.home.ContinueKind.MOVIE ->
+                        if (movieVm.playByIdAsync(target.movieId, target.positionMs) && !movieVm.externalPlayerOn.value) openFullscreen(MainSection.MOVIES)
+                    tv.own.owntv.features.home.ContinueKind.EPISODE ->
+                        if (seriesVm.playFromHomeAsync(target.seriesId, target.episodeId, target.positionMs) && !seriesVm.externalPlayerOn.value) openFullscreen(MainSection.SERIES)
+                }
+            }
+        }
+        Unit
+    }
+    val openShortcutSection: (MainSection) -> Unit = { section ->
+        if (playerMode == PlayerMode.FULLSCREEN) dockPlayer()
+        if (section == MainSection.SEARCH) {
+            searchVm.setQuery("")
+            trendingSearchActive = false
+            restoreTrendingSearchFocus = false
+        }
+        onSelectSection(section)
+        // A shortcut may be fired by a control inside the destination being replaced (most notably
+        // Settings). Once that screen leaves composition its focused node disappears, so hand focus
+        // to the persistent sidebar after the new destination has rendered.
+        scope.launch {
+            withFrameNanos { }
+            runCatching { sidebarFocus.requestFocus() }
+        }
+    }
+    val dispatchRemoteShortcut: (RemoteShortcutAction) -> Unit = { action ->
+        when (action) {
+            RemoteShortcutAction.OPEN_HOME -> openShortcutSection(MainSection.HOME)
+            RemoteShortcutAction.OPEN_LIVE_TV -> openShortcutSection(MainSection.LIVE_TV)
+            RemoteShortcutAction.OPEN_MOVIES -> openShortcutSection(MainSection.MOVIES)
+            RemoteShortcutAction.OPEN_SERIES -> openShortcutSection(MainSection.SERIES)
+            RemoteShortcutAction.OPEN_DOWNLOADS -> openShortcutSection(MainSection.DOWNLOADS)
+            RemoteShortcutAction.OPEN_GUIDE -> openShortcutSection(MainSection.EPG)
+            RemoteShortcutAction.OPEN_SEARCH -> openShortcutSection(MainSection.SEARCH)
+            RemoteShortcutAction.OPEN_SETTINGS -> openShortcutSection(MainSection.SETTINGS)
+            RemoteShortcutAction.OPEN_PROFILE_SWITCHER -> {
+                if (playerMode == PlayerMode.FULLSCREEN) dockPlayer()
+                onSwitchProfile()
+            }
+            RemoteShortcutAction.OPEN_PLAYLIST_SWITCHER -> {
+                if (playerMode == PlayerMode.FULLSCREEN) dockPlayer()
+                if (playlists.size > 1) showPlaylistPicker = true
+            }
+            RemoteShortcutAction.CONTINUE_LAST_WATCHED -> continueLastWatched()
+            RemoteShortcutAction.FOCUS_NOW_PLAYING -> enterNowPlaying()
+            RemoteShortcutAction.EXPAND_NOW_PLAYING -> if (playerMode == PlayerMode.MINI || playerMode == PlayerMode.AUDIO) expandPlayer()
+            RemoteShortcutAction.ENTER_MINI_PLAYER -> if (playerMode == PlayerMode.FULLSCREEN) dockPlayer()
+            RemoteShortcutAction.ENTER_AUDIO_MODE -> if (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI) toAudioMode()
+            RemoteShortcutAction.PLAY_PAUSE -> if (playerMode != PlayerMode.NONE) dockedEngine.togglePlayPause()
+            RemoteShortcutAction.RETURN_TO_LIVE -> if (playerMode != PlayerMode.NONE && zapSource == MainSection.LIVE_TV && timeshifted) liveVm.goToLive()
+            RemoteShortcutAction.PAGE_TOWARD_FIRST,
+            RemoteShortcutAction.PAGE_TOWARD_LAST,
+            RemoteShortcutAction.JUMP_TO_FIRST,
+            RemoteShortcutAction.JUMP_TO_LAST,
+            RemoteShortcutAction.OPEN_SUBTITLE_CONTROLS,
+            RemoteShortcutAction.OPEN_AUDIO_CONTROLS,
+            RemoteShortcutAction.OPEN_ASPECT_CONTROLS,
+            RemoteShortcutAction.TOGGLE_PLAYBACK_INFO,
+            -> Unit
+        }
+    }
+    val latestRemoteShortcutDispatch by rememberUpdatedState(dispatchRemoteShortcut)
+    val remoteShortcutEnvironment = remember(remoteShortcutsEnabled, remoteShortcutBindings) {
+        RemoteShortcutEnvironment(
+            enabled = remoteShortcutsEnabled,
+            bindings = remoteShortcutBindings,
+            dispatch = { action -> latestRemoteShortcutDispatch(action) },
+        )
+    }
+
+    LaunchedEffect(sidebarFocus) {
+        tv.own.owntv.Perf.stamp("shell-composed")
+        withFrameNanos { }
+        runCatching { sidebarFocus.requestFocus() }
+    }
 
     LaunchedEffect(pendingDeepLink, activeProfileId) {
         val deepLink = pendingDeepLink ?: return@LaunchedEffect
@@ -559,6 +649,9 @@ fun OwnTVShell(
     // handler — HUD hide, search clear, dialog dismiss, direct-tune cancel — behaves exactly as before.
     var backHoldJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     var backLongFired by remember { mutableStateOf(false) }
+    var shortcutKeyCode by remember { mutableStateOf(android.view.KeyEvent.KEYCODE_UNKNOWN) }
+    var shortcutLongFired by remember { mutableStateOf(false) }
+    var shortcutHoldJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     val longPressBackArmed = playerMode == PlayerMode.MINI && !showExit && !showAvatarPicker && !showPlaylistPicker
     // Media keys (§8 tier 3) act on the docked window wherever focus is — but only if nothing nearer
     // claimed them first, which is why this is a bubbling handler: a focused browse list still gets its
@@ -569,7 +662,10 @@ fun OwnTVShell(
         else -> null
     }
 
-    CompositionLocalProvider(LocalContentScrolled provides contentScrolled) {
+    CompositionLocalProvider(
+        LocalContentScrolled provides contentScrolled,
+        LocalRemoteShortcuts provides remoteShortcutEnvironment,
+    ) {
     Box(
         modifier = modifier.fillMaxSize().background(shellBase)
             .onPreviewKeyEvent { e ->
@@ -597,6 +693,47 @@ fun OwnTVShell(
                 }
             }
             .onKeyEvent { e ->
+                val shortcutKey = e.nativeKeyEvent.keyCode
+                val shellBindings = remoteShortcutBindings.filter {
+                    it.keyCode == shortcutKey &&
+                        it.action != RemoteShortcutAction.PAGE_TOWARD_FIRST &&
+                        it.action != RemoteShortcutAction.PAGE_TOWARD_LAST &&
+                        it.action != RemoteShortcutAction.JUMP_TO_FIRST &&
+                        it.action != RemoteShortcutAction.JUMP_TO_LAST
+                }
+                if (remoteShortcutsEnabled && shellBindings.isNotEmpty()) {
+                    when (e.type) {
+                        KeyEventType.KeyDown -> {
+                            if (shortcutKeyCode != shortcutKey) {
+                                shortcutHoldJob?.cancel()
+                                shortcutKeyCode = shortcutKey
+                                shortcutLongFired = false
+                                shellBindings.firstOrNull { it.press == tv.own.owntv.features.settings.data.RemoteShortcutPress.LONG }
+                                    ?.let { binding ->
+                                        shortcutHoldJob = scope.launch {
+                                            kotlinx.coroutines.delay(600)
+                                            if (shortcutKeyCode == shortcutKey) {
+                                                shortcutLongFired = true
+                                                dispatchRemoteShortcut(binding.action)
+                                            }
+                                        }
+                                    }
+                            }
+                            return@onKeyEvent true
+                        }
+                        KeyEventType.KeyUp -> if (shortcutKeyCode == shortcutKey) {
+                            shortcutHoldJob?.cancel()
+                            shortcutHoldJob = null
+                            if (!shortcutLongFired) {
+                                shellBindings.firstOrNull { it.press == tv.own.owntv.features.settings.data.RemoteShortcutPress.SHORT }
+                                    ?.let { dispatchRemoteShortcut(it.action) }
+                            }
+                            shortcutKeyCode = android.view.KeyEvent.KEYCODE_UNKNOWN
+                            shortcutLongFired = false
+                            return@onKeyEvent true
+                        }
+                    }
+                }
                 if (e.type != KeyEventType.KeyDown || playerMode != PlayerMode.MINI) return@onKeyEvent false
                 when (e.key) {
                     Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> { dockedEngine.togglePlayPause(); true }
@@ -696,20 +833,7 @@ fun OwnTVShell(
                         tv.own.owntv.features.home.ContinueKind.EPISODE -> OwnTVIcon.SERIES
                         null -> OwnTVIcon.PLAY
                     },
-                    onContinueClick = {
-                        continueTarget?.let { t ->
-                            scope.launch {
-                                when (t.kind) {
-                                    tv.own.owntv.features.home.ContinueKind.LIVE ->
-                                        if (liveVm.ensurePlayingByIdAsync(t.channelId)) openFullscreen(MainSection.LIVE_TV)
-                                    tv.own.owntv.features.home.ContinueKind.MOVIE ->
-                                        if (movieVm.playByIdAsync(t.movieId, t.positionMs) && !movieVm.externalPlayerOn.value) openFullscreen(MainSection.MOVIES)
-                                    tv.own.owntv.features.home.ContinueKind.EPISODE ->
-                                        if (seriesVm.playFromHomeAsync(t.seriesId, t.episodeId, t.positionMs) && !seriesVm.externalPlayerOn.value) openFullscreen(MainSection.SERIES)
-                                }
-                            }
-                        }
-                    },
+                    onContinueClick = continueLastWatched,
                     // Audio Mode: the now-playing bar, left of the weather chip. Present only while
                     // PlayerMode.AUDIO; focusable only while the nav panel holds focus (same rule as Search).
                     audioBarExpanded = audioBarExpanded,

@@ -15,7 +15,7 @@
 
 - **🏷️ Every merged library says which provider an item came from**
 - **🔎 Customize can show All, Visible or Hidden entries**
-- **⏪ Four remote buttons can page long browse lists**
+- **🎛️ Spare remote buttons can do exactly what you choose**
 - **🕰️ The Guide keeps the present in view**
 - **↔️ Choose how much of Guide belongs to channels and programmes**
 - **🪟 Popup boxes and popup text finally size independently**
@@ -43,7 +43,8 @@
 
 ### 🐛 Fixes
 
-- **Focus no longer slides across the screen when you leave a settings page**
+- **Focus returns directly to the Settings row you left**
+- **Home Trending no longer follows popup size and popup font controls**
 - **Two settings put the highlight in the wrong place afterwards**
 - **Back now goes back one level in Settings, not two**
 - **Every series re-sync used to leave a dead resume position behind, for ever**
