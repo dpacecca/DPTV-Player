@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import kotlinx.coroutines.flow.first
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
 import tv.own.owntv.ui.components.ContentMenu
@@ -223,12 +224,12 @@ private fun ArrangeMenuOverlay(
     val vm: SettingsViewModel = koinViewModel()
     val colors = OwnTVTheme.colors
     val refs = catalogue(menu)
-    val saved by remember(menu) { vm.menuOrder(menu) }.collectAsStateWithLifecycle(emptyList())
-    // Seeded once from the stored order: after that the list belongs to the overlay, so a save
-    // arriving mid-edit cannot fight the user's own moves.
+    // Wait for DataStore's first real value before seeding. An eager empty placeholder would make
+    // every reopened editor show the shipped order even when a custom order is already saved.
     var keys by remember(menu) { mutableStateOf(emptyList<String>()) }
-    LaunchedEffect(menu, saved) {
-        if (keys.isEmpty()) keys = applyMenuOrder(refs.map { it.key }, saved) { it }
+    LaunchedEffect(menu) {
+        val saved = vm.menuOrder(menu).first()
+        keys = applyMenuOrder(refs.map { it.key }, saved) { it }
     }
     // -1 = nothing picked up; otherwise the index Up/Down carries.
     var picked by remember(menu) { mutableIntStateOf(-1) }

@@ -9,6 +9,13 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v4.2.4 — Unreleased
+
+### 🐛 Fixes
+
+- **Long-press menu Settings shows the saved order**
+- **Home resume no longer trips working Auto surround into stereo or mpv**
+
 ## v4.2.3 — 2026-08-26
 
 ### ✨ New features

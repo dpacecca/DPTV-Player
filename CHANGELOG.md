@@ -1,5 +1,19 @@
 # Changelog
 
+## v4.2.4 — Unreleased
+
+### 🐛 Bug fixes
+
+- **Long-press menu Settings now reopens in the order you saved.** The editor briefly treated its empty
+  loading value as the real setting, filled itself with the shipped order and then ignored the saved
+  order when it arrived. Live TV, movie, series and episode editors now wait for their stored value, so
+  the arrangement shown in Settings matches the popup you actually use.
+- **Resuming from Home no longer makes working Auto surround fall back to stereo or mpv.** ExoPlayer
+  prepared a movie or episode at the beginning and immediately sought to Home's saved position, forcing
+  some TCL/Realtek TVs to rebuild a just-created E-AC3 output that then stayed silent. The saved position
+  is now part of the initial preparation, so Home resumes directly there with the same working audio path
+  as playback started from Movies or Series.
+
 ## v4.2.3 — 2026-08-26
 
 ### 🏷️ Every merged library says which provider an item came from

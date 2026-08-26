@@ -798,7 +798,7 @@ included in **Backup & Restore**.
   **OK** to drop it, then **Save** — nothing is written until you do, and Back or Cancel discards. **Reset**
   restores the shipped order, per menu or for all four at once. **Close** always stays last.
   An order you set keeps working after an update: a new action is added at the end and a removed one is
-  simply skipped.
+  simply skipped. Reopening the editor shows the same saved order as the long-press popup itself.
 
 - **Settings → Customize Categories & Items**: **hide, rename and reorder** categories, plus **unhide**
   individual channels, movies and series from one place. Pick a section at the top (Live TV / Movies /
@@ -1144,6 +1144,8 @@ included in **Backup & Restore**.
   sound again) — restart the app, or change this setting, to give your equipment another try. When a movie
   or episode is using **ExoPlayer**, this recovery briefly rebuilds the picture on a clean video surface
   and resumes at the same position; it does not treat the audio change as a reason to switch to mpv.
+  Resuming a film or episode from Home also opens directly at its saved position, so Auto surround is not
+  torn down and rebuilt during startup.
 
   Applies to **Live TV, Movies and Series on both players**. Changing it re-opens whatever is playing.
   If sound and picture still drift, nudge it live with the player's **Audio → A/V sync**, and turn on
