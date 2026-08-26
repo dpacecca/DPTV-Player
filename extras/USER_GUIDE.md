@@ -1141,7 +1141,9 @@ included in **Backup & Restore**.
   re‑syncs itself and you keep your surround. That safety net runs in **all three modes** and can't be
   switched off. Once it
   has fired it stays on stereo for the rest of the session (so channel or player switches can't lose the
-  sound again) — restart the app, or change this setting, to give your equipment another try.
+  sound again) — restart the app, or change this setting, to give your equipment another try. When a movie
+  or episode is using **ExoPlayer**, this recovery briefly rebuilds the picture on a clean video surface
+  and resumes at the same position; it does not treat the audio change as a reason to switch to mpv.
 
   Applies to **Live TV, Movies and Series on both players**. Changing it re-opens whatever is playing.
   If sound and picture still drift, nudge it live with the player's **Audio → A/V sync**, and turn on

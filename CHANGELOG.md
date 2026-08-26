@@ -441,6 +441,12 @@
   time for a large 4K file on a slow provider. It now waits 12, the same as the Home screen preview
   has always used, so a slow-starting film is no longer restarted or reported as "audio, no picture"
   when it was about to play.
+- **ExoPlayer no longer drops a working movie or episode into mpv after switching surround to stereo.**
+  Rebuilding ExoPlayer's audio output also replaces its hardware video decoder; on some TCL/Realtek TVs,
+  doing that immediately on the same video surface left the replacement decoder playing sound over a
+  blank picture. Recovery now releases the old decoder, allows it to settle, recreates the video surface,
+  and resumes at the saved position in ExoPlayer. The same safe restart protects its hardware-to-software
+  decoder rescue, while mpv's independent stereo recovery remains unchanged.
 - **"App not installed" when updating from inside OwnTV.** The app downloaded the new version and
   handed it straight to Android without checking anything, so a download that arrived incomplete —
   easy on a TV that is low on storage or on a weak connection — was rejected by the system with a bare
