@@ -338,7 +338,9 @@ fun OwnTVShell(
                 val ch = liveVm.lastWatchedLiveChannel()
                 if (ch != null && playerMode == PlayerMode.NONE) {
                     zapSource = MainSection.LIVE_TV
-                    liveVm.watchFullscreen(ch, listOf(ch))
+                    // There is no caller-owned browse rail here. Let LiveViewModel build the channel's
+                    // provider context instead of permanently arming a one-item list that disables CH+/CH-.
+                    liveVm.watchFullscreen(ch, emptyList())
                     playerMode = PlayerMode.FULLSCREEN
                 }
             }
@@ -375,7 +377,7 @@ fun OwnTVShell(
                 val channel = (launch as? LauncherLaunch.Live)?.channel
                 if (channel != null && liveVm.isVisibleToActiveProfile(channel) && playerMode == PlayerMode.NONE) {
                     zapSource = MainSection.LIVE_TV
-                    liveVm.watchFullscreen(channel, listOf(channel))
+                    liveVm.watchFullscreen(channel, emptyList())
                     playerMode = PlayerMode.FULLSCREEN
                 } else {
                     onSelectSection(MainSection.HOME)
@@ -595,7 +597,9 @@ fun OwnTVShell(
                 }
                 is LauncherLaunch.Live -> {
                     onSelectSection(MainSection.LIVE_TV)
-                    liveVm.ensurePlaying(launch.channel)
+                    // A launcher tile has no browse rail, so arm the channel's provider context before
+                    // opening the player. A bare ensurePlaying() leaves CH+/CH- with no list to step through.
+                    liveVm.watchFullscreen(launch.channel, emptyList())
                     openFullscreen(MainSection.LIVE_TV)
                     onDeepLinkConsumed()
                 }
@@ -1153,16 +1157,15 @@ fun OwnTVShell(
                 )
             }
             if (isFull) {
-                // CH+/CH- zap through the channel list of whichever section opened the current stream
-                // (Live TV or the Guide); never for VOD. When live plays on ExoPlayer (liveOnExo=true) the
-                // mpv `player` is stopped so player.isLiveContent is false — the ExoPlayer engine is the one
-                // playing live, so we must check liveOnExo too (otherwise zap breaks for the common case).
+                // Engine state still distinguishes the live edge from catch-up/archive playback for
+                // controls such as direct number tuning. It must not gate the physical CH keys below.
                 val isLiveStream = liveOnExo || player.isLiveContent
-                val zap: ((Int) -> Unit)? = when {
-                    !isLiveStream -> null
-                    zapSource == MainSection.LIVE_TV && liveCanZap -> liveVm::zap
-                    else -> null
-                }
+                // Dedicated CH+/CH- belong to a Live TV/catch-up player for its whole lifetime. Do not
+                // derive this callback from the active engine or current list readiness: both legitimately
+                // go through short false/empty windows during startup and ExoPlayer/mpv handoffs. Browse
+                // panels keep their configurable paging because PlayerHud exists only in full-screen here.
+                val zap: ((Int) -> Unit)? =
+                    if (zapSource == MainSection.LIVE_TV) liveVm::zap else null
                 // Live rewind controls apply to a Live-TV channel (live OR its timeshift archive).
                 val isLiveChannel = zapSource == MainSection.LIVE_TV
                 // ...but NOT to a catch-up archive programme. That's VOD-style playback of a past

@@ -452,6 +452,15 @@ fun PlayerHud(
                     return@onPreviewKeyEvent true
                 }
             }
+            // A dedicated TV channel key belongs to the channel player for the whole session. Handle it
+            // before configurable browse shortcuts so an OSD button, an engine handoff, or a paging binding
+            // cannot temporarily claim it. KeyUp is swallowed too, keeping the complete press inside the HUD.
+            if (canZap && (e.key == Key.ChannelUp || e.key == Key.ChannelDown)) {
+                if (e.type == KeyEventType.KeyDown) {
+                    zap(if (e.key == Key.ChannelUp) 1 else -1)
+                }
+                return@onPreviewKeyEvent true
+            }
             // Configured player shortcuts run inside this original, stable preview handler. Direct
             // tune above has first priority, so number keys keep changing live channels fullscreen.
             if (remoteShortcuts.enabled && !inert && dialog == HudDialog.NONE && !digitsActive) {
@@ -490,8 +499,9 @@ fun PlayerHud(
             // ---- Existing key handling (unchanged, but skip for digit KeyUp already consumed above) ----
             if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
             when {
-                // Channel surfing: dedicated CH+/CH- and media prev/next keys always zap. D-pad Up/Down
-                // zap ONLY while the HUD is hidden (when it's visible, Up/Down navigate the controls) —
+                // Channel surfing: media prev/next always zap alongside the dedicated CH keys handled
+                // above. D-pad Up/Down zap ONLY on live streams while the HUD is hidden (when it's visible,
+                // Up/Down navigate the controls) —
                 // this is the only way to change channels on remotes without CH keys (e.g. Fire TV).
                 //
                 // Direction is channel-number order, not list-position order: "up" (CH+, D-pad Up) is
@@ -499,10 +509,10 @@ fun PlayerHud(
                 // de facto TV convention (Live Channels, YouTube TV, Pluto TV). All of these keys move
                 // the same way; there is deliberately no split between CH+ and D-pad Up. Wrapping is
                 // intended: CH-/Down from the first channel lands on the last, and vice versa.
-                canZap && (e.key == Key.ChannelUp || e.key == Key.MediaNext) -> { zap(1); true }
-                canZap && (e.key == Key.ChannelDown || e.key == Key.MediaPrevious) -> { zap(-1); true }
-                canZap && !controlsVisible && e.key == Key.DirectionUp -> { zap(1); true }
-                canZap && !controlsVisible && e.key == Key.DirectionDown -> { zap(-1); true }
+                canZap && e.key == Key.MediaNext -> { zap(1); true }
+                canZap && e.key == Key.MediaPrevious -> { zap(-1); true }
+                canZap && isLive && !controlsVisible && e.key == Key.DirectionUp -> { zap(1); true }
+                canZap && isLive && !controlsVisible && e.key == Key.DirectionDown -> { zap(-1); true }
                 // The category list lives at logical Start; history lives at logical End.
                 onOpenChannelList != null && !controlsVisible &&
                     e.key.horizontalDirection(layoutDirection) == HorizontalDirection.START -> { onOpenChannelList(); true }

@@ -43,6 +43,7 @@
 
 ### 🐛 Fixes
 
+- **CH+ / CH− always changes the channel while the Live TV or catch-up player is open**
 - **Focus returns directly to the Settings row you left**
 - **Home Trending no longer follows popup size and popup font controls**
 - **Two settings put the highlight in the wrong place afterwards**

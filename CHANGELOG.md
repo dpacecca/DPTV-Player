@@ -347,6 +347,12 @@
 
 ### 🐛 Fixes
 
+- **CH+ / CH− now always changes the channel while a Live TV or catch-up player is open.** The
+  dedicated channel keys could be claimed by a focused on-screen control just after playback started,
+  or briefly stop responding while the channel list or playback engine changed underneath them. They
+  now belong to the player for the entire session, including channels opened from the Guide, Home,
+  startup and launcher shortcuts. Browse screens keep their configurable CH+/CH− paging, media and
+  colour-key shortcuts are unchanged, and D-pad Up/Down still navigates whenever the controls are visible.
 - **Focus no longer slides across the screen when you leave a settings page.** Coming back from the
   bigger panels — Glass Effect, About — the highlight appeared somewhere else for a moment and then
   travelled to the row you had opened. Full settings pages such as Playlists had the same visible jump:
