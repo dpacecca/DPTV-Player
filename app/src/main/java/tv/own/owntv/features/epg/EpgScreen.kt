@@ -323,12 +323,24 @@ fun EpgScreen(
     // In CELL mode, Back steps out to whole-row (ROW) selection instead of leaving the guide.
     BackHandler(enabled = inCellMode) { inCellMode = false }
 
-    // Keep the highlighted (cursor) programme in view while browsing a row in CELL mode.
-    LaunchedEffect(cursorTime, inCellMode) {
-        if (!inCellMode || state.channels.isEmpty()) return@LaunchedEffect
-        val minutes = ((cursorTime - state.windowStart) / 60_000L).toInt() - GuideGridDefaults.SlotMin // one slot of left margin
-        val px = with(density) { (minutes.coerceAtLeast(0) * GuideGridDefaults.PxPerMin.value).dp.toPx() }.toInt()
-        runCatching { hScroll.scrollTo(px) }
+    // Keep the highlighted (cursor) programme in view while browsing a row in CELL mode. Entering
+    // CELL at "now" must not disturb the centered timeline; scroll only after navigation reaches an edge.
+    LaunchedEffect(cursorTime, inCellMode, guideTimelineWidthPx) {
+        if (!inCellMode || state.channels.isEmpty() || guideTimelineWidthPx <= 0) return@LaunchedEffect
+        val cursorPx = with(density) {
+            ((((cursorTime - state.windowStart) / 60_000f) * GuideGridDefaults.PxPerMin.value).dp).roundToPx()
+        }
+        val marginPx = with(density) {
+            (GuideGridDefaults.SlotMin * GuideGridDefaults.PxPerMin.value).dp.roundToPx()
+        }
+        val viewportStart = hScroll.value
+        val viewportEnd = viewportStart + guideTimelineWidthPx
+        val target = when {
+            cursorPx < viewportStart + marginPx -> cursorPx - marginPx
+            cursorPx > viewportEnd - marginPx -> cursorPx - guideTimelineWidthPx + marginPx
+            else -> null
+        }
+        target?.let { runCatching { hScroll.scrollTo(it.coerceIn(0, hScroll.maxValue)) } }
     }
 
     // Closing ANY of the guide's overlays (programme detail, the match chooser, the manual EPG picker)

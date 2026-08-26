@@ -86,7 +86,7 @@ Scan to join from your phone:
 - **Episode grid** — browse a show by episode stills instead of text rows, with a show-artwork and
   episode-number fallback for episodes TMDB can't match; a whole show's episode details arrive in a
   single request
-- **TMDB** posters, plots, cast photos & trailers **in 40 languages**; scales to ~50k channels / ~168k movies with priority + incremental syncing
+- **TMDB** posters, plots, cast photos and lighter fullscreen in-app trailers **in 40 languages**; scales to ~50k channels / ~168k movies with priority + incremental syncing
 - Dedicated **Metadata** settings show minute/hour/day shared allowance and support a personal TMDB key or self-hosted Worker, including remote hand-over over LAN (QR + PIN)
 - Bring your own **free TMDB key** for unlimited metadata — send it from another device (phone, tablet or PC) over LAN (QR + PIN) instead of typing 32 characters with the remote; the built-in shared service works with no setup and gives every device a fair daily share
 
@@ -124,7 +124,7 @@ Scan to join from your phone:
   stay protected, fullscreen number entry still changes channels, and the shipped CH+/−/Rewind/Fast-forward
   paging setup remains the default
 - **24 complete interface languages** with System default, an in-app searchable language picker, RTL-aware navigation, and a language-first welcome flow on fresh installations
-- **Backup & Restore** locally or over Wi-Fi — a single `.own` file carrying your background image and your downloaded subtitles, optionally encrypted end to end with your own password (older `.json` backups still restore). Android's automatic backup is deliberately disabled, so app data only ever leaves the device through this screen — secrets ride only when you set a backup password. Plus in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
+- **Backup & Restore** locally or over Wi-Fi — a single `.own` file carrying your profiles, sources, complete Settings choices and arrangements, background image and downloaded subtitles, optionally encrypted end to end with your own password (older `.json` backups still restore). Android's automatic backup is deliberately disabled, so app data only ever leaves the device through this screen — secrets ride only when you set a backup password. Plus in-app updates; memory-safe buffers, no-ANR threading, auto-reconnect, resilient imports & offline detection
 
 📖 Full details: **[player reference →](extras/player.html)** · **[user guide →](extras/USER_GUIDE.md)**
 

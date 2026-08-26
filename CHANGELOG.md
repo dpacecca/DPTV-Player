@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.2.3 — Unreleased
+## v4.2.3 — 2026-08-26
 
 ### 🏷️ Every merged library says which provider an item came from
 
@@ -347,6 +347,16 @@
 
 ### 🐛 Fixes
 
+- **Entering a Guide programme row no longer pushes the current time to the left edge.** Guide still
+  opens with Now around 37.5% across the timeline; pressing OK to browse that row keeps the same view
+  and scrolls only after the highlighted programme reaches an edge.
+- **Embedded TMDB trailers do less work on lower-memory TVs.** The in-app YouTube surface no longer
+  builds its own controls, captions, annotations or related-video UI behind OwnTV's controls, and the
+  progress display updates once per second instead of forcing ten interface updates per second.
+- **Backup & Restore now preserves every Settings arrangement and global player choice.** The Live TV
+  and Movies & Series player modes, Quick pinned rows and their order, and all four arranged
+  long-press menus now return with the rest of App settings. Existing backups remain compatible;
+  create a new backup to carry these newly covered values.
 - **CH+ / CH− now always changes the channel while a Live TV or catch-up player is open.** The
   dedicated channel keys could be claimed by a focused on-screen control just after playback started,
   or briefly stop responding while the channel list or playback engine changed underneath them. They

@@ -400,7 +400,9 @@ or **narrow the whole app to just one**.
   timeline**, rather than tight against the channel list, and immediately includes two recent hours so the
   current programme has readable context on its left. An amber **NOW · time** badge sits in the ruler and a
   matching line fades down every programme row. Both update every 30 seconds while Guide stays open.
-  **Jump to Now** (top‑right) returns to that same live position after browsing the catch‑up archive.
+  Pressing **OK** to enter a programme row keeps that same timeline position; Guide scrolls only when the
+  highlighted programme reaches an edge. **Jump to Now** (top‑right) returns to the same live position after
+  browsing the catch‑up archive.
 - ↔️ **Resize Guide's two columns:** **Settings → Layout → Guide Column Widths** adjusts the pinned channel
   list and EPG timeline from **10% to 90%** in 5% steps. Their total must be exactly **100%** before Save works.
   Turning customization off restores the standard **10% channels / 90% timeline** split without forgetting
@@ -579,8 +581,10 @@ or **narrow the whole app to just one**.
   cleaned provider title. The escape hatch when matching still gets a title wrong (or it's stuck in the
   7-day "no match" cache).
 - 🎞️ **Trailers:** long-press a movie or series → **Play Trailer** (shown only when TMDB has one). The trailer
-  plays full screen: **Back or Exit** closes it, **◀/▶** seeks ±10 seconds. If the built-in player
-  can't run on your box, OwnTV opens the trailer in the YouTube app instead.
+  plays full screen inside OwnTV: **Back or Exit** closes it, **◀/▶** seeks ±10 seconds. The embedded player
+  keeps YouTube's extra controls, captions, annotations and related-video layer off, and updates OwnTV's
+  progress display once per second to stay smoother on lower-memory TVs. If the system WebView cannot play
+  the video at all, OwnTV falls back to the YouTube app or browser.
 - **Attribution:** OwnTV uses the TMDB API but is not endorsed or certified by TMDB.
 
 ---
@@ -1187,7 +1191,8 @@ included in **Backup & Restore**.
   your saved **per‑item zoom and volume**, your **downloaded subtitles** — the files themselves, which
   subtitle you had chosen per film or episode, and any timing offsets you nudged by hand —
   your **custom TMDB names** (long‑press → Custom TMDB name), recent searches, your **startup screen**,
-  and which **profile you were using**,
+  global **Live TV** and **Movies & Series player** choices, **Quick** pinned rows and order, all four
+  arranged **long‑press menus**, and which **profile you were using**,
   so a restored setup behaves exactly like the original. Older backup files still restore fine — anything
   they don't contain just keeps its default. (An older OwnTV version cannot read a new `.own` file, so keep
   a `.json` backup if you plan to go back to one.) **Move a backup between TVs over Wi‑Fi:** choose **Restore

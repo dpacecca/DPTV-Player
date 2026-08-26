@@ -9,7 +9,7 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
-## v4.2.3 — Unreleased
+## v4.2.3 — 2026-08-26
 
 ### ✨ New features
 
@@ -43,6 +43,9 @@
 
 ### 🐛 Fixes
 
+- **Entering a Guide programme row keeps the current time in place**
+- **Embedded TMDB trailers run with less interface overhead**
+- **Backup & Restore preserves every Settings arrangement and global player choice**
 - **CH+ / CH− always changes the channel while the Live TV or catch-up player is open**
 - **Focus returns directly to the Settings row you left**
 - **Home Trending no longer follows popup size and popup font controls**
