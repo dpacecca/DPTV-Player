@@ -623,7 +623,7 @@ fun OwnTVShell(
 
     LaunchedEffect(selectedSection, playerMode, activeProfileId, activePlaylistId) {
         if (selectedSection == MainSection.HOME && playerMode == PlayerMode.NONE && (activeProfileId?.let { it >= 0 } == true)) {
-            homeVm.refresh()
+            homeVm.refresh(activeProfileId)
         }
     }
 
@@ -1335,7 +1335,7 @@ fun OwnTVShell(
                     onCyclePosition = { scope.launch { settingsRepo.setMiniPlayerPosition(miniPos.next().name) } },
                     onAudioMode = toAudioMode,
                     entryFocusRequester = miniEntryFocus,
-                    onBack = { runCatching { shellContentFocus.requestFocus() }; Unit },
+                    onBack = { runCatching { shellContentFocus.requestFocus() } },
                     modifier = Modifier.fillMaxSize().onFocusChanged { miniHasFocus = it.hasFocus },
                 )
             }

@@ -9,7 +9,7 @@
 
 <p align="center">
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%20TV-3DDC84?logo=android&logoColor=white">
-  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.21-7F52FF?logo=kotlin&logoColor=white">
+  <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?logo=kotlin&logoColor=white">
   <img alt="Compose for TV" src="https://img.shields.io/badge/Jetpack%20Compose-for%20TV-4285F4?logo=jetpackcompose&logoColor=white">
   <img alt="Player" src="https://img.shields.io/badge/engines-libmpv%20%2B%20ExoPlayer-FB8C00">
   <img alt="License" src="https://img.shields.io/badge/license-GPLv3-blue">
@@ -159,22 +159,23 @@ More in **[extras/screenshots/](extras/screenshots/)** — playlist management, 
 
 | Area | Choice |
 |------|--------|
-| Language | Kotlin 2.3.21 (no `kotlin-android` plugin) |
-| Build | AGP 9.3.1 / Gradle 9.7.0, KSP2 2.3.11 |
-| UI | Jetpack Compose for TV (`androidx.tv:tv-material` 1.1.0), Compose BOM 2026.06.01 |
+| Language | Kotlin 2.4.10 (no `kotlin-android` plugin) |
+| Build | AGP 9.3.2 / Gradle 9.7.1, KSP2 2.3.11 |
+| UI | Jetpack Compose for TV (`androidx.tv:tv-material` 1.1.0), Compose BOM 2026.08.00 |
 | Media | **libmpv** (FFmpeg) — `dev.jdtech.mpv:libmpv` · **ExoPlayer/Media3** 1.11.0 (Live TV + image subs) |
-| Database | Room 2.8.4 + Paging 3.5.0 + FTS4 (WAL) |
-| DI | Koin 4.1.1 |
+| Database | Room 2.8.4 + Paging 3.5.1 + FTS4 (WAL) |
+| DI | Koin 4.2.2 |
 | Networking | OkHttp 5 (`okhttp-android`) |
-| Images | Coil 3.3.0 |
+| Images | Coil 3.6.0 |
 | Preferences | DataStore |
 
-`minSdk 26`, `targetSdk 36`, `applicationId tv.own.owntv`.
+`minSdk 26`, `targetSdk 36`, `compileSdk 37`, `applicationId tv.own.owntv`.
 
 > **Build note:** there is no `kotlin-android` plugin. AGP 9 ships its own Kotlin, but the Compose
 > compiler plugin pulls the Kotlin Gradle plugin up to the `kotlin` version pinned in
 > `gradle/libs.versions.toml` — that is what actually compiles the app, so keep the Compose compiler
-> plugin on exactly that version. KSP must track the same Kotlin line for Room codegen to work.
+> plugin on exactly that version. KSP versions its own way and does **not** have to match that number
+> — KSP2 2.3.11 is the current release and drives Room's codegen against Kotlin 2.4.10 without issue.
 
 ## ⚙️ How it works (backend)
 

@@ -15,6 +15,7 @@
 
 - **🩺 A crash now leaves a report you can send**
 - **⚡ Playlists import and refresh faster**
+- **🚀 OwnTV opens faster**
 
 ### 🐛 Fixes
 

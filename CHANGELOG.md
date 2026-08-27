@@ -20,6 +20,31 @@
   Xtream and Stalker portals alike, on a first import and on a refresh. Nothing about the resulting library
   changes; there is simply less waiting.
 
+### 🚀 OwnTV opens faster
+
+- **The app is usable in roughly 0.7 seconds instead of 1.5, and Home fills in about 0.6 seconds instead
+  of 1.6.** Measured on a TCL Google TV over five cold starts before and after, with a full catalogue.
+  Nothing was removed or simplified to get there — the same rows, artwork and quality arrive, sooner.
+- **The largest single cause was the list of code OwnTV asks Android to prepare ahead of time.** That
+  list is recorded by walking the app, and it had been recorded on a fresh install, so it described the
+  first-run setup wizard rather than Home, Live TV, Movies, Series and Search. It is now recorded against
+  a real catalogue and covers every browse screen, so the first screen no longer has to be worked out
+  from scratch while you wait.
+- **Home no longer loads itself twice on startup.** Two separate triggers each asked for the same load a
+  fraction of a second apart, and the second one restarted work the first had nearly finished.
+- **Home's rows are now fetched all at once rather than one after another**, and the Continue watching row
+  no longer re-reads the same show from the database once per episode. On a library with a long history
+  this was the slowest part of opening the app.
+- **Posters load over a faster connection to the artwork service**, so a grid of covers no longer queues
+  up behind a handful of connections.
+- **Playlists and artwork are read with settings better suited to a television's storage.**
+
+### 🧰 Toolchain
+
+- **Updated to the current release of every build tool and library OwnTV depends on**, including Kotlin,
+  the Compose UI toolkit, the image loader and the networking stack. Building the project now requires
+  Android SDK 37; the app still runs on Android 8.0 and newer, exactly as before.
+
 ### 🐛 Bug fixes
 
 - **Live TV no longer crashes when a channel goes full screen with Animations turned off.** The LIVE badge
