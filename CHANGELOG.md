@@ -2,8 +2,42 @@
 
 ## v4.2.4 — Unreleased
 
+### 🩺 A crash now leaves a report you can send
+
+- **The Playback error log is now simply Error log, and it lives under Settings → App, after About.**
+  It is no longer a playback-only page: alongside the most recent playback failures it now carries the
+  last crash, so one place answers "what went wrong" whatever went wrong. The row keeps its place in
+  settings search — searching for *error* or *crash* still finds it.
+- **A crash is written to disk the moment it happens** and survives the app being killed, so it is still
+  there the next time OwnTV opens. **Export** puts it at the top of the report file it saves to Downloads,
+  ahead of the playback history, which is the file to attach when reporting a problem.
+
+### ⚡ Playlists import and refresh faster
+
+- **Downloading a playlist and saving it into the library now happen at the same time.** Previously the two
+  took strict turns: reading the provider's list stopped completely while a batch was written, then the
+  database sat idle while the next batch was read. Both now run together, on every playlist type — M3U,
+  Xtream and Stalker portals alike, on a first import and on a refresh. Nothing about the resulting library
+  changes; there is simply less waiting.
+
 ### 🐛 Bug fixes
 
+- **Live TV no longer crashes when a channel goes full screen with Animations turned off.** The LIVE badge
+  introduced in 4.2.3 pulsed using a duration that the Animations = Off setting reduced to zero, which
+  brought the app down a frame later. Because the Animations setting is included in Backup & Restore, users
+  who reinstalled and restored hit it again immediately. The badge now simply stays steady when animations
+  are off.
+- **The long-press menu editor can be scrolled.** With thirteen actions, the Movies list was taller than a
+  television screen, so its title and its Save and Cancel buttons hung off the top and bottom with no way to
+  reach them. Every menu editor now scrolls within the panel.
+- **A playlist that claims an absurd catch-up length no longer breaks tuning.** A nonsense `catchup-days`
+  value overflowed the rewind window into a negative number and threw while the channel was being opened;
+  the value is now capped at 31 days.
+- **Stopping a stream during a retry no longer crashes the player.** Several retry paths re-read the current
+  stream address after their backoff delay, which could have been cleared by a stop in the meantime.
+- **A television whose media session refuses to start no longer takes playback with it.** The media session
+  exists so other apps and the TV's own controls can see what is playing; if it fails, the video now
+  continues regardless.
 - **Long-press menu Settings now reopens in the order you saved.** The editor briefly treated its empty
   loading value as the real setting, filled itself with the shipped order and then ignored the saved
   order when it arrived. Live TV, movie, series and episode editors now wait for their stored value, so

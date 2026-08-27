@@ -69,7 +69,7 @@ Scan to join from your phone:
 - **Subtitles** — text (SRT/ASS), image (PGS/VOBSUB/DVB), closed captions, preferred-language auto-selection and independent font/style controls, plus OpenSubtitles search and local files; dedicated OpenSubtitles settings sign in on one panel — username, password and optional API key/Worker together — filled in on the TV or handed over from another device by QR + PIN
 - Resume prompts, next-episode auto-play, mini-player/PiP, **audio-only mode**, confirmed radio/audio-only item labelling, and a live codec/resolution/HDR stream-info overlay
 - **Behaves like a TV app** — remote/headset/assistant transport keys via a system media session, and audio focus that ducks for a notification instead of pausing your film
-- **Diagnostics you can send** — a playback log of failures *and* events, "Report this stream" from the info overlay, optional detailed trace, and a one-press export to `Download/owntv-playback-report.txt`
+- **Diagnostics you can send** — an Error log (Settings → App) holding the last crash *and* recent playback failures and events, "Report this stream" from the info overlay, optional detailed trace, and a one-press export to `Download/owntv-playback-report.txt`
 
 ### 🧭 Browse
 - **Continue Watching** home with TMDB-enriched previews; Live / Movies / Series / Downloads / Guide sections

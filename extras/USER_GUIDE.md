@@ -970,8 +970,12 @@ included in **Backup & Restore**.
 - 🎬 **Every playback setting is on one page.** **Settings → Video player** is the complete list —
   HDR, Auto frame rate, Surround sound, Auto-play next, Live preview, Preview sound and Mini player
   sit there alongside the decoder, zoom, volume, subtitle and Live TV settings, so you never have to
-  remember which of two screens a setting was on. The main Settings page keeps **Video player** and
-  the **Playback error log**; the quick-toggle chips above it still cover the most-used switches.
+  remember which of two screens a setting was on. The main Settings page keeps **Video player**; the
+  quick-toggle chips above it still cover the most-used switches.
+- 🩺 **Error log** (App, the last row, after About) — the last crash plus the most recent playback
+  failures, newest first. **Export** writes them to `OwnTV-playback-report.txt` in **Downloads**, crash
+  first; attach that file when reporting a problem. A crash is saved as it happens, so it is still there
+  after the app has closed itself. Searching Settings for *error* or *crash* opens this page directly.
 - 🌐 **Custom DNS** (Network → DNS) — use the TV’s normal DNS, choose Google, Cloudflare or Quad9,
   or enter your own DNS server / DNS‑over‑HTTPS address. Your enabled state and selected server are
   saved immediately and restored after restarting OwnTV. **Test DNS** checks the current entry before

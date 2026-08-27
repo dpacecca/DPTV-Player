@@ -74,6 +74,9 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
     override fun onCreate() {
         Perf.begin() // zero-point for the OwnTVPerf startup timeline (adb logcat -s OwnTVPerf)
         super.onCreate()
+        // First thing after the context exists: a crash from here on leaves a trace on disk that the
+        // user can export from Settings, instead of being lost with the process.
+        tv.own.owntv.core.util.CrashRecorder.install(this)
         startKoin {
             androidLogger(if (BuildConfig.DEBUG) Level.ERROR else Level.NONE)
             androidContext(this@OwnTVApp)
