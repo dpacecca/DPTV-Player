@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.2.4 — Unreleased
+## v4.2.4 — 2026-08-27
 
 ### 🩺 A crash now leaves a report you can send
 
