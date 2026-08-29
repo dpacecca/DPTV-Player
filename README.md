@@ -196,13 +196,21 @@ More in **[extras/screenshots/](extras/screenshots/)** — playlist management, 
 
 ### Project layout
 
+This repository is the **Android TV app**. The engine underneath it — database, sync, parsers, EPG,
+backup, settings storage, the playback engines and every translated string — lives in a separate
+core library that a future mobile app will share.
+
 ```
+OwnTV/  (this repo)
 tv.own.owntv/
-├── core/        database (Room), network, parser (M3U/Xtream/XMLTV), stalker (MAC portal), repository, sync, util
-├── player/      libmpv + ExoPlayer engines (PlaybackEngine) + Compose surfaces + HUD + mini-player
+├── player/      the TV player HUD, surfaces and mini-player
 ├── ui/          theme + reusable components (focus surface, cards, state views, avatars)
 ├── features/    setup, shell, live, movies, series, search, downloads, epg, profiles, settings
 └── di/          Koin modules
+
+OwnTV_Core/  (separate repository, published as tv.own.owntv:core / :player-core)
+├── core/        database (Room), network, parser (M3U/Xtream/XMLTV), stalker (MAC portal), repository, sync, util, strings
+└── player-core/ libmpv + ExoPlayer engines (PlaybackEngine), fallback ladder, watchdogs, diagnostics
 ```
 
 ## 📚 Docs & design (`extras/`)
@@ -241,18 +249,30 @@ https://github.com/ahXN00/OwnTV/releases/latest/download/OwnTV.apk
 
 > Only needed if you want to build from source. Most people can just **[install the ready-made APK](#-installing-fire-tv--android-tv)** instead — no build tools required.
 
+> **One extra step before the first build: a GitHub token.** Half of the app — the database, the
+> playlist importing and the whole playback engine — lives in the separate
+> [OwnTV_Core](https://github.com/ahXN00/OwnTV_Core) repository and is pulled in as a library from
+> GitHub Packages. That registry always asks who you are, even for public packages, so a clone of
+> this repo fails Gradle sync with a `401` until you do step 2 below. Installing and using the
+> ready-made APK needs none of this.
+
 **What you need first**
 - **[Android Studio](https://developer.android.com/studio)** (a recent version that supports AGP 9.x) — this bundles the JDK and Android SDK, so you don't install those separately.
 - A build target: either a real **Android TV / Fire TV** device (with USB or wireless debugging turned on), or an **Android TV emulator** created from Android Studio's Device Manager.
 
 **Steps**
 1. **Get the code** — click the green **Code** button on GitHub → *Download ZIP* (and unzip it), or run `git clone https://github.com/ahXN00/OwnTV.git`.
-2. **Open it** — in Android Studio choose **Open**, pick the project folder, and wait for the first **Gradle sync** to finish (it downloads dependencies; give it a few minutes the first time).
-3. **Pick the right build variant** — open **Build Variants** (left sidebar) and choose the flavor that matches your target:
+2. **Let Gradle read the core library** — create a [personal access token (classic)](https://github.com/settings/tokens) with the single scope **`read:packages`**, then add it to `~/.gradle/gradle.properties` (`C:\Users\<you>\.gradle\gradle.properties` on Windows) — never inside the project:
+   ```properties
+   gpr.user=your-github-username
+   gpr.token=ghp_yourtokenhere
+   ```
+3. **Open it** — in Android Studio choose **Open**, pick the project folder, and wait for the first **Gradle sync** to finish (it downloads dependencies; give it a few minutes the first time).
+4. **Pick the right build variant** — open **Build Variants** (left sidebar) and choose the flavor that matches your target:
    - **`standard`** — real TV/phone/Fire TV devices and arm emulators (`arm64-v8a` + `armeabi-v7a`)
    - **`x86_64`** — x86_64 emulators only
    - This matters: the native libmpv player only loads on a matching ABI, so the wrong choice = no playback.
-4. **Press Run** (▶) with your device/emulator selected. The app installs and launches. It shows up in the **TV launcher** on Android TV, and as a normal app icon on phones/tablets too (minimum **Android 8.0 / API 26**).
+5. **Press Run** (▶) with your device/emulator selected. The app installs and launches. It shows up in the **TV launcher** on Android TV, and as a normal app icon on phones/tablets too (minimum **Android 8.0 / API 26**).
 
 **Prefer the command line?** From the project folder run `./gradlew assembleDebug` (use `gradlew.bat assembleDebug` on Windows). The APK lands in `app/build/outputs/apk/`.
 
@@ -268,7 +288,7 @@ project's player-only, bring-your-own-source positioning, and match the existing
 <!-- i18n-contribution:start -->
 ## Help translate OwnTV
 
-If your language is already available, contribute interface translations across OwnTV's six Android resource components on [Hosted Weblate](https://hosted.weblate.org/projects/owntv/). If it is not listed, [open a language request ticket](https://github.com/ahXN00/OwnTV/issues/new?template=feature_request.yml&title=%5BLanguage%5D%20Add%20) first. A maintainer will review the request, register the locale, and prepare its base translation files on Hosted Weblate. Once the language appears on Hosted Weblate, you can start translating it there. See the [language contributor guide](tools/i18n/README.md) for identifiers, validation, and promotion policy.
+If your language is already available, contribute interface translations across OwnTV's six Android resource components on [Hosted Weblate](https://hosted.weblate.org/projects/owntv/). If it is not listed, [open a language request ticket](https://github.com/ahXN00/OwnTV/issues/new?template=feature_request.yml&title=%5BLanguage%5D%20Add%20) first. A maintainer will review the request, register the locale, and prepare its base translation files on Hosted Weblate. Once the language appears on Hosted Weblate, you can start translating it there. The strings themselves live in [OwnTV's core library repository](https://github.com/ahXN00/OwnTV_Core), together with the language contributor guide covering identifiers, validation, and promotion policy.
 <!-- i18n-contribution:end -->
 
 
