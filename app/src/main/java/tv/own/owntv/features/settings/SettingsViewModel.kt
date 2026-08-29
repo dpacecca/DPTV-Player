@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.player.AudioOutputPolicy
-import tv.own.owntv.player.SurroundMode
+import tv.own.owntv.core.player.SurroundMode
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.network.ConnectivityObserver
@@ -46,17 +46,17 @@ import tv.own.owntv.core.sync.work.CatalogSyncScheduler
 import tv.own.owntv.core.util.throttleLatest
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
-import tv.own.owntv.features.settings.data.ChNavLimits
-import tv.own.owntv.features.settings.data.EpgAutoRefresh
-import tv.own.owntv.features.settings.data.PanelSection
-import tv.own.owntv.features.settings.data.PanelShares
-import tv.own.owntv.features.settings.data.GuideWidthShares
-import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
-import tv.own.owntv.features.settings.data.SettingsRepository
-import tv.own.owntv.features.settings.data.SubtitleStyle
-import tv.own.owntv.ui.theme.AccentColor
-import tv.own.owntv.ui.theme.ThemeMode
-import tv.own.owntv.ui.theme.UiZoom
+import tv.own.owntv.core.settings.ChNavLimits
+import tv.own.owntv.core.settings.EpgAutoRefresh
+import tv.own.owntv.core.settings.PanelSection
+import tv.own.owntv.core.settings.PanelShares
+import tv.own.owntv.core.settings.GuideWidthShares
+import tv.own.owntv.core.settings.PlaylistAutoRefresh
+import tv.own.owntv.core.settings.SettingsRepository
+import tv.own.owntv.core.settings.SubtitleStyle
+import tv.own.owntv.core.theme.AccentColor
+import tv.own.owntv.core.theme.ThemeMode
+import tv.own.owntv.core.theme.UiZoom
 
 /** Phase 13 — manage IPTV sources (list / add / re-sync / delete) for the active profile. */
 class SettingsViewModel(
@@ -395,15 +395,15 @@ class SettingsViewModel(
     val hwDecoding: StateFlow<Boolean> = settings.hwDecoding.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setHwDecoding(enabled: Boolean) { viewModelScope.launch { settings.setHwDecoding(enabled) } }
 
-    val vodEnginePreference: StateFlow<tv.own.owntv.player.EnginePreference> = settings.vodEnginePreference
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.player.EnginePreference.MPV_FIRST)
-    fun setVodEnginePreference(preference: tv.own.owntv.player.EnginePreference) {
+    val vodEnginePreference: StateFlow<tv.own.owntv.core.player.EnginePreference> = settings.vodEnginePreference
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.player.EnginePreference.MPV_FIRST)
+    fun setVodEnginePreference(preference: tv.own.owntv.core.player.EnginePreference) {
         viewModelScope.launch { settings.setVodEnginePreference(preference) }
     }
 
-    val liveEnginePreference: StateFlow<tv.own.owntv.player.EnginePreference> = settings.liveEnginePreference
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.player.EnginePreference.EXO_FIRST)
-    fun setLiveEnginePreference(preference: tv.own.owntv.player.EnginePreference) {
+    val liveEnginePreference: StateFlow<tv.own.owntv.core.player.EnginePreference> = settings.liveEnginePreference
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.player.EnginePreference.EXO_FIRST)
+    fun setLiveEnginePreference(preference: tv.own.owntv.core.player.EnginePreference) {
         viewModelScope.launch { settings.setLiveEnginePreference(preference) }
     }
 
@@ -444,11 +444,11 @@ class SettingsViewModel(
 
     /** Rewind/forward step in a movie or episode, and the separate one for a live archive. */
     val seekStepSec: StateFlow<Int> = settings.seekStepSec
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.SeekSteps.DEFAULT_SEEK_STEP_SEC)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SeekSteps.DEFAULT_SEEK_STEP_SEC)
     fun setSeekStepSec(seconds: Int) { viewModelScope.launch { settings.setSeekStepSec(seconds) } }
 
     val liveRewindStepSec: StateFlow<Int> = settings.liveRewindStepSec
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.SeekSteps.DEFAULT_LIVE_REWIND_STEP_SEC)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SeekSteps.DEFAULT_LIVE_REWIND_STEP_SEC)
     fun setLiveRewindStepSec(seconds: Int) { viewModelScope.launch { settings.setLiveRewindStepSec(seconds) } }
 
     val deinterlace: StateFlow<Boolean> = settings.deinterlace.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
@@ -483,8 +483,8 @@ class SettingsViewModel(
     fun setQuickPinnedKeys(keys: List<String>) { viewModelScope.launch { settings.setQuickPinnedKeys(keys) } }
 
     /** The saved order of one long-press content menu; empty = the order the app ships with. */
-    fun menuOrder(menu: tv.own.owntv.ui.components.ContentMenu) = settings.menuOrder(menu.name.lowercase())
-    fun setMenuOrder(menu: tv.own.owntv.ui.components.ContentMenu, keys: List<String>) {
+    fun menuOrder(menu: tv.own.owntv.core.model.ContentMenu) = settings.menuOrder(menu.name.lowercase())
+    fun setMenuOrder(menu: tv.own.owntv.core.model.ContentMenu, keys: List<String>) {
         viewModelScope.launch { settings.setMenuOrder(menu.name.lowercase(), keys) }
     }
 
@@ -494,15 +494,15 @@ class SettingsViewModel(
 
     // Per-profile startup landing (v4.0.0): Home / Last channel / Live·Favorites.
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    val startupMode: StateFlow<tv.own.owntv.features.settings.data.StartupMode> =
+    val startupMode: StateFlow<tv.own.owntv.core.settings.StartupMode> =
         settings.activeProfileId
             .flatMapLatest { settings.startupMode(it) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.StartupMode.HOME)
-    fun setStartupMode(mode: tv.own.owntv.features.settings.data.StartupMode) {
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.StartupMode.HOME)
+    fun setStartupMode(mode: tv.own.owntv.core.settings.StartupMode) {
         viewModelScope.launch { settings.setStartupMode(settings.activeProfileId.first(), mode) }
     }
 
-    val startupChannel: StateFlow<tv.own.owntv.features.settings.data.StartupChannelRef?> =
+    val startupChannel: StateFlow<tv.own.owntv.core.settings.StartupChannelRef?> =
         settings.activeProfileId
             .flatMapLatest { profileId ->
                 if (profileId < 0L) flowOf(null) else settings.startupChannel(profileId)
@@ -533,7 +533,7 @@ class SettingsViewModel(
             if (profileId < 0L) return@launch
             settings.setSpecificStartupChannel(
                 profileId,
-                tv.own.owntv.features.settings.data.StartupChannelRef(
+                tv.own.owntv.core.settings.StartupChannelRef(
                     sourceId = channel.sourceId,
                     remoteId = channel.remoteId,
                     name = channel.name,
@@ -594,9 +594,9 @@ class SettingsViewModel(
     val subtitleScaleMpv: StateFlow<Float> = settings.subtitleScaleMpv.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SubtitleStyle.SCALE_DEFAULT)
     fun setSubtitleScaleMpv(scale: Float) { viewModelScope.launch { settings.setSubtitleScaleMpv(scale) } }
 
-    val subtitleFont: StateFlow<tv.own.owntv.ui.theme.AppFontFamily?> = settings.subtitleFont
+    val subtitleFont: StateFlow<tv.own.owntv.core.theme.AppFontFamily?> = settings.subtitleFont
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-    fun setSubtitleFont(font: tv.own.owntv.ui.theme.AppFontFamily?) { viewModelScope.launch { settings.setSubtitleFont(font) } }
+    fun setSubtitleFont(font: tv.own.owntv.core.theme.AppFontFamily?) { viewModelScope.launch { settings.setSubtitleFont(font) } }
 
     val subtitleColor: StateFlow<String> = settings.subtitleColor.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SubtitleStyle.COLOR_DEFAULT)
     fun setSubtitleColor(hex: String) { viewModelScope.launch { settings.setSubtitleColor(hex) } }
@@ -617,16 +617,16 @@ class SettingsViewModel(
     fun setChNavUpSkip(n: Int) { viewModelScope.launch { settings.setChNavUpSkip(n) } }
     val chNavDownSkip: StateFlow<Int> = settings.chNavDownSkip.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ChNavLimits.DEFAULT_SKIP)
     fun setChNavDownSkip(n: Int) { viewModelScope.launch { settings.setChNavDownSkip(n) } }
-    val remoteShortcutBindings: StateFlow<List<tv.own.owntv.features.settings.data.RemoteShortcutBinding>> =
+    val remoteShortcutBindings: StateFlow<List<tv.own.owntv.core.settings.RemoteShortcutBinding>> =
         settings.remoteShortcutBindings.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
-            tv.own.owntv.features.settings.data.RemoteShortcutBindings.defaults,
+            tv.own.owntv.core.settings.RemoteShortcutBindings.defaults,
         )
-    fun setRemoteShortcutBinding(binding: tv.own.owntv.features.settings.data.RemoteShortcutBinding) {
+    fun setRemoteShortcutBinding(binding: tv.own.owntv.core.settings.RemoteShortcutBinding) {
         viewModelScope.launch { settings.setRemoteShortcutBinding(binding) }
     }
-    fun removeRemoteShortcutBinding(keyCode: Int, press: tv.own.owntv.features.settings.data.RemoteShortcutPress) {
+    fun removeRemoteShortcutBinding(keyCode: Int, press: tv.own.owntv.core.settings.RemoteShortcutPress) {
         viewModelScope.launch { settings.removeRemoteShortcutBinding(keyCode, press) }
     }
     fun resetRemoteShortcutBindings() { viewModelScope.launch { settings.resetRemoteShortcutBindings() } }
@@ -686,10 +686,10 @@ class SettingsViewModel(
 
     // --- Glass effect: background image + per-surface translucency ---
     val bgImagePath: StateFlow<String> = settings.bgImagePath.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
-    val glassConfig: StateFlow<tv.own.owntv.ui.theme.GlassConfig> = settings.glassConfig.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.ui.theme.GlassConfig())
+    val glassConfig: StateFlow<tv.own.owntv.core.theme.GlassConfig> = settings.glassConfig.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.theme.GlassConfig())
     fun setBgImagePath(path: String) { viewModelScope.launch { settings.setBgImagePath(path) } }
     fun setGlassScopeBitmask(bits: Int) { viewModelScope.launch { settings.setGlassScopeBitmask(bits) } }
-    fun setGlassPreset(preset: tv.own.owntv.ui.theme.GlassPreset) { viewModelScope.launch { settings.setGlassPreset(preset) } }
+    fun setGlassPreset(preset: tv.own.owntv.core.theme.GlassPreset) { viewModelScope.launch { settings.setGlassPreset(preset) } }
     fun setGlassAlphaPercent(pct: Int, currentBlurPct: Int) {
         viewModelScope.launch { settings.setGlassAlphaPercent(pct, currentBlurPct) }
     }
@@ -706,9 +706,9 @@ class SettingsViewModel(
 
     // --- Nav menu customization (v4.3.0) ---
     /** STATIC (default): user picks which icons to hide. DYNAMIC: icons adapt to the active playlist. */
-    val navMenuMode: StateFlow<tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode> =
-        settings.navMenuMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.STATIC)
-    fun setNavMenuMode(mode: tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode) {
+    val navMenuMode: StateFlow<tv.own.owntv.core.settings.SettingsRepository.NavMenuMode> =
+        settings.navMenuMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.STATIC)
+    fun setNavMenuMode(mode: tv.own.owntv.core.settings.SettingsRepository.NavMenuMode) {
         viewModelScope.launch { settings.setNavMenuMode(mode) }
     }
 
@@ -765,35 +765,35 @@ class SettingsViewModel(
 
     // Docked mini-player: size (% of screen width) and screen position.
     val miniPlayerSizePct: StateFlow<Int> =
-        settings.miniPlayerSizePct.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.player.MiniPlayerSize.DEFAULT)
+        settings.miniPlayerSizePct.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.player.MiniPlayerSize.DEFAULT)
     fun setMiniPlayerSize(percent: Int) { viewModelScope.launch { settings.setMiniPlayerSizePct(percent) } }
 
-    val miniPlayerPosition: StateFlow<tv.own.owntv.player.MiniPlayerPosition> =
+    val miniPlayerPosition: StateFlow<tv.own.owntv.core.player.MiniPlayerPosition> =
         settings.miniPlayerPosition
-            .map { tv.own.owntv.player.MiniPlayerPosition.fromName(it) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.player.MiniPlayerPosition.DEFAULT)
-    fun setMiniPlayerPosition(position: tv.own.owntv.player.MiniPlayerPosition) {
+            .map { tv.own.owntv.core.player.MiniPlayerPosition.fromName(it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.player.MiniPlayerPosition.DEFAULT)
+    fun setMiniPlayerPosition(position: tv.own.owntv.core.player.MiniPlayerPosition) {
         viewModelScope.launch { settings.setMiniPlayerPosition(position.name) }
     }
 
     // Live TV latency (#72): preset + custom seconds.
-    val liveLatencyMode: StateFlow<tv.own.owntv.features.settings.data.LiveLatency> =
+    val liveLatencyMode: StateFlow<tv.own.owntv.core.settings.LiveLatency> =
         settings.liveLatencyMode
-            .map { tv.own.owntv.features.settings.data.LiveLatency.fromName(it) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.LiveLatency.DEFAULT)
-    fun setLiveLatencyMode(mode: tv.own.owntv.features.settings.data.LiveLatency) {
+            .map { tv.own.owntv.core.settings.LiveLatency.fromName(it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.LiveLatency.DEFAULT)
+    fun setLiveLatencyMode(mode: tv.own.owntv.core.settings.LiveLatency) {
         viewModelScope.launch { settings.setLiveLatencyMode(mode.name) }
     }
 
     val liveLatencyCustomSecs: StateFlow<Int> =
-        settings.liveLatencyCustomSecs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.LiveBuffer.CUSTOM_DEFAULT)
+        settings.liveLatencyCustomSecs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.LiveBuffer.CUSTOM_DEFAULT)
     fun setLiveLatencyCustomSecs(secs: Int) {
         viewModelScope.launch { settings.setLiveLatencyCustomSecs(secs) }
     }
 
     /** "Pre-buffer" (F07): the global choice, in seconds (0 = Off). */
     val livePrerollSecs: StateFlow<Int> =
-        settings.livePrerollSecs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.settings.data.LiveBuffer.PREROLL_OFF)
+        settings.livePrerollSecs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.LiveBuffer.PREROLL_OFF)
     fun setLivePrerollSecs(secs: Int) {
         viewModelScope.launch { settings.setLivePrerollSecs(secs) }
     }
@@ -820,9 +820,9 @@ class SettingsViewModel(
         viewModelScope.launch { sourceDao.updateLiveLatency(sourceId, mode, customSecs) }
     }
 
-    val animationLevel: StateFlow<tv.own.owntv.ui.theme.AnimationLevel> =
-        settings.animationLevel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.ui.theme.AnimationLevel.FULL)
-    fun setAnimationLevel(level: tv.own.owntv.ui.theme.AnimationLevel) { viewModelScope.launch { settings.setAnimationLevel(level) } }
+    val animationLevel: StateFlow<tv.own.owntv.core.theme.AnimationLevel> =
+        settings.animationLevel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.theme.AnimationLevel.FULL)
+    fun setAnimationLevel(level: tv.own.owntv.core.theme.AnimationLevel) { viewModelScope.launch { settings.setAnimationLevel(level) } }
 
     val ambientGlowEnabled: StateFlow<Boolean> =
         settings.ambientGlowEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)

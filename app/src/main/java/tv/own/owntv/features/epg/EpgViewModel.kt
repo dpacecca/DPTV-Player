@@ -46,8 +46,8 @@ import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.repository.ActiveProfileSources
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.core.repository.activeSourceIds
-import tv.own.owntv.features.settings.data.SettingsRepository
-import tv.own.owntv.features.settings.data.GuideWidthShares
+import tv.own.owntv.core.settings.SettingsRepository
+import tv.own.owntv.core.settings.GuideWidthShares
 
 sealed interface EpgMessage {
     data object CreateProfile : EpgMessage

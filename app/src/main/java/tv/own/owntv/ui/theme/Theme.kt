@@ -9,6 +9,12 @@ import androidx.tv.material3.ColorScheme
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.darkColorScheme
 import androidx.tv.material3.lightColorScheme
+import tv.own.owntv.core.theme.AccentColor
+import tv.own.owntv.core.theme.AnimationLevel
+import tv.own.owntv.core.theme.AppFontFamily
+import tv.own.owntv.core.theme.PopupFontScale
+import tv.own.owntv.core.theme.PopupSizeScale
+import tv.own.owntv.core.theme.ThemeMode
 
 /**
  * Available OwnTV themes. Persisted via DataStore and selectable from Settings → Theme.

@@ -48,12 +48,15 @@ import tv.own.owntv.core.launcher.LauncherContinuationItem
 import tv.own.owntv.core.launcher.LauncherContinuationKind
 import tv.own.owntv.core.launcher.LauncherRecommendationPlanner
 import tv.own.owntv.core.launcher.LauncherWatchNextType
+import tv.own.owntv.core.model.HomeConfig
+import tv.own.owntv.core.model.HomeLiveRowMode
+import tv.own.owntv.core.model.HomeRow
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.epg.EpgSourceStore
 import tv.own.owntv.core.metadata.MetadataImages
 import tv.own.owntv.core.metadata.MetadataRepository
 import tv.own.owntv.core.repository.activeSourceIds
-import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.player.HeroPreviewEngine
 import tv.own.owntv.core.trending.TrendingMatcher
 
@@ -514,7 +517,7 @@ class HomeViewModel(
             )
         }
         _uiState.value = state
-        tv.own.owntv.Perf.stamp("home-data")
+        tv.own.owntv.core.util.Perf.stamp("home-data")
     }
 
     private fun resolveHeroMetadata(index: Int) {

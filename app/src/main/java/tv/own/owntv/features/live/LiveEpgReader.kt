@@ -309,7 +309,7 @@ internal class LiveArchiveUrls(
     private val sourceDao: SourceDao,
     private val xtreamClient: XtreamClient,
     private val streamUrlResolver: StreamUrlResolver,
-    private val settings: tv.own.owntv.features.settings.data.SettingsRepository,
+    private val settings: tv.own.owntv.core.settings.SettingsRepository,
 ) {
     /** The archive URL for [programme] on [ch], or null when it can't be built. */
     suspend fun forProgramme(ch: ChannelEntity, programme: EpgProgrammeEntity): String? =

@@ -71,9 +71,9 @@ import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.parser.XtEpgEntry
 import tv.own.owntv.core.parser.XtreamClient
 import tv.own.owntv.core.repository.activeProfileSources
-import tv.own.owntv.features.settings.data.LiveBuffer
-import tv.own.owntv.features.settings.data.LiveLatency
-import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.settings.LiveBuffer
+import tv.own.owntv.core.settings.LiveLatency
+import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.player.LiveLadder
 import tv.own.owntv.player.LiveProgramme
 import tv.own.owntv.player.LiveStreamQuirks
@@ -179,8 +179,8 @@ class LiveViewModel(
 
     /** Live TV's global engine order. Eagerly collected for the same reason as the pins: the routing
      *  decision in [playChannel] is synchronous and must never read a stale default. */
-    val liveEnginePreference: StateFlow<tv.own.owntv.player.EnginePreference> = settings.liveEnginePreference
-        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.player.EnginePreference.EXO_FIRST)
+    val liveEnginePreference: StateFlow<tv.own.owntv.core.player.EnginePreference> = settings.liveEnginePreference
+        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.player.EnginePreference.EXO_FIRST)
 
     /** Settings → "Give up after": the whole-tune budget in ms, or [LiveLadder.NO_BUDGET] for Never.
      *  Eagerly collected for the same reason as the engine preference — the tune reads it synchronously. */
@@ -238,9 +238,9 @@ class LiveViewModel(
 
     /** This playlist's Live TV engine override, or null to follow the global setting. Same reasoning as
      *  [prerollFor]: which engine copes is a property of the provider's stream format, not of the user. */
-    private fun enginePreferenceFor(sourceId: Long?): tv.own.owntv.player.EnginePreference? =
+    private fun enginePreferenceFor(sourceId: Long?): tv.own.owntv.core.player.EnginePreference? =
         sourceId?.let { sourceById[it]?.liveEnginePreference }
-            ?.let { name -> tv.own.owntv.player.EnginePreference.entries.firstOrNull { it.name == name } }
+            ?.let { name -> tv.own.owntv.core.player.EnginePreference.entries.firstOrNull { it.name == name } }
 
     /** This playlist's Live latency override, or null to follow the global setting. Resolved through the
      *  same [LiveBuffer.effectiveSeconds] the global path uses, so a CUSTOM value is clamped identically
@@ -1145,9 +1145,10 @@ class LiveViewModel(
         val half = ZAP_WINDOW_HALF
         val afterRaw: List<ChannelEntity>
         val beforeRaw: List<ChannelEntity>
-        if (channel.categoryId != null) {
-            afterRaw = channelDao.channelsAfterCategory(channel.categoryId, channel.sortOrder, channel.id, half)
-            beforeRaw = channelDao.channelsBeforeCategory(channel.categoryId, channel.sortOrder, channel.id, half)
+        val categoryId = channel.categoryId
+        if (categoryId != null) {
+            afterRaw = channelDao.channelsAfterCategory(categoryId, channel.sortOrder, channel.id, half)
+            beforeRaw = channelDao.channelsBeforeCategory(categoryId, channel.sortOrder, channel.id, half)
         } else {
             afterRaw = channelDao.channelsAfterSource(channel.sourceId, channel.sortOrder, channel.id, half)
             beforeRaw = channelDao.channelsBeforeSource(channel.sourceId, channel.sortOrder, channel.id, half)
@@ -1267,10 +1268,10 @@ class LiveViewModel(
         // that, the exception channel would be locked to the engine the user just said cannot play it,
         // with the ladder forbidden from ever reaching the one that can — a dead end of our own making.
         val preference = when {
-            drmProtected -> tv.own.owntv.player.EnginePreference.EXO_ONLY
-            setting.allowsHandover -> tv.own.owntv.player.EnginePreference.firstOn(onMpv)
+            drmProtected -> tv.own.owntv.core.player.EnginePreference.EXO_ONLY
+            setting.allowsHandover -> tv.own.owntv.core.player.EnginePreference.firstOn(onMpv)
             onMpv == setting.startsOnMpv -> setting
-            else -> tv.own.owntv.player.EnginePreference.firstOn(onMpv)
+            else -> tv.own.owntv.core.player.EnginePreference.firstOn(onMpv)
         }
         val reason = when {
             drmProtected -> "exoplayer (drm)"
@@ -1461,7 +1462,7 @@ class LiveViewModel(
             // way to stay put. The NEXT tune of the same channel reads the pin instead and gets the full
             // ladder back, so a channel the chosen engine genuinely cannot play still ends up somewhere
             // that plays it rather than stuck forever on one bad decision.
-            armLadder(channel, tv.own.owntv.player.EnginePreference.onlyOn(goToMpv))
+            armLadder(channel, tv.own.owntv.core.player.EnginePreference.onlyOn(goToMpv))
             if (goToMpv) {
                 fallbackToMpv(channel, "user chose compatibility mode") // ExoPlayer → mpv now
             } else {                    // mpv → ExoPlayer now
@@ -1637,7 +1638,7 @@ class LiveViewModel(
 
     /** Reset the ladder for a fresh tune of [channel]. Rungs already climbed are forgotten — a new tune
      *  is a new chance, including for a channel that ended the last one on its final rung. */
-    private suspend fun armLadder(channel: ChannelEntity, preference: tv.own.owntv.player.EnginePreference) {
+    private suspend fun armLadder(channel: ChannelEntity, preference: tv.own.owntv.core.player.EnginePreference) {
         forceTsForExo = null
         ladder.arm(
             channel.streamUrl,
@@ -2040,7 +2041,7 @@ class LiveViewModel(
     private val rewindStepSec: StateFlow<Int> = settings.liveRewindStepSec
         .stateIn(
             viewModelScope, SharingStarted.Eagerly,
-            tv.own.owntv.features.settings.data.SeekSteps.DEFAULT_LIVE_REWIND_STEP_SEC,
+            tv.own.owntv.core.settings.SeekSteps.DEFAULT_LIVE_REWIND_STEP_SEC,
         )
 
     /** One press of the archive rewind/forward buttons. */

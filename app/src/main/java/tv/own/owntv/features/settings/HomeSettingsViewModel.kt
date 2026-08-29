@@ -15,11 +15,11 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import tv.own.owntv.features.home.HeroKind
-import tv.own.owntv.features.home.HomeConfig
-import tv.own.owntv.features.home.HomeLiveRowMode
-import tv.own.owntv.features.home.HomeRow
-import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.model.HeroKind
+import tv.own.owntv.core.model.HomeConfig
+import tv.own.owntv.core.model.HomeLiveRowMode
+import tv.own.owntv.core.model.HomeRow
+import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.TrendingDao
 import tv.own.owntv.core.database.entity.TrendingAttemptStatus

@@ -33,9 +33,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import tv.own.owntv.features.home.HeroKind
-import tv.own.owntv.features.home.HomeLiveRowMode
-import tv.own.owntv.features.home.HomeRow
+import tv.own.owntv.core.model.HeroKind
+import tv.own.owntv.core.model.HomeLiveRowMode
+import tv.own.owntv.core.model.HomeRow
 import tv.own.owntv.features.home.displayTitle
 import tv.own.owntv.features.home.displayLabel
 import tv.own.owntv.features.home.settingsDescription

@@ -52,7 +52,7 @@ import tv.own.owntv.ui.components.detailText
 import tv.own.owntv.ui.components.primaryText
 import tv.own.owntv.ui.components.remainderText
 import tv.own.owntv.ui.components.warningText
-import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
+import tv.own.owntv.core.settings.PlaylistAutoRefresh
 import tv.own.owntv.features.setup.AddSourceChooserScreen
 import tv.own.owntv.features.setup.AddSourceScreen
 import tv.own.owntv.features.setup.RemoteSetupScreen

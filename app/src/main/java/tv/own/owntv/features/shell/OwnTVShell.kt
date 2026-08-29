@@ -72,8 +72,8 @@ import tv.own.owntv.features.search.SearchViewModel
 import tv.own.owntv.features.home.TrendingHomeItem
 import tv.own.owntv.features.series.SeriesScreen
 import tv.own.owntv.features.series.SeriesViewModel
-import tv.own.owntv.features.settings.data.RemoteShortcutAction
-import tv.own.owntv.features.settings.data.RemoteShortcutBindings
+import tv.own.owntv.core.settings.RemoteShortcutAction
+import tv.own.owntv.core.settings.RemoteShortcutBindings
 import tv.own.owntv.player.MiniPlayer
 import tv.own.owntv.player.MpvVideoSurface
 import tv.own.owntv.player.OwnTVPlayer
@@ -93,15 +93,16 @@ import tv.own.owntv.features.shell.components.TopBar
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.compose.ui.res.stringResource
+import tv.own.owntv.player.alignment
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.LocalRemoteShortcuts
 import tv.own.owntv.ui.components.RemoteShortcutEnvironment
 import tv.own.owntv.ui.theme.Dimens
-import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.LocalContentScrolled
 import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
-import tv.own.owntv.ui.theme.ThemeMode
+import tv.own.owntv.core.theme.ThemeMode
 
 /** Which layer currently holds focus (drives Back navigation). */
 private enum class ShellLayer { SIDEBAR, RAIL, CONTENT }
@@ -121,8 +122,8 @@ fun OwnTVShell(
     themeMode: ThemeMode,
     uiZoomPercent: Int,
     onSetZoom: (Int) -> Unit,
-    fontCustomization: tv.own.owntv.ui.theme.FontCustomization,
-    onSetFontCustomization: (tv.own.owntv.ui.theme.FontCustomization) -> Unit,
+    fontCustomization: tv.own.owntv.core.theme.FontCustomization,
+    onSetFontCustomization: (tv.own.owntv.core.theme.FontCustomization) -> Unit,
     avatarId: Int,
     onSetAvatar: (Int) -> Unit,
     profileName: String,
@@ -167,17 +168,17 @@ fun OwnTVShell(
     val player = koinInject<OwnTVPlayer>()
     // Docked mini-player size (% of screen width) + position, configurable in Settings and from the
     // mini-player's own controls. Read straight from settings so both entry points stay in sync.
-    val settingsRepo = koinInject<tv.own.owntv.features.settings.data.SettingsRepository>()
+    val settingsRepo = koinInject<tv.own.owntv.core.settings.SettingsRepository>()
     val remoteShortcutsEnabled by settingsRepo.chNavEnabled.collectAsStateWithLifecycle(initialValue = true)
     val remoteShortcutBindings by settingsRepo.remoteShortcutBindings.collectAsStateWithLifecycle(
         initialValue = RemoteShortcutBindings.defaults,
     )
-    val miniSizePct by settingsRepo.miniPlayerSizePct.collectAsStateWithLifecycle(initialValue = tv.own.owntv.player.MiniPlayerSize.DEFAULT)
-    val miniPosName by settingsRepo.miniPlayerPosition.collectAsStateWithLifecycle(initialValue = tv.own.owntv.player.MiniPlayerPosition.DEFAULT.name)
+    val miniSizePct by settingsRepo.miniPlayerSizePct.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.player.MiniPlayerSize.DEFAULT)
+    val miniPosName by settingsRepo.miniPlayerPosition.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.player.MiniPlayerPosition.DEFAULT.name)
     val ambientGlowEnabled by settingsRepo.ambientGlowEnabled.collectAsStateWithLifecycle(initialValue = false)
     val ambientGlowPulse by settingsRepo.ambientGlowPulse.collectAsStateWithLifecycle(initialValue = true)
-    val shellAnimationLevel by settingsRepo.animationLevel.collectAsStateWithLifecycle(initialValue = tv.own.owntv.ui.theme.AnimationLevel.FULL)
-    val miniPos = tv.own.owntv.player.MiniPlayerPosition.fromName(miniPosName)
+    val shellAnimationLevel by settingsRepo.animationLevel.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.theme.AnimationLevel.FULL)
+    val miniPos = tv.own.owntv.core.player.MiniPlayerPosition.fromName(miniPosName)
     // §8 "Reaching the mini player" — the mini window floats above the content panel, so D-pad focus
     // search has no spatial path into it from most screens. These are the three deliberate ways in:
     // the rail's Now Playing item, long-press Back, and the media keys.
@@ -328,13 +329,13 @@ fun OwnTVShell(
 
     // Per-profile startup action runs once when the authenticated shell first appears. With one unlocked
     // profile that is immediately; profile/PIN gates keep the shell out of composition until authorized.
-    val resumeSettings = koinInject<tv.own.owntv.features.settings.data.SettingsRepository>()
+    val resumeSettings = koinInject<tv.own.owntv.core.settings.SettingsRepository>()
     val startupChannelUnavailable = androidx.compose.ui.res.stringResource(tv.own.owntv.R.string.settings_startup_channel_unavailable)
     LaunchedEffect(Unit) {
         if (playerMode != PlayerMode.NONE) return@LaunchedEffect
         val pid = resumeSettings.activeProfileId.first()
         when (resumeSettings.startupMode(pid).first()) {
-            tv.own.owntv.features.settings.data.StartupMode.LAST_CHANNEL -> {
+            tv.own.owntv.core.settings.StartupMode.LAST_CHANNEL -> {
                 val ch = liveVm.lastWatchedLiveChannel()
                 if (ch != null && playerMode == PlayerMode.NONE) {
                     zapSource = MainSection.LIVE_TV
@@ -346,12 +347,12 @@ fun OwnTVShell(
             }
             // Open straight to Live TV on the Favorites folder, with focus landing inside the channel list
             // (restoreFocus drives LiveScreen to focus the first/last channel, not the nav panel).
-            tv.own.owntv.features.settings.data.StartupMode.FAVORITES -> {
+            tv.own.owntv.core.settings.StartupMode.FAVORITES -> {
                 onSelectSection(MainSection.LIVE_TV)
                 liveVm.select(tv.own.owntv.features.live.LiveKey.Favorites)
                 restoreFocus = true
             }
-            tv.own.owntv.features.settings.data.StartupMode.SPECIFIC_CHANNEL -> {
+            tv.own.owntv.core.settings.StartupMode.SPECIFIC_CHANNEL -> {
                 val ref = resumeSettings.startupChannel(pid).first()
                 var launch: LauncherLaunch? = null
                 if (ref != null) {
@@ -384,7 +385,7 @@ fun OwnTVShell(
                     localSubToast.show(startupChannelUnavailable)
                 }
             }
-            tv.own.owntv.features.settings.data.StartupMode.HOME -> Unit
+            tv.own.owntv.core.settings.StartupMode.HOME -> Unit
         }
     }
 
@@ -396,7 +397,7 @@ fun OwnTVShell(
     // and is skipped if the user is already on EPG.)
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(1_200)
-        if (selectedSection != MainSection.EPG) { tv.own.owntv.Perf.stamp("epg-preload"); epgVm.load() }
+        if (selectedSection != MainSection.EPG) { tv.own.owntv.core.util.Perf.stamp("epg-preload"); epgVm.load() }
     }
 
     // Opening content from a browse screen goes fullscreen — UNLESS the player is already docked as a
@@ -568,7 +569,7 @@ fun OwnTVShell(
     }
 
     LaunchedEffect(sidebarFocus) {
-        tv.own.owntv.Perf.stamp("shell-composed")
+        tv.own.owntv.core.util.Perf.stamp("shell-composed")
         withFrameNanos { }
         runCatching { sidebarFocus.requestFocus() }
     }
@@ -712,7 +713,7 @@ fun OwnTVShell(
                                 shortcutHoldJob?.cancel()
                                 shortcutKeyCode = shortcutKey
                                 shortcutLongFired = false
-                                shellBindings.firstOrNull { it.press == tv.own.owntv.features.settings.data.RemoteShortcutPress.LONG }
+                                shellBindings.firstOrNull { it.press == tv.own.owntv.core.settings.RemoteShortcutPress.LONG }
                                     ?.let { binding ->
                                         shortcutHoldJob = scope.launch {
                                             kotlinx.coroutines.delay(600)
@@ -729,7 +730,7 @@ fun OwnTVShell(
                             shortcutHoldJob?.cancel()
                             shortcutHoldJob = null
                             if (!shortcutLongFired) {
-                                shellBindings.firstOrNull { it.press == tv.own.owntv.features.settings.data.RemoteShortcutPress.SHORT }
+                                shellBindings.firstOrNull { it.press == tv.own.owntv.core.settings.RemoteShortcutPress.SHORT }
                                     ?.let { dispatchRemoteShortcut(it.action) }
                             }
                             shortcutKeyCode = android.view.KeyEvent.KEYCODE_UNKNOWN
@@ -1071,7 +1072,7 @@ fun OwnTVShell(
         // video and glass mode skip it entirely. Global Animations Off also freezes the slow pulse.
         SolidAmbientBackdrop(
             glowEnabled = ambientGlowEnabled,
-            pulseEnabled = ambientGlowPulse && shellAnimationLevel != tv.own.owntv.ui.theme.AnimationLevel.OFF,
+            pulseEnabled = ambientGlowPulse && shellAnimationLevel != tv.own.owntv.core.theme.AnimationLevel.OFF,
             modifier = Modifier.fillMaxSize(),
         )
       }
@@ -1094,7 +1095,7 @@ fun OwnTVShell(
                 // Dynamic docked size/position: a screen-width fraction at the chosen corner/edge, so it
                 // scales with the panel + UI zoom (unlike the old fixed 340×191 dp box).
                 Modifier.align(miniPos.alignment).padding(24.dp)
-                    .fillMaxWidth(tv.own.owntv.player.MiniPlayerSize.fraction(miniSizePct)).aspectRatio(16f / 9f)
+                    .fillMaxWidth(tv.own.owntv.core.player.MiniPlayerSize.fraction(miniSizePct)).aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(14.dp)).background(Color.Black)
             },
         ) {
@@ -1129,7 +1130,7 @@ fun OwnTVShell(
                     // Tied to the chosen mini size, but nudged up and floored: a strictly proportional
                     // line would be unreadable in the smallest box.
                     sizeScale = if (isFull) 1f else {
-                        (tv.own.owntv.player.MiniPlayerSize.fraction(miniSizePct) * 1.5f).coerceIn(0.35f, 0.7f)
+                        (tv.own.owntv.core.player.MiniPlayerSize.fraction(miniSizePct) * 1.5f).coerceIn(0.35f, 0.7f)
                     },
                 )
             }
@@ -1331,7 +1332,7 @@ fun OwnTVShell(
                     player = if (liveOnExo) liveVm.previewEngine else mpvEngine,
                     onExpand = expandPlayer,
                     onClose = exitPlayer,
-                    onCycleSize = { scope.launch { settingsRepo.setMiniPlayerSizePct(tv.own.owntv.player.MiniPlayerSize.next(miniSizePct)) } },
+                    onCycleSize = { scope.launch { settingsRepo.setMiniPlayerSizePct(tv.own.owntv.core.player.MiniPlayerSize.next(miniSizePct)) } },
                     onCyclePosition = { scope.launch { settingsRepo.setMiniPlayerPosition(miniPos.next().name) } },
                     onAudioMode = toAudioMode,
                     entryFocusRequester = miniEntryFocus,
@@ -1370,7 +1371,7 @@ fun OwnTVShell(
         // "Check for updates" dialog drives the same state machine) and during playback.
         // Interrupted restore (B2): the marker outlives the process, so if it's still set at launch
         // the last restore didn't complete. Acknowledging clears it.
-        val restoreSettings = koinInject<tv.own.owntv.features.settings.data.SettingsRepository>()
+        val restoreSettings = koinInject<tv.own.owntv.core.settings.SettingsRepository>()
     val incompleteRestore by restoreSettings.restoreInProgress.collectAsStateWithLifecycle(initialValue = null)
     var restoreNoticeDismissed by remember { mutableStateOf(false) }
     incompleteRestore?.takeIf { !restoreNoticeDismissed }?.let { description ->
@@ -1389,7 +1390,7 @@ fun OwnTVShell(
         val updateManager = koinInject<UpdateManager>()
         var showStartupToast by remember { mutableStateOf(false) }
         var showChangelog by remember { mutableStateOf(false) }
-        val settingsRepo = koinInject<tv.own.owntv.features.settings.data.SettingsRepository>()
+        val settingsRepo = koinInject<tv.own.owntv.core.settings.SettingsRepository>()
         val updateCheckOnStart by settingsRepo.updateCheckOnStart.collectAsStateWithLifecycle(initialValue = false)
         LaunchedEffect(updateCheckOnStart) {
             if (updateCheckOnStart && !showStartupToast) {

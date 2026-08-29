@@ -25,7 +25,7 @@ import tv.own.owntv.core.database.dao.SeriesDao
 import tv.own.owntv.core.database.entity.DownloadEntity
 import tv.own.owntv.core.download.DownloadManager
 import tv.own.owntv.core.model.MediaType
-import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
 
 /** Phase 12 — lists the active profile's downloads and plays completed ones from local storage. */

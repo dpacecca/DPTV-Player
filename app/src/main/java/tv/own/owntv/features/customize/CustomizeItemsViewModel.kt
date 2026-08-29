@@ -40,7 +40,7 @@ import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.repository.ActiveProfileSources
 import tv.own.owntv.core.repository.activeProfileSources
-import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.settings.SettingsRepository
 
 /** One item row in the Customize items screen. */
 data class CustomizeItemRow(

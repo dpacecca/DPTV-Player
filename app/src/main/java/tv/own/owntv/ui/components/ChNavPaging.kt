@@ -15,8 +15,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import tv.own.owntv.features.settings.data.RemoteShortcutAction
-import tv.own.owntv.features.settings.data.RemoteShortcutPress
+import tv.own.owntv.core.settings.RemoteShortcutAction
+import tv.own.owntv.core.settings.RemoteShortcutPress
 
 /**
  * Configurable remote paging for a browse panel (category rail OR item list/grid).

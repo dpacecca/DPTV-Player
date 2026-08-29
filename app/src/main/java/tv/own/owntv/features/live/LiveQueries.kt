@@ -9,7 +9,7 @@ import tv.own.owntv.core.database.dao.CustomCategoryDao
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.core.model.MediaType
-import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.settings.SettingsRepository
 
 /**
  * Which query backs a Live TV rail selection, and which channels survive the profile's customizations.

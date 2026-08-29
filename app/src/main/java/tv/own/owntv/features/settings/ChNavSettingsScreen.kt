@@ -39,11 +39,11 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
-import tv.own.owntv.features.settings.data.ChNavLimits
-import tv.own.owntv.features.settings.data.RemoteShortcutAction
-import tv.own.owntv.features.settings.data.RemoteShortcutBinding
-import tv.own.owntv.features.settings.data.RemoteShortcutBindings
-import tv.own.owntv.features.settings.data.RemoteShortcutPress
+import tv.own.owntv.core.settings.ChNavLimits
+import tv.own.owntv.core.settings.RemoteShortcutAction
+import tv.own.owntv.core.settings.RemoteShortcutBinding
+import tv.own.owntv.core.settings.RemoteShortcutBindings
+import tv.own.owntv.core.settings.RemoteShortcutPress
 import tv.own.owntv.ui.components.NumberInputDialog
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle

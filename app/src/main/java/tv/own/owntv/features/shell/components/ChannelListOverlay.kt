@@ -46,7 +46,7 @@ import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.ProviderChip
-import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**

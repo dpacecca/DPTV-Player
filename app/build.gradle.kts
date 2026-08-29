@@ -223,8 +223,6 @@ android {
         }
     }
 
-    sourceSets["androidTest"].assets.directories.add("$projectDir/schemas")
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -250,10 +248,6 @@ androidComponents {
 // the `standard` arm APK.
 baselineProfile {
     mergeIntoMain = true
-}
-
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 // --- hardcoded-literal gate ----------------------------------------------------------------
@@ -328,7 +322,11 @@ abstract class VerifyI18nLiterals : DefaultTask() {
 val verifyI18nLiterals = tasks.register<VerifyI18nLiterals>("verifyI18nLiterals") {
     group = "verification"
     description = "Fails the build on user-visible text left hardcoded in Kotlin."
+    // All three modules: the checker scans them all anyway, and declaring each one here is what makes
+    // the task re-run when their Kotlin changes rather than staying wrongly UP-TO-DATE.
     kotlinSources.from(fileTree("src/main/java") { include("**/*.kt") })
+    kotlinSources.from(rootProject.fileTree("core/src/main/java") { include("**/*.kt") })
+    kotlinSources.from(rootProject.fileTree("player-core/src/main/java") { include("**/*.kt") })
     toolInputs.from(
         rootProject.file("tools/i18n/check_hardcoded_strings.py"),
         rootProject.file("tools/i18n/hardcoded_baseline.txt"),
@@ -343,6 +341,13 @@ val verifyI18nLiterals = tasks.register<VerifyI18nLiterals>("verifyI18nLiterals"
 tasks.named("preBuild") { dependsOn(verifyI18nLiterals) }
 
 dependencies {
+    // The shared data/settings/sync module (Plan 1). Everything under core/** lives here.
+    implementation(project(":core"))
+
+    // The shared playback engine (Plan 1, Phase 8). The TV HUD in app/player/** drives it; it renders
+    // nothing itself, so a future mobile shell drives the same engine.
+    implementation(project(":player-core"))
+
     // Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

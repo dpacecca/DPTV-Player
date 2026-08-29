@@ -1,11 +1,8 @@
 package tv.own.owntv.di
 
-import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
-import tv.own.owntv.core.companion.CompanionController
-import tv.own.owntv.core.i18n.LocaleStore
 import tv.own.owntv.features.customize.CustomizeItemsViewModel
 import tv.own.owntv.features.customize.CustomizeViewModel
 import tv.own.owntv.features.downloads.DownloadsViewModel
@@ -24,7 +21,6 @@ import tv.own.owntv.features.settings.HomeSettingsViewModel
 import tv.own.owntv.features.settings.LanguageSettingsViewModel
 import tv.own.owntv.features.settings.OpenSubtitlesViewModel
 import tv.own.owntv.features.settings.SettingsViewModel
-import tv.own.owntv.features.settings.data.SettingsRepository
 import tv.own.owntv.features.setup.SetupViewModel
 import tv.own.owntv.features.shell.ShellViewModel
 import tv.own.owntv.features.subtitles.SubtitleSearchViewModel
@@ -40,14 +36,6 @@ import tv.own.owntv.features.subtitles.SubtitleSearchViewModel
  * reordering is safe and a missing binding fails immediately, naming the type.
  */
 val appModule = module {
-    // The single locale authority (SharedPreferences-backed; see LocaleStore). Registered first so the
-    // SettingsRepository binding below resolves it. The same instance observes the in-process StateFlow
-    // for the picker and the named non-Compose renderers.
-    single { LocaleStore.from(androidContext()) }
-    single { SettingsRepository(androidContext(), get()) }
-    // Remote (companion) add-source LAN server — one shared instance for Setup + Settings.
-    single { CompanionController(androidContext(), get()) }
-
     viewModelOf(::ShellViewModel)
     viewModelOf(::HomeViewModel)
     viewModelOf(::SetupViewModel)

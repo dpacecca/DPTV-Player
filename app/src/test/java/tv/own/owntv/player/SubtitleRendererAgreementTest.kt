@@ -6,8 +6,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import tv.own.owntv.features.settings.data.SubtitleStyle
-import tv.own.owntv.features.settings.data.SubtitleStyle.Position
+import tv.own.owntv.core.settings.SubtitleStyle
+import tv.own.owntv.core.settings.SubtitleStyle.Position
 
 /**
  * Every subtitle option must reach **all three** renderers.

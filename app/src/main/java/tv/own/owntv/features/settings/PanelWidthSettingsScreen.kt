@@ -43,9 +43,9 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
-import tv.own.owntv.features.settings.data.PanelSection
-import tv.own.owntv.features.settings.data.PanelShares
-import tv.own.owntv.features.settings.data.PanelWidthLimits
+import tv.own.owntv.core.settings.PanelSection
+import tv.own.owntv.core.settings.PanelShares
+import tv.own.owntv.core.settings.PanelWidthLimits
 import tv.own.owntv.features.settings.data.BrowseColumnGap
 import tv.own.owntv.features.settings.data.BrowseColumnDividerSpace
 import tv.own.owntv.features.settings.data.BrowseContainerPadding
@@ -61,7 +61,7 @@ import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.restoreAfterDialogClose
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
-import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /**

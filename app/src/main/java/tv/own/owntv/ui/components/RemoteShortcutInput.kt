@@ -1,8 +1,8 @@
 package tv.own.owntv.ui.components
 
 import androidx.compose.runtime.staticCompositionLocalOf
-import tv.own.owntv.features.settings.data.RemoteShortcutAction
-import tv.own.owntv.features.settings.data.RemoteShortcutBinding
+import tv.own.owntv.core.settings.RemoteShortcutAction
+import tv.own.owntv.core.settings.RemoteShortcutBinding
 
 data class RemoteShortcutEnvironment(
     val enabled: Boolean = false,

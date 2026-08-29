@@ -1,6 +1,7 @@
 package tv.own.owntv.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import tv.own.owntv.core.theme.AccentColor
 
 /**
  * Material 3 tonal palette for OwnTV (teal-seeded). NEUTRAL + secondary/tertiary roles are

@@ -40,7 +40,7 @@ import androidx.tv.material3.Text
 import kotlinx.coroutines.flow.first
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
-import tv.own.owntv.ui.components.ContentMenu
+import tv.own.owntv.core.model.ContentMenu
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle

@@ -5,10 +5,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import tv.own.owntv.features.settings.data.RemoteShortcutAction
-import tv.own.owntv.features.settings.data.RemoteShortcutBinding
-import tv.own.owntv.features.settings.data.RemoteShortcutBindings
-import tv.own.owntv.features.settings.data.RemoteShortcutPress
+import tv.own.owntv.core.settings.RemoteShortcutAction
+import tv.own.owntv.core.settings.RemoteShortcutBinding
+import tv.own.owntv.core.settings.RemoteShortcutBindings
+import tv.own.owntv.core.settings.RemoteShortcutPress
 
 class RemoteShortcutBindingsTest {
     @Test

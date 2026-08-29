@@ -4,6 +4,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import tv.own.owntv.core.theme.GlassConfig
+import tv.own.owntv.core.theme.GlassPreset
+import tv.own.owntv.core.theme.GlassSurface
 
 class GlassConfigTest {
 

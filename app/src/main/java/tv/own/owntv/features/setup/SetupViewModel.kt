@@ -30,8 +30,8 @@ import tv.own.owntv.core.util.FriendlySyncFailure
 import tv.own.owntv.core.util.Pin
 import tv.own.owntv.core.util.classifySyncFailure
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
-import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
-import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.settings.PlaylistAutoRefresh
+import tv.own.owntv.core.settings.SettingsRepository
 import java.io.File
 
 /**
