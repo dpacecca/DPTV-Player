@@ -36,8 +36,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
-import tv.own.owntv.features.settings.data.GuideWidthLimits
-import tv.own.owntv.features.settings.data.GuideWidthShares
+import tv.own.owntv.core.settings.GuideWidthLimits
+import tv.own.owntv.core.settings.GuideWidthShares
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon

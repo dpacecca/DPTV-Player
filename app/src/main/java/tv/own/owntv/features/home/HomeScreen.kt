@@ -90,6 +90,8 @@ import tv.own.owntv.core.database.entity.MetadataCacheEntity
 import tv.own.owntv.core.database.dao.TrendingDao
 import tv.own.owntv.core.launcher.LauncherContinuationItem
 import tv.own.owntv.core.launcher.LauncherWatchNextType
+import tv.own.owntv.core.model.HomeLiveRowMode
+import tv.own.owntv.core.model.HomeRow
 import tv.own.owntv.player.HeroPreviewEngine
 import tv.own.owntv.ui.components.BrandLockup
 import tv.own.owntv.ui.components.FocusableSurface
@@ -105,7 +107,7 @@ import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.format.formatSystemTime
 import tv.own.owntv.ui.theme.Dimens
-import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.format.localizedInteger
 import tv.own.owntv.features.shell.components.MediaDetailsScreen
@@ -645,12 +647,13 @@ private fun TrendingHeroSection(
         }
     val displaySignals = ProviderVariantParser.displaySignals(snapshot.providerRawName)
     val typeLabel = if (item is TrendingHomeItem.Movie) movieLabel else seriesLabel
+    val providerLanguage = snapshot.providerLanguage
     val languageBadge = when {
-        snapshot.providerLanguage == preferredLanguage ->
+        providerLanguage == preferredLanguage ->
             stringResource(R.string.home_trending_language_choice, preferredLanguage)
-        snapshot.providerLanguage == "EN" -> stringResource(R.string.home_trending_english_fallback)
-        snapshot.providerLanguage == null -> stringResource(R.string.home_trending_untagged_fallback)
-        else -> stringResource(R.string.home_trending_other_fallback, snapshot.providerLanguage)
+        providerLanguage == "EN" -> stringResource(R.string.home_trending_english_fallback)
+        providerLanguage == null -> stringResource(R.string.home_trending_untagged_fallback)
+        else -> stringResource(R.string.home_trending_other_fallback, providerLanguage)
     }
     val reasonTitle = stringResource(R.string.home_trending_reason_title, snapshot.trendingRank, typeLabel)
     val reasonCopy = when {

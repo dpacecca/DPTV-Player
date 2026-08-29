@@ -32,14 +32,14 @@ import tv.own.owntv.core.sync.ImportFinalizer
 import tv.own.owntv.core.sync.work.CatalogSyncScheduler
 import tv.own.owntv.core.sync.work.EpgSyncScheduler
 import tv.own.owntv.core.database.dao.EpgDao
-import tv.own.owntv.features.settings.data.EpgAutoRefresh
-import tv.own.owntv.features.settings.data.PlaylistAutoRefresh
-import tv.own.owntv.features.settings.data.SettingsRepository
-import tv.own.owntv.ui.theme.AccentColor
-import tv.own.owntv.ui.theme.FontCustomization
-import tv.own.owntv.ui.theme.ThemeMode
-import tv.own.owntv.ui.theme.UiFontScale
-import tv.own.owntv.ui.theme.UiZoom
+import tv.own.owntv.core.settings.EpgAutoRefresh
+import tv.own.owntv.core.settings.PlaylistAutoRefresh
+import tv.own.owntv.core.settings.SettingsRepository
+import tv.own.owntv.core.theme.AccentColor
+import tv.own.owntv.core.theme.FontCustomization
+import tv.own.owntv.core.theme.ThemeMode
+import tv.own.owntv.core.theme.UiFontScale
+import tv.own.owntv.core.theme.UiZoom
 
 /** Top-level navigation destinations rendered in the Layer-1 sidebar. */
 enum class MainSection(@param:androidx.annotation.StringRes val labelRes: Int) {
@@ -279,8 +279,8 @@ class ShellViewModel(
     val fontCustomization: StateFlow<FontCustomization> = settings.fontCustomization
         .stateIn(viewModelScope, SharingStarted.Eagerly, FontCustomization())
 
-    val animationLevel: StateFlow<tv.own.owntv.ui.theme.AnimationLevel> = settings.animationLevel
-        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.ui.theme.AnimationLevel.FULL)
+    val animationLevel: StateFlow<tv.own.owntv.core.theme.AnimationLevel> = settings.animationLevel
+        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.theme.AnimationLevel.FULL)
 
     val accent: StateFlow<AccentColor> = settings.accent
         .stateIn(viewModelScope, SharingStarted.Eagerly, AccentColor.TEAL)
@@ -302,8 +302,8 @@ class ShellViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
     /** Resolved glass config (which surfaces + alpha). Empty scope = feature off. */
-    val glassConfig: StateFlow<tv.own.owntv.ui.theme.GlassConfig> = settings.glassConfig
-        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.ui.theme.GlassConfig())
+    val glassConfig: StateFlow<tv.own.owntv.core.theme.GlassConfig> = settings.glassConfig
+        .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.theme.GlassConfig())
 
     /** The active profile's avatar (so the sidebar reflects profile edits, not a separate setting). */
     val avatarId: StateFlow<Int> = settings.activeProfileId
@@ -388,9 +388,9 @@ class ShellViewModel(
         .flatMapLatest { mode ->
             combine(visibleFromSourceCount(), settings.navMenuHidden) { contentBased, hidden ->
                 when (mode) {
-                    tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.STATIC ->
+                    tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.STATIC ->
                         MainSection.allBrowse - hidden.mapNotNull { name -> runCatching { MainSection.valueOf(name) }.getOrNull() }.toSet()
-                    tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC -> contentBased
+                    tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.DYNAMIC -> contentBased
                 }
             }
         }
@@ -466,8 +466,8 @@ class ShellViewModel(
             settings.setFontCustomization(
                 value.copy(
                     sizePercent = UiFontScale.clamp(value.sizePercent),
-                    popupFontSizePercent = tv.own.owntv.ui.theme.PopupFontScale.clamp(value.popupFontSizePercent),
-                    popupSizePercent = tv.own.owntv.ui.theme.PopupSizeScale.clamp(value.popupSizePercent),
+                    popupFontSizePercent = tv.own.owntv.core.theme.PopupFontScale.clamp(value.popupFontSizePercent),
+                    popupSizePercent = tv.own.owntv.core.theme.PopupSizeScale.clamp(value.popupSizePercent),
                 ),
             )
         }

@@ -85,11 +85,11 @@ import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.features.customize.CustomizeScreen
 import tv.own.owntv.core.i18n.SupportedLocales
-import tv.own.owntv.player.SurroundMode
+import tv.own.owntv.core.player.SurroundMode
 import tv.own.owntv.features.settings.HomeSettingsScreen
 import tv.own.owntv.features.settings.LanguageSettingsScreen
 import tv.own.owntv.features.settings.LanguageSettingsViewModel
-import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.features.update.UpdateDialog
 import tv.own.owntv.features.settings.BackupScreen
 import tv.own.owntv.features.settings.ManageProfilesScreen
@@ -117,25 +117,27 @@ import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.format.formatBestDateTime
 import tv.own.owntv.ui.theme.ALL_GLASS_SURFACES
 import tv.own.owntv.ui.theme.Dimens
-import tv.own.owntv.ui.theme.GlassConfig
+import tv.own.owntv.core.theme.GlassConfig
 import tv.own.owntv.ui.theme.GlassInteraction
-import tv.own.owntv.ui.theme.GlassPreset
-import tv.own.owntv.ui.theme.GlassSurface
+import tv.own.owntv.core.theme.GlassPreset
+import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.glass
-import tv.own.owntv.ui.theme.AppFontFamily
-import tv.own.owntv.ui.theme.FontCustomization
-import tv.own.owntv.ui.theme.PopupFontScale
-import tv.own.owntv.ui.theme.PopupSizeScale
+import tv.own.owntv.core.theme.AppFontFamily
+import tv.own.owntv.core.theme.FontCustomization
+import tv.own.owntv.core.theme.PopupFontScale
+import tv.own.owntv.core.theme.PopupSizeScale
 import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.player.displayText
-import tv.own.owntv.ui.theme.ThemeMode
-import tv.own.owntv.ui.theme.UiFontScale
-import tv.own.owntv.ui.theme.UiZoom
+import tv.own.owntv.core.theme.ThemeMode
+import tv.own.owntv.core.theme.UiFontScale
+import tv.own.owntv.core.theme.UiZoom
 import tv.own.owntv.ui.theme.asComposeFamily
 import kotlin.math.roundToInt
 import java.io.File
 import java.util.Locale
+import tv.own.owntv.ui.theme.labelRes
+import tv.own.owntv.ui.theme.primary
 
 internal enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
@@ -342,9 +344,9 @@ fun SettingsScreen(
     val rememberCatMovies by settingsVm.rememberCategoryMovies.collectAsStateWithLifecycle()
     val rememberCatSeries by settingsVm.rememberCategorySeries.collectAsStateWithLifecycle()
     // "Custom" on the Panel Width row as soon as any one of the three sections is switched on.
-    val panelWidthLive by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.features.settings.data.PanelSection.LIVE).collectAsStateWithLifecycle()
-    val panelWidthMovies by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.features.settings.data.PanelSection.MOVIES).collectAsStateWithLifecycle()
-    val panelWidthSeries by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.features.settings.data.PanelSection.SERIES).collectAsStateWithLifecycle()
+    val panelWidthLive by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.core.settings.PanelSection.LIVE).collectAsStateWithLifecycle()
+    val panelWidthMovies by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.core.settings.PanelSection.MOVIES).collectAsStateWithLifecycle()
+    val panelWidthSeries by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.core.settings.PanelSection.SERIES).collectAsStateWithLifecycle()
     val panelWidthCustom = panelWidthLive || panelWidthMovies || panelWidthSeries
     val guideWidthCustom by settingsVm.guideWidthEnabled.collectAsStateWithLifecycle()
 
@@ -637,7 +639,7 @@ fun SettingsScreen(
             tabRowKey(SettingsTab.NAV_MENU), TileTone.PRIMARY, OwnTVIcon.MENU,
             title = stringResource(R.string.settings_sidebar_customization), desc = stringResource(R.string.settings_sidebar_description_root),
             chip = navModeLabel(navMenuMode),
-            chipTone = if (navMenuMode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY,
+            chipTone = if (navMenuMode == tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY,
             focus = rowFocus.getValue(SettingsTab.NAV_MENU),
             onClick = { open(SettingsTab.NAV_MENU) },
         ),
@@ -760,7 +762,7 @@ fun SettingsScreen(
         RootRow(
             "app_startup", TileTone.SECONDARY, OwnTVIcon.POWER,
             title = stringResource(R.string.settings_app_startup), desc = stringResource(R.string.settings_app_startup_description),
-            chip = if (startupMode == tv.own.owntv.features.settings.data.StartupMode.SPECIFIC_CHANNEL) {
+            chip = if (startupMode == tv.own.owntv.core.settings.StartupMode.SPECIFIC_CHANNEL) {
                 startupChannel?.name ?: startupLabel(startupMode)
             } else startupLabel(startupMode),
             chipTone = TileTone.PRIMARY,
@@ -979,7 +981,7 @@ fun SettingsScreen(
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_search_guide_logos), stringResource(R.string.settings_search_keywords_logos), OwnTVIcon.EPG, TileTone.SECONDARY) { open(SettingsTab.EPG) },
             SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_customize), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.SORT, TileTone.PRIMARY) { open(SettingsTab.CUSTOMIZE) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_sidebar_customization), stringResource(R.string.settings_search_keywords_sidebar), OwnTVIcon.MENU, TileTone.PRIMARY,
-                chip = navModeLabel(navMenuMode), chipTone = if (navMenuMode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },
+                chip = navModeLabel(navMenuMode), chipTone = if (navMenuMode == tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_ch_paging), stringResource(R.string.settings_search_keywords_ch), OwnTVIcon.CH_NAV, TileTone.PRIMARY,
                 chip = if (chNavEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_panel_width), stringResource(R.string.settings_search_keywords_panel_width), OwnTVIcon.PANEL_WIDTH, TileTone.PRIMARY,
@@ -1377,12 +1379,12 @@ fun SettingsScreen(
     if (showStartup) {
         tv.own.owntv.features.settings.PickerDialog(
             title = stringResource(R.string.settings_app_startup_dialog),
-            options = tv.own.owntv.features.settings.data.StartupMode.entries.map { it.name to startupLabel(it) },
+            options = tv.own.owntv.core.settings.StartupMode.entries.map { it.name to startupLabel(it) },
             selected = startupMode.name,
             onSelect = {
-                val mode = tv.own.owntv.features.settings.data.StartupMode.valueOf(it)
+                val mode = tv.own.owntv.core.settings.StartupMode.valueOf(it)
                 showStartup = false
-                if (mode == tv.own.owntv.features.settings.data.StartupMode.SPECIFIC_CHANNEL) {
+                if (mode == tv.own.owntv.core.settings.StartupMode.SPECIFIC_CHANNEL) {
                     settingsVm.setStartupChannelQuery("")
                     settingsVm.refreshStartupChannelPicker()
                     showStartupChannelPicker = true
@@ -1409,9 +1411,9 @@ fun SettingsScreen(
     if (showAnimations) {
         tv.own.owntv.features.settings.PickerDialog(
             title = stringResource(R.string.settings_animations_dialog),
-            options = tv.own.owntv.ui.theme.AnimationLevel.entries.map { it.name to stringResource(it.labelRes) },
+            options = tv.own.owntv.core.theme.AnimationLevel.entries.map { it.name to stringResource(it.labelRes) },
             selected = animationLevel.name,
-            onSelect = { settingsVm.setAnimationLevel(tv.own.owntv.ui.theme.AnimationLevel.valueOf(it)); showAnimations = false },
+            onSelect = { settingsVm.setAnimationLevel(tv.own.owntv.core.theme.AnimationLevel.valueOf(it)); showAnimations = false },
             onDismiss = { showAnimations = false },
         )
     }
@@ -1561,7 +1563,7 @@ fun SettingsScreen(
 private fun StartupChannelPickerDialog(
     query: String,
     channels: List<tv.own.owntv.core.database.entity.ChannelEntity>,
-    selected: tv.own.owntv.features.settings.data.StartupChannelRef?,
+    selected: tv.own.owntv.core.settings.StartupChannelRef?,
     onQueryChange: (String) -> Unit,
     onSelect: (tv.own.owntv.core.database.entity.ChannelEntity) -> Unit,
     onDismiss: () -> Unit,
@@ -1674,18 +1676,18 @@ private fun themeLabel(mode: ThemeMode): String = stringResource(
 )
 
 @Composable
-private fun startupLabel(mode: tv.own.owntv.features.settings.data.StartupMode): String = stringResource(
+private fun startupLabel(mode: tv.own.owntv.core.settings.StartupMode): String = stringResource(
     when (mode) {
-        tv.own.owntv.features.settings.data.StartupMode.HOME -> R.string.settings_startup_home
-        tv.own.owntv.features.settings.data.StartupMode.LAST_CHANNEL -> R.string.settings_startup_last_channel
-        tv.own.owntv.features.settings.data.StartupMode.FAVORITES -> R.string.settings_startup_favorites
-        tv.own.owntv.features.settings.data.StartupMode.SPECIFIC_CHANNEL -> R.string.settings_startup_specific_channel
+        tv.own.owntv.core.settings.StartupMode.HOME -> R.string.settings_startup_home
+        tv.own.owntv.core.settings.StartupMode.LAST_CHANNEL -> R.string.settings_startup_last_channel
+        tv.own.owntv.core.settings.StartupMode.FAVORITES -> R.string.settings_startup_favorites
+        tv.own.owntv.core.settings.StartupMode.SPECIFIC_CHANNEL -> R.string.settings_startup_specific_channel
     },
 )
 
 @Composable
-private fun navModeLabel(mode: tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode): String = stringResource(
-    if (mode == tv.own.owntv.features.settings.data.SettingsRepository.NavMenuMode.DYNAMIC) R.string.settings_dynamic else R.string.settings_static,
+private fun navModeLabel(mode: tv.own.owntv.core.settings.SettingsRepository.NavMenuMode): String = stringResource(
+    if (mode == tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.DYNAMIC) R.string.settings_dynamic else R.string.settings_static,
 )
 
 /** Chip text for the Language settings row: system-default label, or the selected locale's endonym. */
@@ -1697,8 +1699,8 @@ private fun languageChipText(tag: String): String {
 }
 
 /** The six quick presets shown at the top of the accent picker. */
-private val AccentPresetChoices: List<tv.own.owntv.ui.theme.AccentColor> =
-    tv.own.owntv.ui.theme.AccentColor.entries.take(6)
+private val AccentPresetChoices: List<tv.own.owntv.core.theme.AccentColor> =
+    tv.own.owntv.core.theme.AccentColor.entries.take(6)
 
 /**
  * Accent picker: a handful of quick presets plus a full HSV color picker — a hue bar and a
@@ -1709,9 +1711,9 @@ private val AccentPresetChoices: List<tv.own.owntv.ui.theme.AccentColor> =
  */
 @Composable
 private fun AccentPaletteDialog(
-    accent: tv.own.owntv.ui.theme.AccentColor,
+    accent: tv.own.owntv.core.theme.AccentColor,
     customAccent: String,
-    onPickPreset: (tv.own.owntv.ui.theme.AccentColor) -> Unit,
+    onPickPreset: (tv.own.owntv.core.theme.AccentColor) -> Unit,
     onPickCustom: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {

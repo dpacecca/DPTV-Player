@@ -5,7 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
-import tv.own.owntv.features.settings.data.SettingsRepository
+import tv.own.owntv.core.model.ContentMenu
+import tv.own.owntv.core.settings.SettingsRepository
 
 /**
  * One action in a long-press content menu — Live channel, movie, series or episode.
@@ -28,9 +29,6 @@ data class MenuAction(
     val group: Int = 0,
     val onClick: () -> Unit,
 )
-
-/** The four long-press menus, each with its own saved order. The name is the storage key — do not rename. */
-enum class ContentMenu { LIVE, MOVIE, SERIES, EPISODE }
 
 /**
  * Put [actions] into the user's saved [order].

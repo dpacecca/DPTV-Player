@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -617,7 +618,7 @@ internal fun CompanionKeyDialog(
                     Spacer(Modifier.height(12.dp))
                     state.qr?.let { qr ->
                         androidx.compose.foundation.Image(
-                            bitmap = qr,
+                            bitmap = qr.asImageBitmap(),
                             contentDescription = stringResource(R.string.settings_companion_qr),
                             modifier = Modifier
                                 .size(176.dp)

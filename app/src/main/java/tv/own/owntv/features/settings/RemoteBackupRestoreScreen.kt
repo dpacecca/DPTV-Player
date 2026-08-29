@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -104,7 +105,7 @@ fun RemoteBackupRestoreScreen(
                         Spacer(Modifier.height(14.dp))
                         state.qr?.let { qr ->
                             Image(
-                                bitmap = qr,
+                                bitmap = qr.asImageBitmap(),
                                 contentDescription = stringResource(R.string.settings_companion_qr),
                                 modifier = Modifier.size(188.dp).clip(RoundedCornerShape(14.dp)).background(Color.White).padding(9.dp),
                                 contentScale = ContentScale.Fit,
@@ -191,7 +192,7 @@ fun RemoteBackupExportScreen(
                         Spacer(Modifier.height(14.dp))
                         listening.qr?.let { qr ->
                             Image(
-                                bitmap = qr,
+                                bitmap = qr.asImageBitmap(),
                                 contentDescription = stringResource(R.string.settings_companion_qr),
                                 modifier = Modifier.size(188.dp).clip(RoundedCornerShape(14.dp)).background(Color.White).padding(9.dp),
                                 contentScale = ContentScale.Fit,
