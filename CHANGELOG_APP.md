@@ -9,6 +9,18 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v4.2.5 — unreleased
+
+### ✨ New features
+
+- **🧪 Test a playlist before you trust it**
+- **🔄 Auto refresh: choose your own number of days**
+
+### 🐛 Fixes
+
+- **Live TV's catch-up list now reaches back a full week**
+- **The guide line under a channel's name no longer goes blank after updating the app**
+
 ## v4.2.4 — 2026-08-27
 
 ### ✨ New features

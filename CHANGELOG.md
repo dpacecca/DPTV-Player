@@ -1,5 +1,48 @@
 # Changelog
 
+## v4.2.5 — unreleased
+
+### 🧪 Test a playlist before you trust it
+
+- **Every saved playlist has a Test button** on its row in **Settings → Manage sources**. It contacts the
+  provider and reports back in a popup: whether the account is active, when the subscription expires,
+  whether it is a trial, and **how many connections are in use out of how many are allowed** — the
+  figure that explains "why does it say the maximum number of devices is reached?". Xtream accounts get
+  all of it, M3U and Stalker portals get reachability and, for Stalker, whether the portal accepted the
+  MAC address.
+- **The same Test button is inside the playlist form**, so you can fill in a brand-new provider's
+  details and check them **before saving**. It tests what is on screen, not what is stored, and it is
+  available for M3U, Xtream and Stalker alike. Stalker's old one-line "connection OK" message is gone;
+  it now opens the same full result popup as everything else. The Xtream **Test HLS support** button is
+  unchanged.
+- Nothing is downloaded, synced or written to your library by a test — it only asks and reports.
+
+### 🔄 Auto refresh: choose your own number of days
+
+- **Playlist auto-refresh now offers a custom interval of 1 to 99 days.** The list is **Off**, **Refresh
+  at startup**, **6 hours**, **12 hours** and **Custom interval…**; picking the last one opens a day
+  picker where **Left and Right change the number by one** and holding the key repeats. No on-screen
+  keyboard, and cancelling leaves your previous choice alone.
+- **The old fixed 24-hour, 48-hour and 7-day choices are gone, and any playlist already using one moves
+  across by itself** — 24 hours becomes 1 day, 48 hours becomes 2 days, 7 days becomes 7 days. You do
+  not have to set anything again, and restoring an older backup does the same translation.
+- **The companion phone/browser form** offers 1, 2, 7, 14 and 30-day presets; any other figure is dialled
+  in on the television.
+
+### 🐛 Bug fixes
+
+- **Live TV's catch-up list now reaches back a full week, like the TV Guide already did.** The list was
+  capped at 48 hours by a note that stopped being true when the stored guide grew to seven days, so a
+  programme from four days ago could be replayed from the Guide but was not even listed against the same
+  channel in Live TV. Both screens now offer the same archive, still limited by what each channel's own
+  provider allows.
+- **The guide line under a channel's name no longer goes blank after updating the app.** The channel list
+  looked up programmes only among the playlists the visible page happened to come from, while the preview
+  pane beside it searched everything — and guide entries routinely sit under a different playlist than
+  the channel showing them (one provider's guide covering another's channels). The two disagreed until an
+  EPG re-sync happened to rewrite the entries. The channel list now searches every playlist and every
+  guide feed, so the line under the name matches the panel next to it.
+
 ## v4.2.4 — 2026-08-27
 
 ### 🩺 A crash now leaves a report you can send

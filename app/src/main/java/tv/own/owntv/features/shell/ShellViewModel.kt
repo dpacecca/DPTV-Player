@@ -34,6 +34,7 @@ import tv.own.owntv.core.sync.work.EpgSyncScheduler
 import tv.own.owntv.core.database.dao.EpgDao
 import tv.own.owntv.core.settings.EpgAutoRefresh
 import tv.own.owntv.core.settings.PlaylistAutoRefresh
+import tv.own.owntv.core.settings.PlaylistRefresh
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.theme.AccentColor
 import tv.own.owntv.core.theme.FontCustomization
@@ -170,7 +171,7 @@ class ShellViewModel(
             if (playlistModes.isNotEmpty()) {
                 val sources = sourceRepository.observeSources(pid).first()
                 sources.forEach { source ->
-                    val mode = playlistModes[source.id] ?: PlaylistAutoRefresh.OFF
+                    val mode = playlistModes[source.id] ?: PlaylistRefresh.OFF
                     if (shouldRefresh(mode, source.lastSyncAt, nowMs, includeStartup)) {
                         val counts = importFinalizer.contentCounts(source.id)
                         Log.d(TAG, "checkAutoRefresh playlist sourceId=${source.id} mode=$mode — enqueuing")
@@ -248,14 +249,14 @@ class ShellViewModel(
      * successfully synced — counts as infinitely stale so recovery happens).
      */
     private fun shouldRefresh(
-        mode: PlaylistAutoRefresh,
+        refresh: PlaylistRefresh,
         lastSyncAt: Long?,
         now: Long,
         includeStartup: Boolean,
-    ): Boolean = when (mode) {
+    ): Boolean = when (refresh.mode) {
         PlaylistAutoRefresh.OFF -> false
         PlaylistAutoRefresh.STARTUP -> includeStartup
-        else -> (now - (lastSyncAt ?: 0L)) >= (mode.thresholdMs ?: Long.MAX_VALUE)
+        else -> (now - (lastSyncAt ?: 0L)) >= (refresh.thresholdMs ?: Long.MAX_VALUE)
     }
 
     /** EPG equivalent of [shouldRefresh]. */

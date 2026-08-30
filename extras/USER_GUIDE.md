@@ -71,6 +71,13 @@ submission must include it. *Core idea from a community suggestion (PR #66 by @z
 
 ## ⚡ Adding a playlist — per-section sync
 
+- 🧪 **Test connection**: check a provider before you rely on it. The button sits **inside the
+  Add / Edit playlist form** (so you can test details you have typed but not saved yet) **and** on each
+  saved playlist row in **Settings → Manage sources**. The result popup shows whether the account is
+  active, its **expiry date**, whether it is a **trial**, and **how many connections are in use out of
+  the maximum** — the number behind "maximum devices reached" errors. Xtream gives all of it; M3U and
+  Stalker report reachability (and for Stalker, whether the portal accepted the MAC). A test only asks
+  and reports: nothing is imported or changed.
 - **Run in background**: while a playlist is importing (setup wizard or Settings), press
   **Run in background** to enter the app right away — the import keeps going, and a small
   **status pill at the bottom of the screen** shows its progress ("Syncing *playlist* · N items").
@@ -114,8 +121,9 @@ Live TV, Movies, Series, downloads, TMDB metadata, backup, and the playlist swit
    **Signature** under **Advanced device identification**. Leave them blank for a normal MAC-only portal.
 4. (Optional) Pick a **Device model preset** for the User-Agent if your portal is picky about the
    MAG box model (MAG250/254/270/420). The default works on most portals.
-5. Tap **Test connection** — it verifies the complete identity before saving. A "Connected" message
-   means the portal accepted it (if the portal reports a subscription end date, it's shown too).
+5. Tap **Test connection** — it verifies the complete identity before saving, and shows the result in
+   the same popup every playlist type now uses (portal accepted or refused, plus a subscription end
+   date when the portal reports one).
 6. **Start Import** — Live channels, Movies, and Series all populate, just like an Xtream source.
 
 ### Notes & troubleshooting
@@ -217,7 +225,9 @@ or **narrow the whole app to just one**.
 - **Categories** are in the second column. Long category names **wrap to two lines** so they're never cut off.
 - ⏪ **Catch-up category**: between **History** and **All** sits **Catch-up**, holding every channel your
   provider keeps a recording for. It only appears if you have such channels. Sorting, the search box and
-  the in-player channel list all work inside it, like any other category.
+  the in-player channel list all work inside it, like any other category. The catch-up picker looks back
+  **up to seven days** — the same span the TV Guide offers — limited by what each channel's provider
+  actually keeps.
 - ⏭️ **Catch-up plays on**: when a catch-up programme ends, the next one in the guide starts by itself,
   so an evening's catch-up runs through like live television. Once you reach the programme that is on
   the air **now**, OwnTV switches to the live channel — its recording is only half made. Where the guide
@@ -449,7 +459,10 @@ or **narrow the whole app to just one**.
   source once after switching it on, so the logos get stored.
 - 🔄 **Auto refresh (per source)**: each **playlist** (Settings → Manage sources) and each **EPG feed**
   (Settings → EPG sources) has an **Auto refresh** dropdown — **Off** (default), **Refresh at startup**,
-  or an interval (playlists 6–48h, EPG 1–48h). Intervals refresh only when the source is actually stale,
+  or an interval (EPG 1–48h). For **playlists** the choices are **6 hours**, **12 hours** or
+  **Custom interval…**, which opens a day picker: **Left/Right change the number by one** (hold to
+  repeat), anywhere from **1 to 99 days**. Playlists already set to the old 24h, 48h or 7-day options
+  move across automatically to 1, 2 and 7 days. Intervals refresh only when the source is actually stale,
   checked on app start and when you return to the app. Everything stays **Off** until you turn it on.
 
 ---

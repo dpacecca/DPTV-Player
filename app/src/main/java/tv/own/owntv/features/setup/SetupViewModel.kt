@@ -30,7 +30,7 @@ import tv.own.owntv.core.util.FriendlySyncFailure
 import tv.own.owntv.core.util.Pin
 import tv.own.owntv.core.util.classifySyncFailure
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
-import tv.own.owntv.core.settings.PlaylistAutoRefresh
+import tv.own.owntv.core.settings.PlaylistRefresh
 import tv.own.owntv.core.settings.SettingsRepository
 import java.io.File
 
@@ -170,7 +170,7 @@ class SetupViewModel(
         password: String,
         userAgent: String = "",
         epgUrl: String = "",
-        autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Now,
         series: SyncScopeChoice = SyncScopeChoice.Now,
@@ -206,7 +206,7 @@ class SetupViewModel(
         deviceId2: String = "",
         signature: String = "",
         userAgent: String = "",
-        autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Later,
         series: SyncScopeChoice = SyncScopeChoice.Later,
@@ -245,7 +245,7 @@ class SetupViewModel(
         }
     }
 
-    fun startM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF) =
+    fun startM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF) =
         runImport(autoRefresh, requiresNetwork = !url.isLocalPlaylistPath()) { profileId ->
             sourceRepository.addM3uSource(
                 profileId = profileId,
@@ -257,7 +257,7 @@ class SetupViewModel(
         }
 
     private fun runImport(
-        autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
         contentTypes: SyncContentTypes = SyncContentTypes(),
         enabledScope: SyncContentTypes = SyncContentTypes(),
         enqueueRemainder: Boolean = false,
@@ -491,7 +491,7 @@ class SetupViewModel(
                 runCatching { sourceRepository.clearSourceContent(source.id) }
             } else {
                 runCatching { sourceRepository.deleteSource(source) }
-                runCatching { settings.setPlaylistAutoRefresh(source.id, PlaylistAutoRefresh.OFF) }
+                runCatching { settings.setPlaylistAutoRefresh(source.id, PlaylistRefresh.OFF) }
             }
         }
     }

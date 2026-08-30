@@ -32,6 +32,7 @@ import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.network.ConnectivityObserver
 import tv.own.owntv.core.repository.SourceRepository
+import tv.own.owntv.core.repository.SourceTestResult
 import tv.own.owntv.core.sync.ImportStage
 import tv.own.owntv.core.sync.SyncContentTypes
 import tv.own.owntv.core.sync.SyncResult
@@ -51,7 +52,7 @@ import tv.own.owntv.core.settings.EpgAutoRefresh
 import tv.own.owntv.core.settings.PanelSection
 import tv.own.owntv.core.settings.PanelShares
 import tv.own.owntv.core.settings.GuideWidthShares
-import tv.own.owntv.core.settings.PlaylistAutoRefresh
+import tv.own.owntv.core.settings.PlaylistRefresh
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.settings.SubtitleStyle
 import tv.own.owntv.core.theme.AccentColor
@@ -85,6 +86,7 @@ class SettingsViewModel(
     private val stalkerAuth: tv.own.owntv.core.stalker.StalkerAuthManager,
     private val stalkerClient: tv.own.owntv.core.stalker.StalkerClient,
     private val xtreamClient: tv.own.owntv.core.parser.XtreamClient,
+    private val sourceTester: tv.own.owntv.core.repository.SourceTester,
     private val companion: tv.own.owntv.core.companion.CompanionController,
     private val vodEngineStore: tv.own.owntv.core.player.VodEngineStore,
     private val playbackPrefs: tv.own.owntv.core.player.PlaybackPrefsStore,
@@ -878,14 +880,14 @@ class SettingsViewModel(
     fun setRememberLastSeries(enabled: Boolean) { viewModelScope.launch { settings.setRememberLastSeries(enabled) } }
 
     /** Per-source playlist auto-refresh selection (Off / Startup / staleness threshold). */
-    val playlistAutoRefresh: StateFlow<Map<Long, PlaylistAutoRefresh>> = settings.playlistAutoRefresh
+    val playlistAutoRefresh: StateFlow<Map<Long, PlaylistRefresh>> = settings.playlistAutoRefresh
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** Per-source EPG auto-refresh selection (Off / Startup / staleness threshold). */
     val epgAutoRefresh: StateFlow<Map<Long, EpgAutoRefresh>> = settings.epgAutoRefresh
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    fun setPlaylistAutoRefresh(sourceId: Long, mode: PlaylistAutoRefresh) {
+    fun setPlaylistAutoRefresh(sourceId: Long, mode: PlaylistRefresh) {
         viewModelScope.launch { settings.setPlaylistAutoRefresh(sourceId, mode) }
     }
 
@@ -906,7 +908,7 @@ class SettingsViewModel(
         pass: String,
         userAgent: String,
         epgUrl: String,
-        autoRefresh: PlaylistAutoRefresh,
+        autoRefresh: PlaylistRefresh,
         isDefault: Boolean = false,
         mac: String = "",
         stalkerSerialNumber: String = "",
@@ -996,7 +998,7 @@ class SettingsViewModel(
         pass: String,
         userAgent: String = "",
         epgUrl: String = "",
-        autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Now,
         series: SyncScopeChoice = SyncScopeChoice.Now,
@@ -1019,71 +1021,26 @@ class SettingsViewModel(
         }
     }
 
-    // ---- Stalker portal (plan Phase B) ----
+    // ---- "Test" on a saved playlist row ----
 
-    sealed interface StalkerTestState {
-        data object Idle : StalkerTestState
-        data object Testing : StalkerTestState
-        data class Ok(val endpoint: String, val profileFields: Int, val expiry: String?) : StalkerTestState
-        data class Failed(val failure: FriendlySyncFailure) : StalkerTestState
-    }
+    /** Null while no test is on screen; [SourceTestUi.Running] while the call is in flight. */
+    private val _sourceTest = MutableStateFlow<SourceTestUi?>(null)
+    val sourceTest: StateFlow<SourceTestUi?> = _sourceTest.asStateFlow()
 
-    private val _stalkerTest = MutableStateFlow<StalkerTestState>(StalkerTestState.Idle)
-    val stalkerTest: StateFlow<StalkerTestState> = _stalkerTest.asStateFlow()
-
-    fun resetStalkerTest() {
-        _stalkerTest.value = StalkerTestState.Idle
-    }
-
-    /** "Test connection": portal handshake + get_profile with the form's values, no source saved. */
-    fun testStalker(
-        portalUrl: String, mac: String, serialNumber: String = "", deviceId: String = "",
-        deviceId2: String = "", signature: String = "", userAgent: String = "",
-    ) {
-        val canonicalMac = tv.own.owntv.core.stalker.StalkerClient.canonicalizeMac(mac)
-        if (canonicalMac == null) {
-            _stalkerTest.value = StalkerTestState.Failed(FriendlySyncFailure.InvalidMac)
-            return
-        }
+    fun testSource(source: SourceEntity) {
         viewModelScope.launch {
-            _stalkerTest.value = StalkerTestState.Testing
-            _stalkerTest.value = try {
-                if (!connectivity.isOnlineNow()) {
-                    StalkerTestState.Failed(classifySyncFailure(null, online = false))
-                } else {
-                    val session = stalkerAuth.testConnection(
-                        tv.own.owntv.core.stalker.StalkerCredentials(
-                            sourceId = STALKER_TEST_SOURCE_ID,
-                            portalUrl = portalUrl.trim(),
-                            mac = canonicalMac,
-                            userAgent = userAgent.trim().takeIf { it.isNotBlank() },
-                            deviceIdentity = tv.own.owntv.core.stalker.StalkerDeviceIdentity(
-                                serialNumber = serialNumber.trim().takeIf { it.isNotBlank() },
-                                deviceId = deviceId.trim().takeIf { it.isNotBlank() },
-                                deviceId2 = deviceId2.trim().takeIf { it.isNotBlank() },
-                                signature = signature.trim().takeIf { it.isNotBlank() },
-                            ),
-                        ),
-                    )
-                    val endpoint = session.apiBase.substringAfter("://").substringAfter('/', "portal")
-                    // Subscription expiry line (Phase F, §1.2): optional account_info call. Portals
-                    // surface expiry under varying keys (sometimes even `phone`) — best effort only.
-                    val expiry = runCatching {
-                        val info = stalkerClient.getAccountInfo(
-                            session.apiBase, canonicalMac, session.token,
-                            userAgent.trim().takeIf { it.isNotBlank() },
-                        )
-                        stalkerExpiryOf(info) ?: stalkerExpiryOf(session.profile)
-                    }.getOrNull()
-                    StalkerTestState.Ok(endpoint, session.profile.size, expiry)
-                }
-            } catch (c: CancellationException) {
-                throw c
-            } catch (e: Exception) {
-                StalkerTestState.Failed(stalkerFailure(e))
-            }
+            _sourceTest.value = SourceTestUi.Running(source.name)
+            val result = sourceTester.test(source)
+            // Back may have closed the popup while the request was still running; don't re-open it.
+            if (_sourceTest.value != null) _sourceTest.value = SourceTestUi.Done(source.name, result)
         }
     }
+
+    fun dismissSourceTest() {
+        _sourceTest.value = null
+    }
+
+    // ---- Stalker portal (plan Phase B) ----
 
     /**
      * Save a Stalker source. Verifies the portal handshake first (same as Test connection) so a
@@ -1101,7 +1058,7 @@ class SettingsViewModel(
         deviceId2: String = "",
         signature: String = "",
         userAgent: String = "",
-        autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
         isDefault: Boolean = false,
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Later,
@@ -1160,12 +1117,7 @@ class SettingsViewModel(
     private fun String.looksLikeExpiryValue(): Boolean =
         isNotEmpty() && !equals("null", true) && !startsWith("0000") && this != "0"
 
-    private fun stalkerFailure(e: Exception): FriendlySyncFailure = when {
-        e is tv.own.owntv.core.stalker.StalkerClient.StalkerAuthException -> FriendlySyncFailure.MacNotAuthorised
-        else -> classifySyncFailure(e.message, connectivity.isOnlineNow())
-    }
-
-    fun addM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF, isDefault: Boolean = false) = runImport(
+    fun addM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF, isDefault: Boolean = false) = runImport(
         autoRefresh,
         requiresNetwork = !url.isLocalPlaylistPath(),
         makeDefault = isDefault,
@@ -1178,7 +1130,7 @@ class SettingsViewModel(
     }
 
     private fun runImport(
-        autoRefresh: PlaylistAutoRefresh = PlaylistAutoRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
         contentTypes: SyncContentTypes = SyncContentTypes(),
         enabledScope: SyncContentTypes = SyncContentTypes(),
         enqueueRemainder: Boolean = false,
@@ -1345,7 +1297,7 @@ class SettingsViewModel(
         withContext(NonCancellable) {
             catalogSyncScheduler.cancelSync(source.id)
             runCatching { sourceRepository.deleteSource(source) }
-            runCatching { settings.setPlaylistAutoRefresh(source.id, PlaylistAutoRefresh.OFF) }
+            runCatching { settings.setPlaylistAutoRefresh(source.id, PlaylistRefresh.OFF) }
         }
     }
 
@@ -1648,4 +1600,12 @@ class SettingsViewModel(
         is java.net.ConnectException -> ProxyFailure.ConnectionFailed
         else -> ProxyFailure.Unknown(t.message?.takeIf { it.isNotBlank() })
     }
+}
+
+/** What the source-test popup is showing. */
+sealed interface SourceTestUi {
+    val sourceName: String
+
+    data class Running(override val sourceName: String) : SourceTestUi
+    data class Done(override val sourceName: String, val result: SourceTestResult) : SourceTestUi
 }

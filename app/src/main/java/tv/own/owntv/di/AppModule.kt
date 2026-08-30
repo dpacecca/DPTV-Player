@@ -79,6 +79,7 @@ val appModule = module {
             stalkerAuth = get(),
             stalkerClient = get(),
             xtreamClient = get(),
+            sourceTester = get(),
             companion = get(),
             vodEngineStore = get(),
             playbackPrefs = get(),

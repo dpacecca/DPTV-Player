@@ -27,7 +27,11 @@ internal const val DEFAULT_CATCHUP_DAYS = 7
 /** Upper bound on a playlist's `catchup-days`. Guards the arithmetic that turns it into seconds. */
 internal const val MAX_CATCHUP_DAYS = 31
 
-private const val CATCHUP_LOOKBACK_CAP_MS = 48L * 60 * 60 * 1000 // bounded by the EPG we retain (~2 days)
+// How far back the Live TV catch-up picker may look. Must stay within EpgRepository's retention (7
+// days) and matches the Guide's own cap, so the same channel offers the same archive from either
+// screen — this used to be 48h, left over from when only ~2 days of guide were retained, which meant
+// a programme the Guide happily replayed was not even listed in Live TV.
+private const val CATCHUP_LOOKBACK_CAP_MS = 7L * 24 * 60 * 60 * 1000
 
 // How far past a finished catch-up programme to look for the next one. Beyond this the guide has a
 // gap rather than a next programme, and auto-play stops instead of leaping hours ahead.
@@ -148,8 +152,15 @@ internal class LiveEpgReader(
     ): Map<Long, String> = withContext(Dispatchers.IO) {
         if (channels.isEmpty()) return@withContext emptyMap()
         val now = System.currentTimeMillis()
+        // Every playlist plus every EPG feed — NOT just the sources the visible page happens to come
+        // from. Guide rows are keyed by epgChannelId and routinely live under a different source than
+        // the channel showing them (one playlist's xmltv.php covering another's channels), and
+        // [nowNext] — which fills the preview pane — applies no source filter at all. Narrowing this to
+        // the page's own sources made the two disagree: the preview showed a programme while the row
+        // under it stayed blank, until an EPG re-sync happened to rewrite the rows under an id the
+        // filter included.
         val epgIds = epgSourceStore.getAll().map { it.id }
-        val sourceIds = (channels.map { it.sourceId } + epgIds).distinct()
+        val sourceIds = (sourceDao.allSourceIds() + epgIds).distinct()
         // Manual EPG-match overrides take precedence over the channel's own epgChannelId, mirroring nowNext.
         // Shifted channels look up a different instant, so the batch is grouped by shift — with no
         // offsets configured (the normal case) that's still exactly one query group.
@@ -207,7 +218,7 @@ internal class LiveEpgReader(
     }
 
     /** Recent (already-aired) programmes for a catch-up channel, newest first — drives the Live TV
-     *  catch-up picker. Bounded to the EPG we retain (≈ 2 days) and the channel's archive window. */
+     *  catch-up picker. Bounded to the EPG we retain (7 days) and the channel's archive window. */
     suspend fun catchupProgrammes(
         ch: ChannelEntity,
         cust: SectionCustomizations,
