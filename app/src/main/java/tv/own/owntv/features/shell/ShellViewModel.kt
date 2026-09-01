@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tv.own.owntv.core.epg.EpgSourceStore
+import tv.own.owntv.core.nav.MainSection
+import tv.own.owntv.core.nav.NavVisibility
 import tv.own.owntv.core.network.ConnectivityObserver
 import tv.own.owntv.core.weather.WeatherInfo
 import tv.own.owntv.core.weather.WeatherRepository
@@ -42,45 +44,6 @@ import tv.own.owntv.core.theme.ThemeMode
 import tv.own.owntv.core.theme.UiFontScale
 import tv.own.owntv.core.theme.UiZoom
 
-/** Top-level navigation destinations rendered in the Layer-1 sidebar. */
-enum class MainSection(@param:androidx.annotation.StringRes val labelRes: Int) {
-    SEARCH(tv.own.owntv.R.string.common_nav_search),
-    HOME(tv.own.owntv.R.string.common_nav_home),
-    LIVE_TV(tv.own.owntv.R.string.common_nav_live_tv),
-    MOVIES(tv.own.owntv.R.string.common_nav_movies),
-    SERIES(tv.own.owntv.R.string.common_nav_series),
-    DOWNLOADS(tv.own.owntv.R.string.common_nav_downloads),
-    EPG(tv.own.owntv.R.string.common_nav_guide),
-    SETTINGS(tv.own.owntv.R.string.common_nav_settings); // pinned at the bottom of the nav
-
-    /** Shown as an icon in the left nav rail. Phase 4 moved Search to the top bar, so it's excluded. */
-    val isBrowse: Boolean get() = this != SETTINGS && this != SEARCH
-
-    companion object {
-        /** Fixed order of the browse icons in the rail (Settings is pinned separately at the bottom). */
-        val browseOrder: List<MainSection> = listOf(HOME, LIVE_TV, MOVIES, SERIES, DOWNLOADS, EPG)
-
-        /** All six browse items — the default `visibleSections` value so the rail shows everything until
-         *  the first real emission lands (avoids a cold-start flicker to an empty rail). */
-        val allBrowse: Set<MainSection> = browseOrder.toSet()
-
-        /**
-         * DYNAMIC-mode rule (v4.3.0): which browse icons show given the active playlist's content caps.
-         * Home always; Live & Guide when there are channels; Movies/Series when their tables have rows;
-         * Downloads when Movies OR Series exist (Live has no download). Settings is always pinned and not
-         * part of this set. Shared between ShellViewModel (the rail) and SettingsViewModel (the settings
-         * screen's read-only DYNAMIC rows) so both agree on what DYNAMIC mode shows.
-         */
-        fun dynamicVisible(hasLive: Boolean, hasMovies: Boolean, hasSeries: Boolean): Set<MainSection> = buildSet {
-            add(HOME)
-            if (hasLive) { add(LIVE_TV); add(EPG) }
-            if (hasMovies) add(MOVIES)
-            if (hasSeries) add(SERIES)
-            if (hasMovies || hasSeries) add(DOWNLOADS)
-        }
-    }
-}
-
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class ShellViewModel(
     private val settings: SettingsRepository,
@@ -95,9 +58,7 @@ class ShellViewModel(
     private val epgDao: EpgDao,
     private val importFinalizer: ImportFinalizer,
     private val weatherRepository: WeatherRepository,
-    private val channelDao: tv.own.owntv.core.database.dao.ChannelDao,
-    private val movieDao: tv.own.owntv.core.database.dao.MovieDao,
-    private val seriesDao: tv.own.owntv.core.database.dao.SeriesDao,
+    private val navVisibility: NavVisibility,
 ) : ViewModel() {
 
     companion object {
@@ -370,66 +331,10 @@ class ShellViewModel(
         _selectedSection.value = section
     }
 
-    /**
-     * Which browse sections currently show as icons in the rail (v4.3.0 — Nav menu customization).
-     *
-     * - **STATIC** (default): all six browse items minus the user's hidden set.
-     * - **DYNAMIC**: derived from the active source's live content — Home always; Live/EPG when there are
-     *   channels; Movies/Series when their table has rows; Downloads when Movies OR Series exist (Live has
-     *   no download). When the top-bar picker is on "All playlists" (`defaultSourceId <= 0`) the counts are
-     *   unioned across every source in the profile, so a VOD-only source still hides Live in the merged view.
-     *
-     * The content counts come from the existing reactive `countAll` DAO flows, which Room re-emits on every
-     * table write — so icons update on their own right after each sync, with no migration or probe call.
-     */
-    val visibleSections: StateFlow<Set<MainSection>> = visibleSectionsFlow()
+    /** Which browse sections currently show as icons in the rail (v4.3.0 — Nav menu customization).
+     *  The rule itself lives in core's [NavVisibility], shared with the mobile app's bottom bar. */
+    val visibleSections: StateFlow<Set<MainSection>> = navVisibility.visibleSections()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MainSection.allBrowse)
-
-    private fun visibleSectionsFlow(): Flow<Set<MainSection>> = settings.navMenuMode
-        .flatMapLatest { mode ->
-            combine(visibleFromSourceCount(), settings.navMenuHidden) { contentBased, hidden ->
-                when (mode) {
-                    tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.STATIC ->
-                        MainSection.allBrowse - hidden.mapNotNull { name -> runCatching { MainSection.valueOf(name) }.getOrNull() }.toSet()
-                    tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.DYNAMIC -> contentBased
-                }
-            }
-        }
-        .distinctUntilChanged()
-
-    /**
-     * The six browse sections DYNAMIC mode would show, given the active source's live row counts. Home is
-     * always present; the rest depend on channels/movies/series counts from the reactive DAO flows.
-     */
-    private fun visibleFromSourceCount(): Flow<Set<MainSection>> = settings.activeProfileId
-        .flatMapLatest { pid ->
-            if (pid < 0) flowOf(MainSection.allBrowse)
-            else sourceRepository.observeSources(pid)
-                .flatMapLatest { sources -> settings.defaultSourceId.flatMapLatest { defaultId -> countCapsFlow(sources, defaultId) } }
-        }
-
-    /** Resolves "which source ids count" (the chosen playlist, or all of the profile's when none chosen).
-     *  Per-section Off flags drop that section from the nav even when cached rows remain. */
-    private fun countCapsFlow(sources: List<tv.own.owntv.core.database.entity.SourceEntity>, defaultId: Long): Flow<Set<MainSection>> {
-        val scoped = if (defaultId > 0) sources.filter { it.id == defaultId } else sources
-        if (scoped.isEmpty()) return flowOf(setOf(MainSection.HOME))
-        val liveIds = scoped.filter { it.syncLive }.map { it.id }
-        val movieIds = scoped.filter { it.syncMovies }.map { it.id }
-        val seriesIds = scoped.filter { it.syncSeries }.map { it.id }
-        // Empty id lists would make countAll misbehave — use a sentinel that matches nothing.
-        val empty = listOf(-1L)
-        return combine(
-            channelDao.countAll(liveIds.ifEmpty { empty }),
-            movieDao.countAll(movieIds.ifEmpty { empty }),
-            seriesDao.countAll(seriesIds.ifEmpty { empty }),
-        ) { channels, movies, series ->
-            MainSection.dynamicVisible(
-                hasLive = liveIds.isNotEmpty() && channels > 0,
-                hasMovies = movieIds.isNotEmpty() && movies > 0,
-                hasSeries = seriesIds.isNotEmpty() && series > 0,
-            )
-        }
-    }
 
     init {
         // v4.3.0 — if the section the user is viewing becomes hidden (in either mode), jump to the first

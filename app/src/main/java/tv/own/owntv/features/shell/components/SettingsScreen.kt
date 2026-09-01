@@ -96,7 +96,7 @@ import tv.own.owntv.features.settings.ManageProfilesScreen
 import tv.own.owntv.features.settings.ManageSourcesScreen
 import tv.own.owntv.features.settings.SettingsViewModel
 import tv.own.owntv.features.settings.VideoPlayerSettingsScreen
-import tv.own.owntv.features.shell.MainSection
+import tv.own.owntv.core.nav.MainSection
 import tv.own.owntv.ui.components.BrandLockup
 import tv.own.owntv.ui.components.BrowseMode
 import tv.own.owntv.ui.components.FocusableSurface

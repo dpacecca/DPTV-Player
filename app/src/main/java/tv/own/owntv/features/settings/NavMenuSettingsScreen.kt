@@ -37,7 +37,7 @@ import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
 import tv.own.owntv.core.settings.SettingsRepository
-import tv.own.owntv.features.shell.MainSection
+import tv.own.owntv.core.nav.MainSection
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.NavDuotoneIcon
 import tv.own.owntv.ui.components.OwnTVIcon

@@ -53,6 +53,7 @@ import org.koin.compose.koinInject
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.launcher.LauncherDeepLink
+import tv.own.owntv.core.nav.MainSection
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.launcher.LauncherLaunch
 import tv.own.owntv.core.update.UpdateManager

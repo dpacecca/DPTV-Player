@@ -71,8 +71,7 @@ class SettingsViewModel(
     private val channelDao: tv.own.owntv.core.database.dao.ChannelDao,
     private val categoryDao: tv.own.owntv.core.database.dao.CategoryDao,
     private val customizationStore: tv.own.owntv.core.customize.CustomizationStore,
-    private val movieDao: tv.own.owntv.core.database.dao.MovieDao,
-    private val seriesDao: tv.own.owntv.core.database.dao.SeriesDao,
+    private val navVisibility: tv.own.owntv.core.nav.NavVisibility,
     private val historyDao: tv.own.owntv.core.database.dao.HistoryDao,
     private val progressDao: tv.own.owntv.core.database.dao.ProgressDao,
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
@@ -715,10 +714,10 @@ class SettingsViewModel(
     }
 
     /** Browse sections the user has hidden (STATIC mode only). */
-    val navMenuHidden: StateFlow<Set<tv.own.owntv.features.shell.MainSection>> = settings.navMenuHidden
-        .map { raw -> raw.mapNotNull { name -> runCatching { tv.own.owntv.features.shell.MainSection.valueOf(name) }.getOrNull() }.toSet() }
+    val navMenuHidden: StateFlow<Set<tv.own.owntv.core.nav.MainSection>> = settings.navMenuHidden
+        .map { raw -> raw.mapNotNull { name -> runCatching { tv.own.owntv.core.nav.MainSection.valueOf(name) }.getOrNull() }.toSet() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
-    fun setNavSectionHidden(section: tv.own.owntv.features.shell.MainSection, hidden: Boolean) {
+    fun setNavSectionHidden(section: tv.own.owntv.core.nav.MainSection, hidden: Boolean) {
         viewModelScope.launch {
             val current = navMenuHidden.first()
             val next = if (hidden) current + section else current - section
@@ -731,36 +730,8 @@ class SettingsViewModel(
      * computation so the Nav menu settings screen's read-only DYNAMIC rows report the same state the rail
      * reflects. Re-emits automatically as content arrives (Room invalidates the count flows on every write).
      */
-    val dynamicCaps: StateFlow<Set<tv.own.owntv.features.shell.MainSection>> = settings.activeProfileId
-        .flatMapLatest { pid ->
-            if (pid < 0) flowOf(tv.own.owntv.features.shell.MainSection.allBrowse)
-            else sourceRepository.observeSources(pid)
-                .flatMapLatest { sources -> settings.defaultSourceId.flatMapLatest { defaultId -> capsFlow(sources, defaultId) } }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.features.shell.MainSection.allBrowse)
-
-    private fun capsFlow(
-        sources: List<SourceEntity>,
-        defaultId: Long,
-    ): kotlinx.coroutines.flow.Flow<Set<tv.own.owntv.features.shell.MainSection>> {
-        val scoped = if (defaultId > 0) sources.filter { it.id == defaultId } else sources
-        if (scoped.isEmpty()) return flowOf(setOf(tv.own.owntv.features.shell.MainSection.HOME))
-        val liveIds = scoped.filter { it.syncLive }.map { it.id }
-        val movieIds = scoped.filter { it.syncMovies }.map { it.id }
-        val seriesIds = scoped.filter { it.syncSeries }.map { it.id }
-        val empty = listOf(-1L)
-        return combine(
-            channelDao.countAll(liveIds.ifEmpty { empty }),
-            movieDao.countAll(movieIds.ifEmpty { empty }),
-            seriesDao.countAll(seriesIds.ifEmpty { empty }),
-        ) { channels, movies, series ->
-            tv.own.owntv.features.shell.MainSection.dynamicVisible(
-                hasLive = liveIds.isNotEmpty() && channels > 0,
-                hasMovies = movieIds.isNotEmpty() && movies > 0,
-                hasSeries = seriesIds.isNotEmpty() && series > 0,
-            )
-        }
-    }
+    val dynamicCaps: StateFlow<Set<tv.own.owntv.core.nav.MainSection>> = navVisibility.dynamicCaps()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.nav.MainSection.allBrowse)
 
     val uiZoomPercent: StateFlow<Int> = settings.uiZoomPercent.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiZoom.DEFAULT)
     fun setUiZoom(percent: Int) { viewModelScope.launch { settings.setUiZoomPercent(UiZoom.clamp(percent)) } }
