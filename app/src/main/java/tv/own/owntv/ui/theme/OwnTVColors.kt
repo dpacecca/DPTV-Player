@@ -67,17 +67,13 @@ data class OwnTVColors(
     val accent: Color get() = primary
 }
 
-/** Parses "#RRGGBB" / "RRGGBB" (also 8-digit AARRGGBB) into a [Color]; null when invalid. */
-fun parseAccentHex(hex: String): Color? {
-    val s = hex.trim().removePrefix("#")
-    return runCatching {
-        when (s.length) {
-            6 -> Color((0xFF000000L or s.toLong(16)).toInt())
-            8 -> Color(s.toLong(16).toInt())
-            else -> null
-        }
-    }.getOrNull()
-}
+/**
+ * Parses "#RRGGBB" / "RRGGBB" (also 8-digit AARRGGBB) into a [Color]; null when invalid.
+ *
+ * The parsing itself is core's, so the mobile app reads a user's custom accent identically.
+ */
+fun parseAccentHex(hex: String): Color? =
+    tv.own.owntv.core.theme.parseAccentHex(hex)?.let { Color(it) }
 
 /** The four M3 primary roles, resolved either from a preset or generated from a custom seed. */
 private data class AccentRoles(
@@ -87,38 +83,22 @@ private data class AccentRoles(
     val onPrimaryContainer: Color,
 )
 
-/** Keep the seed's hue/saturation but pin the HSL lightness — a cheap stand-in for M3 tones. */
-private fun Color.withLightness(l: Float): Color {
-    val hsl = FloatArray(3)
-    androidx.core.graphics.ColorUtils.colorToHSL(toArgb(), hsl)
-    hsl[2] = l
-    return Color(androidx.core.graphics.ColorUtils.HSLToColor(hsl))
-}
-
 /**
  * Generate tonal primary roles from an arbitrary seed color (the custom hex accent).
- * The seed is used EXACTLY as [primary] so the user's hex renders true; only the supporting
- * contrast roles (onPrimary / containers) are derived by nudging the seed's lightness.
+ * The derivation is core's [tv.own.owntv.core.theme.accentRolesFromSeed]; this only wraps its
+ * values in [Color].
  */
 private fun rolesFrom(seed: Color, isDark: Boolean): AccentRoles {
-    // Choose a readable foreground for text/icons drawn on top of the exact seed color.
-    val onPrimary = if (androidx.core.graphics.ColorUtils.calculateLuminance(seed.toArgb()) > 0.5)
-        Color.Black else Color.White
-    return if (isDark) {
-        AccentRoles(
-            primary = seed,
-            onPrimary = onPrimary,
-            primaryContainer = seed.withLightness(0.26f),
-            onPrimaryContainer = seed.withLightness(0.90f),
-        )
-    } else {
-        AccentRoles(
-            primary = seed,
-            onPrimary = onPrimary,
-            primaryContainer = seed.withLightness(0.88f),
-            onPrimaryContainer = seed.withLightness(0.10f),
-        )
-    }
+    val roles = tv.own.owntv.core.theme.accentRolesFromSeed(
+        seed = seed.toArgb().toLong() and 0xFFFFFFFFL,
+        isDark = isDark,
+    )
+    return AccentRoles(
+        primary = Color(roles.primary),
+        onPrimary = Color(roles.onPrimary),
+        primaryContainer = Color(roles.primaryContainer),
+        onPrimaryContainer = Color(roles.onPrimaryContainer),
+    )
 }
 
 /**
