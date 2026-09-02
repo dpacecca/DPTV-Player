@@ -20,6 +20,8 @@
 
 - **Live TV's catch-up list now reaches back a full week**
 - **The guide line under a channel's name no longer goes blank after updating the app**
+- **Guide auto-match now works for non-Latin channel names** (community PR by @Sekator778)
+- **⚡ Guide auto-match finishes in seconds instead of minutes**
 
 ## v4.2.4 — 2026-08-27
 

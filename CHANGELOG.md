@@ -2,6 +2,23 @@
 
 ## v4.2.5 — unreleased
 
+### 🌍 The guide now matches channels in any alphabet, and matches them quickly
+
+- **Auto-match works for Cyrillic, Greek, Arabic and CJK channel names** (community PR by
+  @Sekator778). Channel names were cleaned down to plain Latin letters and digits before being
+  compared, which left a name written in another script as nothing at all — so it could never be
+  paired with a guide entry, and the guide stayed behind "channel ids don't match your channels' EPG
+  ids" no matter how many times it was re-run. Names are now compared in whatever script they are
+  written in, decorative spellings like `ᴴᴰ` are folded away first, and a channel's number is read in
+  its own digits, so `MTV ٢` and `MTV 2` are recognised as the same channel while `٢` and `٣` are
+  still kept apart.
+- **Auto-match finishes in seconds rather than minutes.** The scan compares every channel against
+  every guide entry — a 1,786-channel lineup against a 1,907-channel guide is about 3.4 million
+  comparisons — and it ran one at a time on a single core, which on older TV hardware meant a
+  spinner that outlasted anyone's patience. It now runs across all of the television's cores and does
+  less work per comparison: about nine times faster end to end on that catalogue, with exactly the
+  same matches in the same order.
+
 ### 🧪 Test a playlist before you trust it
 
 - **Every saved playlist has a Test button** on its row in **Settings → Manage sources**. It contacts the
