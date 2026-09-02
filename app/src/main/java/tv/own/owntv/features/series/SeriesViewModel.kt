@@ -289,6 +289,16 @@ class SeriesViewModel(
 
     data class SeriesMeta(val seriesId: Long, val cache: tv.own.owntv.core.database.entity.MetadataCacheEntity?)
 
+    /**
+     * Poster fallback for tiles the provider gave no artwork for — see MovieViewModel.cachedPosters
+     * for the reasoning. Cache-only: a DB read, never a TMDB call.
+     */
+    private val _posterProbe = MutableStateFlow<List<SeriesEntity>>(emptyList())
+    private val _cachedPosters = MutableStateFlow<Map<Long, String>>(emptyMap())
+    val cachedPosters: StateFlow<Map<Long, String>> = _cachedPosters.asStateFlow()
+
+    fun onPosterlessVisible(series: List<SeriesEntity>) { _posterProbe.value = series }
+
     /** Source mode (plan §4.1) — the pane/details use it to flip provider/TMDB precedence. */
     val metadataMode: StateFlow<tv.own.owntv.core.metadata.MetadataMode> = settings.metadataMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB)
@@ -365,6 +375,22 @@ class SeriesViewModel(
         // here when a season's last episode finishes so we can start the next season's first episode.
         viewModelScope.launch {
             player.queueEnded.collect { continueToNextSeason() }
+        }
+        // Resolve the poster fallback for what is on screen (mirrors MovieViewModel). Debounced so a
+        // fast scroll issues one query when it settles, and re-run on the refresh tick so a
+        // "Refetch TMDB details" re-reads the entry it dropped.
+        viewModelScope.launch {
+            combine(_posterProbe, _seriesMetaTick) { probe, _ -> probe }
+                .debounce(250)
+                .collectLatest { probe ->
+                    val wanted = probe.filterNot { it.id in _cachedPosters.value }
+                    if (wanted.isEmpty()) return@collectLatest
+                    val found = runCatching { metadata.cachedSeriesPosters(wanted) }.getOrDefault(emptyMap())
+                    if (found.isEmpty()) return@collectLatest
+                    // Bounded: a long browse of a huge catalog would otherwise grow this forever.
+                    val base = if (_cachedPosters.value.size > 500) emptyMap() else _cachedPosters.value
+                    _cachedPosters.value = base + found
+                }
         }
         // In-season advance (auto-next / HUD prev-next) happens inside the player — re-point the
         // subtitle context at the NEW episode (subtitle plan Phase 5), else a subtitle search or §9
@@ -600,6 +626,7 @@ class SeriesViewModel(
     fun refetchSeriesMeta(series: SeriesEntity) {
         viewModelScope.launch {
             runCatching { metadata.clearSeries(series) }
+            _cachedPosters.value = _cachedPosters.value - series.id
             _seriesMetaTick.value++
         }
     }

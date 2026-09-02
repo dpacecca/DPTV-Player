@@ -37,6 +37,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +57,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
@@ -310,6 +312,19 @@ private fun SeriesGrid(
     val catListState = androidx.compose.foundation.lazy.rememberLazyListState()
     var gridPaneFocused by remember { mutableStateOf(false) }
     var railPaneFocused by remember { mutableStateOf(false) }
+    // Tiles the provider gave no artwork for: ask for the TMDB poster already cached from an earlier
+    // focus, so the placeholder is only shown when nothing at all is known (mirrors Movies).
+    val cachedPosters by vm.cachedPosters.collectAsStateWithLifecycle()
+    LaunchedEffect(effectiveGridState, effectiveListState, viewMode, series) {
+        val grid = viewMode != SettingsRepository.VodViewMode.LIST
+        snapshotFlow {
+            val indices = if (grid) effectiveGridState.layoutInfo.visibleItemsInfo.map { it.index }
+            else effectiveListState.layoutInfo.visibleItemsInfo.map { it.index }
+            indices.filter { it < series.itemCount }
+                .mapNotNull { series.peek(it) }
+                .filter { it.posterUrl.isNullOrBlank() }
+        }.distinctUntilChanged().collect { vm.onPosterlessVisible(it) }
+    }
 
     // Back from a show's episodes: scroll the grid to the poster you opened, then focus it. It may be
     // far down and not composed, so without scrolling the focus request fails and focus falls to the
@@ -544,6 +559,7 @@ private fun SeriesGrid(
                         if (s != null) {
                             SeriesListRow(
                                 series = s,
+                                posterUrl = s.posterUrl?.takeIf { it.isNotBlank() } ?: cachedPosters[s.id],
                                 isFavorite = favoriteIds.contains(s.id),
                                 providerName = providerNames[s.sourceId],
                                 modifier = Modifier.gridFocusTarget(
@@ -574,7 +590,7 @@ private fun SeriesGrid(
                         val s = series[index]
                         if (s != null) {
                             PosterCard(
-                                posterUrl = s.posterUrl,
+                                posterUrl = s.posterUrl?.takeIf { it.isNotBlank() } ?: cachedPosters[s.id],
                                 title = s.name,
                                 rating = s.rating,
                                 isFavorite = favoriteIds.contains(s.id),
@@ -1681,6 +1697,7 @@ private fun EpisodeRow(
 @Composable
 private fun SeriesListRow(
     series: SeriesEntity,
+    posterUrl: String?,
     isFavorite: Boolean,
     providerName: String? = null,
     onFocus: () -> Unit,
@@ -1707,8 +1724,8 @@ private fun SeriesListRow(
                 modifier = Modifier.size(width = 44.dp, height = 62.dp).clip(RoundedCornerShape(6.dp)).background(colors.surfaceContainerLowest),
                 contentAlignment = Alignment.Center,
             ) {
-                if (!series.posterUrl.isNullOrBlank()) {
-                    AsyncImage(model = series.posterUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
+                if (!posterUrl.isNullOrBlank()) {
+                    AsyncImage(model = posterUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
                 } else {
                     OwnTVIcon(OwnTVIcon.SERIES, tint = colors.onSurfaceVariant, modifier = Modifier.size(22.dp))
                 }

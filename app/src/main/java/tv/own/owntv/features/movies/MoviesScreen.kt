@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +56,7 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
@@ -243,6 +245,20 @@ fun MoviesScreen(
     LaunchedEffect(contentScrolled) { onContentScrolled(contentScrolled) }
     var gridPaneFocused by remember { mutableStateOf(false) }
     var railPaneFocused by remember { mutableStateOf(false) }
+    // Tiles the provider gave no artwork for: ask for the TMDB poster already cached from an earlier
+    // focus, so the placeholder is only shown when nothing at all is known. peek() reads the loaded
+    // page without triggering a fetch.
+    val cachedPosters by vm.cachedPosters.collectAsStateWithLifecycle()
+    LaunchedEffect(effectiveGridState, effectiveListState, viewMode, movies) {
+        val grid = viewMode != SettingsRepository.VodViewMode.LIST
+        snapshotFlow {
+            val info = if (grid) effectiveGridState.layoutInfo.visibleItemsInfo.map { it.index }
+            else effectiveListState.layoutInfo.visibleItemsInfo.map { it.index }
+            info.filter { it < movies.itemCount }
+                .mapNotNull { movies.peek(it) }
+                .filter { it.posterUrl.isNullOrBlank() }
+        }.distinctUntilChanged().collect { vm.onPosterlessVisible(it) }
+    }
     // Returning from the player: scroll to and focus the movie you just played (waits for the grid to load).
     LaunchedEffect(restoreFocus, movies.itemCount) {
         if (!restoreFocus || movies.itemCount == 0) return@LaunchedEffect
@@ -484,6 +500,7 @@ fun MoviesScreen(
                             val prog = movieProgress[movie.id]
                             MovieListRow(
                                 movie = movie,
+                                posterUrl = movie.posterUrl?.takeIf { it.isNotBlank() } ?: cachedPosters[movie.id],
                                 isFavorite = favoriteIds.contains(movie.id),
                                 completed = prog?.let { vm.isMovieCompleted(it) } == true,
                                 providerName = providerNames[movie.sourceId],
@@ -517,7 +534,7 @@ fun MoviesScreen(
                             val prog = movieProgress[movie.id]
                             val done = prog?.let { vm.isMovieCompleted(it) } == true
                             PosterCard(
-                                posterUrl = movie.posterUrl,
+                                posterUrl = movie.posterUrl?.takeIf { it.isNotBlank() } ?: cachedPosters[movie.id],
                                 title = movie.name,
                                 rating = movie.rating,
                                 completed = done,
@@ -992,6 +1009,7 @@ private fun jsonList(json: String?): List<String> {
 @Composable
 private fun MovieListRow(
     movie: MovieEntity,
+    posterUrl: String?,
     isFavorite: Boolean,
     completed: Boolean = false,
     providerName: String? = null,
@@ -1019,8 +1037,8 @@ private fun MovieListRow(
                 modifier = Modifier.size(width = 44.dp, height = 62.dp).clip(RoundedCornerShape(6.dp)).background(colors.surfaceContainerLowest),
                 contentAlignment = Alignment.Center,
             ) {
-                if (!movie.posterUrl.isNullOrBlank()) {
-                    AsyncImage(model = movie.posterUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
+                if (!posterUrl.isNullOrBlank()) {
+                    AsyncImage(model = posterUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
                 } else {
                     OwnTVIcon(OwnTVIcon.MOVIES, tint = colors.onSurfaceVariant, modifier = Modifier.size(22.dp))
                 }

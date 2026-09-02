@@ -290,6 +290,20 @@ class MovieViewModel(
      *  different card during the debounce window. [cache] is null while resolving or on no match. */
     data class MovieMeta(val movieId: Long, val cache: tv.own.owntv.core.database.entity.MetadataCacheEntity?)
 
+    /**
+     * Poster fallback for grid/list tiles the provider gave no artwork for. Those show a placeholder
+     * even once the detail pane has resolved and cached a TMDB poster for the same title — most
+     * visibly under Date added, which puts a whole freshly-imported batch at the front.
+     *
+     * The screen reports the on-screen posterless items and gets back whatever the cache already
+     * holds. Cache-only by design: a DB read, never a TMDB call, so scrolling costs no quota.
+     */
+    private val _posterProbe = MutableStateFlow<List<MovieEntity>>(emptyList())
+    private val _cachedPosters = MutableStateFlow<Map<Long, String>>(emptyMap())
+    val cachedPosters: StateFlow<Map<Long, String>> = _cachedPosters.asStateFlow()
+
+    fun onPosterlessVisible(movies: List<MovieEntity>) { _posterProbe.value = movies }
+
     /** Source mode (plan §4.1) — the detail pane uses it to flip provider/TMDB field precedence. */
     val metadataMode: StateFlow<tv.own.owntv.core.metadata.MetadataMode> = settings.metadataMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.metadata.MetadataMode.PROVIDER_PLUS_TMDB)
@@ -328,6 +342,22 @@ class MovieViewModel(
                 if (wasPlaying && !playing) saveProgressNow()
                 wasPlaying = playing
             }
+        }
+        // Resolve the poster fallback for what is on screen. Debounced so a fast scroll issues one
+        // query when it settles; keyed on the refresh tick too, so a "Refetch TMDB details" that
+        // dropped an entry re-reads it instead of leaving the tile blank.
+        viewModelScope.launch {
+            combine(_posterProbe, _metaRefreshTick) { probe, _ -> probe }
+                .debounce(250)
+                .collectLatest { probe ->
+                    val wanted = probe.filterNot { it.id in _cachedPosters.value }
+                    if (wanted.isEmpty()) return@collectLatest
+                    val found = runCatching { metadata.cachedMoviePosters(wanted) }.getOrDefault(emptyMap())
+                    if (found.isEmpty()) return@collectLatest
+                    // Bounded: a session spent browsing a 170k catalog would otherwise grow this forever.
+                    val base = if (_cachedPosters.value.size > 500) emptyMap() else _cachedPosters.value
+                    _cachedPosters.value = base + found
+                }
         }
     }
 
@@ -429,6 +459,7 @@ class MovieViewModel(
     fun refetchMovieMeta(movie: MovieEntity) {
         viewModelScope.launch {
             runCatching { metadata.clearMovie(movie) }
+            _cachedPosters.value = _cachedPosters.value - movie.id
             _metaRefreshTick.value++
         }
     }
