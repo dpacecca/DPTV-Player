@@ -532,21 +532,26 @@ class EpgViewModel(
                     val prepared = tv.own.owntv.core.epg.EpgMatcher.prepare(
                         candidates.map { tv.own.owntv.core.epg.EpgMatcher.Candidate(it.epgChannelId, it.displayName) },
                     )
-                    val channels = channelDao.allForSources(playlistIds, MAX_CHANNELS)
+                    // Narrow to the channels that actually need a match first, then score them in one
+                    // bulk pass: the scan is channels × candidates, which is millions of comparisons on
+                    // a full catalogue and minutes of spinner on TV silicon if it runs on one thread.
+                    val unmatched = channelDao.allForSources(playlistIds, MAX_CHANNELS).filter { ch ->
+                        val key = CustomizeKeys.channel(ch)
+                        if (key in cust.epgMatches || key in cust.hiddenItems) return@filter false // already matched/hidden
+                        val tvg = ch.epgChannelId?.trim()?.lowercase()
+                        tvg.isNullOrEmpty() || tvg !in knownIds // anything else already has a working guide
+                    }
+                    val best = tv.own.owntv.core.epg.EpgMatcher.bestEpgMatchBulk(unmatched.map { it.name }, prepared)
                     var applied = 0
                     val toApply = mutableListOf<Pair<String, String>>() // key -> epgId
                     val review = mutableListOf<EpgMatchSuggestion>()
-                    for (ch in channels) {
-                        val key = CustomizeKeys.channel(ch)
-                        if (key in cust.epgMatches || key in cust.hiddenItems) continue // already matched/hidden
-                        val tvg = ch.epgChannelId?.trim()?.lowercase()
-                        if (!tvg.isNullOrEmpty() && tvg in knownIds) continue // already has a working guide
-                        val best = tv.own.owntv.core.epg.EpgMatcher.bestEpgMatchPrepared(ch.name, prepared) ?: continue
-                        if (best.score >= tv.own.owntv.core.epg.EpgMatcher.AUTO_THRESHOLD) {
-                            toApply.add(key to best.epgChannelId)
+                    for ((ch, match) in unmatched.zip(best)) {
+                        if (match == null) continue
+                        if (match.score >= tv.own.owntv.core.epg.EpgMatcher.AUTO_THRESHOLD) {
+                            toApply.add(CustomizeKeys.channel(ch) to match.epgChannelId)
                             applied++
                         } else {
-                            review.add(EpgMatchSuggestion(ch, best.epgChannelId, best.displayName, best.score))
+                            review.add(EpgMatchSuggestion(ch, match.epgChannelId, match.displayName, match.score))
                         }
                     }
                     // Persist the confident matches (DataStore writes are cheap but do them off the scan).
