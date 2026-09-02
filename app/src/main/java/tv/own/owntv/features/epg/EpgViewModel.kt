@@ -124,6 +124,10 @@ class EpgViewModel(
     private val customCategoryDao: tv.own.owntv.core.database.dao.CustomCategoryDao,
 ) : ViewModel() {
 
+    /** Every windowed guide read this screen makes. The caches around it stay here — what to keep
+     *  depends on how the grid scrolls, which is the screen's business, not core's. */
+    private val guideReader = tv.own.owntv.core.live.GuideReader(epgDao, epgSourceStore, sourceDao)
+
     // This profile's customizations — shared by the Guide picker, guide rows, and manual EPG match.
     // It must be initialized before guideCategories (Kotlin property initializers run top-to-bottom).
     private val custom: StateFlow<SectionCustomizations> = settings.activeProfileId
@@ -243,19 +247,12 @@ class EpgViewModel(
         val key = channel.epgChannelId?.trim()?.lowercase() ?: return emptyList()
         val s = _state.value
         val shift = shiftFor(channel)
-        if (shift != 0) {
-            val cacheKey = "$key|$shift"
-            shiftedRowCache[cacheKey]?.let { return it }
-            val from = tv.own.owntv.core.epg.EpgShift.toStored(s.windowStart, shift)
-            val to = tv.own.owntv.core.epg.EpgShift.toStored(s.windowEnd, shift)
-            val shifted = epgDao.programmeSummariesForChannel(loadedSourceIds, key, from, to)
-                .map { tv.own.owntv.core.epg.EpgShift.apply(it, shift) }
-            shiftedRowCache[cacheKey] = shifted
-            return shifted
-        }
-        rowCache[key]?.let { return it }
-        val list = epgDao.programmeSummariesForChannel(loadedSourceIds, key, s.windowStart, s.windowEnd)
-        rowCache[key] = list
+        val cacheKey = if (shift == 0) key else "$key|$shift"
+        val cache = if (shift == 0) rowCache else shiftedRowCache
+        cache[cacheKey]?.let { return it }
+        // The read itself — window, shift and all — is core's; only what to keep is this screen's.
+        val list = guideReader.row(channel, custom.value, epgOffset.value, loadedSourceIds, s.windowStart, s.windowEnd)
+        cache[cacheKey] = list
         return list
     }
 
@@ -263,24 +260,9 @@ class EpgViewModel(
     suspend fun programmeDescription(programmeId: Long): String? =
         runCatching { epgDao.programmeDescription(programmeId) }.getOrNull()
 
-    /**
-     * Load the whole guide window in id-keyset pages (each bounded so it fits a single CursorWindow),
-     * grouped by EPG channel id with every row list ordered by start time for the grid. A big lineup
-     * returns far more rows than one ~2 MB window holds, so it MUST be paged. Runs off the main thread.
-     */
+    /** The whole guide window, grouped by EPG channel id — paged, off the main thread, in core. */
     private suspend fun loadWindowGrouped(ids: List<Long>, from: Long, to: Long): Map<String, List<EpgProgrammeEntity>> =
-        withContext(Dispatchers.Default) {
-            val all = ArrayList<EpgProgrammeEntity>()
-            var afterId = 0L
-            while (true) {
-                val page = epgDao.programmesInWindowPage(ids, from, to, afterId, EPG_WINDOW_PAGE)
-                if (page.isEmpty()) break
-                all += page
-                afterId = page.last().id
-                if (page.size < EPG_WINDOW_PAGE) break
-            }
-            all.groupBy { it.epgChannelId }.mapValues { (_, v) -> v.sortedBy { it.startMs } }
-        }
+        guideReader.window(ids, from, to)
 
     init {
         // Re-filter the grid as the user types (DB-level, so it searches ALL guide channels, not
@@ -874,7 +856,5 @@ class EpgViewModel(
         // Cap the candidate set the bulk matcher scans against (keeps the O(channels×candidates) scan bounded).
         private const val MAX_EPG_CANDIDATES = 20_000
         private const val EPG_PICKER_RESULT_LIMIT = 300
-        // Rows per guide-window page — bounded so a page always fits a single ~2 MB CursorWindow.
-        private const val EPG_WINDOW_PAGE = 1_000
     }
 }

@@ -69,7 +69,7 @@ import tv.own.owntv.features.movies.MoviesScreen
 import tv.own.owntv.features.movies.MovieViewModel
 import tv.own.owntv.features.search.SearchScreen
 import tv.own.owntv.features.search.SearchViewModel
-import tv.own.owntv.features.home.TrendingHomeItem
+import tv.own.owntv.core.home.TrendingHomeItem
 import tv.own.owntv.features.series.SeriesScreen
 import tv.own.owntv.features.series.SeriesViewModel
 import tv.own.owntv.core.settings.RemoteShortcutAction

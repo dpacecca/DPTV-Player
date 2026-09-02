@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -62,8 +63,6 @@ import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.model.HlsSupport
 import tv.own.owntv.core.model.SourceType
-import tv.own.owntv.core.parser.HlsInconclusiveReason
-import tv.own.owntv.core.parser.HlsNotServedReason
 import tv.own.owntv.core.parser.HlsProbe
 import tv.own.owntv.core.parser.HlsTest
 import tv.own.owntv.core.parser.XtreamClient
@@ -72,6 +71,8 @@ import tv.own.owntv.features.settings.PickerDialog
 import tv.own.owntv.features.settings.SourceTestDialog
 import tv.own.owntv.features.settings.SourceTestUi
 import tv.own.owntv.core.repository.SourceTester
+import tv.own.owntv.core.setup.MAG_USER_AGENTS
+import tv.own.owntv.core.setup.displayText
 import tv.own.owntv.core.settings.PlaylistAutoRefresh
 import tv.own.owntv.core.settings.PlaylistRefresh
 import tv.own.owntv.core.settings.SettingsRepository
@@ -100,16 +101,6 @@ private sealed interface HlsTestUi {
     data class Failed(val rawMessage: String) : HlsTestUi
 }
 
-/** MAG User-Agent presets (plan §7 "Header/UA pickiness") — value goes into the User-Agent field. */
-private data class MagPreset(@param:StringRes val labelRes: Int, val userAgent: String)
-
-private val MAG_UA_PRESETS = listOf(
-    MagPreset(R.string.setup_default_mag, ""),
-    MagPreset(R.string.setup_mag250, "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG250 stbapp ver: 2 rev: 250 Safari/533.3"),
-    MagPreset(R.string.setup_mag254, "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG254 stbapp ver: 2 rev: 250 Safari/533.3"),
-    MagPreset(R.string.setup_mag270, "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG270 stbapp ver: 2 rev: 250 Safari/533.3"),
-    MagPreset(R.string.setup_mag420, "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/601.1 (KHTML, like Gecko) MAG420 stbapp ver: 4 rev: 2721 Safari/601.1"),
-)
 
 @Composable
 fun AddSourceScreen(
@@ -530,7 +521,7 @@ fun AddSourceScreen(
                     is HlsTestUi.Complete -> {
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            t.displayText(),
+                            t.test.displayText(LocalContext.current.resources),
                             style = MaterialTheme.typography.bodySmall,
                             color = if (t.test.probe is HlsProbe.Served) colors.primary else Color(0xFFEF4444),
                         )
@@ -628,17 +619,11 @@ fun AddSourceScreen(
       if (showUaPresetPicker) {
           PickerDialog(
               title = stringResource(R.string.setup_device_model_preset_title),
-              options = listOf(
-                  R.string.setup_default_mag.toString() to stringResource(R.string.setup_default_mag),
-                  R.string.setup_mag250.toString() to stringResource(R.string.setup_mag250),
-                  R.string.setup_mag254.toString() to stringResource(R.string.setup_mag254),
-                  R.string.setup_mag270.toString() to stringResource(R.string.setup_mag270),
-                  R.string.setup_mag420.toString() to stringResource(R.string.setup_mag420),
-              ),
-              selected = MAG_UA_PRESETS.firstOrNull { it.userAgent == userAgent }?.labelRes?.toString()
-                  ?: MAG_UA_PRESETS.first().labelRes.toString(),
+              options = MAG_USER_AGENTS.map { it.labelRes.toString() to stringResource(it.labelRes) },
+              selected = MAG_USER_AGENTS.firstOrNull { it.userAgent == userAgent }?.labelRes?.toString()
+                  ?: MAG_USER_AGENTS.first().labelRes.toString(),
               onSelect = { labelRes ->
-                  userAgent = MAG_UA_PRESETS.firstOrNull { it.labelRes.toString() == labelRes }?.userAgent.orEmpty()
+                  userAgent = MAG_USER_AGENTS.firstOrNull { it.labelRes.toString() == labelRes }?.userAgent.orEmpty()
                   showUaPresetPicker = false
               },
               onDismiss = { showUaPresetPicker = false },
@@ -673,46 +658,6 @@ fun AddSourceScreen(
       sourceTest?.let { state ->
           SourceTestDialog(state = state, onDismiss = { sourceTest = null })
       }
-    }
-}
-
-/** Resolve a semantic HLS probe result only at the Compose presentation boundary. */
-@Composable
-private fun HlsTestUi.Complete.displayText(): String {
-    val declared = test.declared
-        ?: return stringResource(R.string.setup_hls_test_provider_unreachable)
-
-    return when (val probe = test.probe) {
-        HlsProbe.Served -> stringResource(
-            if (declared) R.string.setup_hls_test_works else R.string.setup_hls_test_works_unadvertised,
-        )
-        is HlsProbe.Busy -> stringResource(R.string.setup_hls_test_busy, probe.code)
-        is HlsProbe.NotServed -> {
-            val reason = when (val reason = probe.reason) {
-                HlsNotServedReason.NotPlaylist -> stringResource(R.string.setup_hls_test_reason_not_playlist)
-                is HlsNotServedReason.NoEndpoint -> stringResource(
-                    R.string.setup_hls_test_reason_no_endpoint,
-                    reason.httpCode,
-                )
-            }
-            stringResource(R.string.setup_hls_test_not_served, reason)
-        }
-        is HlsProbe.Inconclusive -> {
-            val reason = when (val reason = probe.reason) {
-                is HlsInconclusiveReason.HttpError -> stringResource(
-                    R.string.setup_hls_test_reason_http,
-                    reason.httpCode,
-                )
-                is HlsInconclusiveReason.Unexpected -> reason.rawMessage
-                HlsInconclusiveReason.NoAnswer -> stringResource(R.string.setup_hls_test_reason_no_answer)
-                HlsInconclusiveReason.NoLiveChannels -> stringResource(R.string.setup_hls_test_reason_no_live_channels)
-                HlsInconclusiveReason.DeadTestChannel -> stringResource(R.string.setup_hls_test_reason_dead_channel)
-            }
-            val providerClaim = stringResource(
-                if (declared) R.string.setup_hls_provider_advertises else R.string.setup_hls_provider_does_not_advertise,
-            )
-            stringResource(R.string.setup_hls_test_inconclusive, reason, providerClaim)
-        }
     }
 }
 

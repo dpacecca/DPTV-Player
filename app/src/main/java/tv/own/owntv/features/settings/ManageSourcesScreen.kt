@@ -32,6 +32,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
@@ -53,6 +54,8 @@ import tv.own.owntv.ui.components.primaryText
 import tv.own.owntv.ui.components.remainderText
 import tv.own.owntv.ui.components.warningText
 import tv.own.owntv.core.repository.SourceTestResult
+import tv.own.owntv.core.setup.detailLines
+import tv.own.owntv.core.setup.headline
 import tv.own.owntv.core.settings.PlaylistAutoRefresh
 import tv.own.owntv.core.settings.PlaylistRefresh
 import tv.own.owntv.features.setup.playlistAutoRefreshLabel
@@ -643,49 +646,15 @@ internal fun SourceTestDialog(state: SourceTestUi, onDismiss: () -> Unit) {
 @Composable
 private fun SourceTestReport(result: SourceTestResult) {
     val colors = OwnTVTheme.colors
-    val headline = when (result) {
-        is SourceTestResult.Ok -> stringResource(R.string.settings_sources_test_ok)
-        SourceTestResult.AuthFailed -> stringResource(R.string.settings_sources_test_auth)
-        is SourceTestResult.Expired -> stringResource(R.string.settings_sources_test_expired)
-        is SourceTestResult.Unreachable -> stringResource(R.string.settings_sources_test_unreachable)
-    }
-    val expiryMs = (result as? SourceTestResult.Ok)?.expiryMs ?: (result as? SourceTestResult.Expired)?.expiryMs
-    val ok = result as? SourceTestResult.Ok
+    val res = LocalContext.current.resources
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            headline,
+            result.headline(res),
             style = MaterialTheme.typography.bodyLarge,
             color = if (result is SourceTestResult.Ok) colors.onSurface else colors.favorite,
         )
-        ok?.status?.takeIf { it.isNotBlank() }?.let {
-            Text(stringResource(R.string.settings_sources_test_status, it), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-        }
-        if (ok?.trial == true) {
-            Text(stringResource(R.string.settings_sources_test_trial), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-        }
-        if (result !is SourceTestResult.Unreachable && result !== SourceTestResult.AuthFailed) {
-            Text(
-                expiryMs?.let { stringResource(R.string.settings_sources_expiry, formatTestDate(it)) }
-                    ?: stringResource(R.string.settings_sources_test_expiry_none),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
-        }
-        // Only Xtream reports either number; a playlist that says nothing shows no connection line at
-        // all rather than an invented "0 of 0".
-        if (ok != null && ok.maxConnections > 0) {
-            Text(
-                if (ok.activeConnections >= 0) {
-                    stringResource(R.string.settings_sources_test_connections, ok.activeConnections, ok.maxConnections)
-                } else {
-                    stringResource(R.string.settings_sources_test_connections_max, ok.maxConnections)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
+        result.detailLines(res).forEach {
+            Text(it, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         }
     }
 }
-
-private fun formatTestDate(ms: Long): String =
-    java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM).format(java.util.Date(ms))

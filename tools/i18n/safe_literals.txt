@@ -76,21 +76,8 @@
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	·
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	•
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	✓ $providerMatchLabel
-1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	${snapshot.mediaType.name}:${snapshot.tmdbId}
-1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	1080p FHD
-1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	4K
-1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	4K UHD
-1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	720p HD
-1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	8K
-2	locale	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	EN
-1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	FHD
-1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	HD
-1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	SD
-1	locale	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	en
-1	technical	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	episode:${item.episode.id}
+1	locale	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	EN
 1	performance	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	home-data
-1	technical	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	live:${item.channel.id}
-1	technical	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	movie:${item.movie.id}
 3	technical	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	w1280
 2	technical	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	w780
 1	technical	app/src/main/java/tv/own/owntv/features/live/CatchupJumpDialog.kt	EEEHm
@@ -452,22 +439,13 @@
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_zoom
 2	locale	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	zho
 1	locale	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	–
-14	empty	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	\0
+13	empty	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	+
 2	file-path	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	/
-1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG250 stbapp ver: 2 rev: 250 Safari/533.3
-1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG254 stbapp ver: 2 rev: 250 Safari/533.3
-1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG270 stbapp ver: 2 rev: 250 Safari/533.3
-1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/601.1 (KHTML, like Gecko) MAG420 stbapp ver: 4 rev: 2721 Safari/601.1
 1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	m3u
 1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	m3u8
 1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	−
-10	empty	app/src/main/java/tv/own/owntv/features/setup/SetupViewModel.kt	\0
-1	technical	app/src/main/java/tv/own/owntv/features/setup/SetupViewModel.kt	/
-1	technical	app/src/main/java/tv/own/owntv/features/setup/SetupViewModel.kt	add_remainder
-1	url	app/src/main/java/tv/own/owntv/features/setup/SetupViewModel.kt	content://
-1	url	app/src/main/java/tv/own/owntv/features/setup/SetupViewModel.kt	file://
-1	technical	app/src/main/java/tv/own/owntv/features/setup/SetupViewModel.kt	fresh_add
+9	empty	app/src/main/java/tv/own/owntv/features/setup/SetupViewModel.kt	\0
 1	empty	app/src/main/java/tv/own/owntv/features/setup/SetupWizard.kt	\0
 3	empty	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	\0
 2	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	Action

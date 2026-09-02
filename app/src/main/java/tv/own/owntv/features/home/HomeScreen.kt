@@ -1,6 +1,9 @@
 package tv.own.owntv.features.home
 
 import android.content.Context
+import tv.own.owntv.core.home.GuideSliceState
+import tv.own.owntv.core.home.HeroItem
+import tv.own.owntv.core.home.TrendingHomeItem
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.lazy.rememberLazyListState
