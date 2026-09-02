@@ -106,6 +106,8 @@ import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.LocalPopupFontFamily
+import tv.own.owntv.core.live.LiveKey
+import tv.own.owntv.core.live.EpgNowNext
 
 /** Layer 2–4 for Live TV: real category rail, Paging channel list, and a live preview pane. */
 @Composable
@@ -1018,9 +1020,12 @@ private fun ChannelMetaRow(
 
     // EPG status — "EPG · Nd" when we know the stored coverage span (bulk-guide channels), plain "EPG"
     // when only now/next is available (short-EPG API channels), "No EPG" when nothing was resolved.
+    // coverageDays is read into a local: it is core's property now, and Kotlin will not smart-cast a
+    // public property declared in another module.
+    val coverageDays = nowNext?.coverageDays
     val epgStatus = when {
         nowNext == null || (nowNext.now == null && nowNext.next == null) -> stringResource(R.string.content_no_epg)
-        nowNext.coverageDays != null && nowNext.coverageDays > 0 -> stringResource(R.string.content_epg_days, nowNext.coverageDays)
+        coverageDays != null && coverageDays > 0 -> stringResource(R.string.content_epg_days, coverageDays)
         else -> stringResource(R.string.content_epg)
     }
 

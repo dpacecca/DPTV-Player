@@ -11,6 +11,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import tv.own.owntv.core.database.entity.ChannelEntity
+import tv.own.owntv.core.live.LiveKey
 
 /**
  * The zap list — what CH+/CH− steps through, and the bookkeeping that keeps it working across a

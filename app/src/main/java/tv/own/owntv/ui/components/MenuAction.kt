@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
+import tv.own.owntv.core.menu.applyMenuOrder
 import tv.own.owntv.core.model.ContentMenu
 import tv.own.owntv.core.settings.SettingsRepository
 
@@ -31,35 +32,15 @@ data class MenuAction(
 )
 
 /**
- * Put [actions] into the user's saved [order].
- *
- * Two rules, and both matter more than they look:
- * - a saved key that no longer exists is ignored, so an order saved by an older release never drops
- *   an action or crashes;
- * - an action the saved order has never heard of keeps its shipped position relative to the other
- *   unknown ones and is appended, so an action added by a *newer* release still shows up for someone
- *   who arranged their menu months ago.
- *
- * An empty [order] returns [actions] unchanged, which is the shipped order.
- */
-/**
  * [actions] in the order the user arranged [menu] into. The menus read the setting themselves rather
  * than have it threaded down through four screens and their view models.
+ *
+ * The ordering rule itself is core's, so both apps arrange the same saved keys the same way.
  */
 @Composable
 fun arranged(menu: ContentMenu, actions: List<MenuAction>): List<MenuAction> {
     val settings: SettingsRepository = koinInject()
     val order by remember(menu) { settings.menuOrder(menu.name.lowercase()) }
         .collectAsStateWithLifecycle(emptyList())
-    return applyMenuOrder(actions, order)
-}
-
-fun applyMenuOrder(actions: List<MenuAction>, order: List<String>): List<MenuAction> =
-    applyMenuOrder(actions, order) { it.key }
-
-/** [applyMenuOrder] over anything with a key — the settings screen arranges plain keys, not actions. */
-fun <T> applyMenuOrder(items: List<T>, order: List<String>, key: (T) -> String): List<T> {
-    if (order.isEmpty()) return items
-    val byKey = items.associateBy(key)
-    return order.mapNotNull { byKey[it] } + items.filterNot { key(it) in order }
+    return applyMenuOrder(actions, order) { it.key }
 }

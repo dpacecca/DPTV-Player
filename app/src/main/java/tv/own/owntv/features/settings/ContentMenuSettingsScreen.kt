@@ -40,87 +40,20 @@ import androidx.tv.material3.Text
 import kotlinx.coroutines.flow.first
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
+import tv.own.owntv.core.menu.applyMenuOrder
+import tv.own.owntv.core.menu.catalogue
 import tv.own.owntv.core.model.ContentMenu
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVPopup
-import tv.own.owntv.ui.components.applyMenuOrder
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.PopupFontTheme
-
-/**
- * One arrangeable action, for the settings screen only. The long-press menus build their own
- * [tv.own.owntv.ui.components.MenuAction]s from live content; this is the static catalogue of what
- * *can* appear, so the order can be arranged without a channel or a movie in hand.
- *
- * [labelRes] is the neutral wording of an action that flips between two labels — the menu says
- * "Remove from favourites" on a favourite, this list always says "Add to favourites".
- */
-private data class MenuActionRef(val key: String, val labelRes: Int)
-
-private val LIVE_ACTIONS = listOf(
-    MenuActionRef("favourite", R.string.content_add_favourite),
-    MenuActionRef("rename", R.string.content_rename),
-    MenuActionRef("match_epg", R.string.content_match_epg),
-    MenuActionRef("epg_offset", R.string.content_epg_time_offset),
-    MenuActionRef("catchup", R.string.content_catchup),
-    MenuActionRef("play_external", R.string.content_play_external),
-    MenuActionRef("move", R.string.content_move),
-    MenuActionRef("move_to_category", R.string.content_move_to_category),
-    MenuActionRef("hide", R.string.content_hide_channel),
-    MenuActionRef("remove_history", R.string.content_remove_history),
-)
-
-private val MOVIE_ACTIONS = listOf(
-    MenuActionRef("favourite", R.string.content_add_favourite),
-    MenuActionRef("mark_watched", R.string.content_mark_watched),
-    MenuActionRef("move", R.string.content_move),
-    MenuActionRef("move_to_category", R.string.content_move_to_category),
-    MenuActionRef("remove_history", R.string.content_remove_history),
-    MenuActionRef("hide", R.string.common_hide),
-    MenuActionRef("download", R.string.content_download),
-    MenuActionRef("delete_subtitles", R.string.content_delete_subtitles),
-    MenuActionRef("play_external", R.string.content_play_external),
-    MenuActionRef("tmdb_details", R.string.content_tmdb_details),
-    MenuActionRef("play_trailer", R.string.content_play_trailer),
-    MenuActionRef("refetch_tmdb", R.string.content_refetch_tmdb),
-    MenuActionRef("set_tmdb_name", R.string.content_set_tmdb_name),
-)
-
-private val SERIES_ACTIONS = listOf(
-    MenuActionRef("favourite", R.string.content_add_favourite),
-    MenuActionRef("move", R.string.content_move),
-    MenuActionRef("move_to_category", R.string.content_move_to_category),
-    MenuActionRef("remove_history", R.string.content_remove_history),
-    MenuActionRef("hide", R.string.common_hide),
-    MenuActionRef("download", R.string.content_download_all_episodes),
-    MenuActionRef("tmdb_details", R.string.content_tmdb_details),
-    MenuActionRef("play_trailer", R.string.content_play_trailer),
-    MenuActionRef("refetch_tmdb", R.string.content_refetch_tmdb),
-    MenuActionRef("set_tmdb_name", R.string.content_set_tmdb_name),
-)
-
-private val EPISODE_ACTIONS = listOf(
-    MenuActionRef("download", R.string.content_download),
-    MenuActionRef("play_external", R.string.content_play_external),
-    MenuActionRef("mark_watched", R.string.content_mark_watched),
-    MenuActionRef("tmdb_details", R.string.content_tmdb_details),
-    MenuActionRef("refetch_tmdb", R.string.content_refetch_tmdb),
-    MenuActionRef("delete_subtitles", R.string.content_delete_subtitles),
-)
-
-private fun catalogue(menu: ContentMenu) = when (menu) {
-    ContentMenu.LIVE -> LIVE_ACTIONS
-    ContentMenu.MOVIE -> MOVIE_ACTIONS
-    ContentMenu.SERIES -> SERIES_ACTIONS
-    ContentMenu.EPISODE -> EPISODE_ACTIONS
-}
 
 @Composable
 private fun menuTitle(menu: ContentMenu) = stringResource(

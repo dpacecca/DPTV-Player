@@ -79,40 +79,16 @@ import tv.own.owntv.player.LiveProgramme
 import tv.own.owntv.player.LiveStreamQuirks
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
-
-/** Layer-2 rail selection for Live TV. */
-sealed interface LiveKey {
-    data object Favorites : LiveKey
-    data object History : LiveKey
-    /** Every channel the provider says keeps an archive. A filter over ALL, not a stored category —
-     *  and independent of the guide, so it works for users with no EPG. */
-    data object Catchup : LiveKey
-    data object All : LiveKey
-    data class Folder(val id: Long) : LiveKey
-    /** A user-created combined category (issue #87); [id] is its "custom:<uuid>" customization key. */
-    data class Custom(val id: String) : LiveKey
-}
-
-// Persistence for the "remember last category" toggles. The same rail model backs Live TV, Movies and
-// Series, so all three view models share one encoding (stored per section in SettingsRepository).
-fun LiveKey.serialize(): String = when (this) {
-    LiveKey.Favorites -> "FAV"
-    LiveKey.History -> "HIST"
-    LiveKey.Catchup -> "CATCHUP"
-    LiveKey.All -> "ALL"
-    is LiveKey.Folder -> "FOLDER:$id"
-    is LiveKey.Custom -> "CUSTOM:$id"
-}
-
-fun parseLiveKey(s: String): LiveKey? = when {
-    s == "FAV" -> LiveKey.Favorites
-    s == "HIST" -> LiveKey.History
-    s == "CATCHUP" -> LiveKey.Catchup
-    s == "ALL" -> LiveKey.All
-    s.startsWith("FOLDER:") -> s.removePrefix("FOLDER:").toLongOrNull()?.let { LiveKey.Folder(it) }
-    s.startsWith("CUSTOM:") -> LiveKey.Custom(s.removePrefix("CUSTOM:"))
-    else -> null
-}
+import tv.own.owntv.core.live.LiveTimeshift
+import tv.own.owntv.core.live.LiveKey
+import tv.own.owntv.core.live.isChannelVisible
+import tv.own.owntv.core.live.liveCountFlow
+import tv.own.owntv.core.live.livePagingSource
+import tv.own.owntv.core.live.parseLiveKey
+import tv.own.owntv.core.live.serialize
+import tv.own.owntv.core.live.EpgNowNext
+import tv.own.owntv.core.live.LiveEpgReader
+import tv.own.owntv.core.live.LiveArchiveUrls
 
 /** A rail entry. Favorites/History carry an [icon] rendered inline before the title. */
 @Immutable
@@ -121,18 +97,6 @@ data class LiveRailItem(
     val title: String? = null,
     val icon: OwnTVIcon? = null,
     val providerName: String? = null,
-)
-
-/** Now-playing + up-next EPG for the focused channel (null entries when the guide is unavailable). */
-@Immutable
-data class EpgNowNext(
-    val now: XtEpgEntry?,
-    val next: XtEpgEntry?,
-    val upcoming: List<XtEpgEntry> = emptyList(),
-    val previous: XtEpgEntry? = null,
-    /** Whole days of stored guide coverage for this channel (latest stop − earliest start).
-     *  Null when unknown/short-EPG only. Drives the "EPG · Nd" hint in the preview metadata. */
-    val coverageDays: Int? = null,
 )
 
 class LiveViewModel(

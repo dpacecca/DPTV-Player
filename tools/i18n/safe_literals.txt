@@ -100,14 +100,6 @@
 1	technical	app/src/main/java/tv/own/owntv/features/live/CatchupManualTimeDialog.kt	EEEMMMd
 1	technical	app/src/main/java/tv/own/owntv/features/live/CatchupManualTimeDialog.kt	▲
 1	technical	app/src/main/java/tv/own/owntv/features/live/CatchupManualTimeDialog.kt	▼
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveEpgReader.kt	OwnTVHome
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveEpgReader.kt	OwnTVPerf
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveEpgReader.kt	Stalker catch-up resolve failed channelId=${ch.id}
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveEpgReader.kt	Stalker rewind resolve failed channelId=${ch.id}
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveEpgReader.kt	epg_picker scanned=${all.size} ranked=${ranked.size}
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveEpgReader.kt	queryMs=${fetchedAt - startedAt} rankMs=${done - fetchedAt} totalMs=${done - startedAt}
-1	protocol	app/src/main/java/tv/own/owntv/features/live/LiveEpgReader.kt	ts
-1	empty	app/src/main/java/tv/own/owntv/features/live/LiveQueries.kt	\0
 1	empty	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	${it}p
 2	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	+
@@ -138,15 +130,9 @@
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	'${channel.name}' — giving up: $detail
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	'${channel.name}' — no fallback left ($detail)
 2	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	'${channel.name}': $detail
-2	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	ALL
-2	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	CATCHUP
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	ExoPlayer
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	ExoPlayer gave up mid-stream: ${previewEngine.errorInfo.value?.raw ?: previewEngine.error.value}
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	ExoPlayer never opened it (${openBudgetMs / 1000}s, no frame and no error)
-2	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	FAV
-2	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	FOLDER:
-1	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	FOLDER:$id
-2	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	HIST
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	LIVE
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	LiveEngine
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	OwnTVHome
@@ -261,23 +247,6 @@
 3	empty	app/src/main/java/tv/own/owntv/features/settings/BackupScreen.kt	\0
 3	technical	app/src/main/java/tv/own/owntv/features/settings/ChNavSettingsScreen.kt	false
 2	technical	app/src/main/java/tv/own/owntv/features/settings/ChNavSettingsScreen.kt	true
-1	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	catchup
-2	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	delete_subtitles
-3	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	download
-1	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	epg_offset
-3	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	favourite
-3	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	hide
-2	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	mark_watched
-1	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	match_epg
-3	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	move
-3	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	move_to_category
-3	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	play_external
-2	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	play_trailer
-3	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	refetch_tmdb
-3	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	remove_history
-1	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	rename
-2	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	set_tmdb_name
-3	preference-key	app/src/main/java/tv/own/owntv/features/settings/ContentMenuSettingsScreen.kt	tmdb_details
 1	empty	app/src/main/java/tv/own/owntv/features/settings/DeleteSubtitlesScreen.kt	\0
 1	regex	app/src/main/java/tv/own/owntv/features/settings/DeleteSubtitlesScreen.kt	:S(\\d+)E(\\d+)$
 2	technical	app/src/main/java/tv/own/owntv/features/settings/DeleteSubtitlesScreen.kt	ALL
@@ -675,9 +644,6 @@
 1	technical	app/src/main/java/tv/own/owntv/player/PlayerHudControls.kt	liveDot
 1	technical	app/src/main/java/tv/own/owntv/player/PlayerHudControls.kt	liveDotAlpha
 1	technical	app/src/main/java/tv/own/owntv/player/PlayerHudControls.kt	toolPadding
-1	technical	app/src/main/java/tv/own/owntv/player/StreamInfoOverlay.kt	${width}×${height}
-1	technical	app/src/main/java/tv/own/owntv/player/StreamInfoOverlay.kt	5.1
-1	technical	app/src/main/java/tv/own/owntv/player/StreamInfoOverlay.kt	7.1
 1	file-path	app/src/main/java/tv/own/owntv/ui/components/BackgroundImageChooserDialog.kt	background_${System.currentTimeMillis()}.$ext
 1	file-path	app/src/main/java/tv/own/owntv/ui/components/BackgroundImageChooserDialog.kt	png
 1	performance	app/src/main/java/tv/own/owntv/ui/components/FocusableSurface.kt	focusContainer
