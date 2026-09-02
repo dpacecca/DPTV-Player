@@ -59,6 +59,14 @@
   the channel showing them (one provider's guide covering another's channels). The two disagreed until an
   EPG re-sync happened to rewrite the entries. The channel list now searches every playlist and every
   guide feed, so the line under the name matches the panel next to it.
+- **Films and shows your provider gave no artwork for now show the poster OwnTV already found.** Their
+  tiles stayed a grey placeholder for good, even though highlighting one filled the panel beside it with
+  the real poster — the tile only ever used the picture that came with the playlist, and the panel's find
+  was never carried back to it. It is most obvious sorted by **Date added**, which puts a whole freshly
+  imported batch, artwork or not, at the front of the list. Highlight such a title once and its tile keeps
+  that poster from then on, along with every duplicate copy of the same film (the 4K listing and the
+  ordinary one fill together). Nothing extra is downloaded while you scroll — only what is already stored
+  on the television is reused, so a title nothing has been found for yet still shows the placeholder.
 
 ## v4.2.4 — 2026-08-27
 
