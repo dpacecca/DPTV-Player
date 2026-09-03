@@ -1,6 +1,8 @@
 package tv.own.owntv.features.search
 
 import tv.own.owntv.core.epg.displayLogoUrl
+import tv.own.owntv.core.content.SearchIntent
+import tv.own.owntv.core.content.SearchResults
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup

@@ -8,6 +8,7 @@ import tv.own.owntv.features.customize.CustomizeItemsViewModel
 import tv.own.owntv.features.customize.CustomizeViewModel
 import tv.own.owntv.features.downloads.DownloadsViewModel
 import tv.own.owntv.features.epg.EpgViewModel
+import tv.own.owntv.core.content.SearchReader
 import tv.own.owntv.core.home.HomeFeedReader
 import tv.own.owntv.core.live.GuideReader
 import tv.own.owntv.features.home.HomeViewModel
@@ -42,6 +43,7 @@ val appModule = module {
     viewModelOf(::ShellViewModel)
     // Home's rails are core's, shared with the phone app; the view model only decorates them.
     singleOf(::GuideReader)
+    singleOf(::SearchReader)
     singleOf(::HomeFeedReader)
     viewModelOf(::HomeViewModel)
     viewModelOf(::SetupViewModel)
