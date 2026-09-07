@@ -13,6 +13,13 @@
 
 ### ✨ New features
 
+- **⋯ More is the sidebar's last item, with Settings its first row**
+- **⭐ Favourites: everything you starred, on one screen**
+- **🕘 History, newest first, with your resume points**
+- **🧹 Clear history sits on the history screen now, not inside Settings**
+- **📤 Backup & Restore, Local sync, the error log and About moved to More**
+- **⚙️ Settings holds settings only — the Data group is gone**
+- **📁 The download folder moved from Settings to the Downloads screen**
 - **🧪 Test a playlist before you trust it**
 - **🔄 Auto refresh: choose your own number of days**
 - **🪟 A new Glass Effect look: Aurora**

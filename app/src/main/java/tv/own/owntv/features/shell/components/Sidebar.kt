@@ -103,11 +103,13 @@ fun Sidebar(
     // lands in the rail instead of stranding focus in the content area.
     // v4.3.0 — the selected section may also be hidden (Nav menu customization); if so, land focus on the
     // first visible browse item (or Settings if every browse item is hidden) so the rail always has a target.
+    // Plan Z — Settings no longer has a rail item of its own: it lives behind More, so the rail's
+    // target for both of them is the More item.
     val focusSection = when {
         selected == MainSection.SEARCH -> MainSection.HOME
-        selected == MainSection.SETTINGS -> MainSection.SETTINGS
+        selected == MainSection.SETTINGS || selected == MainSection.MORE -> MainSection.MORE
         selected in visibleSections -> selected
-        else -> MainSection.browseOrder.firstOrNull { it in visibleSections } ?: MainSection.SETTINGS
+        else -> MainSection.browseOrder.firstOrNull { it in visibleSections } ?: MainSection.MORE
     }
 
     Column(
@@ -179,14 +181,16 @@ fun Sidebar(
                     )
                     Spacer(Modifier.height(4.dp))
                 }
-                // Settings closes out the nav block.
+                // More closes out the nav block (Plan Z — it used to be Settings, which is now the
+                // first row inside More). It stays lit while Settings itself is open, because that
+                // is where the user is: one level in from here.
                 NavItem(
-                    section = MainSection.SETTINGS,
-                    active = selected == MainSection.SETTINGS,
+                    section = MainSection.MORE,
+                    active = selected == MainSection.MORE || selected == MainSection.SETTINGS,
                     expanded = expanded,
                     count = 0,
-                    onClick = { onSelect(MainSection.SETTINGS) },
-                    modifier = if (focusSection == MainSection.SETTINGS) {
+                    onClick = { onSelect(MainSection.MORE) },
+                    modifier = if (focusSection == MainSection.MORE) {
                         Modifier.focusRequester(selectedItemFocusRequester)
                     } else Modifier,
                 )
@@ -536,4 +540,5 @@ private val MainSection.navIcon: OwnTVIcon
         MainSection.DOWNLOADS -> OwnTVIcon.DOWNLOADS
         MainSection.EPG -> OwnTVIcon.EPG
         MainSection.SETTINGS -> OwnTVIcon.SETTINGS
+        MainSection.MORE -> OwnTVIcon.MORE
     }

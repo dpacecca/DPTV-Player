@@ -593,14 +593,48 @@ class LiveViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /**
+     * Set while this view model is serving More -> Favourites or More -> History rather than the
+     * browse section. Those screens are one folder each: the selection is theirs to fix, and it must
+     * not be persisted as the remembered category.
+     */
+    private var lockedKey: LiveKey? = null
+
+    /** What the browse section was showing before the pin, so [unlock] can put it back. */
+    private var previousKey: LiveKey? = null
+
+    fun lock(key: LiveKey) {
+        if (lockedKey == null) previousKey = _selected.value
+        lockedKey = key
+        _selected.value = key
+    }
+
+    /**
+     * Release the pin and put the browse section back where it was.
+     *
+     * **This is not optional bookkeeping.** On the television this view model is a single instance
+     * shared between the browse section and the More screens, so a pin that outlived the screen that
+     * took it froze the section's category rail — focusable, but every click a no-op. The screen that
+     * locks therefore unlocks on dispose.
+     */
+    fun unlock() {
+        val previous = previousKey ?: return
+        lockedKey = null
+        previousKey = null
+        _selected.value = previous
+    }
+
     fun select(key: LiveKey) {
+        if (lockedKey != null) return
         _selected.value = key
     }
 
     init {
         // Persist the selected category (debounced — the rail fires select() on focus as you scroll).
         viewModelScope.launch {
-            _selected.drop(1).debounce(800).distinctUntilChanged().collect { settings.setLastLiveCategory(it.serialize()) }
+            _selected.drop(1).debounce(800).distinctUntilChanged().collect {
+                if (lockedKey == null) settings.setLastLiveCategory(it.serialize())
+            }
         }
         // Restore it once at startup — but only while still on the default (don't yank a user who already
         // navigated). A saved folder is honoured only once it actually exists in this profile's rail.

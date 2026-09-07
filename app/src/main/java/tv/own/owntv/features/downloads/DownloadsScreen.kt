@@ -47,7 +47,9 @@ import tv.own.owntv.core.model.DownloadStatus
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.BrowseMode
 import tv.own.owntv.ui.components.ContentPanelFill
+import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapVerticalFocusExit
 import tv.own.owntv.ui.theme.Dimens
@@ -74,6 +76,21 @@ fun DownloadsScreen(
     // Grouped rows (Active / Waiting / Completed / Failed) with section headers interleaved.
     val rows = remember(downloads) { buildDownloadRows(downloads) }
     val firstItemId = rows.firstNotNullOfOrNull { (it as? DownloadListRow.Item)?.download?.id }
+
+    var showFolderPicker by remember { mutableStateOf(false) }
+    val gearFocus = remember { androidx.compose.ui.focus.FocusRequester() }
+    // Closing the picker puts focus back on the gear, or it falls spatially into the rail. Only
+    // *after* it has been open once: on arrival the pane's own onEnter owns focus, and stealing it
+    // here would land every entry on the gear instead of the first download.
+    var returnToGear by remember { mutableStateOf(false) }
+    LaunchedEffect(showFolderPicker) {
+        if (showFolderPicker) {
+            returnToGear = true
+        } else if (returnToGear) {
+            returnToGear = false
+            runCatching { gearFocus.requestFocus() }
+        }
+    }
 
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val selFocus = remember { androidx.compose.ui.focus.FocusRequester() }
@@ -133,7 +150,19 @@ fun DownloadsScreen(
             .onFocusChanged { if (it.hasFocus) onChildFocused() }
             .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
     ) {
-        Text(stringResource(R.string.content_downloads_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+        // Plan Z — the download folder used to be Settings → Data → Download folder. The Data group
+        // is gone, and the preference sits on the screen it is about, behind this gear.
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.content_downloads_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
+            OwnTVButton(
+                label = stringResource(R.string.settings_download_folder),
+                onClick = { showFolderPicker = true },
+                style = OwnTVButtonStyle.SECONDARY,
+                icon = OwnTVIcon.GEAR,
+                compact = true,
+                modifier = Modifier.focusRequester(gearFocus),
+            )
+        }
         Spacer(Modifier.height(6.dp))
         Text(stringResource(R.string.content_downloads_description), style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
         Spacer(Modifier.height(18.dp))
@@ -176,6 +205,16 @@ fun DownloadsScreen(
                 }
             }
         }
+    }
+
+    // The volume picker Settings used to open, unchanged — only its door moved.
+    if (showFolderPicker) {
+        StorageBrowser(
+            title = stringResource(R.string.settings_download_folder_title),
+            mode = BrowseMode.FOLDER,
+            onPick = { vm.setDownloadRoot(it.absolutePath); showFolderPicker = false },
+            onDismiss = { showFolderPicker = false },
+        )
     }
 }
 

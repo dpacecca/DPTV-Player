@@ -449,7 +449,41 @@ class MovieViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun select(key: LiveKey) { _selected.value = key }
+    /**
+     * Set while this view model is serving More -> Favourites or More -> History rather than the
+     * browse section. Those screens are one folder each: the selection is theirs to fix, and it must
+     * not be persisted as the remembered category.
+     */
+    private var lockedKey: LiveKey? = null
+
+    /** What the browse section was showing before the pin, so [unlock] can put it back. */
+    private var previousKey: LiveKey? = null
+
+    fun lock(key: LiveKey) {
+        if (lockedKey == null) previousKey = _selected.value
+        lockedKey = key
+        _selected.value = key
+    }
+
+    /**
+     * Release the pin and put the browse section back where it was.
+     *
+     * **This is not optional bookkeeping.** On the television this view model is a single instance
+     * shared between the browse section and the More screens, so a pin that outlived the screen that
+     * took it froze the section's category rail — focusable, but every click a no-op. The screen that
+     * locks therefore unlocks on dispose.
+     */
+    fun unlock() {
+        val previous = previousKey ?: return
+        lockedKey = null
+        previousKey = null
+        _selected.value = previous
+    }
+
+    fun select(key: LiveKey) {
+        if (lockedKey != null) return
+        _selected.value = key
+    }
     fun setSearchQuery(query: String) { _search.value = query }
     fun onMovieFocused(movie: MovieEntity) { _selectedMovie.value = movie }
 
@@ -891,7 +925,7 @@ class MovieViewModel(
         // Persist on change, debounced — the rail fires select() on focus as you scroll it.
         viewModelScope.launch {
             _selected.drop(1).debounce(800).distinctUntilChanged()
-                .collect { settings.setLastMoviesCategory(it.serialize()) }
+                .collect { if (lockedKey == null) settings.setLastMoviesCategory(it.serialize()) }
         }
         // Restore once at startup, and only while still on the default (never yank a user who already
         // navigated). A saved folder is honoured only once it exists in this profile's rail.

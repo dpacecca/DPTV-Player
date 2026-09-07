@@ -201,6 +201,12 @@ fun SettingsScreen(
     onSetFontCustomization: (FontCustomization) -> Unit,
     onOpenPlaylist: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Where Back from the **root** of this screen goes. Plan Z put Settings behind More, so leaving
+     * it should land on More rather than throw focus all the way out to the rail. Null keeps the old
+     * behaviour, which is the shell's own handler.
+     */
+    onBack: (() -> Unit)? = null,
     openEpgAdd: Boolean = false,
     onEpgAddConsumed: () -> Unit = {},
 ) {
@@ -216,16 +222,12 @@ fun SettingsScreen(
     var showTheme by remember { mutableStateOf(false) }
     var showAccent by remember { mutableStateOf(false) }
     var showFocusHighlight by remember { mutableStateOf(false) }
-    var showFolderPicker by remember { mutableStateOf(false) }
     var showUpdate by remember { mutableStateOf(false) }
-    var showAbout by remember { mutableStateOf(false) }
     var showCatchupTime by remember { mutableStateOf(false) }
     var showEpgOffset by remember { mutableStateOf(false) }
-    var showClearHistory by remember { mutableStateOf(false) }
     var showAnimations by remember { mutableStateOf(false) }
     var showStartup by remember { mutableStateOf(false) }
     var showStartupChannelPicker by remember { mutableStateOf(false) }
-    var showErrorLog by remember { mutableStateOf(false) }
     var showAfrWarning by remember { mutableStateOf(false) }
     var showLivePreviewPanelWarning by remember { mutableStateOf(false) }
     var showBgImageChooser by remember { mutableStateOf(false) }
@@ -251,7 +253,6 @@ fun SettingsScreen(
 
     // Dialog-close focus return: closing a dialog/picker refocuses the row that opened it (focus
     // would otherwise fall spatially back to the sidebar).
-    val folderRowFocus = remember { FocusRequester() }
     val themeRowFocus = remember { FocusRequester() }
     val accentRowFocus = remember { FocusRequester() }
     val focusHighlightRowFocus = remember { FocusRequester() }
@@ -259,13 +260,10 @@ fun SettingsScreen(
     val popupSizeRowFocus = remember { FocusRequester() }
     val fontCustomizationRowFocus = remember { FocusRequester() }
     val updateRowFocus = remember { FocusRequester() }
-    val aboutRowFocus = remember { FocusRequester() }
     val catchupRowFocus = remember { FocusRequester() }
     val epgOffsetRowFocus = remember { FocusRequester() }
-    val clearHistoryRowFocus = remember { FocusRequester() }
     val animationsRowFocus = remember { FocusRequester() }
     val startupRowFocus = remember { FocusRequester() }
-    val errorLogRowFocus = remember { FocusRequester() }
     val livePreviewQuickFocus = remember { FocusRequester() }
     val ambientGlowRowFocus = remember { FocusRequester() }
     // Hoisted list state for the root settings list. We snapshot its position the instant a row is
@@ -284,13 +282,13 @@ fun SettingsScreen(
         savedIndex = listState.firstVisibleItemIndex
         savedOffset = listState.firstVisibleItemScrollOffset
     }
-    val anyDialogOpen = showZoom || showPopupSize || showFontCustomization || showTheme || showAccent || showFolderPicker || showUpdate || showAbout || showCatchupTime || showEpgOffset || showClearHistory || showAnimations || showStartup || showStartupChannelPicker || showErrorLog || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote
+    val anyDialogOpen = showZoom || showPopupSize || showFontCustomization || showTheme || showAccent || showUpdate || showCatchupTime || showEpgOffset || showAnimations || showStartup || showStartupChannelPicker || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showPopupSize, showFontCustomization, showTheme, showAccent, showFolderPicker, showUpdate, showAbout, showCatchupTime, showEpgOffset, showClearHistory, showAnimations, showStartup, showStartupChannelPicker, showErrorLog, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote) {
+    LaunchedEffect(showZoom, showPopupSize, showFontCustomization, showTheme, showAccent, showUpdate, showCatchupTime, showEpgOffset, showAnimations, showStartup, showStartupChannelPicker, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote) {
         if (!anyDialogOpen) {
             // Focus back on the opener row, with the scroll offset held still the whole way — see
             // [restoreAfterDialogClose] for why doing those two in sequence made the highlight travel.
@@ -302,7 +300,6 @@ fun SettingsScreen(
     val languageVm: LanguageSettingsViewModel = koinViewModel()
     val currentLocaleTag by languageVm.currentTag.collectAsStateWithLifecycle()
     val languageChip = languageChipText(currentLocaleTag)
-    val downloadRoot by settingsVm.downloadRoot.collectAsStateWithLifecycle()
     val livePreview by settingsVm.livePreviewEnabled.collectAsStateWithLifecycle()
     val livePreviewPanelActive by settingsVm.livePreviewPanelActive.collectAsStateWithLifecycle()
     val previewAudio by settingsVm.livePreviewAudio.collectAsStateWithLifecycle()
@@ -455,6 +452,10 @@ fun SettingsScreen(
             SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
             SettingsTab.ROOT -> Unit
     }
+
+    // Only at the root: every sub-screen registers its own handler, which is nested deeper and
+    // therefore wins while one is open.
+    if (onBack != null) BackHandler { onBack() }
 
     val colors = OwnTVTheme.colors
 
@@ -731,33 +732,9 @@ fun SettingsScreen(
             focus = rowFocus.getValue(SettingsTab.DNS),
             onClick = { open(SettingsTab.DNS) },
         ),
-        RootGroup("group_data", stringResource(R.string.settings_group_data), OwnTVIcon.BACKUP, stringResource(R.string.settings_group_summary_data)),
-        RootRow(
-            tabRowKey(SettingsTab.BACKUP), TileTone.TERTIARY, OwnTVIcon.BACKUP,
-            title = stringResource(R.string.settings_backup_restore), desc = stringResource(R.string.settings_backup_restore_description),
-            focus = rowFocus.getValue(SettingsTab.BACKUP),
-            onClick = { open(SettingsTab.BACKUP) },
-        ),
-        RootRow(
-            tabRowKey(SettingsTab.LOCAL_SYNC), TileTone.TERTIARY, OwnTVIcon.REFRESH,
-            title = stringResource(R.string.local_sync_title), desc = stringResource(R.string.local_sync_description),
-            focus = rowFocus.getValue(SettingsTab.LOCAL_SYNC),
-            onClick = { open(SettingsTab.LOCAL_SYNC) },
-        ),
-        RootRow(
-            "download_folder", TileTone.TERTIARY, OwnTVIcon.DOWNLOADS,
-            title = stringResource(R.string.settings_download_folder),
-            chip = downloadRoot.ifBlank { stringResource(R.string.settings_app_storage) }.let { java.io.File(it).name.ifBlank { it } },
-            chipTone = TileTone.TERTIARY,
-            focus = folderRowFocus,
-            onClick = { saveScroll(); dialogReturn = folderRowFocus; showFolderPicker = true },
-        ),
-        RootRow(
-            "clear_history", TileTone.SECONDARY, OwnTVIcon.HISTORY,
-            title = stringResource(R.string.settings_clear_history), desc = stringResource(R.string.settings_clear_history_description),
-            focus = clearHistoryRowFocus,
-            onClick = { saveScroll(); dialogReturn = clearHistoryRowFocus; showClearHistory = true },
-        ),
+        // Plan Z — the whole "Data" group is gone. Backup and Local sync are places, not preferences,
+        // and are More rows now; Clear history moved onto the History screen it acts on; the download
+        // folder moved to the Downloads screen. With all four gone the group had nothing left in it.
         RootGroup("group_app", stringResource(R.string.settings_app_group), OwnTVIcon.INFO, stringResource(R.string.settings_group_summary_app)),
         RootRow(
             tabRowKey(SettingsTab.LANGUAGE), TileTone.PRIMARY, OwnTVIcon.LANGUAGE,
@@ -792,20 +769,8 @@ fun SettingsScreen(
             chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
         ),
-        RootRow(
-            "about", TileTone.SECONDARY, OwnTVIcon.INFO,
-            title = stringResource(R.string.settings_about), desc = stringResource(R.string.settings_about_description),
-            focus = aboutRowFocus,
-            onClick = { saveScroll(); dialogReturn = aboutRowFocus; showAbout = true },
-        ),
-        // Last row in the app, deliberately: the log now carries the last crash as well as playback
-        // failures, so it belongs with About rather than under Playback.
-        RootRow(
-            "error_log", TileTone.SECONDARY, OwnTVIcon.WARNING,
-            title = stringResource(R.string.settings_playback_error_log), desc = stringResource(R.string.settings_playback_error_description),
-            focus = errorLogRowFocus,
-            onClick = { saveScroll(); dialogReturn = errorLogRowFocus; showErrorLog = true },
-        ),
+        // Plan Z — About and the error log left with the Data group. A page of facts and a log are
+        // not preferences; both are More rows now, opening the very same dialogs.
     )
 
     // --- Two-pane root: the flat list above is still the single source of truth for order, tone,
@@ -920,10 +885,10 @@ fun SettingsScreen(
         }
     }
 
-    // Restore focus to the row a sub-screen was opened from when the user navigates back. Fresh entry
-    // intentionally does NOT grab focus here — every other main-menu section lets the shell/sidebar
-    // own initial focus, and Settings stays consistent with them. This block only exists while the
-    // root list is showing, so coming back from a sub-screen is exactly when it runs.
+    // Restore focus to the row a sub-screen was opened from when the user navigates back. This block
+    // only exists while the root list is showing, so coming back from a sub-screen is exactly when it
+    // runs. Fresh entry is handled separately below — it used to be left to the sidebar, which
+    // Settings no longer has a slot on.
     val returningRowFocus = when {
         searchQuery.isNotBlank() && (deepReturnKey != null || lastTab != null) -> searchFieldFocus
         deepReturnKey != null -> deepRowFocus
@@ -959,6 +924,27 @@ fun SettingsScreen(
                 }
             } else {
                 settledFrames = 0
+            }
+        }
+    }
+
+    // Plan Z — a fresh entry has nothing to fall back on any more. Settings used to be a sidebar
+    // item, so clicking it left focus in the sidebar and the user's next Right press fired the
+    // group's `onEnter` above. It is reached by OK on a More row now, and that row is gone the
+    // instant this screen replaces it — so focus was left orphaned. Ask for it here instead, on the
+    // group column, which is exactly where a directional entry used to land.
+    //
+    // Only on a fresh entry: coming back from a sub-screen is the block above's job, and both
+    // firing would fight over the cursor. `onBack` non-null is what says More is the parent.
+    if (onBack != null) {
+        LaunchedEffect(Unit) {
+            if (returningRowFocus != null) return@LaunchedEffect
+            // By frames rather than a fixed delay — the lazy spine may need a layout pass first.
+            repeat(10) {
+                withFrameNanos { }
+                if (runCatching { selectedCategoryFocus.requestFocus() }.getOrDefault(false)) {
+                    return@LaunchedEffect
+                }
             }
         }
     }
@@ -1000,11 +986,9 @@ fun SettingsScreen(
         SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_browsing_lists), stringResource(R.string.settings_search_keywords_browsing), OwnTVIcon.LIST_GRID, TileTone.PRIMARY) { saveScroll(); dialogReturn = browsingRowFocus; showBrowsing = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_home_root), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
             SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_metadata), stringResource(R.string.settings_search_keywords_metadata), OwnTVIcon.IMAGE, TileTone.PRIMARY) { open(SettingsTab.METADATA) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_data), stringResource(R.string.settings_download_folder), stringResource(R.string.settings_search_keywords_download), OwnTVIcon.DOWNLOADS, TileTone.TERTIARY,
-                chip = downloadRoot.ifBlank { stringResource(R.string.settings_app_storage) }.let { java.io.File(it).name.ifBlank { it } }, chipTone = TileTone.TERTIARY) { saveScroll(); dialogReturn = searchFieldFocus; showFolderPicker = true },
-            SettingsSearchEntry(stringResource(R.string.settings_group_data), stringResource(R.string.settings_backup_restore), stringResource(R.string.settings_search_keywords_backup), OwnTVIcon.BACKUP, TileTone.TERTIARY) { open(SettingsTab.BACKUP) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_data), stringResource(R.string.local_sync_title), stringResource(R.string.local_sync_search_keywords), OwnTVIcon.REFRESH, TileTone.TERTIARY) { open(SettingsTab.LOCAL_SYNC) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_data), stringResource(R.string.settings_clear_history), stringResource(R.string.settings_search_keywords_history), OwnTVIcon.HISTORY, TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showClearHistory = true },
+            // Plan Z — no entries for the download folder, Backup, Local sync or Clear history. They
+            // are not in Settings any more, and a result for something that is not here is a lie
+            // about where it lives. The no-results state deliberately says nothing else either.
             SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_theme), stringResource(R.string.settings_search_keywords_theme), OwnTVIcon.THEME, TileTone.PRIMARY,
                 chip = themeLabel(themeMode)) { saveScroll(); dialogReturn = searchFieldFocus; showTheme = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_accent), stringResource(R.string.settings_search_keywords_accent), OwnTVIcon.PALETTE, TileTone.SECONDARY,
@@ -1061,7 +1045,6 @@ fun SettingsScreen(
             SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_subtitle_appearance), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
             SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_live_latency), stringResource(R.string.settings_search_keywords_latency), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
             SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_live_preroll), stringResource(R.string.settings_search_keywords_live_preroll), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-            SettingsSearchEntry(stringResource(R.string.settings_app_group), stringResource(R.string.settings_playback_error_log), stringResource(R.string.settings_search_keywords_errors), OwnTVIcon.WARNING, TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showErrorLog = true },
             SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_detailed_playback_logging), stringResource(R.string.settings_search_keywords_detailed_logging), OwnTVIcon.INFO, TileTone.SECONDARY) { open(SettingsTab.VIDEO) },
             SettingsSearchEntry(stringResource(R.string.settings_group_network), stringResource(R.string.common_proxy), stringResource(R.string.settings_search_keywords_proxy), OwnTVIcon.NETWORK, TileTone.SECONDARY) { open(SettingsTab.NETWORK) },
             SettingsSearchEntry(stringResource(R.string.settings_group_network), stringResource(R.string.settings_dns), stringResource(R.string.settings_search_keywords_dns), OwnTVIcon.DNS, TileTone.SECONDARY) { open(SettingsTab.DNS) },
@@ -1071,7 +1054,6 @@ fun SettingsScreen(
                 chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}") { saveScroll(); dialogReturn = searchFieldFocus; showUpdate = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_update_startup), stringResource(R.string.settings_search_keywords_update_auto), OwnTVIcon.REFRESH, TileTone.SECONDARY,
                 chip = if (updateCheckOnStart) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_about), stringResource(R.string.settings_search_keywords_about), OwnTVIcon.INFO, TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAbout = true },
         )
         val tokens = searchQuery.trim().lowercase().split(" ").filter { it.isNotBlank() }
         entries.filter { e -> tokens.all { t -> e.haystack.contains(t) } }
@@ -1366,17 +1348,6 @@ fun SettingsScreen(
             onDismiss = { showEpgOffset = false },
         ) }
     }
-    if (showAbout) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAbout = false }) {
-            AboutDialog(onDismiss = { showAbout = false })
-        }
-    }
-    if (showClearHistory) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showClearHistory = false }) { ClearHistoryDialog(
-            onClear = { type -> settingsVm.clearWatchHistory(type); showClearHistory = false },
-            onDismiss = { showClearHistory = false },
-        ) }
-    }
     if (showTheme) {
         tv.own.owntv.features.settings.PickerDialog(
             title = stringResource(R.string.settings_theme_dialog),
@@ -1489,11 +1460,6 @@ fun SettingsScreen(
             onDismiss = { showAmbientGlow = false },
         ) }
     }
-    if (showErrorLog) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showErrorLog = false }) {
-            PlaybackErrorLogDialog(onDismiss = { showErrorLog = false })
-        }
-    }
     if (showAfrWarning) {
         tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAfrWarning = false }) { AutoFrameRateWarningDialog(
             onEnable = { settingsVm.setAutoFrameRate(true); showAfrWarning = false },
@@ -1504,14 +1470,6 @@ fun SettingsScreen(
         tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showLivePreviewPanelWarning = false }) {
             LivePreviewPanelHiddenDialog(onDismiss = { showLivePreviewPanelWarning = false })
         }
-    }
-    if (showFolderPicker) {
-        StorageBrowser(
-            title = stringResource(R.string.settings_download_folder_title),
-            mode = BrowseMode.FOLDER,
-            onPick = { settingsVm.setDownloadRoot(it.absolutePath); showFolderPicker = false },
-            onDismiss = { showFolderPicker = false },
-        )
     }
     if (showBgImageChooser) {
         tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showBgImageChooser = false }) { BackgroundImageChooserDialog(
@@ -2020,7 +1978,7 @@ private const val TELEGRAM_LINK = "t.me/owntvplayer"
 
 /** About OwnTV: version, license, author and project link — all readable on screen (no TV browser). */
 @Composable
-private fun AboutDialog(onDismiss: () -> Unit) {
+internal fun AboutDialog(onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -2094,7 +2052,7 @@ private fun String.playbackDisplayName(): String = when (trim().lowercase(java.u
 }
 
 @Composable
-private fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
+internal fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
     val context = androidx.compose.ui.platform.LocalContext.current
     var refresh by remember { mutableStateOf(0) }
@@ -2317,7 +2275,7 @@ private enum class HistoryScope(val type: tv.own.owntv.core.model.MediaType?, va
  * Cancel is focused first so a stray OK doesn't wipe anything. [onClear] gets null for "all".
  */
 @Composable
-private fun ClearHistoryDialog(
+internal fun ClearHistoryDialog(
     onClear: (tv.own.owntv.core.model.MediaType?) -> Unit,
     onDismiss: () -> Unit,
 ) {

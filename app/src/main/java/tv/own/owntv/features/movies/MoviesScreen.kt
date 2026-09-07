@@ -27,6 +27,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -125,8 +126,24 @@ fun MoviesScreen(
     onRestored: () -> Unit = {},
     onContentScrolled: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
+    /**
+     * Pins the grid to one folder and takes the category rail away — how More → Favourites and
+     * More → History show films without a second copy of this grid existing.
+     */
+    lockedKey: LiveKey? = null,
 ) {
     val vm: MovieViewModel = koinViewModel()
+    // Locking and unlocking are one pair: the pin belongs to this screen's lifetime, not to the view
+    // model's. On the television that view model is a single instance shared with the browse section,
+    // so a pin left behind froze its category rail. `DisposableEffect` (not `LaunchedEffect`) also
+    // means the pin is in place before the first frame, so the list never flashes the wrong folder.
+    if (lockedKey != null) {
+        val pinned = lockedKey
+        DisposableEffect(pinned) {
+            vm.lock(pinned)
+            onDispose { vm.unlock() }
+        }
+    }
     val alreadyDownloadedMessage = stringResource(R.string.content_already_downloaded)
     val refetchingTmdbMessage = stringResource(R.string.content_refetching_tmdb)
     val researchingTmdbMessage = stringResource(R.string.content_researching_tmdb)
@@ -336,8 +353,16 @@ fun MoviesScreen(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .roundedPanel(fillColor = ContentPanelFill)
-            .padding(BrowseContainerPadding)
+            // Plan Z — while pinned, the More screen hosting this pane owns the panel and its
+            // padding, so the tab strip above the list is inside the same box rather than floating
+            // over the wallpaper next to a second one.
+            .then(
+                if (lockedKey == null) {
+                    Modifier.roundedPanel(fillColor = ContentPanelFill).padding(BrowseContainerPadding)
+                } else {
+                    Modifier
+                },
+            )
             .onFocusChanged { if (it.hasFocus) onChildFocused() },
     ) {
     val previewVisible = panelShares?.preview != 0
@@ -347,6 +372,9 @@ fun MoviesScreen(
         modifier = Modifier
             .fillMaxSize(),
     ) {
+        // Plan Z — More → Favourites and More → History pin this pane to one folder and put
+        // their own three tabs above it, so there is no category rail to draw.
+        if (lockedKey == null) {
         CategoryRail(
             width = panels?.category ?: Dimens.RailWidthFixed,
             categories = railItems.map {
@@ -384,6 +412,7 @@ fun MoviesScreen(
         )
 
         Spacer(Modifier.width(BrowseColumnGap))
+        }
 
         Column(
             modifier = Modifier
@@ -446,7 +475,10 @@ fun MoviesScreen(
                 }
                 // Held Up/Down can outrun the lazy grid's composition and escape this pane
                 // (landing on the top bar) — trap vertical exits; Left/Right/Back leave normally.
-                .trapVerticalFocusExit()
+                // Plan Z — while pinned there IS somewhere above to go: the More screen's tab
+                // strip. It owns the trap instead, so Up reaches the tabs and still cannot escape
+                // past them to the shell's top bar.
+                .then(if (lockedKey == null) Modifier.trapVerticalFocusExit() else Modifier)
                 .focusGroup()
         ) {
             Text(stringResource(R.string.content_section_category, stringResource(R.string.common_nav_movies), selectedLabel), style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface)

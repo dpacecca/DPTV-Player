@@ -878,6 +878,17 @@ fun OwnTVShell(
                 )
                 Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(start = 0.dp, end = 6.dp, bottom = 6.dp)) {
                     when {
+                        // Plan Z — the hub the rail's last item now opens. Settings is a row in it.
+                        selectedSection == MainSection.MORE -> tv.own.owntv.features.more.MoreScreen(
+                            onOpenSettings = { onSelectSection(MainSection.SETTINGS) },
+                            onFullscreen = { openFullscreen() },
+                            onChildFocused = { focusedLayer = ShellLayer.CONTENT },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
+                                .focusGroup(),
+                        )
+
                         selectedSection == MainSection.SETTINGS -> SettingsScreen(
                             themeMode = themeMode,
                             uiZoomPercent = uiZoomPercent,
@@ -885,6 +896,9 @@ fun OwnTVShell(
                             fontCustomization = fontCustomization,
                             onSetFontCustomization = onSetFontCustomization,
                             onOpenPlaylist = { /* Phase 6: open setup/playlist */ },
+                            // Settings is reached through More now, so Back out of its root goes
+                            // back there rather than to the rail — one level out, not two.
+                            onBack = { onSelectSection(MainSection.MORE) },
                             openEpgAdd = openEpgAdd,
                             onEpgAddConsumed = { openEpgAdd = false },
                             modifier = Modifier
@@ -1452,6 +1466,7 @@ private val MainSection.emptyIcon: OwnTVIcon
         MainSection.DOWNLOADS -> OwnTVIcon.DOWNLOADS
         MainSection.EPG -> OwnTVIcon.EPG
         MainSection.SETTINGS -> OwnTVIcon.SETTINGS
+        MainSection.MORE -> OwnTVIcon.MORE
     }
 
 private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (section) {
@@ -1490,12 +1505,12 @@ private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (
         RailCategory("Movies", labelRes = tv.own.owntv.R.string.content_category_movies),
         RailCategory("Series", labelRes = tv.own.owntv.R.string.content_category_series),
     )
-    MainSection.SETTINGS -> emptyList()
+    MainSection.SETTINGS, MainSection.MORE -> emptyList()
 }
 
 @Composable
 private fun placeholderCount(section: MainSection): String = when (section) {
-    MainSection.SEARCH, MainSection.HOME, MainSection.EPG, MainSection.SETTINGS -> ""
+    MainSection.SEARCH, MainSection.HOME, MainSection.EPG, MainSection.SETTINGS, MainSection.MORE -> ""
     MainSection.LIVE_TV -> stringResource(R.string.content_zero_channels)
     MainSection.MOVIES -> stringResource(R.string.content_zero_movies)
     MainSection.SERIES -> stringResource(R.string.content_zero_series)

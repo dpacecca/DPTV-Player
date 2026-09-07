@@ -92,6 +92,17 @@ class DownloadsViewModel(
         .mapLatest { downloadManager.storageInfo() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    /**
+     * Where downloads are written. Plan Z moved this preference out of Settings and onto the gear
+     * beside this screen's title — it is the one thing on the screen it is about.
+     */
+    val downloadRoot: StateFlow<String> = settings.downloadRoot
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
+    fun setDownloadRoot(path: String) {
+        viewModelScope.launch { settings.setDownloadRoot(path) }
+    }
+
     private val _lastPlayedId = MutableStateFlow<Long?>(null)
     val lastPlayedId: StateFlow<Long?> = _lastPlayedId.asStateFlow()
 

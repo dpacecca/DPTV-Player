@@ -3,6 +3,7 @@ package tv.own.owntv.di
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
+import tv.own.owntv.features.more.MoreCountsViewModel
 import org.koin.dsl.module
 import tv.own.owntv.features.customize.CustomizeItemsViewModel
 import tv.own.owntv.features.customize.CustomizeViewModel
@@ -104,4 +105,6 @@ val appModule = module {
     viewModelOf(::CustomizeItemsViewModel)
     viewModelOf(::BackupViewModel)
     viewModelOf(::EpgSourcesViewModel)
+    // The counts the More rows and the Favourites / History tabs carry.
+    viewModelOf(::MoreCountsViewModel)
 }

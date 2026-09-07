@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -119,8 +120,24 @@ fun LiveScreen(
     onRestored: () -> Unit = {},
     onContentScrolled: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
+    /**
+     * Pins the list to one folder and takes the category rail away — how More → Favourites and
+     * More → History show channels without a second copy of this list existing.
+     */
+    lockedKey: LiveKey? = null,
 ) {
     val vm: LiveViewModel = koinViewModel()
+    // Locking and unlocking are one pair: the pin belongs to this screen's lifetime, not to the view
+    // model's. On the television that view model is a single instance shared with the browse section,
+    // so a pin left behind froze its category rail. `DisposableEffect` (not `LaunchedEffect`) also
+    // means the pin is in place before the first frame, so the list never flashes the wrong folder.
+    if (lockedKey != null) {
+        val pinned = lockedKey
+        DisposableEffect(pinned) {
+            vm.lock(pinned)
+            onDispose { vm.unlock() }
+        }
+    }
     val railItems by vm.railItems.collectAsStateWithLifecycle()
     val providerNames by vm.providerNames.collectAsStateWithLifecycle()
     val selectedKey by vm.selectedKey.collectAsStateWithLifecycle()
@@ -336,8 +353,16 @@ fun LiveScreen(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .roundedPanel(fillColor = ContentPanelFill)
-            .padding(BrowseContainerPadding)
+            // Plan Z — while pinned, the More screen hosting this pane owns the panel and its
+            // padding, so the tab strip above the list is inside the same box rather than floating
+            // over the wallpaper next to a second one.
+            .then(
+                if (lockedKey == null) {
+                    Modifier.roundedPanel(fillColor = ContentPanelFill).padding(BrowseContainerPadding)
+                } else {
+                    Modifier
+                },
+            )
             .onFocusChanged { if (it.hasFocus) onChildFocused() },
     ) {
     val previewVisible = panelShares?.preview != 0
@@ -347,6 +372,9 @@ fun LiveScreen(
         modifier = Modifier
             .fillMaxSize(),
     ) {
+        // Plan Z — More → Favourites and More → History pin this pane to one folder and put
+        // their own three tabs above it, so there is no category rail to draw.
+        if (lockedKey == null) {
         CategoryRail(
             width = panels?.category ?: Dimens.RailWidthFixed,
             categories = railItems.map {
@@ -390,6 +418,7 @@ fun LiveScreen(
         )
 
         Spacer(Modifier.width(BrowseColumnGap))
+        }
 
         // Layer 3 — header + channel list (fixed-width column; the preview pane fills the rest)
         Column(
@@ -452,7 +481,10 @@ fun LiveScreen(
                 }
                 // Held Up/Down can outrun the lazy list's composition and escape this pane
                 // (landing on the top bar) — trap vertical exits; Left/Right/Back leave normally.
-                .trapVerticalFocusExit()
+                // Plan Z — while pinned there IS somewhere above to go: the More screen's tab
+                // strip. It owns the trap instead, so Up reaches the tabs and still cannot escape
+                // past them to the shell's top bar.
+                .then(if (lockedKey == null) Modifier.trapVerticalFocusExit() else Modifier)
                 .focusGroup()
         ) {
             Text(

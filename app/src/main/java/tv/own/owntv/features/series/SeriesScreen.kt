@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -129,8 +130,24 @@ fun SeriesScreen(
     restoreFocus: Boolean = false,
     onRestored: () -> Unit = {},
     modifier: Modifier = Modifier,
+    /**
+     * Pins the grid to one folder and takes the category rail away — how More → Favourites and
+     * More → History show shows without a second copy of this grid existing.
+     */
+    lockedKey: LiveKey? = null,
 ) {
     val vm: SeriesViewModel = koinViewModel()
+    // Locking and unlocking are one pair: the pin belongs to this screen's lifetime, not to the view
+    // model's. On the television that view model is a single instance shared with the browse section,
+    // so a pin left behind froze its category rail. `DisposableEffect` (not `LaunchedEffect`) also
+    // means the pin is in place before the first frame, so the list never flashes the wrong folder.
+    if (lockedKey != null) {
+        val pinned = lockedKey
+        DisposableEffect(pinned) {
+            vm.lock(pinned)
+            onDispose { vm.unlock() }
+        }
+    }
     val openedSeries by vm.openedSeries.collectAsStateWithLifecycle()
 
     // Track leaving a show so the grid can put focus back on the poster you came from (the episode
@@ -156,6 +173,7 @@ fun SeriesScreen(
             onChildFocused = onChildFocused,
             restoreSelected = returnFromShow,
             onRestoredSelected = { returnFromShow = false },
+            lockedKey = lockedKey,
             modifier = modifier,
         )
     }
@@ -239,6 +257,8 @@ private fun SeriesGrid(
     onChildFocused: () -> Unit,
     restoreSelected: Boolean = false,
     onRestoredSelected: () -> Unit = {},
+    /** Non-null while this grid is a More screen's stage — see [SeriesScreen]. */
+    lockedKey: LiveKey? = null,
     modifier: Modifier,
 ) {
     val alreadyDownloadedMessage = stringResource(R.string.content_already_downloaded)
@@ -412,8 +432,16 @@ private fun SeriesGrid(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .roundedPanel(fillColor = ContentPanelFill)
-            .padding(BrowseContainerPadding)
+            // Plan Z — while pinned, the More screen hosting this pane owns the panel and its
+            // padding, so the tab strip above the list is inside the same box rather than floating
+            // over the wallpaper next to a second one.
+            .then(
+                if (lockedKey == null) {
+                    Modifier.roundedPanel(fillColor = ContentPanelFill).padding(BrowseContainerPadding)
+                } else {
+                    Modifier
+                },
+            )
             .onFocusChanged { if (it.hasFocus) onChildFocused() },
     ) {
     val previewVisible = panelShares?.preview != 0
@@ -423,6 +451,9 @@ private fun SeriesGrid(
         modifier = Modifier
             .fillMaxSize(),
     ) {
+        // Plan Z — More → Favourites and More → History pin this pane to one folder and put
+        // their own three tabs above it, so there is no category rail to draw.
+        if (lockedKey == null) {
         CategoryRail(
             width = panels?.category ?: Dimens.RailWidthFixed,
             categories = railItems.map {
@@ -460,6 +491,7 @@ private fun SeriesGrid(
         )
 
         Spacer(Modifier.width(BrowseColumnGap))
+        }
 
         Column(
             modifier = Modifier
@@ -517,7 +549,10 @@ private fun SeriesGrid(
                 }
                 // Held Up/Down can outrun the lazy grid's composition and escape this pane
                 // (landing on the top bar) — trap vertical exits; Left/Right/Back leave normally.
-                .trapVerticalFocusExit()
+                // Plan Z — while pinned there IS somewhere above to go: the More screen's tab
+                // strip. It owns the trap instead, so Up reaches the tabs and still cannot escape
+                // past them to the shell's top bar.
+                .then(if (lockedKey == null) Modifier.trapVerticalFocusExit() else Modifier)
                 .focusGroup()
         ) {
             Text(stringResource(R.string.content_section_category, stringResource(R.string.common_nav_series), selectedLabel), style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface)

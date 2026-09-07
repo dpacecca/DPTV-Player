@@ -2,6 +2,32 @@
 
 ## v4.2.5 — unreleased
 
+### ⋯ More: the last item on the sidebar
+
+- **Settings is now one press further in, and never a hunt.** The sidebar's last item is **More**
+  instead of Settings, and Settings is the first row inside it — with focus already on it the moment
+  More opens. So the route is sidebar → More → OK. Downloads and your profile card have not moved:
+  they already have a place on the sidebar.
+- **Favourites, in one place, for the first time.** More → Favourites is one screen with three tabs —
+  Live TV, Movies, Series — showing everything you have starred, whichever section you starred it in.
+  Each tab is the pane that section already has: the channel list with what is on now, the Movies
+  grid at your own column count, the Series grid. The context menu is the section's own, un-favourite
+  included, and a row leaves the list the moment the star does. A tab with nothing under it is still
+  shown, so a Movies count of zero reads as "nothing starred" rather than as a broken screen.
+- **History, the same way**, newest first — and **Clear history now lives on that screen** instead of
+  inside Settings. Same four choices and the same confirmation; only the door changed.
+- **Backup & Restore, Local sync, the playback error log and About left Settings.** None of them is a
+  preference — two are places, one is a log and one is a page of facts — and they were only in
+  Settings because Settings used to be the only door. All four are More rows now, opening exactly the
+  same pages.
+- **Settings holds settings and nothing else.** The whole *Data* group is gone with them. Searching
+  Settings for "backup", "sync" or "history" now finds nothing, because none of those is in Settings
+  any more. **Settings → Profiles has not moved** — it is still where you rename a profile, set its
+  PIN, turn kids mode on or delete it.
+- **The download folder moved to the Downloads screen.** It was the last thing left in *Data*, and it
+  is now a gear beside the Downloads title, opening the same volume picker. If you know it as
+  Settings → Data → Download folder, that is where it went — it has not been removed.
+
 ### 🔄 Sync with your phone over your own Wi-Fi
 
 - **Local sync.** Settings → Data → Local sync pairs this television with the OwnTV app on your phone

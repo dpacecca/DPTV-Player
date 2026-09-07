@@ -138,6 +138,14 @@ fun NavDuotoneIcon(
                 drawCircle(fill, radius = 7f * s, center = o(39f, 67f), style = stroke)
                 drawPath(poly(50f,15f, 59f,21f, 69f,22f, 74f,30f), soft, style = thin)
             }
+
+            // ---- More — three stacked bars, the shortest last, with a dot accent -----
+            MainSection.MORE -> {
+                drawPath(poly(20f,33f, 80f,33f), fill, style = stroke)
+                drawPath(poly(20f,50f, 80f,50f), fill, style = stroke)
+                drawPath(poly(20f,67f, 58f,67f), fill, style = stroke)
+                dot(72f, 67f, 4f, soft)
+            }
         }
     }
 }
