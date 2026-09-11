@@ -108,6 +108,21 @@ fun LiveEpgCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                // What the programme actually IS, not just what it is called. The guide carries this
+                // for both stored XMLTV rows and the providers' own short-EPG replies, and until now
+                // the only place it surfaced was the Guide screen — so anyone watching live could read
+                // a title and nothing else. Two lines: enough to tell an episode apart, short enough
+                // that the card stays a strip across the top of the picture.
+                entry.description?.takeIf { it.isNotBlank() }?.let { synopsis ->
+                    Text(
+                        synopsis,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.62f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
                 val span = (entry.stopMs - entry.startMs).toFloat()
                 if (span > 0f) {
                     val progress = ((nowMs - entry.startMs) / span).coerceIn(0f, 1f)

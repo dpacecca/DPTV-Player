@@ -59,6 +59,7 @@ class ShellViewModel(
     private val importFinalizer: ImportFinalizer,
     private val weatherRepository: WeatherRepository,
     private val navVisibility: NavVisibility,
+    private val profiles: tv.own.owntv.core.profile.ProfileManager,
 ) : ViewModel() {
 
     companion object {
@@ -272,6 +273,16 @@ class ShellViewModel(
         .flatMapLatest { pid -> if (pid < 0) flowOf(0) else profileDao.observeById(pid).map { it?.avatarId ?: 0 } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
+    /**
+     * The active profile's own picture, when it has one — blank means the drawn tile named by
+     * [avatarId]. Every surface that draws an avatar reads this alongside the id, so a picture set
+     * here shows up in the sidebar, the profile gate and the profile list without any of them
+     * knowing where it came from.
+     */
+    val avatarPath: StateFlow<String> = settings.activeProfileId
+        .flatMapLatest { pid -> if (pid < 0) flowOf("") else profileDao.observeById(pid).map { it?.avatarPath.orEmpty() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
     /** The active profile's name, shown in the sidebar profile card. */
     val profileName: StateFlow<String> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf("") else profileDao.observeById(pid).map { it?.name ?: "" } }
@@ -396,6 +407,27 @@ class ShellViewModel(
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             profileDao.setAvatar(pid, id)
+        }
+    }
+
+    /**
+     * Give the active profile a picture of its own, from a file the user picked on this device or
+     * one a phone sent over the local network. [onResult] reports whether the file was a readable
+     * image, so the caller can say so rather than leaving a dialog that appears to have done nothing.
+     */
+    fun setCustomAvatar(source: java.io.File, onResult: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            val pid = currentProfileId()
+            val profile = pid?.let { profileDao.getById(it) }
+            onResult(profile != null && profiles.setCustomAvatar(profile, source))
+        }
+    }
+
+    /** Drop the active profile's own picture; the drawn tile it already had comes back. */
+    fun clearCustomAvatar() {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            profileDao.getById(pid)?.let { profiles.clearCustomAvatar(it) }
         }
     }
 

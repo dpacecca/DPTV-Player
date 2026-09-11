@@ -446,7 +446,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/setup/AddSourceScreen.kt	−
 9	empty	app/src/main/java/tv/own/owntv/features/setup/SetupViewModel.kt	\0
 1	empty	app/src/main/java/tv/own/owntv/features/setup/SetupWizard.kt	\0
-3	empty	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	\0
+5	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	\0
 2	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	Action
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	All Channels
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	All Downloads
@@ -466,13 +466,18 @@
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	United Kingdom
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	United States
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	ass
+1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	bmp
 1	performance	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	epg-preload
+1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	jpeg
+1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	jpg
+1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	png
 1	performance	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	shell-composed
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	srt
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	ssa
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	vtt
+1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	webp
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	webvtt
-5	empty	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	\0
+8	technical	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	\0
 1	log	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	OwnTVHome
 1	log	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	activeProfileChanged profile=$pid androidTvHomeEnabled=${settings.androidTvHomeEnabled.first()}
 2	technical	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	auto_refresh
@@ -481,6 +486,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	epgRefill check failed
 1	log	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	epgRefill sourceId=${src.id} — synced before but guide is empty, re-fetching
 1	technical	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	migration_refill
+1	technical	app/src/main/java/tv/own/owntv/features/shell/components/AvatarPickerDialog.kt	\0
 2	empty	app/src/main/java/tv/own/owntv/features/shell/components/CategoryRail.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/CategoryRail.kt	__rail_search__
 1	empty	app/src/main/java/tv/own/owntv/features/shell/components/MediaDetailsScreen.kt	\0
@@ -548,6 +554,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	–
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	›
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	−
+2	technical	app/src/main/java/tv/own/owntv/features/shell/components/Sidebar.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/Sidebar.kt	nowPlayingRing
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/Sidebar.kt	nowPlayingRingAlpha
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SolidAmbientBackdrop.kt	solidAmbientPulse
@@ -1048,6 +1055,7 @@
 1	performance	app/src/main/java/tv/own/owntv/ui/components/NavLadder.kt	navLadderFg
 1	performance	app/src/main/java/tv/own/owntv/ui/components/NavLadder.kt	navLadderIcon
 1	empty	app/src/main/java/tv/own/owntv/ui/components/NumberInputDialog.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/ui/components/OwnTVAvatar.kt	\0
 1	empty	app/src/main/java/tv/own/owntv/ui/components/OwnTVTextField.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/ui/components/PosterCard.kt	✓
 1	empty	app/src/main/java/tv/own/owntv/ui/components/SetTmdbNameDialog.kt	\0
@@ -1060,6 +1068,7 @@
 1	log	app/src/main/java/tv/own/owntv/ui/components/TvImeMetrics.kt	frame=$rect imeBottom=$imeBottom
 1	technical	app/src/main/java/tv/own/owntv/ui/format/TimeFormat.kt	Hm
 1	technical	app/src/main/java/tv/own/owntv/ui/format/TimeFormat.kt	hm
+1	technical	app/src/main/java/tv/own/owntv/ui/format/TimeFormat.kt	yMMMd
 1	technical	app/src/main/java/tv/own/owntv/ui/theme/Glass.kt	chromeCondense
 1	technical	app/src/main/java/tv/own/owntv/ui/theme/Glass.kt	glassPosition
 2	empty	app/src/main/java/tv/own/owntv/ui/theme/OwnTVColors.kt	\0

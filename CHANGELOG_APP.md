@@ -13,6 +13,11 @@
 
 ### ✨ New features
 
+- **📺 Live TV shows what a programme is about, not just its name**
+- **📅 Episodes show the day they first aired**
+- **🖼️ A profile picture of your own, from this TV or sent from your phone**
+- **🎨 The drawn avatars redrawn — lit, not flat**
+- **🗓️ Stalker portals: the portal's own TV guide, and catch-up with it**
 - **⋯ More is the sidebar's last item, with Settings its first row**
 - **⋯ More rebuilt as a two-pane hub, in Settings' own shape**
 - **👀 The panel says what is behind each row before you open it**
@@ -39,6 +44,8 @@
 
 ### 🐛 Fixes
 
+- **Stalker portals: no more 403 errors, endless loading and half-finished syncs**
+- **Stalker portals: catch-up appears on the channels that actually have it**
 - **The highlight stays where you left it in ⋯ More, and lands on the first row going in**
 - **Back works on the first press again, everywhere**
 - **Live TV's catch-up list now reaches back a full week**

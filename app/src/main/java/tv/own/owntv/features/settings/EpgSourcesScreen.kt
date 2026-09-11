@@ -296,7 +296,15 @@ private fun EpgRow(
                     )
                 }
             }
-            Text(source.url, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // A Stalker portal's own guide has no address to show — it comes through the portal
+            // session rather than being downloaded — so the row says what it is instead of printing
+            // the internal marker that stands in for its URL.
+            val subtitle = if (tv.own.owntv.core.repository.EpgRepository.stalkerSourceIdOf(source.url) != null) {
+                stringResource(R.string.settings_epg_sources_portal_guide)
+            } else {
+                source.url
+            }
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.dp))
             val catchupNote = count?.third?.takeIf { it > 0 }?.let {
                 pluralStringResource(R.plurals.settings_epg_sources_catchup, it, it)
@@ -419,7 +427,17 @@ internal fun EpgSourceForm(
     if (showPlaylistPicker) {
         PlaylistEpgPicker(
             load = loadPlaylistOptions,
-            onPick = { opt -> if (name.isBlank()) name = opt.name; url = opt.url; showPlaylistPicker = false },
+            onPick = { opt ->
+                showPlaylistPicker = false
+                if (tv.own.owntv.core.repository.EpgRepository.stalkerSourceIdOf(opt.url) != null) {
+                    // Nothing to fill in: a portal guide is fetched through the playlist's own session,
+                    // so showing the user an internal marker in a URL box would be worse than useless.
+                    onSave(opt.name, opt.url, ua, autoRefresh, useLogos)
+                } else {
+                    if (name.isBlank()) name = opt.name
+                    url = opt.url
+                }
+            },
             onDismiss = { showPlaylistPicker = false },
         )
     }
@@ -523,7 +541,13 @@ private fun PlaylistEpgPicker(
                         ) { _ ->
                             Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
                                 Text(opt.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                                Text(opt.url, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                // A portal guide has no address to show — say what it is instead.
+                                val subtitle = if (tv.own.owntv.core.repository.EpgRepository.stalkerSourceIdOf(opt.url) != null) {
+                                    stringResource(R.string.settings_epg_sources_portal_guide)
+                                } else {
+                                    opt.url
+                                }
+                                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }

@@ -121,6 +121,7 @@ import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.format.localizedInteger
+import tv.own.owntv.ui.format.rememberAirDateFormatter
 import tv.own.owntv.core.live.LiveKey
 
 @Composable
@@ -934,7 +935,9 @@ private fun EpisodeDetailPane(
         else episode.plot?.takeIf { it.isNotBlank() } ?: meta?.overview
     val bits = listOfNotNull(
         stringResource(R.string.content_season_episode, episode.seasonNumber, episode.episodeNumber),
-        meta?.year?.let { localizedInteger(it, grouping = false) },
+        // The full day where one is known; the bare year only when it is not, since on a long-running
+        // show the year is shared by hundreds of episodes and identifies none of them.
+        rememberAirDateLabel(episode, meta) ?: meta?.year?.let { localizedInteger(it, grouping = false) },
         meta?.rating?.takeIf { it > 0 }?.let { stringResource(R.string.content_rating, it) },
     )
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Dimens.GapLarge)) {
@@ -1053,7 +1056,10 @@ private fun buildEpisodeDetails(
     val still = tv.own.owntv.core.metadata.MetadataImages.backdrop(meta?.backdropPath ?: meta?.posterPath)
     val title = if (tmdbWins) meta?.title?.takeIf { it.isNotBlank() } ?: episodeDisplayTitle(ep) else episodeDisplayTitle(ep)
     val plot = if (tmdbWins) meta?.overview ?: ep.plot else ep.plot?.takeIf { it.isNotBlank() } ?: meta?.overview
-    val metaLine = listOfNotNull(meta?.year?.let { localizedInteger(it, grouping = false) }, meta?.rating?.takeIf { it > 0 }?.let { stringResource(R.string.content_rating, it) }).joinToString(stringResource(R.string.content_metadata_separator))
+    val metaLine = listOfNotNull(
+        rememberAirDateLabel(ep, meta) ?: meta?.year?.let { localizedInteger(it, grouping = false) },
+        meta?.rating?.takeIf { it > 0 }?.let { stringResource(R.string.content_rating, it) },
+    ).joinToString(stringResource(R.string.content_metadata_separator))
     return tv.own.owntv.features.shell.components.MediaDetailsUi(
         title = title,
         subtitle = stringResource(R.string.content_season_episode, ep.seasonNumber, ep.episodeNumber),
@@ -1361,6 +1367,7 @@ private fun EpisodeView(
                                     val completed = ep.id in completedIds
                                     EpisodeRow(
                                         episode = ep,
+                                        meta = seasonMeta[ep.id],
                                         lastWatched = ep.id == lastPlayedId,
                                         completed = completed,
                                         progressFraction = prog?.takeIf { !completed && it.durationMs > 0 }
@@ -1644,6 +1651,7 @@ private fun EpisodeTile(
                     )
                 }
             }
+            val aired = rememberAirDateLabel(episode, meta)
             Text(
                 title,
                 style = MaterialTheme.typography.labelLarge,
@@ -1651,15 +1659,41 @@ private fun EpisodeTile(
                 fontWeight = if (focused) FontWeight.Medium else FontWeight.Normal,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+                modifier = Modifier.fillMaxWidth()
+                    .padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = if (aired == null) 6.dp else 0.dp),
             )
+            if (aired != null) {
+                Text(
+                    aired,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 1,
+                    modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
+                )
+            }
         }
     }
+}
+
+/**
+ * The day an episode first aired, ready to render, or null when nothing knows it. Asked for by a
+ * user whose series run to thousands of episodes, where the titles are near-identical and the
+ * number stops being a landmark long before episode nine hundred.
+ */
+@Composable
+private fun rememberAirDateLabel(
+    episode: EpisodeEntity,
+    meta: tv.own.owntv.core.database.entity.MetadataCacheEntity?,
+): String? {
+    val format = rememberAirDateFormatter()
+    val ms = tv.own.owntv.core.content.AirDate.of(episode.airDateMs, meta?.airDate)
+    return ms?.let(format)
 }
 
 @Composable
 private fun EpisodeRow(
     episode: EpisodeEntity,
+    meta: tv.own.owntv.core.database.entity.MetadataCacheEntity?,
     lastWatched: Boolean,
     completed: Boolean,
     progressFraction: Float?,
@@ -1707,6 +1741,14 @@ private fun EpisodeRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                rememberAirDateLabel(episode, meta)?.let { aired ->
+                    Text(
+                        aired,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
                 // Mark the episode you last watched so it's findable even when it isn't focused (#22).
                 if (lastWatched) {
                     Text(

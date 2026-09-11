@@ -2,6 +2,50 @@
 
 ## v4.2.5 — unreleased
 
+### 📺 What the programme actually is, while you are watching it
+
+- **Live TV showed a title and nothing else.** The guide has carried a synopsis all along — the Guide
+  screen has shown it for ages — but the two places you actually look while watching never did. The
+  fullscreen card now carries two lines of it under the clock, and the preview pane in the channel
+  list carries the whole paragraph for what is on now, with a shorter one for what is next.
+- Works the same whether the description comes from an XMLTV feed or straight from your provider's
+  own guide.
+
+### 📅 Episodes say when they first aired
+
+- **A series with a thousand episodes gave you a list of near-identical titles and a number.** Every
+  episode now shows the day it first aired — on the list rows, on the grid tiles, in the detail pane
+  and in the TMDB details sheet.
+- The provider's own date wins where it sends one; TMDB's fills the (very common) gap where it does
+  not. A refresh that carries no date leaves the one you already had alone.
+- The date is a calendar day, not a clock time, so it reads the same wherever you are.
+
+### 🖼️ A profile picture of your own
+
+- **The drawn avatars are no longer the only choice.** Pick a picture from this television, or send
+  one from your phone over your own Wi-Fi — the same two ways the Glass background image already
+  works, so there is one idea to learn rather than two.
+- The picture is copied into the app, cropped square and scaled down, so a photo on a USB stick keeps
+  working after the stick is gone, and a twelve-megapixel picture does not cost twelve megapixels
+  every time your profile is drawn.
+- **It travels in your backup.** Restore on another television and the picture comes with it, onto
+  the right person even though profiles are matched up by name.
+- The ten drawn avatars were redrawn with a lit gradient, a soft sheen and a hairline rim. Same
+  shapes, far less flat.
+
+### 🗓️ A Stalker portal has a guide and catch-up at last
+
+- **A portal that publishes no XMLTV feed had no guide at all — and therefore no catch-up**, because
+  choosing a programme to replay means choosing it out of a guide that was never there. The portal's
+  own guide is now read, and appears in Settings → EPG as **"Guide from the portal"**.
+- It is registered after the playlist syncs but never downloaded on its own — pressing Sync is still
+  your decision. **Add EPG source → Fill from playlist** offers it too, and adds it straight away
+  since there is nothing to type.
+- **Catch-up never worked on a Stalker portal.** The app was looking for a field name that Xtream uses
+  and this kind of portal does not send, so every portal channel was recorded as having no archive. On
+  a real portal that hid catch-up on 427 channels. It was also about to read the portal's "72 hours"
+  as "72 days".
+
 ### ⋯ More, rebuilt as a two-pane hub
 
 - **More now looks and works like Settings, because it is built from the same parts.** A narrow list

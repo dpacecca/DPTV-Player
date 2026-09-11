@@ -1156,6 +1156,18 @@ private fun EpgSection(nowNext: EpgNowNext?) {
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.onSurfaceVariant,
             )
+            // The synopsis. This pane already scrolls, so it can afford the whole paragraph the guide
+            // carries rather than a teaser — this is where someone browsing channels decides whether
+            // the programme is worth watching.
+            now.description?.takeIf { it.isNotBlank() }?.let { synopsis ->
+                Text(
+                    synopsis,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 8,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         if (next != null) {
             Spacer(Modifier.height(2.dp))
@@ -1167,6 +1179,17 @@ private fun EpgSection(nowNext: EpgNowNext?) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            // Shorter than the "Now" one on purpose: what's on next is a decision about whether to
+            // stay, not about whether to tune in, so it gets a teaser rather than the paragraph.
+            next.description?.takeIf { it.isNotBlank() }?.let { synopsis ->
+                Text(
+                    synopsis,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         // Upcoming programmes after "next" — see what's on later without opening the Guide (#11).
         val later = nowNext.upcoming

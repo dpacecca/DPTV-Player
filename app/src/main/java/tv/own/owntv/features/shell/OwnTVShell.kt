@@ -127,6 +127,10 @@ fun OwnTVShell(
     onSetFontCustomization: (tv.own.owntv.core.theme.FontCustomization) -> Unit,
     avatarId: Int,
     onSetAvatar: (Int) -> Unit,
+    // The active profile's own picture, and the two things that can be done to it. Blank = none.
+    avatarPath: String = "",
+    onSetCustomAvatar: (java.io.File) -> Unit = {},
+    onClearCustomAvatar: () -> Unit = {},
     profileName: String,
     sourceSummary: String?,
     playlists: List<tv.own.owntv.core.database.entity.SourceEntity> = emptyList(),
@@ -158,6 +162,9 @@ fun OwnTVShell(
     var focusedLayer by remember { mutableStateOf(ShellLayer.SIDEBAR) }
     var showExit by remember { mutableStateOf(false) }
     var showAvatarPicker by remember { mutableStateOf(false) }
+    var showAvatarChooser by remember { mutableStateOf(false) }
+    var showAvatarFilePicker by remember { mutableStateOf(false) }
+    var showAvatarRemote by remember { mutableStateOf(false) }
     var showPlaylistPicker by remember { mutableStateOf(false) }
     var playerMode by remember { mutableStateOf(PlayerMode.NONE) }
     // Deep-link: the Guide's "Add EPG" button switches to Settings and opens EPG Sources → add.
@@ -795,6 +802,7 @@ fun OwnTVShell(
                 },
                 visibleSections = visibleSections,
                 avatarId = avatarId,
+                avatarPath = avatarPath,
                 onPickAvatar = { showAvatarPicker = true },
                 profileName = profileName,
                 sourceSummary = sourceSummary,
@@ -1389,8 +1397,55 @@ fun OwnTVShell(
         tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAvatarPicker = false }) { AvatarPickerDialog(
                 selectedId = avatarId,
                 onSelect = onSetAvatar,
+                customPath = avatarPath,
+                onPickCustom = { showAvatarPicker = false; showAvatarChooser = true },
+                onClearCustom = { onClearCustomAvatar(); showAvatarPicker = false },
                 onDismiss = { showAvatarPicker = false },
         ) }
+    }
+    // A picture for the profile, taken the same two ways the background image is: a file on this
+    // television, or a photo a phone sends over the local network. Both hand over a File, which core
+    // copies and scales — nothing here knows or cares which one it was.
+    if (showAvatarChooser) {
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAvatarChooser = false }) {
+            tv.own.owntv.ui.components.BackgroundImageChooserDialog(
+                hasImage = avatarPath.isNotBlank(),
+                onPickLocal = { showAvatarChooser = false; showAvatarFilePicker = true },
+                onPickRemote = { showAvatarChooser = false; showAvatarRemote = true },
+                onClear = { onClearCustomAvatar(); showAvatarChooser = false },
+                onDismiss = { showAvatarChooser = false },
+            )
+        }
+    }
+    if (showAvatarFilePicker) {
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAvatarFilePicker = false }) {
+            tv.own.owntv.ui.components.StorageBrowser(
+                title = stringResource(R.string.profiles_avatar_own_picture),
+                mode = tv.own.owntv.ui.components.BrowseMode.FILE,
+                fileExtensions = setOf("png", "jpg", "jpeg", "webp", "bmp"),
+                onPick = { file -> onSetCustomAvatar(file); showAvatarFilePicker = false },
+                onDismiss = { showAvatarFilePicker = false },
+            )
+        }
+    }
+    if (showAvatarRemote) {
+        // The same companion listener the background image uses — one PIN-protected upload page, so
+        // a phone sends a profile picture exactly the way it already sends a wallpaper.
+        val avatarRemoteVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.settings.SettingsViewModel>()
+        val remoteState by avatarRemoteVm.remoteState.collectAsStateWithLifecycle()
+        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAvatarRemote = false }) {
+            tv.own.owntv.ui.components.RemoteBackgroundDialog(
+                state = remoteState,
+                images = avatarRemoteVm.remoteImages,
+                onStart = avatarRemoteVm::startRemoteImageListener,
+                onStop = avatarRemoteVm::stopRemoteListener,
+                onImageReceived = { file ->
+                    onSetCustomAvatar(file)
+                    showAvatarRemote = false
+                },
+                onDismiss = { showAvatarRemote = false; showAvatarChooser = true },
+            )
+        }
     }
     if (showPlaylistPicker) {
         tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showPlaylistPicker = false }) { PlaylistPickerDialog(

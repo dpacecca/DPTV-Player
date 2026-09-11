@@ -127,5 +127,6 @@ class EpgSourcesViewModel(
         if (pid < 0) return emptyList()
         return sourceRepository.observeSources(pid).first()
             .mapNotNull { src -> epgRepository.guideUrl(src)?.let { PlaylistEpg(src.name, it) } }
+
     }
 }
