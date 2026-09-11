@@ -29,6 +29,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.ui.Alignment
@@ -170,8 +171,15 @@ fun MoreScreen(
     }
 
     val dialogOpen = showAbout || showErrorLog
+    // The wait is the whole fix: coming back from a sub-page (Local sync, Backup, Favourites) this
+    // effect starts in the same composition that re-creates the spine, so without it the request
+    // lands before the rows are placed, fails silently into `runCatching`, and focus drops to the top
+    // of the list instead of the row the user left from.
     LaunchedEffect(dialogOpen) {
-        if (!dialogOpen) runCatching { rowFocus.getValue(returnTo).requestFocus() }
+        if (!dialogOpen) {
+            delay(FOCUS_RESTORE_DELAY_MS)
+            runCatching { rowFocus.getValue(returnTo).requestFocus() }
+        }
     }
 
     val context = LocalContext.current
@@ -710,6 +718,9 @@ private fun AboutPane() {
 
 /** How many log entries the pane shows. Three is what the mockup draws; the dialog has them all. */
 private const val PANE_LOG_ROWS = 3
+
+/** Long enough for the spine to be laid out before focus is asked for. `BackupScreen`'s own number. */
+private const val FOCUS_RESTORE_DELAY_MS = 50L
 
 /** "2 days ago" — Android's own relative time, so it is localised without a string of ours. */
 private fun relativeShort(at: Long): String =

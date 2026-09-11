@@ -64,6 +64,8 @@ class LocalSyncViewModel(
             val file: File,
             val preview: BackupManager.Preview,
             val sections: Set<BackupManager.Section>,
+            /** The key that opens [file]. Worked out by core, never typed by anyone. */
+            val password: String?,
         ) : Step
         data class Result(val received: BackupManager.ImportSummary?, val sent: Boolean) : Step
     }
@@ -82,13 +84,14 @@ class LocalSyncViewModel(
         // same arriving container twice.
         if (incomingWatcher?.isActive != true) incomingWatcher = viewModelScope.launch {
             sync.incoming.collect { file ->
-                val preview = sync.preview(file).getOrNull() ?: return@collect
+                val payload = sync.previewIncoming(file).getOrNull() ?: return@collect
                 step = Step.Confirm(
                     device = null,
                     direction = SyncDirection.RECEIVE,
-                    file = file,
-                    preview = preview,
+                    file = payload.file,
+                    preview = payload.preview,
                     sections = BackupManager.Section.entries.toSet(),
+                    password = payload.password,
                 )
             }
         }
@@ -110,6 +113,33 @@ class LocalSyncViewModel(
     fun chooseAddress(address: String, port: Int) {
         discovery?.cancel()
         step = Step.EnterPin(address, port)
+    }
+
+    /**
+     * The pairing this discovered device already has here, or null.
+     *
+     * Its announced id first, because that is the thing that does not change; the address only as a
+     * fallback for a device too old to announce one, where a router handing out a new lease would
+     * make a known device look new.
+     */
+    fun pairedMatch(device: DiscoveredDevice): PairedDevice? {
+        val known = paired.value
+        return device.deviceId.takeIf { it.isNotBlank() }?.let { id -> known.firstOrNull { it.id == id } }
+            ?: known.firstOrNull { it.address == device.address }
+    }
+
+    /**
+     * Picking a device out of the found list. One that is already paired goes straight to its actions:
+     * asking for a PIN again would be asking the user to prove something this device already knows.
+     */
+    fun choose(device: DiscoveredDevice) {
+        val existing = pairedMatch(device)
+        if (existing == null) {
+            chooseAddress(device.address, device.port)
+        } else {
+            discovery?.cancel()
+            step = Step.ChooseDirection(existing)
+        }
     }
 
     fun submitPin(pin: String) {
@@ -145,8 +175,10 @@ class LocalSyncViewModel(
                     .onSuccess { step = Step.Result(received = null, sent = true) }
                     .onFailure { error = reason() }
                 SyncDirection.RECEIVE, SyncDirection.MERGE -> sync.fetch(current.device, sections)
-                    .onSuccess { (file, preview) ->
-                        step = Step.Confirm(current.device, current.direction, file, preview, sections)
+                    .onSuccess { payload ->
+                        step = Step.Confirm(
+                            current.device, current.direction, payload.file, payload.preview, sections, payload.password,
+                        )
                     }
                     .onFailure { error = reason() }
             }
@@ -158,7 +190,7 @@ class LocalSyncViewModel(
         val current = step as? Step.Confirm ?: return
         busy = true
         viewModelScope.launch {
-            sync.apply(current.file, current.sections)
+            sync.apply(current.file, current.sections, current.password)
                 .onSuccess { summary ->
                     val sent = current.device != null && current.direction == SyncDirection.MERGE &&
                         sync.send(current.device, current.sections).isSuccess

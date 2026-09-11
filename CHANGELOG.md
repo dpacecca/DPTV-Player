@@ -63,13 +63,26 @@
   so the direction is never a guess.
 - **You choose what travels.** The same tick-list Backup & Restore uses — playlists, favourites, watch
   history, resume positions, your customisations, your manual ordering and your settings — all of it
-  or only the parts you want. Add a password and your playlist logins travel too.
+  or only the parts you want.
+- **You are never asked for a password, and your playlist logins travel anyway.** The two devices
+  agree a key between themselves when they pair, and everything crossing the network is locked with
+  it. **Both devices need this update** — a television still on the old version cannot open what an
+  updated one sends.
 - **You see what will change before it does.** A summary counts what would be added and what would be
   removed, and nothing is written until you say yes. A sync never deletes anything you did not delete
   yourself.
 - **A deletion now stays deleted.** Unfavourite a channel here, sync, and it does not come back from
   the phone on the next sync. This is why the database gains a table on this update: OwnTV now
   remembers *that* you removed something, not merely that it is gone.
+- **The newer of the two always wins.** Finish an episode on the television and your phone takes that
+  over, not the other way round. Watch history and resume positions used to be decided by whichever
+  device happened to sync last, so a sync could quietly move you backwards in a show.
+- **A device you have already paired says so** when you go looking, instead of asking for its PIN a
+  second time — select it and you go straight to Send, Receive or Merge.
+- **Pairing the same device again updates it** instead of adding a second copy to the list. Pairing a
+  phone three times used to leave three identical rows behind.
+- **Two devices of the same model are told apart** by a short code after the name, shown only when two
+  paired devices would otherwise read exactly the same.
 - **Each device shows when you last synced with it**, and forgetting a device asks for the PIN again
   next time.
 
@@ -141,6 +154,13 @@
 
 ### 🐛 Bug fixes
 
+- **The highlight stays where you left it in More, and lands where you expect going in.** Coming back
+  out of Local sync — or Backup & Restore, or Favourites — dropped the highlight at the top of the
+  list instead of on the row you had just been on, so you had to walk back down to where you were.
+  And opening Local sync put the highlight on the back arrow rather than on the first row, so the
+  first press down was spent getting into the screen you were already in. Both were the same cause:
+  the screen asked for the highlight before it had finished drawing, and the request was quietly
+  dropped.
 - **Back works on the first press again, everywhere.** Leaving Settings took two presses: the first did
   nothing at all, and only the second returned you to More. The first press was not being ignored — it was
   being spent moving the highlight one step outwards inside the screen, which usually looks like nothing

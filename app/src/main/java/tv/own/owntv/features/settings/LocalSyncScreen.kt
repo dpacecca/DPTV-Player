@@ -23,7 +23,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,12 +40,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
 import tv.own.owntv.core.backup.BackupManager
 import tv.own.owntv.core.companion.CompanionServerState
 import tv.own.owntv.core.sync.local.SyncDirection
 import tv.own.owntv.core.sync.local.SyncFailure
+import tv.own.owntv.core.sync.local.shortCodes
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -76,8 +77,11 @@ fun LocalSyncScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Deliberately NOT started on entry. Which device hosts is the user's choice, on both apps and in
     // the same words — a television that quietly opened a listener the moment you looked at the
     // screen was making that choice for you, and gave you no way to unmake it.
+    // One frame was not enough: the Header's Back arrow is the first focusable in the tree, so
+    // Compose's own initial-focus pass ran after the request and took focus straight back off the
+    // first row. Same wait as `BackupScreen`, for the same reason.
     LaunchedEffect(Unit) {
-        withFrameNanos { }
+        delay(FIRST_FOCUS_DELAY_MS)
         runCatching { firstFocus.requestFocus() }
     }
     // The listener runs while this screen does, and not a moment longer.
@@ -124,10 +128,14 @@ fun LocalSyncScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 HostingBlock(it, vm.deviceName)
             }
             if (paired.isNotEmpty()) Spacer(Modifier.height(12.dp))
+            // Only the devices whose names collide get a code, so a normal household never sees one.
+            val codes = shortCodes(paired)
             paired.forEach { device ->
                 Row2(
                     icon = OwnTVIcon.BACKUP,
-                    title = device.name,
+                    title = codes[device.id]
+                        ?.let { stringResource(R.string.local_sync_device_with_code, device.name, it) }
+                        ?: device.name,
                     desc = lastSyncedText(device.lastSyncAt),
                     chevron = true,
                     onClick = { vm.chooseDevice(device) },
@@ -251,11 +259,14 @@ private fun FindDeviceBlock(vm: LocalSyncViewModel) {
             Text(stringResource(R.string.local_sync_searching), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         } else {
             vm.found.forEach { device ->
+                // A device already paired says so instead of showing an address the user has no use
+                // for, and opens its actions rather than asking for a PIN it does not need.
+                val known = vm.pairedMatch(device)
                 Row2(
                     icon = OwnTVIcon.BACKUP,
                     title = device.name,
-                    desc = device.address,
-                    onClick = { vm.chooseAddress(device.address, device.port) },
+                    desc = if (known != null) stringResource(R.string.local_sync_already_paired) else device.address,
+                    onClick = { vm.choose(device) },
                 )
             }
         }
@@ -460,3 +471,6 @@ private fun portOf(address: String): Int =
         .toIntOrNull() ?: tv.own.owntv.core.companion.CompanionLink.DEFAULT_PORT
 
 private const val PIN_LENGTH = 6
+
+/** Long enough to outlast Compose's own initial-focus pass. `BackupScreen`'s number. */
+private const val FIRST_FOCUS_DELAY_MS = 50L
