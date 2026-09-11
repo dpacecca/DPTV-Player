@@ -602,14 +602,41 @@ or **narrow the whole app to just one**.
 
 ---
 
+## ⋯ More — the sidebar's last item
+
+Everything that is neither a channel nor a preference lives here: **Settings, Favourites, History,
+Backup & Restore, Local sync, the error log and About**. Settings is the first row and already has
+focus when More opens, so the route to it is **sidebar → More → OK**.
+
+- **Two panels, like Settings.** The list is on the left; the panel on the right tells you what is
+  behind the highlighted row **before you open it**. Walk the list with **Up/Down** and the panel
+  follows.
+- **The panel is a view, not a place.** It never takes focus, so **Right does nothing on purpose** —
+  **OK** opens the row, **Back** leaves. One direction, one meaning, on every row.
+- **What each panel tells you:**
+  - **Settings** — your pinned Quick toggles with their current values, and the settings groups.
+  - **Favourites / History** — how many channels, films and shows, and a list of the actual items.
+  - **Backup & Restore** — when your last backup was, its size, whether it was encrypted, and
+    **where it was saved**. Says **Never** until you have taken one; the date starts from your next
+    export.
+  - **Local sync** — whether this television is listening for other devices, and each paired device
+    with when it last synced. Read‑only: turning Sync mode on is still a deliberate act, done inside.
+  - **Error log** — the newest failures, or a plain "nothing has failed".
+  - **About** — the version and how many languages are packaged.
+- Downloads and your profile card are **not** in More — they already have their own place on the
+  sidebar.
+
+---
+
 ## 🕐 History
 
 - Browse **recently watched movies, series and channels**.
 - ✂️ **Remove single item**: **long‑press OK** on any history item and choose **Remove from History** to
   delete just that entry (keeps the rest). For a **series** this also clears where you had got to in its
   episodes, so the show leaves the Home screen's Continue Watching row and opens at episode 1 next time.
-- 🧹 **Clear entire history** (by type): Settings → Content → **Clear watch history** — wipe all recently‑watched
-  items, or just **Live TV, Movies or Series**. Playlists, Favorites and Downloads are untouched.
+- 🧹 **Clear entire history** (by type): **More → History → Clear** — wipe all recently‑watched items, or
+  just **Live TV, Movies or Series**. Playlists, Favorites and Downloads are untouched. (It used to live
+  in Settings → Content; it now sits on the screen it acts on.)
 
 ---
 

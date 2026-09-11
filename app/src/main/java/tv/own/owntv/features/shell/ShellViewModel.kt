@@ -343,7 +343,16 @@ class ShellViewModel(
         visibleSections
             .onEach { visible ->
                 val current = _selectedSection.value
-                if (current in visible || current == MainSection.SETTINGS || current == MainSection.SEARCH) return@onEach
+                // MORE is exempt for the same reason SETTINGS is: it is a pinned rail item, not a
+                // browse section, so it is never in `visible` and would otherwise be redirected away
+                // from the moment the user changed anything in Nav menu customization.
+                if (current in visible ||
+                    current == MainSection.SETTINGS ||
+                    current == MainSection.SEARCH ||
+                    current == MainSection.MORE
+                ) {
+                    return@onEach
+                }
                 _selectedSection.value = MainSection.browseOrder.firstOrNull { it in visible } ?: MainSection.SETTINGS
             }
             .launchIn(viewModelScope)

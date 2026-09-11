@@ -1973,7 +1973,8 @@ private fun FocusHighlightDialog(
 }
 
 
-private const val GITHUB_REPO = "github.com/ahXN00/OwnTV"
+/** Widened for More's About pane, which shows the same repository line the dialog does. */
+internal const val GITHUB_REPO = "github.com/ahXN00/OwnTV"
 private const val TELEGRAM_LINK = "t.me/owntvplayer"
 
 /** About OwnTV: version, license, author and project link — all readable on screen (no TV browser). */
@@ -4159,13 +4160,23 @@ internal fun SpineItem(
     active: Boolean,
     onFocused: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Shown instead of [count] when set — More's spine needs "Off", "2 days ago" and a version
+     * string where Settings only ever needs a number. Null keeps Settings' behaviour exactly.
+     */
+    badge: String? = null,
+    /**
+     * What OK does. Null = Settings' behaviour, where OK merely selects the group whose rows are
+     * already showing. More's rows *navigate*, so they pass one.
+     */
+    onClick: (() -> Unit)? = null,
 ) {
     val colors = OwnTVTheme.colors
     val shape = SettingsSkin.RowShape
     var focused by remember { mutableStateOf(false) }
     val hot = focused || selected || active
     FocusableSurface(
-        onClick = onFocused,
+        onClick = onClick ?: onFocused,
         selected = selected,
         modifier = modifier
             .fillMaxWidth()
@@ -4230,7 +4241,7 @@ internal fun SpineItem(
                     .padding(horizontal = 7.dp, vertical = 4.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                MonoText(count.toString(), 11.5.sp, if (hot) colors.primary else colors.onSurfaceVariant)
+                MonoText(badge ?: count.toString(), 11.5.sp, if (hot) colors.primary else colors.onSurfaceVariant)
             }
         }
         if (selected) {

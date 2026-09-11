@@ -2,6 +2,31 @@
 
 ## v4.2.5 — unreleased
 
+### ⋯ More, rebuilt as a two-pane hub
+
+- **More now looks and works like Settings, because it is built from the same parts.** A narrow list
+  on the left and a panel on the right that tells you what is behind the highlighted row *before* you
+  open it. The rows, the panel header, the icon tiles and the monospaced values are the Settings
+  screen's own components, not lookalikes, so the two screens one press apart finally read as one
+  product.
+- **The panel answers the question the arrow never did.** Highlight **Local sync** and it says whether
+  this television is listening and lists your paired devices with when each last synced — so "why
+  can't my phone see it?" is answered from the sofa. Highlight **Backup & Restore** and it says when
+  your last backup was, how big it was, whether it was encrypted and **where it was saved**.
+  Highlight **Error log** and it shows the newest failures, or says plainly that nothing has failed.
+  **About** shows the version and how many languages are packaged. **Settings** shows your pinned
+  Quick toggles with their current values, and the settings groups behind the door.
+- **Favourites and History show what is in them.** Three counts — channels, films, shows — and under
+  them a list of the actual items, newest first. A type with nothing in it shows a zero rather than
+  vanishing, so an empty Movies reads as "you have not starred a film" rather than looking broken.
+- **The right-hand panel never takes focus, on any row.** Up and Down walk the list, the panel
+  follows, OK opens, Back leaves. One direction does one thing everywhere, rather than Right working
+  on some rows and doing nothing on others.
+- **Nothing is pushed off the bottom.** However many toggles you pin to Quick, the panel trims the
+  list at the bottom edge so the groups and the "OK to open" line stay on screen.
+- **When the last backup happened, and where, are now recorded at all.** Previously nothing in the app
+  knew — the date only starts from your next export, and until then the row honestly says "Never".
+
 ### ⋯ More: the last item on the sidebar
 
 - **Settings is now one press further in, and never a hunt.** The sidebar's last item is **More**

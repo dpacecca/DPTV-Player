@@ -635,6 +635,13 @@ fun OwnTVShell(
             showAvatarPicker -> showAvatarPicker = false
             showPlaylistPicker -> showPlaylistPicker = false
             showExit -> showExit = false
+            // Settings is reached through More now, so Back out of its root goes back there — one
+            // level out, not two. `SettingsScreen` passes its own `onBack` for the same purpose, but
+            // its root handler does not always win against this one, which left Back looking dead on
+            // the first press: the fallback below simply moved focus to the rail and nothing else
+            // happened. Handled here as well so the answer is the same whichever handler fires; a
+            // sub-screen of Settings still wins, because its handler is composed deeper than this.
+            selectedSection == MainSection.SETTINGS -> onSelectSection(MainSection.MORE)
             focusedLayer == ShellLayer.SIDEBAR -> showExit = true
             else -> runCatching { sidebarFocus.requestFocus() }
         }

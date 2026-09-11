@@ -14,6 +14,9 @@
 ### ✨ New features
 
 - **⋯ More is the sidebar's last item, with Settings its first row**
+- **⋯ More rebuilt as a two-pane hub, in Settings' own shape**
+- **👀 The panel says what is behind each row before you open it**
+- **💾 Backup & Restore shows when your last backup was, and where it was saved**
 - **⭐ Favourites: everything you starred, on one screen**
 - **🕘 History, newest first, with your resume points**
 - **🧹 Clear history sits on the history screen now, not inside Settings**

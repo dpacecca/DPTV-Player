@@ -573,7 +573,8 @@ private fun ProfilePinDialog(
 }
 
     }
-private fun sectionLabelRes(section: BackupManager.Section): Int = when (section) {
+/** Widened for More's Backup pane, which lists what a backup carries. One mapping, not two. */
+internal fun sectionLabelRes(section: BackupManager.Section): Int = when (section) {
     BackupManager.Section.SOURCES -> R.string.settings_backup_section_sources
     BackupManager.Section.CUSTOMIZE -> R.string.settings_backup_section_customize
     BackupManager.Section.FAVORITES -> R.string.settings_backup_section_favorites

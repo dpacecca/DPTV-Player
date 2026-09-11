@@ -151,6 +151,15 @@
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	user chose compatibility mode
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveZapList.kt	LiveZapList
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveZapList.kt	direct tune: zap rebuild failed
+1	empty	app/src/main/java/tv/own/owntv/features/more/MoreScreen.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/more/MoreScreen.kt	dMMM
+1	technical	app/src/main/java/tv/own/owntv/features/more/MoreScreen.kt	dMMMyyyy
+1	preference-key	app/src/main/java/tv/own/owntv/features/more/QuickPreview.kt	quick_autoplay
+1	preference-key	app/src/main/java/tv/own/owntv/features/more/QuickPreview.kt	quick_channel_numbers
+1	preference-key	app/src/main/java/tv/own/owntv/features/more/QuickPreview.kt	quick_check_update
+1	preference-key	app/src/main/java/tv/own/owntv/features/more/QuickPreview.kt	quick_hdr
+1	preference-key	app/src/main/java/tv/own/owntv/features/more/QuickPreview.kt	quick_live_preview
+1	preference-key	app/src/main/java/tv/own/owntv/features/more/QuickPreview.kt	quick_preview_sound
 2	empty	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	${StorageAccess.sanitize(movie.name)}.${movie.containerExt ?: StorageAccess.extOf(movie.streamUrl)}
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	MOVIE
