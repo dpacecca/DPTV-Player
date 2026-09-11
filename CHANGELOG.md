@@ -141,6 +141,15 @@
 
 ### 🐛 Bug fixes
 
+- **Back works on the first press again, everywhere.** Leaving Settings took two presses: the first did
+  nothing at all, and only the second returned you to More. The first press was not being ignored — it was
+  being spent moving the highlight one step outwards inside the screen, which usually looks like nothing
+  happening, and that swallowed the press before anything could act on it. It was never really about
+  Settings; that screen is simply where it showed, because Settings is now reached through More. Back is
+  now answered on the first press wherever you are, and everything it already did is unchanged: leaving a
+  settings page returns you to the list you opened it from, Back inside the settings list steps up to the
+  groups, Back on an open search box closes it, Back in a browse screen returns to the sidebar, Back on
+  the sidebar asks whether to exit, and Back while watching leaves the player.
 - **Live TV's catch-up list now reaches back a full week, like the TV Guide already did.** The list was
   capped at 48 hours by a note that stopped being true when the stored guide grew to seven days, so a
   programme from four days ago could be replayed from the Guide but was not even listed against the same

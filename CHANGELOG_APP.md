@@ -34,6 +34,7 @@
 
 ### 🐛 Fixes
 
+- **Back works on the first press again, everywhere**
 - **Live TV's catch-up list now reaches back a full week**
 - **The guide refreshes itself after adding, re-syncing or deleting an EPG source**
 - **The guide line under a channel's name no longer goes blank after updating the app**

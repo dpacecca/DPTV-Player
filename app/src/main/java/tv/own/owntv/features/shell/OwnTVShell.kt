@@ -660,6 +660,7 @@ fun OwnTVShell(
     // key repeats: several TVs re-fire KeyDown while a key is held, so a repeat-counting version fires
     // the long-press the instant Back is touched. Short Back is never consumed, so every existing Back
     // handler — HUD hide, search clear, dialog dismiss, direct-tune cancel — behaves exactly as before.
+    val backDispatcher = androidx.activity.compose.LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
     var backHoldJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     var backLongFired by remember { mutableStateOf(false) }
     var shortcutKeyCode by remember { mutableStateOf(android.view.KeyEvent.KEYCODE_UNKNOWN) }
@@ -746,6 +747,20 @@ fun OwnTVShell(
                             return@onKeyEvent true
                         }
                     }
+                }
+                // Back that bubbled all the way up here is a Back nothing nearer wanted as a key, so it
+                // is ours to turn into a back-press. Compose would otherwise map it to
+                // FocusDirection.Exit and spend it moving focus one level out of whatever focus target
+                // holds it — silently, because the highlight usually does not visibly move. That
+                // consumed the KeyDown before Activity.onKeyDown could startTracking(), so the KeyUp
+                // was discarded as untracked and NO BackHandler ran: Back out of Settings looked dead
+                // until a second press, by which time the exit had nowhere left to go. Running the
+                // dispatcher here keeps the answer the same on the first press, everywhere.
+                // Deeper key handlers (a text field's Back-to-close, the direct-tune cancel) still win,
+                // because this is a bubbling handler and they have already declined by the time it runs.
+                if (e.key == Key.Back) {
+                    if (e.type == KeyEventType.KeyUp && !e.nativeKeyEvent.isCanceled) backDispatcher?.onBackPressed()
+                    return@onKeyEvent backDispatcher != null
                 }
                 if (e.type != KeyEventType.KeyDown || playerMode != PlayerMode.MINI) return@onKeyEvent false
                 when (e.key) {
