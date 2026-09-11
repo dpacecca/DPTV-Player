@@ -44,6 +44,7 @@
 
 ### 🐛 Fixes
 
+- **A playlist that offers two TV guides now sets up both of them (#171)**
 - **Stalker portals: no more 403 errors, endless loading and half-finished syncs**
 - **Stalker portals: catch-up appears on the channels that actually have it**
 - **The highlight stays where you left it in ⋯ More, and lands on the first row going in**

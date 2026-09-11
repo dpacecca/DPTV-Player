@@ -126,7 +126,8 @@ class EpgSourcesViewModel(
         val pid = settings.activeProfileId.first()
         if (pid < 0) return emptyList()
         return sourceRepository.observeSources(pid).first()
-            .mapNotNull { src -> epgRepository.guideUrl(src)?.let { PlaylistEpg(src.name, it) } }
+            // A comma-separated url-tvg names several feeds; offer each one on its own.
+            .flatMap { src -> epgRepository.guideUrls(src).map { PlaylistEpg(src.name, it) } }
 
     }
 }

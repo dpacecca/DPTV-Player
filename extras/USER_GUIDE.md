@@ -1300,7 +1300,8 @@ http://your-server/live/bbc1.ts
 ```
 
 > `url-tvg="…"` on the `#EXTM3U` header line is picked up as the playlist's EPG source automatically if
-> you haven't set one. Catch-up attributes (`catchup="…"`, `catchup-source="…"`, `catchup-days="7"`)
+> you haven't set one. Several addresses separated by commas are read as separate guides, and each one
+> becomes its own entry in **Settings → EPG Sources** that you can sync or delete on its own. Catch-up attributes (`catchup="…"`, `catchup-source="…"`, `catchup-days="7"`)
 > are also read on live entries — the `append`, `shift`, `flussonic` and `xc` styles are all supported,
 > and `{utc}` / `{lutc}` / `{now}` / date tokens in `catchup-source` are filled in.
 

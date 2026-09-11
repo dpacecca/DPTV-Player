@@ -198,6 +198,13 @@
 
 ### 🐛 Bug fixes
 
+- **A playlist that offers two TV guides now sets up both of them (#171).** Some playlists name more
+  than one guide in their header, separated by a comma — one for each country a provider covers. Both
+  addresses were taken as a single one and glued together, so the guide request could only fail: the
+  entry in Settings → EPG showed the two addresses joined, it sat on "Connecting…", and no programmes
+  ever appeared. Each guide is now set up on its own, syncs on its own and can be re-synced or deleted
+  on its own. A playlist you already added repairs itself the next time it syncs — there is nothing to
+  re-import — and if one of the two guides is dead, the other still fills the TV Guide.
 - **The highlight stays where you left it in More, and lands where you expect going in.** Coming back
   out of Local sync — or Backup & Restore, or Favourites — dropped the highlight at the top of the
   list instead of on the row you had just been on, so you had to walk back down to where you were.
