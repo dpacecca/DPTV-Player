@@ -1668,6 +1668,7 @@ private fun EpisodeTile(
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.onSurfaceVariant,
                     maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
                 )
             }
@@ -1747,6 +1748,7 @@ private fun EpisodeRow(
                         style = MaterialTheme.typography.labelMedium,
                         color = colors.onSurfaceVariant,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 // Mark the episode you last watched so it's findable even when it isn't focused (#22).
