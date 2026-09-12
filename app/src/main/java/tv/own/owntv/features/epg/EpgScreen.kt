@@ -73,9 +73,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
+import tv.own.owntv.core.epg.displayLogoUrl
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.components.ChannelGenre
@@ -836,6 +840,7 @@ private fun GuideChannelRow(
                 if (categoryColor != null) {
                     Box(Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(categoryColor))
                 }
+                GuideChannelLogo(channel)
                 Text(
                     channel.number?.let { stringResource(R.string.content_epg_channel_number, it, channel.name) } ?: channel.name,
                     style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.Content),
@@ -895,6 +900,28 @@ private fun GuideChannelRow(
             }
         }
     }
+}
+
+/**
+ * The channel's logo in the guide's label column.
+ *
+ * Deliberately collapses to nothing — rather than to a placeholder icon — when there is no logo or the
+ * logo fails to load. The label column is narrow and user-resizable, so reserving 34dp on every row of
+ * a playlist that carries no logos would cost the channel name two characters for no gain.
+ */
+@Composable
+private fun GuideChannelLogo(channel: ChannelEntity) {
+    val url = channel.displayLogoUrl
+    if (url.isNullOrBlank()) return
+    var failed by remember(url) { mutableStateOf(false) }
+    if (failed) return
+    AsyncImage(
+        model = url,
+        contentDescription = null,
+        contentScale = ContentScale.Fit,
+        modifier = Modifier.size(34.dp),
+        onState = { if (it is AsyncImagePainter.State.Error) failed = true },
+    )
 }
 
 /** Move the CELL-stage cursor [delta] programmes within [progs], reporting the new highlighted time. */

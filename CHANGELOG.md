@@ -11,6 +11,17 @@
 - Works the same whether the description comes from an XMLTV feed or straight from your provider's
   own guide.
 
+### 🖼️ Channel logos in the guide
+
+- **The guide named your channels but never showed them.** Every other list did — Home, Live TV, the
+  channel list over the picture — so a guide of nothing but numbers and names was the odd one out.
+  The logo now sits at the left of each channel label, before the number.
+- It follows **Prefer EPG logos** like everywhere else, so a logo from your guide feed wins over the
+  playlist's where you asked for that.
+- Channels with no logo, and logos that fail to load, take up no room at all rather than leaving a
+  gap or a placeholder — the channel column is narrow, and its width is still yours to set under
+  **Settings → Layout → Guide Column Widths**.
+
 ### 📅 Episodes say when they first aired
 
 - **A series with a thousand episodes gave you a list of near-identical titles and a number.** Every

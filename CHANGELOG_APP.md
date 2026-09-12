@@ -14,6 +14,7 @@
 ### ✨ New features
 
 - **📺 Live TV shows what a programme is about, not just its name**
+- **🖼️ Channel logos in the guide**
 - **📅 Episodes show the day they first aired**
 - **🖼️ A profile picture of your own, from this TV or sent from your phone**
 - **🎨 The drawn avatars redrawn — lit, not flat**

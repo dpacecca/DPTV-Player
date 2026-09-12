@@ -417,6 +417,9 @@ or **narrow the whole app to just one**.
   list and EPG timeline from **10% to 90%** in 5% steps. Their total must be exactly **100%** before Save works.
   Turning customization off restores the standard **10% channels / 90% timeline** split without forgetting
   your values; the setting is included in Backup & Restore.
+- 🖼️ **Channel logos**: each channel label shows its logo at the left, before the number and name —
+  the same logo Home and Live TV use, and it respects **Prefer EPG logos** if you've turned that on.
+  Channels with no logo (or a logo that won't load) show none and give the space back to the name.
 - ↻ **Catch‑up & genre hints**: programmes you can rewind from show a ↻ badge, and each channel label
   carries a small colour dot hinting at its **genre**, based on the channel's **category name**:
   🟢 green = sport · 🔴 red = news · 🟣 violet = movies/film/cinema · 🟡 amber = kids/animation ·
