@@ -111,6 +111,12 @@ fun CategoryRail(
     // pass their own so CH+- key paging can drive the rail's scroll position from the screen.
     listState: androidx.compose.foundation.lazy.LazyListState = rememberLazyListState(),
     focusRequester: FocusRequester? = null,
+    // One-shot request to land the cursor on ONE category row rather than on the column as a whole.
+    // [focusRequester] is attached to the container, so requesting it lets Compose pick the first
+    // child (the search field / top row) — wrong when returning from a context menu opened further
+    // down. Caller passes the row's index and clears it in [onRowFocused].
+    focusRowIndex: Int? = null,
+    onRowFocused: () -> Unit = {},
     // Column width. Defaults to the stock rail width; Live/Movies/Series override it when the user has
     // turned on manual panel widths for that section (see PanelWidths.kt).
     width: androidx.compose.ui.unit.Dp = Dimens.RailWidthFixed,
@@ -130,6 +136,16 @@ fun CategoryRail(
         else categories.indices.filter { categories[it].fullName.contains(q, ignoreCase = true) }
     }
     val rowFocusers = remember(visible.size) { List(visible.size) { FocusRequester() } }
+    // Return the cursor to a specific row (see [focusRowIndex]). The row is addressed by its original
+    // category index, so a rail filtered by the search box still resolves to the right focuser.
+    LaunchedEffect(focusRowIndex, visible) {
+        val target = focusRowIndex ?: return@LaunchedEffect
+        val pos = visible.indexOf(target)
+        if (pos >= 0) {
+            runCatching { rowFocusers[pos].requestFocus() }
+        }
+        onRowFocused()
+    }
     // Phase 2 — the rail is a FIXED full-label column (no collapse/abbreviation overlay), so it never
     // reflows the layout on the D-pad. Always "expanded" = full category names.
     val expanded = true

@@ -256,6 +256,10 @@ fun LiveScreen(
     // Resolved through resources rather than stringResource: the count is only known inside the click.
     val multiviewRes = androidx.compose.ui.platform.LocalContext.current.resources
     var contextCategory by remember { mutableStateOf<LiveRailItem?>(null) }
+    // The rail row a category menu was opened from, kept after the menu closes so the cursor can go
+    // back to that exact row. Held as a key, not an index: a Move changes the row's position.
+    var contextCategoryKey by remember { mutableStateOf<LiveKey?>(null) }
+    var railFocusRow by remember { mutableStateOf<Int?>(null) }
     // The channel the "Move to category…" flow is moving (issue #87), with the origin captured at
     // menu-open time (the rail can't change under the modal, but capturing is still safer).
     var moveItem by remember { mutableStateOf<ChannelEntity?>(null) }
@@ -370,6 +374,12 @@ fun LiveScreen(
     // Category rail focus restoration.
     var contextCategoryWasOpen by remember { mutableStateOf(false) }
     var categoryMoveWasOpen by remember { mutableStateOf(false) }
+    // Land on the row the menu was opened from; fall back to the column if that row is gone (Hide).
+    fun restoreToContextCategory() {
+        val row = contextCategoryKey?.let { k -> railItems.indexOfFirst { it.key == k } }?.takeIf { it >= 0 }
+        contextCategoryKey = null
+        if (row != null) railFocusRow = row else runCatching { railFocus.requestFocus() }
+    }
     LaunchedEffect(contextCategory, categoryMoveState) {
         if (contextCategory != null) contextCategoryWasOpen = true
         if (categoryMoveState != null) categoryMoveWasOpen = true
@@ -378,13 +388,13 @@ fun LiveScreen(
             contextCategoryWasOpen = false
             if (!categoryMoveWasOpen) {
                 kotlinx.coroutines.delay(60)
-                runCatching { railFocus.requestFocus() }
+                restoreToContextCategory()
             }
         }
         if (categoryMoveState == null && categoryMoveWasOpen) {
             categoryMoveWasOpen = false
             kotlinx.coroutines.delay(60)
-            runCatching { railFocus.requestFocus() }
+            restoreToContextCategory()
         }
     }
     // Returning from fullscreen: scroll to and focus the channel you were watching (waits for the list to load).
@@ -448,11 +458,14 @@ fun LiveScreen(
                 )
             },
             selectedIndex = selectedIndex,
+            focusRowIndex = railFocusRow,
+            onRowFocused = { railFocusRow = null },
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             onLongSelect = { idx -> 
                 railItems.getOrNull(idx)?.let { item ->
                     if (item.key is LiveKey.Folder || item.key is LiveKey.Custom) {
                         contextCategory = item
+                        contextCategoryKey = item.key
                     }
                 }
             },

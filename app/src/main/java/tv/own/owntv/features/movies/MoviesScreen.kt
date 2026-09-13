@@ -165,6 +165,10 @@ fun MoviesScreen(
     val categoryMoveState by vm.categoryMoveState.collectAsStateWithLifecycle()
     var contextMovie by remember { mutableStateOf<MovieEntity?>(null) }
     var contextCategory by remember { mutableStateOf<LiveRailItem?>(null) }
+    // The rail row a category menu was opened from, kept after the menu closes so the cursor can go
+    // back to that exact row. Held as a key, not an index: a Move changes the row's position.
+    var contextCategoryKey by remember { mutableStateOf<LiveKey?>(null) }
+    var railFocusRow by remember { mutableStateOf<Int?>(null) }
     val railFocus = remember { FocusRequester() }
     // The movie the "Move to category…" flow is moving (issue #87), with the origin captured at
     // menu-open time (the rail can't change under the modal, but capturing is still safer).
@@ -307,7 +311,6 @@ fun MoviesScreen(
     //     list no longer contains it, so focus the NEAREST surviving neighbour by position (the item
     //     that slid into the removed slot, else the new last item, else first item). Only if the whole
     //     category is now empty do we let focus leave (there's nothing here to land on).
-    var reorderWasOpen by remember { mutableStateOf(false) }
     LaunchedEffect(contextMovie, moveItem, creatingCategory, moveState) {
         if (contextMovie != null) return@LaunchedEffect
         // Opening the TMDB Details window or the Set TMDB name dialog closes the menu; don't yank focus
@@ -315,14 +318,10 @@ fun MoviesScreen(
         if (detailsMovie != null) return@LaunchedEffect
         if (setTmdbNameMovie != null) return@LaunchedEffect
         if (trailerVideoKey != null) return@LaunchedEffect
-        // The context menu closes before MoveToCategoryDialog (and its nested name prompt) opens.
-        // Do not focus the grid behind either modal; re-run this effect when the whole flow closes.
-        if (moveItem != null || creatingCategory) return@LaunchedEffect
-
-        if (moveState != null) { reorderWasOpen = true; return@LaunchedEffect }
-        if (reorderWasOpen) {
-            reorderWasOpen = false
-        }
+        // The context menu closes before MoveToCategoryDialog (and its nested name prompt) opens, and
+        // the reorder overlay owns focus while it is up. Do not focus the grid behind any of them;
+        // this effect re-runs when the whole flow closes and restores the row below.
+        if (moveItem != null || creatingCategory || moveState != null) return@LaunchedEffect
 
         val targetId = contextMovieId
         if (targetId == null) { contextMovieIndex = -1; return@LaunchedEffect }
@@ -399,11 +398,14 @@ fun MoviesScreen(
                 )
             },
             selectedIndex = selectedIndex,
+            focusRowIndex = railFocusRow,
+            onRowFocused = { railFocusRow = null },
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
             onLongSelect = { idx ->
                 railItems.getOrNull(idx)?.let { item ->
                     if (item.key is LiveKey.Folder || item.key is LiveKey.Custom) {
                         contextCategory = item
+                        contextCategoryKey = item.key
                     }
                 }
             },
@@ -848,6 +850,12 @@ fun MoviesScreen(
     }
 
     // Restore focus to the rail when the context menu or category move mode closes.
+    // Land on the row the menu was opened from; fall back to the column if that row is gone (Hide).
+    fun restoreToContextCategory() {
+        val row = contextCategoryKey?.let { k -> railItems.indexOfFirst { it.key == k } }?.takeIf { it >= 0 }
+        contextCategoryKey = null
+        if (row != null) railFocusRow = row else runCatching { railFocus.requestFocus() }
+    }
     var catMenuWasOpen by remember { mutableStateOf(false) }
     var categoryMoveWasOpen by remember { mutableStateOf(false) }
     LaunchedEffect(contextCategory, categoryMoveState) {
@@ -858,13 +866,13 @@ fun MoviesScreen(
             catMenuWasOpen = false
             if (!categoryMoveWasOpen) {
                 kotlinx.coroutines.delay(60)
-                runCatching { railFocus.requestFocus() }
+                restoreToContextCategory()
             }
         }
         if (categoryMoveState == null && categoryMoveWasOpen) {
             categoryMoveWasOpen = false
             kotlinx.coroutines.delay(60)
-            runCatching { railFocus.requestFocus() }
+            restoreToContextCategory()
         }
     }
 
