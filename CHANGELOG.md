@@ -2,6 +2,37 @@
 
 ## v4.2.5 — unreleased
 
+### 🗂️ Hide or move a category without leaving the screen — community PR #131 by @pt5pnzghm6-sys0
+
+- **Tidying your categories meant a trip to Settings.** Hold **OK** on any category in Live TV,
+  Movies or Series and a small menu offers **Hide** and **Move**, right where you are.
+- **Move** opens the same full-screen reorder view the rest of the app uses — Up and Down to shift
+  the category, then Commit or Cancel.
+- Changes made here and changes made in **Settings → Customize categories and items** are the same
+  thing, so either place shows what you did in the other.
+- **Opening the menu does not move you.** Holding OK on a category you are not in leaves you where
+  you were, so backing out of the menu never strands you in a category you never chose, and nothing
+  loads behind it.
+- The cursor comes back to the category you opened the menu on — including after a Move, where it
+  follows that category to its new position.
+
+### 🎨 In Glass mode, the focused item is yours again
+
+- **Your chosen highlight colour was ignored on Glass.** A focused channel, film or show now uses
+  the colour and thickness you picked under **Settings → Appearance**, whether Glass Effect is on
+  or off.
+- **The "you are here" marker stopped shouting.** The category you are currently in used to draw a
+  bright white border that, from across the room, read as a second cursor. It is now a thin hairline
+  in your own colour, so there is one cursor on screen again — and picking Gold or Cyan no longer
+  loses your choice there.
+
+### 🔁 Customize follows the item you are moving
+
+- **The cursor used to stay in the slot instead of on the item.** In **Settings → Customize**, moving
+  an item up or down now carries the cursor with it, so holding Up moves one item a long way instead
+  of walking a different item each press.
+- Rapid presses no longer glitch the order — each move now waits for the one before it.
+
 ### 📺 What the programme actually is, while you are watching it
 
 - **Live TV showed a title and nothing else.** The guide has carried a synopsis all along — the Guide

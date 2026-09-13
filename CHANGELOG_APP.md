@@ -13,6 +13,7 @@
 
 ### ✨ New features
 
+- **🗂️ Hide or move a category without leaving the screen** (community PR #131 by @pt5pnzghm6-sys0)
 - **⏺️ Record Live TV — from the guide, the channel list or while you are watching**
 - **🔁 Record every showing of a programme on a channel**
 - **⏪ Save a catch-up programme from your provider's archive**
@@ -53,6 +54,9 @@
 
 ### 🐛 Fixes
 
+- **Glass mode ignored your chosen focus highlight colour**
+- **The active category's white border looked like a second cursor**
+- **Customize moved the item but left the cursor behind**
 - **A Multiview tile that could not be played no longer plays its sound**
 - **File sizes say MB again**
 - **An episode download appeared in no list at all**

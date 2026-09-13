@@ -930,6 +930,14 @@ included in **Backup & Restore**.
   An order you set keeps working after an update: a new action is added at the end and a removed one is
   simply skipped. Reopening the editor shows the same saved order as the long-press popup itself.
 
+- 🗂️ **Hide or move a category without leaving the screen**: in Live TV, Movies or Series, **hold OK**
+  on a category in the left-hand list. A small menu offers **Move** and **Hide**. **Move** opens the
+  full-screen reorder view — **Up / Down** to shift the category, then **Commit** or **Cancel**.
+  Opening the menu does **not** switch you into that category, so backing out leaves you exactly where
+  you were, and the cursor returns to the category you opened the menu on (following it to its new
+  place after a Move). Anything you do here shows up in **Settings → Customize Categories & Items**,
+  and vice versa — to bring a hidden category back, unhide it there.
+
 - **Settings → Customize Categories & Items**: **hide, rename and reorder** categories, plus **unhide**
   individual channels, movies and series from one place. Pick a section at the top (Live TV / Movies /
   Series). Use **Filter: All / Visible / Hidden** on the category screen or inside a category to inspect only
