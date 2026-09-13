@@ -8,10 +8,12 @@ import org.koin.dsl.module
 import tv.own.owntv.features.customize.CustomizeItemsViewModel
 import tv.own.owntv.features.customize.CustomizeViewModel
 import tv.own.owntv.features.downloads.DownloadsViewModel
+import tv.own.owntv.features.recordings.RecordingsViewModel
 import tv.own.owntv.features.epg.EpgViewModel
 import tv.own.owntv.core.content.SearchReader
 import tv.own.owntv.core.home.HomeFeedReader
 import tv.own.owntv.core.live.GuideReader
+import tv.own.owntv.core.live.LiveEpgReader
 import tv.own.owntv.features.home.HomeViewModel
 import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MovieViewModel
@@ -44,13 +46,49 @@ import tv.own.owntv.features.subtitles.SubtitleSearchViewModel
 val appModule = module {
     viewModelOf(::ShellViewModel)
     // Home's rails are core's, shared with the phone app; the view model only decorates them.
+    // LiveEpgReader is registered because GuideReader now needs one: a guide row whose stored data
+    // has run out falls back to the provider's short-EPG, which is this reader's to fetch. One
+    // instance, so the grid, the Live rows and the preview pane share its cache instead of each
+    // asking the provider the same question.
+    singleOf(::LiveEpgReader)
     singleOf(::GuideReader)
     singleOf(::SearchReader)
     singleOf(::HomeFeedReader)
     viewModelOf(::HomeViewModel)
     viewModelOf(::SetupViewModel)
     // Takes a Context first; Koin resolves it from androidContext().
-    viewModelOf(::LiveViewModel)
+    //
+    // Spelled out rather than `viewModelOf(::LiveViewModel)`: that reflective helper is generated for
+    // up to 22 constructor parameters and this class now has 23. The failure is a "none of the
+    // following candidates is applicable" at the call above, which says nothing about arity — hence
+    // this note. Every argument is resolved by type, so the order here does not matter.
+    viewModel {
+        LiveViewModel(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
     viewModelOf(::MovieViewModel)
     viewModelOf(::SeriesViewModel)
     viewModelOf(::SearchViewModel)
@@ -91,6 +129,10 @@ val appModule = module {
             companion = get(),
             vodEngineStore = get(),
             playbackPrefs = get(),
+            connectionLimits = get(),
+            player = get(),
+            livePreview = get(),
+            enginePool = get(),
         )
     }
     viewModelOf(::LocalSyncViewModel)
@@ -100,6 +142,7 @@ val appModule = module {
     viewModelOf(::DeleteSubtitlesViewModel)
     viewModelOf(::SubtitleSearchViewModel)
     viewModelOf(::DownloadsViewModel)
+    viewModelOf(::RecordingsViewModel)
     viewModelOf(::EpgViewModel)
     viewModelOf(::CustomizeViewModel)
     viewModelOf(::CustomizeItemsViewModel)

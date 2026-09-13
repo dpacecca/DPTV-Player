@@ -234,6 +234,15 @@ fun AddSourceScreen(
     // Read-only: it asks the provider for its account status and stores nothing.
     val sourceTester: SourceTester = koinInject()
     var sourceTest by remember { mutableStateOf<SourceTestUi?>(null) }
+    // True while the "this stops playback and takes a while" confirmation is up.
+    var confirmMeasure by remember { mutableStateOf(false) }
+    // Cancelling this closes the probe's streams — it releases them in a `finally` — so Skip hands
+    // the provider's connections straight back instead of leaving them held.
+    var measureJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    val connectionLimits: tv.own.owntv.core.live.ConnectionLimits = koinInject()
+    val player: tv.own.owntv.player.OwnTVPlayer = koinInject()
+    val livePreview: tv.own.owntv.player.LivePreviewEngine = koinInject()
+    val enginePool: tv.own.owntv.player.LiveEnginePool = koinInject()
 
     fun formSource(): SourceEntity {
         fun opt(value: String) = value.trim().takeIf { it.isNotBlank() }
@@ -259,6 +268,13 @@ fun AddSourceScreen(
         }
     }
 
+    /**
+     * The credentials check: one short request, and the reason this button exists before saving.
+     *
+     * It does *not* measure the connection limit. There is no playlist row to store an answer
+     * against yet, and the first sync measures it anyway — so doing it here would spend two minutes
+     * and two connections producing a number that is thrown away.
+     */
     fun runSourceTest() {
         val probe = formSource()
         val label = name.ifBlank { probe.url }
@@ -267,6 +283,29 @@ fun AddSourceScreen(
             val result = sourceTester.test(probe)
             // Dismissed while the request was in flight — don't reopen the dialog behind the user.
             if (sourceTest != null) sourceTest = SourceTestUi.Done(label, result)
+        }
+    }
+
+    /**
+     * Measure the limit from the edit form, for a playlist that already exists.
+     *
+     * Offered only when editing, because the result is saved against the playlist's row. Playback is
+     * stopped first and the user has already agreed to the warning that says so.
+     */
+    fun runConnectionMeasurement() {
+        val source = initial ?: return
+        val label = name.ifBlank { source.url }
+        measureJob?.cancel()
+        measureJob = scope.launch {
+            runCatching { player.stop() }
+            runCatching { livePreview.stop() }
+            runCatching { enginePool.releaseAll() }
+            sourceTest = SourceTestUi.Measuring(label, tv.own.owntv.core.live.ProbeProgress(1, 1, tv.own.owntv.core.live.MAX_PROBE_STREAMS))
+            val limit = connectionLimits.measureAndStore(source, force = true) { progress ->
+                if (sourceTest is SourceTestUi.Measuring) sourceTest = SourceTestUi.Measuring(label, progress)
+            }
+            val result = sourceTester.test(source)
+            if (sourceTest != null) sourceTest = SourceTestUi.Done(label, result, limit)
         }
     }
 
@@ -655,8 +694,23 @@ fun AddSourceScreen(
               onDismiss = { showManualDaysPicker = false },
           )
       }
+      if (confirmMeasure) {
+          tv.own.owntv.features.settings.ConfirmDialog(
+              title = stringResource(R.string.settings_sources_probe_title),
+              message = stringResource(R.string.settings_sources_probe_warning),
+              onConfirm = { confirmMeasure = false; runConnectionMeasurement() },
+              onDismiss = { confirmMeasure = false },
+              confirmLabel = R.string.settings_sources_retest,
+          )
+      }
       sourceTest?.let { state ->
-          SourceTestDialog(state = state, onDismiss = { sourceTest = null })
+          SourceTestDialog(
+              state = state,
+              onDismiss = { sourceTest = null },
+              // Editing only: an unsaved playlist has nowhere to keep the answer.
+              onRetest = if (initial != null) { { confirmMeasure = true } } else null,
+              onSkip = { measureJob?.cancel(); measureJob = null; sourceTest = null },
+          )
       }
     }
 }

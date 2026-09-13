@@ -44,6 +44,8 @@ import tv.own.owntv.core.customize.CustomizationStore
 import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.features.customize.MoveTarget
 import tv.own.owntv.core.epg.CatchupUrl
+import tv.own.owntv.core.live.StreamGrant
+import tv.own.owntv.core.recording.RecordingSchedule
 import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.customize.applyCustomizations
 import tv.own.owntv.core.customize.applyCustomizationsWithCustoms
@@ -74,6 +76,7 @@ import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.core.settings.LiveBuffer
 import tv.own.owntv.core.settings.LiveLatency
 import tv.own.owntv.core.settings.SettingsRepository
+import tv.own.owntv.player.LiveExoWatchdog
 import tv.own.owntv.player.LiveLadder
 import tv.own.owntv.player.LiveProgramme
 import tv.own.owntv.player.LiveStreamQuirks
@@ -122,7 +125,101 @@ class LiveViewModel(
     private val streamUrlResolver: tv.own.owntv.core.stalker.StreamUrlResolver,
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
+    private val recordings: tv.own.owntv.core.recording.RecordingManager,
 ) : ViewModel() {
+
+    // --- "Record what I'm watching" (Plan D, D3 mode b) -----------------------------------------
+
+    /**
+     * The row opened for the channel currently being recorded off the player's own stream, or null.
+     *
+     * Held here rather than derived from the table because this recording belongs to *this* playing
+     * stream: it ends when the stream does, and nothing in the database says which stream that was.
+     */
+    private val _playerRecording =
+        MutableStateFlow<tv.own.owntv.core.database.entity.RecordingEntity?>(null)
+
+    val playerRecording: StateFlow<tv.own.owntv.core.database.entity.RecordingEntity?> = _playerRecording
+
+    /**
+     * Start or stop recording the channel on screen, from its start time of *now*.
+     *
+     * **This fetches the channel itself rather than copying the open stream, and that is deliberate.**
+     * The original design tapped mpv's `stream-record`, which costs no second connection — but that
+     * copies bytes as they pass through mpv's stream layer, and an HLS channel never puts them there:
+     * FFmpeg's `hls` demuxer opens each segment on its own. mpv accepted the instruction
+     * (`Set property: stream-record="…" -> 1`) and wrote nothing, every time, on every HLS channel —
+     * which on a normal IPTV playlist is all of them. Proven on the television's own mpv log.
+     *
+     * So it goes through the same engine as a scheduled recording, and inherits its behaviour: it
+     * costs one of the playlist's connections, it **keeps running** when the channel is changed or the
+     * player is left, and the Recordings screen can stop it. The connection is why
+     * [RecordingManager.canRecordOn] is asked first — a refusal is a sentence, not a failed recording.
+     */
+    fun togglePlayerRecording(channel: ChannelEntity) {
+        viewModelScope.launch {
+            val open = _playerRecording.value
+            if (open != null) {
+                recordings.stop(open)
+                _playerRecording.value = null
+                return@launch
+            }
+            val pid = currentProfileId() ?: return@launch
+            _playerRecording.value = startRecordingNow(channel, pid, nowNext.value?.now)
+        }
+    }
+
+    /**
+     * Record this channel from now, whether or not it is the one on screen.
+     *
+     * The guide's Record needs a programme to record, so a channel the provider publishes no guide
+     * for cannot be recorded from there at all — and those are exactly the channels a user is most
+     * likely to want kept. This is the same recording by another door: long-press the channel in the
+     * list. With a programme on screen it ends when that programme does; with none it runs for
+     * [RecordingSchedule.NO_GUIDE_RUNTIME_MINUTES] and is stopped from Downloads → Live TV.
+     */
+    fun recordNow(channel: ChannelEntity) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            // The programme is only known for the channel the guide pane is showing; from the list
+            // this is a channel like any other, so its own now-programme is looked up here.
+            startRecordingNow(channel, pid, epgReader.nowNext(channel, custom.value, epgOffset.value)?.now)
+        }
+    }
+
+    private suspend fun startRecordingNow(
+        channel: ChannelEntity,
+        profileId: Long,
+        programme: tv.own.owntv.core.parser.XtEpgEntry?,
+    ): tv.own.owntv.core.database.entity.RecordingEntity? {
+        if (recordings.canRecordOn(channel.sourceId) !is StreamGrant.Allowed) return null
+        val startMs = System.currentTimeMillis()
+        // Start now: the programme is already under way and a live edge cannot be rewound, so the
+        // pre-roll has nothing to reach back to. The end is the programme's own, padding included.
+        val stopMs = programme
+            ?.let { recordings.windowFor(it.startMs, it.stopMs).last }
+            ?.takeIf { it > startMs }
+            ?: (startMs + RecordingSchedule.NO_GUIDE_RUNTIME_MINUTES * 60_000L)
+        return recordings.schedule(
+            tv.own.owntv.core.database.entity.RecordingEntity(
+                profileId = profileId,
+                sourceId = channel.sourceId,
+                channelId = channel.id,
+                channelName = channel.name,
+                channelIconUrl = channel.logoUrl,
+                epgChannelId = channel.epgChannelId,
+                streamUrl = channel.streamUrl,
+                httpHeaders = channel.httpHeaders,
+                title = programme?.title ?: channel.name,
+                description = programme?.description,
+                programmeStartMs = programme?.startMs ?: startMs,
+                programmeStopMs = programme?.stopMs ?: stopMs,
+                startMs = startMs,
+                stopMs = stopMs,
+            ),
+        )
+    }
+
 
     data class ChannelMoveState(val items: List<ChannelEntity>, val activeIndex: Int, val contextKey: String)
     private val _moveState = MutableStateFlow<ChannelMoveState?>(null)
@@ -758,6 +855,67 @@ class LiveViewModel(
             liveBufferOverride = liveBufferFor(channel.sourceId),
             httpHeaders = channel.httpHeaders,
             drmConfig = channel.drmConfig,
+        )
+    }
+
+    // --- Multiview: channels kept from the browse screen ------------------------------------------
+    // The plan's second entry point: pick two to four channels from the Live list, then press play and
+    // the grid opens already filled. Held here rather than in the shell because the context menu that
+    // fills it and the player that empties it are two different screens.
+    private val _multiviewSelection = MutableStateFlow<List<ChannelEntity>>(emptyList())
+    val multiviewSelection: StateFlow<List<ChannelEntity>> = _multiviewSelection.asStateFlow()
+
+    /** Keep [channel] for the grid, up to [limit] tiles. Adding one twice does nothing. */
+    fun addToMultiview(channel: ChannelEntity, limit: Int) {
+        val current = _multiviewSelection.value
+        if (current.any { it.id == channel.id } || current.size >= limit) return
+        _multiviewSelection.value = current + channel
+    }
+
+    fun clearMultiviewSelection() {
+        _multiviewSelection.value = emptyList()
+    }
+
+    /** The playlist a channel came from, so a caller can ask what it allows (Multiview's tile budget). */
+    fun sourceOf(channel: ChannelEntity): SourceEntity? = sourceById[channel.sourceId]
+
+    /**
+     * Tune [channel] into a Multiview tile's own engine.
+     *
+     * Deliberately routed through here rather than built in the grid: which URL a channel actually
+     * plays is not a property of the channel row. It is the playlist's pre-buffer override, its live
+     * latency, its User-Agent, the channel's own headers and DRM, and — for Stalker — a `cmd` that
+     * has to be resolved to a link per play. All of that already lives here, and a second copy in the
+     * grid would drift the first time one of them changed.
+     */
+    fun tuneTile(engine: tv.own.owntv.player.LivePreviewEngine, channel: ChannelEntity, muted: Boolean) {
+        val source = sourceById[channel.sourceId]
+        val meta = tv.own.owntv.player.MediaMeta(
+            title = channel.name,
+            subtitle = channelNumberLabel(channel),
+            logoUrl = channel.displayLogoUrl,
+            contentKey = mpvPinKey(channel),
+        )
+        if (streamUrlResolver.needsResolve(source)) {
+            viewModelScope.launch {
+                val url = runCatching { streamUrlResolver.resolve(source!!, channel.streamUrl) }
+                    .onFailure { Log.w(ENGINE_TAG, "multiview resolve failed '${channel.name}'", it) }
+                    .getOrNull() ?: return@launch
+                engine.play(
+                    url, muted = muted, meta = meta, userAgent = sourceUaMap[channel.sourceId],
+                    prerollSecsOverride = prerollFor(channel.sourceId),
+                    liveBufferOverride = liveBufferFor(channel.sourceId),
+                    httpHeaders = channel.httpHeaders, drmConfig = channel.drmConfig,
+                )
+            }
+            return
+        }
+        engine.play(
+            tuneUrl(channel, source), muted = muted, meta = meta,
+            userAgent = sourceUaMap[channel.sourceId],
+            prerollSecsOverride = prerollFor(channel.sourceId),
+            liveBufferOverride = liveBufferFor(channel.sourceId),
+            httpHeaders = channel.httpHeaders, drmConfig = channel.drmConfig,
         )
     }
 
@@ -1500,128 +1658,17 @@ class LiveViewModel(
     private fun watchExoOutcome(channel: ChannelEntity) {
         exoOutcomeJob?.cancel()
         exoOutcomeJob = viewModelScope.launch {
-            // Runs alongside the terminal-state wait below: audio/position can be progressing fine (so
-            // ExoPlayer never reaches ERROR) while a video track never renders a single frame — the "audio
-            // plays, no picture" case. One-shot per tune; mpv's own outcome (success or its own error state)
-            // takes it from there, same as the ERROR branch below.
-            launch {
-                previewEngine.noVideoDetected.first { it }
-                if (!isStill(channel)) return@launch
-                val reason = "no video frame rendered (audio plays, no picture)"
-                advanceLadder(channel, reason)
-            }
-            // The provider signs each segment URL with an expiring token and refuses them all; Media3 can
-            // only re-issue the URL it already resolved, so no amount of retrying recovers this. mpv/FFmpeg
-            // re-reads the playlist and fetches with a fresh token, so hand over as soon as it's proven.
-            launch {
-                previewEngine.segmentsRefused.first { it }
-                if (isStill(channel)) advanceLadder(channel, "provider refuses ExoPlayer's signed segment URLs")
-            }
-            // Bounded, because "neither" is a real outcome. A stream can open its HLS playlist, report
-            // BUFFERING and then simply never deliver a playable segment — no first frame, no error. The
-            // engine's own stall watchdog can't save that one: it is armed only AFTER the first successful
-            // play, so nothing times out and the spinner sits there forever. Without this deadline that
-            // channel never reaches mpv, which usually plays it fine.
-            // A pre-buffer is requested silence: 10s of it means the first frame is *supposed* to be ~10s
-            // out, so the deadline has to move with it or every pre-buffered channel looks stuck.
-            val openBudgetMs = EXO_OPEN_TIMEOUT_MS + previewEngine.activePrerollSecs.coerceAtLeast(0) * 1000L
-            // A provider back-off (HTTP 429 + Retry-After) is the panel naming the second at which this
-            // channel frees up, and the engine is counting it down behind the spinner. Expiring the budget
-            // in the middle of that would hand a perfectly good channel to TS/mpv over a wait we asked for
-            // — so the deadline restarts for as long as the countdown is running, and only a stream that
-            // goes quiet for a whole budget with nothing pending counts as "never opened".
-            var terminal: tv.own.owntv.player.LivePreviewEngine.State?
-            var waitsSeen = 0
-            while (true) {
-                terminal = kotlinx.coroutines.withTimeoutOrNull(openBudgetMs) {
-                    previewEngine.state.first {
-                        it == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
-                            it == tv.own.owntv.player.LivePreviewEngine.State.ERROR
-                    }
-                }
-                if (terminal != null) break
-                if (!isStill(channel)) return@launch
-                val waits = previewEngine.providerBackOffsSpent
-                // Nothing pending and no new wait since the last deadline → this really is a stuck open.
-                if (previewEngine.providerBackOff.value == null && waits == waitsSeen) break
-                waitsSeen = waits
-                // The budget just spent was the panel's own countdown, not this channel failing to open,
-                // so give it back — otherwise the whole-tune deadline would abandon a channel that is
-                // simply queued behind a wait OwnTV agreed to.
-                ladder.postponeDeadline(openBudgetMs)
-            }
-            if (!isStill(channel)) return@launch
-            if (terminal == null) {
-                val reason = "ExoPlayer never opened it (${openBudgetMs / 1000}s, no frame and no error)"
-                advanceLadder(channel, reason)
-                return@launch
-            }
-            if (terminal == tv.own.owntv.player.LivePreviewEngine.State.ERROR) {
-                // onPlayerError assigns _state before _errorInfo, and this collector resumes inline on
-                // Dispatchers.Main.immediate — so yield first, or the detail is always read as null.
-                kotlinx.coroutines.yield()
-                val info = previewEngine.errorInfo.value
-                val reason = "ExoPlayer error before first frame: ${info?.raw ?: previewEngine.error.value}"
-                advanceLadder(channel, reason)
-                return@launch
-            }
-            // One unconditional line per tune saying whether ExoPlayer ever opened it. Without this a
-            // support log shows the tune and then nothing at all, which reads identically whether the
-            // channel played, wedged with the watchers still waiting, or the watcher itself never ran.
-            engineLog("'${channel.name}' opened on ExoPlayer")
-            ladderOpened()
-            // PLAYING: give the track list a moment to settle, then route silent (undecodable-audio) streams to mpv.
-            delay(300)
-            if (!isStill(channel)) return@launch
-            if (previewEngine.audioUnsupported.value) { advanceLadder(channel, "no decodable audio track"); return@launch }
-            watchExoAfterFirstFrame(channel)
-        }
-    }
-
-    /**
-     * Keep watching a live channel that HAS opened, and hand it over if it then wedges for good.
-     *
-     * Everything above this is a first-frame check, so a stream that starts and dies used to be nobody's
-     * problem: the engine's reconnect ladder took it from there, and that ladder is deliberately patient
-     * — a dozen seconds to call a buffer a stall, then eight attempts backing off to 15 s each. Well over
-     * two minutes of frozen picture behind a spinner before the honest "Lost connection" appears, and mpv
-     * — which often plays the very same channel — was never given a turn. (Seen on a `.m3u8` that hands
-     * out a few seconds of video and then nothing.)
-     *
-     * A brief re-buffer is not that: it is normal on live TV and the engine recovers by itself, so only a
-     * stall that outlasts [EXO_STALL_HANDOFF_MS] counts. Nothing here fires while the channel is playing.
-     */
-    private suspend fun watchExoAfterFirstFrame(channel: ChannelEntity) {
-        var lastLoggedMs = 0L
-        while (isStill(channel)) {
-            // Suspends for as long as the channel is healthy — LOADING here means buffering or reconnecting.
-            val left = previewEngine.state.first { it != tv.own.owntv.player.LivePreviewEngine.State.PLAYING }
-            if (!isStill(channel)) return
-            if (left == tv.own.owntv.player.LivePreviewEngine.State.IDLE) return // stopped/zapped away — not our business
-            // Throttled: a stream that re-buffers several times a second (the flap the engine's
-            // [noteRebufferFlap] catches) would otherwise fill the log with this one line.
-            val nowMs = android.os.SystemClock.elapsedRealtime()
-            if (nowMs - lastLoggedMs >= STALL_LOG_THROTTLE_MS) {
-                lastLoggedMs = nowMs
-                engineLog("'${channel.name}' stopped playing (state=$left) — ${EXO_STALL_HANDOFF_MS / 1000}s to recover")
-            }
-            val recovered = if (left == tv.own.owntv.player.LivePreviewEngine.State.ERROR) null else
-                kotlinx.coroutines.withTimeoutOrNull(EXO_STALL_HANDOFF_MS) {
-                    previewEngine.state.first {
-                        it != tv.own.owntv.player.LivePreviewEngine.State.LOADING
-                    }
-                }
-            if (!isStill(channel)) return
-            if (recovered == tv.own.owntv.player.LivePreviewEngine.State.PLAYING) continue // it came back — keep watching
-            if (recovered == tv.own.owntv.player.LivePreviewEngine.State.IDLE) return
-            kotlinx.coroutines.yield() // let onPlayerError finish assigning errorInfo (see the ERROR branch above)
-            val reason = if (left == tv.own.owntv.player.LivePreviewEngine.State.ERROR || recovered != null) {
-                "ExoPlayer gave up mid-stream: ${previewEngine.errorInfo.value?.raw ?: previewEngine.error.value}"
-            } else {
-                "played, then stalled for ${EXO_STALL_HANDOFF_MS / 1000}s without recovering"
-            }
-            advanceLadder(channel, reason)
-            return
+            // L1 — every rung of this now lives in :player-core, so the phone runs the same one. What
+            // stays here is what is genuinely the television's: which channel is on screen, how a
+            // handover is recorded, and where the log line goes.
+            LiveExoWatchdog(
+                engine = previewEngine,
+                stillOurs = { isStill(channel) },
+                handOver = { reason -> advanceLadder(channel, reason) },
+                onOpened = { ladderOpened() },
+                postponeDeadline = { ladder.postponeDeadline(it) },
+                log = { engineLog(it) },
+            ).watch(channel.name)
         }
     }
 
@@ -1664,7 +1711,7 @@ class LiveViewModel(
      * bought the tune more time ([LiveLadder.postponeDeadline]) moves this alarm with it.
      *
      * A channel that OPENS cancels this job outright ([ladderOpened]), so a stream that plays and later
-     * stalls is never touched by it — that one belongs to [watchExoAfterFirstFrame], which is about
+     * stalls is never touched by it — that one belongs to [LiveExoWatchdog], which is about
      * recovery, not about opening.
      */
     private fun startLadderDeadline(channel: ChannelEntity) {
@@ -1747,7 +1794,7 @@ class LiveViewModel(
         if (next.onMpv) {
             // Detached on purpose. [fallbackToMpv] cancels [exoOutcomeJob] the moment mpv takes over —
             // but every automatic rung is dispatched from INSIDE that job (the audio/no-video/error
-            // watchers and [watchExoAfterFirstFrame] all run there), so calling it inline meant the
+            // watchers and [LiveExoWatchdog] all run there), so calling it inline meant the
             // handoff cancelled itself and died at its first suspension point: the shell had already
             // flipped to mpv's surface, mpv was never asked to load anything, and [watchMpvOutcome]
             // never armed. That is a permanent black screen whose diagnostics stop dead at
@@ -2292,19 +2339,9 @@ class LiveViewModel(
             // it deliberately is not.
             else defaultRail.dropLast(1) + LiveRailItem(LiveKey.Catchup, icon = OwnTVIcon.CATCHUP) + defaultRail.last()
         const val ZAP_WINDOW_HALF = 50 // channels loaded on each side of the tuned channel for CH+/-
-        /** How long ExoPlayer gets to reach a first frame (or an error) before the channel goes to mpv,
-         *  *on top of* any requested pre-buffer. Past this it is not slow, it is stuck — see
-         *  [watchExoOutcome].
-         *
-         *  Was 25s while a channel could buffer forever without starting; the engine now calls that in
-         *  about four seconds and fails the load ([LivePreviewEngine.openWatchdog]), so the only thing
-         *  left to wait for is a genuinely slow panel. Still not 5s: a 4K channel on a distant panel
-         *  legitimately spends several seconds on the first segment plus decoder setup, and bouncing those
-         *  off the faster engine costs more than the extra seconds save. */
-        const val EXO_OPEN_TIMEOUT_MS = 12_000L
         /**
          * How long a channel that HAS played may stay stalled before it goes to mpv — see
-         * [watchExoAfterFirstFrame].
+         * [LiveExoWatchdog].
          *
          * DERIVED from the engine's own death verdict rather than chosen independently. The two numbers
          * had drifted badly apart: this was a flat 30s while the engine calls a stalled feed dead at 12s
@@ -2316,12 +2353,6 @@ class LiveViewModel(
          * actually open before the channel is offered to the other player. Sitting through a SECOND one
          * is what this no longer does.
          */
-        val EXO_STALL_HANDOFF_MS =
-            tv.own.owntv.player.LivePreviewEngine.DEATH_VERDICT_MS + STALL_HANDOFF_GRACE_MS
-
-        /** Grace on top of the engine's own verdict: room for the engine's first reconnect to
-         *  open, not for a second one to be attempted. */
-        private const val STALL_HANDOFF_GRACE_MS = 2_000L
 
         /** How long mpv gets to produce a picture before the channel moves to the next rung of the
          *  ladder — see [watchMpvOutcome]. Looser than ExoPlayer's: mpv runs its own open watchdog
@@ -2329,7 +2360,5 @@ class LiveViewModel(
          *  finishes would throw away attempts that often succeed. */
         const val MPV_OPEN_TIMEOUT_MS = 35_000L
 
-        /** Minimum gap between two "stopped playing" lines for the same tune (see [watchExoAfterFirstFrame]). */
-        private const val STALL_LOG_THROTTLE_MS = 5_000L
     }
 }

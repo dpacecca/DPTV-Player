@@ -88,6 +88,12 @@ class SettingsViewModel(
     private val companion: tv.own.owntv.core.companion.CompanionController,
     private val vodEngineStore: tv.own.owntv.core.player.VodEngineStore,
     private val playbackPrefs: tv.own.owntv.core.player.PlaybackPrefsStore,
+    private val connectionLimits: tv.own.owntv.core.live.ConnectionLimits,
+    // The measurement opens streams, so whatever is playing has to stop first — on a
+    // single-connection account the measurement IS the thing that cuts the picture off.
+    private val player: tv.own.owntv.player.OwnTVPlayer,
+    private val livePreview: tv.own.owntv.player.LivePreviewEngine,
+    private val enginePool: tv.own.owntv.player.LiveEnginePool,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OwnTVHome"
@@ -279,6 +285,28 @@ class SettingsViewModel(
 
     val autoFrameRate: StateFlow<Boolean> = settings.autoFrameRate
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    // Multiview (Plan D, feature B). The tile count is never reduced behind the user's back: the
+    // warning above two tiles is asked once and obeyed either way (D5, D12).
+    val multiviewEnabled: StateFlow<Boolean> = settings.multiviewEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val multiviewTiles: StateFlow<Int> = settings.multiviewTiles
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.live.DEFAULT_MULTIVIEW_TILES)
+
+    val multiviewWarningAccepted: StateFlow<Boolean> = settings.multiviewWarningAccepted
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun setMultiviewEnabled(enabled: Boolean) {
+        viewModelScope.launch { settings.setMultiviewEnabled(enabled) }
+    }
+
+    fun setMultiviewTiles(tiles: Int, acceptWarning: Boolean = false) {
+        viewModelScope.launch {
+            if (acceptWarning) settings.setMultiviewWarningAccepted(true)
+            settings.setMultiviewTiles(tiles)
+        }
+    }
 
     fun setAutoFrameRate(enabled: Boolean) {
         viewModelScope.launch { settings.setAutoFrameRate(enabled) }
@@ -602,6 +630,20 @@ class SettingsViewModel(
     fun setAudioDelayMs(ms: Int) { viewModelScope.launch { settings.setAudioDelayMs(ms) } }
 
     // --- CH+- key paging (browse panels): master toggle + per-direction skip counts ---
+    // --- Recording (Plan D, Feature A) ---
+    val recordWhatImWatching: StateFlow<Boolean> =
+        settings.recordWhatImWatching.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    fun setRecordWhatImWatching(enabled: Boolean) { viewModelScope.launch { settings.setRecordWhatImWatching(enabled) } }
+    val recordingReserveConnection: StateFlow<Boolean> =
+        settings.recordingReserveConnection.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+    fun setRecordingReserveConnection(reserve: Boolean) { viewModelScope.launch { settings.setRecordingReserveConnection(reserve) } }
+    val recordingPreRollMinutes: StateFlow<Int> = settings.recordingPreRollMinutes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.recording.RecordingSchedule.DEFAULT_PRE_ROLL_MINUTES)
+    fun setRecordingPreRollMinutes(minutes: Int) { viewModelScope.launch { settings.setRecordingPreRollMinutes(minutes) } }
+    val recordingPostRollMinutes: StateFlow<Int> = settings.recordingPostRollMinutes
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.recording.RecordingSchedule.DEFAULT_POST_ROLL_MINUTES)
+    fun setRecordingPostRollMinutes(minutes: Int) { viewModelScope.launch { settings.setRecordingPostRollMinutes(minutes) } }
+
     val chNavEnabled: StateFlow<Boolean> = settings.chNavEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
     fun setChNavEnabled(enabled: Boolean) { viewModelScope.launch { settings.setChNavEnabled(enabled) } }
     val chNavUpSkip: StateFlow<Int> = settings.chNavUpSkip.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ChNavLimits.DEFAULT_SKIP)
@@ -772,6 +814,7 @@ class SettingsViewModel(
     fun setSourcePreroll(sourceId: Long, secs: Int) {
         viewModelScope.launch { sourceDao.updateLivePreroll(sourceId, secs) }
     }
+
 
     /** Per-playlist Live TV engine override; `null` = follow the global setting. */
     fun setSourceLiveEngine(sourceId: Long, preference: String?) {
@@ -988,13 +1031,68 @@ class SettingsViewModel(
     private val _sourceTest = MutableStateFlow<SourceTestUi?>(null)
     val sourceTest: StateFlow<SourceTestUi?> = _sourceTest.asStateFlow()
 
+    /**
+     * The Info popup: what is already known, plus a quick liveness check.
+     *
+     * The measured stream limit is read straight from the playlist row and never re-measured here —
+     * measuring costs minutes and stops playback, so it belongs behind Re-test. Everything else is
+     * one short request, because "is this playlist still alive?" is the question this button has
+     * always really answered.
+     */
     fun testSource(source: SourceEntity) {
         viewModelScope.launch {
             _sourceTest.value = SourceTestUi.Running(source.name)
             val result = sourceTester.test(source)
             // Back may have closed the popup while the request was still running; don't re-open it.
-            if (_sourceTest.value != null) _sourceTest.value = SourceTestUi.Done(source.name, result)
+            if (_sourceTest.value != null) {
+                _sourceTest.value = SourceTestUi.Done(source.name, result, connectionLimits.known(source))
+            }
         }
+    }
+
+    /**
+     * Re-test: measure how many streams this provider really allows, by opening them.
+     *
+     * Stops playback first, and deliberately not gently — the user agreed to a warning that says so.
+     * A single-connection provider cuts the oldest stream when a new one starts, so a picture left
+     * running would both be killed by the measurement and corrupt its result.
+     */
+    fun retestSource(source: SourceEntity) {
+        measureJob?.cancel()
+        measureJob = viewModelScope.launch {
+            stopAllPlayback()
+            _sourceTest.value = SourceTestUi.Measuring(source.name, tv.own.owntv.core.live.ProbeProgress(1, 1, tv.own.owntv.core.live.MAX_PROBE_STREAMS))
+            val limit = connectionLimits.measureAndStore(source, force = true) { progress ->
+                if (_sourceTest.value is SourceTestUi.Measuring) {
+                    _sourceTest.value = SourceTestUi.Measuring(source.name, progress)
+                }
+            }
+            val result = sourceTester.test(source)
+            if (_sourceTest.value != null) _sourceTest.value = SourceTestUi.Done(source.name, result, limit)
+        }
+    }
+
+    /**
+     * Abandon a measurement in progress.
+     *
+     * Cancelling the coroutine is what closes the streams — the probe releases them in a `finally`,
+     * so nothing is left holding a connection the user is about to want back. Whatever the run had
+     * already confirmed is discarded rather than saved: half a measurement is a guess, and a wrong
+     * low number refuses tiles the user is entitled to.
+     */
+    fun skipConnectionMeasurement() {
+        measureJob?.cancel()
+        measureJob = null
+        _sourceTest.value = null
+    }
+
+    private var measureJob: kotlinx.coroutines.Job? = null
+
+    /** Every engine that could be holding one of this provider's connections. */
+    private fun stopAllPlayback() {
+        runCatching { player.stop() }
+        runCatching { livePreview.stop() }
+        runCatching { enginePool.releaseAll() }
     }
 
     fun dismissSourceTest() {
@@ -1552,5 +1650,20 @@ sealed interface SourceTestUi {
     val sourceName: String
 
     data class Running(override val sourceName: String) : SourceTestUi
-    data class Done(override val sourceName: String, val result: SourceTestResult) : SourceTestUi
+
+    /**
+     * The connection measurement, which takes minutes rather than the fraction of a second the
+     * liveness check takes — hence its own state, with the progress the user has to be able to see.
+     */
+    data class Measuring(
+        override val sourceName: String,
+        val progress: tv.own.owntv.core.live.ProbeProgress,
+    ) : SourceTestUi
+
+    data class Done(
+        override val sourceName: String,
+        val result: SourceTestResult,
+        /** What is stored for this playlist, measured or published. Null before anything is known. */
+        val limit: tv.own.owntv.core.live.ConnectionLimit? = null,
+    ) : SourceTestUi
 }

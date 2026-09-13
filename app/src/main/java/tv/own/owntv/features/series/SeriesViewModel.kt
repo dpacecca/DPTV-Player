@@ -63,6 +63,7 @@ import tv.own.owntv.core.util.throttleLatest
 import tv.own.owntv.core.download.DownloadManager
 import tv.own.owntv.core.repository.SeriesRepository
 import tv.own.owntv.core.storage.StorageAccess
+import tv.own.owntv.core.storage.MediaFolders
 import tv.own.owntv.features.customize.MoveTarget
 import tv.own.owntv.features.live.LiveRailItem
 import tv.own.owntv.core.repository.activeProfileSources
@@ -1068,7 +1069,7 @@ class SeriesViewModel(
                 title = episode.name.takeIf { it.isNotBlank() } ?: show?.name.orEmpty(),
                 posterUrl = show?.posterUrl,
                 streamUrl = episode.streamUrl,
-                relativeDir = "Series/$showDir/Season ${episode.seasonNumber}",
+                relativeDir = MediaFolders.seasonDir(showDir, episode.seasonNumber),
                 fileName = "${StorageAccess.sanitize(episode.name.ifBlank { "episode-${episode.episodeNumber}" })}.$ext",
             )
         }
@@ -1088,7 +1089,7 @@ class SeriesViewModel(
                     title = ep.name.takeIf { it.isNotBlank() } ?: series.name,
                     posterUrl = series.posterUrl,
                     streamUrl = ep.streamUrl,
-                    relativeDir = "Series/$showDir/Season ${ep.seasonNumber}",
+                    relativeDir = MediaFolders.seasonDir(showDir, ep.seasonNumber),
                     fileName = "${StorageAccess.sanitize(ep.name.ifBlank { "episode-${ep.episodeNumber}" })}.$ext",
                 )
             }

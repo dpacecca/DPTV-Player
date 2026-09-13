@@ -207,7 +207,84 @@
 - **The companion phone/browser form** offers 1, 2, 7, 14 and 30-day presets; any other figure is dialled
   in on the television.
 
+### ⏺️ Record Live TV
+
+Live TV can be recorded — from the guide, from the channel list, or from the player while you are
+watching — and the recordings live in **Downloads → Live TV**, beside Movies and Series.
+
+- **Record what you are watching.** A button in the player, on live channels only, once the setting is
+  on. It keeps running when you change channel or leave the player; the Recordings list stops it.
+- **Record from the guide.** Long-press a programme. A channel your provider publishes no guide for
+  records for two hours, because a recording with no end is worse than one that stops too early.
+- **Record every showing.** A standing rule for a programme on a channel — new showings are scheduled
+  as the guide learns about them.
+- **Catch-up as a recording.** A programme that has already been broadcast can be saved from the
+  provider's archive instead of being watched once.
+- **It costs one of your provider's connections**, and says so before it starts rather than failing
+  into a spinner. If your account allows one stream and something is already using it, you are told in
+  a sentence — and a recording is allowed to take that one stream, because a live programme is gone
+  forever and a picture is not.
+- Each row shows **duration · size · the full path**, and the status pill shows the size ticking up.
+- **Recording is a row under Playback in Settings**, not a group of its own.
+
+### 🔲 Multiview — up to four channels at once
+
+Watch several live channels side by side. The grid opens from the player's **Multiview** button, or
+by marking channels with **Add to Multiview** from the channel list and then playing one.
+
+- **The Settings number is a ceiling, not a size.** The grid opens with two — your channel and an
+  empty tile — and grows only when you ask, up to the maximum. Four allowed does not mean four every
+  time, and watching exactly two needs no trip back to Settings.
+- **Hold OK on a tile** for its menu: change channel, add a tile, make it fullscreen, give it the
+  sound, sound only, remove it. (A long press, because most remotes have no MENU key.)
+- **Filling a tile starts at the categories**, across every playlist, so a grid can mix channels from
+  playlists you were not browsing.
+- **One tile has the sound**, and short OK moves it.
+- **Sound only** gives up a tile's picture and keeps its commentary — it still uses one of your
+  provider's connections, and the tile says so rather than looking free.
+- **A tile never sits blank.** One that cannot start says why; one your provider has no connection
+  left for says that; one this television cannot decode says *that*, which is a different problem
+  from a full account and sends you somewhere different.
+- **Leaving the grid stops everything** and returns you to the Live TV list. A grid is put away by
+  someone who has finished watching, and being handed one of the four full screen would leave a
+  stream running — and a connection spent — while you believed you had closed it.
+
+### 🔌 OwnTV works out how many channels your provider allows
+
+Most providers never say how many streams your account may run at once, so Multiview and recording
+could only find out by a picture stopping.
+
+OwnTV now finds out by trying, **once**, when a playlist is added — before any channels are saved, so
+nothing you are watching can be interrupted. It asks the provider first, so an account that publishes
+the number is never tested. Afterwards it warns you *before* a tile or a recording is refused, instead
+of after.
+
+- A playlist's **Test** button is now **Info**: what is already known, and a quick check that the
+  playlist is still alive.
+- **Re-test** is inside it, behind a warning that says plainly that playback will stop and that it can
+  take up to two minutes — with **Skip** if you change your mind.
+- A broken channel cannot fool it, and it stores **nothing** rather than a wrong number.
+
+### 📂 Downloads, recordings and where files go
+
+- **Recordings moved into Downloads** as its **Live TV** tab. The Recordings row is gone from More.
+- A download row now shows **where the file went** — the whole path, not a crumb. On a box with an
+  internal drive and a USB stick, "Downloads" does not say which disk.
+- The folder picker's *Use this folder* sits **above** the list, one Up from the first row.
+
 ### 🐛 Bug fixes
+
+- **A Multiview tile that could not be played no longer plays its sound.** The picture failing does
+  not stop the audio track, so a tile reading "Couldn't play this channel" went on making a noise from
+  a channel nobody could see — and could even hold the audio badge.
+- **File sizes say MB again.** A download or recording could read "233,8" with no unit.
+- **An episode download appeared in no list at all**, because the Series tab looked for the wrong kind
+  of item.
+- **The guide, the channel row and the preview pane no longer disagree** about what is on, and the
+  same programme is no longer listed twice when a playlist carries two guides for one channel.
+- **A guide row whose stored data has run out now asks the provider**, as the preview pane always did.
+- **A recording scheduled across a reboot is repaired the next time OwnTV is opened.** Some
+  televisions never tell an app the box has restarted, so the timers could be lost without it.
 
 - **A playlist that offers two TV guides now sets up both of them (#171).** Some playlists name more
   than one guide in their header, separated by a comma — one for each country a provider covers. Both

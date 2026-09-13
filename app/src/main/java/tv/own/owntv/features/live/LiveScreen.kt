@@ -57,6 +57,7 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
@@ -241,6 +242,16 @@ fun LiveScreen(
         mutableStateOf<Pair<ChannelEntity, tv.own.owntv.core.database.entity.EpgProgrammeEntity>?>(null)
     }
     var contextChannel by remember { mutableStateOf<ChannelEntity?>(null) } // long-press quick menu
+    // Multiview: whether the menu offers it at all, how many tiles the grid has, and the confirmation
+    // after a channel is kept (null = nothing to say).
+    val liveSettings = koinInject<tv.own.owntv.core.settings.SettingsRepository>()
+    val multiviewEnabled by liveSettings.multiviewEnabled.collectAsStateWithLifecycle(false)
+    val multiviewTiles by liveSettings.multiviewTiles.collectAsStateWithLifecycle(
+        tv.own.owntv.core.live.DEFAULT_MULTIVIEW_TILES,
+    )
+    val multiviewToast = tv.own.owntv.ui.components.rememberInAppToast()
+    // Resolved through resources rather than stringResource: the count is only known inside the click.
+    val multiviewRes = androidx.compose.ui.platform.LocalContext.current.resources
     // The channel the "Move to category…" flow is moving (issue #87), with the origin captured at
     // menu-open time (the rail can't change under the modal, but capturing is still safer).
     var moveItem by remember { mutableStateOf<ChannelEntity?>(null) }
@@ -535,7 +546,15 @@ fun LiveScreen(
                             ChannelRow(
                                 channel = channel,
                                 isFavorite = favoriteIds.contains(channel.id),
-                            nowTitle = nowPlaying[channel.id],
+                            // The batch answers from the stored guide plus whatever the preview has
+                            // already resolved; the channel under the cursor is answered from the
+                            // preview ITSELF, so the row and the pane beside it can never disagree and
+                            // the line appears at once rather than at the next 60s refresh.
+                            nowTitle = if (channel.id == previewChannel?.id) {
+                                nowNext?.now?.title?.takeIf { it.isNotBlank() } ?: nowPlaying[channel.id]
+                            } else {
+                                nowPlaying[channel.id]
+                            },
                             showNumber = showChannelNumbers,
                             providerName = providerNames[channel.sourceId],
                                 modifier = Modifier.gridFocusTarget(
@@ -663,7 +682,25 @@ fun LiveScreen(
             onMatchEpg = { matchingEpg = ch; contextChannel = null },
             onEpgOffset = { offsettingEpg = ch; contextChannel = null },
             onCatchup = { catchupChannel = ch; contextChannel = null },
+            onRecord = { vm.recordNow(ch); contextChannel = null },
             onPlayExternal = { vm.playExternal(ch); contextChannel = null },
+            // Only offered once Multiview is switched on. Adding is silent apart from the toast: the
+            // grid opens when the user plays a channel, which is the gesture that says "now".
+            onAddToMultiview = if (multiviewEnabled) {
+                {
+                    vm.addToMultiview(ch, multiviewTiles)
+                    multiviewToast.show(
+                        multiviewRes.getString(
+                            R.string.multiview_added,
+                            vm.multiviewSelection.value.size,
+                            multiviewTiles,
+                        ),
+                    )
+                    contextChannel = null
+                }
+            } else {
+                null
+            },
             onMove = { contextChannel = null; enteringMoveMode = true; vm.enterMoveMode(ch, selectedKey) },
             onMoveToCategory = {
                 moveOriginKey = when (val k = selectedKey) {
@@ -680,6 +717,8 @@ fun LiveScreen(
             onDismiss = { contextChannel = null },
         )
     }
+
+    tv.own.owntv.ui.components.InAppToast(multiviewToast)
 
     // Move to… a combined category (issue #87), incl. the "＋ New category…" name prompt.
     val moveTargets by vm.moveTargets.collectAsStateWithLifecycle()
@@ -812,7 +851,10 @@ private fun ChannelContextMenu(
     onMatchEpg: () -> Unit,
     onEpgOffset: () -> Unit,
     onCatchup: () -> Unit,
+    onRecord: () -> Unit,
     onPlayExternal: () -> Unit,
+    // Null unless Multiview is switched on: keep this channel for the grid (Plan D, B5).
+    onAddToMultiview: (() -> Unit)?,
     onMove: () -> Unit,
     // "Move to category…" (issue #87): send this channel into a user's combined category.
     onMoveToCategory: () -> Unit,
@@ -843,9 +885,15 @@ private fun ChannelContextMenu(
                 add(MenuAction("match_epg", stringResource(R.string.content_match_epg), OwnTVIcon.EPG, group = 1, onClick = onMatchEpg))
                 add(MenuAction("epg_offset", stringResource(R.string.content_epg_time_offset), OwnTVIcon.EPG, group = 1, onClick = onEpgOffset))
                 if (hasCatchup) add(MenuAction("catchup", stringResource(R.string.content_catchup), group = 1, onClick = onCatchup))
+                // Record this channel from now. The guide's Record needs a programme, so a channel
+                // the provider publishes no guide for can only be recorded from here.
+                add(MenuAction("record", stringResource(R.string.recording_record), OwnTVIcon.LIVE_TV, group = 1, onClick = onRecord))
                 // Always offered, regardless of the Live TV external-player default — this is the per-channel
                 // escape hatch for a stream neither in-app engine can open (same as Movies/Series/Downloads).
                 add(MenuAction("play_external", stringResource(R.string.content_play_external_short), OwnTVIcon.PLAY, group = 1, onClick = onPlayExternal))
+                if (onAddToMultiview != null) {
+                    add(MenuAction("add_to_multiview", stringResource(R.string.multiview_add_to), OwnTVIcon.LIST_GRID, group = 1, onClick = onAddToMultiview))
+                }
                 if (canMove) {
                     add(MenuAction("move", stringResource(R.string.content_move), group = 2, onClick = onMove))
                     add(MenuAction("move_to_category", stringResource(R.string.content_move_to_category), group = 2, onClick = onMoveToCategory))

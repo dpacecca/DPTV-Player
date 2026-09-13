@@ -459,6 +459,9 @@ fun VideoPlayerSettingsScreen(
     // player is the one complete list; the root rows are shortcuts to the same values (item 14).
     val hdr by vm.hdrEnabled.collectAsStateWithLifecycle()
     val autoFrameRate by vm.autoFrameRate.collectAsStateWithLifecycle()
+    val multiviewEnabled by vm.multiviewEnabled.collectAsStateWithLifecycle()
+    val multiviewTiles by vm.multiviewTiles.collectAsStateWithLifecycle()
+    val multiviewWarningAccepted by vm.multiviewWarningAccepted.collectAsStateWithLifecycle()
     val surroundMode by vm.surroundMode.collectAsStateWithLifecycle()
     val autoPlayNext by vm.autoPlayNext.collectAsStateWithLifecycle()
     val livePreview by vm.livePreviewEnabled.collectAsStateWithLifecycle()
@@ -537,6 +540,8 @@ fun VideoPlayerSettingsScreen(
     // Settings root list — Compose resets the scrollable's offset when a scrim dialog tears down).
     val scrollState = rememberScrollState()
     var savedScroll by remember { mutableIntStateOf(0) }
+    // The tile count the warning is being asked about, so "Use 4 anyway" knows which number it meant.
+    var pendingTiles by remember { mutableIntStateOf(tv.own.owntv.core.live.MAX_MULTIVIEW_TILES) }
     val anyDialogOpen = dialog != Dialog.NONE || lowWarning != null
     LaunchedEffect(dialog, lowWarning) {
         if (dialog != Dialog.NONE) {
@@ -759,6 +764,29 @@ fun VideoPlayerSettingsScreen(
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.AFR_WARNING)),
             onClick = toggleAutoFrameRate,
         )
+        Row2(
+            quickKey = "vp_multiview",
+            icon = OwnTVIcon.LIST_GRID, title = stringResource(R.string.settings_multiview),
+            desc = stringResource(R.string.settings_multiview_description),
+            chip = stringResource(if (multiviewEnabled) R.string.common_on else R.string.common_off),
+            primaryChip = multiviewEnabled,
+            onClick = { vm.setMultiviewEnabled(!multiviewEnabled) },
+        )
+        if (multiviewEnabled) {
+            Row2(
+                quickKey = "vp_multiview_tiles",
+                icon = OwnTVIcon.LIST_GRID, title = stringResource(R.string.settings_multiview_tiles_max),
+                desc = stringResource(R.string.settings_multiview_description),
+                // "Max 4", not "4": the number is the ceiling, and the grid opens with two and grows
+                // only when the user asks. A bare number read as "every grid is this big", which is
+                // what it used to be and what made watching two channels impossible.
+                chip = stringResource(R.string.settings_multiview_tiles_max_value, multiviewTiles),
+                chevron = true,
+                primaryChip = multiviewTiles > tv.own.owntv.core.live.DEFAULT_MULTIVIEW_TILES,
+                modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.MULTIVIEW_TILES)),
+                onClick = { savedScroll = scrollState.value; dialog = Dialog.MULTIVIEW_TILES },
+            )
+        }
         Row2(
             quickKey = "vp_live_engine",
             icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_live_tv_player),
@@ -1438,6 +1466,32 @@ fun VideoPlayerSettingsScreen(
                 onDismiss = { dialog = Dialog.NONE },
             )
         }
+        Dialog.MULTIVIEW_TILES -> tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { dialog = Dialog.NONE }) {
+            MultiviewTilesDialog(
+                current = multiviewTiles,
+                onPick = { tiles ->
+                    // Above two tiles the warning is asked once, here and nowhere else (D12): a tile
+                    // that then fails already explains itself, so the user is not asked twice.
+                    if (tiles > tv.own.owntv.core.live.DEFAULT_MULTIVIEW_TILES && !multiviewWarningAccepted) {
+                        pendingTiles = tiles
+                        dialog = Dialog.MULTIVIEW_WARNING
+                    } else {
+                        vm.setMultiviewTiles(tiles)
+                        dialog = Dialog.NONE
+                    }
+                },
+                onDismiss = { dialog = Dialog.NONE },
+            )
+        }
+        Dialog.MULTIVIEW_WARNING -> tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { dialog = Dialog.NONE }) {
+            MultiviewWarningDialog(
+                onUseAnyway = { vm.setMultiviewTiles(pendingTiles, acceptWarning = true); dialog = Dialog.NONE },
+                onKeepTwo = {
+                    vm.setMultiviewTiles(tv.own.owntv.core.live.DEFAULT_MULTIVIEW_TILES)
+                    dialog = Dialog.NONE
+                },
+            )
+        }
         Dialog.LIVE_PREVIEW_PANEL -> tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { dialog = Dialog.NONE }) {
             LivePreviewPanelHiddenDialog(onDismiss = { dialog = Dialog.NONE })
         }
@@ -1513,6 +1567,7 @@ private fun ConfirmResetDialog(title: String, description: String, onConfirm: ()
 /** The dialog a pinned row opens when Quick jumps into this screen. Null for rows that toggle. */
 private fun dialogForQuickKey(key: String): Dialog? = when (key) {
     "vp_afr" -> Dialog.AFR_WARNING
+    "vp_multiview_tiles" -> Dialog.MULTIVIEW_TILES
     "vp_live_engine" -> Dialog.LIVE_ENGINE
     "vp_live_engine_sources" -> Dialog.LIVE_ENGINE_SOURCES
     "vp_vod_engine" -> Dialog.VOD_ENGINE
@@ -1540,7 +1595,7 @@ private fun dialogForQuickKey(key: String): Dialog? = when (key) {
     else -> null
 }
 
-private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, AFR_WARNING, LIVE_PREVIEW_PANEL, MINI_PLAYER }
+private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, AFR_WARNING, LIVE_PREVIEW_PANEL, MINI_PLAYER, MULTIVIEW_TILES, MULTIVIEW_WARNING }
 
 /**
  * Label for one engine preference — "ExoPlayer, then mpv", "mpv only", and so on.

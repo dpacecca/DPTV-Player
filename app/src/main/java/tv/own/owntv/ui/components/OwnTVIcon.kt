@@ -31,6 +31,9 @@ enum class OwnTVIcon {
     // both panel width and focus highlight, SKIP_NEXT was both channel paging and autoplay-next.
     DNS, PANEL_WIDTH, FOCUS_HIGHLIGHT, CH_NAV, AUTOPLAY_NEXT, LIVE_DOT, SEEK_BACK, SEEK_FORWARD, MORE,
     REMOTE_CHANNEL_UP, REMOTE_CHANNEL_DOWN, PAGE_TOWARD_FIRST, PAGE_TOWARD_LAST,
+    // Where the files go. A gear said "settings for this screen"; the question this button actually
+    // asks is "which folder?", and a folder is the one mark that says so without a word.
+    FOLDER,
 }
 
 @Composable
@@ -509,6 +512,12 @@ fun OwnTVIcon(
                 // instead of drawing a second line.
                 drawRoundRectStroke(p(5f, 8.5f), p(19f, 20.8f), 1.8f * s, tint, stroke)
                 drawLineStroke(p(9.8f, 12.6f), p(14.2f, 12.6f), tint, stroke)
+            }
+            OwnTVIcon.FOLDER -> { // Folder: the tab, then the body it sits on.
+                drawLineStroke(p(3.2f, 8.2f), p(3.2f, 5.8f), tint, stroke)
+                drawLineStroke(p(3.2f, 5.8f), p(9.2f, 5.8f), tint, stroke)
+                drawLineStroke(p(9.2f, 5.8f), p(11.1f, 8.2f), tint, stroke)
+                drawRoundRectStroke(p(3.2f, 8.2f), p(20.8f, 19.4f), 1.8f * s, tint, stroke)
             }
             OwnTVIcon.REFRESH -> { // Circular arrow, head drawn as the usual corner marker.
                 drawArc(tint, 0f, 314.1f, false, p(3.5f, 3.5f), Size(17f * s, 17f * s), style = stroke)

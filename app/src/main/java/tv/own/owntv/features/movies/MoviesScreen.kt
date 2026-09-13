@@ -604,7 +604,7 @@ fun MoviesScreen(
                     meta = selectedMovieMeta?.takeIf { it.movieId == selectedMovie?.id }?.cache,
                     tmdbWins = metadataMode.tmdbWins,
                     resumePositionMs = selectedProgress?.takeIf { !vm.isMovieCompleted(it) }?.positionMs?.takeIf { it > 0 },
-                    downloadStrip = selectedMovie?.let { m -> downloadStates[m.id]?.let { tv.own.owntv.ui.components.downloadStripFor(listOf(it)) } },
+                    downloadStrip = selectedMovie?.let { m -> downloadStates[m.id]?.let { tv.own.owntv.core.download.downloadStripFor(listOf(it)) } },
                 )
             }
         }
@@ -898,7 +898,7 @@ private fun MovieDetailsPane(
     meta: tv.own.owntv.core.database.entity.MetadataCacheEntity?,
     tmdbWins: Boolean,
     resumePositionMs: Long? = null,
-    downloadStrip: tv.own.owntv.ui.components.DownloadStripState? = null,
+    downloadStrip: tv.own.owntv.core.download.DownloadStripState? = null,
 ) {
     val colors = OwnTVTheme.colors
     if (movie == null) {

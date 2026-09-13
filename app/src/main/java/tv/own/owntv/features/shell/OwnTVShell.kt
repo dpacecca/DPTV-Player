@@ -277,6 +277,19 @@ fun OwnTVShell(
     var showChannelList by remember { mutableStateOf(false) }
     // In-player watch-history list (Right while controls hidden, live only).
     var showHistoryList by remember { mutableStateOf(false) }
+    // Multiview: the grid, while it is up, and which tile is waiting for a channel to be picked.
+    val multiviewEnabled by settingsRepo.multiviewEnabled.collectAsStateWithLifecycle(false)
+    val recordWatchingEnabled by settingsRepo.recordWhatImWatching.collectAsStateWithLifecycle(false)
+    val multiviewTileCount by settingsRepo.multiviewTiles.collectAsStateWithLifecycle(
+        tv.own.owntv.core.live.DEFAULT_MULTIVIEW_TILES,
+    )
+    val enginePool = koinInject<tv.own.owntv.player.LiveEnginePool>()
+    val streamRegistry = koinInject<tv.own.owntv.core.live.OpenStreamRegistry>()
+    var multiview by remember { mutableStateOf<tv.own.owntv.features.multiview.MultiviewState?>(null) }
+    var multiviewPickFor by remember { mutableStateOf<Int?>(null) }
+    // Channels kept from the Live list (B5's second entry point). Pressing play on any channel is
+    // what says "now": the grid opens with them already in it, and the selection is spent.
+    val multiviewSelection by liveVm.multiviewSelection.collectAsStateWithLifecycle()
     val zapChannels by liveVm.zapChannels.collectAsStateWithLifecycle()
     val zapListTitle by liveVm.zapListTitle.collectAsStateWithLifecycle()
     val zapListKey by liveVm.zapListKey.collectAsStateWithLifecycle()
@@ -291,6 +304,7 @@ fun OwnTVShell(
     val showCategoryBrowser by liveVm.showCategoryBrowser.collectAsStateWithLifecycle()
     val browserCategories by liveVm.browserCategories.collectAsStateWithLifecycle()
     val previewChannel by liveVm.previewChannel.collectAsStateWithLifecycle()
+    val playerRecording by liveVm.playerRecording.collectAsStateWithLifecycle()
     val liveProviderNames by liveVm.providerNames.collectAsStateWithLifecycle()
     // Favorite state for the player HUD's in-stream favorite toggle (live channel / movie / series).
     val liveFavoriteIds by liveVm.favoriteIds.collectAsStateWithLifecycle()
@@ -455,6 +469,47 @@ fun OwnTVShell(
         runCatching { sidebarFocus.requestFocus() }
         Unit
     }
+    /**
+     * Turn the channel on screen into tile 1 of the grid, with [extra] filling the tiles after it.
+     *
+     * The fullscreen stream is stopped first, always: tile 1 opens an engine of its own, and a
+     * playlist that allows two streams would otherwise be asked for three.
+     */
+    val openMultiview = { first: tv.own.owntv.core.database.entity.ChannelEntity?,
+                          extra: List<tv.own.owntv.core.database.entity.ChannelEntity> ->
+        liveVm.previewEngine.stop()
+        player.stop()
+        val state = tv.own.owntv.features.multiview.MultiviewState(
+            pool = enginePool,
+            registry = streamRegistry,
+            live = liveVm,
+            maxTiles = multiviewTileCount,
+        )
+        var tile = 0
+        first?.let { state.fill(tile++, it) }
+        // Channels kept with "Add to Multiview" grow the grid as they are placed, up to the ceiling —
+        // the user asked for these by name, so they are the one case that sizes the grid itself.
+        extra.filter { it.id != first?.id }.forEach { channel ->
+            if (tile >= state.tiles.size) state.addTile()
+            if (tile < state.tiles.size) state.fill(tile++, channel)
+        }
+        liveVm.clearMultiviewSelection()
+        state
+    }
+    // The kept selection is spent the moment a channel actually starts playing full screen: that
+    // press is the "and now open it" the plan describes, and nothing else in the app claims it.
+    LaunchedEffect(playerMode, previewChannel?.id, multiviewSelection.size) {
+        if (multiviewEnabled &&
+            multiview == null &&
+            multiviewSelection.isNotEmpty() &&
+            playerMode == PlayerMode.FULLSCREEN &&
+            zapSource == MainSection.LIVE_TV &&
+            previewChannel != null
+        ) {
+            multiview = openMultiview(previewChannel, multiviewSelection)
+        }
+    }
+
     val dockPlayer = {
         resumeVideo()
         playerMode = PlayerMode.MINI
@@ -1131,7 +1186,78 @@ fun OwnTVShell(
       // Player surface — hoisted so it persists across fullscreen <-> mini (same call site = the
       // SurfaceView isn't recreated when docking/expanding, so playback never blips). NOT composed in
       // AUDIO mode: there's no video surface — audio plays and the top-bar now-playing bar drives it.
-      if (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI) {
+      // Multiview draws over everything, including the player it grew out of, and owns its own
+      // engines. The player surface below is not composed while it is up: its stream was stopped when
+      // the grid opened, so there is nothing behind the tiles to keep alive.
+      multiview?.let { grid ->
+          tv.own.owntv.features.multiview.MultiviewScreen(
+              state = grid,
+              // Categories first, then that category's channels. The player's overlay starts at the
+              // channels because it already has one playing and its category is the obvious place to
+              // look; an empty tile has no such context, and a flat list of every channel across
+              // every playlist is tens of thousands of rows to scroll.
+              onPickChannel = { tile -> multiviewPickFor = tile; liveVm.showCategories() },
+              onFullscreen = { channel ->
+                  grid.releaseAll()
+                  multiview = null
+                  multiviewPickFor = null
+                  liveVm.ensurePlaying(channel)
+                  playerMode = PlayerMode.FULLSCREEN
+              },
+              // Leaving the grid leaves *playback*, by the owner's decision (2026-09-13).
+              //
+              // It used to promote the focused tile to full screen, which is what the plan asked for.
+              // In use that is wrong twice over: a grid of four is put away by someone who has
+              // finished watching, and being handed one of the four full screen means a stream is
+              // still running and still costing a connection when the user believes they closed
+              // everything. Back now lands on the Live TV list, with nothing playing.
+              onExit = {
+                  grid.releaseAll()
+                  multiview = null
+                  multiviewPickFor = null
+                  exitPlayer()
+              },
+              modifier = Modifier.fillMaxSize(),
+          )
+          // Filling a tile reuses the very list the Live screen and the in-player overlay use, so the
+          // categories, ordering and hidden channels can never disagree between them.
+          multiviewPickFor?.let { tile ->
+              if (showCategoryBrowser) {
+                  // Step one, and where the picker always starts: every Live TV category across every
+                  // playlist, so a tile can be filled from a playlist the user was not browsing —
+                  // which is the whole point of the grid. Back here leaves the picker entirely.
+                  tv.own.owntv.features.shell.components.CategoryBrowserOverlay(
+                      categories = browserCategories,
+                      currentCategoryId = grid.tiles.getOrNull(tile)?.channel?.categoryId,
+                      onSelect = { catId -> liveVm.loadChannelsForCategory(catId) },
+                      onDismiss = { liveVm.hideCategoryBrowser(); multiviewPickFor = null },
+                      modifier = Modifier.fillMaxSize(),
+                  )
+              } else if (zapChannels.isNotEmpty()) {
+                  tv.own.owntv.features.shell.components.ChannelListOverlay(
+                      channels = zapChannels,
+                      currentId = grid.tiles.getOrNull(tile)?.channel?.id,
+                      title = zapOverlayTitle,
+                      showNumbers = directTuneEnabled,
+                      providerNames = liveProviderNames,
+                      alignEnd = true,
+                      // Step two: that category's channels. Back goes up to the categories rather than
+                      // out, so a wrong turn costs one press instead of starting again.
+                      onOpenCategories = { liveVm.showCategories() },
+                      onSelect = { grid.fill(tile, it); multiviewPickFor = null },
+                      onDismiss = { liveVm.showCategories() },
+                      modifier = Modifier.fillMaxSize(),
+                  )
+              } else {
+                  // A category that turns out to be empty must not leave the picker with nothing
+                  // drawn: Back would fall past it to the grid's own handler and close Multiview
+                  // altogether. Go back to the categories instead, which is where the user was.
+                  LaunchedEffect(Unit) { liveVm.showCategories() }
+              }
+          }
+      }
+
+      if (multiview == null && (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI)) {
         val isFull = playerMode == PlayerMode.FULLSCREEN
         Box(
             modifier = if (isFull) {
@@ -1230,6 +1356,21 @@ fun OwnTVShell(
                     onChannelUp = zap?.let { z -> { z(-1) } },
                     onChannelDown = zap?.let { z -> { z(1) } },
                     onOpenChannelList = if (isTunedLive && liveCanZap) { { showChannelList = true } } else null,
+                    // Live channels only, and only once Multiview is switched on: the channel on screen
+                    // becomes tile 1 and the grid takes over. Everything it needs is already tuned.
+                    onMultiview = if (multiviewEnabled && isTunedLive && previewChannel != null) {
+                        { multiview = openMultiview(previewChannel, emptyList()) }
+                    } else {
+                        null
+                    },
+                    // D3 — the button exists only once the setting is on, and only on a live
+                    // channel: there is nothing to record off a film that is already a file.
+                    // The engine does not come into it. Recording fetches the channel itself rather
+                    // than copying the open stream, so it works the same whichever engine is playing.
+                    onRecordThis = previewChannel
+                        ?.takeIf { recordWatchingEnabled && isTunedLive }
+                        ?.let { channel -> { liveVm.togglePlayerRecording(channel) } },
+                    recordingThis = playerRecording != null,
                     onOpenHistoryList = if (isTunedLive) { { showHistoryList = true } } else null,
                     onRewindLive = if (isTunedLive && canRewindLive) liveVm::rewindLive else null,
                     onForwardLive = if (isTunedLive) liveVm::forwardLive else null,

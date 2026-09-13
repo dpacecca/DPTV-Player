@@ -151,6 +151,16 @@ private fun StorageBrowserContent(
             val folders = listing.folders
             val files = listing.files
 
+            // Above the list, not below it. Below, the only way down to it was through every folder
+            // in the listing — about thirty presses in a full directory, for the one action the user
+            // opened a folder picker to perform. Above, it is a single Up from the first row no
+            // matter how long the listing is, and the list still opens focused so navigating first
+            // costs nothing.
+            if (mode == BrowseMode.FOLDER && current != null) {
+                OwnTVButton(stringResource(R.string.setup_use_folder), onClick = { current?.let(onPick) }, modifier = Modifier.fillMaxWidth(), compact = true)
+                Spacer(Modifier.height(8.dp))
+            }
+
             // Cap the list to the screen (minus dialog chrome) so the footer buttons stay reachable.
             val listMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 200.dp).coerceIn(140.dp, 200.dp)
             LazyColumn(Modifier.heightIn(max = listMax).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -174,10 +184,6 @@ private fun StorageBrowserContent(
             }
 
             Spacer(Modifier.height(12.dp))
-            if (mode == BrowseMode.FOLDER && current != null) {
-                OwnTVButton(stringResource(R.string.setup_use_folder), onClick = { current?.let(onPick) }, modifier = Modifier.fillMaxWidth(), compact = true)
-                Spacer(Modifier.height(8.dp))
-            }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, compact = true)
                 Spacer(Modifier.weight(1f))

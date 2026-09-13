@@ -46,6 +46,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import tv.own.owntv.R
+import tv.own.owntv.core.player.PlayerControl
+import tv.own.owntv.core.player.ControlCluster
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -310,7 +312,9 @@ internal fun BottomBar(
     vodOnExo: Boolean?, onToggleVodEngine: (() -> Unit)?,
     onInfo: (() -> Unit)? = null, infoOn: Boolean = false, onReport: (() -> Unit)? = null,
     favorite: Boolean = false, onToggleFavorite: (() -> Unit)? = null,
-    onOpenDialog: (HudDialog) -> Unit, onPip: (() -> Unit)?, onAudioMode: (() -> Unit)?, onBack: () -> Unit, modifier: Modifier = Modifier,
+    onOpenDialog: (HudDialog) -> Unit, onPip: (() -> Unit)?, onAudioMode: (() -> Unit)?,
+    onMultiview: (() -> Unit)? = null, onRecordThis: (() -> Unit)? = null, recordingThis: Boolean = false,
+    onBack: () -> Unit, modifier: Modifier = Modifier,
 ) {
     val seekStep by player.seekStepMs.collectAsStateWithLifecycle() // Settings -> Seek step
     val buffered by player.bufferedMs.collectAsStateWithLifecycle()
@@ -360,51 +364,124 @@ internal fun BottomBar(
         // cluster outward-in and nothing you have already passed ever moves.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().focusGroup()) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                // Go Live leads the media cluster, but only while there is actually a live edge to go
-                // back to: at the edge it is absent and the tools sit flush left, and falling behind
-                // inserts it and pushes them right. onGoToLive alone is non-null on every tuned live
-                // channel, so onScrubLive is what says the channel has an archive at all.
-                if (onGoToLive != null && onScrubLive != null) {
-                    GoLivePill(enabled = (timeshiftOffsetSec ?: 0) > 1) { onGoToLive() }
+                // H2 — the ORDER comes from core's canonical list, not from the order these lines
+                // happen to be written in. Each control keeps its own composable and its own
+                // condition; only the sequence is shared, which is what makes this bar and the
+                // phone's read alike. The `when` is exhaustive, so a control added to the shared
+                // list cannot be silently missing here.
+                PlayerControl.clusterFor(tv = true, cluster = ControlCluster.MEDIA).forEach { control ->
+                    when (control) {
+                        // Go Live leads the media cluster, but only while there is actually a live
+                        // edge to go back to: at the edge it is absent and the tools sit flush left,
+                        // and falling behind inserts it and pushes them right. onGoToLive alone is
+                        // non-null on every tuned live channel, so onScrubLive is what says the
+                        // channel has an archive at all.
+                        PlayerControl.GO_LIVE -> if (onGoToLive != null && onScrubLive != null) {
+                            GoLivePill(enabled = (timeshiftOffsetSec ?: 0) > 1) { onGoToLive() }
+                        }
+                        PlayerControl.VOLUME ->
+                            CtrlButton(volumeIcon(volume), label = stringResource(R.string.player_tool_volume)) { onOpenDialog(HudDialog.VOLUME) }
+                        PlayerControl.SPEED ->
+                            SpeedButton(label = speedLabel, active = speedLabel != stringResource(R.string.player_speed_normal_short), toolLabel = stringResource(R.string.player_tool_speed)) { onOpenDialog(HudDialog.SPEED) }
+                        PlayerControl.SUBTITLES ->
+                            CtrlButton(OwnTVIcon.SUBTITLE, badge = subCount.takeIf { it > 0 }, label = stringResource(R.string.player_tool_subtitles)) { onOpenDialog(HudDialog.SUBS) }
+                        PlayerControl.AUDIO ->
+                            CtrlButton(OwnTVIcon.AUDIO, badge = audioCount.takeIf { it > 1 }, label = stringResource(R.string.player_tool_audio)) { onOpenDialog(HudDialog.AUDIO) }
+                        // Favorite the current channel/movie/series without leaving the stream (coral
+                        // heart = on, the same colour the marker has on posters and in browse rows).
+                        PlayerControl.FAVOURITE -> if (onToggleFavorite != null) {
+                            CtrlButton(OwnTVIcon.FAVORITE, active = favorite, activeTint = OwnTVTheme.colors.favorite, label = stringResource(R.string.player_tool_favorite)) { onToggleFavorite() }
+                        }
+                        // "Go back to…" — jump straight to a time in this channel's archive. Only on
+                        // catch-up channels. CATCHUP (a TV with a replay loop): REWIND is already the
+                        // transport button beside it, and a plain clock would not say which of the
+                        // two time controls this is.
+                        PlayerControl.CATCH_UP -> if (onOpenJumpBack != null) {
+                            CtrlButton(OwnTVIcon.CATCHUP, label = stringResource(R.string.player_tool_catchup)) { onOpenJumpBack() }
+                        }
+                        // Belongs to the tools cluster; `clusterFor` never hands them to this loop.
+                        PlayerControl.BRIGHTNESS, PlayerControl.CHANNEL_LIST, PlayerControl.ENGINE,
+                        PlayerControl.ASPECT, PlayerControl.MINI_PLAYER, PlayerControl.AUDIO_ONLY,
+                        PlayerControl.MULTIVIEW, PlayerControl.RECORD, PlayerControl.INFO,
+                        PlayerControl.REPORT,
+                        -> Unit
+                    }
                 }
-                CtrlButton(volumeIcon(volume), label = stringResource(R.string.player_tool_volume)) { onOpenDialog(HudDialog.VOLUME) }
-                SpeedButton(label = speedLabel, active = speedLabel != stringResource(R.string.player_speed_normal_short), toolLabel = stringResource(R.string.player_tool_speed)) { onOpenDialog(HudDialog.SPEED) }
-                CtrlButton(OwnTVIcon.SUBTITLE, badge = subCount.takeIf { it > 0 }, label = stringResource(R.string.player_tool_subtitles)) { onOpenDialog(HudDialog.SUBS) }
-                CtrlButton(OwnTVIcon.AUDIO, badge = audioCount.takeIf { it > 1 }, label = stringResource(R.string.player_tool_audio)) { onOpenDialog(HudDialog.AUDIO) }
-                // Favorite the current channel/movie/series without leaving the stream (coral heart = on,
-                // the same colour the marker has on posters and in browse rows).
-                if (onToggleFavorite != null) CtrlButton(OwnTVIcon.FAVORITE, active = favorite, activeTint = OwnTVTheme.colors.favorite, label = stringResource(R.string.player_tool_favorite)) { onToggleFavorite() }
-                // "Go back to…" — jump straight to a time in this channel's archive. Only on catch-up
-                // channels. CATCHUP (a TV with a replay loop): REWIND is already the transport button
-                // beside it, and a plain clock would not say which of the two time controls this is.
-                if (onOpenJumpBack != null) CtrlButton(OwnTVIcon.CATCHUP, label = stringResource(R.string.player_tool_catchup)) { onOpenJumpBack() }
             }
             Spacer(Modifier.weight(1f))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                // Live "compatibility mode" (Live TV + channels opened from the Guide): pin this channel
-                // to mpv. The pill shows the active engine and flips on click (teal while pinned to mpv).
-                if (onToggleCompatMode != null) {
-                    EngineToggle(label = stringResource(if (compatMode == true) R.string.player_engine_mpv else R.string.player_engine_exo), active = compatMode == true, toolLabel = stringResource(R.string.player_tool_engine)) { onToggleCompatMode() }
+                // H2 — the ORDER is core's, exactly as in the media cluster above. Each control
+                // keeps its own composable and condition; only the sequence is shared.
+                PlayerControl.clusterFor(tv = true, cluster = ControlCluster.TOOLS).forEach { control ->
+                    when (control) {
+                        PlayerControl.ENGINE -> {
+                            // Live "compatibility mode" (Live TV + channels opened from the Guide):
+                            // pin this channel to mpv. The pill shows the active engine and flips on
+                            // click (teal while pinned to mpv).
+                            if (onToggleCompatMode != null) {
+                                EngineToggle(label = stringResource(if (compatMode == true) R.string.player_engine_mpv else R.string.player_engine_exo), active = compatMode == true, toolLabel = stringResource(R.string.player_tool_engine)) { onToggleCompatMode() }
+                            }
+                            // VOD engine toggle (Movies/Series): flip THIS movie/episode between mpv
+                            // and ExoPlayer. The pill shows the active engine (teal while ExoPlayer
+                            // owns playback).
+                            if (onToggleVodEngine != null) {
+                                EngineToggle(label = stringResource(if (vodOnExo == true) R.string.player_engine_exo else R.string.player_engine_mpv), active = vodOnExo == true, toolLabel = stringResource(R.string.player_tool_engine)) { onToggleVodEngine() }
+                            }
+                        }
+                        // Aspect/zoom works in every mode now — direct mode resizes the surface view
+                        // itself (see MpvVideoSurface), GL mode scales internally.
+                        PlayerControl.ASPECT ->
+                            CtrlButton(OwnTVIcon.ASPECT, active = zoomMode != ZoomMode.FIT, label = stringResource(R.string.player_tool_aspect)) { onOpenDialog(HudDialog.ZOOM) }
+                        PlayerControl.MINI_PLAYER -> if (onPip != null) {
+                            CtrlButton(OwnTVIcon.PIP, label = stringResource(R.string.player_tool_mini)) { onPip() }
+                        }
+                        PlayerControl.AUDIO_ONLY -> if (onAudioMode != null) {
+                            CtrlButton(OwnTVIcon.HEADPHONES, label = stringResource(R.string.player_tool_audio_only)) { onAudioMode() }
+                        }
+                        // Live only, and only once the user has switched Multiview on: four tiles
+                        // from the channel already playing. Next to the mini-player button, which is
+                        // its nearest relative.
+                        PlayerControl.MULTIVIEW -> if (onMultiview != null) {
+                            CtrlButton(OwnTVIcon.LIST_GRID, label = stringResource(R.string.multiview_button)) { onMultiview() }
+                        }
+                        // Record what is already on screen. Present only when the setting is on, so
+                        // it never needs to explain itself here — the trade-off was accepted when it
+                        // was enabled (D3). Tinted while running, and the label flips, because
+                        // "Record" on a button that is already recording is the kind of thing that
+                        // loses an hour of somebody's evening.
+                        PlayerControl.RECORD -> if (onRecordThis != null) {
+                            CtrlButton(
+                                OwnTVIcon.LIVE_TV,
+                                active = recordingThis,
+                                activeTint = androidx.compose.ui.graphics.Color(0xFFEF4444),
+                                label = stringResource(
+                                    if (recordingThis) R.string.recording_stop else R.string.recording_record,
+                                ),
+                            ) { onRecordThis() }
+                        }
+                        // Stream technical info (codec/res/HDR/bitrate/decoder/audio/buffer) —
+                        // toggles the overlay. Parked at the far right, where the redundant
+                        // exit-fullscreen button used to sit (Back already leaves the player, so
+                        // that button never did anything the remote couldn't).
+                        PlayerControl.INFO -> if (onInfo != null) {
+                            CtrlButton(OwnTVIcon.INFO, active = infoOn, label = stringResource(R.string.player_tool_info)) { onInfo() }
+                        }
+                        // "Report this stream": copies the readout the user is looking at into the
+                        // playback log, so a "this channel judders" complaint carries the
+                        // codec/decoder/bitrate that caused it. Only offered while the info overlay
+                        // is open — there is nothing to report otherwise, and the bar stays as short
+                        // as it was for everyone who never needs this. H1 made that the rule on both
+                        // apps.
+                        PlayerControl.REPORT -> if (infoOn && onReport != null) {
+                            CtrlButton(OwnTVIcon.SHARE, label = stringResource(R.string.player_tool_report)) { onReport() }
+                        }
+                        // Belongs to the media cluster; `clusterFor` never hands them to this loop.
+                        PlayerControl.GO_LIVE, PlayerControl.VOLUME, PlayerControl.BRIGHTNESS,
+                        PlayerControl.SPEED, PlayerControl.SUBTITLES, PlayerControl.AUDIO,
+                        PlayerControl.FAVOURITE, PlayerControl.CATCH_UP, PlayerControl.CHANNEL_LIST,
+                        -> Unit
+                    }
                 }
-                // VOD engine toggle (Movies/Series): flip THIS movie/episode between mpv and ExoPlayer.
-                // The pill shows the active engine (teal while ExoPlayer owns playback).
-                if (onToggleVodEngine != null) {
-                    EngineToggle(label = stringResource(if (vodOnExo == true) R.string.player_engine_exo else R.string.player_engine_mpv), active = vodOnExo == true, toolLabel = stringResource(R.string.player_tool_engine)) { onToggleVodEngine() }
-                }
-                // Aspect/zoom works in every mode now — direct mode resizes the surface view itself
-                // (see MpvVideoSurface), GL mode scales internally.
-                CtrlButton(OwnTVIcon.ASPECT, active = zoomMode != ZoomMode.FIT, label = stringResource(R.string.player_tool_aspect)) { onOpenDialog(HudDialog.ZOOM) }
-                if (onPip != null) CtrlButton(OwnTVIcon.PIP, label = stringResource(R.string.player_tool_mini)) { onPip() }
-                if (onAudioMode != null) CtrlButton(OwnTVIcon.HEADPHONES, label = stringResource(R.string.player_tool_audio_only)) { onAudioMode() }
-                // Stream technical info (codec/res/HDR/bitrate/decoder/audio/buffer) — toggles the overlay.
-                // Parked at the far right, where the redundant exit-fullscreen button used to sit (Back
-                // already leaves the player, so that button never did anything the remote couldn't).
-                if (onInfo != null) CtrlButton(OwnTVIcon.INFO, active = infoOn, label = stringResource(R.string.player_tool_info)) { onInfo() }
-                // "Report this stream": copies the readout the user is looking at into the playback log,
-                // so a "this channel judders" complaint carries the codec/decoder/bitrate that caused it.
-                // Only offered while the info overlay is open — there is nothing to report otherwise, and
-                // the bar stays as short as it was for everyone who never needs this.
-                if (infoOn && onReport != null) CtrlButton(OwnTVIcon.SHARE, label = stringResource(R.string.player_tool_report)) { onReport() }
             }
         }
     }

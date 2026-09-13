@@ -53,8 +53,6 @@
 1	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	⤒
 1	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	⤓
 1	empty	app/src/main/java/tv/own/owntv/features/customize/CustomizeViewModel.kt	\0
-1	technical	app/src/main/java/tv/own/owntv/features/downloads/DownloadsScreen.kt	Movies
-1	technical	app/src/main/java/tv/own/owntv/features/downloads/DownloadsScreen.kt	Series
 1	technical	app/src/main/java/tv/own/owntv/features/downloads/DownloadsScreen.kt	d_${download.id}
 1	technical	app/src/main/java/tv/own/owntv/features/downloads/DownloadsScreen.kt	hdr_$group
 1	empty	app/src/main/java/tv/own/owntv/features/downloads/DownloadsViewModel.kt	\0
@@ -93,6 +91,7 @@
 2	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	+
 2	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	30
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	EEE
+1	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	add_to_multiview
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	catchup
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	channel
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	epg_offset
@@ -102,6 +101,7 @@
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	move
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	move_to_category
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	play_external
+1	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	record
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	remove_history
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	rename
 2	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	−
@@ -112,15 +112,11 @@
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	${if (onMpv) "mpv" else "exoplayer"} (pinned)
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	${if (onMpv) "mpv" else "exoplayer"} (setting)
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	'${channel.name}' falling back to $label ($reason)
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	'${channel.name}' opened on ExoPlayer
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	'${channel.name}' opened on mpv
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	'${channel.name}' stopped playing (state=$left) — ${EXO_STALL_HANDOFF_MS / 1000}s to recover
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	'${channel.name}' — giving up: $detail
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	'${channel.name}' — no fallback left ($detail)
 2	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	'${channel.name}': $detail
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	ExoPlayer
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	ExoPlayer gave up mid-stream: ${previewEngine.errorInfo.value?.raw ?: previewEngine.error.value}
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	ExoPlayer never opened it (${openBudgetMs / 1000}s, no frame and no error)
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	LIVE
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	LiveEngine
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	OwnTVHome
@@ -136,11 +132,8 @@
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	mpv (panel refuses segments)
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	mpv couldn't play it: ${failure.second}
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	mpv never opened it (${MPV_OPEN_TIMEOUT_MS / 1000}s, no picture and no error)
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	no decodable audio track
+1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	multiview resolve failed '${channel.name}'
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	no picture within ${ladderBudgetMs.value / 1000}s of tuning
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	no video frame rendered (audio plays, no picture)
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	played, then stalled for ${EXO_STALL_HANDOFF_MS / 1000}s without recovering
-1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	provider refuses ExoPlayer's signed segment URLs
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	stalker fullscreen resolve failed '${channel.name}'
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	stalker mpv resolve failed '${channel.name}'
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	stalker preview resolve failed '${channel.name}'
@@ -163,7 +156,6 @@
 2	empty	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	${StorageAccess.sanitize(movie.name)}.${movie.containerExt ?: StorageAccess.extOf(movie.streamUrl)}
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	MOVIE
-1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	Movies
 1	log	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	OwnTVHome
 2	log	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	external play history record failed movieId=${movie.id} profile=$pid
 1	log	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	play history record failed movieId=${movie.id} profile=$pid
@@ -191,6 +183,9 @@
 1	preference-key	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	tmdb_details
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	✓
 4	empty	app/src/main/java/tv/own/owntv/features/profiles/ProfileComponents.kt	\0
+1	locale	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	EEEdMMMjm
+1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	r_${recording.id}
+1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rhdr_$group
 1	empty	app/src/main/java/tv/own/owntv/features/search/SearchScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/search/SearchScreen.kt	c${item.row.channel.id}
 1	technical	app/src/main/java/tv/own/owntv/features/search/SearchScreen.kt	heading
@@ -224,8 +219,6 @@
 3	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	EPISODE
 1	log	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	OwnTVHome
 1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	Series
-1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	Series/$showDir/Season ${ep.seasonNumber}
-1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	Series/$showDir/Season ${episode.seasonNumber}
 1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	episode-${ep.episodeNumber}
 1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	episode-${episode.episodeNumber}
 2	log	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	external play episode history record failed episodeId=${episode.id} profile=$pid
@@ -419,6 +412,8 @@
 3	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_logging
 3	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_measured_stats
 3	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_mini
+1	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_multiview
+2	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_multiview_tiles
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_preroll
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_preroll_sources
 3	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_preview_audio
@@ -623,6 +618,8 @@
 1	technical	app/src/main/java/tv/own/owntv/player/PlayerHudControls.kt	liveDot
 1	technical	app/src/main/java/tv/own/owntv/player/PlayerHudControls.kt	liveDotAlpha
 1	technical	app/src/main/java/tv/own/owntv/player/PlayerHudControls.kt	toolPadding
+1	technical	app/src/main/java/tv/own/owntv/player/RecordingBadge.kt	rec
+1	technical	app/src/main/java/tv/own/owntv/player/RecordingBadge.kt	recPulse
 1	file-path	app/src/main/java/tv/own/owntv/ui/components/BackgroundImageChooserDialog.kt	background_${System.currentTimeMillis()}.$ext
 1	file-path	app/src/main/java/tv/own/owntv/ui/components/BackgroundImageChooserDialog.kt	png
 1	performance	app/src/main/java/tv/own/owntv/ui/components/FocusableSurface.kt	focusContainer

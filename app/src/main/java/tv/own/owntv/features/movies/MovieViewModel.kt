@@ -62,6 +62,7 @@ import tv.own.owntv.features.customize.MoveTarget
 import tv.own.owntv.features.live.LiveRailItem
 import tv.own.owntv.core.download.DownloadManager
 import tv.own.owntv.core.storage.StorageAccess
+import tv.own.owntv.core.storage.MediaFolders
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
@@ -687,7 +688,7 @@ class MovieViewModel(
                 title = movie.name,
                 posterUrl = movie.posterUrl,
                 streamUrl = movie.streamUrl,
-                relativeDir = "Movies",
+                relativeDir = MediaFolders.MOVIES,
                 fileName = "${StorageAccess.sanitize(movie.name)}.${movie.containerExt ?: StorageAccess.extOf(movie.streamUrl)}",
             )
         }

@@ -684,7 +684,7 @@ private fun SeriesGrid(
                         .padding(Dimens.GapLarge),
                 ) {
                     // Non-focusable status strip — only present while this series' episodes are downloading.
-                    tv.own.owntv.ui.components.downloadStripFor(selectedSeriesDownloads)?.let {
+                    tv.own.owntv.core.download.downloadStripFor(selectedSeriesDownloads)?.let {
                         tv.own.owntv.ui.components.DownloadStatusStrip(it)
                         Spacer(Modifier.height(12.dp))
                     }
@@ -922,7 +922,7 @@ private fun EpisodeDetailPane(
     nextUpEpisode: EpisodeEntity?,
     nextUpPositionMs: Long,
     onPlayNextUp: () -> Unit,
-    downloadStrip: tv.own.owntv.ui.components.DownloadStripState? = null,
+    downloadStrip: tv.own.owntv.core.download.DownloadStripState? = null,
 ) {
     val colors = OwnTVTheme.colors
     if (episode == null) {
@@ -1396,8 +1396,8 @@ private fun EpisodeView(
                             nextUpPositionMs = nextUpPos,
                             onPlayNextUp = { nextUpEp?.let { startEpisode(it) } },
                             // The focused episode's own download, else the whole-series aggregate.
-                            downloadStrip = (ep?.let { e -> episodeDownloadStates[e.id]?.let { tv.own.owntv.ui.components.downloadStripFor(listOf(it)) } })
-                                ?: tv.own.owntv.ui.components.downloadStripFor(openedSeriesDownloads),
+                            downloadStrip = (ep?.let { e -> episodeDownloadStates[e.id]?.let { tv.own.owntv.core.download.downloadStripFor(listOf(it)) } })
+                                ?: tv.own.owntv.core.download.downloadStripFor(openedSeriesDownloads),
                         )
                     }
                 }

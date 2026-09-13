@@ -13,6 +13,14 @@
 
 ### ✨ New features
 
+- **⏺️ Record Live TV — from the guide, the channel list or while you are watching**
+- **🔁 Record every showing of a programme on a channel**
+- **⏪ Save a catch-up programme from your provider's archive**
+- **🔲 Multiview — up to four live channels at once**
+- **🔊 Sound only: keep a channel's commentary without its picture**
+- **🔌 OwnTV works out how many channels your provider allows, and warns you before refusing one**
+- **ℹ️ A playlist's Test button is now Info, with Re-test behind it**
+- **📂 Recordings live in Downloads, as its Live TV tab**
 - **📺 Live TV shows what a programme is about, not just its name**
 - **🖼️ Channel logos in the guide**
 - **📅 Episodes show the day they first aired**
@@ -45,6 +53,13 @@
 
 ### 🐛 Fixes
 
+- **A Multiview tile that could not be played no longer plays its sound**
+- **File sizes say MB again**
+- **An episode download appeared in no list at all**
+- **The guide, the channel row and the preview pane no longer disagree**
+- **The same programme is no longer listed twice**
+- **A guide row whose data has run out now asks the provider**
+- **A recording booked across a reboot is repaired when OwnTV is next opened**
 - **A playlist that offers two TV guides now sets up both of them (#171)**
 - **Stalker portals: no more 403 errors, endless loading and half-finished syncs**
 - **Stalker portals: catch-up appears on the channels that actually have it**

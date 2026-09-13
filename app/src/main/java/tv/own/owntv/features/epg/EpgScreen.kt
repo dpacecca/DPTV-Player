@@ -554,11 +554,39 @@ fun EpgScreen(
     }
 
     detail?.let { (channel, p) ->
+        // Recompute as the recordings change, so pressing Record swaps the button to Cancel without
+        // closing the dialog.
+        val recordingRows by vm.recordingRows.collectAsStateWithLifecycle()
+        val existingRecording = remember(recordingRows, channel.id, p.startMs) {
+            vm.recordingFor(channel, p)
+        }
+        // The clash is a database read, so it happens once per opened programme rather than per frame.
+        val clash by produceState<String?>(null, channel.id, p.startMs, recordingRows) {
+            value = vm.clashFor(channel, p)
+        }
+        // Re-read as the recordings change, so adding or removing the rule flips the button without
+        // closing the dialog.
+        val seriesRule by produceState<tv.own.owntv.core.database.entity.RecordingRuleEntity?>(
+            null, channel.id, p.title, recordingRows,
+        ) {
+            value = vm.seriesRuleFor(channel, p)
+        }
         ProgrammeDetailDialog(
             channelName = channel.name,
             programme = p,
-            loadDescription = { vm.programmeDescription(it) },
+            // A provider-fetched row is in no table, so its synopsis is the one it already carries;
+            // only a stored row needs fetching by id.
+            loadDescription = { id -> p.description ?: vm.programmeDescription(id) },
             canCatchup = vm.canCatchup(channel, p, liveNow),
+            canRecord = vm.canRecord(channel, p, liveNow),
+            recording = existingRecording,
+            clashWith = clash,
+            onRecord = { vm.record(channel, p) },
+            onStopRecording = { existingRecording?.let { vm.stopRecording(it) } },
+            onCancelRecording = { existingRecording?.let { vm.cancelRecording(it) } },
+            seriesRuleActive = seriesRule != null,
+            onRecordSeries = { vm.recordSeries(channel, p) },
+            onStopSeries = { seriesRule?.let { vm.stopSeries(it) } },
             isFavorite = channel.id in favoriteIds,
             onToggleFavorite = { vm.toggleFavoriteChannel(channel) },
             onWatch = { detail = null; vm.noteChannelTuned(channel); onPlayChannel(channel, state.channels) },
@@ -974,7 +1002,8 @@ private fun GuideInfoStrip(
         }
     }
     val synopsis by produceState<String?>(null, programme?.id) {
-        value = programme?.id?.let { vm.programmeDescription(it) }
+        // As above: a provider-fetched row carries its own synopsis and has no id to look up.
+        value = programme?.description ?: programme?.id?.takeIf { it > 0 }?.let { vm.programmeDescription(it) }
     }
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp)

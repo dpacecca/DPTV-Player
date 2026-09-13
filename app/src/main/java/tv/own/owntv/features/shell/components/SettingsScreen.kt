@@ -155,7 +155,7 @@ internal val LocalSettingsRowTone = staticCompositionLocalOf { TileTone.PRIMARY 
 private fun Toned(tone: TileTone, content: @Composable () -> Unit) =
     CompositionLocalProvider(LocalSettingsRowTone provides tone, content = content)
 
-private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, LOCAL_SYNC, VIDEO, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS }
+private enum class SettingsTab { ROOT, RECORDING, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, LOCAL_SYNC, VIDEO, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS }
 
 @Composable
 internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
@@ -375,28 +375,12 @@ fun SettingsScreen(
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by rememberSaveable { mutableStateOf<SettingsTab?>(null) }
-    val rowFocus = remember { mapOf(
-        SettingsTab.LANGUAGE to FocusRequester(),
-        SettingsTab.SOURCES to FocusRequester(),
-        SettingsTab.EPG to FocusRequester(),
-        SettingsTab.PROFILES to FocusRequester(),
-        SettingsTab.BACKUP to FocusRequester(),
-        SettingsTab.LOCAL_SYNC to FocusRequester(),
-        SettingsTab.VIDEO to FocusRequester(),
-        SettingsTab.CUSTOMIZE to FocusRequester(),
-        SettingsTab.HOME to FocusRequester(),
-        SettingsTab.NETWORK to FocusRequester(),
-        SettingsTab.DNS to FocusRequester(),
-        SettingsTab.METADATA to FocusRequester(),
-        SettingsTab.OPEN_SUBTITLES to FocusRequester(),
-        SettingsTab.WEATHER to FocusRequester(),
-        SettingsTab.NAV_MENU to FocusRequester(),
-        SettingsTab.CH_NAV to FocusRequester(),
-        SettingsTab.CONTENT_MENUS to FocusRequester(),
-            SettingsTab.PANEL_WIDTH to FocusRequester(),
-            SettingsTab.GUIDE_WIDTH to FocusRequester(),
-            SettingsTab.GLASS_EFFECT to FocusRequester(),
-    ) }
+    // Built from the enum, not hand-listed. It used to be a literal map of twenty entries, and
+    // adding SettingsTab.RECORDING without adding a line to it crashed the whole Settings screen
+    // with "Key RECORDING is missing in the map" — a `getValue` on a map that had quietly gone
+    // stale. From the entries there is nothing to keep in step. ROOT gets one it never uses, which
+    // is cheaper than a list that can be wrong.
+    val rowFocus = remember { SettingsTab.entries.associateWith { FocusRequester() } }
     // Mini player is a popup on the Video player screen, not a screen of its own. The settings search
     // still lists it by name, so it needs a way to say "open that popup on arrival".
     var openMiniPlayer by rememberSaveable { mutableStateOf(false) }
@@ -434,6 +418,12 @@ fun SettingsScreen(
                     focusRowKey = videoRowKey,
                     modifier = modifier,
                 )
+            }
+            return
+        }
+        SettingsTab.RECORDING -> {
+            Toned(TileTone.TERTIARY) {
+                tv.own.owntv.features.settings.RecordingSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
             }
             return
         }
@@ -717,6 +707,15 @@ fun SettingsScreen(
             title = stringResource(R.string.settings_video_player), desc = stringResource(R.string.settings_video_player_description),
             focus = rowFocus.getValue(SettingsTab.VIDEO),
             onClick = { open(SettingsTab.VIDEO) },
+        ),
+        // A row under Playback, not a group of its own. A group holding exactly one row still has to
+        // be opened to find out it holds one row, which is a press that tells the user nothing.
+        RootRow(
+            tabRowKey(SettingsTab.RECORDING), TileTone.TERTIARY, OwnTVIcon.LIVE_TV,
+            title = stringResource(R.string.recording_settings_group),
+            desc = stringResource(R.string.recording_description),
+            focus = rowFocus.getValue(SettingsTab.RECORDING),
+            onClick = { open(SettingsTab.RECORDING) },
         ),
         RootGroup("group_network", stringResource(R.string.settings_network_group), OwnTVIcon.NETWORK, stringResource(R.string.settings_group_summary_network)),
         RootRow(

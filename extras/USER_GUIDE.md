@@ -675,6 +675,93 @@ focus when More opens, so the route to it is **sidebar → More → OK**.
 
 ---
 
+## ⏺️ Record Live TV
+
+Recording uses **one of your provider's connections**, exactly as watching does — so on an account
+that allows one stream at a time, a recording and a picture cannot both run. OwnTV tells you that in a
+sentence *before* it starts, rather than failing halfway.
+
+**Three ways to start one**
+
+- 🗓️ **From the TV Guide** — long‑press a programme → **Record**. On a channel your provider publishes
+  no guide for, the recording runs for **two hours**, because a recording with no end is worse than one
+  that stops too early.
+- 📺 **From the channel list** — long‑press a channel → **Record**. It records from now.
+- ▶️ **While you are watching** — the **Record** button in the player, on live channels only, once
+  *Settings → Playback → Recording* is on. It **keeps going** when you change channel or leave the
+  player; stop it from the Recordings list.
+
+**Record every showing**
+
+Long‑press a programme and choose the standing rule. New showings of that title on that channel are
+scheduled as the guide learns about them, without you asking again.
+
+**Catch‑up as a recording**
+
+A programme that has already been broadcast can be **saved from your provider's archive** instead of
+being watched once — the same Record action, on a programme in the past.
+
+**Where they go**
+
+📂 **Downloads → Live TV**, beside Movies and Series. Each row shows **how long · how big · the full
+path**, and while one is running the status pill shows its size ticking up.
+
+⚠️ **If your television blocks apps from starting at boot**, a recording booked across a restart cannot
+be armed while OwnTV is closed. Opening OwnTV repairs every pending timer; one whose time passed while
+the box was off is marked **Missed** rather than left waiting forever.
+
+---
+
+## 🔲 Multiview — up to four channels at once
+
+Watch several live channels side by side.
+
+**Two ways in**
+
+- ▶️ The **Multiview** button in the player — the channel on screen becomes the first tile.
+- 📺 **Long‑press a channel → Add to Multiview**, mark as many as you want, then play any channel. The
+  grid opens with them already in it.
+
+**The number in Settings is a maximum, not a size.** *Settings → Playback → Video player → Most tiles*
+sets how many you are ever allowed. The grid **opens with two** — your channel and an empty tile — and
+grows only when you ask. Choosing four does not mean every grid is four.
+
+**Driving it**
+
+| Press | Does |
+| --- | --- |
+| **D‑pad** | move between tiles |
+| **OK** on a playing tile | give it the sound |
+| **OK** on an empty tile | pick a channel — **categories first**, across every playlist |
+| **Hold OK** | that tile's menu: change channel, **add a tile**, make fullscreen, sound, **sound only**, remove |
+| **Back** | leave, stopping every tile |
+
+- 🔊 **One tile has the sound** at a time, marked with a speaker.
+- 🎧 **Sound only** gives up a tile's picture and keeps its commentary — useful for a second match. It
+  still uses one of your provider's connections, and the tile says so rather than looking free.
+- ⚠️ **A tile never sits blank.** If it cannot start, it says why: your provider has no connection
+  spare, or **this television cannot decode another channel at the same time** — a different problem,
+  and worth knowing which. Several 4K channels at once is what usually reaches the television's limit.
+- ↩️ **Back stops everything** and returns you to the Live TV list. Nothing is left playing behind it.
+
+---
+
+## 🔌 How many channels your provider allows
+
+Most providers never publish how many streams your account may run at once, so OwnTV **finds out by
+trying** — once, when you add a playlist, before any channels are saved and while nothing is playing.
+An account that does publish the number is never tested.
+
+Afterwards, Multiview and recording warn you *before* refusing something, instead of a picture simply
+stopping.
+
+- **Settings → Playlists → Info** shows what is known about a playlist and checks it is still alive.
+- **Re-test** is inside Info. It warns you first: **anything playing will stop**, and it can take up to
+  **two minutes**. **Skip** abandons it.
+- A broken channel cannot fool it — it would rather store **nothing** than a wrong number.
+
+---
+
 ## 🎛️ Player controls (reference)
 
 Bring up the controls in any full‑screen player (press OK / a direction). The bottom bar has:

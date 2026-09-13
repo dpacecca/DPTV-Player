@@ -1,6 +1,7 @@
 package tv.own.owntv.features.settings
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -95,6 +96,8 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var editingSource by remember { mutableStateOf<SourceEntity?>(null) }
     var confirmDelete by remember { mutableStateOf<SourceEntity?>(null) }
     var resyncChoice by remember { mutableStateOf<SourceEntity?>(null) }
+    // Set while the "this will stop playback and take a while" confirmation is on screen.
+    var confirmRetest by remember { mutableStateOf<SourceEntity?>(null) }
     val addFocus = remember { FocusRequester() }
     val errorFocus = remember { FocusRequester() }
 
@@ -362,7 +365,27 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         }
 
         sourceTest?.let { state ->
-            SourceTestDialog(state = state, onDismiss = { vm.dismissSourceTest() })
+            SourceTestDialog(
+                state = state,
+                onDismiss = { vm.dismissSourceTest() },
+                // Only for a playlist that exists; the measurement is stored against its row.
+                onRetest = sources.firstOrNull { it.name == state.sourceName }?.let { src ->
+                    { confirmRetest = src }
+                },
+                onSkip = { vm.skipConnectionMeasurement() },
+            )
+        }
+
+        // Measuring opens real streams, so the user is told plainly that playback stops and that it
+        // is slow, and gets to say no. Same shape as the delete confirmation beneath it.
+        confirmRetest?.let { src ->
+            ConfirmDialog(
+                title = stringResource(R.string.settings_sources_probe_title),
+                message = stringResource(R.string.settings_sources_probe_warning),
+                onConfirm = { confirmRetest = null; vm.retestSource(src) },
+                onDismiss = { confirmRetest = null },
+                confirmLabel = R.string.settings_sources_retest,
+            )
         }
 
         confirmDelete?.let { src ->
@@ -464,7 +487,9 @@ private fun SourceRow(
         } else {
             OwnTVButton(stringResource(R.string.settings_sources_edit), onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
             Spacer(Modifier.width(10.dp))
-            OwnTVButton(stringResource(R.string.settings_test), onClick = onTest, style = OwnTVButtonStyle.SECONDARY)
+            // "Info", not "Test": the expensive measurement now lives behind Re-test inside the
+            // popup, and this button answers the question it always really answered — is it alive?
+            OwnTVButton(stringResource(R.string.settings_sources_info), onClick = onTest, style = OwnTVButtonStyle.SECONDARY)
             Spacer(Modifier.width(10.dp))
             // One stable button whose label/action flips with syncState. Keeping the SAME composable
             // in the tree (instead of an if/else that disposes "Re-sync" and composes "Cancel") means
@@ -534,7 +559,18 @@ private fun CenterStatus(content: @Composable androidx.compose.foundation.layout
 }
 
 @Composable
-internal fun ConfirmDialog(title: String, message: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+internal fun ConfirmDialog(
+    title: String,
+    message: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    /**
+     * What the confirming button says. Defaults to Delete because every caller was a deletion when
+     * this was written — which is exactly how the connection-measurement confirmation ended up
+     * offering "Delete", a word with nothing to do with what it would have done.
+     */
+    @StringRes confirmLabel: Int = R.string.common_delete,
+) {
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
@@ -549,7 +585,7 @@ internal fun ConfirmDialog(title: String, message: String, onConfirm: () -> Unit
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(focus))
                 Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.common_delete), onClick = onConfirm)
+                OwnTVButton(stringResource(confirmLabel), onClick = onConfirm)
             }
         }
     }
@@ -616,11 +652,29 @@ private enum class AddMode { REMOTE, MANUAL }
  * vocabulary there, and a wrong translation of "Banned" would be worse than the English original.
  */
 @Composable
-internal fun SourceTestDialog(state: SourceTestUi, onDismiss: () -> Unit) {
+internal fun SourceTestDialog(
+    state: SourceTestUi,
+    onDismiss: () -> Unit,
+    /** Null hides Re-test — the add form has no saved playlist to measure yet. */
+    onRetest: (() -> Unit)? = null,
+    /** Abandon a measurement in progress. Falls back to simply closing when not supplied. */
+    onSkip: (() -> Unit)? = null,
+) {
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    // Keyed on *which* button carries the requester, not on first composition.
+    //
+    // While measuring that button is Skip; when the measurement finishes it becomes OK, and the node
+    // holding the requester is therefore removed and replaced. A one-shot request left focus on a
+    // node that no longer existed, so the finished dialog could not be dismissed with the remote at
+    // all — the press went nowhere. A frame is waited for because the replacement must exist before
+    // it can be asked to take focus.
+    val measuring = state is SourceTestUi.Measuring
+    LaunchedEffect(measuring) {
+        withFrameNanos { }
+        runCatching { focus.requestFocus() }
+    }
     BackHandler { onDismiss() }
     Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
         Column(Modifier.dialogPanel(width = 520.dp, padding = 28.dp)) {
@@ -634,17 +688,54 @@ internal fun SourceTestDialog(state: SourceTestUi, onDismiss: () -> Unit) {
                     Spacer(Modifier.width(12.dp))
                     Text(stringResource(R.string.setup_testing), style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
                 }
-                is SourceTestUi.Done -> SourceTestReport(state.result)
+                // The measurement is slow by nature, so it says which stream it is on rather than
+                // spinning silently for two minutes and looking like a hang.
+                is SourceTestUi.Measuring -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    OwnTVSpinner(sizeDp = 22)
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        stringResource(
+                            R.string.settings_sources_probe_running,
+                            state.progress.stream,
+                            state.progress.maxStreams,
+                        ),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurfaceVariant,
+                    )
+                }
+                is SourceTestUi.Done -> SourceTestReport(state.result, state.limit)
             }
             Spacer(Modifier.height(22.dp))
-            OwnTVButton(stringResource(R.string.common_ok), onClick = onDismiss, modifier = Modifier.focusRequester(focus))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // While measuring, the only honest button is one that abandons it: OK would suggest
+                // the answer is already in. Nobody should be trapped for two minutes by a provider
+                // that is simply slow.
+                if (state is SourceTestUi.Measuring) {
+                    OwnTVButton(
+                        stringResource(R.string.settings_sources_probe_skip),
+                        onClick = onSkip ?: onDismiss,
+                        modifier = Modifier.focusRequester(focus),
+                    )
+                } else {
+                    OwnTVButton(stringResource(R.string.common_ok), onClick = onDismiss, modifier = Modifier.focusRequester(focus))
+                }
+                // Only once the quick check has finished: starting a two-minute measurement on top of
+                // a request that is still running would race it for the same connection.
+                if (onRetest != null && state is SourceTestUi.Done) {
+                    OwnTVButton(
+                        stringResource(R.string.settings_sources_retest),
+                        onClick = onRetest,
+                        style = OwnTVButtonStyle.SECONDARY,
+                    )
+                }
+            }
         }
     }
     }
 }
 
 @Composable
-private fun SourceTestReport(result: SourceTestResult) {
+private fun SourceTestReport(result: SourceTestResult, limit: tv.own.owntv.core.live.ConnectionLimit?) {
     val colors = OwnTVTheme.colors
     val res = LocalContext.current.resources
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -653,7 +744,7 @@ private fun SourceTestReport(result: SourceTestResult) {
             style = MaterialTheme.typography.bodyLarge,
             color = if (result is SourceTestResult.Ok) colors.onSurface else colors.favorite,
         )
-        result.detailLines(res).forEach {
+        result.detailLines(res, limit).forEach {
             Text(it, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
         }
     }
