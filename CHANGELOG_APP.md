@@ -13,6 +13,7 @@
 
 ### ✨ New features
 
+- **🔎 Set how big the interface and its text are during setup** (#179)
 - **🗂️ Hide or move a category without leaving the screen** (community PR #131 by @pt5pnzghm6-sys0)
 - **⏺️ Record Live TV — from the guide, the channel list or while you are watching**
 - **🔁 Record every showing of a programme on a channel**

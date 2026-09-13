@@ -29,6 +29,7 @@ import tv.own.owntv.features.settings.HomeSettingsViewModel
 import tv.own.owntv.features.settings.LanguageSettingsViewModel
 import tv.own.owntv.features.settings.OpenSubtitlesViewModel
 import tv.own.owntv.features.settings.SettingsViewModel
+import tv.own.owntv.features.setup.DisplaySizeViewModel
 import tv.own.owntv.features.setup.SetupViewModel
 import tv.own.owntv.features.shell.ShellViewModel
 import tv.own.owntv.features.subtitles.SubtitleSearchViewModel
@@ -56,6 +57,7 @@ val appModule = module {
     singleOf(::HomeFeedReader)
     viewModelOf(::HomeViewModel)
     viewModelOf(::SetupViewModel)
+    viewModelOf(::DisplaySizeViewModel)
     // Takes a Context first; Koin resolves it from androidContext().
     //
     // Spelled out rather than `viewModelOf(::LiveViewModel)`: that reflective helper is generated for

@@ -26,12 +26,18 @@ On a fresh installation, OwnTV opens with its language selector focused before *
 translated languages. Each choice is shown in its own script with an English description; selecting it
 updates the welcome screen immediately and returns focus to the selector.
 
-The four main setup pages use the same OwnTV welcome design and D-pad behaviour:
+The five main setup pages use the same OwnTV welcome design and D-pad behaviour:
 
 1. **Welcome** — choose the interface language, then press **Get Started**.
-2. **Before you start** — read the player-only disclaimer and press **I understand**.
-3. **Set up OwnTV** — create a new profile or restore a backup from a local file or another device.
-4. **Add playlist** — add a new M3U, Xtream, or Stalker source, use a playlist already shared by another
+2. **Make it comfortable to read** — set **UI Zoom** and **Font size** before the rest of setup. A
+   sample sentence below the two controls resizes as you press, so you can judge the size from where
+   you sit instead of guessing at a percentage. Focus starts on the zoom **+**. These are the same
+   settings as **Settings → Look & Feel**, so whatever you choose here applies to the whole app and
+   can be changed again later. Zoom covers 50–150%; stepping below 85% asks you to confirm, because
+   very small sizes can exhaust the memory of a low-RAM TV. **Reset** returns both to their defaults.
+3. **Before you start** — read the player-only disclaimer and press **I understand**.
+4. **Set up OwnTV** — create a new profile or restore a backup from a local file or another device.
+5. **Add playlist** — add a new M3U, Xtream, or Stalker source, use a playlist already shared by another
    profile, import a backup, or skip for now.
 
 Change the interface language at any time under **Settings → Look & Feel → Language**. The picker is

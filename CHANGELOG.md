@@ -2,6 +2,20 @@
 
 ## v4.2.5 — unreleased
 
+### 🔎 Set how big everything is during setup, not after it — issue #179 by @Generator
+
+- **The settings that make the interface bigger were only findable once setup was over.** A first
+  run now asks, on its second screen, how large you want the interface and its text — before the
+  disclaimer, which is the first screen that is mostly words.
+- **A sample sentence sits under the two controls and resizes as you press**, so you judge the size
+  by reading it from where you actually sit rather than by picking a number.
+- **UI Zoom and Font size are the same settings Settings has always had.** What you choose here is
+  simply the app's from then on, and Settings can still change either at any time.
+- The screen offers zoom's whole 50–150% range, and going below 85% asks the same
+  accept-the-risk question Settings asks, because very small sizes can exhaust a low-memory TV.
+- **The step is drawn at full size while the rest of the wizard is drawn smaller.** That is
+  deliberate: a size tuned against a shrunken screen would be the wrong size everywhere else.
+
 ### 🗂️ Hide or move a category without leaving the screen — community PR #131 by @pt5pnzghm6-sys0
 
 - **Tidying your categories meant a trip to Settings.** Hold **OK** on any category in Live TV,
