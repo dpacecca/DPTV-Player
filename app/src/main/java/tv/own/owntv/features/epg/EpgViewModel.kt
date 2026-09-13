@@ -36,7 +36,7 @@ import tv.own.owntv.core.parser.XtreamClient
 import tv.own.owntv.core.customize.CustomizationStore
 import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.customize.applyCustomizations
-import tv.own.owntv.core.customize.applyCustomizationsWithCustoms
+import tv.own.owntv.core.customize.railCategories
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
 import tv.own.owntv.core.model.MediaType
@@ -297,16 +297,10 @@ class EpgViewModel(
             .flatMapLatest { aps ->
                 if (aps.sources.isEmpty()) flowOf(emptyList())
             else combine(categoryDao.observe(aps.liveSourceIds, MediaType.LIVE), settings.sortLive, custom, profileDao.observeById(aps.profileId)) { cats, sort, cust, profile ->
-                // Mirror Live TV: hidden filtered + renames + pinned order; A–Z sorts the rest.
-                val visibleCats = if (profile?.isKids == true) {
-                    cats.filterNot { tv.own.owntv.core.content.AdultCategoryClassifier.isAdult(it.name) }
-                } else cats
-                val visibleCustoms = if (profile?.isKids == true) {
-                    cust.customCategories.filterNot { tv.own.owntv.core.content.AdultCategoryClassifier.isAdult(it.name) }
-                } else cust.customCategories
-                visibleCats.applyCustomizationsWithCustoms(
+                // The same rail Live TV shows: hidden filtered + renames + pinned order.
+                cats.railCategories(
                     cust,
-                    visibleCustoms,
+                    kids = profile?.isKids == true,
                     alphaRest = sort == SettingsRepository.SortMode.ALPHA,
                     ).let { entries ->
                         val multiSourceNames = aps.sources
@@ -314,7 +308,7 @@ class EpgViewModel(
                             .associate { it.id to it.name }
                             .takeIf { it.size > 1 }
                             .orEmpty()
-                        val categoriesById = visibleCats.associateBy { it.id }
+                        val categoriesById = cats.associateBy { it.id }
                         entries.map { entry ->
                         GuideCategory(
                             key = entry.key,

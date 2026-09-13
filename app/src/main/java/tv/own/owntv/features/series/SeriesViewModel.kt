@@ -37,7 +37,10 @@ import kotlinx.coroutines.launch
 import tv.own.owntv.core.customize.CustomizationStore
 import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.customize.applyCustomizations
-import tv.own.owntv.core.customize.applyCustomizationsWithCustoms
+import tv.own.owntv.core.customize.CategoryMove
+import tv.own.owntv.core.customize.CategoryRailEditor
+import tv.own.owntv.core.customize.MoveKind
+import tv.own.owntv.core.customize.railCategories
 import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.database.dao.CategoryDao
 import tv.own.owntv.core.database.dao.ContentOrderDao
@@ -104,9 +107,11 @@ class SeriesViewModel(
     private val _moveState = MutableStateFlow<SeriesMoveState?>(null)
     val moveState: StateFlow<SeriesMoveState?> = _moveState.asStateFlow()
 
-    data class CategoryMoveState(val items: List<String>, val keys: List<String>, val activeIndex: Int, val targetKey: String)
-    private val _categoryMoveState = MutableStateFlow<CategoryMoveState?>(null)
-    val categoryMoveState: StateFlow<CategoryMoveState?> = _categoryMoveState.asStateFlow()
+    /** Hide and reorder a category from the rail — the same editor Settings → Customize writes through. */
+    private val categoryEditor = CategoryRailEditor(customize, categoryDao, profileDao)
+
+    private val _categoryMoveState = MutableStateFlow<CategoryMove?>(null)
+    val categoryMoveState: StateFlow<CategoryMove?> = _categoryMoveState.asStateFlow()
 
     private data class Ctx(
         val profileId: Long,
@@ -487,12 +492,13 @@ class SeriesViewModel(
                 // A–Z also sorts the category folders (custom categories included); manually moved
                 // categories stay pinned first. Custom categories ride the SAME customization keys,
                 // so renames/hides/reorders apply to them with no extra code (#87).
-                val kids = profile?.isKids == true
-                val visibleCats = if (kids) cats.filterNot { tv.own.owntv.core.content.AdultCategoryClassifier.isAdult(it.name) } else cats
-                val visibleCustoms = if (kids) cust.customCategories.filterNot { tv.own.owntv.core.content.AdultCategoryClassifier.isAdult(it.name) } else cust.customCategories
-                val folders = visibleCats.applyCustomizationsWithCustoms(cust, visibleCustoms, alphaRest = sort == SettingsRepository.SortMode.ALPHA)
+                val folders = cats.railCategories(
+                    cust,
+                    kids = profile?.isKids == true,
+                    alphaRest = sort == SettingsRepository.SortMode.ALPHA,
+                )
                 val multiSourceNames = c.sourceNames.takeIf { it.size > 1 }.orEmpty()
-                val categoriesById = visibleCats.associateBy { it.id }
+                val categoriesById = cats.associateBy { it.id }
                 defaultRail + folders.map { e ->
                     LiveRailItem(
                         key = e.categoryId?.let { LiveKey.Folder(it) } ?: LiveKey.Custom(e.customId!!),
@@ -1111,14 +1117,8 @@ class SeriesViewModel(
 
     /** Hide a category by its rail key (undo via Settings → Customize). */
     fun hideCategory(key: LiveKey) {
-        if (key !is LiveKey.Folder && key !is LiveKey.Custom) return
         viewModelScope.launch {
-            val pid = currentProfileId() ?: return@launch
-            val customizationKey = when (key) {
-                is LiveKey.Folder -> categoryDao.getById(key.id)?.let { CustomizeKeys.category(it) }
-                is LiveKey.Custom -> key.id
-            } ?: return@launch
-            customize.setCategoryHidden(pid, MediaType.SERIES, customizationKey, true)
+            categoryEditor.hide(currentProfileId() ?: return@launch, MediaType.SERIES, key)
         }
     }
 
@@ -1126,72 +1126,22 @@ class SeriesViewModel(
         if (key !is LiveKey.Folder && key !is LiveKey.Custom) return
         viewModelScope.launch {
             val c = ctx.first { it.profileId >= 0 }
-            val pid = c.profileId
-            val type = MediaType.SERIES
-            val cats = categoryDao.observe(c.sourceIds, type).first()
-            val cust = customize.observe(pid, type).first()
-            val sort = sortMode.value
-            val profile = profileDao.getById(pid)
-
-            val kids = profile?.isKids == true
-            val visibleCats = if (kids) cats.filterNot { tv.own.owntv.core.content.AdultCategoryClassifier.isAdult(it.name) } else cats
-            val visibleCustoms = if (kids) cust.customCategories.filterNot { tv.own.owntv.core.content.AdultCategoryClassifier.isAdult(it.name) } else cust.customCategories
-
-            val targetKey = when (key) {
-                is LiveKey.Folder -> categoryDao.getById(key.id)?.let { CustomizeKeys.category(it) }
-                is LiveKey.Custom -> key.id
-            } ?: return@launch
-
-            // Filter hidden categories so reordering exactly mirrors applyCustomizationsWithCustoms.
-            val filteredCats = if (cust.hiddenCategories.isEmpty()) visibleCats else visibleCats.filter { CustomizeKeys.category(it) !in cust.hiddenCategories }
-            val filteredCustoms = visibleCustoms.filter { it.id !in cust.hiddenCategories }
-
-            val orderIndex = cust.categoryOrder.withIndex().associate { (i, k) -> k to i }
-            val entries = filteredCustoms.map { cc ->
-                cc.id to (cust.categoryNames[cc.id] ?: cc.name)
-            } + filteredCats.map { cat ->
-                val k = CustomizeKeys.category(cat)
-                k to (cust.categoryNames[k] ?: cat.name)
-            }
-
-            val alpha = sort == SettingsRepository.SortMode.ALPHA
-            val (pinned, rest) = entries.partition { it.first in orderIndex }
-            val sortedList = pinned.sortedBy { orderIndex.getValue(it.first) } +
-                (if (alpha) rest.sortedBy { it.second.lowercase() } else rest)
-
-            val fullKeys = sortedList.map { it.first }
-            val entryIdx = fullKeys.indexOf(targetKey)
-            if (entryIdx < 0) return@launch
-
-            _categoryMoveState.value = CategoryMoveState(
-                items = sortedList.map { it.second },
-                keys = fullKeys,
-                activeIndex = entryIdx,
-                targetKey = targetKey,
+            _categoryMoveState.value = categoryEditor.beginMove(
+                profileId = c.profileId,
+                sourceIds = c.sourceIds,
+                type = MediaType.SERIES,
+                alphaRest = sortMode.value == SettingsRepository.SortMode.ALPHA,
+                key = key,
             )
         }
     }
 
     fun moveCategoryUp() {
-        val s = _categoryMoveState.value ?: return
-        if (s.activeIndex <= 0) return
-        val items = s.items.toMutableList()
-        val keys = s.keys.toMutableList()
-        val i = s.activeIndex
-        items[i - 1] = s.items[i]; items[i] = s.items[i - 1]
-        keys[i - 1] = s.keys[i]; keys[i] = s.keys[i - 1]
-        _categoryMoveState.value = s.copy(items = items, keys = keys, activeIndex = i - 1)
+        _categoryMoveState.value = _categoryMoveState.value?.moved(MoveKind.UP) ?: return
     }
 
     fun moveCategoryDown() {
-        val s = _categoryMoveState.value ?: return
-        if (s.activeIndex >= s.items.lastIndex) return
-        val items = s.items.toMutableList()
-        val keys = s.keys.toMutableList()
-        val i = s.activeIndex
-        items[i + 1] = s.items[i]; items[i] = s.items[i + 1]
-        keys[i + 1] = s.keys[i]; keys[i] = s.keys[i + 1]
-        _categoryMoveState.value = s.copy(items = items, keys = keys, activeIndex = i + 1)
+        _categoryMoveState.value = _categoryMoveState.value?.moved(MoveKind.DOWN) ?: return
     }
 
     fun commitCategoryMove() {
