@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.2.5 — unreleased
+## v5.0.0 — 2026-09-14
 
 ### 🧱 The player engine, the database and the build toolchain move up
 
