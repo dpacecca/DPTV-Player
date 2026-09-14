@@ -55,6 +55,7 @@
 
 ### 🐛 Fixes
 
+- **🧱 ExoPlayer, Room and the build toolchain updated**
 - **Glass mode ignored your chosen focus highlight colour**
 - **The active category's white border looked like a second cursor**
 - **Customize moved the item but left the cursor behind**

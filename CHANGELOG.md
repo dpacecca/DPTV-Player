@@ -2,6 +2,17 @@
 
 ## v4.2.5 — unreleased
 
+### 🧱 The player engine, the database and the build toolchain move up
+
+- **ExoPlayer (Media3) 1.11.0 → 1.11.1 and Room 2.8.4 → 2.8.5.** Both are bug-fix releases on the
+  versions already in use — the first is half of the live TV player, the second is every query in
+  the library. Pinned here as well as in core deliberately: a core generating Room 2.8.5 code beside
+  an app carrying the 2.8.4 runtime would put two Room versions on one classpath.
+- **Android Gradle Plugin 9.3.2 → 9.4.0 and Kotlin 2.4.10 → 2.4.20.** One change across all three
+  repositories, because they share a composite build that cannot mix two versions of either.
+- **Nothing in this app's own code changed** — the whole of it is the version catalogue. Verified by
+  a full release build, lint and the unit tests on the new toolchain.
+
 ### 🔎 Set how big everything is during setup, not after it — issue #179 by @Generator
 
 - **The settings that make the interface bigger were only findable once setup was over.** A first
