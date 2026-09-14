@@ -347,7 +347,9 @@ fun HomeScreen(
                 // Two shapes, the user's choice: the full hero, or the plain strip of posters the
                 // rest of Home is made of. Same items, same order, either way.
                 HomeRow.TRENDING -> if (state.trendingItems.size < TrendingDao.MIN_ELIGIBLE_ITEMS) {
-                    Unit
+                    // Too few titles to be a "trending" row at all, so the row is not drawn. An empty
+                    // block rather than a bare `Unit`: the compiler reads that one as an expression
+                    // whose value is thrown away, and says so on every build.
                 } else if (state.config.trendingStyle == HomeTrendingStyle.POSTERS) {
                     TrendingPosterRow(
                         title = row.displayTitle(),
