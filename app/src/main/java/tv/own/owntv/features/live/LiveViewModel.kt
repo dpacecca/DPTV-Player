@@ -18,7 +18,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -2045,13 +2048,27 @@ class LiveViewModel(
     val catchupPlayer: StateFlow<SettingsRepository.CatchupPlayer> = settings.catchupPlayer
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.CatchupPlayer.INTERNAL)
 
+    /**
+     * No archive URL could be built for what the user just picked.
+     *
+     * Every one of these paths used to `return@launch` in silence, so pressing "Watch from start" or
+     * "Go back to…" on a provider that cannot serve the archive did *nothing at all* — no picture, no
+     * message, nothing to tell the difference between a broken app and a provider without a recording.
+     * The Guide has said [EpgMatchSummary.CatchupUnavailable] all along; Live TV now says it too.
+     */
+    private val _catchupUnavailable = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val catchupUnavailable: SharedFlow<Unit> = _catchupUnavailable.asSharedFlow()
+
     /** Hand an archive programme to an external app (VLC, MX Player). No HUD, resume or engine toggle
      *  once it leaves, but external players cope with mid-GOP archive segments some providers serve. */
     fun playCatchupExternal(ch: ChannelEntity, programme: tv.own.owntv.core.database.entity.EpgProgrammeEntity) {
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             if (!tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, ch.categoryId, profileDao, categoryDao)) return@launch
-            val url = archiveUrls.forProgramme(ch, programme) ?: return@launch
+            val url = archiveUrls.forProgramme(ch, programme) ?: run {
+                _catchupUnavailable.tryEmit(Unit)
+                return@launch
+            }
             Log.i(ENGINE_TAG, "catch-up external '${ch.name}' prog='${programme.title}'")
             externalPlayerLauncher.launch(url, ch.name, programme.title)
             recordLiveHistory(ch, immediate = true)
@@ -2067,7 +2084,10 @@ class LiveViewModel(
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             if (!tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, ch.categoryId, profileDao, categoryDao)) return@launch
-            val url = archiveUrls.forProgramme(ch, programme) ?: return@launch
+            val url = archiveUrls.forProgramme(ch, programme) ?: run {
+                _catchupUnavailable.tryEmit(Unit)
+                return@launch
+            }
             val sourceUa = withContext(Dispatchers.IO) { sourceDao.getById(ch.sourceId)?.userAgent }
             // The archive URL shape decides whether ExoPlayer can take it at all (progressive .ts vs
             // .m3u8 vs an extension-less panel endpoint), so log it redacted — it's the first thing
@@ -2212,7 +2232,12 @@ class LiveViewModel(
         val (url, sourceUa) = withContext(Dispatchers.IO) {
             val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
             archiveUrls.forTimeshift(ch, source, startMs, offsetSec, tz)?.let { it to source.userAgent }
-        } ?: return false
+        } ?: run {
+            // The rewind hands back to the live edge from here (see LiveTimeshift.scheduleLoad), which
+            // on its own looks exactly like the button doing nothing. Say why.
+            _catchupUnavailable.tryEmit(Unit)
+            return false
+        }
         if (timeshift.offsetSec.value == null) return false // user jumped back to live meanwhile
         // Keep the rewind instant semantic. The player HUD formats it with the current
         // localized context, so an in-session locale switch updates an already-visible subtitle.

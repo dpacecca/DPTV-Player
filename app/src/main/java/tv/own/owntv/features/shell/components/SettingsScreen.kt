@@ -1041,6 +1041,12 @@ fun SettingsScreen(
                     SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
                 }) { saveScroll(); dialogReturn = searchFieldFocus; showCatchupTime = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_video_player), stringResource(R.string.settings_search_keywords_video), OwnTVIcon.VIDEO, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
+            // Four screens that had no entry at all, so nothing on them could be found by name.
+            SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.recording_settings_group), stringResource(R.string.settings_search_keywords_recording), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.RECORDING) },
+            SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_open_subtitles), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.PRIMARY) { open(SettingsTab.OPEN_SUBTITLES) },
+            SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_glass_effect), stringResource(R.string.settings_search_keywords_glass), OwnTVIcon.SPARKLE, TileTone.PRIMARY,
+                chip = if (glassOn) glassPresetLabel(glassConfig.preset) else stringResource(R.string.common_off), chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.GLASS_EFFECT) },
+            SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_content_menus_title), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.MENU, TileTone.PRIMARY) { open(SettingsTab.CONTENT_MENUS) },
             SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_subtitle_appearance), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
             SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_live_latency), stringResource(R.string.settings_search_keywords_latency), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
             SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_live_preroll), stringResource(R.string.settings_search_keywords_live_preroll), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
@@ -1054,8 +1060,49 @@ fun SettingsScreen(
             SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_update_startup), stringResource(R.string.settings_search_keywords_update_auto), OwnTVIcon.REFRESH, TileTone.SECONDARY,
                 chip = if (updateCheckOnStart) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
         )
+        // Rows that already have a bespoke entry above. Those are richer than a generic one — they flip
+        // in place, or carry a confirmation the search field has to own — so the catalogue skips them
+        // rather than listing them a second time.
+        val bespokeVideoKeys = setOf(
+            "vp_live_preview", "vp_preview_audio", "vp_channel_numbers", "vp_mini", "vp_hdr", "vp_afr",
+            "vp_surround", "vp_autoplay", "vp_sub_style", "vp_live_latency", "vp_preroll", "vp_logging",
+        )
+        // …and every OTHER Video player row, taken straight from the catalogue that screen already draws
+        // from. Twenty-four settings had no entry of any kind — Multiview, the engine pickers, the seek
+        // and volume steps, the language preferences, the per-playlist overrides — so searching for them
+        // by name found nothing, on a screen whose own header offers to search "every setting". Deriving
+        // them means a row added there is searchable the day it exists, instead of the day someone
+        // remembers to type it out here a second time.
+        val videoKeywords = stringResource(R.string.settings_search_keywords_video)
+        val videoEntries = tv.own.owntv.features.settings.VIDEO_QUICK_ROWS
+            .filterNot { it.key in bespokeVideoKeys }
+            .map { ref ->
+                // The same binding Quick uses, so a result shows the row's live value and a plain toggle
+                // flips right here in the results instead of sending the user to the screen to do it.
+                val binding = androidx.compose.runtime.key(ref.key) {
+                    tv.own.owntv.features.settings.videoQuickBinding(ref.key, settingsVm)
+                }
+                val jump = {
+                    lastTab = null
+                    deepReturnKey = ref.key
+                    videoSection = ref.section
+                    videoRowKey = ref.key
+                    tab = SettingsTab.VIDEO
+                }
+                SettingsSearchEntry(
+                    videoPlayerGroup,
+                    stringResource(ref.titleRes),
+                    videoKeywords,
+                    ref.icon,
+                    TileTone.TERTIARY,
+                    chip = binding?.chip,
+                    chipTone = if (binding?.primaryChip == true) TileTone.PRIMARY else TileTone.SECONDARY,
+                    showChevron = binding?.onToggle == null,
+                    onClick = binding?.onToggle ?: jump,
+                )
+            }
         val tokens = searchQuery.trim().lowercase().split(" ").filter { it.isNotBlank() }
-        entries.filter { e -> tokens.all { t -> e.haystack.contains(t) } }
+        (entries + videoEntries).filter { e -> tokens.all { t -> e.haystack.contains(t) } }
     }
     Column(
         modifier = modifier

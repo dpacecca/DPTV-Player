@@ -114,6 +114,8 @@ internal val VIDEO_QUICK_ROWS: List<VideoQuickRef> = listOf(
     VideoQuickRef("vp_deinterlace", SECTION_ENGINE, OwnTVIcon.VIDEO, R.string.settings_deinterlace, R.string.settings_deinterlace_description),
     VideoQuickRef("vp_hdr", SECTION_ENGINE, OwnTVIcon.VIDEO, R.string.settings_quick_hdr, R.string.settings_hdr_description),
     VideoQuickRef("vp_afr", SECTION_ENGINE, OwnTVIcon.VIDEO, R.string.settings_auto_frame_rate, R.string.settings_auto_frame_rate_description),
+    VideoQuickRef("vp_multiview", SECTION_ENGINE, OwnTVIcon.LIST_GRID, R.string.settings_multiview, R.string.settings_multiview_description),
+    VideoQuickRef("vp_multiview_tiles", SECTION_ENGINE, OwnTVIcon.LIST_GRID, R.string.settings_multiview_tiles_max, R.string.settings_multiview_description),
     VideoQuickRef("vp_live_engine", SECTION_ENGINE, OwnTVIcon.PLAY, R.string.settings_live_tv_player, R.string.settings_live_player_description),
     VideoQuickRef("vp_live_engine_sources", SECTION_ENGINE, OwnTVIcon.PLAY, R.string.settings_live_engine_per_playlist, R.string.settings_live_engine_per_playlist_description),
     VideoQuickRef("vp_vod_engine", SECTION_ENGINE, OwnTVIcon.PLAY, R.string.settings_movies_series_player, R.string.settings_movies_player_description),
@@ -191,6 +193,19 @@ internal fun videoQuickBinding(key: String, vm: SettingsViewModel): VideoQuickBi
         "vp_hdr" -> {
             val on by vm.hdrEnabled.collectAsStateWithLifecycle()
             toggle(onOff(on), on) { vm.setHdrEnabled(!on) }
+        }
+        "vp_multiview" -> {
+            val on by vm.multiviewEnabled.collectAsStateWithLifecycle()
+            toggle(onOff(on), on) { vm.setMultiviewEnabled(!on) }
+        }
+        "vp_multiview_tiles" -> {
+            // The ceiling is picked in a dialog, so this one links back to the row rather than
+            // cycling the number in place — [dialogForQuickKey] already routes it there.
+            val tiles by vm.multiviewTiles.collectAsStateWithLifecycle()
+            link(
+                stringResource(R.string.settings_multiview_tiles_max_value, tiles),
+                tiles > tv.own.owntv.core.live.DEFAULT_MULTIVIEW_TILES,
+            )
         }
         "vp_afr" -> {
             val on by vm.autoFrameRate.collectAsStateWithLifecycle()

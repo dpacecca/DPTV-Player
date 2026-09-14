@@ -1470,6 +1470,13 @@ fun OwnTVShell(
                     )
                 }
                 tv.own.owntv.ui.components.InAppToast(localSubToast)
+                // A catch-up pick that could not be resolved. Raised from Live TV wherever an archive
+                // URL comes back null — "Watch from start", "Go back to…" and the external hand-off —
+                // all of which used to fail in complete silence.
+                val catchupUnavailable = stringResource(R.string.content_epg_catchup_unavailable)
+                LaunchedEffect(liveVm) {
+                    liveVm.catchupUnavailable.collect { localSubToast.show(catchupUnavailable) }
+                }
                 // Left — the playing channel's own provider category.
                 if (showChannelList && isLiveChannel) {
                     if (showCategoryBrowser) {

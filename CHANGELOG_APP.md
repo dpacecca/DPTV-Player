@@ -9,6 +9,17 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v5.0.1 — unreleased
+
+### 🩹 Fixes
+
+- **⏪ Catch-up plays on Stalker portal playlists**
+- **⏪ Catch-up loads faster**
+- **💬 Catch-up says when a provider has no recording, instead of doing nothing**
+- **🔲 Holding OK on the Multiview settings no longer closes the app**
+- **🔎 Settings search finds every setting, including Multiview and the player engines**
+- **📖 The user guide explains how to turn Multiview on**
+
 ## v5.0.0 — 2026-09-14
 
 ### ✨ New features

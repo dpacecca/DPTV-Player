@@ -1,5 +1,30 @@
 # Changelog
 
+## v5.0.1 — unreleased
+
+### 🩹 Catch-up plays, a crash is gone, and Settings search finds everything
+
+- **Stalker catch-up plays.** Picking a past programme on a portal playlist did nothing at all — no
+  picture, no message. The archive request carried a reference the provider could not resolve, so it
+  answered with an empty response and the app gave up in silence. Fixed in core (`core-1.0.43`) and
+  confirmed against a real portal. The lookup is also faster: finding the programme used to take up
+  to eight requests to the provider and got slower the later in the day it aired; four at the worst
+  now, usually two or three.
+- **Catch-up says when it cannot play.** Where "Watch from start" or "Go back to…" cannot reach the
+  archive — a provider with no recording behind the channel, most often — the player now says so
+  instead of returning to the live picture without a word.
+- **Holding OK on the Multiview settings no longer crashes the app.** Both Multiview rows offered
+  "Pin to Quick" without being registered for it, so holding OK on either closed the app. They pin,
+  move and unpin like every other row now.
+- **Settings search finds every setting.** Twenty-four settings on the Video player screen could not
+  be found by name — Multiview, the Live TV and Movies player pickers, the seek and rewind steps, the
+  volume and zoom defaults, the language preferences, the per-playlist overrides — and four whole
+  screens had no entry at all: Recording, OpenSubtitles, Glass Effect and Content menus. A result you
+  can simply switch on or off now flips in the results list itself.
+- **The user guide explains Multiview.** It says that it is off by default and where to switch it on,
+  and the Settings table describes it. Two stale lines were corrected: Quick holds what *you* pin, not
+  "the six most-used switches".
+
 ## v5.0.0 — 2026-09-14
 
 ### 🧱 The player engine, the database and the build toolchain move up

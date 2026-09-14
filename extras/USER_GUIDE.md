@@ -224,6 +224,10 @@ sets a standing rule for that programme on that channel. Recordings appear in
 
 ## 🔲 Multiview — up to four channels
 
+**Turn it on first:** Settings → Playback → **Video player** → **Multiview**. It is off by default, and
+the button does not appear in the player until it is on. **Max tiles** on the same screen sets the
+ceiling — the grid still opens with two and grows only when you ask.
+
 **Where:** the **Multiview** button in the player, or long-press channels → **Add to Multiview**
 The channel on screen becomes the first tile. **One tile carries the sound**, marked with a speaker;
 tap another to move it. **Sound only** gives up a tile's picture and keeps its commentary.
@@ -460,11 +464,14 @@ Turn interface motion off for a snappier feel on a slower box.
 
 ## ⚙️ Settings worth knowing
 
-Settings is two columns — sections on the left, their settings on the right. **Quick** at the top
-holds the six most-used switches, and the **search pill** searches every setting at once.
+Settings is two columns — sections on the left, their settings on the right. **Quick** at the top is
+yours to build: **hold OK on any setting** and choose **Pin to Quick**, then Move it up or down. The
+**search pill** searches every setting at once, and a result you can simply switch on or off flips
+right there in the list.
 
 | Setting | Where | Why |
 |---|---|---|
+| **Multiview** | Video player | Watch up to four channels at once. Off by default; also sets the tile ceiling |
 | **Live latency** | Video player → Live TV | How close to the live edge to play. Lower = less delay, more stutter risk |
 | **Pre-buffer live streams** | Video player → Live TV | Collect a few seconds first on a flaky provider |
 | **Give up on a channel after** | Video player → Live TV | 30 s default — bounds how long a dead channel can spin |
