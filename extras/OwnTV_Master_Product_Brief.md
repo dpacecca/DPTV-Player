@@ -311,7 +311,9 @@ path in each result.
 A fresh installation opens with a **language selector before Get Started**. English plus 25 packaged
 translations; further requested languages stay catalogue-only until they reach the reviewed
 readiness threshold. The first run is five pages: language → text size → disclaimer → profile →
-add a playlist.
+add a playlist. The profile page offers three routes, not two: create one, restore a backup file, or
+**copy everything from another OwnTV device** over the local network — so replacing a box does not
+mean finishing setup first and then finding Local sync in the menus.
 
 App language is independent of profiles and of the separate TMDB metadata language, and survives
 restart and backup/restore. Locale-aware plurals, dates, times, numbers, RTL navigation, font
@@ -337,7 +339,8 @@ every id** the file carries. Sources are matched on type + URL + username, plus 
 **Local sync** swaps favourites, history and resume positions with the OwnTV mobile app over the
 local network — no account, no cloud. Both devices enter Sync mode deliberately, an arriving
 container is previewed before it is applied, and a deletion propagates as a deletion rather than
-being undone by the merge.
+being undone by the merge. The same engine is offered during first run, where a device that has
+nothing yet only receives and never hosts, so only the established device enters Sync mode.
 
 **Updates** — in-app, from GitHub Releases, with an optional startup check, the full changelog on a
 manual check, and installation on the TV itself.

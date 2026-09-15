@@ -76,6 +76,7 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.features.settings.EpgSyncDialog
 import tv.own.owntv.features.settings.RemoteBackupRestoreScreen
+import tv.own.owntv.features.settings.SetupLocalSyncScreen
 import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
@@ -87,7 +88,7 @@ import tv.own.owntv.ui.components.summaryText
 import tv.own.owntv.ui.components.warningText
 import tv.own.owntv.ui.theme.OwnTVTheme
 
-private enum class Step { WELCOME, DISPLAY_SIZE, DISCLAIMER, SETUP_CHOICE, CREATE_PROFILE, ADD_CONTENT, ADD_SOURCE_CHOOSER, ADD_SOURCE_REMOTE, ADD_SOURCE, IMPORTING, EXISTING, IMPORT_BACKUP_CHOOSER, IMPORT_BACKUP_REMOTE, IMPORT_BACKUP }
+private enum class Step { WELCOME, DISPLAY_SIZE, DISCLAIMER, SETUP_CHOICE, SYNC_DEVICE, CREATE_PROFILE, ADD_CONTENT, ADD_SOURCE_CHOOSER, ADD_SOURCE_REMOTE, ADD_SOURCE, IMPORTING, EXISTING, IMPORT_BACKUP_CHOOSER, IMPORT_BACKUP_REMOTE, IMPORT_BACKUP }
 
 /**
  * Onboarding for one profile. [firstRun] shows language/welcome/disclaimer; otherwise it starts at profile
@@ -129,7 +130,15 @@ fun Onboarding(firstRun: Boolean, onDone: (Long?) -> Unit, onCancel: () -> Unit,
             Step.SETUP_CHOICE -> SetupChoiceScreen(
                 onCreate = { step = Step.CREATE_PROFILE },
                 onRestore = { backupOrigin = Step.SETUP_CHOICE; step = Step.IMPORT_BACKUP_CHOOSER },
+                onSyncDevice = { step = Step.SYNC_DEVICE },
                 onBack = { step = Step.DISCLAIMER },
+            )
+            // A sync brings whole profiles with it, exactly as a restored backup does, so it finishes
+            // the wizard the same way: hand over with no profile chosen and let MainActivity ask for
+            // the PIN of whichever one the user picks.
+            Step.SYNC_DEVICE -> SetupLocalSyncScreen(
+                onRestored = { onDone(null) },
+                onBack = { step = Step.SETUP_CHOICE },
             )
             Step.CREATE_PROFILE -> ProfileEditorDialog(
                 initial = null,
@@ -507,7 +516,7 @@ private fun DisclaimerScreen(onAgree: () -> Unit, onBack: () -> Unit) {
 }
 
 @Composable
-private fun SetupChoiceScreen(onCreate: () -> Unit, onRestore: () -> Unit, onBack: () -> Unit) {
+private fun SetupChoiceScreen(onCreate: () -> Unit, onRestore: () -> Unit, onSyncDevice: () -> Unit, onBack: () -> Unit) {
     val colors = OwnTVTheme.colors
     val fr = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
@@ -530,6 +539,7 @@ private fun SetupChoiceScreen(onCreate: () -> Unit, onRestore: () -> Unit, onBac
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             ChoiceCard(icon = OwnTVIcon.PERSON, title = stringResource(R.string.setup_new_profile), desc = stringResource(R.string.setup_create_profile_add_sources), modifier = Modifier.focusRequester(fr), onClick = onCreate)
             ChoiceCard(icon = OwnTVIcon.DOWNLOADS, title = stringResource(R.string.setup_restore_backup), desc = stringResource(R.string.setup_import_profiles_playlists), onClick = onRestore)
+            ChoiceCard(icon = OwnTVIcon.REFRESH, title = stringResource(R.string.setup_sync_device), desc = stringResource(R.string.setup_sync_device_description), onClick = onSyncDevice)
         }
     }
 }

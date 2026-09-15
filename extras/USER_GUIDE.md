@@ -23,8 +23,17 @@ Language  →  Text size  →  Disclaimer  →  Profile  →  Add a playlist
 2. **Text size** — set UI Zoom and Font size while a sample sentence resizes, so you judge it from
    your sofa. Changeable later in Settings → Look & Feel.
 3. **Disclaimer** — OwnTV is a player; you bring the sources.
-4. **Profile** — create one, or restore a backup.
+4. **Profile** — create one, restore a backup, or copy everything **From another device**.
 5. **Add a playlist** — M3U, Xtream or Stalker. You can also **Skip for now**.
+
+### 🔄 Already have OwnTV on another device?
+**Where:** the **Set up OwnTV** screen → **From another device**
+Copies your profiles, playlists, favourites, history and resume points straight over your Wi-Fi —
+no account, no cloud, no file to find. On the device you already have, open **⋯ More → Local sync**
+and turn **Sync mode** on; it stays on while that screen is open. The new television then finds it on
+the network, you type its 6-digit PIN once, tick what to bring across, and see exactly what will
+change before it changes. A television being set up only ever *receives* — nothing on the old device
+is altered.
 
 ### 📱 Type the playlist on your phone instead
 **Where:** Add source → **Remote**
@@ -500,7 +509,8 @@ subtitles — **optionally encrypted with your own password**. Restore locally o
 **Where:** ⋯ More → **Local sync**
 Swap favourites, history and resume points with the OwnTV mobile app over your own Wi-Fi — no
 account, no cloud. **Both devices must open the Local sync screen**; you see exactly what will change
-before it changes.
+before it changes. On a brand-new television this is offered during setup instead — see
+**From another device** under *Start here*.
 
 ---
 

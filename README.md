@@ -94,6 +94,8 @@ Questions, ideas, bug reports — **join the OwnTV Telegram group:**
 - **Remote Shortcuts** — map spare colour, number, channel and media keys to 25 actions
 - **26 interface languages**, RTL-aware, chosen before anything else on a fresh install
 - **Backup & Restore** to a single `.own` file, optionally encrypted, locally or over Wi-Fi
+- **Set up from another device** — a new box copies everything from the OwnTV device you already
+  have over your own Wi-Fi, offered on the first setup screen rather than buried in the menus
 - In-app updates; memory-safe lists, auto-reconnect and offline detection throughout
 
 ---

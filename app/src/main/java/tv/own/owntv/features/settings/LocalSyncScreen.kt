@@ -175,6 +175,112 @@ fun LocalSyncScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 /**
+ * The same feature offered during first-run setup, as the third way of getting a new television
+ * furnished: copy the old one over the Wi-Fi instead of typing a playlist in or finding a backup file.
+ *
+ * It lives beside [LocalSyncScreen] rather than in the setup package so it can reuse that screen's
+ * step blocks unchanged — they are the substance of it, and a second copy of them would be a second
+ * thing to keep right. Presented as a settings panel for the same reason `RemoteBackupRestoreScreen`
+ * is: the wizard already borrows a settings screen for a step.
+ *
+ * Two things differ from the settings screen, and only two:
+ *  - **it never hosts.** A television still being set up has nothing worth serving, and announcing an
+ *    empty container on the network would only be something for the other device to find by mistake.
+ *  - **the direction is not a question.** A device at this point in its life can only receive, so
+ *    [LocalSyncViewModel.Step.ChooseDirection] is answered for the user rather than drawn. What *is*
+ *    still asked is which sections to take — someone moving to a new television may well want the
+ *    playlists without the old one's settings.
+ */
+@Composable
+fun SetupLocalSyncScreen(onRestored: () -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = OwnTVTheme.colors
+    val vm: LocalSyncViewModel = koinViewModel()
+
+    // Straight into discovery: arriving here IS the decision to look for the other device, so a
+    // screen that then asked the user to press "Find a device" would be asking twice.
+    var started by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        vm.beginPairing()
+        started = true
+    }
+
+    val step = vm.step
+    LaunchedEffect(step, started) {
+        when {
+            !started -> Unit
+            // Cancelling any block clears the step, and on this screen that means leaving — there is
+            // no device list underneath to fall back to.
+            step == null -> onBack()
+            step is LocalSyncViewModel.Step.ChooseDirection -> vm.chooseDirection(SyncDirection.RECEIVE)
+            else -> Unit
+        }
+    }
+
+    // Cancelling with the remote and cancelling with a button do the same thing — except once the
+    // data has landed, when there is nothing left to cancel and Back means the same as Done.
+    BackHandler { if (step is LocalSyncViewModel.Step.Result) onRestored() else vm.cancel() }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .roundedPanel()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 40.dp, vertical = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Header(
+            stringResource(R.string.setup_sync_device),
+            onBack = { if (step is LocalSyncViewModel.Step.Result) onRestored() else vm.cancel() },
+        )
+        Spacer(Modifier.height(12.dp))
+
+        when (step) {
+            null -> Unit
+            is LocalSyncViewModel.Step.FindDevice -> FindDeviceBlock(vm)
+            is LocalSyncViewModel.Step.EnterPin -> PinBlock(vm)
+            // Answered above; drawing anything for it would flash a list the user never chose from.
+            is LocalSyncViewModel.Step.ChooseDirection -> Unit
+            is LocalSyncViewModel.Step.ChooseSections -> SectionsBlock(vm, step)
+            is LocalSyncViewModel.Step.Confirm -> ConfirmBlock(vm, step)
+            // Not [ResultBlock]: its Done returns to the device list, and here the only thing left to
+            // do is finish onboarding.
+            is LocalSyncViewModel.Step.Result -> SetupResultBlock(step, onDone = onRestored)
+        }
+
+        vm.error?.let { failure ->
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = stringResource(failure.messageRes()),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFFEF4444),
+            )
+            Spacer(Modifier.height(8.dp))
+            OwnTVButton(stringResource(R.string.settings_close), onClick = vm::dismissError, style = OwnTVButtonStyle.SECONDARY)
+        }
+
+        if (vm.busy) {
+            Spacer(Modifier.height(12.dp))
+            Text(stringResource(R.string.local_sync_working), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** [ResultBlock] with the one difference setup needs: Done leaves the wizard instead of the step. */
+@Composable
+private fun SetupResultBlock(step: LocalSyncViewModel.Step.Result, onDone: () -> Unit) {
+    val colors = OwnTVTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(stringResource(R.string.local_sync_done), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+        step.received?.let {
+            Text(stringResource(R.string.local_sync_received_items, it.items), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        }
+        Spacer(Modifier.height(10.dp))
+        OwnTVButton(stringResource(R.string.common_done), onClick = onDone)
+    }
+}
+
+/**
  * The badge that says this television is reachable right now.
  *
  * Sync mode is the one piece of state here with a consequence off the screen — a listening port and

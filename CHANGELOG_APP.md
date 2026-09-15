@@ -11,6 +11,10 @@
 
 ## v5.0.1 — unreleased
 
+### ✨ New features
+
+- **✨ Set a new television up from the one you already have** (#189)
+
 ### 🩹 Fixes
 
 - **⏪ Catch-up plays on Stalker portal playlists**
