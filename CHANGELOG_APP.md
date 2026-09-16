@@ -17,6 +17,7 @@
 
 ### 🩹 Fixes
 
+- **🗂️ Categories your provider lists no longer arrive empty**
 - **⏪ Catch-up plays on Stalker portal playlists**
 - **⏪ Catch-up loads faster**
 - **💬 Catch-up says when a provider has no recording, instead of doing nothing**
