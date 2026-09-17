@@ -55,7 +55,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import androidx.tv.material3.MaterialTheme
@@ -887,15 +886,11 @@ private fun ChannelRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Box(
-                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(colors.surfaceContainerLowest),
-                contentAlignment = Alignment.Center,
+            tv.own.owntv.ui.components.ChannelLogoTile(
+                logoUrl = channel.displayLogoUrl,
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)),
             ) {
-                if (!channel.displayLogoUrl.isNullOrBlank()) {
-                    AsyncImage(model = channel.displayLogoUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
-                } else {
-                    OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(24.dp))
-                }
+                OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(24.dp))
             }
             // Provider channel number, in a fixed-width strip so every name below starts at the same x
             // however many digits the number has. Hidden entirely when the setting is off.
@@ -1107,9 +1102,15 @@ private fun LivePreviewPane(
             modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp)).background(colors.surfaceContainerLowest),
             contentAlignment = Alignment.Center,
         ) {
-            if (!channel.displayLogoUrl.isNullOrBlank()) {
-                AsyncImage(model = channel.displayLogoUrl, contentDescription = null, modifier = Modifier.size(120.dp))
-            } else {
+            // No fill of its own: the 16:9 box behind it is already the video container's. The tile
+            // plates itself only if this channel's logo would be unreadable. Video covers it anyway
+            // once playback starts.
+            tv.own.owntv.ui.components.ChannelLogoTile(
+                logoUrl = channel.displayLogoUrl,
+                modifier = Modifier.size(160.dp).clip(RoundedCornerShape(12.dp)),
+                imageModifier = Modifier.size(120.dp),
+                fill = Color.Transparent,
+            ) {
                 OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(56.dp))
             }
             if (previewPlaying) {

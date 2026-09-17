@@ -43,6 +43,20 @@
 - **The user guide explains Multiview.** It says that it is off by default and where to switch it on,
   and the Settings table describes it. Two stale lines were corrected: Quick holds what *you* pin, not
   "the six most-used switches".
+- **Popup font size now resizes the whole popup.** Turning it up, even to the maximum, moved only a
+  few labels: the setting reached the shared text styles and nothing else, so buttons, input fields
+  and any text with a size of its own stayed exactly as they were — which read as a setting that did
+  nothing at all. It is now applied to the popup's text scale itself, so every word inside a dialog or
+  menu follows it. At the larger sizes some labels wrap onto a second line; popups already scroll, so
+  nothing moves out of reach.
+- **Channel logos no longer sit on a black square.** Most provider logos are transparent, and the
+  tile behind them showed through as a dark box around the artwork — worst on a logo drawn in dark
+  ink, which disappeared into it entirely. The tile is now drawn only when there is no logo to show,
+  and the logo itself is measured once so the few that would be unreadable get a backing plate in the
+  opposite shade: light behind a dark logo, dark behind a light one, following the theme. A logo that
+  carries its own background is left alone, and a logo that fails to load falls back to the channel
+  icon instead of an empty box. The tile never changes size, so nothing shifts on screen. Reported by
+  a user; applies to the Live TV list and preview and to the Home screen's channel rows.
 
 ## v5.0.0 — 2026-09-14
 

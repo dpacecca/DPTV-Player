@@ -24,6 +24,8 @@
 - **🔲 Holding OK on the Multiview settings no longer closes the app**
 - **🔎 Settings search finds every setting, including Multiview and the player engines**
 - **📖 The user guide explains how to turn Multiview on**
+- **🔠 Popup font size now resizes everything inside a popup**
+- **🖼️ Channel logos no longer sit on a black square**
 
 ## v5.0.0 — 2026-09-14
 
