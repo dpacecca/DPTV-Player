@@ -948,8 +948,14 @@ class EpgViewModel(
         if (missingKeys.isNotEmpty()) {
             // Resolve only the matched channels (their key's tail is the remoteId/Xtream stream id) in one
             // query, instead of loading the entire channel table — that table-load was seconds on big lists.
+            // In batches: SQLite rejects a statement with more than 999 bound parameters on older
+            // Android, and someone who has matched a thousand channels by hand would otherwise crash
+            // the app on every guide load. Still one query per batch, not the two per match this
+            // replaced.
             val remoteIds = missingKeys.mapNotNull { it.substringAfter(':', "").takeIf { r -> r.isNotEmpty() } }.distinct()
-            val resolved = channelDao.findByRemoteIds(playlistIds, remoteIds).associateBy { CustomizeKeys.channel(it) }
+            val resolved = remoteIds.chunked(QUERY_CHUNK)
+                .flatMap { channelDao.findByRemoteIds(playlistIds, it) }
+                .associateBy { CustomizeKeys.channel(it) }
             for (key in missingKeys) {
                 val epgId = matches[key] ?: continue
                 val ch = resolved[key] ?: continue
@@ -996,5 +1002,8 @@ class EpgViewModel(
         // Cap the candidate set the bulk matcher scans against (keeps the O(channels×candidates) scan bounded).
         private const val MAX_EPG_CANDIDATES = 20_000
         private const val EPG_PICKER_RESULT_LIMIT = 300
+        // Bound values sent to a single `IN (...)`. SQLite's parameter ceiling is 999 on older
+        // Android; core chunks its own bulk lookups at the same size.
+        private const val QUERY_CHUNK = 500
     }
 }

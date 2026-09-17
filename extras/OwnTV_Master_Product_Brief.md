@@ -310,10 +310,14 @@ path in each result.
 
 A fresh installation opens with a **language selector before Get Started**. English plus 25 packaged
 translations; further requested languages stay catalogue-only until they reach the reviewed
-readiness threshold. The first run is five pages: language → text size → disclaimer → profile →
-add a playlist. The profile page offers three routes, not two: create one, restore a backup file, or
-**copy everything from another OwnTV device** over the local network — so replacing a box does not
-mean finishing setup first and then finding Local sync in the menus.
+readiness threshold. The first run is welcome (which carries the language selector) → text size →
+disclaimer → **Set up OwnTV** → profile → **add a playlist** → how to enter it → the import, closing
+with an offer to download the guide. **Set up OwnTV** offers three routes, not two: create a profile,
+restore a backup file, or **copy everything from another OwnTV device** over the local network — so
+replacing a box does not mean finishing setup first and then finding Local sync in the menus. The
+"how to enter it" page is the one that keeps an Xtream password off the D-pad: **Remote** hands the
+form to a phone over Wi-Fi, **Manual** types it on the television. It is the same page Settings →
+Manage sources reaches later, so the choice is never a first-run-only opportunity.
 
 App language is independent of profiles and of the separate TMDB metadata language, and survives
 restart and backup/restore. Locale-aware plurals, dates, times, numbers, RTL navigation, font

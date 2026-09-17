@@ -24,6 +24,8 @@
 - **🔲 Holding OK on the Multiview settings no longer closes the app**
 - **🔎 Settings search finds every setting, including Multiview and the player engines**
 - **📖 The user guide explains how to turn Multiview on**
+- **💥 The app no longer crashes on opening with many manually matched EPG channels**
+- **📖 The user guide describes first-run setup and remote playlist entry accurately**
 - **🔠 Popup font size now resizes everything inside a popup**
 - **🖼️ Channel logos no longer sit on a black square**
 

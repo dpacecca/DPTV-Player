@@ -43,6 +43,19 @@
 - **The user guide explains Multiview.** It says that it is off by default and where to switch it on,
   and the Settings table describes it. Two stale lines were corrected: Quick holds what *you* pin, not
   "the six most-used switches".
+- **The user guide now describes first-run setup exactly as it happens.** It listed five screens
+  where there are eight, folded the "Set up OwnTV" choice into the profile step, and never mentioned
+  the screen that asks whether to enter a playlist by remote or by phone. Adding a playlist from your
+  phone also has an entry of its own under Playlists now — it was described only as part of first-run
+  setup, so anyone who pressed "Skip for now" had no way of discovering it. Both guides also explain
+  that a feed's channel logos can stand in for a playlist that carries none.
+- **The app no longer crashes on opening for people with many manually matched channels.** Every
+  channel you match to a guide by hand is remembered, and the Guide looked all of them up in a single
+  database request. Past roughly a thousand matches that request exceeds SQLite's limit on how many
+  values one query may carry, so it was rejected outright and the app closed — instantly and every
+  time, because the Guide loads as the app starts. The lookup is now made in batches of 500, so it
+  cannot hit the limit however many channels you match. Still one request per batch, so the speed the
+  bulk lookup was written for is unchanged. Reported with a crash log by a user.
 - **Popup font size now resizes the whole popup.** Turning it up, even to the maximum, moved only a
   few labels: the setting reached the shared text styles and nothing else, so buttons, input fields
   and any text with a size of its own stayed exactly as they were — which read as a setting that did

@@ -13,18 +13,28 @@ required reading — skim the headings and stop where something looks useful.
 
 ## 🚀 Start here
 
-A fresh install walks you through five screens:
+A fresh install walks you through this, in order. Nothing here is permanent — every choice can be
+changed later in Settings.
 
 ```
-Language  →  Text size  →  Disclaimer  →  Profile  →  Add a playlist
+Welcome  →  Text size  →  Disclaimer  →  Set up OwnTV  →  Profile
+                                                            ↓
+            Guide offer  ←  Import  ←  Playlist details  ←  Add a playlist
 ```
 
-1. **Language** — pick one of 26, or keep **System default**.
+1. **Welcome** — the language picker is on this screen: one of 26, or keep **System default**.
+   Press **Get started**.
 2. **Text size** — set UI Zoom and Font size while a sample sentence resizes, so you judge it from
    your sofa. Changeable later in Settings → Look & Feel.
 3. **Disclaimer** — OwnTV is a player; you bring the sources.
-4. **Profile** — create one, restore a backup, or copy everything **From another device**.
-5. **Add a playlist** — M3U, Xtream or Stalker. You can also **Skip for now**.
+4. **Set up OwnTV** — three ways to begin: **New profile**, **Restore a backup**, or
+   **From another device** (copy everything off a TV you already have — see below).
+5. **Profile** — name it, pick an avatar, and optionally make it a **Kids** profile or give it a PIN.
+6. **Add a playlist** — **New**, **Existing** (only shown when another profile already has one), or
+   **Import** a backup file. **Skip for now** is a valid answer; you can add one later from Settings.
+7. **New** then asks **how** you want to enter it — **Remote** (fill it in on your phone) or
+   **Manual** (type it with the remote). Then the form: M3U, Xtream or Stalker.
+8. **Import** runs, and when it finishes OwnTV **offers to download the TV guide** in one press.
 
 ### 🔄 Already have OwnTV on another device?
 **Where:** the **Set up OwnTV** screen → **From another device**
@@ -36,10 +46,11 @@ change before it changes. A television being set up only ever *receives* — not
 is altered.
 
 ### 📱 Type the playlist on your phone instead
-**Where:** Add source → **Remote**
+**Where:** step 7 → **Remote**
 The TV shows a QR code and a 6-digit PIN. Scan it with a phone on the same Wi-Fi, fill the form
 there — or upload an `.m3u` file straight from a computer — and press **Send to TV**. You still press
-**Start Import** on the TV. *(Idea from community PR #66 by @zarga03.)*
+**Start Import** on the TV. Available from Settings later too, see
+[Remote](#-remote--fill-the-form-on-your-phone). *(Idea from community PR #66 by @zarga03.)*
 
 ### ⏳ Don't wait for the import
 **Where:** the import screen → **Run in background**
@@ -92,8 +103,16 @@ and media keys to 25 actions. D-pad, Back, OK, volume, Home and power stay prote
 
 ### ➕ Add a playlist
 **Where:** Settings → Manage sources → Add source
-**Xtream** (server + user + password), **M3U** (URL or a local file), or **Stalker/Ministra**
-(portal URL + MAC).
+First choose **Remote** or **Manual** (below), then fill the form: **Xtream** (server + user +
+password), **M3U** (URL or a local file), or **Stalker/Ministra** (portal URL + MAC).
+
+### 📱 Remote — fill the form on your phone
+**Where:** Settings → Manage sources → Add source → **Remote**
+The same option the first-run wizard offers, and it stays available forever — you do not have to
+type an Xtream password with the remote. The TV shows a QR code and a 6-digit PIN; scan it with any
+phone on the same Wi-Fi, fill the form in the browser there, or upload an `.m3u` file from a
+computer, and press **Send to TV**. The details land in the TV's form and you press **Start Import**.
+*(Idea from community PR #66 by @zarga03.)*
 
 ### 🧪 Test connection
 **Where:** inside the Add/Edit form, and on each saved playlist row
@@ -180,7 +199,12 @@ programme has context on its left. **Jump to Now** (top-right) returns after bro
 
 ### ➕ Add guide data
 **Where:** Settings → EPG Sources
-The guide is opt-in. After importing a playlist you are offered a one-tap sync.
+The guide is opt-in. After importing a playlist you are offered a one-tap sync. Later, add XMLTV
+feeds here — **Fill from playlist** takes the URL your playlist already carries — and set each feed's
+User-Agent and refresh interval.
+
+> **Playlist has no channel logos?** Turn on **Use this guide's channel logos** on the feed. Logos
+> then come from the XMLTV guide instead; channels the feed has no logo for keep the playlist's one.
 
 ### 🎯 Match channels to the guide
 **Where:** Guide → **Auto-match EPG**, or long-press a channel → **Match EPG**
