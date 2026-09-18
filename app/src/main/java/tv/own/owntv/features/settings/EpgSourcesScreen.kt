@@ -79,6 +79,10 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
     val autoRefreshMap by vm.autoRefresh.collectAsStateWithLifecycle()
     val useLogosIds by vm.useLogos.collectAsStateWithLifecycle()
     val deletingIds by vm.deletingIds.collectAsStateWithLifecycle()
+    // How far ahead the guide is stored. Global rather than per-source: it is one horizon that every
+    // feed is trimmed to, and the grid can only scroll as far as the shortest answer. Collected up
+    // here because the stepper dialog below sits outside the Column that shows the row.
+    val guideDays by vm.guideDaysToKeep.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
 
     var editing by remember { mutableStateOf<EpgSource?>(null) }
@@ -180,9 +184,6 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
         )
         Spacer(Modifier.height(16.dp))
 
-        // How far ahead the guide is stored. Global rather than per-source: it is one horizon that
-        // every feed is trimmed to, and the grid can only scroll as far as the shortest answer.
-        val guideDays by vm.guideDaysToKeep.collectAsStateWithLifecycle()
         FocusableSurface(
             onClick = { editingGuideDays = true },
             modifier = Modifier.fillMaxWidth(),
@@ -244,7 +245,7 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
                 GuideRetention.MIN_DAYS,
                 GuideRetention.MAX_DAYS,
             ),
-            initialDays = vm.guideDaysToKeep.value,
+            initialDays = guideDays,
             minDays = GuideRetention.MIN_DAYS,
             maxDays = GuideRetention.MAX_DAYS,
             label = { days -> pluralStringResource(R.plurals.settings_epg_guide_days_value, days, days) },

@@ -18,6 +18,7 @@
 
 ### 🩹 Fixes
 
+- **🎞️ A live channel's frame rate is no longer shown a notch too low**
 - **🗂️ Categories your provider lists no longer arrive empty**
 - **⏪ Catch-up plays on Stalker portal playlists**
 - **⏪ Catch-up loads faster**

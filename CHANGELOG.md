@@ -40,6 +40,13 @@
   playlist that recovered 174 channels that had never been delivered. Fixed in core (`core-1.0.45`),
   and it applies to live channels, movies and series on both portal and Xtream playlists. Kids
   profiles hide those categories automatically, exactly as before.
+- **The frame rate shown for a live channel is no longer a notch too low.** A channel sending 25
+  pictures a second could be labelled "24 FPS", because the reading was taken over a single second —
+  short enough that one frame of slack tipped the answer onto the wrong standard rate, and 24 looks
+  as convincing as 25. It now measures over a longer stretch and insists on the same answer twice
+  before showing it. On one television BBC Two Northern Ireland went from 24 FPS to the correct 25,
+  and a 50fps sports channel still reads 50. Fixed in core (`core-1.0.47`). Only the label was ever
+  wrong — the picture was always correct.
 - **Stalker catch-up plays.** Picking a past programme on a portal playlist did nothing at all — no
   picture, no message. The archive request carried a reference the provider could not resolve, so it
   answered with an empty response and the app gave up in silence. Fixed in core (`core-1.0.43`) and
