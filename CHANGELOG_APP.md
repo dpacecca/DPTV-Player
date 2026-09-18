@@ -14,6 +14,7 @@
 ### ✨ New features
 
 - **✨ Set a new television up from the one you already have** (#189)
+- **📅 A week of guide, and you choose how much**
 
 ### 🩹 Fixes
 
@@ -28,6 +29,13 @@
 - **📖 The user guide describes first-run setup and remote playlist entry accurately**
 - **🔠 Popup font size now resizes everything inside a popup**
 - **🖼️ Channel logos no longer sit on a black square**
+- **💥 The app no longer runs out of memory when the guide is refreshed**
+- **🔗 "Match EPG" lists guide channels again**
+- **🔎 The guide picker's search understands names and non-Latin scripts**
+- **🔗 Manual EPG matches survive deleting and re-adding a playlist**
+- **🤖 Auto-match no longer reports success it cannot deliver**
+- **🧹 Duplicate programmes are removed when the guide is downloaded**
+- **⚡ The Live TV list stops re-asking what is on**
 
 ## v5.0.0 — 2026-09-14
 

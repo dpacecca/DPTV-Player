@@ -14,6 +14,23 @@
   can only receive — but the tick list is the same one Backup & Restore uses, so you can take the
   playlists and leave the old box's settings behind. Closes #189.
 
+### 📅 A week of guide, and you choose how much
+
+- **"Guide days to keep" in Settings → EPG Sources.** The app used to store two days of upcoming
+  guide and throw away the rest, however much your provider sent — so the grid stopped at tomorrow,
+  and two days after a refresh the guide was simply empty. It now keeps as many days as you ask for,
+  seven by default, up to a fortnight. One number decides everything: how much is downloaded, how
+  much is kept, and how far the grid scrolls.
+- **The grid scrolls the whole week.** It was fixed at 24 hours forward regardless of what was
+  stored.
+- **Old programmes are kept only where they can be replayed.** A week of finished programmes used to
+  be kept for every channel, though only catch-up channels can play any of it back. Catch-up channels
+  keep their full archive — including ones you matched to a guide by hand — and everything else keeps
+  six hours, which is all the player's "Before" slot needs. On one television that took the stored
+  guide from 397,415 programmes to 172,083 *while storing a week ahead instead of two days*.
+- **Guide refresh can be set to "every N days",** exactly like a playlist's. Anything you had already
+  chosen is untouched — a source set to 48 hours stays on 48 hours.
+
 ### 🩹 Empty categories fill, catch-up plays, a crash is gone, and Settings search finds everything
 
 - **A category your provider lists no longer arrives empty.** A playlist could offer a category and
@@ -70,6 +87,30 @@
   carries its own background is left alone, and a logo that fails to load falls back to the channel
   icon instead of an empty box. The tile never changes size, so nothing shifts on screen. Reported by
   a user; applies to the Live TV list and preview and to the Home screen's channel rows.
+- **The app no longer runs out of memory when the guide is refreshed.** Re-syncing a guide could
+  close the app outright. To draw the eight rows on screen the Guide was reading *every* programme in
+  the database — 349,077 of them on one television — and a refresh restarted that job every few
+  seconds without stopping the previous one, six copies at a time, until there was no memory left. It
+  now reads only the rows actually on screen, remembers a few hundred of them, and waits for a
+  download to finish before redrawing. The Guide opens in under two seconds instead of eight, and
+  each row loads in milliseconds.
+- **"Match EPG" lists guide channels again.** On a channel with no guide the picker could come up
+  empty — "No guide channels match" — while the grid happily drew programmes for that same channel.
+  The picker was filtering by which playlist delivered the guide; nothing else was. It now offers
+  every guide channel the app holds, including feeds that list programmes without naming their
+  channels.
+- **Searching the guide picker understands names.** Typing `bbc1` now finds "BBC One"; a lowercase
+  Cyrillic or Greek search now finds an uppercase name, which it never could before.
+- **Your manual EPG matches survive deleting and re-adding a playlist.** Every match was remembered
+  against the playlist's internal id, so re-importing the same playlist quietly orphaned all of them.
+- **Auto-match no longer reports success it cannot deliver.** It skipped channels whose guide id
+  existed but held no programmes, and silently applied matches onto empty guide channels. Those now
+  go to the review list instead.
+- **Duplicate programmes are removed when the guide is downloaded** rather than hidden on every read
+  — 16,080 of them on one sync.
+- **The Live TV list stops re-asking what is on.** Scrolling a large category re-queried every
+  channel already on screen on every page, and again every minute. It now asks only about channels it
+  has not seen, and refreshes on the minute so every row changes together.
 
 ## v5.0.0 — 2026-09-14
 

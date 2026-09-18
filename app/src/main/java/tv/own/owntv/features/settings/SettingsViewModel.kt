@@ -49,6 +49,7 @@ import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.settings.ChNavLimits
 import tv.own.owntv.core.settings.EpgAutoRefresh
+import tv.own.owntv.core.settings.EpgRefresh
 import tv.own.owntv.core.settings.PanelSection
 import tv.own.owntv.core.settings.PanelShares
 import tv.own.owntv.core.settings.GuideWidthShares
@@ -888,15 +889,15 @@ class SettingsViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** Per-source EPG auto-refresh selection (Off / Startup / staleness threshold). */
-    val epgAutoRefresh: StateFlow<Map<Long, EpgAutoRefresh>> = settings.epgAutoRefresh
+    val epgAutoRefresh: StateFlow<Map<Long, EpgRefresh>> = settings.epgAutoRefresh
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun setPlaylistAutoRefresh(sourceId: Long, mode: PlaylistRefresh) {
         viewModelScope.launch { settings.setPlaylistAutoRefresh(sourceId, mode) }
     }
 
-    fun setEpgAutoRefresh(sourceId: Long, mode: EpgAutoRefresh) {
-        viewModelScope.launch { settings.setEpgAutoRefresh(sourceId, mode) }
+    fun setEpgAutoRefresh(sourceId: Long, refresh: EpgRefresh) {
+        viewModelScope.launch { settings.setEpgAutoRefresh(sourceId, refresh) }
     }
 
     /**

@@ -830,9 +830,10 @@ private fun GuideChannelRow(
     channelWidth: androidx.compose.ui.unit.Dp,
 ) {
     val colors = OwnTVTheme.colors
-    // Cache peek as the initial value → rows render instantly from the batch-loaded cache, no flash, no
-    // per-row query. Re-key on cacheRevision so a row re-reads the cache when the background catch-up
-    // lookback (pass 2) merges in.
+    // Cache peek as the initial value → a row scrolled back into view renders instantly, with no
+    // flash and no second query. A miss reads that one channel through the indexed per-channel query
+    // and warms the rows below it. Re-key on cacheRevision so a row re-reads after the cache is
+    // dropped (window moved, sync settled, shift changed).
     val cacheRevision by vm.cacheRevision.collectAsStateWithLifecycle()
     val programmes by produceState(initialValue = vm.cachedProgrammes(channel), channel.id, windowStart, cacheRevision) {
         value = vm.cachedProgrammes(channel) ?: vm.programmesFor(channel)

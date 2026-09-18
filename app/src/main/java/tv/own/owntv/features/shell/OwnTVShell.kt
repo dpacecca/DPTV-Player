@@ -332,9 +332,11 @@ fun OwnTVShell(
     }
     // Current programme per channel for the in-player channel list overlay (small subtitle under each row).
     // Only resolved while the overlay is actually open. Keyed on the channel set so a zap-list change re-resolves.
-    val overlayNowPlaying by produceState<Map<Long, String>>(emptyMap(), showChannelList, zapChannels) {
-        if (!showChannelList || zapChannels.size <= 1) { value = emptyMap(); return@produceState }
-        value = runCatching { liveVm.nowPlayingFor(zapChannels) }.getOrDefault(emptyMap())
+    // Shares the Live list's resolved titles, so opening the overlay over a list already on screen
+    // asks for nothing, and only genuinely new channels cost a query.
+    val overlayNowPlaying by liveVm.nowPlaying.collectAsStateWithLifecycle()
+    LaunchedEffect(showChannelList, zapChannels) {
+        if (showChannelList && zapChannels.size > 1) liveVm.ensureNowPlaying(zapChannels)
     }
     // Recently-watched channels for the right-hand history overlay — re-read each time it opens (and
     // after a zap, since tuning writes a new history row) so the newest channel is always on top.
@@ -342,10 +344,8 @@ fun OwnTVShell(
         if (!showHistoryList) { value = emptyList(); return@produceState }
         value = runCatching { liveVm.historyChannels() }.getOrDefault(emptyList())
     }
-    val historyNowPlaying by produceState<Map<Long, String>>(emptyMap(), historyChannels) {
-        if (historyChannels.isEmpty()) { value = emptyMap(); return@produceState }
-        value = runCatching { liveVm.nowPlayingFor(historyChannels) }.getOrDefault(emptyMap())
-    }
+    val historyNowPlaying = overlayNowPlaying // one shared map; the history rail adds to it below
+    LaunchedEffect(historyChannels) { liveVm.ensureNowPlaying(historyChannels) }
     // Batch 7 — the single most-recent resumable item, surfaced as a shared top-bar "Continue" chip.
     val continueTarget by homeVm.continueTarget.collectAsStateWithLifecycle()
 

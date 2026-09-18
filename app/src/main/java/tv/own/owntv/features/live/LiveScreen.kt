@@ -160,22 +160,25 @@ fun LiveScreen(
     val moveState by vm.moveState.collectAsStateWithLifecycle()
     val categoryMoveState by vm.categoryMoveState.collectAsStateWithLifecycle()
 
-    // Current programme title for each loaded channel (id → title), batched in ONE query against the
-    // stored guide. Drives the small "now playing" subtitle on each channel row. Recomputed when the page
-    // contents change and every 60s (the programme airing "now" turns over). Channels with no guide are
-    // simply absent from the map → their row shows no second line.
-    val channelIdsKey = remember(channels.itemSnapshotList) {
-        channels.itemSnapshotList.items.filterNotNull().map { it.id }
+    // Current programme title for each loaded channel (id → title), against the stored guide. Drives
+    // the small "now playing" subtitle on each channel row. Channels with no guide are absent from the
+    // map → their row shows no second line.
+    //
+    // An appended page asks only about the channels it added; the view model keeps the rest. This
+    // used to re-query every loaded channel on every append and again every 60 seconds, which deep
+    // in a large category was a dozen chunked queries a minute to learn nothing new.
+    val nowPlaying by vm.nowPlaying.collectAsStateWithLifecycle()
+    val loadedChannels = channels.itemSnapshotList.items.filterNotNull()
+    LaunchedEffect(loadedChannels.size, loadedChannels.firstOrNull()?.id, loadedChannels.lastOrNull()?.id) {
+        vm.ensureNowPlaying(loadedChannels)
     }
-    val nowPlaying by produceState<Map<Long, String>>(initialValue = emptyMap(), channelIdsKey) {
-        if (channelIdsKey.isEmpty()) { value = emptyMap(); return@produceState }
-        val loaded = channels.itemSnapshotList.items.filterNotNull()
-        value = runCatching { vm.nowPlayingFor(loaded) }.getOrDefault(emptyMap())
-        // Refresh periodically so a programme ending/starting is reflected while the list stays open.
-        // This producer is auto-cancelled (and restarted) when channelIdsKey changes.
+    // Turnover happens on the minute, so wait for the next one rather than 60s from mount — otherwise
+    // rows change late and at different instants from each other.
+    LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(60_000)
-            value = runCatching { vm.nowPlayingFor(loaded) }.getOrDefault(emptyMap())
+            val now = System.currentTimeMillis()
+            kotlinx.coroutines.delay(60_000 - (now % 60_000))
+            vm.refreshNowPlaying(channels.itemSnapshotList.items.filterNotNull())
         }
     }
     // Preview runs only when the player isn't busy (previewEnabled) AND the user hasn't turned it off.
@@ -1475,14 +1478,14 @@ private fun CatchupDialog(
 internal fun EpgMatchDialog(
     channelName: String,
     currentMatch: String?,
-    loadChannels: suspend (String) -> List<tv.own.owntv.core.database.entity.EpgChannelEntity>,
+    loadChannels: suspend (String) -> List<tv.own.owntv.core.epg.GuideCandidate>,
     onPick: (String) -> Unit,
     onClear: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
     var query by remember { mutableStateOf("") }
-    val results by androidx.compose.runtime.produceState<List<tv.own.owntv.core.database.entity.EpgChannelEntity>?>(initialValue = null, query) {
+    val results by androidx.compose.runtime.produceState<List<tv.own.owntv.core.epg.GuideCandidate>?>(initialValue = null, query) {
         kotlinx.coroutines.delay(250)
         value = runCatching { loadChannels(query) }.getOrDefault(emptyList())
     }
@@ -1537,7 +1540,7 @@ internal fun EpgMatchDialog(
                             style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
                         )
                         else -> LazyColumn(Modifier.fillMaxWidth().height(listHeight), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            items(list, key = { it.id }) { epg ->
+                            items(list, key = { it.epgChannelId }) { epg ->
                                 FocusableSurface(
                                     onClick = { onPick(epg.epgChannelId) },
                                     modifier = if (epg == list.first()) Modifier.fillMaxWidth().focusRequester(firstItemFocus) else Modifier.fillMaxWidth(),

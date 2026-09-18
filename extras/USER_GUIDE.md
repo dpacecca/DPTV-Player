@@ -201,7 +201,8 @@ programme has context on its left. **Jump to Now** (top-right) returns after bro
 **Where:** Settings → EPG Sources
 The guide is opt-in. After importing a playlist you are offered a one-tap sync. Later, add XMLTV
 feeds here — **Fill from playlist** takes the URL your playlist already carries — and set each feed's
-User-Agent and refresh interval.
+User-Agent and refresh interval. The refresh interval can also be **every N days**, the same choice a
+playlist offers.
 
 > **Playlist has no channel logos?** Turn on **Use this guide's channel logos** on the feed. Logos
 > then come from the XMLTV guide instead; channels the feed has no logo for keep the playlist's one.
@@ -209,6 +210,13 @@ User-Agent and refresh interval.
 ### 🎯 Match channels to the guide
 **Where:** Guide → **Auto-match EPG**, or long-press a channel → **Match EPG**
 Auto-match does the bulk; the manual picker lists the most similar guide channels first.
+
+### 📅 Guide days to keep
+**Where:** Settings → EPG Sources → **Guide days to keep**
+How many days of upcoming guide the app stores, 1–14, seven by default. The same number decides how
+much is downloaded, how much is kept, and how far the grid scrolls — so raising it gives you a longer
+guide, and lowering it frees space. Old programmes are kept only on channels with catch-up, since
+those are the only ones that can play them back.
 
 ### 🕰️ Guide time offset
 **Where:** Settings → EPG → **Guide time offset** (global) · long-press a channel (just that one)
