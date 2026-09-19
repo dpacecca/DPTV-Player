@@ -14,6 +14,16 @@
   can only receive — but the tick list is the same one Backup & Restore uses, so you can take the
   playlists and leave the old box's settings behind. Closes #189.
 
+### 🚀 Refreshing a playlist gets out of your way
+
+- **The background catalogue fill pauses while you watch.** A Stalker playlist keeps downloading its
+  film and series lists after setup, quietly, for several minutes. It now stops the moment you start
+  watching anything from that playlist and picks up again afterwards — on an account that only allows
+  one stream, that download was competing with your picture.
+- **The category you open is filled first.** Open a film or series category that has not finished
+  downloading and it jumps to the front of the queue instead of waiting its turn behind every
+  category above it.
+
 ### 📅 A week of guide, and you choose how much
 
 - **"Guide days to keep" in Settings → EPG Sources.** The app used to store two days of upcoming

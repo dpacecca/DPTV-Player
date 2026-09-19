@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -329,6 +330,29 @@ fun OwnTVShell(
         MainSection.MOVIES -> playingMovie?.let { movieFavoriteIds.contains(it.id) } ?: false
         MainSection.SERIES -> playingSeries?.let { seriesFavoriteIds.contains(it.id) } ?: false
         else -> false
+    }
+    // Tell core which playlist is on screen, so its background catalogue drain steps aside while the
+    // user is watching (core's N1f-3). Core cannot work this out alone: the player engines are handed
+    // a URL and have no notion of a sourceId, and fullscreen playback deliberately never claims a
+    // connection in OpenStreamRegistry — that register is the Multiview/recording budget. This screen
+    // holds the row, so this is the only place the answer exists.
+    val watchSession = koinInject<tv.own.owntv.core.live.WatchSession>()
+    val watchingSourceId = if (playerMode == PlayerMode.NONE) {
+        null
+    } else {
+        when (zapSource) {
+            MainSection.LIVE_TV -> previewChannel?.sourceId
+            MainSection.MOVIES -> playingMovie?.sourceId
+            MainSection.SERIES -> playingSeries?.sourceId
+            else -> null
+        }
+    }
+    // DisposableEffect, not LaunchedEffect: zapping to another playlist has to close the old session
+    // before opening the new one, and leaving the shell has to close the last one — a leaked session
+    // would hold the drain off for good.
+    DisposableEffect(watchingSourceId) {
+        watchingSourceId?.let { watchSession.open(it) }
+        onDispose { watchingSourceId?.let { watchSession.close(it) } }
     }
     // Current programme per channel for the in-player channel list overlay (small subtitle under each row).
     // Only resolved while the overlay is actually open. Keyed on the channel set so a zap-list change re-resolves.
