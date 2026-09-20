@@ -116,6 +116,30 @@
 - **The subtitle-timing panel still leaves the picture undimmed** — it is the one dialog with no
   wash behind it, deliberately, so speech and subtitles can be compared while the offset is nudged.
 
+### 📺 Protected and MPEG-DASH channels play
+
+- **Channels delivered as MPEG-DASH now play, protected ones included.** Some providers publish a
+  channel at an address that gives no hint of its format and only reveals it once the app asks. The
+  app could only ever guess between two formats, so these channels were opened the wrong way and
+  stopped with a format error before any picture appeared — and because a protected channel can only
+  run on one of the two players, there was nothing left to fall back to. It now recognises the format
+  three ways: from what the playlist says about the channel, from what the provider actually sends
+  back, and from what other channels on the same provider have already turned out to be. Reported by
+  a user with a mixed playlist where the ordinary channels played and these never did.
+- **Stream info said MPEG-TS on a DASH channel.** The Format line only had two possible answers, so
+  the third format was labelled as the wrong one — even on a channel that had failed to start, which
+  is what people were sending in with their reports. It now shows HLS, DASH or MPEG-TS to match what
+  is really being played.
+- **A channel that will not open can now fall back to the provider's own address.** Where a playlist
+  supplies one, it is tried once as the very last resort — after every other recovery step, at the
+  point where the alternative is an error screen. Channels that work today are unaffected: this
+  address is never used first, because providers frequently publish one that only works inside their
+  own network.
+- **Recording a copy-protected channel is refused straight away, and says why.** It used to try, save
+  a file that could not play, and reconnect to the provider for the entire length of the programme —
+  holding one of your allowed connections the whole time. The recording now stops immediately and
+  explains that the protection comes from the provider rather than from OwnTV.
+
 ### 🗂️ Restoring a backup during setup asks what to bring back
 
 - **The first-run restore takes only what you tick.** It used to apply the whole file, always —

@@ -64,7 +64,14 @@ Each engine is chosen automatically by content type, with fallback between them.
   `#KODIPROP` licence properties, for live channels, films and episodes. The device's own CDM does
   the work, so there is nothing to configure and no licence to buy; the device's security level
   decides whether HD is served. Such an item is pinned to ExoPlayer, outranks every other preference,
-  and never leaves for an external player.
+  and never leaves for an external player. It also **cannot be recorded** — the CDM decrypts only
+  into a secure decoder for immediate display, so a recording is refused before it starts rather than
+  left as a file that will not play.
+- **Container is decided from evidence, not from the file extension** — the declared
+  `manifest_type`, then what the response actually turns out to be, then what the same provider has
+  already been caught serving. This is what lets a DASH channel published at an extensionless address
+  play at all, and it is the only route available to Stalker portals and Xtream panels, whose stream
+  addresses can carry no declaration.
 
 ### 2.2 Rendering
 

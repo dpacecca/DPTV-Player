@@ -1023,6 +1023,7 @@ class SeriesViewModel(
                         } else null,
                         httpHeaders = ep.httpHeaders,
                         drmConfig = ep.drmConfig,
+                        manifestType = ep.manifestType,
                     )
                 },
                 startIndex = startIndex,

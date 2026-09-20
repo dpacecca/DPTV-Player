@@ -913,6 +913,8 @@ class LiveViewModel(
             liveBufferOverride = liveBufferFor(channel.sourceId),
             httpHeaders = channel.httpHeaders,
             drmConfig = channel.drmConfig,
+            manifestType = channel.manifestType,
+            directSource = channel.directSource,
         )
     }
 
@@ -964,6 +966,7 @@ class LiveViewModel(
                     prerollSecsOverride = prerollFor(channel.sourceId),
                     liveBufferOverride = liveBufferFor(channel.sourceId),
                     httpHeaders = channel.httpHeaders, drmConfig = channel.drmConfig,
+                    manifestType = channel.manifestType, directSource = channel.directSource,
                 )
             }
             return
@@ -974,6 +977,7 @@ class LiveViewModel(
             prerollSecsOverride = prerollFor(channel.sourceId),
             liveBufferOverride = liveBufferFor(channel.sourceId),
             httpHeaders = channel.httpHeaders, drmConfig = channel.drmConfig,
+            manifestType = channel.manifestType, directSource = channel.directSource,
         )
     }
 
@@ -1007,6 +1011,8 @@ class LiveViewModel(
                 liveBufferOverride = liveBufferFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
                 drmConfig = channel.drmConfig,
+                manifestType = channel.manifestType,
+                directSource = channel.directSource,
             )
         }
     }
@@ -1601,6 +1607,8 @@ class LiveViewModel(
                 liveBufferOverride = liveBufferFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
                 drmConfig = channel.drmConfig,
+                manifestType = channel.manifestType,
+                directSource = channel.directSource,
             )
         }
         watchExoOutcome(channel)
@@ -1632,6 +1640,8 @@ class LiveViewModel(
                 liveBufferOverride = liveBufferFor(channel.sourceId),
                 httpHeaders = channel.httpHeaders,
                 drmConfig = channel.drmConfig,
+                manifestType = channel.manifestType,
+                directSource = channel.directSource,
             )
             watchExoOutcome(channel)
         }

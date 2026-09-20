@@ -263,6 +263,10 @@ sets a standing rule for that programme on that channel. Recordings appear in
 
 > A recording costs one of your provider's connections and says so before it starts.
 
+> **Copy-protected channels cannot be recorded.** Where a provider protects a channel with DRM, it
+> can be watched but not saved — the protection is theirs, not OwnTV's. Asking to record one stops
+> straight away and tells you why, rather than leaving a file that will not play.
+
 ---
 
 ## 🔲 Multiview — up to four channels

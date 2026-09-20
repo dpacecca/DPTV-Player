@@ -18,9 +18,13 @@
 - **🚀 Refreshing a playlist gets out of your way**
 - **📅 A week of guide, and you choose how much**
 - **🔄 Local sync, tidied up on the television**
+- **📺 Protected and MPEG-DASH channels play**
 
 ### 🩹 Fixes
 
+- **📺 Stream info said MPEG-TS on a DASH channel**
+- **📺 A channel that will not open can now fall back to the provider's own address**
+- **⏺️ Recording a copy-protected channel is refused straight away, and says why**
 - **🪟 Every popup now behaves like every other popup**
 - **🗂️ Restoring a backup during setup asks what to bring back**
 - **🔗 Sync mode could hand the other device a key that did not fit**

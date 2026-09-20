@@ -647,6 +647,7 @@ class MovieViewModel(
                 userAgent = sourceUa,
                 httpHeaders = movie.httpHeaders,
                 drmConfig = movie.drmConfig,
+                manifestType = movie.manifestType,
                 // P6 — engine pins key on this, not on playUrl (a Stalker playUrl is minted per play).
                 contentKey = pinKey,
                 // F12 — a Stalker create_link URL dies before a long film ends; give the player a way to
