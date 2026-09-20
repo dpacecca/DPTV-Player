@@ -1671,7 +1671,7 @@ private fun externalPlayerChip(live: Boolean, movies: Boolean, series: Boolean):
 // --- Shared building blocks (kept local to the settings sub-screens) ---
 
 @Composable
-internal fun Header(title: String, onBack: () -> Unit) {
+internal fun Header(title: String, onBack: () -> Unit, subtitle: String? = null) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         FocusableSurface(
             onClick = onBack,
@@ -1680,7 +1680,16 @@ internal fun Header(title: String, onBack: () -> Unit) {
             surface = GlassSurface.CARDS,
             contentAlignment = Alignment.Center,
         ) { _ -> OwnTVIcon(OwnTVIcon.BACK, tint = OwnTVTheme.colors.onSurface, modifier = Modifier.size(20.dp)) }
-        Text(title, style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface)
+        Column {
+            Text(title, style = MaterialTheme.typography.headlineLarge, color = OwnTVTheme.colors.onSurface)
+            if (subtitle != null) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = OwnTVTheme.colors.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
@@ -1716,6 +1725,9 @@ internal fun Row2(
     primaryChip: Boolean = true,
     chevron: Boolean = false,
     iconTint: Color? = null,
+    /** Tile fill override. With [iconTint] and [titleTint], marks a row as destructive. */
+    iconBackground: Color? = null,
+    titleTint: Color? = null,
     iconBadge: String? = null,
     accentIconBadge: Boolean = false,
     keycapColor: Color? = null,
@@ -1750,7 +1762,7 @@ internal fun Row2(
             val (tileBg, tileOn) = LocalSettingsRowTone.current.colors()
             Box {
                 Box(
-                    modifier = Modifier.size(Dimens.IconTileSize).clip(RoundedCornerShape(Dimens.IconTileCorner)).background(tileBg),
+                    modifier = Modifier.size(Dimens.IconTileSize).clip(RoundedCornerShape(Dimens.IconTileCorner)).background(iconBackground ?: tileBg),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (keycapColor != null) {
@@ -1805,7 +1817,7 @@ internal fun Row2(
                     Text(
                         title,
                         style = MaterialTheme.typography.titleMedium,
-                        color = colors.onSurface,
+                        color = titleTint ?: colors.onSurface,
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     // The same dot the root rows carry: this one is also sitting in Quick.

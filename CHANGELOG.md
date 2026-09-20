@@ -41,6 +41,29 @@
 - **Guide refresh can be set to "every N days",** exactly like a playlist's. Anything you had already
   chosen is untouched — a source set to 48 hours stays on 48 hours.
 
+### 🔄 Local sync, tidied up on the television
+
+- **Every row now carries a mark that means what it does.** One archive-box icon used to stand for
+  "let this television be found", for your paired phone *and* for "send my data there" — three
+  different jobs, and the same mark Backup & Restore uses one row above. Sync mode now shows a
+  globe, Connect a magnifier, your phone a phone, and Send and Receive a matching pair of arrows.
+- **The PIN and the QR code have a card of their own, beside the list.** They used to be wedged
+  between the buttons and your paired devices, so turning Sync mode on shoved the device rows a
+  third of a screen downwards while you were looking at them. Now nothing moves — the card simply
+  appears next to the list.
+- **Choosing what to do with a paired device opens a panel.** Press OK on your phone and Send,
+  Receive, Merge and Forget appear in a popup that names the device, with the remote already on the
+  first choice. Before, the list was replaced where it stood and the highlight was left on the Back
+  arrow, so the first press of the D-pad was wasted.
+- **"Forget this device" now looks like the destructive one** — below a divider and drawn in red,
+  instead of sitting flush under "Merge" as though it were a fourth way of syncing.
+- **The remote can no longer fall out of the screen.** A Down press at the end of the list used to
+  jump focus up into the Search button in the top bar, leaving the screen behind.
+- **The screen says what it is for.** It now carries the same one-line description the More screen
+  shows, the paired devices sit under their own heading, and Sync mode's state is shown as a badge
+  in the corner whether it is on or off. "Working…" is a proper row with a spinner rather than a
+  stray line of grey text.
+
 ### 🗂️ Restoring a backup during setup asks what to bring back
 
 - **The first-run restore takes only what you tick.** It used to apply the whole file, always —
