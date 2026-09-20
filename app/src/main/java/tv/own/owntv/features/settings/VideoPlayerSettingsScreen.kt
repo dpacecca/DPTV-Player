@@ -1855,6 +1855,10 @@ internal fun PickerDialog(
     searchable: Boolean = false,
     trailingLabels: Map<String, String> = emptyMap(),
     leadingIcons: Map<String, OwnTVIcon> = emptyMap(),
+    subtitle: String? = null,
+    descriptions: Map<String, String> = emptyMap(),
+    /** Drawn under an option's description — the layout chooser's little bar preview. */
+    optionPreview: (@Composable (String) -> Unit)? = null,
 ) {
     val colors = OwnTVTheme.colors
     val fr = remember { FocusRequester() }
@@ -1878,9 +1882,14 @@ internal fun PickerDialog(
         tv.own.owntv.ui.theme.PopupFontTheme {
             Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
                 Column(
-                    modifier = Modifier.dialogPanel(width = 280.dp, corner = 16.dp, padding = 14.dp, scroll = false),
+                    // Descriptions need room to breathe; a 280dp column would wrap them to five lines.
+                    modifier = Modifier.dialogPanel(width = if (descriptions.isEmpty()) 280.dp else 420.dp, corner = 16.dp, padding = 14.dp, scroll = false),
                 ) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+            if (subtitle != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+            }
             Spacer(Modifier.height(10.dp))
             if (searchable) {
                 tv.own.owntv.ui.components.SearchBar(
@@ -1906,6 +1915,7 @@ internal fun PickerDialog(
                         contentAlignment = Alignment.CenterStart,
                         surface = GlassSurface.DIALOGS,
                     ) { _ ->
+                        Column(Modifier.fillMaxWidth()) {
                         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         leadingIcons[value]?.let { icon ->
                             OwnTVIcon(
@@ -1924,6 +1934,18 @@ internal fun PickerDialog(
                             )
                         }
                         if (isSel) OwnTVIcon(OwnTVIcon.STAR, tint = colors.onPrimaryContainer, filled = true, modifier = Modifier.size(14.dp))
+                        }
+                        descriptions[value]?.let { desc ->
+                            Text(
+                                desc,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isSel) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
+                            )
+                        }
+                        optionPreview?.let { preview ->
+                            Box(Modifier.padding(start = 10.dp, end = 10.dp, bottom = 10.dp)) { preview(value) }
+                        }
                         }
                     }
                 }

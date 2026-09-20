@@ -13,6 +13,7 @@
 
 ### ✨ New features
 
+- **🎬 A cinematic layout for Movies & Series**
 - **✨ Set a new television up from the one you already have** (#189)
 - **🚀 Refreshing a playlist gets out of your way**
 - **📅 A week of guide, and you choose how much**

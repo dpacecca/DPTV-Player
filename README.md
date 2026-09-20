@@ -68,6 +68,7 @@ Questions, ideas, bug reports — **join the OwnTV Telegram group:**
 - **Multiple playlists** at once, with provider labels everywhere they could be confused
 - Rename, hide, reorder and combine categories; bulk rename rules
 - **TMDB** posters, plots, cast and trailers in 40 languages — scales to ~50k channels / ~168k movies
+- **Two layouts for Movies & Series** — the classic three panels, or **Cinematic**: the focused title's artwork full-bleed behind the whole screen, with its details and cast above a wide poster grid
 - Adjustable panel widths per section, including hiding the preview pane entirely
 
 ### 📥 Sources & EPG

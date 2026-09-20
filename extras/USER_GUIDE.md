@@ -482,10 +482,27 @@ Main text 60–140%, popup text and popup boxes independently, and a choice of b
 > Below **85% zoom** OwnTV warns first — very small sizes draw many more items and can exhaust a
 > low-memory TV.
 
+### 🎬 Movies & Series layout
+**Where:** Settings → Layout → **Movies & Series layout**
+Two ways to browse films and shows. **Separate panels** (the default) is categories, the list and a
+preview side by side, with the List/Grid toggle. **Cinematic** fills the screen with the focused
+title's artwork and puts its details — title lettering, rating, quality badges, genres, plot and cast
+photos — above a wide poster grid.
+- Cinematic is **grid only**; the List/Grid toggle hides, and your List choice comes back if you
+  switch layouts again.
+- **Nothing in the details area takes focus.** **OK** on the focused poster plays or opens it, and
+  **long-press** opens the usual menu. A half-watched film shows a green *Resume* badge and a sliver
+  on its poster.
+- Live TV and the episode list inside a show are unchanged either way.
+
 ### 📐 Panel widths
 **Where:** Settings → **Panel Width Adjustment**
 How wide the category rail, list and preview pane are, per section. The third panel can be **0%** to
 hide it entirely. Each section must total 100%.
+> With **Cinematic** on, Movies and Series have two columns instead of three: the second slider
+> becomes **Content area** and moves opposite the first, and the third becomes **Details height** —
+> shown *below* the Total size line, because it is a height and is not part of that 100%. Lower it
+> for another row of posters, raise it for more plot and cast. Set it to **0%** for posters only.
 
 ### 🗂️ Categories & items
 **Where:** long-press a category → **Customize**, or Settings → **Customize Categories & Items**

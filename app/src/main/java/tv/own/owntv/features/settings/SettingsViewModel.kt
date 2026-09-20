@@ -674,6 +674,16 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setPanelWidths(s, enabled, shares) }
     }
 
+    /** Cinematic's detail-block height per section — its own value, not one of the width shares. */
+    val cinematicDetailsHeights: Map<PanelSection, StateFlow<Int>> =
+        panelFlows(settings::cinematicDetailsHeight, tv.own.owntv.core.settings.CINEMATIC_DETAILS_DEFAULT)
+
+    fun cinematicDetailsHeight(s: PanelSection): StateFlow<Int> = cinematicDetailsHeights.getValue(s)
+
+    fun setCinematicDetailsHeight(s: PanelSection, percent: Int) {
+        viewModelScope.launch { settings.setCinematicDetailsHeight(s, percent) }
+    }
+
     val guideWidthEnabled: StateFlow<Boolean> = settings.guideWidthEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     val guideWidthShares: StateFlow<GuideWidthShares?> = settings.guideWidthShares
@@ -826,6 +836,11 @@ class SettingsViewModel(
     val animationLevel: StateFlow<tv.own.owntv.core.theme.AnimationLevel> =
         settings.animationLevel.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.theme.AnimationLevel.FULL)
     fun setAnimationLevel(level: tv.own.owntv.core.theme.AnimationLevel) { viewModelScope.launch { settings.setAnimationLevel(level) } }
+
+    /** Separate panels (the default) or the Cinematic frame, shared by Movies and Series. */
+    val vodLayout: StateFlow<tv.own.owntv.core.settings.SettingsRepository.VodLayout> =
+        settings.vodLayout.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.VodLayout.SEPARATE)
+    fun setVodLayout(layout: tv.own.owntv.core.settings.SettingsRepository.VodLayout) { viewModelScope.launch { settings.setVodLayout(layout) } }
 
     val ambientGlowEnabled: StateFlow<Boolean> =
         settings.ambientGlowEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)

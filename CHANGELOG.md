@@ -2,6 +2,34 @@
 
 ## v5.0.1 — unreleased
 
+### 🎬 A cinematic layout for Movies & Series
+
+- **Settings → Layout → "Movies & Series layout".** A second way to browse films and shows, beside
+  the one you have now. *Separate panels* — categories, the list and a preview side by side — stays
+  the default, so nothing changes until you pick otherwise. The chooser shows a small bar diagram
+  under each option so you can see the difference without reading.
+- **The focused title's artwork fills the whole screen.** Its backdrop sits behind the category panel
+  and the posters, washed down on the left so the text stays readable over any picture. Move along
+  the row and it cross-fades to the next film — and holding the D-pad down does not fire a download
+  per poster it passes under; only the title you settle on is fetched.
+- **Details above the posters, and no buttons up there.** The studio's own title lettering where TMDB
+  has it (with the film's name printed under it, because plenty of those logos are black line-art and
+  would be invisible on a dark background), then the rating, year, running time, quality badges
+  (4K/HDR/5.1 as the provider advertised them), genres, the plot, and the cast as photos. Nothing in
+  that area can take focus — it is there to read. **OK** on the focused poster still plays or opens
+  it, **long-press** still opens the same menu with Resume, Favourite, TMDB details and the rest, and
+  a half-watched film still shows a green *Resume* badge and the green sliver on its poster.
+- **Grid only, and your List choice is remembered.** The List/Grid toggle is hidden while Cinematic
+  is on, because a full-bleed backdrop has nowhere to go behind a row of text. Switching back to
+  *Separate panels* restores whichever of the two you were using.
+- **Panel Width Adjustment works in both.** In Cinematic the section has two columns rather than
+  three, so its second slider becomes *Content area* and the two move together — whatever one gives
+  up, the other takes. The third becomes **Details height**, and it now sits **below** the Total size
+  line because it is a height and takes no part in that 100%: set it to 0% for nothing but posters,
+  or raise it for more plot and cast, without touching either width. Live TV is untouched.
+- **It follows your other settings.** Text grows with the app font size, the category panel follows
+  your Glass Effect setting, and with *Animations = Off* every fade snaps instantly.
+
 ### ✨ Set a new television up from the one you already have
 
 - **"From another device" on the very first setup screen.** Setting up a new box no longer means
