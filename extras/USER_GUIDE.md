@@ -28,7 +28,9 @@ Welcome  →  Text size  →  Disclaimer  →  Set up OwnTV  →  Profile
    your sofa. Changeable later in Settings → Look & Feel.
 3. **Disclaimer** — OwnTV is a player; you bring the sources.
 4. **Set up OwnTV** — three ways to begin: **New profile**, **Restore a backup**, or
-   **From another device** (copy everything off a TV you already have — see below).
+   **From another device** (copy everything off a TV you already have — see below). A restore asks
+   which parts of the backup to bring back before it applies anything, so you can take the playlists
+   and leave the old box's settings behind.
 5. **Profile** — name it, pick an avatar, and optionally make it a **Kids** profile or give it a PIN.
 6. **Add a playlist** — **New**, **Existing** (only shown when another profile already has one), or
    **Import** a backup file. **Skip for now** is a valid answer; you can add one later from Settings.

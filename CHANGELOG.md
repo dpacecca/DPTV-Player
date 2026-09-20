@@ -41,6 +41,32 @@
 - **Guide refresh can be set to "every N days",** exactly like a playlist's. Anything you had already
   chosen is untouched — a source set to 48 hours stays on 48 hours.
 
+### 🗂️ Restoring a backup during setup asks what to bring back
+
+- **The first-run restore takes only what you tick.** It used to apply the whole file, always —
+  while Settings → Backup & Restore and the local-sync setup step have always offered the list. The
+  same list now appears before anything is applied, whether the file came off a USB stick or was
+  sent from another device, so a restore can bring the playlists and leave the old box's settings
+  behind. It is the same dialog Backup & Restore uses, so the two cannot drift apart. Fixed in core
+  (`core-1.0.52`), so the phone gained it in the same change.
+
+### 🔗 Sync mode could hand the other device a key that did not fit
+
+- **A phone or television set up from this one could fail with "Something went wrong".** When Sync
+  mode had been started more than once, this box answered "who are you" with a newly minted key
+  while still serving the data package built for the previous one — so the far device downloaded
+  something it could not open, and gave up with a message that explained nothing. The key is now
+  published together with the package it opens. A package that genuinely cannot be read also says
+  so now, instead of shrugging. Fixed in core (`core-1.0.52`).
+
+### 📡 A long guide download is no longer stopped by the system
+
+- **The guide sync runs as a foreground job.** It could previously be frozen part-way and then
+  restarted from the beginning — on a large feed, forever. It now announces itself the way downloads
+  and recordings always have. Fixed in core (`core-1.0.52`). This was found on a phone, where
+  aggressive battery management makes it happen within seconds of the screen going dark; the same
+  protection applies here.
+
 ### 🩹 Empty categories fill, catch-up plays, a crash is gone, and Settings search finds everything
 
 - **A category your provider lists no longer arrives empty.** A playlist could offer a category and

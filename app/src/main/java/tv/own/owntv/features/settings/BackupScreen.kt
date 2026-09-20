@@ -594,9 +594,14 @@ private fun sectionDescriptionRes(section: BackupManager.Section): Int = when (s
     BackupManager.Section.SETTINGS -> R.string.settings_backup_section_settings_desc
 }
 
-/** Multi-select dialog over backup sections, with an "Everything" toggle on top. */
+/**
+ * Multi-select dialog over backup sections, with an "Everything" toggle on top.
+ *
+ * Internal rather than private because the first-run wizard asks the same question with the same
+ * words — see `SetupWizard.kt`. One dialog, so the two places can never drift apart.
+ */
 @Composable
-private fun SectionPickerDialog(
+internal fun SectionPickerDialog(
     title: String,
     sections: List<BackupManager.Section>,
     initial: Set<BackupManager.Section>,

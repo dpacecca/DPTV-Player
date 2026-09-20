@@ -19,6 +19,9 @@
 
 ### 🩹 Fixes
 
+- **🗂️ Restoring a backup during setup asks what to bring back**
+- **🔗 Sync mode could hand the other device a key that did not fit**
+- **📡 A long guide download is no longer stopped by the system**
 - **🎞️ A live channel's frame rate is no longer shown a notch too low**
 - **🗂️ Categories your provider lists no longer arrive empty**
 - **⏪ Catch-up plays on Stalker portal playlists**
