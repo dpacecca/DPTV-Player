@@ -959,6 +959,7 @@ private fun ChannelContextMenu(
     val focus = remember { androidx.compose.ui.focus.FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     androidx.activity.compose.BackHandler { onDismiss() }
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     Box(
         modifier = Modifier.fillMaxSize().modalScrim()
             .trapAllFocusExit().focusGroup()
@@ -1011,6 +1012,7 @@ private fun ChannelContextMenu(
             ChannelMenuDivider()
             ChannelMenuAction(stringResource(R.string.content_close), onDismiss, OwnTVIcon.CLOSE, Modifier.fillMaxWidth())
         }
+    }
     }
 }
 
@@ -1509,7 +1511,7 @@ internal fun EpgMatchDialog(
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
     androidx.compose.foundation.layout.Box(
-        Modifier.fillMaxSize().modalScrim().focusGroup(),
+        Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         // Same small-screen cap as CatchupDialog: search bar + buttons must stay reachable.

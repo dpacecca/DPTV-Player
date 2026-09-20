@@ -64,6 +64,30 @@
   in the corner whether it is on or off. "Working…" is a proper row with a spinner rather than a
   stray line of grey text.
 
+### 🪟 Every popup now behaves like every other popup
+
+- **Dialogs and menus all follow your Glass Effect, popup size and popup font.** Around forty of
+  them were built before the shared popup was, and each one opted out of something: a hand-drawn
+  panel ignored the Glass setting, a fixed black wash ignored it again, and a dozen had no popup
+  typography at all, so the popup font and popup size settings simply passed them by. The long-press
+  menu on a Live channel, the Multiview tile menu, the guide's channel chooser, the subtitle
+  appearance dialogs, the Customize dialogs and every Backup & Restore dialog are now built the same
+  way as the rest.
+- **The on-screen keyboard can no longer cover the button you need.** A popup with a text field now
+  measures the space the keyboard leaves and lays itself out inside it. This mattered most in Backup
+  & Restore: the backup password and the profile PIN are typed into a dialog whose *Restore* button
+  the keyboard could hide, with no way to scroll to it.
+- **The remote stays inside an open popup.** A stray Left or Right with nothing to land on could
+  drop focus onto the screen behind the dialog, leaving it open with the highlight somewhere else.
+- **Popups stay translucent at high transparency settings.** A dialog is drawn slightly denser than
+  the panels around it so it reads as being in front. That extra density was a fixed amount added on
+  top of your own Surface transparency, so at 85% it reached 97% and the popup turned solid while
+  the panels beside it were still glass. It is now a proportion of what is left, so a popup follows
+  your setting at every value and can never close up on its own. Cards, focused rows and everything
+  drawn *lighter* than its container are unchanged.
+- **The subtitle-timing panel still leaves the picture undimmed** — it is the one dialog with no
+  wash behind it, deliberately, so speech and subtitles can be compared while the offset is nudged.
+
 ### 🗂️ Restoring a backup during setup asks what to bring back
 
 - **The first-run restore takes only what you tick.** It used to apply the whole file, always —

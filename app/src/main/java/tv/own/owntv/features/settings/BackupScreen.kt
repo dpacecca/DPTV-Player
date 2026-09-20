@@ -43,6 +43,7 @@ import tv.own.owntv.ui.components.BrowseMode
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.OwnTVPopup
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -53,7 +54,6 @@ import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
-import tv.own.owntv.ui.theme.PopupFontTheme
 import java.io.File
 
 /**
@@ -372,7 +372,7 @@ private fun RemoteLocalChooserDialog(
     onLocal: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    PopupFontTheme {
+    OwnTVPopup(onDismissRequest = onDismiss) {
     val colors = OwnTVTheme.colors
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
@@ -407,7 +407,7 @@ private fun BackupPasswordDialog(
     onSkip: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    PopupFontTheme {
+    OwnTVPopup(onDismissRequest = onDismiss) {
     val colors = OwnTVTheme.colors
     var password by remember { mutableStateOf("") }
     val firstFocus = remember { FocusRequester() }
@@ -459,7 +459,7 @@ private fun ProfilePickerDialog(
     onConfirm: (Set<Long>) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    PopupFontTheme {
+    OwnTVPopup(onDismissRequest = onDismiss) {
     val colors = OwnTVTheme.colors
     var ticked by remember(activeId) {
         mutableStateOf(if (profiles.any { it.id == activeId }) setOf(activeId) else emptySet())
@@ -530,7 +530,7 @@ private fun ProfilePinDialog(
     onUnlocked: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    PopupFontTheme {
+    OwnTVPopup(onDismissRequest = onDismiss) {
     val colors = OwnTVTheme.colors
     var pin by remember { mutableStateOf("") }
     var wrong by remember { mutableStateOf(false) }
@@ -609,7 +609,7 @@ internal fun SectionPickerDialog(
     onConfirm: (Set<BackupManager.Section>) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    PopupFontTheme {
+    OwnTVPopup(onDismissRequest = onDismiss) {
     val colors = OwnTVTheme.colors
     var selected by remember { mutableStateOf(initial) }
     val firstFocus = remember { FocusRequester() }

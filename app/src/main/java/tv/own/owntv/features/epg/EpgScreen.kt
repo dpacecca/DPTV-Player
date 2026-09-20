@@ -687,7 +687,7 @@ private fun EpgMatchReviewDialog(
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDone) {
     tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
     Box(
-        Modifier.fillMaxSize().modalScrim(),
+        Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(Modifier.dialogPanel(width = 576.dp, corner = 18.dp, padding = 18.dp)) {
@@ -771,6 +771,7 @@ private fun EpgMatchChooserDialog(
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
 
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     Box(
         Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup()
             .longPressMenuGuard(), // long-press OK is still held — don't auto-click the first option
@@ -799,6 +800,7 @@ private fun EpgMatchChooserDialog(
             Spacer(Modifier.height(16.dp))
             OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
         }
+    }
     }
 }
 

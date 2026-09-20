@@ -1528,6 +1528,7 @@ private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     BackHandler { onCancel() }
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onCancel) {
     Box(
         modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
@@ -1547,6 +1548,7 @@ private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit
             }
         }
     }
+    }
 }
 
 /** Confirmation before forgetting a whole set of remembered per-item choices (engine pins, zoom and
@@ -1558,6 +1560,7 @@ private fun ConfirmResetDialog(title: String, description: String, onConfirm: ()
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     BackHandler { onCancel() }
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onCancel) {
     Box(
         modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
@@ -1576,6 +1579,7 @@ private fun ConfirmResetDialog(title: String, description: String, onConfirm: ()
                 OwnTVButton(stringResource(R.string.common_reset), onClick = onConfirm)
             }
         }
+    }
     }
 }
 
@@ -1957,7 +1961,7 @@ private fun ExternalPlayerDialog(
         Triple(tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.MOVIES, stringResource(R.string.common_nav_movies), movies),
         Triple(tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.SERIES, stringResource(R.string.common_nav_series), series),
     )
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
         Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
             Column(modifier = Modifier.dialogPanel(width = 300.dp, corner = 16.dp, padding = 14.dp, scroll = false)) {
                 Text(stringResource(R.string.settings_external_player), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
@@ -2013,7 +2017,7 @@ internal fun StepperDialog(
     val minusEnabled = value > min
     val steppers = tv.own.owntv.ui.components.rememberStepperFocus(plusEnabled, minusEnabled)
     BackHandler { onDismiss() }
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier.dialogPanel(width = 360.dp, corner = 16.dp, padding = 16.dp),
@@ -2167,7 +2171,7 @@ private fun SubtitleAppearanceDialog(
     }
 
     BackHandler { onDismiss() }
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier.fillMaxSize().modalScrim()
                 .trapAllFocusExit().focusGroup(),
@@ -2310,7 +2314,7 @@ private fun SubtitleColorDialog(color: String, onColor: (String) -> Unit, onDism
         onColor(hex)
     }
 
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier.fillMaxSize().modalScrim()
                 .imePadding().trapAllFocusExit().focusGroup(),
@@ -2407,7 +2411,7 @@ private fun SubtitlePositionDialog(
     val selectedFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { selectedFocus.requestFocus() } }
     BackHandler { onDismiss() }
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier.fillMaxSize().modalScrim()
                 .trapAllFocusExit().focusGroup(),
@@ -2523,7 +2527,7 @@ private fun SubtitleSizeDialog(
     val firstRow = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstRow.requestFocus() } }
     BackHandler { onDismiss() }
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier.fillMaxSize().modalScrim()
                 .trapAllFocusExit().focusGroup(),
@@ -2625,7 +2629,7 @@ private fun SubtitleTransparencyDialog(
     val plusEnabled = isDefault || effective < SubtitleStyle.OPACITY_MAX
     val steppers = tv.own.owntv.ui.components.rememberStepperFocus(plusEnabled, minusEnabled)
     BackHandler { onDismiss() }
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier.fillMaxSize().modalScrim()
                 .trapAllFocusExit().focusGroup(),

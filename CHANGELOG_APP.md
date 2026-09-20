@@ -20,6 +20,7 @@
 
 ### 🩹 Fixes
 
+- **🪟 Every popup now behaves like every other popup**
 - **🗂️ Restoring a backup during setup asks what to bring back**
 - **🔗 Sync mode could hand the other device a key that did not fit**
 - **📡 A long guide download is no longer stopped by the system**

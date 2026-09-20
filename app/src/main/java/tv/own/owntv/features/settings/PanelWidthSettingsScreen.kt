@@ -211,7 +211,7 @@ private fun PanelWidthDialog(
         if (showPreviewDisableConfirmation) showPreviewDisableConfirmation = false else onDismiss()
     }
 
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
         Box(
             Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
             contentAlignment = Alignment.Center,

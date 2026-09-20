@@ -474,6 +474,7 @@ The colour and thickness of the ring around whatever is selected. Applies everyw
 A frosted look with a live preview and six presets from **Ultra Clear** to **Opaque**. Choose which
 surfaces get it, and set your own background image (local file or URL).
 > Real frost needs a background image and **Android 12+**. Without those, panels are simply tinted.
+> **Surface transparency** sets how *solid* a surface is, so a lower number is more see-through.
 
 ### 🔤 Font & size
 **Where:** Settings → Appearance → **Font customization**

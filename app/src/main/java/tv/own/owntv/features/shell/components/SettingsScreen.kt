@@ -2603,6 +2603,7 @@ private fun FontFamilyPickerDialog(
     val focus = remember { AppFontFamily.entries.associateWith { FocusRequester() } }
     LaunchedEffect(Unit) { runCatching { focus.getValue(selected).requestFocus() } }
     BackHandler { onDismiss() }
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     Box(
         modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
@@ -2646,6 +2647,7 @@ private fun FontFamilyPickerDialog(
                 Spacer(Modifier.height(8.dp))
             }
         }
+    }
     }
 }
 
@@ -3775,6 +3777,7 @@ private fun GlassSurfacesDialog(
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
     BackHandler { onDismiss() }
     fun toggled(s: GlassSurface): Int = GlassConfig(if (s in scope) scope - s else scope + s).toBitmask()
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
     Box(
         modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
@@ -3818,6 +3821,7 @@ private fun GlassSurfacesDialog(
             OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss, modifier = Modifier.fillMaxWidth())
         }
         }
+    }
     }
 }
 
