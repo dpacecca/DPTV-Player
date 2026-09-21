@@ -1,5 +1,21 @@
 # Changelog
 
+## v5.0.2 — 2026-09-21
+
+### 🩹 Fixes
+
+#### 💥 The app would not open after updating from v5.0.0
+
+Updating straight from `v5.0.0` to `v5.0.1` left the app unable to start: the splash screen appeared
+and the app closed again, every time, because the one-off upgrade of the stored guide data could not
+finish and was retried on every launch. Nothing was wrong with the data — the upgrade step asked
+SQLite to begin a save point that was already open, which the newer storage engine in `v5.0.1`
+refuses. The upgrade now runs as one piece and completes on the first launch, with your profiles,
+playlists, favourites and history untouched.
+
+Televisions already running `v5.0.1` are affected only if they never managed to open it. A box that
+opened `v5.0.1` once has already finished the upgrade and was never at risk.
+
 ## v5.0.1 — 2026-09-21
 
 ### 🎬 A cinematic layout for Movies & Series

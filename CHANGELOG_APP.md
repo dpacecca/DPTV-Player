@@ -9,6 +9,12 @@
 > (e.g. `(community PR #40 by @codeVerine)`). Issue numbers that are part of a title (e.g. `(#57)`) are
 > fine; explanatory parentheticals are not. Descriptions belong in CHANGELOG.md, never here.
 
+## v5.0.2 — 2026-09-21
+
+### 🩹 Fixes
+
+- **💥 The app would not open after updating from v5.0.0**
+
 ## v5.0.1 — 2026-09-21
 
 ### ✨ New features
