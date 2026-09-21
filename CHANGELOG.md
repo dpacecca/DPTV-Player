@@ -1,6 +1,6 @@
 # Changelog
 
-## v5.0.1 — unreleased
+## v5.0.1 — 2026-09-21
 
 ### 🎬 A cinematic layout for Movies & Series
 
