@@ -1,0 +1,699 @@
+package tv.own.owntv.ui.stage
+
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.em
+import androidx.tv.material3.Text
+import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.theme.StageAccent
+import tv.own.owntv.ui.theme.StageColors
+import tv.own.owntv.ui.theme.StageRadii
+import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.theme.ownTvTween
+import tv.own.owntv.ui.theme.stageAccent
+import tv.own.owntv.ui.theme.stageText
+
+/*
+ * The Stage component set (mockup `.mine` classes). Idle = nothing, selected = accent text + dot or bar,
+ * focused = the one loud thing, in one of four treatments:
+ *
+ *  FX       rows and cards: accent 34%→14% sweep, 2 px focus ring inside, 44 px accent glow.
+ *  FILLED   menu items, sheet items, pills, tools, cells: accent fill, 2 px focus ring outside, glow.
+ *  PRIMARY  buttons: accent fill, 3 px ring outside, a larger glow, lifted to 1.04.
+ *  POSTER   posters: 3 px focus ring + 4 px accent-35% ring outside, glow, lifted to 1.08.
+ */
+enum class StageFocus { FX, FILLED, PRIMARY, POSTER }
+
+private fun Modifier.stageFocusDecor(style: StageFocus, radius: Dp, a: StageAccent) = drawBehind {
+    val r = radius.toPx()
+    val px = 1.mpx.toPx()
+    when (style) {
+        StageFocus.FX -> {
+            drawBoxShadow(a.accent.copy(alpha = 0.28f), 44 * px, r)
+            // A row-sized sweep: small enough to stay a brush (see GradientTextures).
+            drawRoundRect(
+                Brush.horizontalGradient(listOf(a.accent.copy(alpha = 0.34f), a.accent.copy(alpha = 0.14f))),
+                cornerRadius = CornerRadius(r),
+            )
+            drawInnerRing(a.focus, 2 * px, r)
+        }
+        StageFocus.FILLED -> {
+            drawBoxShadow(a.accent.copy(alpha = 0.35f), 30 * px, r, dy = 10 * px)
+            drawRoundRect(a.accent, cornerRadius = CornerRadius(r))
+            drawOuterRing(a.focus, 2 * px, r)
+        }
+        StageFocus.PRIMARY -> {
+            drawBoxShadow(a.accent.copy(alpha = 0.45f), 40 * px, r, dy = 14 * px)
+            drawRoundRect(a.accent, cornerRadius = CornerRadius(r))
+            drawOuterRing(a.focus, 3 * px, r)
+        }
+        StageFocus.POSTER -> {
+            drawBoxShadow(a.accent.copy(alpha = 0.35f), 60 * px, r, dy = 24 * px)
+            drawOuterRing(a.accent.copy(alpha = 0.35f), 4 * px, r, inset = 3 * px)
+            drawOuterRing(a.focus, 3 * px, r)
+        }
+    }
+}
+
+/**
+ * The focusable base every Stage control is built on: D-pad focus and click wiring as in
+ * FocusableSurface, the [focusStyle] treatment while focused, [idle] (a fill or [stageGlass]) otherwise.
+ * Nothing is clipped, so rings and glows reach past the bounds exactly as a `box-shadow` does.
+ */
+@Composable
+fun StageSurface(
+    onClick: () -> Unit,
+    radius: Dp,
+    modifier: Modifier = Modifier,
+    focusStyle: StageFocus = StageFocus.FILLED,
+    idle: Modifier = Modifier,
+    enabled: Boolean = true,
+    onLongClick: (() -> Unit)? = null,
+    contentAlignment: Alignment = Alignment.CenterStart,
+    content: @Composable BoxScope.(focused: Boolean) -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val accent = stageAccent
+    Box(
+        modifier = modifier
+            .stageLift(focused, focusStyle)
+            .then(if (focused) Modifier.stageFocusDecor(focusStyle, radius, accent) else idle)
+            .stageClickable(interaction, enabled, onClick, onLongClick),
+        contentAlignment = contentAlignment,
+    ) { content(focused) }
+}
+
+/** The PRIMARY (1.04) and POSTER (1.08, from 50% 40%) lift; FX and FILLED stay put. */
+@Composable
+private fun Modifier.stageLift(focused: Boolean, style: StageFocus): Modifier {
+    val lift = when (style) {
+        StageFocus.PRIMARY -> 1.04f
+        StageFocus.POSTER -> 1.08f
+        else -> 1f
+    }
+    val scale by animateFloatAsState(if (focused) lift else 1f, ownTvTween(170), label = "stageLift")
+    return graphicsLayer {
+        scaleX = scale
+        scaleY = scale
+        transformOrigin = if (style == StageFocus.POSTER) TransformOrigin(0.5f, 0.4f) else TransformOrigin.Center
+    }
+}
+
+private fun Modifier.stageClickable(
+    interaction: MutableInteractionSource,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
+) = if (onLongClick != null) {
+    combinedClickable(interaction, null, enabled, onLongClick = onLongClick, onClick = onClick)
+} else {
+    clickable(interaction, null, enabled, onClick = onClick)
+}
+
+/** The glowing 7 px dot that marks the selected item in a sheet (`.ci.sel::before`). */
+@Composable
+fun StageSelectedDot() {
+    val accent = stageAccent.accent
+    Box(
+        Modifier
+            .size(7.mpx)
+            .drawBehind {
+                drawBoxShadow(accent, 8.mpx.toPx(), size.minDimension / 2f)
+                drawCircle(accent)
+            },
+    )
+}
+
+/**
+ * The 4 px glowing accent bar at the left edge of a selected category (`.fcat.sel`, inset 14) or
+ * settings group (`.gsheet .gi.sel`, inset 18).
+ */
+fun Modifier.stageSelectedBar(accent: Color, verticalInset: Dp) = drawBehind {
+    val inset = verticalInset.toPx()
+    if (size.height <= inset * 2f) return@drawBehind
+    val bar = Rect(0f, inset, 4.mpx.toPx(), size.height - inset)
+    val r = 3.mpx.toPx()
+    drawBoxShadow(accent, 10.mpx.toPx(), r, bounds = bar)
+    drawRoundRect(accent, topLeft = bar.topLeft, size = bar.size, cornerRadius = CornerRadius(r))
+}
+
+@Composable
+private fun StageIcon(icon: OwnTVIcon, tint: Color, size: Dp, filled: Boolean = false) =
+    OwnTVIcon(icon, tint, Modifier.size(size), filled = filled)
+
+// ---------------------------------------------------------------------------------------------
+// Buttons, pills, tools, segmented
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * `.btn`: 64 high, 22 px type. Idle glass; focused = the PRIMARY treatment (the hero's "Play").
+ * [round] is the 64×64 icon-only button (ⓘ, ♥). [trailing] is the muted count in "All versions 3".
+ */
+@Composable
+fun StageButton(
+    text: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: OwnTVIcon? = null,
+    iconFilled: Boolean = false,
+    trailing: String? = null,
+    round: Boolean = false,
+) {
+    val a = stageAccent
+    val r = StageRadii.Button
+    StageSurface(
+        onClick = onClick,
+        radius = r,
+        modifier = modifier.height(64.mpx).then(if (round) Modifier.width(64.mpx) else Modifier),
+        focusStyle = StageFocus.PRIMARY,
+        idle = Modifier.stageGlass(r),
+        contentAlignment = Alignment.Center,
+    ) { focused ->
+        val color = if (focused) a.onAccent else StageColors.Text
+        Row(
+            Modifier.then(if (round) Modifier else Modifier.padding(horizontal = 30.mpx)),
+            horizontalArrangement = Arrangement.spacedBy(12.mpx),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (icon != null) StageIcon(icon, color, 22.mpx, iconFilled)
+            if (text != null) Text(text, style = stageText(22, 700), color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (trailing != null) {
+                Text(trailing, style = stageText(22, 600), color = if (focused) a.onAccent else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+/**
+ * `.pill` (top-right cluster): 50 high, glass, 18 px type, a 20 px accent icon, an optional small
+ * label before the text ("Resume · Toy Story 5"), capped at 470 wide. Focused = FILLED.
+ */
+@Composable
+fun StagePill(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: OwnTVIcon? = null,
+    iconFilled: Boolean = false,
+    small: String? = null,
+    trailingIcon: OwnTVIcon? = null,
+) {
+    val a = stageAccent
+    val r = StageRadii.Pill
+    StageSurface(
+        onClick = onClick,
+        radius = r,
+        modifier = modifier.height(50.mpx).widthIn(max = 470.mpx),
+        idle = Modifier.stageGlass(r),
+    ) { focused ->
+        Row(
+            Modifier.padding(horizontal = 18.mpx),
+            horizontalArrangement = Arrangement.spacedBy(10.mpx),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val on = if (focused) a.onAccent else null
+            if (icon != null) StageIcon(icon, on ?: a.accent, 20.mpx, iconFilled)
+            if (small != null) Text(small, style = stageText(15, 700), color = on ?: StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                text,
+                style = stageText(18, 700),
+                color = on ?: StageColors.Text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            if (trailingIcon != null) StageIcon(trailingIcon, on ?: a.accent, 20.mpx)
+        }
+    }
+}
+
+/**
+ * `.tool`: a quiet 48-high text button in a tool row, muted 18 px type; [boxed] gives it the idle
+ * white-6% fill. [value] is the bold part of "Sort: **Date added** ▾", [trailingIcon] its ▾. Focused = FILLED.
+ */
+@Composable
+fun StageTool(
+    text: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: OwnTVIcon? = null,
+    value: String? = null,
+    trailingIcon: OwnTVIcon? = null,
+    boxed: Boolean = false,
+) {
+    val a = stageAccent
+    val r = StageRadii.Tool
+    StageSurface(
+        onClick = onClick,
+        radius = r,
+        modifier = modifier.height(48.mpx),
+        idle = if (boxed) Modifier.background(StageColors.ControlFill, RoundedCornerShape(r)) else Modifier,
+    ) { focused ->
+        Row(
+            Modifier.padding(horizontal = 16.mpx),
+            horizontalArrangement = Arrangement.spacedBy(9.mpx),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val color = if (focused) a.onAccent else StageColors.Muted
+            if (icon != null) StageIcon(icon, color, 20.mpx)
+            if (text != null) Text(text, style = stageText(18, 700), color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (value != null) Text(value, style = stageText(18, 700), color = if (focused) a.onAccent else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (trailingIcon != null) StageIcon(trailingIcon, color, 20.mpx)
+        }
+    }
+}
+
+/**
+ * `.seg2`: two or more options in one white-6% capsule; the chosen one sits on white 13% in full text
+ * colour. The mockup draws no focused segment; a focused one takes the FILLED treatment, as `.row2`
+ * does in menus.
+ */
+@Composable
+fun StageSegmented(
+    options: List<String>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    icons: List<OwnTVIcon?> = emptyList(),
+) {
+    val a = stageAccent
+    Row(
+        modifier
+            .background(StageColors.ControlFill, RoundedCornerShape(15.mpx))
+            .padding(4.mpx),
+        horizontalArrangement = Arrangement.spacedBy(2.mpx),
+    ) {
+        options.forEachIndexed { i, label ->
+            val on = i == selected
+            StageSurface(
+                onClick = { onSelect(i) },
+                radius = 11.mpx,
+                modifier = Modifier.height(40.mpx),
+                idle = if (on) Modifier.background(Color.White.copy(alpha = 0.13f), RoundedCornerShape(11.mpx)) else Modifier,
+            ) { focused ->
+                val color = when {
+                    focused -> a.onAccent
+                    on -> StageColors.Text
+                    else -> StageColors.Muted
+                }
+                Row(
+                    Modifier.padding(horizontal = 14.mpx),
+                    horizontalArrangement = Arrangement.spacedBy(8.mpx),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    icons.getOrNull(i)?.let { StageIcon(it, color, 17.mpx) }
+                    Text(label, style = stageText(17, 700), color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Tags and playlist marks
+// ---------------------------------------------------------------------------------------------
+
+/** `.tag`: a provider or quality badge, 13/800 caps-spaced on white 8%. [onAccent] inside a focused item. */
+@Composable
+fun StageTag(text: String, onAccent: Color? = null) {
+    Text(
+        text,
+        style = stageText(13, 800, 0.05.em),
+        color = onAccent ?: StageColors.TagText,
+        maxLines = 1, overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .background(if (onAccent != null) Color.Black.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.08f), RoundedCornerShape(StageRadii.Tag))
+            .padding(horizontal = 7.mpx, vertical = 3.mpx),
+    )
+}
+
+/** `.pm`: which playlist a row comes from, outlined in that playlist's colour (see [PlaylistMark]). */
+@Composable
+fun StagePlaylistMark(mark: PlaylistMark) {
+    val shape = RoundedCornerShape(7.mpx)
+    Box(
+        Modifier
+            .height(22.mpx)
+            .defaultMinSize(minWidth = 30.mpx)
+            .drawBehind { drawInnerRing(mark.color, 1.5f * 1.mpx.toPx(), 7.mpx.toPx()) }
+            .clip(shape)
+            .padding(horizontal = 6.mpx),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(mark.text, style = stageText(12, 800, 0.04.em), color = mark.color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Rows, menus, sheets
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * A Stage list row: nothing when idle, FX when focused. Channel rows are 84 high with 20 px padding,
+ * settings rows 84 with 22, Movies list rows 118 with 16 — the caller passes its own.
+ */
+@Composable
+fun StageRow(
+    onClick: () -> Unit,
+    height: Dp,
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 20.mpx,
+    gap: Dp = 18.mpx,
+    onLongClick: (() -> Unit)? = null,
+    content: @Composable RowScope.(focused: Boolean) -> Unit,
+) {
+    StageSurface(
+        onClick = onClick,
+        radius = StageRadii.Row,
+        modifier = modifier.height(height),
+        focusStyle = StageFocus.FX,
+        onLongClick = onLongClick,
+    ) { focused ->
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = horizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(gap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) { content(focused) }
+    }
+}
+
+/** `.menu`: the options / picker panel (☰ menus, sort pickers, the playlist switcher). */
+@Composable
+fun StageMenu(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier
+            .stageGlass(StageRadii.Menu)
+            .padding(start = 16.mpx, end = 16.mpx, top = 22.mpx, bottom = 16.mpx),
+        content = content,
+    )
+}
+
+/** `.menu .mh`: the menu's heading — optional leading art, a 23/800 title and a 15 px muted line. */
+@Composable
+fun StageMenuHeader(title: String, subtitle: String?, leading: (@Composable () -> Unit)? = null) {
+    Row(
+        Modifier.padding(start = 12.mpx, end = 12.mpx, bottom = 12.mpx),
+        horizontalArrangement = Arrangement.spacedBy(14.mpx),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        leading?.invoke()
+        Column {
+            Text(title, style = stageText(23, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle != null) {
+                Spacer(Modifier.height(2.mpx))
+                Text(subtitle, style = stageText(15, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+/**
+ * `.menu .mg` / `.sheet .grp`: a dim group label ("WATCH", "GROUPS · DE"). The text is passed in
+ * capitals, as the mockup writes it; upper-casing in code would break Turkish (i → İ).
+ */
+@Composable
+fun StageGroupLabel(text: String, sheet: Boolean = false) {
+    Text(
+        text,
+        style = if (sheet) stageText(13, 800, 0.12.em) else stageText(12.5f, 800, 0.13.em),
+        color = StageColors.Dim,
+        maxLines = 1, overflow = TextOverflow.Ellipsis,
+        modifier = if (sheet) {
+            Modifier.padding(start = 16.mpx, end = 16.mpx, top = 14.mpx, bottom = 6.mpx)
+        } else {
+            Modifier.padding(start = 14.mpx, end = 14.mpx, top = 12.mpx, bottom = 5.mpx)
+        },
+    )
+}
+
+/**
+ * `.menu .mi`: 50 high, 19/600, a 21 px muted icon, an optional dim value on the right ("7 days") or
+ * an accent ✓ when [checked]. [enabled] = false dims it to 45% ("Record from catch-up").
+ */
+@Composable
+fun StageMenuItem(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: OwnTVIcon? = null,
+    iconFilled: Boolean = false,
+    value: String? = null,
+    checked: Boolean = false,
+    enabled: Boolean = true,
+) {
+    val a = stageAccent
+    StageSurface(
+        onClick = onClick,
+        radius = StageRadii.MenuItem,
+        modifier = modifier.fillMaxWidth().height(50.mpx).alpha(if (enabled) 1f else 0.45f),
+        enabled = enabled,
+    ) { focused ->
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 14.mpx),
+            horizontalArrangement = Arrangement.spacedBy(14.mpx),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val on = if (focused) a.onAccent else null
+            if (icon != null) StageIcon(icon, on ?: StageColors.Muted, 21.mpx, iconFilled)
+            Text(text, style = stageText(19, 600), color = on ?: StageColors.MenuItemText, maxLines = 1,
+                overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            if (value != null) Text(value, style = stageText(15, 700), color = on ?: StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (checked) StageIcon(OwnTVIcon.CHECK, on ?: a.accent, 22.mpx)
+        }
+    }
+}
+
+/** `.sheet`: a tier that slides over the content (categories, settings groups). */
+@Composable
+fun StageSheet(title: String, modifier: Modifier = Modifier, trailing: String? = null, content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier
+            .stageGlass(StageRadii.Sheet)
+            .padding(horizontal = 16.mpx, vertical = 26.mpx),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = 14.mpx, end = 14.mpx, bottom = 16.mpx),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(title, style = stageText(26, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (trailing != null) Text(trailing, style = stageText(17, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        content()
+    }
+}
+
+/**
+ * `.sheet .ci`: 56 high, 20/600. Selected = accent text with the glowing dot before it; focused =
+ * FILLED. [tags] follow the name; [count] and then [trailing] (the playlist mark) sit on the right.
+ */
+@Composable
+fun StageSheetItem(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: OwnTVIcon? = null,
+    count: String? = null,
+    selected: Boolean = false,
+    tags: (@Composable RowScope.(focused: Boolean) -> Unit)? = null,
+    trailing: (@Composable RowScope.(focused: Boolean) -> Unit)? = null,
+) {
+    val a = stageAccent
+    StageSurface(
+        onClick = onClick,
+        radius = StageRadii.SheetItem,
+        modifier = modifier.fillMaxWidth().height(56.mpx),
+    ) { focused ->
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.mpx),
+            horizontalArrangement = Arrangement.spacedBy(14.mpx),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val on = if (focused) a.onAccent else null
+            // The dot has `margin-right: -4px`: a 3 px slot it overflows, so it sits 10 px from the text.
+            if (selected && !focused) {
+                Box(Modifier.width(3.mpx).wrapContentWidth(Alignment.Start, unbounded = true)) { StageSelectedDot() }
+            }
+            if (icon != null) StageIcon(icon, on ?: if (selected) a.accent else StageColors.Muted, 22.mpx)
+            Row(
+                Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(14.mpx),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text,
+                    style = stageText(20, 600),
+                    color = on ?: if (selected) a.accent else StageColors.ItemText,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                tags?.invoke(this, focused)
+            }
+            if (count != null) Text(count, style = stageText(16, 600), color = on ?: StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            trailing?.invoke(this, focused)
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Posters, stepper, switch
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * `.pc`: a poster card — artwork with rounded corners and a soft drop shadow, the rating chip in its
+ * corner, a one-line title below. Focused: the card lifts to 1.08 from 50% 40%, the POSTER ring and
+ * glow go round the artwork only, and the title turns white/700.
+ */
+@Composable
+fun StagePoster(
+    title: String,
+    onClick: () -> Unit,
+    width: Dp,
+    height: Dp,
+    modifier: Modifier = Modifier,
+    rating: String? = null,
+    onLongClick: (() -> Unit)? = null,
+    artwork: @Composable BoxScope.() -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val accent = stageAccent
+    val r = StageRadii.Poster
+    Column(
+        modifier
+            .width(width)
+            .stageLift(focused, StageFocus.POSTER)
+            .stageClickable(interaction, true, onClick, onLongClick),
+    ) {
+        Box(
+            Modifier
+                .size(width, height)
+                .then(
+                    if (focused) {
+                        Modifier.stageFocusDecor(StageFocus.POSTER, r, accent)
+                    } else {
+                        Modifier.drawBehind {
+                            drawBoxShadow(Color.Black.copy(alpha = 0.45f), 26.mpx.toPx(), r.toPx(), dy = 10.mpx.toPx())
+                        }
+                    },
+                )
+                .clip(RoundedCornerShape(r)),
+        ) {
+            artwork()
+            if (rating != null) StageRatingChip(rating, Modifier.padding(8.mpx))
+        }
+        Spacer(Modifier.height(12.mpx))
+        Text(
+            title,
+            style = stageText(17, if (focused) 700 else 600),
+            color = if (focused) Color.White else StageColors.Muted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** `.pc .rt`: "★ 7.8" on near-black in the poster's top-left corner. */
+@Composable
+fun StageRatingChip(rating: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier
+            .height(32.mpx)
+            .defaultMinSize(minWidth = 76.mpx)
+            .background(Color(8, 12, 14).copy(alpha = 0.92f), RoundedCornerShape(10.mpx))
+            .padding(horizontal = 10.mpx),
+        horizontalArrangement = Arrangement.spacedBy(6.mpx),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StageIcon(OwnTVIcon.STAR, StageColors.RatingStar, 15.mpx, filled = true)
+        Text(rating, style = stageText(15, 800), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/**
+ * `.stp`: "− 90% +" inside a settings row. Display only: the row owns focus and ◀ ▶ change the value
+ * (P10, "controls inside the rows").
+ */
+@Composable
+fun StageStepper(value: String) {
+    Row(
+        Modifier
+            .background(StageColors.ControlFill, RoundedCornerShape(13.mpx))
+            .padding(4.mpx),
+        horizontalArrangement = Arrangement.spacedBy(4.mpx),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(34.mpx), contentAlignment = Alignment.Center) {
+            Text("−", style = stageText(20, 700), color = StageColors.Muted)
+        }
+        Text(
+            value,
+            style = stageText(18, 700),
+            color = StageColors.Text,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.widthIn(min = 64.mpx),
+        )
+        Box(Modifier.size(34.mpx), contentAlignment = Alignment.Center) {
+            Text("+", style = stageText(20, 700), color = StageColors.Muted)
+        }
+    }
+}
+
+/** `.sw2`: 56×32 switch, display only like [StageStepper]. */
+@Composable
+fun StageSwitch(on: Boolean) {
+    val a = stageAccent
+    Box(
+        Modifier
+            .size(56.mpx, 32.mpx)
+            .background(if (on) a.accent else Color.White.copy(alpha = 0.14f), RoundedCornerShape(16.mpx)),
+    ) {
+        Box(
+            Modifier
+                .offset(x = if (on) 28.mpx else 4.mpx, y = 4.mpx)
+                .size(24.mpx)
+                .background(if (on) Color.White else Color(0xFFCFD8D4), CircleShape),
+        )
+    }
+}

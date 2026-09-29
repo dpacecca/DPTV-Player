@@ -1,5 +1,6 @@
 package tv.own.owntv.features.more
 
+import tv.own.owntv.features.settings.DeveloperScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -81,10 +82,11 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.glass
 
 /** Which of More's own pages is on screen. [ROOT] is the hub itself. */
-private enum class MorePage { ROOT, FAVORITES, HISTORY, BACKUP, LOCAL_SYNC }
+private enum class MorePage { ROOT, FAVORITES, HISTORY, BACKUP, LOCAL_SYNC, DEVELOPER }
 
 /** The rows, in the order the spine shows them. */
-private enum class MoreRow { SETTINGS, FAVORITES, HISTORY, BACKUP, LOCAL_SYNC, ERROR_LOG, ABOUT }
+/** [DEVELOPER] is shown only when BuildConfig.DEV_TOOLS is set. */
+private enum class MoreRow { SETTINGS, FAVORITES, HISTORY, BACKUP, LOCAL_SYNC, ERROR_LOG, ABOUT, DEVELOPER }
 
 /**
  * The hub the rail's last item opens — everything that is neither a channel nor a preference.
@@ -169,6 +171,10 @@ fun MoreScreen(
         }
         MorePage.LOCAL_SYNC -> {
             Toned(TileTone.TERTIARY) { LocalSyncScreen(onBack = { page = MorePage.ROOT }, modifier = modifier) }
+            return
+        }
+        MorePage.DEVELOPER -> {
+            DeveloperScreen(onBack = { page = MorePage.ROOT }, modifier = modifier)
             return
         }
         MorePage.ROOT -> Unit
@@ -338,6 +344,21 @@ fun MoreScreen(
                     onSelected = { selected = it },
                     onClick = { focusRow(MoreRow.ABOUT); showAbout = true },
                 )
+                // Maintainer-only (the phone keeps its developer rows in More too). DEV_TOOLS is a
+                // compile-time constant, so R8 removes this row and its page from published APKs.
+                if (BuildConfig.DEV_TOOLS) {
+                    SpineRow(
+                        row = MoreRow.DEVELOPER,
+                        icon = OwnTVIcon.GEAR,
+                        title = "Developer",
+                        summary = "Maintainer tools",
+                        badge = "DEV",
+                        selected = selected,
+                        focus = rowFocus.getValue(MoreRow.DEVELOPER),
+                        onSelected = { selected = it },
+                        onClick = { focusRow(MoreRow.DEVELOPER); page = MorePage.DEVELOPER },
+                    )
+                }
 
                 SpineFooter()
             }
@@ -359,6 +380,7 @@ fun MoreScreen(
                     MoreRow.LOCAL_SYNC -> stringResource(R.string.local_sync_title)
                     MoreRow.ERROR_LOG -> stringResource(R.string.settings_playback_error_log)
                     MoreRow.ABOUT -> stringResource(R.string.settings_about)
+                    MoreRow.DEVELOPER -> "Developer"
                 }
                 // Settings' own sheet header: 18 sp title, 12.5 sp summary, bordered mono tag.
                 SheetHeader(
@@ -374,6 +396,7 @@ fun MoreScreen(
                         MoreRow.LOCAL_SYNC -> stringResource(R.string.local_sync_description)
                         MoreRow.ERROR_LOG -> stringResource(R.string.settings_playback_error_description)
                         MoreRow.ABOUT -> stringResource(R.string.settings_about_description)
+                        MoreRow.DEVELOPER -> "Rebuild Now Trending and the Stage specimen. Local builds only."
                     },
                     tag = when (selected) {
                         MoreRow.SETTINGS ->
@@ -384,6 +407,7 @@ fun MoreScreen(
                         MoreRow.LOCAL_SYNC -> syncValue
                         MoreRow.ERROR_LOG -> (logEntries?.size ?: 0).toString()
                         MoreRow.ABOUT -> BuildConfig.VERSION_NAME
+                        MoreRow.DEVELOPER -> "DEV"
                     },
                     tagHot = false,
                 )
@@ -400,6 +424,7 @@ fun MoreScreen(
                         MoreRow.LOCAL_SYNC -> LocalSyncPane(sync)
                         MoreRow.ERROR_LOG -> ErrorLogPane(logEntries)
                         MoreRow.ABOUT -> AboutPane()
+                        MoreRow.DEVELOPER -> Unit
                     }
                 }
                 PaneHint(destination)

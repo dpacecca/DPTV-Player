@@ -98,6 +98,30 @@ fun DrawScope.drawRadialGlow(colors: List<Color>, center: Offset, radius: Float,
 }
 
 /**
+ * CSS `radial-gradient(<radiusX> <radiusY> at <center>, colors at positions)`: the radial texture stretched
+ * to an ellipse. The last colour must be fully transparent, as for [drawRadialGlow].
+ */
+fun DrawScope.drawEllipticalGlow(
+    colors: List<Color>,
+    positions: List<Float>,
+    center: Offset,
+    radiusX: Float,
+    radiusY: Float,
+) {
+    if (radiusX <= 0f || radiusY <= 0f) return
+    val texture = GradientTextures.get(GradientTextures.Kind.RADIAL, colors, positions)
+    val left = floor(center.x - radiusX).toInt()
+    val top = floor(center.y - radiusY).toInt()
+    clipRect {
+        drawImage(
+            image = texture,
+            dstOffset = IntOffset(left, top),
+            dstSize = IntSize(ceil(radiusX * 2f).toInt() + 1, ceil(radiusY * 2f).toInt() + 1),
+        )
+    }
+}
+
+/**
  * Same pixels as `drawRect(Brush.verticalGradient(colors, startY, endY))` over this scope's bounds, with
  * the whole draw faded by [alpha]. The first colour must be fully transparent (nothing is drawn above
  * [startY]); below [endY] the last colour continues, as the brush's clamp does.

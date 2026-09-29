@@ -2622,6 +2622,7 @@ private fun fontFamilyLabel(family: AppFontFamily): String = stringResource(
         AppFontFamily.PLAYFAIR_DISPLAY -> R.string.settings_font_playfair_display
         AppFontFamily.DANCING_SCRIPT -> R.string.settings_font_dancing_script
         AppFontFamily.POPPINS -> R.string.settings_font_poppins
+        AppFontFamily.PLUS_JAKARTA_SANS -> R.string.settings_font_plus_jakarta_sans
     },
 )
 

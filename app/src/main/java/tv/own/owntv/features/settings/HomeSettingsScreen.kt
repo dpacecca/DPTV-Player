@@ -41,7 +41,6 @@ import tv.own.owntv.core.trending.TrendingAvailability
 import tv.own.owntv.features.home.displayTitle
 import tv.own.owntv.features.home.displayLabel
 import tv.own.owntv.features.home.settingsDescription
-import tv.own.owntv.BuildConfig
 import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -56,7 +55,6 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val settingsVm: SettingsViewModel = koinViewModel()
     val config by vm.config.collectAsStateWithLifecycle()
     val trendingAvailability by vm.trendingAvailability.collectAsStateWithLifecycle()
-    val devRebuild by vm.devRebuild.collectAsStateWithLifecycle()
     val heroPreviewEnabled by vm.heroPreviewEnabled.collectAsStateWithLifecycle()
     val androidTvHomeEnabled by settingsVm.androidTvHomeEnabled.collectAsStateWithLifecycle()
     val tvHomeRefresh by settingsVm.tvHomeRefresh.collectAsStateWithLifecycle()
@@ -171,27 +169,6 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     },
                     onToggleLiveMode = { mode -> vm.setLiveRowMode(row, mode.toggled()) },
                 )
-            }
-
-            // Maintainer-only. BuildConfig.DEV_TOOLS is a compile-time constant that is false in every
-            // published APK, so R8 removes this row (and the view-model call behind it) entirely.
-            if (BuildConfig.DEV_TOOLS) {
-                item {
-                    Spacer(Modifier.height(14.dp))
-                    GroupLabel("Developer")
-                }
-                item {
-                    Row2(
-                        icon = OwnTVIcon.SHARE,
-                        title = "Rebuild Now Trending",
-                        desc = "Forces a fresh TMDB trending download for every playlist, ignoring the multi-day fetch timer.",
-                        chip = when (devRebuild) {
-                            HomeSettingsViewModel.DevRebuildState.STARTED -> stringResource(R.string.settings_rebuilding)
-                            else -> null
-                        },
-                        onClick = { vm.rebuildTrendingNow() },
-                    )
-                }
             }
 
             item {
