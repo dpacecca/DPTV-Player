@@ -113,8 +113,6 @@ fun AudioNowPlayingBar(
     /** The favourite state of whatever is playing — the same channel/movie/series the fullscreen HUD toggles. */
     favorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
-    /** Reported so the top strip can grow with the capsule and push the content panel down. */
-    onExpandedChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val accent = stageAccent
@@ -149,7 +147,6 @@ fun AudioNowPlayingBar(
 
     val expanded = (hasFocus || active) && focusable
     val hasTime = !isLive && duration > 0L
-    LaunchedEffect(expanded) { onExpandedChange(expanded) }
 
     fun moveFocus(dir: Int) {
         val pos = navSlots.indexOf(focusedSlot)

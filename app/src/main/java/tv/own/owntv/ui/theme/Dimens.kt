@@ -11,11 +11,8 @@ object Dimens {
     // collapses to an icon rail when focus moves into a submenu.
     val SidebarWidthExpanded = 272.dp
     val SidebarWidthCollapsed = 88.dp
-    val TopBarHeight = 48.dp
     /** The strip while the audio capsule is focused/activated — the capsule's tall rendering plus its inset. */
     val TopBarAudioExpandedHeight = 70.dp
-    /** Normal chrome has no tall audio controls, so it can sit closer to the content panel. */
-    val TopBarCompactHeight = 40.dp
 
     // Layer 2 — category rail (expands to show full names when it holds focus)
     val RailWidth = 92.dp

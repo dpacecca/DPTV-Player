@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.em
 import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.core.settings.SettingsRepository.NavHideAfter
+import tv.own.owntv.core.settings.SettingsRepository.NavLength
+import tv.own.owntv.core.settings.SettingsRepository.NavSize
 import tv.own.owntv.core.settings.SettingsRepository.NavStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVPopup
@@ -46,18 +48,20 @@ import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
 /**
- * Settings › Layout › Navigation (P1-06): how the rail behaves. Four styles as radio rows, then the
- * rail's hide delay (OK steps 2 → 4 → 8 s), whether the open rail shows counts (OK toggles), and the
- * existing Sidebar Menu Customization screen ([onOpenMenuItems]).
+ * Settings › Layout › Navigation (P1-06, P1-18): Floating or Docked as radio rows, then the rail's Size
+ * and Length, the existing Sidebar Menu Customization screen ([onOpenMenuItems]) and, for Floating only,
+ * the hide delay. OK on a value row steps to its next choice.
  */
 @Composable
 fun NavigationSettingsPopup(
     style: NavStyle,
     onStyle: (NavStyle) -> Unit,
-    hideAfterSecs: Int,
-    onHideAfterSecs: (Int) -> Unit,
-    showCounts: Boolean,
-    onShowCounts: (Boolean) -> Unit,
+    size: NavSize,
+    onSize: (NavSize) -> Unit,
+    length: NavLength,
+    onLength: (NavLength) -> Unit,
+    hideAfterMs: Int,
+    onHideAfterMs: (Int) -> Unit,
     menuItemsValue: String,
     onOpenMenuItems: () -> Unit,
     onDismiss: () -> Unit,
@@ -72,20 +76,17 @@ fun NavigationSettingsPopup(
         stringResource(R.string.settings_group_layout),
     ).uppercase(locale)
     val styles = listOf(
-        NavStyle.FLOATING_AUTO_HIDE to (R.string.settings_nav_floating_auto to R.string.settings_nav_floating_auto_desc),
         NavStyle.FLOATING to (R.string.settings_nav_floating to R.string.settings_nav_floating_desc),
-        NavStyle.DOCKED_ICONS to (R.string.settings_nav_docked to R.string.settings_nav_docked_desc),
-        NavStyle.DOCKED_LABELS to (R.string.settings_nav_docked_labels to R.string.settings_nav_docked_labels_desc),
+        NavStyle.DOCKED to (R.string.settings_nav_docked to R.string.settings_nav_docked_desc),
     )
 
     OwnTVPopup(onDismissRequest = onDismiss, stageLayout = true) {
         Box(
             Modifier.fillMaxSize().background(Color(2, 5, 6).copy(alpha = 0.55f)).trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.TopCenter,
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 Modifier
-                    .padding(top = 120.mpx)
                     .width(880.mpx)
                     .stageGlass(30.mpx, overContent = true)
                     .padding(30.mpx),
@@ -110,21 +111,18 @@ fun NavigationSettingsPopup(
                 }
                 Box(Modifier.padding(vertical = 18.mpx).fillMaxWidth().height(1.mpx).background(Color.White.copy(alpha = 0.10f)))
                 NavOption(
-                    title = stringResource(R.string.settings_nav_hide_after),
-                    subtitle = stringResource(R.string.settings_nav_hide_after_desc),
-                    value = pluralStringResource(R.plurals.settings_nav_hide_after_seconds, hideAfterSecs, hideAfterSecs),
-                    onClick = {
-                        val choices = NavHideAfter.CHOICES
-                        onHideAfterSecs(choices[(choices.indexOf(hideAfterSecs) + 1) % choices.size])
-                    },
-                    leading = { OwnTVIcon(OwnTVIcon.CLOCK, StageColors.Text, Modifier.size(21.mpx)) },
+                    title = stringResource(R.string.settings_size),
+                    subtitle = stringResource(R.string.settings_nav_size_desc),
+                    value = stringResource(size.labelRes),
+                    onClick = { onSize(NavSize.entries[(size.ordinal + 1) % NavSize.entries.size]) },
+                    leading = { OwnTVIcon(OwnTVIcon.EXPAND, StageColors.Text, Modifier.size(21.mpx)) },
                 )
                 NavOption(
-                    title = stringResource(R.string.settings_nav_show_counts),
-                    subtitle = stringResource(R.string.settings_nav_show_counts_desc),
-                    value = stringResource(if (showCounts) R.string.common_on else R.string.common_off),
-                    onClick = { onShowCounts(!showCounts) },
-                    leading = { OwnTVIcon(OwnTVIcon.LIST, StageColors.Text, Modifier.size(21.mpx)) },
+                    title = stringResource(R.string.settings_nav_length),
+                    subtitle = stringResource(R.string.settings_nav_length_desc),
+                    value = stringResource(if (length == NavLength.FIT) R.string.settings_nav_length_fit else R.string.settings_nav_length_full),
+                    onClick = { onLength(if (length == NavLength.FIT) NavLength.FULL else NavLength.FIT) },
+                    leading = { OwnTVIcon(OwnTVIcon.SORT, StageColors.Text, Modifier.size(21.mpx)) },
                 )
                 NavOption(
                     title = stringResource(R.string.settings_nav_menu_items),
@@ -133,10 +131,34 @@ fun NavigationSettingsPopup(
                     onClick = onOpenMenuItems,
                     leading = { OwnTVIcon(OwnTVIcon.GRID, StageColors.Text, Modifier.size(21.mpx)) },
                 )
+                if (style == NavStyle.FLOATING) {
+                    NavOption(
+                        title = stringResource(R.string.settings_nav_hide_after),
+                        subtitle = stringResource(R.string.settings_nav_hide_after_desc),
+                        value = if (hideAfterMs < 1000) {
+                            stringResource(R.string.settings_nav_hide_after_half)
+                        } else {
+                            pluralStringResource(R.plurals.settings_nav_hide_after_seconds, hideAfterMs / 1000, hideAfterMs / 1000)
+                        },
+                        onClick = {
+                            val choices = NavHideAfter.CHOICES_MS
+                            onHideAfterMs(choices[(choices.indexOf(hideAfterMs) + 1) % choices.size])
+                        },
+                        leading = { OwnTVIcon(OwnTVIcon.CLOCK, StageColors.Text, Modifier.size(21.mpx)) },
+                    )
+                }
             }
         }
     }
 }
+
+private val NavSize.labelRes: Int
+    get() = when (this) {
+        NavSize.COMPACT -> R.string.settings_nav_size_compact
+        NavSize.NORMAL -> R.string.settings_nav_size_normal
+        NavSize.WIDE -> R.string.settings_nav_size_wide
+        NavSize.EXTRA_WIDE -> R.string.settings_nav_size_extra_wide
+    }
 
 /** `.opt`: 76 high, a title 21/600 over a 15 px muted line, an optional accent value with ›; focused = FX. */
 @Composable

@@ -85,13 +85,10 @@ import tv.own.owntv.features.shell.components.CategoryRail
 import tv.own.owntv.features.shell.components.ContentPane
 import tv.own.owntv.features.shell.components.ExitDialog
 import tv.own.owntv.features.shell.components.IncompleteRestoreDialog
-import tv.own.owntv.features.shell.components.PlaylistPickerDialog
 import tv.own.owntv.features.shell.components.PreviewPane
 import tv.own.owntv.features.shell.components.RailCategory
 import tv.own.owntv.features.shell.components.SettingsScreen
-import tv.own.owntv.features.shell.components.Sidebar
 import tv.own.owntv.features.shell.components.SolidAmbientBackdrop
-import tv.own.owntv.features.shell.components.TopBar
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.compose.ui.res.stringResource
@@ -197,14 +194,16 @@ fun OwnTVShell(
     // The browse UI is one focus group with a restorer, so handing focus back to it after the mini
     // player returns to the exact control the user left rather than to the top of the screen.
     val shellContentFocus = remember { FocusRequester() }
-    // Stage navigation (P1): how the rail behaves. Docked icon rail keeps today's rail and top bar.
-    val navStyle by settingsRepo.navStyle.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING_AUTO_HIDE)
-    val navHideAfterSecs by settingsRepo.navHideAfterSecs.collectAsStateWithLifecycle(
-        initialValue = tv.own.owntv.core.settings.SettingsRepository.NavHideAfter.DEFAULT,
+    // Stage navigation (P1, P1b): where the rail sits, what it shows, its length, the floating hide delay.
+    val navStyle by settingsRepo.navStyle.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING)
+    val navSize by settingsRepo.navSize.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.SettingsRepository.NavSize.NORMAL)
+    val navLength by settingsRepo.navLength.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.SettingsRepository.NavLength.FIT)
+    val navHideAfterMs by settingsRepo.navHideAfterMs.collectAsStateWithLifecycle(
+        initialValue = tv.own.owntv.core.settings.SettingsRepository.NavHideAfter.DEFAULT_MS,
     )
-    val navShowCounts by settingsRepo.navShowCounts.collectAsStateWithLifecycle(initialValue = true)
-    val stageNav = navStyle != tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED_ICONS
-    val railCounts by org.koin.androidx.compose.koinViewModel<RailCountsViewModel>().counts.collectAsStateWithLifecycle()
+    val railVm = org.koin.androidx.compose.koinViewModel<RailCountsViewModel>()
+    val railCounts by railVm.counts.collectAsStateWithLifecycle()
+    val railDetails by railVm.details.collectAsStateWithLifecycle()
     // Where ▶ out of the Stage rail returns to: the content, exactly as it was left.
     val contentAreaFocus = remember { FocusRequester() }
     // The playlist pill's place on screen, where the playlist menu redraws it above its scrim.
@@ -365,9 +364,6 @@ fun OwnTVShell(
         MainSection.SERIES -> playingSeries?.let { s -> { seriesVm.toggleFavorite(s) } }
         else -> null
     }
-    // The audio capsule grows when it takes focus; the top strip grows with it so the content panel
-    // is pushed down rather than covered.
-    var audioBarExpanded by remember { mutableStateOf(false) }
     val favActive = when (zapSource) {
         MainSection.LIVE_TV -> previewChannel?.let { liveFavoriteIds.contains(it.id) } ?: false
         MainSection.MOVIES -> playingMovie?.let { movieFavoriteIds.contains(it.id) } ?: false
@@ -630,17 +626,19 @@ fun OwnTVShell(
     // scrim never covers the pill that holds focus.
     var clusterFocused by remember { mutableStateOf(false) }
     val railFocused = focusedLayer == ShellLayer.SIDEBAR && !clusterFocused
-    LaunchedEffect(railFocused, navStyle, navHideAfterSecs) {
+    LaunchedEffect(railFocused, navStyle, navHideAfterMs) {
         railIdleHidden = false
-        if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING_AUTO_HIDE && !railFocused) {
-            kotlinx.coroutines.delay(navHideAfterSecs * 1000L)
+        if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING && !railFocused) {
+            kotlinx.coroutines.delay(navHideAfterMs.toLong())
             railIdleHidden = true
         }
     }
+    // Docked always shows its Size; Floating rests as the capsule, opens at its Size while it holds
+    // focus and hides once focus has been in the content for the delay. Compact stays the capsule.
     val railState = when {
-        navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED_LABELS -> tv.own.owntv.features.shell.components.RailState.PINNED
+        navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED -> tv.own.owntv.features.shell.components.RailState.PINNED
         railFocused -> tv.own.owntv.features.shell.components.RailState.OPEN
-        navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING_AUTO_HIDE && railIdleHidden -> tv.own.owntv.features.shell.components.RailState.HIDDEN
+        railIdleHidden -> tv.own.owntv.features.shell.components.RailState.HIDDEN
         else -> tv.own.owntv.features.shell.components.RailState.CAPSULE
     }
     // The playlist chip reflects the active filter: "All playlists" when none is chosen (id <= 0), the
@@ -827,9 +825,6 @@ fun OwnTVShell(
     // between/around panels. Solid otherwise — the usual near-black base.
     val glass = LocalGlass.current
     val shellBase = if (glass.isGlassy(GlassSurface.PANELS) || glass.isGlassy(GlassSurface.SIDEBAR)) Color.Transparent else colors.background
-    // Keep the navigation plate aligned with the content below the same dynamic top bar: compact during
-    // normal browsing, and restored to the taller reservation while Audio Mode shows its player controls.
-    val shellTopBarHeight = if (playerMode == PlayerMode.AUDIO) Dimens.TopBarHeight else Dimens.TopBarCompactHeight
 
     // Long-press Back (§8 tier 2). Deliberately timed from the FIRST KeyDown rather than counted from
     // key repeats: several TVs re-fire KeyDown while a key is held, so a repeat-counting version fires
@@ -994,29 +989,11 @@ fun OwnTVShell(
                       entryFocusRequester = audioEntryFocus,
                       favorite = favActive,
                       onToggleFavorite = favToggle,
-                      onExpandedChange = { audioBarExpanded = it },
                   )
               }
           } else null
           Box(Modifier.weight(1f).fillMaxWidth()) {
           Row(modifier = Modifier.fillMaxSize()) {
-            if (!stageNav) Sidebar(
-                selected = selectedSection,
-                onSelect = selectFromNav,
-                visibleSections = visibleSections,
-                avatarId = avatarId,
-                avatarPath = avatarPath,
-                onPickAvatar = { showAvatarPicker = true },
-                profileName = profileName,
-                sourceSummary = sourceSummary,
-                onSwitchProfile = onSwitchProfile,
-                selectedItemFocusRequester = sidebarFocus,
-                onFocused = { focusedLayer = ShellLayer.SIDEBAR },
-                topInset = shellTopBarHeight,
-                nowPlaying = nowPlayingRail,
-                onNowPlaying = enterNowPlaying,
-            )
-
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -1027,72 +1004,22 @@ fun OwnTVShell(
                     // the image shows through the gaps between the content panels.
                     .background(shellBase),
             ) {
-                // Phase 5 — top bar above the content (active section + Search pill + clock + playlist).
-                // Shown on EVERY section now, including Settings ("top bar same for all").
-                if (!stageNav) TopBar(
-                    sectionLabel = stringResource(selectedSection.labelRes),
-                    onSearchClick = {
-                        searchVm.setQuery("")
-                        trendingSearchActive = false
-                        restoreTrendingSearchFocus = false
-                        onSelectSection(MainSection.SEARCH)
-                    },
-                    playlistName = playlistLabel,
-                    weatherInfo = weatherInfo,
-                    weatherFahrenheit = weatherFahrenheit,
-                    // The Search pill only exists while focus sits on the nav panel — inside a
-                    // section it fades out and turns unfocusable, so focus can never jump to it.
-                    searchVisible = focusedLayer == ShellLayer.SIDEBAR,
-                    // The playlist chip becomes a quick-switcher only when there's more than one to pick
-                    // and focus is on the sidebar or the Home screen, preventing focus escapes from content lists.
-                    playlistInteractive = playlists.size > 1 && (focusedLayer == ShellLayer.SIDEBAR || selectedSection == MainSection.HOME),
-                    onPlaylistClick = { showPlaylistPicker = true },
-                    playlistDownFocusRequester = homeFirstRowFocus.takeIf {
-                        selectedSection == MainSection.HOME
-                    },
-                    // Batch 7 — shared "Continue" chip: one-press resume of the most-recent item.
-                    continueLabel = continueTarget?.let { target ->
-                        val action = when (target.action) {
-                            tv.own.owntv.features.home.ContinueAction.RESUME -> stringResource(R.string.content_action_resume)
-                            tv.own.owntv.features.home.ContinueAction.PLAY -> stringResource(R.string.content_action_play)
-                            tv.own.owntv.features.home.ContinueAction.NEXT_UP -> stringResource(R.string.content_action_next_up)
-                            tv.own.owntv.features.home.ContinueAction.LAST_CHANNEL -> stringResource(R.string.content_action_last_channel)
-                        }
-                        stringResource(R.string.content_continue_label, action, target.name)
-                    },
-                    continueIcon = when (continueTarget?.kind) {
-                        tv.own.owntv.features.home.ContinueKind.LIVE -> OwnTVIcon.LIVE_TV
-                        tv.own.owntv.features.home.ContinueKind.MOVIE -> OwnTVIcon.MOVIES
-                        tv.own.owntv.features.home.ContinueKind.EPISODE -> OwnTVIcon.SERIES
-                        null -> OwnTVIcon.PLAY
-                    },
-                    onContinueClick = continueLastWatched,
-                    // Audio Mode: the now-playing bar, left of the weather chip. Present only while
-                    // PlayerMode.AUDIO; focusable only while the nav panel holds focus (same rule as Search).
-                    audioBarExpanded = audioBarExpanded,
-                    audioBar = audioBarContent,
-                    leadingExtension = Dimens.SidebarWidthCollapsed,
-                )
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth()
                         .then(
-                            // Stage: the rail floats, so the content starts at the screen edge (or beside a
-                            // docked rail), below the top-right cluster. Screens not yet redrawn for Stage
-                            // keep this top inset until their phase gives them the full canvas.
-                            if (stageNav) {
-                                Modifier
-                                    .padding(
-                                        start = when (navStyle) {
-                                            tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING -> tv.own.owntv.features.shell.components.RailCapsuleReserve
-                                            tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED_LABELS -> tv.own.owntv.features.shell.components.RailPinnedReserve
-                                            else -> 6.dp
-                                        },
-                                        top = tv.own.owntv.features.shell.components.StageContentTop,
-                                    )
-                                    .focusRequester(contentAreaFocus)
-                                    .focusRestorer()
-                                    .focusGroup()
-                            } else Modifier,
+                            // Stage: the floating rail sits over the content, so the content starts at the
+                            // screen edge (or beside a docked rail), below the top-right cluster. Screens not
+                            // yet redrawn for Stage keep this top inset until their phase gives them the full canvas.
+                            Modifier
+                                .padding(
+                                    start = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) {
+                                        tv.own.owntv.features.shell.components.railDockedReserve(navSize)
+                                    } else 6.dp,
+                                    top = tv.own.owntv.features.shell.components.StageContentTop,
+                                )
+                                .focusRequester(contentAreaFocus)
+                                .focusRestorer()
+                                .focusGroup(),
                         )
                         .padding(start = 0.dp, end = 6.dp, bottom = 6.dp),
                 ) {
@@ -1301,54 +1228,55 @@ fun OwnTVShell(
                 }
             }
           }
-          if (stageNav) {
-              tv.own.owntv.features.shell.components.StageStatusCluster(
-                  continuePill = continueTarget?.let { target ->
-                      val live = target.kind == tv.own.owntv.features.home.ContinueKind.LIVE
-                      tv.own.owntv.features.shell.components.ContinuePill(
-                          icon = if (live) OwnTVIcon.LIVE_TV else OwnTVIcon.PLAY,
-                          iconFilled = !live,
-                          action = stringResource(
-                              when (target.action) {
-                                  tv.own.owntv.features.home.ContinueAction.RESUME -> R.string.content_action_resume
-                                  tv.own.owntv.features.home.ContinueAction.PLAY -> R.string.content_action_play
-                                  tv.own.owntv.features.home.ContinueAction.NEXT_UP -> R.string.content_action_next_episode
-                                  tv.own.owntv.features.home.ContinueAction.LAST_CHANNEL -> R.string.content_action_last_channel
-                              },
-                          ),
-                          title = target.name,
-                          onClick = continueLastWatched,
-                      )
-                  },
-                  audioBar = audioBarContent,
-                  playlistLabel = playlistLabel,
-                  playlistInteractive = playlists.size > 1,
-                  onPlaylistClick = { showPlaylistPicker = true },
-                  // Out of reach from deep in a list, as the old top bar was: from the rail or on Home only.
-                  pillsFocusable = focusedLayer == ShellLayer.SIDEBAR || clusterFocused || selectedSection == MainSection.HOME,
-                  weatherInfo = weatherInfo,
-                  weatherFahrenheit = weatherFahrenheit,
-                  playlistDownFocusRequester = homeFirstRowFocus.takeIf { selectedSection == MainSection.HOME },
-                  onPlaylistPillBounds = { playlistPillBounds = it },
-                  modifier = Modifier.align(Alignment.TopEnd).onFocusChanged { clusterFocused = it.hasFocus }.focusGroup(),
-              )
-              tv.own.owntv.features.shell.components.StageRail(
-                  state = railState,
-                  selected = selectedSection,
-                  visibleSections = visibleSections,
-                  onSelect = selectFromNav,
-                  count = { section -> if (navShowCounts) railCounts[section]?.takeIf { it > 0 } else null },
-                  profileName = profileName.ifBlank { stringResource(R.string.common_own_tv_user) },
-                  profileLine = stringResource(R.string.shell_rail_profile_line, playlistLabel),
-                  onSwitchProfile = onSwitchProfile,
-                  onPickAvatar = { showAvatarPicker = true },
-                  selectedItemFocusRequester = sidebarFocus,
-                  contentFocusRequester = contentAreaFocus,
-                  onFocused = { focusedLayer = ShellLayer.SIDEBAR },
-                  nowPlaying = nowPlayingRail,
-                  onNowPlaying = enterNowPlaying,
-              )
-          }
+            tv.own.owntv.features.shell.components.StageStatusCluster(
+                continuePill = continueTarget?.let { target ->
+                    val live = target.kind == tv.own.owntv.features.home.ContinueKind.LIVE
+                    tv.own.owntv.features.shell.components.ContinuePill(
+                        icon = if (live) OwnTVIcon.LIVE_TV else OwnTVIcon.PLAY,
+                        iconFilled = !live,
+                        action = stringResource(
+                            when (target.action) {
+                                tv.own.owntv.features.home.ContinueAction.RESUME -> R.string.content_action_resume
+                                tv.own.owntv.features.home.ContinueAction.PLAY -> R.string.content_action_play
+                                tv.own.owntv.features.home.ContinueAction.NEXT_UP -> R.string.content_action_next_episode
+                                tv.own.owntv.features.home.ContinueAction.LAST_CHANNEL -> R.string.content_action_last_channel
+                            },
+                        ),
+                        title = target.name,
+                        onClick = continueLastWatched,
+                    )
+                },
+                audioBar = audioBarContent,
+                playlistLabel = playlistLabel,
+                playlistInteractive = playlists.size > 1,
+                onPlaylistClick = { showPlaylistPicker = true },
+                // Out of reach from deep in a list, as the old top bar was: from the rail or on Home only.
+                pillsFocusable = focusedLayer == ShellLayer.SIDEBAR || clusterFocused || selectedSection == MainSection.HOME,
+                weatherInfo = weatherInfo,
+                weatherFahrenheit = weatherFahrenheit,
+                playlistDownFocusRequester = homeFirstRowFocus.takeIf { selectedSection == MainSection.HOME },
+                onPlaylistPillBounds = { playlistPillBounds = it },
+                modifier = Modifier.align(Alignment.TopEnd).onFocusChanged { clusterFocused = it.hasFocus }.focusGroup(),
+            )
+            tv.own.owntv.features.shell.components.StageRail(
+                state = railState,
+                size = navSize,
+                length = navLength,
+                selected = selectedSection,
+                visibleSections = visibleSections,
+                onSelect = selectFromNav,
+                count = { section -> railCounts[section]?.takeIf { it > 0 } },
+                detail = { section -> railDetail(section, railDetails) },
+                profileName = profileName.ifBlank { stringResource(R.string.common_own_tv_user) },
+                profileLine = stringResource(R.string.shell_rail_profile_line, playlistLabel),
+                onSwitchProfile = onSwitchProfile,
+                onPickAvatar = { showAvatarPicker = true },
+                selectedItemFocusRequester = sidebarFocus,
+                contentFocusRequester = contentAreaFocus,
+                onFocused = { focusedLayer = ShellLayer.SIDEBAR },
+                nowPlaying = nowPlayingRail,
+                onNowPlaying = enterNowPlaying,
+            )
           }
         }
         // The solid-mode wizard aura is deliberately drawn after the opaque browse surfaces so it
@@ -1806,21 +1734,13 @@ fun OwnTVShell(
             )
         }
     }
-    if (showPlaylistPicker && stageNav) {
+    if (showPlaylistPicker) {
         tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showPlaylistPicker = false }, stageLayout = true) {
             tv.own.owntv.features.shell.components.StagePlaylistMenu(
                 playlists = playlists,
                 activeId = activePlaylistId,
                 pillLabel = playlistLabel,
                 pillBounds = playlistPillBounds,
-                onSelect = onSelectPlaylist,
-                onDismiss = { showPlaylistPicker = false },
-            )
-        }
-    } else if (showPlaylistPicker) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showPlaylistPicker = false }) { PlaylistPickerDialog(
-                playlists = playlists,
-                activeId = activePlaylistId,
                 onSelect = onSelectPlaylist,
                 onDismiss = { showPlaylistPicker = false },
             )
@@ -1962,4 +1882,24 @@ private fun placeholderCount(section: MainSection): String = when (section) {
     MainSection.MOVIES -> stringResource(R.string.content_zero_movies)
     MainSection.SERIES -> stringResource(R.string.content_zero_series)
     MainSection.DOWNLOADS -> stringResource(R.string.content_zero_downloads)
+}
+
+/** The line under a rail item at Size = Extra wide (P1-15); real data only, so most items can have none. */
+@Composable
+private fun railDetail(section: MainSection, d: RailDetails): String? = when (section) {
+    MainSection.LIVE_TV -> d.lastChannel?.let { stringResource(R.string.shell_rail_detail_last, it) }
+    MainSection.MOVIES -> d.resumeMovie?.let { stringResource(R.string.shell_rail_detail_resume, it) }
+    MainSection.SERIES -> d.episode?.let { e ->
+        val title = stringResource(R.string.shell_rail_detail_episode, e.series, stringResource(R.string.content_season_episode, e.season, e.episode))
+        stringResource(if (e.resume) R.string.shell_rail_detail_resume else R.string.shell_rail_detail_next, title)
+    }
+    MainSection.DOWNLOADS -> if (d.downloading == 0) null else {
+        val progress = d.downloadProgress?.let {
+            java.text.NumberFormat.getPercentInstance(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]).format(it)
+        }
+        if (progress == null) null
+        else androidx.compose.ui.res.pluralStringResource(R.plurals.shell_rail_detail_downloads, d.downloading, d.downloading, progress)
+    }
+    MainSection.MORE -> stringResource(R.string.shell_rail_detail_more)
+    else -> null
 }

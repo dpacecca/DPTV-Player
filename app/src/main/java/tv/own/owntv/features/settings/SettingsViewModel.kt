@@ -823,21 +823,26 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setNavMenuMode(mode) }
     }
 
-    // --- Stage navigation (the rail's style, hide delay, counts) ---
+    // --- Stage navigation (the rail's style, size, length, hide delay) ---
     val navStyle: StateFlow<tv.own.owntv.core.settings.SettingsRepository.NavStyle> =
-        settings.navStyle.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING_AUTO_HIDE)
+        settings.navStyle.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING)
     fun setNavStyle(style: tv.own.owntv.core.settings.SettingsRepository.NavStyle) {
         viewModelScope.launch { settings.setNavStyle(style) }
     }
-    val navHideAfterSecs: StateFlow<Int> =
-        settings.navHideAfterSecs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavHideAfter.DEFAULT)
-    fun setNavHideAfterSecs(secs: Int) {
-        viewModelScope.launch { settings.setNavHideAfterSecs(secs) }
+    val navSize: StateFlow<tv.own.owntv.core.settings.SettingsRepository.NavSize> =
+        settings.navSize.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavSize.NORMAL)
+    fun setNavSize(size: tv.own.owntv.core.settings.SettingsRepository.NavSize) {
+        viewModelScope.launch { settings.setNavSize(size) }
     }
-    val navShowCounts: StateFlow<Boolean> =
-        settings.navShowCounts.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-    fun setNavShowCounts(show: Boolean) {
-        viewModelScope.launch { settings.setNavShowCounts(show) }
+    val navLength: StateFlow<tv.own.owntv.core.settings.SettingsRepository.NavLength> =
+        settings.navLength.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavLength.FIT)
+    fun setNavLength(length: tv.own.owntv.core.settings.SettingsRepository.NavLength) {
+        viewModelScope.launch { settings.setNavLength(length) }
+    }
+    val navHideAfterMs: StateFlow<Int> =
+        settings.navHideAfterMs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavHideAfter.DEFAULT_MS)
+    fun setNavHideAfterMs(ms: Int) {
+        viewModelScope.launch { settings.setNavHideAfterMs(ms) }
     }
 
     /** Browse sections the user has hidden (STATIC mode only). */

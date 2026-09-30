@@ -1882,16 +1882,19 @@ private fun navModeLabel(mode: tv.own.owntv.core.settings.SettingsRepository.Nav
 @Composable
 private fun NavigationPopupHost(settingsVm: SettingsViewModel, onOpenMenuItems: () -> Unit, onDismiss: () -> Unit) {
     val navStyle by settingsVm.navStyle.collectAsStateWithLifecycle()
-    val navHideAfterSecs by settingsVm.navHideAfterSecs.collectAsStateWithLifecycle()
-    val navShowCounts by settingsVm.navShowCounts.collectAsStateWithLifecycle()
+    val navSize by settingsVm.navSize.collectAsStateWithLifecycle()
+    val navLength by settingsVm.navLength.collectAsStateWithLifecycle()
+    val navHideAfterMs by settingsVm.navHideAfterMs.collectAsStateWithLifecycle()
     val navMenuMode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
     tv.own.owntv.features.settings.NavigationSettingsPopup(
         style = navStyle,
         onStyle = settingsVm::setNavStyle,
-        hideAfterSecs = navHideAfterSecs,
-        onHideAfterSecs = settingsVm::setNavHideAfterSecs,
-        showCounts = navShowCounts,
-        onShowCounts = settingsVm::setNavShowCounts,
+        size = navSize,
+        onSize = settingsVm::setNavSize,
+        length = navLength,
+        onLength = settingsVm::setNavLength,
+        hideAfterMs = navHideAfterMs,
+        onHideAfterMs = settingsVm::setNavHideAfterMs,
         menuItemsValue = navModeLabel(navMenuMode),
         onOpenMenuItems = onOpenMenuItems,
         onDismiss = onDismiss,
@@ -1964,10 +1967,8 @@ private fun navigationSearchEntry(settingsVm: SettingsViewModel, onClick: () -> 
 @Composable
 private fun navStyleLabel(style: tv.own.owntv.core.settings.SettingsRepository.NavStyle): String = stringResource(
     when (style) {
-        tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING_AUTO_HIDE -> R.string.settings_nav_floating_auto
         tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING -> R.string.settings_nav_floating
-        tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED_ICONS -> R.string.settings_nav_docked
-        tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED_LABELS -> R.string.settings_nav_docked_labels
+        tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED -> R.string.settings_nav_docked
     },
 )
 

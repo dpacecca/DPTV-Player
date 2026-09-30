@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -49,6 +51,8 @@ import androidx.tv.material3.Text
 import kotlinx.coroutines.launch
 import tv.own.owntv.R
 import tv.own.owntv.core.nav.MainSection
+import tv.own.owntv.core.settings.SettingsRepository.NavLength
+import tv.own.owntv.core.settings.SettingsRepository.NavSize
 import tv.own.owntv.ui.components.BrandMark
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.rememberAppliedIcon
@@ -68,13 +72,19 @@ import java.text.NumberFormat
 enum class RailState {
     /** A 7 px accent glow at the screen edge; the items stay focusable so ◀ can still reach them. */
     HIDDEN,
-    /** The 84 px icon capsule. */
+    /** The 84 px icon capsule: Floating at rest, or Size = Compact. */
     CAPSULE,
-    /** Labels, counts and the profile, over a scrim: the rail while it holds focus. */
+    /** The chosen Size over a scrim: the floating rail while it holds focus. */
     OPEN,
-    /** Open, without the scrim: Navigation = Docked with labels. */
+    /** The chosen Size without the scrim: Navigation = Docked. */
     PINNED,
 }
+
+/**
+ * What the rail's "Now Playing" item shows: the docked channel's logo, or the equalizer while Audio
+ * Mode is running (there is no picture to stand for then).
+ */
+data class NowPlayingRail(val logoUrl: String?, val audioMode: Boolean, val playing: Boolean)
 
 /** The mockup's rail order (`screens.js` `cRail`): Search first, the Guide right after Live TV, More last. */
 private val StageRailOrder = listOf(
@@ -82,9 +92,17 @@ private val StageRailOrder = listOf(
     MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS,
 )
 
-/** The space a docked rail takes from the content, from the screen edge: 28 + 84 capsule, 24 + 340 open. */
-val RailCapsuleReserve = (28 + 84 + 16).mpx
-val RailPinnedReserve = (24 + 340 + 16).mpx
+/** The rail's width with names (P1b): Normal 280 · Wide 340 · Extra wide 400; Compact is the 84 capsule. */
+private val NavSize.openWidth get() = when (this) {
+    NavSize.COMPACT -> 84
+    NavSize.NORMAL -> 280
+    NavSize.WIDE -> 340
+    NavSize.EXTRA_WIDE -> 400
+}
+
+/** The space a docked rail takes from the content, from the screen edge: 28 + 84 capsule, 24 + width with names. */
+fun railDockedReserve(size: NavSize) =
+    if (size == NavSize.COMPACT) (28 + 84 + 16).mpx else (24 + size.openWidth + 16).mpx
 
 /**
  * Where content starts below the top-right cluster (34 + its 68 height + a gap) on screens that have not
@@ -93,18 +111,22 @@ val RailPinnedReserve = (24 + 340 + 16).mpx
 val StageContentTop = 110.mpx
 
 /**
- * The Stage navigation rail (P1-01 … P1-05): a floating glass capsule, the open rail over a scrim,
- * or only the accent glow at the edge. [count] is the number beside an item in the open rail, null
- * for none. Entering the rail from the content always lands on the selected section, and ▶ out of it
- * returns to exactly where the content was ([contentFocusRequester] restores it).
+ * The Stage navigation rail (P1-01 … P1-05, P1-13 … P1-17): a floating glass capsule, the rail at its
+ * [size] over a scrim or docked, or only the accent glow at the edge. [count] is the number beside an
+ * item (Wide and up) and [detail] the line under its name (Extra wide), null for none. [length] Full
+ * runs the rail the height of the screen. Entering the rail from the content always lands on the
+ * selected section, and ▶ out of it returns to exactly where the content was ([contentFocusRequester]).
  */
 @Composable
 fun StageRail(
     state: RailState,
+    size: NavSize,
+    length: NavLength,
     selected: MainSection,
     visibleSections: Set<MainSection>,
     onSelect: (MainSection) -> Unit,
     count: (MainSection) -> Int?,
+    detail: @Composable (MainSection) -> String?,
     profileName: String,
     profileLine: String,
     onSwitchProfile: () -> Unit,
@@ -116,7 +138,10 @@ fun StageRail(
     onNowPlaying: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val open = state == RailState.OPEN || state == RailState.PINNED
+    val open = (state == RailState.OPEN || state == RailState.PINNED) && size != NavSize.COMPACT
+    val counts = size >= NavSize.WIDE
+    val details = size == NavSize.EXTRA_WIDE
+    val full = length == NavLength.FULL
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val scope = rememberCoroutineScope()
     var hasFocus by remember { mutableStateOf(false) }
@@ -139,17 +164,18 @@ fun StageRail(
     }
 
     Box(modifier.fillMaxSize()) {
-        if (state == RailState.OPEN) {
+        if (state == RailState.OPEN && open) {
             Box(Modifier.fillMaxSize().background(Color(2, 5, 6).copy(alpha = 0.55f)))
         }
         if (state == RailState.HIDDEN) RailEdgeGlow(Modifier.align(Alignment.CenterStart))
 
-        val width = if (open) 340.mpx else 84.mpx
+        val width = if (open) size.openWidth.mpx else 84.mpx
         val edge = if (open) 24.mpx else 28.mpx
         Column(
             modifier = Modifier
                 .align(Alignment.CenterStart)
                 .offset(x = edge)
+                .then(if (full) Modifier.padding(vertical = 24.mpx).fillMaxHeight() else Modifier)
                 .width(width)
                 .graphicsLayer {
                     val travel = (width + edge).toPx()
@@ -187,7 +213,8 @@ fun StageRail(
                 RailItem(
                     icon = if (nowPlaying.audioMode) OwnTVIcon.EQ else OwnTVIcon.PLAY,
                     label = stringResource(R.string.shell_now_playing),
-                    trailing = if (nowPlaying.audioMode) stringResource(R.string.shell_now_playing_audio) else null,
+                    trailing = if (nowPlaying.audioMode && counts) stringResource(R.string.shell_now_playing_audio) else null,
+                    detail = null,
                     open = open,
                     active = false,
                     accentIcon = true,
@@ -199,7 +226,8 @@ fun StageRail(
                 RailItem(
                     icon = section.stageIcon,
                     label = stringResource(section.labelRes),
-                    trailing = count(section)?.let { NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0]).format(it) },
+                    trailing = if (counts) count(section)?.let { NumberFormat.getIntegerInstance(LocalConfiguration.current.locales[0]).format(it) } else null,
+                    detail = if (details) detail(section) else null,
                     open = open,
                     active = section == selected ||
                         (section == MainSection.MORE && selected == MainSection.SETTINGS),
@@ -207,8 +235,10 @@ fun StageRail(
                     modifier = if (section == focusSection) Modifier.focusRequester(selectedItemFocusRequester) else Modifier,
                 )
             }
+            // Full height: the profile sits at the bottom, after the last separator.
+            if (full) Spacer(Modifier.weight(1f))
             RailSeparator(open)
-            RailProfile(open, profileName, profileLine, onSwitchProfile, onPickAvatar)
+            RailProfile(open, profileName, profileLine.takeIf { counts }, onSwitchProfile, onPickAvatar)
         }
     }
 }
@@ -285,7 +315,8 @@ private fun RailSeparator(open: Boolean) {
 }
 
 /**
- * `.frail .it`: a 58 × 58 icon tile in the capsule, a 60 high row with its label and count when open.
+ * `.frail .it`: a 58 × 58 icon tile in the capsule, a 60 high row with its label, [detail] line under it
+ * and count when open.
  * Active = accent icon on accent 14%, plus the glowing dot outside the capsule; focused = FILLED.
  */
 @Composable
@@ -293,6 +324,7 @@ private fun RailItem(
     icon: OwnTVIcon,
     label: String,
     trailing: String?,
+    detail: String?,
     open: Boolean,
     active: Boolean,
     onClick: () -> Unit,
@@ -324,13 +356,24 @@ private fun RailItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OwnTVIcon(icon, iconTint, Modifier.size(26.mpx))
-            Text(
-                label,
-                style = stageText(21, 600),
-                color = if (focused) a.onAccent else if (active) a.accent else StageColors.Text,
-                maxLines = 1, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    label,
+                    style = stageText(21, 600),
+                    color = if (focused) a.onAccent else if (active) a.accent else StageColors.Text,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                if (detail != null) {
+                    // `.dt`: 14/500 dim, 2 px under the name; on the focused (filled) row on-accent at 80%.
+                    Text(
+                        detail,
+                        style = stageText(14, 500),
+                        color = if (focused) a.onAccent.copy(alpha = 0.8f) else StageColors.Dim,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.mpx),
+                    )
+                }
+            }
             if (trailing != null) {
                 Text(trailing, style = stageText(16, 600), color = if (focused) a.onAccent else StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
@@ -353,11 +396,11 @@ private fun RailActiveDot(modifier: Modifier) {
 }
 
 /**
- * The profile: the 46 px avatar alone in the capsule, avatar + name + "All playlists · switch ›" when
- * open. OK switches profile; a long press still changes the avatar picture.
+ * The profile: the 46 px avatar alone in the capsule, avatar + name when open, with "All playlists ·
+ * switch ›" under it from Size Wide up ([line]). OK switches profile; a long press changes the avatar.
  */
 @Composable
-private fun RailProfile(open: Boolean, name: String, line: String, onSwitchProfile: () -> Unit, onPickAvatar: () -> Unit) {
+private fun RailProfile(open: Boolean, name: String, line: String?, onSwitchProfile: () -> Unit, onPickAvatar: () -> Unit) {
     val a = stageAccent
     val initial = name.trim().take(1).uppercase().ifEmpty { "?" }
     StageSurface(
@@ -379,7 +422,9 @@ private fun RailProfile(open: Boolean, name: String, line: String, onSwitchProfi
             RailAvatar(initial)
             Column {
                 Text(name, style = stageText(19, 700), color = if (focused) a.onAccent else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("$line ›", style = stageText(15, 400), color = if (focused) a.onAccent else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (line != null) {
+                    Text("$line ›", style = stageText(15, 400), color = if (focused) a.onAccent else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
     }
