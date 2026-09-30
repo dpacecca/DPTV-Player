@@ -234,6 +234,7 @@ fun SettingsScreen(
     var showGuideDays by remember { mutableStateOf(false) }
     var showAnimations by remember { mutableStateOf(false) }
     var showVodLayout by remember { mutableStateOf(false) }
+    var showNavigation by remember { mutableStateOf(false) }
     var showStartup by remember { mutableStateOf(false) }
     var showStartupChannelPicker by remember { mutableStateOf(false) }
     var showAfrWarning by remember { mutableStateOf(false) }
@@ -275,6 +276,7 @@ fun SettingsScreen(
     val guideDaysRowFocus = remember { FocusRequester() }
     val animationsRowFocus = remember { FocusRequester() }
     val vodLayoutRowFocus = remember { FocusRequester() }
+    val navigationRowFocus = remember { FocusRequester() }
     val startupRowFocus = remember { FocusRequester() }
     val livePreviewQuickFocus = remember { FocusRequester() }
     val ambientGlowRowFocus = remember { FocusRequester() }
@@ -294,13 +296,13 @@ fun SettingsScreen(
         savedIndex = listState.firstVisibleItemIndex
         savedOffset = listState.firstVisibleItemScrollOffset
     }
-    val anyDialogOpen = showZoom || showPopupSize || showFontCustomization || showTheme || showAccent || showUpdate || showCatchupTime || showCatchupSources || showCatchupSourceValue || showEpgOffset || showGuideDays || showAnimations || showStartup || showStartupChannelPicker || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote || showVodLayout
+    val anyDialogOpen = showZoom || showPopupSize || showFontCustomization || showTheme || showAccent || showUpdate || showCatchupTime || showCatchupSources || showCatchupSourceValue || showEpgOffset || showGuideDays || showAnimations || showStartup || showStartupChannelPicker || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote || showVodLayout || showNavigation
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showPopupSize, showFontCustomization, showTheme, showAccent, showUpdate, showCatchupTime, showCatchupSources, showCatchupSourceValue, showEpgOffset, showGuideDays, showAnimations, showStartup, showStartupChannelPicker, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote, showVodLayout) {
+    LaunchedEffect(showZoom, showPopupSize, showFontCustomization, showTheme, showAccent, showUpdate, showCatchupTime, showCatchupSources, showCatchupSourceValue, showEpgOffset, showGuideDays, showAnimations, showStartup, showStartupChannelPicker, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote, showVodLayout, showNavigation) {
         if (!anyDialogOpen) {
             // Focus back on the opener row, with the scroll offset held still the whole way — see
             // [restoreAfterDialogClose] for why doing those two in sequence made the highlight travel.
@@ -669,6 +671,7 @@ fun SettingsScreen(
             onClick = { open(SettingsTab.WEATHER) },
         ),
         RootGroup("group_layout", stringResource(R.string.settings_group_layout), OwnTVIcon.LIST_GRID, stringResource(R.string.settings_group_summary_layout)),
+        navigationRootRow(settingsVm, navigationRowFocus) { saveScroll(); dialogReturn = navigationRowFocus; showNavigation = true },
         RootRow(
             tabRowKey(SettingsTab.NAV_MENU), TileTone.PRIMARY, OwnTVIcon.MENU,
             title = stringResource(R.string.settings_sidebar_customization), desc = stringResource(R.string.settings_sidebar_description_root),
@@ -1032,6 +1035,7 @@ fun SettingsScreen(
                 chip = pluralStringResource(R.plurals.settings_epg_guide_days_value, guideDays, guideDays), chipTone = TileTone.PRIMARY) { saveScroll(); dialogReturn = searchFieldFocus; showGuideDays = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_search_guide_logos), stringResource(R.string.settings_search_keywords_logos), OwnTVIcon.EPG, TileTone.SECONDARY) { open(SettingsTab.EPG) },
             SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_customize), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.SORT, TileTone.PRIMARY) { open(SettingsTab.CUSTOMIZE) },
+            navigationSearchEntry(settingsVm) { saveScroll(); dialogReturn = searchFieldFocus; showNavigation = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_sidebar_customization), stringResource(R.string.settings_search_keywords_sidebar), OwnTVIcon.MENU, TileTone.PRIMARY,
                 chip = navModeLabel(navMenuMode), chipTone = if (navMenuMode == tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_ch_paging), stringResource(R.string.settings_search_keywords_ch), OwnTVIcon.CH_NAV, TileTone.PRIMARY,
@@ -1605,32 +1609,10 @@ fun SettingsScreen(
             onDismiss = { showAnimations = false },
         )
     }
-    if (showVodLayout) {
-        val layouts = tv.own.owntv.core.settings.SettingsRepository.VodLayout.entries
-        tv.own.owntv.features.settings.PickerDialog(
-            title = stringResource(R.string.settings_vod_layout),
-            subtitle = stringResource(R.string.settings_vod_layout_screen_description),
-            options = layouts.map { it.name to stringResource(vodLayoutLabelRes(it)) },
-            descriptions = layouts.associate {
-                it.name to stringResource(
-                    if (it == tv.own.owntv.core.settings.SettingsRepository.VodLayout.CINEMATIC) {
-                        R.string.settings_vod_layout_cinematic_description
-                    } else {
-                        R.string.settings_vod_layout_separate_description
-                    },
-                )
-            },
-            optionPreview = { value ->
-                VodLayoutPreviewBars(tv.own.owntv.core.settings.SettingsRepository.VodLayout.valueOf(value))
-            },
-            selected = vodLayout.name,
-            onSelect = {
-                settingsVm.setVodLayout(tv.own.owntv.core.settings.SettingsRepository.VodLayout.valueOf(it))
-                showVodLayout = false
-            },
-            onDismiss = { showVodLayout = false },
-        )
+    if (showNavigation) {
+        NavigationPopupHost(settingsVm, onOpenMenuItems = { showNavigation = false; open(SettingsTab.NAV_MENU) }, onDismiss = { showNavigation = false })
     }
+    if (showVodLayout) VodLayoutDialog(settingsVm, vodLayout, onClose = { showVodLayout = false })
     if (showFocusHighlight) {
         FocusHighlightDialog(
             highlight = focusHighlight,
@@ -1650,9 +1632,7 @@ fun SettingsScreen(
         ) }
     }
     if (showZoom) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showZoom = false }) {
-            ZoomDialog(current = uiZoomPercent, onSet = onSetZoom, onDismiss = { showZoom = false })
-        }
+        ZoomDialog(current = uiZoomPercent, onSet = onSetZoom, onDismiss = { showZoom = false })
     }
     if (showAppIcon) {
         tv.own.owntv.ui.components.AppIconSettingsDialog(
@@ -1896,6 +1876,99 @@ private fun startupLabel(mode: tv.own.owntv.core.settings.StartupMode): String =
 @Composable
 private fun navModeLabel(mode: tv.own.owntv.core.settings.SettingsRepository.NavMenuMode): String = stringResource(
     if (mode == tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.DYNAMIC) R.string.settings_dynamic else R.string.settings_static,
+)
+
+/** Settings › Layout › Navigation, hosted outside [SettingsScreen] (whose body is at the JVM method-size limit). */
+@Composable
+private fun NavigationPopupHost(settingsVm: SettingsViewModel, onOpenMenuItems: () -> Unit, onDismiss: () -> Unit) {
+    val navStyle by settingsVm.navStyle.collectAsStateWithLifecycle()
+    val navHideAfterSecs by settingsVm.navHideAfterSecs.collectAsStateWithLifecycle()
+    val navShowCounts by settingsVm.navShowCounts.collectAsStateWithLifecycle()
+    val navMenuMode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
+    tv.own.owntv.features.settings.NavigationSettingsPopup(
+        style = navStyle,
+        onStyle = settingsVm::setNavStyle,
+        hideAfterSecs = navHideAfterSecs,
+        onHideAfterSecs = settingsVm::setNavHideAfterSecs,
+        showCounts = navShowCounts,
+        onShowCounts = settingsVm::setNavShowCounts,
+        menuItemsValue = navModeLabel(navMenuMode),
+        onOpenMenuItems = onOpenMenuItems,
+        onDismiss = onDismiss,
+    )
+}
+
+/**
+ * The Movies & Series layout picker. Moved out of [SettingsScreen] unchanged, because that function's
+ * body had reached the JVM's 64 KB method-size limit and the Navigation row (Stage P1) did not fit.
+ */
+@Composable
+private fun VodLayoutDialog(
+    settingsVm: SettingsViewModel,
+    vodLayout: tv.own.owntv.core.settings.SettingsRepository.VodLayout,
+    onClose: () -> Unit,
+) {
+    val layouts = tv.own.owntv.core.settings.SettingsRepository.VodLayout.entries
+    tv.own.owntv.features.settings.PickerDialog(
+        title = stringResource(R.string.settings_vod_layout),
+        subtitle = stringResource(R.string.settings_vod_layout_screen_description),
+        options = layouts.map { it.name to stringResource(vodLayoutLabelRes(it)) },
+        descriptions = layouts.associate {
+            it.name to stringResource(
+                if (it == tv.own.owntv.core.settings.SettingsRepository.VodLayout.CINEMATIC) {
+                    R.string.settings_vod_layout_cinematic_description
+                } else {
+                    R.string.settings_vod_layout_separate_description
+                },
+            )
+        },
+        optionPreview = { value ->
+            VodLayoutPreviewBars(tv.own.owntv.core.settings.SettingsRepository.VodLayout.valueOf(value))
+        },
+        selected = vodLayout.name,
+        onSelect = {
+            settingsVm.setVodLayout(tv.own.owntv.core.settings.SettingsRepository.VodLayout.valueOf(it))
+            onClose()
+        },
+        onDismiss = onClose,
+    )
+}
+
+/** The Layout group's Navigation row, built here to keep [SettingsScreen] under the JVM method-size limit. */
+@Composable
+private fun navigationRootRow(settingsVm: SettingsViewModel, focus: FocusRequester, onClick: () -> Unit): RootRow {
+    val style by settingsVm.navStyle.collectAsStateWithLifecycle()
+    return RootRow(
+        "navigation", TileTone.PRIMARY, OwnTVIcon.MENU,
+        title = stringResource(R.string.settings_navigation),
+        desc = stringResource(R.string.settings_navigation_description),
+        chip = navStyleLabel(style),
+        chipTone = TileTone.PRIMARY,
+        focus = focus,
+        onClick = onClick,
+    )
+}
+
+/** The Navigation row's settings-search entry (see [navigationRootRow]). */
+@Composable
+private fun navigationSearchEntry(settingsVm: SettingsViewModel, onClick: () -> Unit): SettingsSearchEntry {
+    val style by settingsVm.navStyle.collectAsStateWithLifecycle()
+    return SettingsSearchEntry(
+        stringResource(R.string.settings_group_layout), stringResource(R.string.settings_navigation),
+        stringResource(R.string.settings_search_keywords_navigation), OwnTVIcon.MENU, TileTone.PRIMARY,
+        chip = navStyleLabel(style), chipTone = TileTone.PRIMARY, onClick = onClick,
+    )
+}
+
+/** Chip label for the Navigation row: the chosen rail style. */
+@Composable
+private fun navStyleLabel(style: tv.own.owntv.core.settings.SettingsRepository.NavStyle): String = stringResource(
+    when (style) {
+        tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING_AUTO_HIDE -> R.string.settings_nav_floating_auto
+        tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING -> R.string.settings_nav_floating
+        tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED_ICONS -> R.string.settings_nav_docked
+        tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED_LABELS -> R.string.settings_nav_docked_labels
+    },
 )
 
 /** Chip and option label for the Movies & Series layout choice. */
@@ -2892,15 +2965,30 @@ private fun FontFamilyPickerDialog(
     }
 }
 
+/**
+ * Focus memory for the live stepper dialogs: each step rebuilds their popup window, which used to drop
+ * focus back on "−" so repeated "+" presses went the wrong way. Held outside the popup, it survives.
+ * Slot 0 (decrease) is the initial focus — see [ZoomDialog] for why.
+ */
+private class StepFocus {
+    val requesters = List(3) { FocusRequester() }
+    // The PRESSED button, not the last focused one: a rebuild lands focus on "−" for a moment first.
+    var slot by mutableIntStateOf(0)
+    fun track(i: Int): Modifier = Modifier.focusRequester(requesters[i])
+    fun press(i: Int, action: () -> Unit) { slot = i; action() }
+    fun restore() { runCatching { requesters[slot].requestFocus() } }
+}
+
 /** A stepper for shared popup geometry. Changes apply live to this dialog too. */
 @Composable
 private fun PopupSizeDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
-    val firstFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    val step = remember { StepFocus() }
     BackHandler { onDismiss() }
 
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+        // A step changes the popup geometry and rebuilds this window; focus returns to the pressed button.
+        LaunchedEffect(Unit) { step.restore() }
         Box(
             Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
             contentAlignment = Alignment.Center,
@@ -2926,8 +3014,8 @@ private fun PopupSizeDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () ->
                     StepButton(
                         stringResource(R.string.settings_decrease),
                         dimmed = current <= PopupSizeScale.MIN,
-                        modifier = Modifier.focusRequester(firstFocus),
-                    ) { onSet(PopupSizeScale.clamp(current - PopupSizeScale.STEP)) }
+                        modifier = step.track(0),
+                    ) { step.press(0) { onSet(PopupSizeScale.clamp(current - PopupSizeScale.STEP)) } }
                     Text(
                         stringResource(R.string.common_percent, current),
                         style = MaterialTheme.typography.headlineLarge,
@@ -2938,14 +3026,16 @@ private fun PopupSizeDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () ->
                     StepButton(
                         stringResource(R.string.settings_increase),
                         dimmed = current >= PopupSizeScale.MAX,
-                    ) { onSet(PopupSizeScale.clamp(current + PopupSizeScale.STEP)) }
+                        modifier = step.track(1),
+                    ) { step.press(1) { onSet(PopupSizeScale.clamp(current + PopupSizeScale.STEP)) } }
                 }
                 Spacer(Modifier.height(24.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     OwnTVButton(
                         stringResource(R.string.settings_reset),
-                        onClick = { onSet(PopupSizeScale.DEFAULT) },
+                        onClick = { step.press(2) { onSet(PopupSizeScale.DEFAULT) } },
                         style = OwnTVButtonStyle.SECONDARY,
+                        modifier = step.track(2),
                     )
                     Spacer(Modifier.weight(1f))
                     OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss)
@@ -2959,100 +3049,106 @@ private fun PopupSizeDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () ->
 @Composable
 private fun ZoomDialog(current: Int, onSet: (Int) -> Unit, onDismiss: () -> Unit) {
     val colors = OwnTVTheme.colors
-    val firstFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
+    val step = remember { StepFocus() }
+    val firstFocus = step.requesters[0]
     // Zoom below LOW_RAM_WARN doubles the on-screen item count, which can OOM-crash 2 GB devices
     // (#51) — the first step under it is gated behind an accept-the-risk warning. Accepting once
     // arms the rest of this dialog session; if it was opened already below the line, don't nag.
     var lowZoomAccepted by remember { mutableStateOf(current < UiZoom.LOW_RAM_WARN) }
     var pendingLowZoom by remember { mutableStateOf<Int?>(null) }
     BackHandler { onDismiss() }
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier.dialogPanel(width = 460.dp, padding = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+        // Every step re-scales the UI and rebuilds this window; put focus back on the button that was pressed.
+        LaunchedEffect(Unit) { step.restore() }
+        Box(
+            modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
+            contentAlignment = Alignment.Center,
         ) {
-            Text(stringResource(R.string.settings_ui_zoom), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(6.dp))
-            Text(
-                stringResource(R.string.settings_ui_zoom_range, UiZoom.MIN, UiZoom.MAX),
-                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(20.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                // Initial focus lands on the DECREASE button: the dialog is most often opened to escape an
-                // over-zoomed screen (where everything's too big to navigate), so "–" must be first under
-                // the cursor. The buttons stay focusable at the limits (clamped + dimmed, never disabled)
-                // so focus always lands inside the dialog — a disabled "+" at MAX zoom was leaving focus
-                // stranded outside, trapping the user at high zoom.
-                StepButton(stringResource(R.string.settings_decrease), dimmed = current <= UiZoom.MIN, modifier = Modifier.focusRequester(firstFocus)) {
-                    val next = UiZoom.clamp(current - UiZoom.STEP)
-                    if (next < UiZoom.LOW_RAM_WARN && !lowZoomAccepted) pendingLowZoom = next else onSet(next)
-                }
-                Text(
-                    stringResource(R.string.common_percent, current),
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = colors.primary,
-                    modifier = Modifier.width(120.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                )
-                StepButton(stringResource(R.string.settings_increase), dimmed = current >= UiZoom.MAX) {
-                    onSet(UiZoom.clamp(current + UiZoom.STEP))
-                }
-            }
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(stringResource(R.string.settings_reset), onClick = { onSet(UiZoom.DEFAULT) }, style = OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss)
-            }
-        }
-
-        // Accept-the-risk gate for zoom below LOW_RAM_WARN (#51). One button, focus locked (all
-        // D-pad directions cancelled) — OK accepts and applies the pending step, Back cancels.
-        pendingLowZoom?.let { target ->
-            val acceptFocus = remember { FocusRequester() }
-            LaunchedEffect(Unit) { runCatching { acceptFocus.requestFocus() } }
-            // Composed after the dialog's own BackHandler, so it wins while the warning is up.
-            BackHandler {
-                pendingLowZoom = null
-                runCatching { firstFocus.requestFocus() }
-            }
-            Box(
-                modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-                contentAlignment = Alignment.Center,
+            Column(
+                modifier = Modifier.dialogPanel(width = 460.dp, padding = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(
-                    modifier = Modifier.dialogPanel(width = 460.dp, padding = 28.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(stringResource(R.string.settings_low_zoom_warning_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                    Spacer(Modifier.height(10.dp))
+                Text(stringResource(R.string.settings_ui_zoom), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    stringResource(R.string.settings_ui_zoom_range, UiZoom.MIN, UiZoom.MAX),
+                    style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(20.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    // Initial focus lands on the DECREASE button: the dialog is most often opened to escape an
+                    // over-zoomed screen (where everything's too big to navigate), so "–" must be first under
+                    // the cursor. The buttons stay focusable at the limits (clamped + dimmed, never disabled)
+                    // so focus always lands inside the dialog — a disabled "+" at MAX zoom was leaving focus
+                    // stranded outside, trapping the user at high zoom.
+                    StepButton(stringResource(R.string.settings_decrease), dimmed = current <= UiZoom.MIN, modifier = step.track(0)) {
+                        step.slot = 0
+                        val next = UiZoom.clamp(current - UiZoom.STEP)
+                        if (next < UiZoom.LOW_RAM_WARN && !lowZoomAccepted) pendingLowZoom = next else onSet(next)
+                    }
                     Text(
-                        stringResource(R.string.settings_low_zoom_warning, UiZoom.LOW_RAM_WARN, UiZoom.LOW_RAM_WARN),
-                        style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                        stringResource(R.string.common_percent, current),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = colors.primary,
+                        modifier = Modifier.width(120.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     )
-                    Spacer(Modifier.height(20.dp))
-                    OwnTVButton(
-                        stringResource(R.string.settings_low_zoom_accept),
-                        onClick = {
-                            lowZoomAccepted = true
-                            pendingLowZoom = null
-                            onSet(target)
-                            runCatching { firstFocus.requestFocus() }
-                        },
-                        modifier = Modifier
-                            .focusRequester(acceptFocus)
-                            .focusProperties {
-                                up = FocusRequester.Cancel
-                                down = FocusRequester.Cancel
-                                start = FocusRequester.Cancel
-                                end = FocusRequester.Cancel
+                    StepButton(stringResource(R.string.settings_increase), dimmed = current >= UiZoom.MAX, modifier = step.track(1)) {
+                        step.slot = 1
+                        onSet(UiZoom.clamp(current + UiZoom.STEP))
+                    }
+                }
+                Spacer(Modifier.height(24.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OwnTVButton(stringResource(R.string.settings_reset), onClick = { step.press(2) { onSet(UiZoom.DEFAULT) } }, style = OwnTVButtonStyle.SECONDARY, modifier = step.track(2))
+                    Spacer(Modifier.weight(1f))
+                    OwnTVButton(stringResource(R.string.settings_done), onClick = onDismiss)
+                }
+            }
+
+            // Accept-the-risk gate for zoom below LOW_RAM_WARN (#51). One button, focus locked (all
+            // D-pad directions cancelled) — OK accepts and applies the pending step, Back cancels.
+            pendingLowZoom?.let { target ->
+                val acceptFocus = remember { FocusRequester() }
+                LaunchedEffect(Unit) { runCatching { acceptFocus.requestFocus() } }
+                // Composed after the dialog's own BackHandler, so it wins while the warning is up.
+                BackHandler {
+                    pendingLowZoom = null
+                    runCatching { firstFocus.requestFocus() }
+                }
+                Box(
+                    modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        modifier = Modifier.dialogPanel(width = 460.dp, padding = 28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(stringResource(R.string.settings_low_zoom_warning_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            stringResource(R.string.settings_low_zoom_warning, UiZoom.LOW_RAM_WARN, UiZoom.LOW_RAM_WARN),
+                            style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(20.dp))
+                        OwnTVButton(
+                            stringResource(R.string.settings_low_zoom_accept),
+                            onClick = {
+                                lowZoomAccepted = true
+                                pendingLowZoom = null
+                                onSet(target)
+                                runCatching { firstFocus.requestFocus() }
                             },
-                    )
+                            modifier = Modifier
+                                .focusRequester(acceptFocus)
+                                .focusProperties {
+                                    up = FocusRequester.Cancel
+                                    down = FocusRequester.Cancel
+                                    start = FocusRequester.Cancel
+                                    end = FocusRequester.Cancel
+                                },
+                        )
+                    }
                 }
             }
         }

@@ -823,6 +823,23 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setNavMenuMode(mode) }
     }
 
+    // --- Stage navigation (the rail's style, hide delay, counts) ---
+    val navStyle: StateFlow<tv.own.owntv.core.settings.SettingsRepository.NavStyle> =
+        settings.navStyle.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING_AUTO_HIDE)
+    fun setNavStyle(style: tv.own.owntv.core.settings.SettingsRepository.NavStyle) {
+        viewModelScope.launch { settings.setNavStyle(style) }
+    }
+    val navHideAfterSecs: StateFlow<Int> =
+        settings.navHideAfterSecs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavHideAfter.DEFAULT)
+    fun setNavHideAfterSecs(secs: Int) {
+        viewModelScope.launch { settings.setNavHideAfterSecs(secs) }
+    }
+    val navShowCounts: StateFlow<Boolean> =
+        settings.navShowCounts.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+    fun setNavShowCounts(show: Boolean) {
+        viewModelScope.launch { settings.setNavShowCounts(show) }
+    }
+
     /** Browse sections the user has hidden (STATIC mode only). */
     val navMenuHidden: StateFlow<Set<tv.own.owntv.core.nav.MainSection>> = settings.navMenuHidden
         .map { raw -> raw.mapNotNull { name -> runCatching { tv.own.owntv.core.nav.MainSection.valueOf(name) }.getOrNull() }.toSet() }

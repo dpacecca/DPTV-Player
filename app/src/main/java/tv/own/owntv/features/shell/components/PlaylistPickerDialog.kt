@@ -20,6 +20,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import tv.own.owntv.ui.theme.mpx
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
@@ -154,6 +157,81 @@ private fun PlaylistRow(
             if (selected) {
                 // Accent dot marks the current choice (no dedicated check glyph in OwnTVIcon).
                 Box(Modifier.size(10.dp).clip(RoundedCornerShape(999.dp)).background(colors.primary))
+            }
+        }
+    }
+}
+
+/**
+ * The Stage playlist switcher (P1-07): the options-menu style, 520 wide under the playlist pill, over
+ * the Stage scrim with the pill itself redrawn above it, lit, at [pillBounds]. Rows: "All playlists"
+ * with the layers icon, then each playlist with its mark and channel count; a ✓ marks the current one.
+ */
+@Composable
+fun StagePlaylistMenu(
+    playlists: List<SourceEntity>,
+    activeId: Long,
+    pillLabel: String,
+    pillBounds: androidx.compose.ui.geometry.Rect?,
+    onSelect: (Long) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val channelDao = org.koin.compose.koinInject<tv.own.owntv.core.database.dao.ChannelDao>()
+    val counts by androidx.compose.runtime.produceState(emptyMap<Long, Int>(), playlists) {
+        value = playlists.associate { it.id to runCatching { channelDao.countForSourceOnce(it.id) }.getOrDefault(0) }
+    }
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val numbers = remember(locale) { java.text.NumberFormat.getIntegerInstance(locale) }
+    val selectedFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { selectedFocus.requestFocus() } }
+    BackHandler { onDismiss() }
+
+    Box(Modifier.fillMaxSize().background(Color(2, 5, 6).copy(alpha = 0.55f))) {
+        if (pillBounds != null) {
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            with(density) {
+                tv.own.owntv.ui.stage.StagePill(
+                    text = pillLabel,
+                    icon = tv.own.owntv.ui.components.OwnTVIcon.LAYERS,
+                    trailingIcon = tv.own.owntv.ui.components.OwnTVIcon.CHEVRON_DOWN,
+                    onClick = {},
+                    enabled = false,
+                    highlighted = true,
+                    modifier = Modifier
+                        .offset { androidx.compose.ui.unit.IntOffset(pillBounds.left.toInt(), pillBounds.top.toInt()) }
+                        .width(pillBounds.width.toDp()),
+                )
+            }
+        }
+        tv.own.owntv.ui.stage.StageMenu(
+            Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 104.mpx, end = 100.mpx)
+                .width(520.mpx)
+                .trapAllFocusExit()
+                .focusGroup(),
+        ) {
+            tv.own.owntv.ui.stage.StageMenuHeader(
+                title = stringResource(R.string.content_playlist_picker_title),
+                subtitle = stringResource(R.string.content_playlist_picker_subtitle),
+            )
+            tv.own.owntv.ui.stage.StageMenuItem(
+                text = stringResource(R.string.content_all_playlists),
+                icon = tv.own.owntv.ui.components.OwnTVIcon.LAYERS,
+                checked = activeId <= 0,
+                onClick = { onSelect(-1L); onDismiss() },
+                modifier = if (activeId <= 0) Modifier.focusRequester(selectedFocus) else Modifier,
+            )
+            playlists.forEachIndexed { index, source ->
+                val current = source.id == activeId
+                tv.own.owntv.ui.stage.StageMenuItem(
+                    text = source.name,
+                    leading = { tv.own.owntv.ui.stage.StagePlaylistMark(tv.own.owntv.ui.stage.PlaylistMark.of(source.name, index)) },
+                    value = if (current) null else counts[source.id]?.let(numbers::format),
+                    checked = current,
+                    onClick = { onSelect(source.id); onDismiss() },
+                    modifier = if (current) Modifier.focusRequester(selectedFocus) else Modifier,
+                )
             }
         }
     }

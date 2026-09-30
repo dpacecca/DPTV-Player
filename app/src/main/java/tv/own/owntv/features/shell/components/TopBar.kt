@@ -332,7 +332,7 @@ private fun WeatherChip(info: WeatherInfo, fahrenheit: Boolean) {
 }
 
 @Composable
-private fun WeatherConditionIcon(info: WeatherInfo, modifier: Modifier = Modifier) {
+internal fun WeatherConditionIcon(info: WeatherInfo, modifier: Modifier = Modifier) {
     val key = info.symbolKey()
     val sunC = Color(0xFFFFD166); val moonC = Color(0xFFDDF8FF)
     val cloudC = Color(0xFFDDEFE9); val rainC = Color(0xFF76A7FF)

@@ -63,6 +63,10 @@ import tv.own.owntv.ui.theme.stageText
  */
 enum class StageFocus { FX, FILLED, PRIMARY, POSTER }
 
+/** A focus treatment on a custom-built element (the audio card), drawn exactly as [StageSurface] draws it. */
+@Composable
+fun Modifier.stageFocusLook(style: StageFocus, radius: Dp): Modifier = stageFocusDecor(style, radius, stageAccent)
+
 private fun Modifier.stageFocusDecor(style: StageFocus, radius: Dp, a: StageAccent) = drawBehind {
     val r = radius.toPx()
     val px = 1.mpx.toPx()
@@ -109,10 +113,12 @@ fun StageSurface(
     enabled: Boolean = true,
     onLongClick: (() -> Unit)? = null,
     contentAlignment: Alignment = Alignment.CenterStart,
+    /** Drawn as focused without holding focus: a pill whose menu is open over it. */
+    highlighted: Boolean = false,
     content: @Composable BoxScope.(focused: Boolean) -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
-    val focused by interaction.collectIsFocusedAsState()
+    val focused = interaction.collectIsFocusedAsState().value || highlighted
     val accent = stageAccent
     Box(
         modifier = modifier
@@ -237,6 +243,8 @@ fun StagePill(
     iconFilled: Boolean = false,
     small: String? = null,
     trailingIcon: OwnTVIcon? = null,
+    enabled: Boolean = true,
+    highlighted: Boolean = false,
 ) {
     val a = stageAccent
     val r = StageRadii.Pill
@@ -245,6 +253,8 @@ fun StagePill(
         radius = r,
         modifier = modifier.height(50.mpx).widthIn(max = 470.mpx),
         idle = Modifier.stageGlass(r),
+        enabled = enabled,
+        highlighted = highlighted,
     ) { focused ->
         Row(
             Modifier.padding(horizontal = 18.mpx),
@@ -422,7 +432,7 @@ fun StageRow(
 fun StageMenu(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier
-            .stageGlass(StageRadii.Menu)
+            .stageGlass(StageRadii.Menu, overContent = true)
             .padding(start = 16.mpx, end = 16.mpx, top = 22.mpx, bottom = 16.mpx),
         content = content,
     )
@@ -480,6 +490,8 @@ fun StageMenuItem(
     value: String? = null,
     checked: Boolean = false,
     enabled: Boolean = true,
+    /** Drawn where the icon goes, for rows that lead with something else (a playlist mark). */
+    leading: (@Composable () -> Unit)? = null,
 ) {
     val a = stageAccent
     StageSurface(
@@ -495,6 +507,7 @@ fun StageMenuItem(
         ) {
             val on = if (focused) a.onAccent else null
             if (icon != null) StageIcon(icon, on ?: StageColors.Muted, 21.mpx, iconFilled)
+            leading?.invoke()
             Text(text, style = stageText(19, 600), color = on ?: StageColors.MenuItemText, maxLines = 1,
                 overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             if (value != null) Text(value, style = stageText(15, 700), color = on ?: StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -508,7 +521,7 @@ fun StageMenuItem(
 fun StageSheet(title: String, modifier: Modifier = Modifier, trailing: String? = null, content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier
-            .stageGlass(StageRadii.Sheet)
+            .stageGlass(StageRadii.Sheet, overContent = true)
             .padding(horizontal = 16.mpx, vertical = 26.mpx),
     ) {
         Row(

@@ -47,6 +47,8 @@ enum class OwnTVIcon {
     // Stage marks with no older counterpart (see StageGlyphs.kt). TILES is the More destination.
     PLAY_CIRCLE, BELL, REC, CHEVRON_LEFT, GRID, LIST, CHECK, CLOCK, SUN, TREND, LAYERS, PENCIL,
     EYE_OFF, MOVE, EXTERNAL, TRASH, MULTIVIEW, NOW, CALENDAR, TILES,
+    // Audio mode's equaliser mark (the bar at rest, the rail's Now playing item).
+    EQ,
 }
 
 /** Parsed once: [StageGlyphPaths] in 24-unit coordinates. */
@@ -169,30 +171,12 @@ fun OwnTVIcon(
                 drawLineStroke(p(21f, 19f), p(17.5f, 15.5f), tint, stroke)
                 drawLineStroke(p(21f, 19f), p(17.5f, 22.5f), tint, stroke)
             }
-            OwnTVIcon.SKIP_NEXT -> {
-                // play-to-bar: ▶|
-                drawPath(triangle(p(5f, 6f), p(14f, 12f), p(5f, 18f)), tint, style = Fill)
-                drawRect(tint, topLeft = p(15.6f, 6f), size = Size(2.6f * s, 12f * s))
-            }
-            OwnTVIcon.SKIP_PREVIOUS -> {
-                // bar-to-play: |◀
-                drawRect(tint, topLeft = p(5.8f, 6f), size = Size(2.6f * s, 12f * s))
-                drawPath(triangle(p(19f, 6f), p(10f, 12f), p(19f, 18f)), tint, style = Fill)
-            }
             OwnTVIcon.AUDIO -> {
                 // Music note (audio track) — clearly distinct from the speaker/volume icon.
                 drawCircle(tint, radius = 3f * s, center = p(8.5f, 17.5f))    // filled note head
                 drawLineStroke(p(11.5f, 17.5f), p(11.5f, 5f), tint, stroke)   // stem
                 drawLineStroke(p(11.5f, 5f), p(16.5f, 7f), tint, stroke)      // upper flag
                 drawLineStroke(p(11.5f, 8.5f), p(16.5f, 10.5f), tint, stroke) // lower flag
-            }
-            OwnTVIcon.HEADPHONES -> {
-                // Over-ear headphones: headband arc + two filled earcups.
-                drawArc(tint, 180f, 180f, false, topLeft = p(4f, 5f), size = Size(16f * s, 16f * s), style = stroke)
-                drawRoundRectStroke(p(4f, 13f), p(8f, 20f), 2f * s, tint, stroke)
-                drawRect(tint, topLeft = p(4.5f, 13.5f), size = Size(3f * s, 6f * s))
-                drawRoundRectStroke(p(16f, 13f), p(20f, 20f), 2f * s, tint, stroke)
-                drawRect(tint, topLeft = p(16.5f, 13.5f), size = Size(3f * s, 6f * s))
             }
             OwnTVIcon.BACK -> {
                 drawLineStroke(p(20f, 12f), p(4f, 12f), tint, stroke)
@@ -238,11 +222,6 @@ fun OwnTVIcon(
                     tint, style = Fill,
                 )
             }
-            OwnTVIcon.VOLUME_HIGH -> {
-                drawPath(speaker(::p), tint, style = Fill)
-                drawArc(tint, -52f, 104f, false, topLeft = p(11.5f, 8.5f), size = Size(5f * s, 7f * s), style = stroke)
-                drawArc(tint, -52f, 104f, false, topLeft = p(12.5f, 6f), size = Size(8f * s, 12f * s), style = stroke)
-            }
             OwnTVIcon.VOLUME_LOW -> {
                 drawPath(speaker(::p), tint, style = Fill)
                 drawArc(tint, -52f, 104f, false, topLeft = p(11.5f, 8.5f), size = Size(5f * s, 7f * s), style = stroke)
@@ -258,13 +237,6 @@ fun OwnTVIcon(
                 drawLineStroke(p(7f, 9f), p(9f, 9f), tint, stroke)
                 drawLineStroke(p(17f, 13f), p(17f, 15f), tint, stroke)
                 drawLineStroke(p(17f, 15f), p(15f, 15f), tint, stroke)
-            }
-            OwnTVIcon.EXPAND -> { // ⤢ open-in-full: diagonal with arrowheads at both ends
-                drawLineStroke(p(6f, 18f), p(18f, 6f), tint, stroke)
-                drawLineStroke(p(18f, 6f), p(12.5f, 6f), tint, stroke)
-                drawLineStroke(p(18f, 6f), p(18f, 11.5f), tint, stroke)
-                drawLineStroke(p(6f, 18f), p(11.5f, 18f), tint, stroke)
-                drawLineStroke(p(6f, 18f), p(6f, 12.5f), tint, stroke)
             }
             OwnTVIcon.IMAGE -> { // photo/picture frame: rounded rect + sun + mountain
                 drawRoundRectStroke(p(3f, 5f), p(21f, 19f), 2f * s, tint, stroke)
@@ -433,16 +405,6 @@ fun OwnTVIcon(
                 drawArc(tint, 60f, 90f, false, p(5.5f, 5.5f), Size(13f * s, 13f * s), style = stroke)
                 drawArc(tint, -125f, 100f, false, p(1.8f, 1.8f), Size(20.4f * s, 20.4f * s), style = stroke)
                 drawArc(tint, 55f, 100f, false, p(1.8f, 1.8f), Size(20.4f * s, 20.4f * s), style = stroke)
-            }
-            OwnTVIcon.SEEK_BACK -> { // REFRESH's circular arrow, mirrored: jump back through the stream.
-                drawArc(tint, 180f, -314.1f, false, p(3.5f, 3.5f), Size(17f * s, 17f * s), style = stroke)
-                drawLineStroke(p(3.2f, 3.6f), p(3.2f, 8.6f), tint, stroke)
-                drawLineStroke(p(3.2f, 8.6f), p(8.2f, 8.6f), tint, stroke)
-            }
-            OwnTVIcon.SEEK_FORWARD -> {
-                drawArc(tint, 0f, 314.1f, false, p(3.5f, 3.5f), Size(17f * s, 17f * s), style = stroke)
-                drawLineStroke(p(20.8f, 3.6f), p(20.8f, 8.6f), tint, stroke)
-                drawLineStroke(p(20.8f, 8.6f), p(15.8f, 8.6f), tint, stroke)
             }
             else -> Unit // drawn from StagePaths above
     }

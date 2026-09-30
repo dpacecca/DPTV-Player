@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -600,6 +602,7 @@ private fun expandedHeroPlot(item: HeroItem, metadata: HomeHeroMetadata?): Strin
     is HeroItem.LiveHero -> null
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TrendingHeroSection(
     items: List<TrendingHomeItem>,
@@ -834,10 +837,12 @@ private fun TrendingHeroSection(
                         }
                     }
                     Spacer(Modifier.height(15.dp))
-                    Row(
+                    // FlowRow: when the labels don't fit (wide font, high zoom, German) the last button moves
+                    // to a second line instead of being squeezed until its label breaks mid-word.
+                    FlowRow(
                         modifier = Modifier.onFocusChanged { actionButtonsFocused = it.hasFocus }.focusGroup(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         TrendingActionButton(
                             label = if (item is TrendingHomeItem.Movie) playLabel else openEpisodesLabel,
@@ -996,7 +1001,7 @@ private fun TrendingActionButton(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             OwnTVIcon(icon, tint = contentColor, modifier = Modifier.size(16.dp), filled = primary)
-            Text(label, style = MaterialTheme.typography.labelLarge, color = contentColor, fontWeight = FontWeight.Bold)
+            Text(label, style = MaterialTheme.typography.labelLarge, color = contentColor, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
         }
     }
 }

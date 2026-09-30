@@ -147,15 +147,15 @@ private fun DrawScope.light(color: Color, alpha: Float, center: Offset, rx: Floa
  * top highlight (white 10%), a 1 px rim (white 7%) and the drop shadow `0 24 60` black 45%.
  * Glass off: solid #121A1C, rim white 5%, shadow black 50%.
  *
- * Not drawn yet: the mockup's `backdrop-filter` blur of whatever sits behind the panel. The shipped
- * glass only frosts a wallpaper image, and the reference setup has none, so the phases that put a
- * panel over live content (the rail over the Home hero, P1) add it.
+ * No `backdrop-filter` blur of what sits behind the panel: a live blur costs the G10 GPU a full pass
+ * per frame. Instead [overContent] chrome — the rail, menus and popups, which float over text — takes
+ * the same tint at 92%, so the words behind it can never be read through it (seen on the TV, P1).
  */
 @Composable
-fun Modifier.stageGlass(radius: Dp): Modifier {
+fun Modifier.stageGlass(radius: Dp, overContent: Boolean = false): Modifier {
     val config = LocalGlass.current
     val on = config.enabled
-    val fill = if (on) StageColors.GlassTint.copy(alpha = config.alpha) else StageColors.GlassOff
+    val fill = if (on) StageColors.GlassTint.copy(alpha = if (overContent) maxOf(config.alpha, 0.92f) else config.alpha) else StageColors.GlassOff
     return drawWithCache {
         val r = radius.toPx()
         val px = 1.mpx.toPx()

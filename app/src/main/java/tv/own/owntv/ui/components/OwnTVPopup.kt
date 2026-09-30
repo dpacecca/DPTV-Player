@@ -34,6 +34,9 @@ import tv.own.owntv.ui.theme.PopupFontTheme
  *
  * Popup chrome and the user-selected popup typography are reduced together here. Keeping the scale in the host means
  * nested popups (Rule builder -> Rule value) cannot silently return to full application size.
+ *
+ * [stageLayout] is for the Stage menus, which are drawn in mockup pixels at the screen's own scale and
+ * anchored to the control that opened them: no popup scale, no centring, the whole window to place in.
  */
 @Composable
 fun OwnTVPopup(
@@ -41,8 +44,12 @@ fun OwnTVPopup(
     dismissOnBackPress: Boolean = true,
     dismissOnClickOutside: Boolean = true,
     fontScale: Float = 0.70f,
+    stageLayout: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    // The app's own density (2.0 × UI Zoom). A dialog window starts again from the display's density,
+    // so Stage menus, drawn in mockup pixels, would come out at 100% zoom whatever the user chose.
+    val appDensity = LocalDensity.current
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(
@@ -104,6 +111,13 @@ fun OwnTVPopup(
         }
         val availableHeightPx = (usableBottomPx - topSafePx).coerceAtLeast(1)
         val availableHeightDp = with(baseDensity) { availableHeightPx.toDp() }
+
+        if (stageLayout) {
+            CompositionLocalProvider(LocalDensity provides appDensity, LocalTvImeWatcher provides watcher, LocalTvImeMetrics provides metrics) {
+                Box(Modifier.fillMaxSize()) { content() }
+            }
+            return@Dialog
+        }
 
         val popupScale = 0.70f
         // The host owns the fixed TV-safe base scale. PopupFontTheme applies the user's independent
