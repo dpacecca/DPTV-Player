@@ -194,7 +194,9 @@ private fun StageIcon(icon: OwnTVIcon, tint: Color, size: Dp, filled: Boolean = 
 
 /**
  * `.btn`: 64 high, 22 px type. Idle glass; focused = the PRIMARY treatment (the hero's "Play").
- * [round] is the 64×64 icon-only button (ⓘ, ♥). [trailing] is the muted count in "All versions 3".
+ * [round] is the square icon-only button (ⓘ, ♥). [trailing] is the muted count in "All versions 3".
+ * The guide's buttons are 56 high in 19 px ([height], [textSize]); [tinted] is their accent-20% idle
+ * ("Remind me", "Done") in place of glass.
  */
 @Composable
 fun StageButton(
@@ -205,28 +207,34 @@ fun StageButton(
     iconFilled: Boolean = false,
     trailing: String? = null,
     round: Boolean = false,
+    height: Dp = 64.mpx,
+    textSize: Int = 22,
+    tinted: Boolean = false,
+    /** A glyph after the label: the ▾ of "● Record ▾". */
+    trailingIcon: OwnTVIcon? = null,
 ) {
     val a = stageAccent
     val r = StageRadii.Button
     StageSurface(
         onClick = onClick,
         radius = r,
-        modifier = modifier.height(64.mpx).then(if (round) Modifier.width(64.mpx) else Modifier),
+        modifier = modifier.height(height).then(if (round) Modifier.width(height) else Modifier),
         focusStyle = StageFocus.PRIMARY,
-        idle = Modifier.stageGlass(r),
+        idle = if (tinted) Modifier.background(a.accent.copy(alpha = 0.2f), RoundedCornerShape(r)) else Modifier.stageGlass(r),
         contentAlignment = Alignment.Center,
     ) { focused ->
-        val color = if (focused) a.onAccent else StageColors.Text
+        val color = if (focused) a.onAccent else if (tinted) a.accent else StageColors.Text
         Row(
             Modifier.then(if (round) Modifier else Modifier.padding(horizontal = 30.mpx)),
             horizontalArrangement = Arrangement.spacedBy(12.mpx),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (icon != null) StageIcon(icon, color, 22.mpx, iconFilled)
-            if (text != null) Text(text, style = stageText(22, 700), color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (icon != null) StageIcon(icon, color, textSize.mpx, iconFilled)
+            if (text != null) Text(text, style = stageText(textSize, 700), color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (trailing != null) {
-                Text(trailing, style = stageText(22, 600), color = if (focused) a.onAccent else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(trailing, style = stageText(textSize, 600), color = if (focused) a.onAccent else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+            if (trailingIcon != null) StageIcon(trailingIcon, color, textSize.mpx)
         }
     }
 }
@@ -293,6 +301,8 @@ fun StageTool(
     value: String? = null,
     trailingIcon: OwnTVIcon? = null,
     boxed: Boolean = false,
+    /** The value in accent (the guide's category, "**Sky Cinema** ▾"). */
+    valueAccent: Boolean = false,
 ) {
     val a = stageAccent
     val r = StageRadii.Tool
@@ -310,7 +320,7 @@ fun StageTool(
             val color = if (focused) a.onAccent else StageColors.Muted
             if (icon != null) StageIcon(icon, color, 20.mpx)
             if (text != null) Text(text, style = stageText(18, 700), color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (value != null) Text(value, style = stageText(18, 700), color = if (focused) a.onAccent else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (value != null) Text(value, style = stageText(18, 700), color = if (focused) a.onAccent else if (valueAccent) a.accent else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (trailingIcon != null) StageIcon(trailingIcon, color, 20.mpx)
         }
     }

@@ -130,7 +130,6 @@ class LiveViewModel(
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
     private val recordings: tv.own.owntv.core.recording.RecordingManager,
-    private val reminders: tv.own.owntv.core.reminder.ReminderManager,
 ) : ViewModel() {
 
     // --- "Record what I'm watching" (Plan D, D3 mode b) -----------------------------------------
@@ -715,40 +714,6 @@ class LiveViewModel(
     /** The global guide shift, shown as the per-channel dialog's "follow global" default. */
     fun globalEpgShift(): Int = epgOffset.value
 
-    /** Remind me of [p] on [ch] (▶ Schedule → OK). Nothing happens for a programme already on. */
-    fun remind(ch: ChannelEntity, p: tv.own.owntv.core.parser.XtEpgEntry) {
-        viewModelScope.launch {
-            val pid = currentProfileId() ?: return@launch
-            reminders.add(pid, ch.id, ch.name, ch.epgChannelId, p.title, p.startMs, p.stopMs)
-        }
-    }
-
-    /** Schedule a recording of the upcoming [p] on [ch] — the TV Guide's Record, for the schedule under the stage. */
-    fun recordUpcoming(ch: ChannelEntity, p: tv.own.owntv.core.parser.XtEpgEntry) {
-        viewModelScope.launch {
-            val pid = currentProfileId() ?: return@launch
-            val window = recordings.windowFor(p.startMs, p.stopMs)
-            recordings.schedule(
-                tv.own.owntv.core.database.entity.RecordingEntity(
-                    profileId = pid,
-                    sourceId = ch.sourceId,
-                    channelId = ch.id,
-                    channelName = ch.name,
-                    channelIconUrl = ch.logoUrl,
-                    epgChannelId = ch.epgChannelId,
-                    streamUrl = ch.streamUrl,
-                    httpHeaders = ch.httpHeaders,
-                    title = p.title,
-                    description = p.description,
-                    programmeStartMs = p.startMs,
-                    programmeStopMs = p.stopMs,
-                    startMs = window.first,
-                    stopMs = window.last,
-                ),
-            )
-        }
-    }
-
     /** The playlist's name, for the channel menu's "category · playlist" line. */
     fun sourceNameOf(sourceId: Long): String? = sourceById[sourceId]?.name
 
@@ -757,6 +722,14 @@ class LiveViewModel(
     suspend fun availableEpgChannels(channelName: String, query: String): List<tv.own.owntv.core.epg.GuideCandidate> {
         if (currentProfileId() == null) return emptyList()
         return guideCandidates.forPicker(channelName, query)
+    }
+
+    /** List view or Guide view (G14): what Live TV shows, and so what it opens in next time. */
+    val liveView: StateFlow<SettingsRepository.LiveView> = settings.liveView
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.LiveView.LIST)
+
+    fun setLiveView(view: SettingsRepository.LiveView) {
+        viewModelScope.launch { settings.setLiveView(view) }
     }
 
     /** Live TV layout: the categories as a sheet on Left (Stage), or a column always on screen. */

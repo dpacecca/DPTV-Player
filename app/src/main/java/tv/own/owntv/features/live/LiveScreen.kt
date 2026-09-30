@@ -521,29 +521,7 @@ fun LiveScreen(
         }
     }
 
-    val allLabel = stringResource(R.string.content_category_all_channels)
-    val recentLabel = stringResource(R.string.content_category_recently_watched)
-    val categoryEntries = railItems.map { item ->
-        val label = if (item.key == LiveKey.History) recentLabel else item.displayLabel()
-        val parsed = if (item.key is LiveKey.Folder || item.key is LiveKey.Custom) ProviderTags.parse(label) else null
-        LiveCategoryEntry(
-            item = item,
-            label = parsed?.name ?: label,
-            name = parsed,
-            icon = when (item.key) {
-                LiveKey.Favorites -> OwnTVIcon.FAVORITE
-                LiveKey.History -> OwnTVIcon.HISTORY
-                LiveKey.Catchup -> OwnTVIcon.REWIND
-                LiveKey.All -> OwnTVIcon.LIVE_TV
-                else -> null
-            },
-            count = railCounts[item.key],
-            mark = null,
-        )
-    }
-    val groupCountry = ProviderTags.sharedCountry(categoryEntries.mapNotNull { it.name })
-    val groupsHeading = (if (groupCountry != null) stringResource(R.string.content_live_groups_country, groupCountry) else stringResource(R.string.content_live_groups))
-        .uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale)
+    val (categoryEntries, groupsHeading) = liveCategoryEntries(railItems, railCounts)
     val headerLabel = if (selectedItem?.key is LiveKey.Folder || selectedItem?.key is LiveKey.Custom) ProviderTags.parse(selectedLabel).name else selectedLabel
 
     val categoriesModifier = Modifier
@@ -751,7 +729,7 @@ fun LiveScreen(
                     tv.own.owntv.ui.stage.StageTool(
                         text = null,
                         icon = OwnTVIcon.SORT,
-                        value = if (sortMode == tv.own.owntv.core.settings.SettingsRepository.SortMode.ALPHA) stringResource(R.string.settings_sort_alpha) else stringResource(R.string.content_sort_number),
+                        value = if (sortMode == tv.own.owntv.core.settings.SettingsRepository.SortMode.ALPHA) stringResource(R.string.settings_sort_alpha) else stringResource(R.string.content_epg_sort_provider),
                         onClick = vm::toggleSort,
                     )
                     tv.own.owntv.ui.stage.StageTool(
@@ -910,15 +888,33 @@ fun LiveScreen(
         }
     }
 
-    // A next / later programme opened from the schedule under the stage (▶ Schedule): Remind me,
-    // Record, Watch channel — the first actions of the P4-02 programme menu; the full menu is P5's.
-    openProgramme?.let { (ch, p) ->
-        ProgrammeMenu(
-            channelName = ProviderTags.parse(ch.name).name,
-            programme = p,
-            onRemind = { vm.remind(ch, p) },
-            onRecord = { vm.recordUpcoming(ch, p) },
-            onWatch = { vm.watchFullscreen(ch, emptyList()); if (!externalPlayerOn) onFullscreen() },
+    // A next / later programme opened from the schedule under the stage (▶ Schedule): the TV Guide's
+    // programme menu (P4-02), acting through the guide's view model so both screens do the same thing.
+    openProgramme?.let { (ch, xt) ->
+        val epgVm: tv.own.owntv.features.epg.EpgViewModel = koinViewModel()
+        val leadMinutes by epgVm.reminderLeadMinutes.collectAsStateWithLifecycle()
+        val p = remember(ch.id, xt.startMs) {
+            tv.own.owntv.core.database.entity.EpgProgrammeEntity(
+                sourceId = ch.sourceId, epgChannelId = ch.epgChannelId.orEmpty(),
+                startMs = xt.startMs, stopMs = xt.stopMs, title = xt.title, description = xt.description,
+            )
+        }
+        val formatTime = rememberSystemTimeFormatter()
+        tv.own.owntv.features.epg.GuideProgrammeMenu(
+            title = p.title,
+            subtitle = listOf(
+                stringResource(R.string.content_live_time_range_plain, formatTime(p.startMs), formatTime(p.stopMs)),
+                listOfNotNull(ch.number?.toString(), ProviderTags.parse(ch.name).name).joinToString(" "),
+            ).joinToString(" · "),
+            actions = tv.own.owntv.features.epg.guideProgrammeActions(
+                epgVm, ch, p, System.currentTimeMillis(),
+                onWatch = { vm.watchFullscreen(ch, emptyList()); if (!externalPlayerOn) onFullscreen() },
+                onPlayFromStart = { vm.playCatchupProgramme(ch, p); if (!externalPlayerOn) onFullscreen() },
+                onPickEpg = { contextChannelId = ch.id; matchingEpg = ch },
+                onEpgOffset = { contextChannelId = ch.id; offsettingEpg = ch },
+                autoMatch = false,
+            ),
+            leadMinutes = leadMinutes,
             onDismiss = { openProgramme = null; runCatching { scheduleFocus.requestFocus() } },
         )
     }
@@ -1108,62 +1104,6 @@ fun LiveScreen(
             onMove = { vm.enterCategoryMoveMode(item.key); contextCategory = null },
             onDismiss = { contextCategory = null }
         )
-    }
-}
-
-/**
- * OK on a next / later programme: the Stage menu, header "Title" + "20:30 – 22:55 · channel", then
- * Remind me (5 min before) · Record · Watch channel. Each one closes the menu.
- */
-@Composable
-private fun ProgrammeMenu(
-    channelName: String,
-    programme: tv.own.owntv.core.parser.XtEpgEntry,
-    onRemind: () -> Unit,
-    onRecord: () -> Unit,
-    onWatch: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    androidx.activity.compose.BackHandler { onDismiss() }
-    val formatTime = rememberSystemTimeFormatter()
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, stageLayout = true) {
-        BoxWithConstraints(Modifier.fillMaxSize().background(Color(2, 5, 6).copy(alpha = 0.55f))) {
-            tv.own.owntv.ui.stage.StageMenu(
-                Modifier
-                    .padding(start = maxWidth * (930f / 1920f), top = 118.mpx)
-                    .width(540.mpx)
-                    .trapAllFocusExit()
-                    .focusGroup(),
-            ) {
-                tv.own.owntv.ui.stage.StageMenuHeader(
-                    title = programme.title,
-                    subtitle = listOf(
-                        stringResource(R.string.content_live_time_range_plain, formatTime(programme.startMs), formatTime(programme.stopMs)),
-                        channelName,
-                    ).joinToString(" · "),
-                )
-                tv.own.owntv.ui.stage.StageMenuItem(
-                    text = stringResource(R.string.content_remind_me),
-                    icon = OwnTVIcon.BELL,
-                    value = stringResource(
-                        R.string.content_remind_before,
-                        stringResource(R.string.player_duration_minutes, tv.own.owntv.core.reminder.ReminderSchedule.DEFAULT_LEAD_MINUTES),
-                    ),
-                    onClick = { onRemind(); onDismiss() },
-                    modifier = Modifier.focusRequester(focus),
-                )
-                tv.own.owntv.ui.stage.StageMenuItem(
-                    text = stringResource(R.string.recording_record), icon = OwnTVIcon.REC, iconFilled = true,
-                    onClick = { onRecord(); onDismiss() },
-                )
-                tv.own.owntv.ui.stage.StageMenuItem(
-                    text = stringResource(R.string.content_epg_watch_channel), icon = OwnTVIcon.LIVE_TV,
-                    onClick = { onDismiss(); onWatch() },
-                )
-            }
-        }
     }
 }
 
@@ -1406,7 +1346,6 @@ internal fun EpgMatchDialog(
     onClear: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
     var query by remember { mutableStateOf("") }
     val results by androidx.compose.runtime.produceState<List<tv.own.owntv.core.epg.GuideCandidate>?>(initialValue = null, query) {
         kotlinx.coroutines.delay(250)
@@ -1427,69 +1366,57 @@ internal fun EpgMatchDialog(
         else runCatching { searchFocus.requestFocus() }
     }
 
-    // Popup(focusable=true) is a hard focus boundary: a stray D-pad right/left with no target inside
-    // can no longer drop focus onto the screen behind the scrim (same fix as EpgMatchReviewDialog).
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
-    androidx.compose.foundation.layout.Box(
-        Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        // Same small-screen cap as CatchupDialog: search bar + buttons must stay reachable.
-        val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 260.dp).coerceIn(140.dp, 240.dp)
-        Column(Modifier.dialogPanel(width = 384.dp, corner = 16.dp, padding = 14.dp)) {
-            Text(stringResource(R.string.content_match_epg), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-            Spacer(Modifier.height(2.dp))
-            Text(
-                if (currentMatch != null) {
-                    stringResource(R.string.content_epg_match_prompt_current, channelName, currentMatch)
-                } else {
-                    stringResource(R.string.content_epg_match_prompt, channelName)
-                },
-                style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(12.dp))
-            // Actions live in a right-hand column so a D-pad right from the search bar or ANY list row
-            // reaches Close/Clear directly — no scrolling to the bottom of a long list.
-            Row(Modifier.fillMaxWidth()) {
-                Column(Modifier.weight(1f)) {
-                    SearchBar(query = query, onQueryChange = { query = it }, placeholder = stringResource(R.string.content_search_guide_channels), modifier = Modifier.fillMaxWidth().focusRequester(searchFocus), surface = GlassSurface.DIALOGS)
-                    Spacer(Modifier.height(12.dp))
-                    val list = results
-                    when {
-                        list == null -> androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 28) }
-                        list.isEmpty() -> Text(
-                            if (query.isBlank()) stringResource(R.string.content_no_epg_data) else stringResource(R.string.content_no_guide_channels, query),
-                            style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
-                        )
-                        else -> LazyColumn(Modifier.fillMaxWidth().height(listHeight), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            items(list, key = { it.epgChannelId }) { epg ->
-                                FocusableSurface(
-                                    onClick = { onPick(epg.epgChannelId) },
-                                    modifier = if (epg == list.first()) Modifier.fillMaxWidth().focusRequester(firstItemFocus) else Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    contentAlignment = Alignment.CenterStart,
-                                    surface = GlassSurface.DIALOGS,
-                                ) { _ ->
-                                    Column(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp)) {
-                                        Text(epg.displayName ?: epg.epgChannelId, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Text(epg.epgChannelId, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    }
-                                }
-                            }
+    // The Stage picker: a menu panel over the scrim, focus trapped inside, the list capped so Close stays reachable.
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, stageLayout = true) {
+        androidx.compose.foundation.layout.Box(
+            Modifier.fillMaxSize().background(Color(2, 5, 6).copy(alpha = 0.55f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            tv.own.owntv.ui.stage.StageMenu(Modifier.width(640.mpx).trapAllFocusExit().focusGroup()) {
+                tv.own.owntv.ui.stage.StageMenuHeader(
+                    title = stringResource(R.string.content_match_epg),
+                    subtitle = if (currentMatch != null) {
+                        stringResource(R.string.content_epg_match_prompt_current, channelName, currentMatch)
+                    } else {
+                        stringResource(R.string.content_epg_match_prompt, channelName)
+                    },
+                )
+                tv.own.owntv.ui.stage.StageSearchField(
+                    query = query, onQueryChange = { query = it },
+                    placeholder = stringResource(R.string.content_search_guide_channels).trimEnd('…'),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.mpx).focusRequester(searchFocus),
+                )
+                Spacer(Modifier.height(12.mpx))
+                val list = results
+                when {
+                    list == null -> androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(120.mpx), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 24) }
+                    list.isEmpty() -> Text(
+                        if (query.isBlank()) stringResource(R.string.content_no_epg_data) else stringResource(R.string.content_no_guide_channels, query),
+                        style = tv.own.owntv.ui.theme.stageText(18, 500), color = tv.own.owntv.ui.theme.StageColors.Muted,
+                        modifier = Modifier.padding(horizontal = 14.mpx, vertical = 12.mpx),
+                    )
+                    else -> LazyColumn(Modifier.fillMaxWidth().height(400.mpx)) {
+                        items(list, key = { it.epgChannelId }) { epg ->
+                            tv.own.owntv.ui.stage.StageMenuItem(
+                                text = epg.displayName ?: epg.epgChannelId,
+                                value = epg.epgChannelId.takeIf { epg.displayName != null },
+                                checked = epg.epgChannelId == currentMatch,
+                                onClick = { onPick(epg.epgChannelId) },
+                                modifier = if (epg == list.first()) Modifier.focusRequester(firstItemFocus) else Modifier,
+                            )
                         }
                     }
                 }
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.width(110.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-                    if (currentMatch != null) OwnTVButton(stringResource(R.string.content_clear_match), onClick = onClear, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 14.mpx),
+                    horizontalArrangement = Arrangement.spacedBy(12.mpx, Alignment.End),
+                ) {
+                    if (currentMatch != null) tv.own.owntv.ui.stage.StageButton(stringResource(R.string.content_clear_match), onClick = onClear, height = 56.mpx, textSize = 19)
+                    tv.own.owntv.ui.stage.StageButton(stringResource(R.string.content_close), onClick = onDismiss, height = 56.mpx, textSize = 19, tinted = true)
                 }
             }
         }
     }
-    } // PopupFontTheme
-    } // Popup
 }
 
 /**
@@ -1582,8 +1509,14 @@ internal fun EpgOffsetDialog(
     } // Popup
 }
 
+/** Remind me's value: "5 min before", or "At the start" when the reminder comes at the start. */
 @Composable
-private fun liveEpgShiftLabel(minutes: Int): String {
+internal fun reminderLeadText(minutes: Int): String =
+    if (minutes == 0) stringResource(R.string.settings_reminder_at_start)
+    else stringResource(R.string.content_remind_before, stringResource(R.string.player_duration_minutes, minutes))
+
+@Composable
+internal fun liveEpgShiftLabel(minutes: Int): String {
     if (minutes == 0) return stringResource(R.string.common_off)
     val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.US
     val number = java.text.NumberFormat.getIntegerInstance(locale)

@@ -236,6 +236,9 @@ fun SettingsScreen(
     var showVodLayout by remember { mutableStateOf(false) }
     var showNavigation by remember { mutableStateOf(false) }
     var showLiveLayout by remember { mutableStateOf(false) }
+    // Stage P5's three pickers (Live TV opens in, Programme reminders, Reminder time): their state, rows,
+    // search entries and dialogs live outside this function, which sits at the JVM's 64 KB method limit.
+    val stageSettings = remember { StageSettingsState() }
     var showStartup by remember { mutableStateOf(false) }
     var showStartupChannelPicker by remember { mutableStateOf(false) }
     var showAfrWarning by remember { mutableStateOf(false) }
@@ -298,13 +301,13 @@ fun SettingsScreen(
         savedIndex = listState.firstVisibleItemIndex
         savedOffset = listState.firstVisibleItemScrollOffset
     }
-    val anyDialogOpen = showZoom || showPopupSize || showFontCustomization || showTheme || showAccent || showUpdate || showCatchupTime || showCatchupSources || showCatchupSourceValue || showEpgOffset || showGuideDays || showAnimations || showStartup || showStartupChannelPicker || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote || showVodLayout || showNavigation || showLiveLayout
+    val anyDialogOpen = showZoom || showPopupSize || showFontCustomization || showTheme || showAccent || showUpdate || showCatchupTime || showCatchupSources || showCatchupSourceValue || showEpgOffset || showGuideDays || showAnimations || showStartup || showStartupChannelPicker || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote || showVodLayout || showNavigation || showLiveLayout || stageSettings.open != null
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showPopupSize, showFontCustomization, showTheme, showAccent, showUpdate, showCatchupTime, showCatchupSources, showCatchupSourceValue, showEpgOffset, showGuideDays, showAnimations, showStartup, showStartupChannelPicker, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote, showVodLayout, showNavigation, showLiveLayout) {
+    LaunchedEffect(showZoom, showPopupSize, showFontCustomization, showTheme, showAccent, showUpdate, showCatchupTime, showCatchupSources, showCatchupSourceValue, showEpgOffset, showGuideDays, showAnimations, showStartup, showStartupChannelPicker, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote, showVodLayout, showNavigation, showLiveLayout, stageSettings.open) {
         if (!anyDialogOpen) {
             // Focus back on the opener row, with the scroll offset held still the whole way — see
             // [restoreAfterDialogClose] for why doing those two in sequence made the highlight travel.
@@ -352,8 +355,6 @@ fun SettingsScreen(
     val weatherEnabled by settingsVm.weatherEnabled.collectAsStateWithLifecycle()
     val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
     val startupChannel by settingsVm.startupChannel.collectAsStateWithLifecycle()
-    val startupChannelQuery by settingsVm.startupChannelQuery.collectAsStateWithLifecycle()
-    val startupChannelResults by settingsVm.startupChannelResults.collectAsStateWithLifecycle()
     val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
     val rememberLastLive by settingsVm.rememberLastLive.collectAsStateWithLifecycle()
     val rememberLastMovies by settingsVm.rememberLastMovies.collectAsStateWithLifecycle()
@@ -551,6 +552,7 @@ fun SettingsScreen(
             focus = epgOffsetRowFocus,
             onClick = { saveScroll(); dialogReturn = epgOffsetRowFocus; showEpgOffset = true },
         ),
+        *stageGuideRows(settingsVm, stageSettings) { saveScroll(); dialogReturn = it }.toTypedArray(),
         // How far ahead the guide is stored. Global rather than per-source: it is one horizon that
         // every feed is trimmed to, so it sits beside the other guide-wide setting, not inside a feed.
         RootRow(
@@ -673,6 +675,7 @@ fun SettingsScreen(
         RootGroup("group_layout", stringResource(R.string.settings_group_layout), OwnTVIcon.LIST_GRID, stringResource(R.string.settings_group_summary_layout)),
         navigationRootRow(settingsVm, navigationRowFocus) { saveScroll(); dialogReturn = navigationRowFocus; showNavigation = true },
         liveLayoutRootRow(settingsVm, liveLayoutRowFocus) { saveScroll(); dialogReturn = liveLayoutRowFocus; showLiveLayout = true },
+        *stageLayoutRows(settingsVm, stageSettings) { saveScroll(); dialogReturn = it }.toTypedArray(),
         RootRow(
             "vod_layout", TileTone.PRIMARY, OwnTVIcon.LIST_GRID,
             title = stringResource(R.string.settings_vod_layout),
@@ -1030,6 +1033,8 @@ fun SettingsScreen(
             SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_customize), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.SORT, TileTone.PRIMARY) { open(SettingsTab.CUSTOMIZE) },
             navigationSearchEntry(settingsVm) { saveScroll(); dialogReturn = searchFieldFocus; showNavigation = true },
             liveLayoutSearchEntry(settingsVm) { saveScroll(); dialogReturn = searchFieldFocus; showLiveLayout = true },
+            SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_live_opens_in), stringResource(R.string.settings_search_keywords_live_opens_in), OwnTVIcon.LIVE_TV, TileTone.PRIMARY) { saveScroll(); dialogReturn = searchFieldFocus; stageSettings.open = StageSettingsDialog.LIVE_OPENS_IN },
+            SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_reminders), stringResource(R.string.settings_search_keywords_reminders), OwnTVIcon.BELL, TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; stageSettings.open = StageSettingsDialog.REMINDERS },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_ch_paging), stringResource(R.string.settings_search_keywords_ch), OwnTVIcon.CH_NAV, TileTone.PRIMARY,
                 chip = if (chNavEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_vod_layout), stringResource(R.string.settings_search_keywords_vod_layout), OwnTVIcon.LIST_GRID, TileTone.PRIMARY,
@@ -1526,86 +1531,18 @@ fun SettingsScreen(
             onDismiss = { showCatchupSources = true; showCatchupSourceValue = false },
         )
     }
-    if (showEpgOffset) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showEpgOffset = false }) { EpgOffsetSettingDialog(
-            offsetMinutes = epgOffset,
-            offsetRange = settingsVm.epgOffsetRangeMinutes,
-            onAdjust = settingsVm::adjustEpgOffset,
-            onReset = { settingsVm.setEpgOffsetMinutes(0) },
-            onDismiss = { showEpgOffset = false },
-        ) }
-    }
-    if (showGuideDays) {
-        tv.own.owntv.ui.components.DayStepperDialog(
-            title = stringResource(R.string.settings_epg_guide_days),
-            hint = stringResource(
-                R.string.settings_epg_guide_days_hint,
-                tv.own.owntv.core.settings.GuideRetention.MIN_DAYS,
-                tv.own.owntv.core.settings.GuideRetention.MAX_DAYS,
-            ),
-            initialDays = guideDays,
-            minDays = tv.own.owntv.core.settings.GuideRetention.MIN_DAYS,
-            maxDays = tv.own.owntv.core.settings.GuideRetention.MAX_DAYS,
-            label = { days -> pluralStringResource(R.plurals.settings_epg_guide_days_value, days, days) },
-            onConfirm = { settingsVm.setGuideDaysToKeep(it); showGuideDays = false },
-            onDismiss = { showGuideDays = false },
-        )
-    }
-    if (showTheme) {
-        tv.own.owntv.features.settings.PickerDialog(
-            title = stringResource(R.string.settings_theme_dialog),
-            options = ThemeMode.entries.map { it.name to themeLabel(it) },
-            selected = themeMode.name,
-            onSelect = { settingsVm.setThemeMode(ThemeMode.valueOf(it)); showTheme = false },
-            onDismiss = { showTheme = false },
-        )
-    }
-    if (showStartup) {
-        tv.own.owntv.features.settings.PickerDialog(
-            title = stringResource(R.string.settings_app_startup_dialog),
-            options = tv.own.owntv.core.settings.StartupMode.entries.map { it.name to startupLabel(it) },
-            selected = startupMode.name,
-            onSelect = {
-                val mode = tv.own.owntv.core.settings.StartupMode.valueOf(it)
-                showStartup = false
-                if (mode == tv.own.owntv.core.settings.StartupMode.SPECIFIC_CHANNEL) {
-                    settingsVm.setStartupChannelQuery("")
-                    settingsVm.refreshStartupChannelPicker()
-                    showStartupChannelPicker = true
-                } else {
-                    settingsVm.setStartupMode(mode)
-                }
-            },
-            onDismiss = { showStartup = false },
-        )
-    }
-    if (showStartupChannelPicker) {
-        StartupChannelPickerDialog(
-            query = startupChannelQuery,
-            channels = startupChannelResults,
-            selected = startupChannel,
-            onQueryChange = settingsVm::setStartupChannelQuery,
-            onSelect = {
-                settingsVm.setStartupChannel(it)
-                showStartupChannelPicker = false
-            },
-            onDismiss = { showStartupChannelPicker = false },
-        )
-    }
-    if (showAnimations) {
-        tv.own.owntv.features.settings.PickerDialog(
-            title = stringResource(R.string.settings_animations_dialog),
-            options = tv.own.owntv.core.theme.AnimationLevel.entries.map { it.name to stringResource(it.labelRes) },
-            selected = animationLevel.name,
-            onSelect = { settingsVm.setAnimationLevel(tv.own.owntv.core.theme.AnimationLevel.valueOf(it)); showAnimations = false },
-            onDismiss = { showAnimations = false },
-        )
-    }
+    if (showEpgOffset) EpgOffsetRootDialog(settingsVm, epgOffset, onClose = { showEpgOffset = false })
+    if (showGuideDays) GuideDaysDialog(settingsVm, guideDays, onClose = { showGuideDays = false })
+    if (showTheme) ThemeDialogHost(settingsVm, themeMode, onClose = { showTheme = false })
+    if (showStartup) StartupDialogHost(settingsVm, startupMode, onClose = { showStartup = false }, onPickChannel = { showStartupChannelPicker = true })
+    if (showStartupChannelPicker) StartupChannelPickerHost(settingsVm, startupChannel, onClose = { showStartupChannelPicker = false })
+    if (showAnimations) AnimationsDialogHost(settingsVm, animationLevel, onClose = { showAnimations = false })
     if (showNavigation) {
         NavigationPopupHost(settingsVm, onDismiss = { showNavigation = false })
     }
     if (showVodLayout) VodLayoutDialog(settingsVm, vodLayout, onClose = { showVodLayout = false })
     if (showLiveLayout) LiveLayoutDialog(settingsVm, onClose = { showLiveLayout = false })
+    StageSettingsDialogHost(settingsVm, stageSettings)
     if (showFocusHighlight) {
         FocusHighlightDialog(
             highlight = focusHighlight,
@@ -1651,28 +1588,8 @@ fun SettingsScreen(
             onDismiss = { showFontCustomization = false },
         ) }
     }
-    if (showBrowsing) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showBrowsing = false }) { BrowsingListsDialog(
-            catLive = rememberCatLive, catMovies = rememberCatMovies, catSeries = rememberCatSeries,
-            itemLive = rememberLastLive, itemMovies = rememberLastMovies, itemSeries = rememberLastSeries,
-            onToggleCatLive = { settingsVm.setRememberCategoryLive(!rememberCatLive) },
-            onToggleCatMovies = { settingsVm.setRememberCategoryMovies(!rememberCatMovies) },
-            onToggleCatSeries = { settingsVm.setRememberCategorySeries(!rememberCatSeries) },
-            onToggleItemLive = { settingsVm.setRememberLastLive(!rememberLastLive) },
-            onToggleItemMovies = { settingsVm.setRememberLastMovies(!rememberLastMovies) },
-            onToggleItemSeries = { settingsVm.setRememberLastSeries(!rememberLastSeries) },
-            onDismiss = { showBrowsing = false },
-        ) }
-    }
-    if (showAmbientGlow) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAmbientGlow = false }) { AmbientGlowDialog(
-            glowEnabled = ambientGlowEnabled,
-            pulseEnabled = ambientGlowPulse,
-            onToggleGlow = { settingsVm.setAmbientGlowEnabled(!ambientGlowEnabled) },
-            onTogglePulse = { settingsVm.setAmbientGlowPulse(!ambientGlowPulse) },
-            onDismiss = { showAmbientGlow = false },
-        ) }
-    }
+    if (showBrowsing) BrowsingListsHost(settingsVm, onClose = { showBrowsing = false })
+    if (showAmbientGlow) AmbientGlowHost(settingsVm, ambientGlowEnabled, ambientGlowPulse, onClose = { showAmbientGlow = false })
     if (showAfrWarning) {
         tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAfrWarning = false }) { AutoFrameRateWarningDialog(
             onEnable = { settingsVm.setAutoFrameRate(true); showAfrWarning = false },
@@ -2002,6 +1919,259 @@ private fun LiveLayoutDialog(settingsVm: SettingsViewModel, onClose: () -> Unit)
             settingsVm.setLiveLayout(tv.own.owntv.core.settings.SettingsRepository.LiveLayout.valueOf(it))
             onClose()
         },
+        onDismiss = onClose,
+    )
+}
+
+// Moved out of SettingsScreen unchanged: that function sits at the JVM's 64 KB method limit.
+@Composable
+private fun ThemeDialogHost(settingsVm: SettingsViewModel, themeMode: ThemeMode, onClose: () -> Unit) {
+    tv.own.owntv.features.settings.PickerDialog(
+        title = stringResource(R.string.settings_theme_dialog),
+        options = ThemeMode.entries.map { it.name to themeLabel(it) },
+        selected = themeMode.name,
+        onSelect = { settingsVm.setThemeMode(ThemeMode.valueOf(it)); onClose() },
+        onDismiss = { onClose() },
+    )
+}
+
+@Composable
+private fun StartupDialogHost(settingsVm: SettingsViewModel, startupMode: tv.own.owntv.core.settings.StartupMode, onClose: () -> Unit, onPickChannel: () -> Unit) {
+    tv.own.owntv.features.settings.PickerDialog(
+        title = stringResource(R.string.settings_app_startup_dialog),
+        options = tv.own.owntv.core.settings.StartupMode.entries.map { it.name to startupLabel(it) },
+        selected = startupMode.name,
+        onSelect = {
+            val mode = tv.own.owntv.core.settings.StartupMode.valueOf(it)
+            onClose()
+            if (mode == tv.own.owntv.core.settings.StartupMode.SPECIFIC_CHANNEL) {
+                settingsVm.setStartupChannelQuery("")
+                settingsVm.refreshStartupChannelPicker()
+                onPickChannel()
+            } else {
+                settingsVm.setStartupMode(mode)
+            }
+        },
+        onDismiss = { onClose() },
+    )
+}
+
+@Composable
+private fun StartupChannelPickerHost(settingsVm: SettingsViewModel, startupChannel: tv.own.owntv.core.settings.StartupChannelRef?, onClose: () -> Unit) {
+    val startupChannelQuery by settingsVm.startupChannelQuery.collectAsStateWithLifecycle()
+    val startupChannelResults by settingsVm.startupChannelResults.collectAsStateWithLifecycle()
+    StartupChannelPickerDialog(
+        query = startupChannelQuery,
+        channels = startupChannelResults,
+        selected = startupChannel,
+        onQueryChange = settingsVm::setStartupChannelQuery,
+        onSelect = {
+            settingsVm.setStartupChannel(it)
+            onClose()
+        },
+        onDismiss = { onClose() },
+    )
+}
+
+@Composable
+private fun AnimationsDialogHost(settingsVm: SettingsViewModel, animationLevel: tv.own.owntv.core.theme.AnimationLevel, onClose: () -> Unit) {
+    tv.own.owntv.features.settings.PickerDialog(
+        title = stringResource(R.string.settings_animations_dialog),
+        options = tv.own.owntv.core.theme.AnimationLevel.entries.map { it.name to stringResource(it.labelRes) },
+        selected = animationLevel.name,
+        onSelect = { settingsVm.setAnimationLevel(tv.own.owntv.core.theme.AnimationLevel.valueOf(it)); onClose() },
+        onDismiss = { onClose() },
+    )
+}
+
+@Composable
+private fun BrowsingListsHost(settingsVm: SettingsViewModel, onClose: () -> Unit) {
+    val rememberCatLive by settingsVm.rememberCategoryLive.collectAsStateWithLifecycle()
+    val rememberCatMovies by settingsVm.rememberCategoryMovies.collectAsStateWithLifecycle()
+    val rememberCatSeries by settingsVm.rememberCategorySeries.collectAsStateWithLifecycle()
+    val rememberLastLive by settingsVm.rememberLastLive.collectAsStateWithLifecycle()
+    val rememberLastMovies by settingsVm.rememberLastMovies.collectAsStateWithLifecycle()
+    val rememberLastSeries by settingsVm.rememberLastSeries.collectAsStateWithLifecycle()
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onClose) { BrowsingListsDialog(
+        catLive = rememberCatLive, catMovies = rememberCatMovies, catSeries = rememberCatSeries,
+        itemLive = rememberLastLive, itemMovies = rememberLastMovies, itemSeries = rememberLastSeries,
+        onToggleCatLive = { settingsVm.setRememberCategoryLive(!rememberCatLive) },
+        onToggleCatMovies = { settingsVm.setRememberCategoryMovies(!rememberCatMovies) },
+        onToggleCatSeries = { settingsVm.setRememberCategorySeries(!rememberCatSeries) },
+        onToggleItemLive = { settingsVm.setRememberLastLive(!rememberLastLive) },
+        onToggleItemMovies = { settingsVm.setRememberLastMovies(!rememberLastMovies) },
+        onToggleItemSeries = { settingsVm.setRememberLastSeries(!rememberLastSeries) },
+        onDismiss = onClose,
+    ) }
+}
+
+@Composable
+private fun AmbientGlowHost(settingsVm: SettingsViewModel, ambientGlowEnabled: Boolean, ambientGlowPulse: Boolean, onClose: () -> Unit) {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onClose) { AmbientGlowDialog(
+        glowEnabled = ambientGlowEnabled,
+        pulseEnabled = ambientGlowPulse,
+        onToggleGlow = { settingsVm.setAmbientGlowEnabled(!ambientGlowEnabled) },
+        onTogglePulse = { settingsVm.setAmbientGlowPulse(!ambientGlowPulse) },
+        onDismiss = onClose,
+    ) }
+}
+
+@Composable
+private fun EpgOffsetRootDialog(settingsVm: SettingsViewModel, epgOffset: Int, onClose: () -> Unit) {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onClose) { EpgOffsetSettingDialog(
+        offsetMinutes = epgOffset,
+        offsetRange = settingsVm.epgOffsetRangeMinutes,
+        onAdjust = settingsVm::adjustEpgOffset,
+        onReset = { settingsVm.setEpgOffsetMinutes(0) },
+        onDismiss = onClose,
+    ) }
+}
+
+@Composable
+private fun GuideDaysDialog(settingsVm: SettingsViewModel, guideDays: Int, onClose: () -> Unit) {
+    tv.own.owntv.ui.components.DayStepperDialog(
+        title = stringResource(R.string.settings_epg_guide_days),
+        hint = stringResource(
+            R.string.settings_epg_guide_days_hint,
+            tv.own.owntv.core.settings.GuideRetention.MIN_DAYS,
+            tv.own.owntv.core.settings.GuideRetention.MAX_DAYS,
+        ),
+        initialDays = guideDays,
+        minDays = tv.own.owntv.core.settings.GuideRetention.MIN_DAYS,
+        maxDays = tv.own.owntv.core.settings.GuideRetention.MAX_DAYS,
+        label = { days -> pluralStringResource(R.plurals.settings_epg_guide_days_value, days, days) },
+        onConfirm = { settingsVm.setGuideDaysToKeep(it); onClose() },
+        onDismiss = onClose,
+    )
+}
+
+private enum class StageSettingsDialog { LIVE_OPENS_IN, REMINDERS, REMINDER_LEAD }
+
+/** Which Stage P5 picker is open, and each row's focus to come back to. */
+@androidx.compose.runtime.Stable
+private class StageSettingsState {
+    var open by mutableStateOf<StageSettingsDialog?>(null)
+    val focus = StageSettingsDialog.entries.associateWith { FocusRequester() }
+}
+
+/** Layout: Live TV opens in. [onOpen] saves the scroll and names the focus to return to. */
+@Composable
+private fun stageLayoutRows(settingsVm: SettingsViewModel, state: StageSettingsState, onOpen: (FocusRequester) -> Unit): List<RootRow> {
+    val f = state.focus.getValue(StageSettingsDialog.LIVE_OPENS_IN)
+    return listOf(liveOpensInRootRow(settingsVm, f) { onOpen(f); state.open = StageSettingsDialog.LIVE_OPENS_IN })
+}
+
+/** The guide block: Programme reminders, Reminder time. */
+@Composable
+private fun stageGuideRows(settingsVm: SettingsViewModel, state: StageSettingsState, onOpen: (FocusRequester) -> Unit): List<RootRow> {
+    val r = state.focus.getValue(StageSettingsDialog.REMINDERS)
+    val l = state.focus.getValue(StageSettingsDialog.REMINDER_LEAD)
+    return listOf(
+        remindersRootRow(settingsVm, r) { onOpen(r); state.open = StageSettingsDialog.REMINDERS },
+        reminderLeadRootRow(settingsVm, l) { onOpen(l); state.open = StageSettingsDialog.REMINDER_LEAD },
+    )
+}
+
+@Composable
+private fun StageSettingsDialogHost(settingsVm: SettingsViewModel, state: StageSettingsState) {
+    val close = { state.open = null }
+    when (state.open) {
+        StageSettingsDialog.LIVE_OPENS_IN -> LiveOpensInDialog(settingsVm, close)
+        StageSettingsDialog.REMINDERS -> RemindersDialog(settingsVm, close)
+        StageSettingsDialog.REMINDER_LEAD -> ReminderLeadDialog(settingsVm, close)
+        null -> Unit
+    }
+}
+
+/** Layout › Live TV opens in (G14): List view or Guide view — the same value Live TV's toggle sets. */
+@Composable
+private fun liveOpensInRootRow(settingsVm: SettingsViewModel, focus: FocusRequester, onClick: () -> Unit): RootRow {
+    val view by settingsVm.liveView.collectAsStateWithLifecycle()
+    return RootRow(
+        "live_opens_in", TileTone.PRIMARY, OwnTVIcon.LIVE_TV,
+        title = stringResource(R.string.settings_live_opens_in),
+        desc = stringResource(R.string.settings_live_opens_in_description),
+        chip = stringResource(liveViewLabelRes(view)),
+        chipTone = TileTone.PRIMARY,
+        focus = focus,
+        onClick = onClick,
+    )
+}
+
+private fun liveViewLabelRes(view: tv.own.owntv.core.settings.SettingsRepository.LiveView): Int =
+    if (view == tv.own.owntv.core.settings.SettingsRepository.LiveView.GUIDE) R.string.content_live_guide_view else R.string.content_live_list_view
+
+@Composable
+private fun LiveOpensInDialog(settingsVm: SettingsViewModel, onClose: () -> Unit) {
+    val current by settingsVm.liveView.collectAsStateWithLifecycle()
+    tv.own.owntv.features.settings.PickerDialog(
+        title = stringResource(R.string.settings_live_opens_in),
+        subtitle = stringResource(R.string.settings_live_opens_in_description),
+        options = tv.own.owntv.core.settings.SettingsRepository.LiveView.entries.map { it.name to stringResource(liveViewLabelRes(it)) },
+        selected = current.name,
+        onSelect = { settingsVm.setLiveView(tv.own.owntv.core.settings.SettingsRepository.LiveView.valueOf(it)); onClose() },
+        onDismiss = onClose,
+    )
+}
+
+/** The guide block's Programme reminders (G2): Ask to switch · Switch · Notify only. */
+@Composable
+private fun remindersRootRow(settingsVm: SettingsViewModel, focus: FocusRequester, onClick: () -> Unit): RootRow {
+    val mode by settingsVm.reminderMode.collectAsStateWithLifecycle()
+    return RootRow(
+        "reminders", TileTone.SECONDARY, OwnTVIcon.BELL,
+        title = stringResource(R.string.settings_reminders),
+        desc = stringResource(R.string.settings_reminders_description),
+        chip = stringResource(reminderModeLabelRes(mode)),
+        chipTone = TileTone.PRIMARY,
+        focus = focus,
+        onClick = onClick,
+    )
+}
+
+private fun reminderModeLabelRes(mode: tv.own.owntv.core.settings.SettingsRepository.ReminderMode): Int = when (mode) {
+    tv.own.owntv.core.settings.SettingsRepository.ReminderMode.ASK -> R.string.settings_reminder_ask
+    tv.own.owntv.core.settings.SettingsRepository.ReminderMode.SWITCH -> R.string.settings_reminder_switch
+    tv.own.owntv.core.settings.SettingsRepository.ReminderMode.NOTIFY -> R.string.settings_reminder_notify
+}
+
+@Composable
+private fun RemindersDialog(settingsVm: SettingsViewModel, onClose: () -> Unit) {
+    val current by settingsVm.reminderMode.collectAsStateWithLifecycle()
+    tv.own.owntv.features.settings.PickerDialog(
+        title = stringResource(R.string.settings_reminders),
+        subtitle = stringResource(R.string.settings_reminders_description),
+        options = tv.own.owntv.core.settings.SettingsRepository.ReminderMode.entries.map { it.name to stringResource(reminderModeLabelRes(it)) },
+        selected = current.name,
+        onSelect = { settingsVm.setReminderMode(tv.own.owntv.core.settings.SettingsRepository.ReminderMode.valueOf(it)); onClose() },
+        onDismiss = onClose,
+    )
+}
+
+/** Reminder time: at the start, or 1 or 5 minutes before. */
+@Composable
+private fun reminderLeadRootRow(settingsVm: SettingsViewModel, focus: FocusRequester, onClick: () -> Unit): RootRow {
+    val lead by settingsVm.reminderLeadMinutes.collectAsStateWithLifecycle()
+    return RootRow(
+        "reminder_lead", TileTone.SECONDARY, OwnTVIcon.CLOCK,
+        title = stringResource(R.string.settings_reminder_lead),
+        desc = stringResource(R.string.settings_reminder_lead_description),
+        chip = tv.own.owntv.features.live.reminderLeadText(lead),
+        chipTone = TileTone.PRIMARY,
+        focus = focus,
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun ReminderLeadDialog(settingsVm: SettingsViewModel, onClose: () -> Unit) {
+    val current by settingsVm.reminderLeadMinutes.collectAsStateWithLifecycle()
+    tv.own.owntv.features.settings.PickerDialog(
+        title = stringResource(R.string.settings_reminder_lead),
+        subtitle = stringResource(R.string.settings_reminder_lead_description),
+        options = tv.own.owntv.core.reminder.ReminderSchedule.LEAD_CHOICES.map { it.toString() to tv.own.owntv.features.live.reminderLeadText(it) },
+        selected = current.toString(),
+        onSelect = { settingsVm.setReminderLeadMinutes(it.toInt()); onClose() },
         onDismiss = onClose,
     )
 }

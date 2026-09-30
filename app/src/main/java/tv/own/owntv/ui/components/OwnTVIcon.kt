@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.PathParser
 
 /**
@@ -58,6 +59,23 @@ private val StagePaths: Map<OwnTVIcon, Path> by lazy {
 
 /** The mockup draws only these solid; every other glyph ignores [filled], as the old drawings did. */
 private val StageFillable = setOf(OwnTVIcon.PLAY, OwnTVIcon.STAR, OwnTVIcon.FAVORITE, OwnTVIcon.REC)
+
+/** A Stage glyph drawn straight into a Canvas (the guide's programme cells), [sizePx] square at [topLeft]. */
+internal fun androidx.compose.ui.graphics.drawscope.DrawScope.drawStageGlyph(
+    icon: OwnTVIcon,
+    tint: Color,
+    topLeft: Offset,
+    sizePx: Float,
+    filled: Boolean = false,
+) {
+    val path = StagePaths[icon] ?: return
+    val s = sizePx / 24f
+    translate(topLeft.x, topLeft.y) {
+        scale(s, s, pivot = Offset.Zero) {
+            drawPath(path, tint, style = if (filled && icon in StageFillable) Fill else Stroke(2f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        }
+    }
+}
 
 @Composable
 fun OwnTVIcon(

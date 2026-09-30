@@ -184,10 +184,15 @@ internal fun LiveStageRow(
     }
 }
 
-/** `.plate`: the logo on a white plate, radius 12, whatever the logo's own colours. */
+/** `.plate`: the logo on a white plate, radius 12 (the guide's 10), whatever the logo's own colours. */
 @Composable
-private fun LivePlate(logoUrl: String?, width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp) {
-    Box(Modifier.size(width, height).clip(RoundedCornerShape(StageRadii.Plate)).background(Color.White)) {
+internal fun LivePlate(
+    logoUrl: String?,
+    width: androidx.compose.ui.unit.Dp,
+    height: androidx.compose.ui.unit.Dp,
+    radius: androidx.compose.ui.unit.Dp = StageRadii.Plate,
+) {
+    Box(Modifier.size(width, height).clip(RoundedCornerShape(radius)).background(Color.White)) {
         ChannelLogoTile(logoUrl = logoUrl, modifier = Modifier.fillMaxSize(), fill = Color.Transparent) {
             OwnTVIcon(OwnTVIcon.LIVE_TV, tint = StageColors.Dim, modifier = Modifier.align(Alignment.Center).size(height * 0.5f))
         }
@@ -389,6 +394,38 @@ internal data class LiveCategoryEntry(
 )
 
 /**
+ * Live TV's category list as the sheet and column draw it — the fixed entries with their icons, the
+ * provider groups parsed into name and tags — and the "GROUPS · DE" heading above the groups. The TV
+ * Guide's category sheet is this same list (P4-03).
+ */
+@Composable
+internal fun liveCategoryEntries(railItems: List<LiveRailItem>, railCounts: Map<tv.own.owntv.core.live.LiveKey, Int>): Pair<List<LiveCategoryEntry>, String> {
+    val recentLabel = stringResource(R.string.content_category_recently_watched)
+    val entries = railItems.map { item ->
+        val label = if (item.key == tv.own.owntv.core.live.LiveKey.History) recentLabel else item.displayLabel()
+        val parsed = if (item.key is tv.own.owntv.core.live.LiveKey.Folder || item.key is tv.own.owntv.core.live.LiveKey.Custom) ProviderTags.parse(label) else null
+        LiveCategoryEntry(
+            item = item,
+            label = parsed?.name ?: label,
+            name = parsed,
+            icon = when (item.key) {
+                tv.own.owntv.core.live.LiveKey.Favorites -> OwnTVIcon.FAVORITE
+                tv.own.owntv.core.live.LiveKey.History -> OwnTVIcon.HISTORY
+                tv.own.owntv.core.live.LiveKey.Catchup -> OwnTVIcon.REWIND
+                tv.own.owntv.core.live.LiveKey.All -> OwnTVIcon.LIVE_TV
+                else -> null
+            },
+            count = railCounts[item.key],
+            mark = null,
+        )
+    }
+    val groupCountry = ProviderTags.sharedCountry(entries.mapNotNull { it.name })
+    val heading = (if (groupCountry != null) stringResource(R.string.content_live_groups_country, groupCountry) else stringResource(R.string.content_live_groups))
+        .uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale)
+    return entries to heading
+}
+
+/**
  * The categories: the glass sheet (P3-02, 450 wide, radius 32, "Categories · Live TV") or the flat
  * column (P3-06, the Movies P5-05 column). Search, the fixed entries with icons and counts, then
  * "GROUPS · DE" and the provider groups with their tags, counts and playlist marks. The selected
@@ -412,6 +449,9 @@ internal fun LiveCategories(
     focusRequester: FocusRequester? = null,
     focusRowIndex: Int? = null,
     onRowFocused: () -> Unit = {},
+    /** The sheet's heading and the line beside it; the TV Guide says "Guide category · Same list as Live TV". */
+    sheetTitle: String = stringResource(R.string.content_category_browser_title),
+    sheetHint: String = stringResource(R.string.common_nav_live_tv),
 ) {
     var query by remember { mutableStateOf("") }
     val visible = remember(entries, query) {
@@ -451,8 +491,8 @@ internal fun LiveCategories(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(stringResource(R.string.content_category_browser_title), style = stageText(26, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(stringResource(R.string.common_nav_live_tv), style = stageText(17, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(sheetTitle, style = stageText(26, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                Text(sheetHint, style = stageText(17, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 16.mpx))
             }
         }
         // Edge-only scrolling, as the channel list (no double step on ▼).

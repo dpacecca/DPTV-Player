@@ -955,6 +955,15 @@ class SettingsViewModel(
     val liveLayout: StateFlow<tv.own.owntv.core.settings.SettingsRepository.LiveLayout> =
         settings.liveLayout.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.LiveLayout.STAGE)
     fun setLiveLayout(layout: tv.own.owntv.core.settings.SettingsRepository.LiveLayout) { viewModelScope.launch { settings.setLiveLayout(layout) } }
+    val liveView: StateFlow<tv.own.owntv.core.settings.SettingsRepository.LiveView> =
+        settings.liveView.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.LiveView.LIST)
+    fun setLiveView(view: tv.own.owntv.core.settings.SettingsRepository.LiveView) { viewModelScope.launch { settings.setLiveView(view) } }
+    val reminderMode: StateFlow<tv.own.owntv.core.settings.SettingsRepository.ReminderMode> =
+        settings.reminderMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.ReminderMode.ASK)
+    fun setReminderMode(mode: tv.own.owntv.core.settings.SettingsRepository.ReminderMode) { viewModelScope.launch { settings.setReminderMode(mode) } }
+    val reminderLeadMinutes: StateFlow<Int> =
+        settings.reminderLeadMinutes.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.reminder.ReminderSchedule.DEFAULT_LEAD_MINUTES)
+    fun setReminderLeadMinutes(minutes: Int) { viewModelScope.launch { settings.setReminderLeadMinutes(minutes) } }
     /** Live TV's Stage-layout widths: the categories sheet on its own, list + preview = 100. */
     val liveStageWidths: StateFlow<tv.own.owntv.core.settings.LiveStageWidths?> =
         settings.liveStageWidths.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)

@@ -25,7 +25,6 @@
 1	app/src/main/java/tv/own/owntv/features/customize/MoveToCategoryDialog.kt	●
 1	app/src/main/java/tv/own/owntv/features/customize/MoveToCategoryDialog.kt	☐
 1	app/src/main/java/tv/own/owntv/features/customize/MoveToCategoryDialog.kt	☑
-1	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	ALL
 8	app/src/main/java/tv/own/owntv/features/settings/DnsSettingsScreen.kt	\0
 1	app/src/main/java/tv/own/owntv/features/settings/DnsSettingsScreen.kt	${cfg.host}$p
 1	app/src/main/java/tv/own/owntv/features/settings/DnsSettingsScreen.kt	:${cfg.port}

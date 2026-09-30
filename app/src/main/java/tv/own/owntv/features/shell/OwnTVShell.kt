@@ -209,6 +209,8 @@ fun OwnTVShell(
     // Where ▶ out of the Stage rail returns to: the content, exactly as it was left.
     val contentAreaFocus = remember { FocusRequester() }
     var homeEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    // The guide's entry hook: the TV Guide, or Live TV in Guide view (null while Live TV shows its list).
+    var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The playlist pill's place on screen, where the playlist menu redraws it above its scrim.
     var playlistPillBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var miniHasFocus by remember { mutableStateOf(false) }
@@ -791,11 +793,12 @@ fun OwnTVShell(
         }
     }
 
-    // Stop a leftover live preview when you leave the Live section (but never while fullscreen/mini plays).
+    // Stop a leftover live preview when you leave the Live section or the Guide, which previews through it
+    // too (but never while fullscreen/mini plays).
     // The preview runs on the ExoPlayer live engine, not mpv: stopping only mpv here (as when the preview
     // was mpv) left it decoding and holding a provider connection after a shortcut or deep link out.
     LaunchedEffect(selectedSection, playerMode) {
-        if (selectedSection != MainSection.LIVE_TV && playerMode == PlayerMode.NONE) liveVm.stopPreview()
+        if (selectedSection != MainSection.LIVE_TV && selectedSection != MainSection.EPG && playerMode == PlayerMode.NONE) liveVm.stopPreview()
         if (selectedSection != MainSection.HOME || playerMode != PlayerMode.NONE) homeVm.stopPreview()
     }
 
@@ -1009,14 +1012,33 @@ fun OwnTVShell(
                     // A Stage screen's page, across the whole width — under a docked rail's reserve too.
                     // A wallpaper, when the user set one, shows through instead.
                     .then(
-                        if ((selectedSection == MainSection.HOME || selectedSection == MainSection.LIVE_TV) && !glass.hasBackdrop) {
+                        if (selectedSection in StageSections && !glass.hasBackdrop) {
                             Modifier.stageBackground(colors.primary)
                         } else Modifier,
                     ),
             ) {
                 // Screens already redrawn for Stage own the whole canvas: they lay themselves out under
                 // the floating rail and the top-right cluster, as the mockup does.
-                val stageScreen = selectedSection == MainSection.HOME || selectedSection == MainSection.LIVE_TV
+                val stageScreen = selectedSection in StageSections
+                // Live TV's view (List / Guide, G14), and how a guide — the TV Guide or Live TV's Guide view —
+                // starts a channel or an archive programme: through LiveViewModel, the one live path.
+                val liveView by liveVm.liveView.collectAsStateWithLifecycle()
+                val guidePlayChannel: (ChannelEntity, List<ChannelEntity>) -> Unit = { ch, _ ->
+                    restoreFocus = false
+                    liveVm.watchFromGuide(ch)
+                    zapSource = MainSection.LIVE_TV
+                    homeVm.stopPreview()
+                    // Live TV set to play externally → the channel went to another app;
+                    // don't mount the fullscreen player over it.
+                    if (playerMode != PlayerMode.MINI && !liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
+                }
+                val guidePlayCatchup: (ChannelEntity, tv.own.owntv.core.database.entity.EpgProgrammeEntity) -> Unit = { ch, prog ->
+                    restoreFocus = false
+                    liveVm.playCatchupProgramme(ch, prog)
+                    zapSource = MainSection.LIVE_TV
+                    homeVm.stopPreview()
+                    if (playerMode != PlayerMode.MINI) playerMode = PlayerMode.FULLSCREEN
+                }
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth()
                         .then(
@@ -1147,9 +1169,26 @@ fun OwnTVShell(
                             modifier = Modifier.fillMaxSize(),
                         )
 
+                        selectedSection == MainSection.LIVE_TV && liveView == tv.own.owntv.core.settings.SettingsRepository.LiveView.GUIDE -> EpgScreen(
+                            onPlayChannel = guidePlayChannel,
+                            onPlayCatchup = guidePlayCatchup,
+                            onAddEpg = { openEpgAdd = true; onSelectSection(MainSection.SETTINGS) },
+                            previewEnabled = playerMode == PlayerMode.NONE,
+                            liveMode = true,
+                            onEntryHook = { guideEntry = it },
+                            onListView = { liveVm.setLiveView(tv.own.owntv.core.settings.SettingsRepository.LiveView.LIST) },
+                            restoreFocus = restoreFocus,
+                            onRestored = { restoreFocus = false },
+                            onContentScrolled = { contentScrolled = it },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
+                                .focusGroup(),
+                        )
+
                         selectedSection == MainSection.LIVE_TV -> LiveScreen(
                             onFullscreen = { openFullscreen() },
-                            onOpenGuide = { onSelectSection(MainSection.EPG) },
+                            onOpenGuide = { liveVm.setLiveView(tv.own.owntv.core.settings.SettingsRepository.LiveView.GUIDE) },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                             previewEnabled = playerMode == PlayerMode.NONE,
                             restoreFocus = restoreFocus,
@@ -1184,24 +1223,11 @@ fun OwnTVShell(
                         )
 
                         selectedSection == MainSection.EPG -> EpgScreen(
-                            onBack = { runCatching { sidebarFocus.requestFocus() } },
                             onFullscreen = { openFullscreen() },
-                            onPlayChannel = { ch, _ ->
-                                restoreFocus = false
-                                liveVm.watchFromGuide(ch)
-                                zapSource = MainSection.LIVE_TV
-                                homeVm.stopPreview()
-                                // Live TV set to play externally → the channel went to another app;
-                                // don't mount the fullscreen player over it.
-                                if (playerMode != PlayerMode.MINI && !liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
-                            },
-                            onPlayCatchup = { ch, prog ->
-                                restoreFocus = false
-                                liveVm.playCatchupProgramme(ch, prog)
-                                zapSource = MainSection.LIVE_TV
-                                homeVm.stopPreview()
-                                if (playerMode != PlayerMode.MINI) playerMode = PlayerMode.FULLSCREEN
-                            },
+                            onPlayChannel = guidePlayChannel,
+                            onPlayCatchup = guidePlayCatchup,
+                            previewEnabled = playerMode == PlayerMode.NONE,
+                            onEntryHook = { guideEntry = it },
                             onAddEpg = { openEpgAdd = true; onSelectSection(MainSection.SETTINGS) },
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
@@ -1292,7 +1318,11 @@ fun OwnTVShell(
                 onPickAvatar = { showAvatarPicker = true },
                 selectedItemFocusRequester = sidebarFocus,
                 contentFocusRequester = contentAreaFocus,
-                enterContent = homeEntry.takeIf { selectedSection == MainSection.HOME },
+                enterContent = when (selectedSection) {
+                    MainSection.HOME -> homeEntry
+                    MainSection.EPG, MainSection.LIVE_TV -> guideEntry
+                    else -> null
+                },
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
                 nowPlaying = nowPlayingRail,
                 onNowPlaying = enterNowPlaying,
@@ -1621,6 +1651,37 @@ fun OwnTVShell(
                     )
                 }
                 tv.own.owntv.ui.components.InAppToast(localSubToast)
+                // Programme reminders (G2): when one comes up, ask to switch, switch, or only say so (the
+                // Programme reminders setting) — over whatever is on screen, the player included.
+                val reminderManager = koinInject<tv.own.owntv.core.reminder.ReminderManager>()
+                val dueReminders by reminderManager.due.collectAsStateWithLifecycle()
+                val reminderMode by settingsRepo.reminderMode.collectAsStateWithLifecycle(tv.own.owntv.core.settings.SettingsRepository.ReminderMode.ASK)
+                val dueReminder = dueReminders.firstOrNull { it.profileId == activeProfileId }
+                val watchReminder: (tv.own.owntv.core.database.entity.ReminderEntity) -> Unit = { r ->
+                    scope.launch {
+                        reminderManager.dismiss(r.id)
+                        if (liveVm.ensurePlayingByIdAsync(r.channelId)) openFullscreen(MainSection.LIVE_TV)
+                    }
+                }
+                val reminderText = dueReminder?.let { listOf(it.title, tv.own.owntv.features.epg.reminderEyebrow(it)).joinToString(" · ") }
+                LaunchedEffect(dueReminder?.id, reminderMode) {
+                    val r = dueReminder ?: return@LaunchedEffect
+                    when (reminderMode) {
+                        tv.own.owntv.core.settings.SettingsRepository.ReminderMode.SWITCH -> watchReminder(r)
+                        tv.own.owntv.core.settings.SettingsRepository.ReminderMode.NOTIFY -> {
+                            reminderText?.let(localSubToast::show)
+                            reminderManager.dismiss(r.id)
+                        }
+                        tv.own.owntv.core.settings.SettingsRepository.ReminderMode.ASK -> Unit
+                    }
+                }
+                if (dueReminder != null && reminderMode == tv.own.owntv.core.settings.SettingsRepository.ReminderMode.ASK) {
+                    tv.own.owntv.features.epg.ReminderPrompt(
+                        reminder = dueReminder,
+                        onWatch = { watchReminder(dueReminder) },
+                        onDismiss = { scope.launch { reminderManager.dismiss(dueReminder.id) } },
+                    )
+                }
                 // A catch-up pick that could not be resolved. Raised from Live TV wherever an archive
                 // URL comes back null — "Watch from start", "Go back to…" and the external hand-off —
                 // all of which used to fail in complete silence.
@@ -1842,6 +1903,9 @@ private fun OfflineBanner() {
             color = colors.onTertiaryContainer,
         ) }
     }
+
+/** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
+private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG)
 
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {
