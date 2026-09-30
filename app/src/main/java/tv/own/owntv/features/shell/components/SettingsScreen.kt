@@ -235,6 +235,7 @@ fun SettingsScreen(
     var showAnimations by remember { mutableStateOf(false) }
     var showVodLayout by remember { mutableStateOf(false) }
     var showNavigation by remember { mutableStateOf(false) }
+    var showLiveLayout by remember { mutableStateOf(false) }
     var showStartup by remember { mutableStateOf(false) }
     var showStartupChannelPicker by remember { mutableStateOf(false) }
     var showAfrWarning by remember { mutableStateOf(false) }
@@ -276,6 +277,7 @@ fun SettingsScreen(
     val guideDaysRowFocus = remember { FocusRequester() }
     val animationsRowFocus = remember { FocusRequester() }
     val vodLayoutRowFocus = remember { FocusRequester() }
+    val liveLayoutRowFocus = remember { FocusRequester() }
     val navigationRowFocus = remember { FocusRequester() }
     val startupRowFocus = remember { FocusRequester() }
     val livePreviewQuickFocus = remember { FocusRequester() }
@@ -296,13 +298,13 @@ fun SettingsScreen(
         savedIndex = listState.firstVisibleItemIndex
         savedOffset = listState.firstVisibleItemScrollOffset
     }
-    val anyDialogOpen = showZoom || showPopupSize || showFontCustomization || showTheme || showAccent || showUpdate || showCatchupTime || showCatchupSources || showCatchupSourceValue || showEpgOffset || showGuideDays || showAnimations || showStartup || showStartupChannelPicker || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote || showVodLayout || showNavigation
+    val anyDialogOpen = showZoom || showPopupSize || showFontCustomization || showTheme || showAccent || showUpdate || showCatchupTime || showCatchupSources || showCatchupSourceValue || showEpgOffset || showGuideDays || showAnimations || showStartup || showStartupChannelPicker || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote || showVodLayout || showNavigation || showLiveLayout
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
     // INTO the root focus group from outside (the dialog), but onEnter does NOT fire for programmatic
     // requestsFocus (only for directional entry) — so dialogReturn must be cleared HERE, not in onEnter.
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
-    LaunchedEffect(showZoom, showPopupSize, showFontCustomization, showTheme, showAccent, showUpdate, showCatchupTime, showCatchupSources, showCatchupSourceValue, showEpgOffset, showGuideDays, showAnimations, showStartup, showStartupChannelPicker, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote, showVodLayout, showNavigation) {
+    LaunchedEffect(showZoom, showPopupSize, showFontCustomization, showTheme, showAccent, showUpdate, showCatchupTime, showCatchupSources, showCatchupSourceValue, showEpgOffset, showGuideDays, showAnimations, showStartup, showStartupChannelPicker, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showBrowsing, showFocusHighlight, showBgRemote, showVodLayout, showNavigation, showLiveLayout) {
         if (!anyDialogOpen) {
             // Focus back on the opener row, with the scroll offset held still the whole way — see
             // [restoreAfterDialogClose] for why doing those two in sequence made the highlight travel.
@@ -670,6 +672,7 @@ fun SettingsScreen(
         ),
         RootGroup("group_layout", stringResource(R.string.settings_group_layout), OwnTVIcon.LIST_GRID, stringResource(R.string.settings_group_summary_layout)),
         navigationRootRow(settingsVm, navigationRowFocus) { saveScroll(); dialogReturn = navigationRowFocus; showNavigation = true },
+        liveLayoutRootRow(settingsVm, liveLayoutRowFocus) { saveScroll(); dialogReturn = liveLayoutRowFocus; showLiveLayout = true },
         RootRow(
             "vod_layout", TileTone.PRIMARY, OwnTVIcon.LIST_GRID,
             title = stringResource(R.string.settings_vod_layout),
@@ -1026,6 +1029,7 @@ fun SettingsScreen(
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_search_guide_logos), stringResource(R.string.settings_search_keywords_logos), OwnTVIcon.EPG, TileTone.SECONDARY) { open(SettingsTab.EPG) },
             SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_customize), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.SORT, TileTone.PRIMARY) { open(SettingsTab.CUSTOMIZE) },
             navigationSearchEntry(settingsVm) { saveScroll(); dialogReturn = searchFieldFocus; showNavigation = true },
+            liveLayoutSearchEntry(settingsVm) { saveScroll(); dialogReturn = searchFieldFocus; showLiveLayout = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_ch_paging), stringResource(R.string.settings_search_keywords_ch), OwnTVIcon.CH_NAV, TileTone.PRIMARY,
                 chip = if (chNavEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_vod_layout), stringResource(R.string.settings_search_keywords_vod_layout), OwnTVIcon.LIST_GRID, TileTone.PRIMARY,
@@ -1601,6 +1605,7 @@ fun SettingsScreen(
         NavigationPopupHost(settingsVm, onDismiss = { showNavigation = false })
     }
     if (showVodLayout) VodLayoutDialog(settingsVm, vodLayout, onClose = { showVodLayout = false })
+    if (showLiveLayout) LiveLayoutDialog(settingsVm, onClose = { showLiveLayout = false })
     if (showFocusHighlight) {
         FocusHighlightDialog(
             highlight = focusHighlight,
@@ -1946,6 +1951,58 @@ private fun navigationSearchEntry(settingsVm: SettingsViewModel, onClick: () -> 
         stringResource(R.string.settings_group_layout), stringResource(R.string.settings_navigation),
         stringResource(R.string.settings_search_keywords_navigation), OwnTVIcon.MENU, TileTone.PRIMARY,
         chip = navStyleLabel(style), chipTone = TileTone.PRIMARY, onClick = onClick,
+    )
+}
+
+/** The Layout group's Live TV layout row (Stage P4): Stage, or Separate panels. */
+@Composable
+private fun liveLayoutRootRow(settingsVm: SettingsViewModel, focus: FocusRequester, onClick: () -> Unit): RootRow {
+    val layout by settingsVm.liveLayout.collectAsStateWithLifecycle()
+    return RootRow(
+        "live_layout", TileTone.PRIMARY, OwnTVIcon.LIVE_TV,
+        title = stringResource(R.string.settings_live_layout),
+        desc = stringResource(R.string.settings_live_layout_description),
+        chip = stringResource(liveLayoutLabelRes(layout)),
+        chipTone = TileTone.PRIMARY,
+        focus = focus,
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun liveLayoutSearchEntry(settingsVm: SettingsViewModel, onClick: () -> Unit): SettingsSearchEntry {
+    val layout by settingsVm.liveLayout.collectAsStateWithLifecycle()
+    return SettingsSearchEntry(
+        stringResource(R.string.settings_group_layout), stringResource(R.string.settings_live_layout),
+        stringResource(R.string.settings_search_keywords_live_layout), OwnTVIcon.LIVE_TV, TileTone.PRIMARY,
+        chip = stringResource(liveLayoutLabelRes(layout)), chipTone = TileTone.PRIMARY, onClick = onClick,
+    )
+}
+
+private fun liveLayoutLabelRes(layout: tv.own.owntv.core.settings.SettingsRepository.LiveLayout): Int =
+    if (layout == tv.own.owntv.core.settings.SettingsRepository.LiveLayout.SEPARATE) R.string.settings_vod_layout_separate
+    else R.string.settings_live_layout_stage
+
+@Composable
+private fun LiveLayoutDialog(settingsVm: SettingsViewModel, onClose: () -> Unit) {
+    val current by settingsVm.liveLayout.collectAsStateWithLifecycle()
+    val layouts = tv.own.owntv.core.settings.SettingsRepository.LiveLayout.entries
+    tv.own.owntv.features.settings.PickerDialog(
+        title = stringResource(R.string.settings_live_layout),
+        subtitle = stringResource(R.string.settings_live_layout_description),
+        options = layouts.map { it.name to stringResource(liveLayoutLabelRes(it)) },
+        descriptions = layouts.associate {
+            it.name to stringResource(
+                if (it == tv.own.owntv.core.settings.SettingsRepository.LiveLayout.SEPARATE) R.string.settings_live_layout_separate_description
+                else R.string.settings_live_layout_stage_description,
+            )
+        },
+        selected = current.name,
+        onSelect = {
+            settingsVm.setLiveLayout(tv.own.owntv.core.settings.SettingsRepository.LiveLayout.valueOf(it))
+            onClose()
+        },
+        onDismiss = onClose,
     )
 }
 

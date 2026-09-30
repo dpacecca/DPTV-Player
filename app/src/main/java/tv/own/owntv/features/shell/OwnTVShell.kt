@@ -1009,14 +1009,14 @@ fun OwnTVShell(
                     // A Stage screen's page, across the whole width — under a docked rail's reserve too.
                     // A wallpaper, when the user set one, shows through instead.
                     .then(
-                        if (selectedSection == MainSection.HOME && !glass.hasBackdrop) {
+                        if ((selectedSection == MainSection.HOME || selectedSection == MainSection.LIVE_TV) && !glass.hasBackdrop) {
                             Modifier.stageBackground(colors.primary)
                         } else Modifier,
                     ),
             ) {
                 // Screens already redrawn for Stage own the whole canvas: they lay themselves out under
                 // the floating rail and the top-right cluster, as the mockup does.
-                val stageScreen = selectedSection == MainSection.HOME
+                val stageScreen = selectedSection == MainSection.HOME || selectedSection == MainSection.LIVE_TV
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth()
                         .then(
@@ -1149,6 +1149,7 @@ fun OwnTVShell(
 
                         selectedSection == MainSection.LIVE_TV -> LiveScreen(
                             onFullscreen = { openFullscreen() },
+                            onOpenGuide = { onSelectSection(MainSection.EPG) },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                             previewEnabled = playerMode == PlayerMode.NONE,
                             restoreFocus = restoreFocus,

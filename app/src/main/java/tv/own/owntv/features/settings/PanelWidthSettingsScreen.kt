@@ -122,6 +122,9 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
 
             val vodLayout by vm.vodLayout.collectAsStateWithLifecycle()
             val cinematic = vodLayout == tv.own.owntv.core.settings.SettingsRepository.VodLayout.CINEMATIC
+            val liveLayout by vm.liveLayout.collectAsStateWithLifecycle()
+            val liveStage = liveLayout == tv.own.owntv.core.settings.SettingsRepository.LiveLayout.STAGE
+            val liveStageSaved by vm.liveStageWidths.collectAsStateWithLifecycle()
             val detailsHeights = PanelSection.entries.associateWith {
                 vm.cinematicDetailsHeight(it).collectAsStateWithLifecycle().value
             }
@@ -129,6 +132,8 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
                 val enabled by vm.panelWidthEnabled.getValue(section).collectAsStateWithLifecycle()
                 val shares by vm.panelShares.getValue(section).collectAsStateWithLifecycle()
                 val current = shares ?: defaultPanelShares(section, rowWidth)
+                val stageWidths = (liveStageSaved ?: tv.own.owntv.core.settings.LiveStageWidths.DEFAULT)
+                    .takeIf { section == PanelSection.LIVE && liveStage }
                 Row2(
                     icon = when (section) {
                         PanelSection.LIVE -> OwnTVIcon.LIVE_TV
@@ -136,7 +141,9 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
                         PanelSection.SERIES -> OwnTVIcon.SERIES
                     },
                     title = sectionTitle(section),
-                    desc = stringResource(
+                    desc = if (stageWidths != null) {
+                        stringResource(R.string.settings_panel_width_summary_stage, stageWidths.sheet, stageWidths.list, stageWidths.preview)
+                    } else stringResource(
                         R.string.settings_panel_width_summary,
                         current.category,
                         current.list,
@@ -230,6 +237,12 @@ private fun PanelWidthDialog(
 
     var enabled by remember { mutableStateOf(savedEnabled) }
     var draft by remember { mutableStateOf(savedShares ?: stock) }
+    // Live TV in the Stage layout sizes a different thing: the sheet over the list, on its own scale,
+    // and a row of list + preview that totals 100. Seeded once, like `draft`.
+    val liveLayout by vm.liveLayout.collectAsStateWithLifecycle()
+    val stage = section == PanelSection.LIVE && liveLayout == tv.own.owntv.core.settings.SettingsRepository.LiveLayout.STAGE
+    val savedStage by vm.liveStageWidths.collectAsStateWithLifecycle()
+    var stageDraft by remember { mutableStateOf(savedStage ?: tv.own.owntv.core.settings.LiveStageWidths.DEFAULT) }
     // Seeded ONCE, exactly like `draft` above — never resynced from the flow while the dialog is up.
     // The saved value is a `stateIn(WhileSubscribed)` StateFlow, so it starts at the default and the
     // stored number lands a frame later; a resync would let that late emission overwrite whatever the
@@ -244,7 +257,8 @@ private fun PanelWidthDialog(
     // The red note only appears once the user has actually tried to save an unbalanced total.
     var showError by remember { mutableStateOf(false) }
     var showPreviewDisableConfirmation by remember { mutableStateOf(false) }
-    val valid = draft.isValid
+    val valid = if (stage) stageDraft.isValid else draft.isValid
+    val shownTotal = if (stage) stageDraft.list + stageDraft.preview else draft.total
 
     val toggleFocus = remember { FocusRequester() }
     val confirmationFocus = remember { FocusRequester() }
@@ -290,7 +304,7 @@ private fun PanelWidthDialog(
                             onClick = {
                                 // This branch is Live TV only, which is never Cinematic — the
                                 // details height is saved by the main Okay button below.
-                                vm.setPanelWidths(section, enabled, draft)
+                                if (stage) vm.setLiveStageWidths(enabled, stageDraft) else vm.setPanelWidths(section, enabled, draft)
                                 onDismiss()
                             },
                             style = OwnTVButtonStyle.SECONDARY,
@@ -338,7 +352,16 @@ private fun PanelWidthDialog(
 
                 if (enabled) {
                     Spacer(Modifier.height(10.dp))
-                    if (showDetailsHeight) {
+                    if (stage) {
+                        // List and preview are one row that must total 100, so they move together.
+                        StepRow(listLabel(section, false), stageDraft.list, maximum = PanelWidthLimits.TOTAL) {
+                            stageDraft = stageDraft.copy(list = it, preview = PanelWidthLimits.TOTAL - it)
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        StepRow(thirdSliderLabel(section, false), stageDraft.preview, minimum = 0, maximum = PanelWidthLimits.TOTAL - PanelWidthLimits.MIN) {
+                            stageDraft = stageDraft.copy(preview = it, list = PanelWidthLimits.TOTAL - it)
+                        }
+                    } else if (showDetailsHeight) {
                         // Two columns that must total 100 are really one slider, so they move
                         // together: whatever one gives up, the other takes. Without this the total
                         // could sit at 100 while a column was over the per-panel 80% cap, which
@@ -364,7 +387,7 @@ private fun PanelWidthDialog(
                     Spacer(Modifier.height(6.dp))
                     StepRow(listLabel(section, cinematic), draft.list, maximum = PanelWidthLimits.listMax(draft.preview)) { draft = draft.copy(list = it) }
                     }
-                    if (!showDetailsHeight) {
+                    if (!showDetailsHeight && !stage) {
                         Spacer(Modifier.height(6.dp))
                         StepRow(
                             thirdSliderLabel(section, cinematic),
@@ -377,11 +400,15 @@ private fun PanelWidthDialog(
                     }
 
                     Spacer(Modifier.height(10.dp))
-                    PanelWidthDiagram(
-                        draft,
-                        cinematic = showDetailsHeight,
-                        detailsHeight = detailsHeight,
-                    )
+                    if (stage) {
+                        StageWidthDiagram(stageDraft)
+                    } else {
+                        PanelWidthDiagram(
+                            draft,
+                            cinematic = showDetailsHeight,
+                            detailsHeight = detailsHeight,
+                        )
+                    }
 
                     Spacer(Modifier.height(10.dp))
                     Row(
@@ -396,7 +423,7 @@ private fun PanelWidthDialog(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
-                            stringResource(R.string.common_percent, draft.total),
+                            stringResource(R.string.common_percent, shownTotal),
                             style = MaterialTheme.typography.titleMedium,
                             // `favorite` is the theme's red — the same one MaterialTheme maps to `error`.
                             color = if (valid) colors.primary else colors.favorite,
@@ -404,6 +431,27 @@ private fun PanelWidthDialog(
                             textAlign = TextAlign.Center,
                             // Same width as a stepper's value + one button, so it lines up under them.
                             modifier = Modifier.padding(end = 48.dp).width(64.dp),
+                        )
+                    }
+
+                    if (stage) {
+                        // Below the total, like the Cinematic height: the sheet slides over the row
+                        // and takes no part in its 100%.
+                        Spacer(Modifier.height(12.dp))
+                        Box(Modifier.fillMaxWidth().height(1.dp).background(colors.outlineVariant.copy(alpha = 0.5f)))
+                        Spacer(Modifier.height(12.dp))
+                        StepRow(
+                            stringResource(R.string.settings_panel_width_live_sheet),
+                            stageDraft.sheet,
+                            minimum = tv.own.owntv.core.settings.LiveStageWidths.LIVE_SHEET_MIN,
+                            maximum = tv.own.owntv.core.settings.LiveStageWidths.LIVE_SHEET_MAX,
+                        ) { stageDraft = stageDraft.copy(sheet = it) }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            stringResource(R.string.settings_panel_width_live_sheet_hint, *NO_ARGS),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 2.dp),
                         )
                     }
 
@@ -443,7 +491,7 @@ private fun PanelWidthDialog(
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                         ) {
                             Text(
-                                stringResource(R.string.settings_panel_width_invalid_total, draft.total),
+                                stringResource(R.string.settings_panel_width_invalid_total, shownTotal),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = colors.favorite,
                                 textAlign = TextAlign.Center,
@@ -458,6 +506,7 @@ private fun PanelWidthDialog(
                         stringResource(R.string.common_reset),
                         onClick = {
                             draft = stock
+                            stageDraft = tv.own.owntv.core.settings.LiveStageWidths.DEFAULT
                             detailsHeight = CINEMATIC_DETAILS_DEFAULT
                             showError = false
                         },
@@ -471,9 +520,13 @@ private fun PanelWidthDialog(
                             if (enabled && !valid) {
                                 showError = true
                             } else if (
-                                section == PanelSection.LIVE && enabled && draft.preview == 0 && livePreviewEnabled
+                                section == PanelSection.LIVE && enabled && livePreviewEnabled &&
+                                (if (stage) stageDraft.preview == 0 else draft.preview == 0)
                             ) {
                                 showPreviewDisableConfirmation = true
+                            } else if (stage) {
+                                vm.setLiveStageWidths(enabled, stageDraft)
+                                onDismiss()
                             } else {
                                 vm.setPanelWidths(section, enabled, draft)
                                 if (showDetailsHeight) vm.setCinematicDetailsHeight(section, detailsHeight)
@@ -485,6 +538,34 @@ private fun PanelWidthDialog(
             }
             }
         }
+    }
+}
+
+/** Live TV, Stage layout: the list and the preview across the row, the categories sheet drawn over its left edge. */
+@Composable
+private fun StageWidthDiagram(w: tv.own.owntv.core.settings.LiveStageWidths) {
+    val colors = OwnTVTheme.colors
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(colors.surfaceContainerLowest)
+            .padding(4.dp),
+    ) {
+        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(Modifier.weight(w.list.toFloat()).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(colors.surfaceContainerHigh))
+            if (w.preview > 0) {
+                Box(Modifier.weight(w.preview.toFloat()).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(colors.surfaceContainerHighest))
+            }
+        }
+        Box(
+            Modifier
+                .fillMaxWidth(w.sheet / 100f)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(6.dp))
+                .background(colors.primary.copy(alpha = 0.55f)),
+        )
     }
 }
 

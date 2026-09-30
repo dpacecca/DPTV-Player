@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -550,17 +551,21 @@ fun StageSheetItem(
     icon: OwnTVIcon? = null,
     count: String? = null,
     selected: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    /** 2 lets a long name wrap instead of being cut; the row then grows past 56 (owner, 2026-09-30). */
+    maxLines: Int = 1,
     tags: (@Composable RowScope.(focused: Boolean) -> Unit)? = null,
     trailing: (@Composable RowScope.(focused: Boolean) -> Unit)? = null,
 ) {
     val a = stageAccent
     StageSurface(
         onClick = onClick,
+        onLongClick = onLongClick,
         radius = StageRadii.SheetItem,
-        modifier = modifier.fillMaxWidth().height(56.mpx),
+        modifier = modifier.fillMaxWidth().then(if (maxLines > 1) Modifier.heightIn(min = 56.mpx) else Modifier.height(56.mpx)),
     ) { focused ->
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.mpx),
+            Modifier.fillMaxWidth().padding(horizontal = 16.mpx, vertical = if (maxLines > 1) 8.mpx else 0.mpx),
             horizontalArrangement = Arrangement.spacedBy(14.mpx),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -570,19 +575,30 @@ fun StageSheetItem(
                 Box(Modifier.width(3.mpx).wrapContentWidth(Alignment.Start, unbounded = true)) { StageSelectedDot() }
             }
             if (icon != null) StageIcon(icon, on ?: if (selected) a.accent else StageColors.Muted, 22.mpx)
-            Row(
-                Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(14.mpx),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            val label = @Composable { m: Modifier ->
                 Text(
                     text,
                     style = stageText(20, 600),
                     color = on ?: if (selected) a.accent else StageColors.ItemText,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
+                    maxLines = maxLines, overflow = TextOverflow.Ellipsis,
+                    modifier = m,
                 )
-                tags?.invoke(this, focused)
+            }
+            if (maxLines > 1) {
+                // Wrapping names get the full width: the tags move to their own line underneath.
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.mpx)) {
+                    label(Modifier)
+                    if (tags != null) Row(horizontalArrangement = Arrangement.spacedBy(8.mpx)) { tags(this, focused) }
+                }
+            } else {
+                Row(
+                    Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(14.mpx),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    label(Modifier.weight(1f, fill = false))
+                    tags?.invoke(this, focused)
+                }
             }
             if (count != null) Text(count, style = stageText(16, 600), color = on ?: StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
             trailing?.invoke(this, focused)

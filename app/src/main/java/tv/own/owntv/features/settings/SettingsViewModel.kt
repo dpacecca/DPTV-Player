@@ -952,6 +952,15 @@ class SettingsViewModel(
     val vodLayout: StateFlow<tv.own.owntv.core.settings.SettingsRepository.VodLayout> =
         settings.vodLayout.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.VodLayout.SEPARATE)
     fun setVodLayout(layout: tv.own.owntv.core.settings.SettingsRepository.VodLayout) { viewModelScope.launch { settings.setVodLayout(layout) } }
+    val liveLayout: StateFlow<tv.own.owntv.core.settings.SettingsRepository.LiveLayout> =
+        settings.liveLayout.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.LiveLayout.STAGE)
+    fun setLiveLayout(layout: tv.own.owntv.core.settings.SettingsRepository.LiveLayout) { viewModelScope.launch { settings.setLiveLayout(layout) } }
+    /** Live TV's Stage-layout widths: the categories sheet on its own, list + preview = 100. */
+    val liveStageWidths: StateFlow<tv.own.owntv.core.settings.LiveStageWidths?> =
+        settings.liveStageWidths.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    fun setLiveStageWidths(enabled: Boolean, widths: tv.own.owntv.core.settings.LiveStageWidths) {
+        viewModelScope.launch { settings.setLiveStageWidths(enabled, widths) }
+    }
 
     val ambientGlowEnabled: StateFlow<Boolean> =
         settings.ambientGlowEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
