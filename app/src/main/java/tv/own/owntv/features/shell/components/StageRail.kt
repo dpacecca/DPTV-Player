@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -133,6 +134,8 @@ fun StageRail(
     onPickAvatar: () -> Unit,
     selectedItemFocusRequester: FocusRequester,
     contentFocusRequester: FocusRequester,
+    /** A screen's own way in, when it has one (Home returns to the exact control left from). */
+    enterContent: (() -> Boolean)? = null,
     onFocused: () -> Unit,
     nowPlaying: NowPlayingRail?,
     onNowPlaying: () -> Unit,
@@ -194,7 +197,15 @@ fun StageRail(
                 .focusProperties {
                     onExit = {
                         val out = if (rtl) FocusDirection.Left else FocusDirection.Right
-                        if (requestedFocusDirection == out && runCatching { contentFocusRequester.requestFocus() }.getOrDefault(false)) {
+                        if (requestedFocusDirection == out && enterContent != null) {
+                            // Focus cannot be moved from inside a focus change: stop this one, and let
+                            // the screen place focus itself on the next frame.
+                            cancelFocusChange()
+                            scope.launch {
+                                withFrameNanos { }
+                                if (!enterContent()) runCatching { contentFocusRequester.requestFocus() }
+                            }
+                        } else if (requestedFocusDirection == out && runCatching { contentFocusRequester.requestFocus() }.getOrDefault(false)) {
                             cancelFocusChange()
                         }
                     }

@@ -122,7 +122,7 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         desc = stringResource(R.string.home_row_trending_description),
                         chip = stringResource(
                             when (config.trendingStyle) {
-                                HomeTrendingStyle.HERO -> R.string.home_trending_style_hero
+                                HomeTrendingStyle.HERO -> R.string.home_trending_style_full_bleed
                                 HomeTrendingStyle.POSTERS -> R.string.home_trending_style_posters
                             },
                         ),

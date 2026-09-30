@@ -10,8 +10,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -163,6 +166,25 @@ fun Modifier.gradientWash(vertical: Boolean, vararg stops: Pair<Float, Color>): 
         onDrawBehind { drawImage(image = texture, dstSize = dstSize) }
     }
 }
+
+/**
+ * CSS `mask-image: linear-gradient(90deg, transparent, #000 <left>), linear-gradient(0deg, transparent,
+ * #000 <bottom>)` with `mask-composite: intersect`: the element (a backdrop) dissolves into whatever is
+ * behind it on its left and bottom edges instead of ending on a line. The two ramps are cached textures
+ * multiplied into the element's alpha in one offscreen layer.
+ */
+fun Modifier.dissolveEdges(left: Float, bottom: Float): Modifier = this
+    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+    .drawWithCache {
+        val across = GradientTextures.get(GradientTextures.Kind.HORIZONTAL, listOf(Color.Transparent, Color.Black), listOf(0f, left))
+        val down = GradientTextures.get(GradientTextures.Kind.VERTICAL, listOf(Color.Black, Color.Transparent), listOf(1f - bottom, 1f))
+        val dstSize = IntSize(ceil(size.width).toInt(), ceil(size.height).toInt())
+        onDrawWithContent {
+            drawContent()
+            drawImage(image = across, dstSize = dstSize, blendMode = BlendMode.DstIn)
+            drawImage(image = down, dstSize = dstSize, blendMode = BlendMode.DstIn)
+        }
+    }
 
 /** [gradientWash] with evenly spaced [colors], like `Brush.verticalGradient(listOf(...))`. */
 fun Modifier.gradientWash(vertical: Boolean, colors: List<Color>): Modifier =

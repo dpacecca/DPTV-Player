@@ -646,6 +646,68 @@ fun StagePoster(
     }
 }
 
+/**
+ * Home's Keep watching card (`.pc` with a 16:9 `.img`): the still, a 6 px accent progress bar along its
+ * bottom on black 50%, then the title in 700 and a muted line ("S1 · E2 · 31 min left"). Focus is the
+ * POSTER treatment, as on any `.pc`. [titleSize] / [lineSize] differ between the hero (20 / 16) and the
+ * rows (19 / 15).
+ */
+@Composable
+fun StageStill(
+    title: String,
+    line: String?,
+    onClick: () -> Unit,
+    width: Dp,
+    height: Dp,
+    titleSize: Int,
+    lineSize: Int,
+    modifier: Modifier = Modifier,
+    progress: Float? = null,
+    artwork: @Composable BoxScope.() -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val accent = stageAccent
+    val r = StageRadii.Poster
+    Column(
+        modifier
+            .width(width)
+            .stageLift(focused, StageFocus.POSTER)
+            .stageClickable(interaction, true, onClick, null),
+    ) {
+        Box(
+            Modifier
+                .size(width, height)
+                .then(
+                    if (focused) {
+                        Modifier.stageFocusDecor(StageFocus.POSTER, r, accent)
+                    } else {
+                        Modifier.drawBehind {
+                            drawBoxShadow(Color.Black.copy(alpha = 0.45f), 26.mpx.toPx(), r.toPx(), dy = 10.mpx.toPx())
+                        }
+                    },
+                )
+                .clip(RoundedCornerShape(r)),
+        ) {
+            artwork()
+            if (progress != null && progress > 0f) {
+                Box(
+                    Modifier.align(Alignment.BottomStart).fillMaxWidth().height(6.mpx)
+                        .background(Color.Black.copy(alpha = 0.5f)),
+                ) {
+                    Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).height(6.mpx).background(accent.accent))
+                }
+            }
+        }
+        Spacer(Modifier.height(12.mpx))
+        Text(title, style = stageText(titleSize, 700), color = Color(0xFFE6EEEA), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (line != null) {
+            Spacer(Modifier.height((if (lineSize >= 16) 4 else 3).mpx))
+            Text(line, style = stageText(lineSize, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
 /** `.pc .rt`: "★ 7.8" on near-black in the poster's top-left corner. */
 @Composable
 fun StageRatingChip(rating: String, modifier: Modifier = Modifier) {

@@ -93,6 +93,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.compose.ui.res.stringResource
 import tv.own.owntv.player.alignment
+import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.stage.stageBackground
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.LocalRemoteShortcuts
 import tv.own.owntv.ui.components.RemoteShortcutEnvironment
@@ -206,6 +208,7 @@ fun OwnTVShell(
     val railDetails by railVm.details.collectAsStateWithLifecycle()
     // Where ▶ out of the Stage rail returns to: the content, exactly as it was left.
     val contentAreaFocus = remember { FocusRequester() }
+    var homeEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The playlist pill's place on screen, where the playlist menu redraws it above its scrim.
     var playlistPillBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var miniHasFocus by remember { mutableStateOf(false) }
@@ -1002,8 +1005,18 @@ fun OwnTVShell(
                     // rounded borders define regions on one continuous dark-green surface.
                     // Glass effect: transparent here (shellBase) when a background image is active, so
                     // the image shows through the gaps between the content panels.
-                    .background(shellBase),
+                    .background(shellBase)
+                    // A Stage screen's page, across the whole width — under a docked rail's reserve too.
+                    // A wallpaper, when the user set one, shows through instead.
+                    .then(
+                        if (selectedSection == MainSection.HOME && !glass.hasBackdrop) {
+                            Modifier.stageBackground(colors.primary)
+                        } else Modifier,
+                    ),
             ) {
+                // Screens already redrawn for Stage own the whole canvas: they lay themselves out under
+                // the floating rail and the top-right cluster, as the mockup does.
+                val stageScreen = selectedSection == MainSection.HOME
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth()
                         .then(
@@ -1012,16 +1025,19 @@ fun OwnTVShell(
                             // yet redrawn for Stage keep this top inset until their phase gives them the full canvas.
                             Modifier
                                 .padding(
-                                    start = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) {
-                                        tv.own.owntv.features.shell.components.railDockedReserve(navSize)
-                                    } else 6.dp,
-                                    top = tv.own.owntv.features.shell.components.StageContentTop,
+                                    start = when {
+                                        navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED ->
+                                            tv.own.owntv.features.shell.components.railDockedReserve(navSize)
+                                        stageScreen -> 0.dp
+                                        else -> 6.dp
+                                    },
+                                    top = if (stageScreen) 0.dp else tv.own.owntv.features.shell.components.StageContentTop,
                                 )
                                 .focusRequester(contentAreaFocus)
                                 .focusRestorer()
                                 .focusGroup(),
                         )
-                        .padding(start = 0.dp, end = 6.dp, bottom = 6.dp),
+                        .then(if (stageScreen) Modifier else Modifier.padding(end = 6.dp, bottom = 6.dp)),
                 ) {
                     when {
                         // Plan Z — the hub the rail's last item now opens. Settings is a row in it.
@@ -1061,7 +1077,6 @@ fun OwnTVShell(
                             onPlayMovie = { id, pos -> scope.launch { if (movieVm.playByIdAsync(id, pos) && !movieVm.externalPlayerOn.value) openFullscreen(MainSection.MOVIES) } },
                             onPlayEpisode = { seriesId, epId, pos -> scope.launch { if (seriesVm.playFromHomeAsync(seriesId, epId, pos) && !seriesVm.externalPlayerOn.value) openFullscreen(MainSection.SERIES) } },
                             onPlayChannel = { id, zap -> scope.launch { if (liveVm.ensurePlayingByIdAsync(id, zap)) openFullscreen(MainSection.LIVE_TV) } },
-                            onOpenGuide = { onSelectSection(MainSection.EPG) },
                             onActivateTrending = { selected, onUnavailable ->
                                 scope.launch {
                                     when (val current = homeVm.revalidateTrendingItem(selected)) {
@@ -1095,6 +1110,9 @@ fun OwnTVShell(
                             previewEnabled = playerMode == PlayerMode.NONE,
                             firstRowFocusRequester = homeFirstRowFocus,
                             onContentScrolled = { contentScrolled = it },
+                            // Beside the resting capsule; a docked rail already reserves its own width.
+                            onEntryHook = { homeEntry = it },
+                            contentStart = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 64.mpx else 150.mpx,
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -1273,6 +1291,7 @@ fun OwnTVShell(
                 onPickAvatar = { showAvatarPicker = true },
                 selectedItemFocusRequester = sidebarFocus,
                 contentFocusRequester = contentAreaFocus,
+                enterContent = homeEntry.takeIf { selectedSection == MainSection.HOME },
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
                 nowPlaying = nowPlayingRail,
                 onNowPlaying = enterNowPlaying,
