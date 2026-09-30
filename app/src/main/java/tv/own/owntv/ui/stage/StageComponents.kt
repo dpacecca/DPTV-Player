@@ -245,6 +245,8 @@ fun StagePill(
     trailingIcon: OwnTVIcon? = null,
     enabled: Boolean = true,
     highlighted: Boolean = false,
+    /** Idle text in the dim colour: a choice that is currently off. */
+    dimmed: Boolean = false,
 ) {
     val a = stageAccent
     val r = StageRadii.Pill
@@ -267,7 +269,7 @@ fun StagePill(
             Text(
                 text,
                 style = stageText(18, 700),
-                color = on ?: StageColors.Text,
+                color = on ?: if (dimmed) StageColors.Dim else StageColors.Text,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),

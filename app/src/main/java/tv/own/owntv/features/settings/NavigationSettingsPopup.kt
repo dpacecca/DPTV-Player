@@ -6,6 +6,7 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -31,14 +34,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.em
 import androidx.tv.material3.Text
 import tv.own.owntv.R
+import tv.own.owntv.core.nav.MainSection
 import tv.own.owntv.core.settings.SettingsRepository.NavHideAfter
 import tv.own.owntv.core.settings.SettingsRepository.NavLength
+import tv.own.owntv.core.settings.SettingsRepository.NavMenuMode
 import tv.own.owntv.core.settings.SettingsRepository.NavSize
 import tv.own.owntv.core.settings.SettingsRepository.NavStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVPopup
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.stage.StageFocus
+import tv.own.owntv.ui.stage.StagePill
 import tv.own.owntv.ui.stage.StageSurface
 import tv.own.owntv.ui.stage.drawInnerRing
 import tv.own.owntv.ui.stage.stageGlass
@@ -48,9 +54,9 @@ import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
 /**
- * Settings › Layout › Navigation (P1-06, P1-18): Floating or Docked as radio rows, then the rail's Size
- * and Length, the existing Sidebar Menu Customization screen ([onOpenMenuItems]) and, for Floating only,
- * the hide delay. OK on a value row steps to its next choice.
+ * Settings › Layout › Navigation (P1-06, P1-18, P1-19): Floating or Docked as radio rows, then the rail's
+ * Size and Length, Menu items (Dynamic / Static; Static lists the sections as toggles) and, for Floating
+ * only, the hide delay. OK on a value row steps to its next choice.
  */
 @Composable
 fun NavigationSettingsPopup(
@@ -62,8 +68,10 @@ fun NavigationSettingsPopup(
     onLength: (NavLength) -> Unit,
     hideAfterMs: Int,
     onHideAfterMs: (Int) -> Unit,
-    menuItemsValue: String,
-    onOpenMenuItems: () -> Unit,
+    menuMode: NavMenuMode,
+    onMenuMode: (NavMenuMode) -> Unit,
+    hiddenSections: Set<MainSection>,
+    onSectionHidden: (MainSection, Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val first = remember { FocusRequester() }
@@ -89,6 +97,8 @@ fun NavigationSettingsPopup(
                 Modifier
                     .width(880.mpx)
                     .stageGlass(30.mpx, overContent = true)
+                    // Static's section toggles make it tall: at large zooms it scrolls instead of clipping.
+                    .verticalScroll(rememberScrollState())
                     .padding(30.mpx),
             ) {
                 Text(eyebrow, style = stageText(15, 800, 0.12.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -124,13 +134,33 @@ fun NavigationSettingsPopup(
                     onClick = { onLength(if (length == NavLength.FIT) NavLength.FULL else NavLength.FIT) },
                     leading = { OwnTVIcon(OwnTVIcon.SORT, StageColors.Text, Modifier.size(21.mpx)) },
                 )
+                val static = menuMode == NavMenuMode.STATIC
                 NavOption(
                     title = stringResource(R.string.settings_nav_menu_items),
-                    subtitle = stringResource(R.string.settings_nav_menu_items_desc, stringResource(R.string.settings_sidebar_customization)),
-                    value = menuItemsValue,
-                    onClick = onOpenMenuItems,
+                    subtitle = stringResource(R.string.settings_nav_menu_items_desc),
+                    value = stringResource(if (static) R.string.settings_static else R.string.settings_dynamic),
+                    onClick = { onMenuMode(if (static) NavMenuMode.DYNAMIC else NavMenuMode.STATIC) },
                     leading = { OwnTVIcon(OwnTVIcon.GRID, StageColors.Text, Modifier.size(21.mpx)) },
                 )
+                // Static: the browse sections as toggles, in rail order; Search and More can never be hidden.
+                if (static) {
+                    FlowRow(
+                        Modifier.padding(start = 61.mpx, end = 22.mpx, top = 6.mpx, bottom = 14.mpx),
+                        horizontalArrangement = Arrangement.spacedBy(12.mpx),
+                        verticalArrangement = Arrangement.spacedBy(12.mpx),
+                    ) {
+                        MenuSections.forEach { (section, icon) ->
+                            val shown = section !in hiddenSections
+                            StagePill(
+                                text = stringResource(section.labelRes),
+                                onClick = { onSectionHidden(section, shown) },
+                                icon = icon,
+                                trailingIcon = if (shown) OwnTVIcon.CHECK else OwnTVIcon.EYE_OFF,
+                                dimmed = !shown,
+                            )
+                        }
+                    }
+                }
                 if (style == NavStyle.FLOATING) {
                     NavOption(
                         title = stringResource(R.string.settings_nav_hide_after),
@@ -151,6 +181,15 @@ fun NavigationSettingsPopup(
         }
     }
 }
+
+private val MenuSections = listOf(
+    MainSection.HOME to OwnTVIcon.HOME,
+    MainSection.LIVE_TV to OwnTVIcon.LIVE_TV,
+    MainSection.EPG to OwnTVIcon.EPG,
+    MainSection.MOVIES to OwnTVIcon.MOVIES,
+    MainSection.SERIES to OwnTVIcon.SERIES,
+    MainSection.DOWNLOADS to OwnTVIcon.DOWNLOADS,
+)
 
 private val NavSize.labelRes: Int
     get() = when (this) {

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -133,6 +134,8 @@ class EpgViewModel(
     /** The provider-guide half of a row, for channels whose stored guide stops short — the app-wide
      *  reader Live TV uses too (T18), so both screens share one cache. */
     private val liveEpgReader: tv.own.owntv.core.live.LiveEpgReader,
+    /** Which guide feeds are syncing right now: the grid waits for them instead of reloading per batch. */
+    private val epgActivity: tv.own.owntv.core.sync.EpgActivityTracker,
 ) : ViewModel() {
 
     /** The one candidate set the picker and both auto-match paths read — see [GuideCandidates]. */
@@ -490,15 +493,23 @@ class EpgViewModel(
         // while the grid is on screen had no way to show itself. Room reports every write to the
         // programme table, so this waits for the writes to stop rather than reloading per batch, and
         // `load()`'s own stored-count guard means a settled sync that changed nothing costs nothing.
-        // drop(1): the first is the guide as it already stands.
         epgSourceStore.sources
             .map { sources -> sources.map { it.id } }
             .distinctUntilChanged()
             .flatMapLatest { ids ->
                 if (ids.isEmpty()) flowOf(0) else combine(ids.map { epgDao.countForSource(it) }) { it.sum() }
             }
+            // A big feed writes for minutes, one batch every few seconds; the debounce alone rebuilt the
+            // whole grid (≈2 s of database work) every time a pause crossed it, all through the sync.
+            // So nothing reloads while a feed is still syncing — the change is picked up when it ends.
+            .combine(epgActivity.active.map { it.isEmpty() }.distinctUntilChanged()) { count, idle -> count to idle }
+            .filter { (_, idle) -> idle }
+            .map { (count, _) -> count }
+            .distinctUntilChanged()
             .debounce(GUIDE_DATA_SETTLE_MS)
-            .drop(1)
+            // The first value is the guide as it already stands — unless a sync was running when the
+            // screen opened, in which case the first value is that sync's result and must be loaded.
+            .drop(if (epgActivity.active.value.isEmpty()) 1 else 0)
             .onEach { load() }
             .launchIn(viewModelScope)
     }

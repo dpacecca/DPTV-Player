@@ -156,7 +156,7 @@ internal val LocalSettingsRowTone = staticCompositionLocalOf { TileTone.PRIMARY 
 private fun Toned(tone: TileTone, content: @Composable () -> Unit) =
     CompositionLocalProvider(LocalSettingsRowTone provides tone, content = content)
 
-private enum class SettingsTab { ROOT, RECORDING, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, LOCAL_SYNC, VIDEO, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, NAV_MENU, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS }
+private enum class SettingsTab { ROOT, RECORDING, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, LOCAL_SYNC, VIDEO, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS }
 
 @Composable
 internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
@@ -352,7 +352,6 @@ fun SettingsScreen(
     val startupChannel by settingsVm.startupChannel.collectAsStateWithLifecycle()
     val startupChannelQuery by settingsVm.startupChannelQuery.collectAsStateWithLifecycle()
     val startupChannelResults by settingsVm.startupChannelResults.collectAsStateWithLifecycle()
-    val navMenuMode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
     val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
     val rememberLastLive by settingsVm.rememberLastLive.collectAsStateWithLifecycle()
     val rememberLastMovies by settingsVm.rememberLastMovies.collectAsStateWithLifecycle()
@@ -453,7 +452,6 @@ fun SettingsScreen(
         SettingsTab.METADATA -> { tv.own.owntv.features.settings.MetadataSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.OPEN_SUBTITLES -> { tv.own.owntv.features.settings.OpenSubtitlesAccountScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.WEATHER -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }; return }
-        SettingsTab.NAV_MENU -> { tv.own.owntv.features.settings.NavMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
         SettingsTab.CONTENT_MENUS -> { tv.own.owntv.features.settings.ContentMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
             SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
@@ -672,14 +670,6 @@ fun SettingsScreen(
         ),
         RootGroup("group_layout", stringResource(R.string.settings_group_layout), OwnTVIcon.LIST_GRID, stringResource(R.string.settings_group_summary_layout)),
         navigationRootRow(settingsVm, navigationRowFocus) { saveScroll(); dialogReturn = navigationRowFocus; showNavigation = true },
-        RootRow(
-            tabRowKey(SettingsTab.NAV_MENU), TileTone.PRIMARY, OwnTVIcon.MENU,
-            title = stringResource(R.string.settings_sidebar_customization), desc = stringResource(R.string.settings_sidebar_description_root),
-            chip = navModeLabel(navMenuMode),
-            chipTone = if (navMenuMode == tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY,
-            focus = rowFocus.getValue(SettingsTab.NAV_MENU),
-            onClick = { open(SettingsTab.NAV_MENU) },
-        ),
         RootRow(
             "vod_layout", TileTone.PRIMARY, OwnTVIcon.LIST_GRID,
             title = stringResource(R.string.settings_vod_layout),
@@ -1036,8 +1026,6 @@ fun SettingsScreen(
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_search_guide_logos), stringResource(R.string.settings_search_keywords_logos), OwnTVIcon.EPG, TileTone.SECONDARY) { open(SettingsTab.EPG) },
             SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_customize), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.SORT, TileTone.PRIMARY) { open(SettingsTab.CUSTOMIZE) },
             navigationSearchEntry(settingsVm) { saveScroll(); dialogReturn = searchFieldFocus; showNavigation = true },
-            SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_sidebar_customization), stringResource(R.string.settings_search_keywords_sidebar), OwnTVIcon.MENU, TileTone.PRIMARY,
-                chip = navModeLabel(navMenuMode), chipTone = if (navMenuMode == tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.DYNAMIC) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_ch_paging), stringResource(R.string.settings_search_keywords_ch), OwnTVIcon.CH_NAV, TileTone.PRIMARY,
                 chip = if (chNavEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_vod_layout), stringResource(R.string.settings_search_keywords_vod_layout), OwnTVIcon.LIST_GRID, TileTone.PRIMARY,
@@ -1610,7 +1598,7 @@ fun SettingsScreen(
         )
     }
     if (showNavigation) {
-        NavigationPopupHost(settingsVm, onOpenMenuItems = { showNavigation = false; open(SettingsTab.NAV_MENU) }, onDismiss = { showNavigation = false })
+        NavigationPopupHost(settingsVm, onDismiss = { showNavigation = false })
     }
     if (showVodLayout) VodLayoutDialog(settingsVm, vodLayout, onClose = { showVodLayout = false })
     if (showFocusHighlight) {
@@ -1873,19 +1861,15 @@ private fun startupLabel(mode: tv.own.owntv.core.settings.StartupMode): String =
     },
 )
 
-@Composable
-private fun navModeLabel(mode: tv.own.owntv.core.settings.SettingsRepository.NavMenuMode): String = stringResource(
-    if (mode == tv.own.owntv.core.settings.SettingsRepository.NavMenuMode.DYNAMIC) R.string.settings_dynamic else R.string.settings_static,
-)
-
 /** Settings › Layout › Navigation, hosted outside [SettingsScreen] (whose body is at the JVM method-size limit). */
 @Composable
-private fun NavigationPopupHost(settingsVm: SettingsViewModel, onOpenMenuItems: () -> Unit, onDismiss: () -> Unit) {
+private fun NavigationPopupHost(settingsVm: SettingsViewModel, onDismiss: () -> Unit) {
     val navStyle by settingsVm.navStyle.collectAsStateWithLifecycle()
     val navSize by settingsVm.navSize.collectAsStateWithLifecycle()
     val navLength by settingsVm.navLength.collectAsStateWithLifecycle()
     val navHideAfterMs by settingsVm.navHideAfterMs.collectAsStateWithLifecycle()
     val navMenuMode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
+    val navMenuHidden by settingsVm.navMenuHidden.collectAsStateWithLifecycle()
     tv.own.owntv.features.settings.NavigationSettingsPopup(
         style = navStyle,
         onStyle = settingsVm::setNavStyle,
@@ -1895,8 +1879,10 @@ private fun NavigationPopupHost(settingsVm: SettingsViewModel, onOpenMenuItems: 
         onLength = settingsVm::setNavLength,
         hideAfterMs = navHideAfterMs,
         onHideAfterMs = settingsVm::setNavHideAfterMs,
-        menuItemsValue = navModeLabel(navMenuMode),
-        onOpenMenuItems = onOpenMenuItems,
+        menuMode = navMenuMode,
+        onMenuMode = settingsVm::setNavMenuMode,
+        hiddenSections = navMenuHidden,
+        onSectionHidden = settingsVm::setNavSectionHidden,
         onDismiss = onDismiss,
     )
 }
@@ -4415,7 +4401,6 @@ private fun subScreenSearchEntries(open: (SettingsTab) -> Unit): List<SettingsSe
         SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_movies_keep_watching), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
         SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_series_keep_watching), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
         SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_android_tv_home), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
-        SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_nav_behavior), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.MENU, TileTone.SECONDARY) { open(SettingsTab.NAV_MENU) },
         SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_ch_nav_up), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.CH_NAV, TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
         SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_ch_nav_down), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.CH_NAV, TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
         SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_remote_shortcuts), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.CH_NAV, TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
