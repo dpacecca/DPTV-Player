@@ -205,25 +205,31 @@
 1	log	app/src/main/java/tv/own/owntv/features/search/SearchViewModel.kt	OwnTVHome
 1	log	app/src/main/java/tv/own/owntv/features/search/SearchViewModel.kt	record history failed profile=$pid type=$type itemId=$itemId
 1	log	app/src/main/java/tv/own/owntv/features/search/SearchViewModel.kt	stalker resolve failed movieId=${movie.id}
-1	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	delete_subtitles
-2	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	download
-1	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	favourite
+3	empty	app/src/main/java/tv/own/owntv/features/series/EpisodeTitles.kt	\0
+1	regex	app/src/main/java/tv/own/owntv/features/series/EpisodeTitles.kt	^(?:S\\d{1,3}\\s*E\\d{1,4}|\\d{1,3}x\\d{1,4})\\b
+1	regex	app/src/main/java/tv/own/owntv/features/series/EpisodeTitles.kt	^[\\s\\-–—:|.·]+
+1	empty	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	,
+2	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	delete_subtitles
+4	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	download
+2	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	favourite
 1	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	hide
 1	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	mark_watched
 1	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	move
 1	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	move_to_category
 1	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	play_external
-2	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	play_trailer
-2	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	refetch_tmdb
-2	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	remove_history
+1	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	play_start
+4	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	play_trailer
+3	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	refetch_tmdb
+4	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	remove_history
 3	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	series
-1	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	set_tmdb_name
-3	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	tmdb_details
+2	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	set_tmdb_name
+6	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	tmdb_details
 1	url	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	w1280
-1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	w300
-1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	·
+2	url	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	w300
+1	url	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	w780
+6	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	·
 1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	◀
-2	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	✓
 2	empty	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	${StorageAccess.sanitize(ep.name.ifBlank { "episode-${ep.episodeNumber}" })}.$ext
 1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	${StorageAccess.sanitize(episode.name.ifBlank { "episode-${episode.episodeNumber}" })}.$ext
@@ -1174,6 +1180,7 @@
 1	technical	app/src/main/java/tv/own/owntv/ui/components/OwnTVAvatar.kt	\0
 1	empty	app/src/main/java/tv/own/owntv/ui/components/OwnTVTextField.kt	\0
 1	empty	app/src/main/java/tv/own/owntv/ui/components/SetTmdbNameDialog.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/ui/components/SetTmdbNameDialog.kt	TMDB
 1	technical	app/src/main/java/tv/own/owntv/ui/components/StageGlyphs.kt	M11 19 3 12l8-7zM21 19l-8-7 8-7z
 1	technical	app/src/main/java/tv/own/owntv/ui/components/StageGlyphs.kt	M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9z
 1	technical	app/src/main/java/tv/own/owntv/ui/components/StageGlyphs.kt	M12 3 2 20h20zM12 10v4M12 17h.01
@@ -1237,8 +1244,13 @@
 1	performance	app/src/main/java/tv/own/owntv/ui/components/StateViews.kt	spinnerAngle
 1	empty	app/src/main/java/tv/own/owntv/ui/components/StorageBrowser.kt	\0
 1	locale	app/src/main/java/tv/own/owntv/ui/components/TrackOptionText.kt	und
+1	log	app/src/main/java/tv/own/owntv/ui/components/TrailerPlayerScreen.kt	TrailerPlayer
 1	uri	app/src/main/java/tv/own/owntv/ui/components/TrailerPlayerScreen.kt	https://www.youtube.com/watch?v=$videoKey
+1	technical	app/src/main/java/tv/own/owntv/ui/components/TrailerPlayerScreen.kt	tnum
+1	log	app/src/main/java/tv/own/owntv/ui/components/TrailerPlayerScreen.kt	trailer error key=${keys[keyIndex]} error=$error
+1	log	app/src/main/java/tv/own/owntv/ui/components/TrailerPlayerScreen.kt	trailerHud
 1	uri	app/src/main/java/tv/own/owntv/ui/components/TrailerPlayerScreen.kt	vnd.youtube:$videoKey
+1	technical	app/src/main/java/tv/own/owntv/ui/components/TrailerPlayerScreen.kt	◀ ▶
 1	log	app/src/main/java/tv/own/owntv/ui/components/TvImeMetrics.kt	frame=$rect imeBottom=$imeBottom
 1	technical	app/src/main/java/tv/own/owntv/ui/format/TimeFormat.kt	Hm
 1	technical	app/src/main/java/tv/own/owntv/ui/format/TimeFormat.kt	hm

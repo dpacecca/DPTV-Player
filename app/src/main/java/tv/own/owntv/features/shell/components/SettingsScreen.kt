@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -2284,12 +2283,12 @@ private fun AccentPaletteDialog(
     // PopupFontTheme swaps in the selected popup family and applies the shared popup type scale.
     tv.own.owntv.ui.theme.PopupFontTheme {
     Box(
-        modifier = Modifier.fillMaxSize().modalScrim().imePadding().trapAllFocusExit().focusGroup(),
+        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            // dialogPanel already applies verticalScroll; imePadding on the parent Box lifts the
-            // whole panel above the on-screen keyboard so the hex field stays visible.
+            // dialogPanel already applies verticalScroll; the popup host keeps the panel above the
+            // on-screen keyboard so the hex field stays visible.
             modifier = Modifier.dialogPanel(width = 640.dp, padding = 28.dp),
         ) {
             Text(stringResource(R.string.settings_accent_dialog), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)

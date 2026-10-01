@@ -19,6 +19,9 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.geometry.Rect
@@ -112,9 +115,31 @@ private fun StageClock(weatherInfo: WeatherInfo?, fahrenheit: Boolean) {
     val date = remember(now, locale) {
         android.text.format.DateFormat.format(DateFormat.getBestDateTimePattern(locale, "EEEdMMM"), now).toString()
     }
-    // The mockup lifts the cluster's text off any backdrop with a soft black shadow.
-    val shadow = with(LocalDensity.current) { Shadow(Color.Black.copy(alpha = 0.85f), Offset(0f, 2.mpx.toPx()), 14.mpx.toPx()) }
-    Column(horizontalAlignment = Alignment.End) {
+    // The mockup lifts the cluster's text off any backdrop with a soft black shadow. The TV cuts a text
+    // shadow's blur off at the line's bounds, so a wide one showed as a dark box behind each line over a
+    // bright backdrop: the shadow stays tight, and a soft oval glow behind the whole block does the lifting.
+    val shadow = with(LocalDensity.current) { Shadow(Color.Black.copy(alpha = 0.6f), Offset(0f, 1.mpx.toPx()), 3.mpx.toPx()) }
+    Column(
+        horizontalAlignment = Alignment.End,
+        // Unclipped (the GradientTextures glows clip to the node, which drew a hard box); a few hundred
+        // pixels, so a brush is fine here. Drawn as a circle squashed to an oval around the block.
+        modifier = Modifier.drawBehind {
+            val r = size.height * 1.2f
+            scale(scaleX = (size.width * 0.8f) / r, scaleY = 1f, pivot = center) {
+                drawCircle(
+                    Brush.radialGradient(
+                        0f to Color.Black.copy(alpha = 0.34f),
+                        0.55f to Color.Black.copy(alpha = 0.16f),
+                        1f to Color.Transparent,
+                        center = center,
+                        radius = r,
+                    ),
+                    radius = r,
+                    center = center,
+                )
+            }
+        },
+    ) {
         Text(
             time,
             style = stageText(40, 700, (-0.5).mpxSp).copy(fontFeatureSettings = "tnum", shadow = shadow, lineHeight = 40.mpxSp),

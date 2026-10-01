@@ -322,19 +322,6 @@ class SeriesViewModel(
     private val _playingSeries = MutableStateFlow<SeriesEntity?>(null)
     val playingSeries: StateFlow<SeriesEntity?> = _playingSeries.asStateFlow()
 
-    // --- Download status for poster-panel strips (display-only) ---
-
-    /** Active episode-download rows keyed by episode id — for the focused-episode strip. */
-    val episodeDownloadStates: StateFlow<Map<Long, DownloadEntity>> = ctx
-        .flatMapLatest { c -> if (c.profileId < 0) flowOf(emptyList()) else downloadManager.observe(c.profileId) }
-        .map { list -> list.filter { it.mediaType == MediaType.EPISODE }.associateBy { it.itemId } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
-
-    /** All episode downloads for the opened series (aggregate strip inside the episode view). */
-    val openedSeriesDownloads: StateFlow<List<DownloadEntity>> = _openedSeries
-        .flatMapLatest { s -> if (s == null) flowOf(emptyList()) else downloadManager.observeForSeries(s.id) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
     private val _selectedSeason = MutableStateFlow(1)
     val selectedSeason: StateFlow<Int> = _selectedSeason.asStateFlow()
 
@@ -813,18 +800,19 @@ class SeriesViewModel(
     }
 
     /**
-     * TMDB rows for EVERY episode of the active season, keyed by local episode id — the grid needs all
-     * of them at once, unlike the list which only ever shows the focused episode's still.
+     * TMDB rows for EVERY episode of the active season, keyed by local episode id — the grid and the
+     * list both show every episode's still at once.
      *
-     * Only collected in grid mode, and only after [GRID_DWELL_MS]: opening a show and immediately
+     * Only fetched after [GRID_DWELL_MS]: opening a show and immediately
      * pressing Back should cost nothing, and leaving cancels the fetch outright because `mapLatest`
      * tears down the previous coroutine. One request covers the whole season (see
      * `MetadataRepository.resolveSeasonEpisodes`).
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val seasonEpisodeMeta: StateFlow<Map<Long, tv.own.owntv.core.database.entity.MetadataCacheEntity>> =
-        combine(_openedSeries, _selectedSeason, episodes, episodeViewMode, _episodeMetaTick) { show, season, eps, mode, _ ->
-            if (show == null || mode != SettingsRepository.VodViewMode.GRID) {
+        // Both layouts show each episode's still, date and plot (P6-01 / P6-02), so both need the season's details.
+        combine(_openedSeries, _selectedSeason, episodes, _episodeMetaTick) { show, season, eps, _ ->
+            if (show == null) {
                 null
             } else {
                 // Mirror the screen's own fallback: a show whose seasons start at 0 or 2 displays its
@@ -1118,12 +1106,17 @@ class SeriesViewModel(
         }
     }
 
-    fun downloadSeries(series: SeriesEntity) {
+    fun downloadSeries(series: SeriesEntity) = downloadEpisodes(series, null)
+
+    /** "Download season" on the series page (G11): only [season]'s episodes. */
+    fun downloadSeason(series: SeriesEntity, season: Int) = downloadEpisodes(series, season)
+
+    private fun downloadEpisodes(series: SeriesEntity, season: Int?) {
         val showDir = StorageAccess.sanitize(series.name)
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
             if (!tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, series.categoryId, profileDao, categoryDao)) return@launch
-            seriesDao.episodesBySeries(series.id).first().forEach { ep ->
+            seriesDao.episodesBySeries(series.id).first().filter { season == null || it.seasonNumber == season }.forEach { ep ->
                 val ext = ep.containerExt ?: StorageAccess.extOf(ep.streamUrl)
                 downloadManager.enqueue(
                     profileId = pid,

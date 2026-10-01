@@ -192,6 +192,7 @@ fun MoviesScreen(
     var setTmdbNameMovie by remember { mutableStateOf<MovieEntity?>(null) }
     // In-app trailer playback (§7.3 U4); non-null = fullscreen player open with this YouTube key.
     var trailerVideoKey by remember { mutableStateOf<String?>(null) }
+    var trailerTitle by remember { mutableStateOf<String?>(null) }
     // Downloaded subtitles for the movie whose context menu is open (subtitle plan §11); drives the
     // "Delete subtitles" action + its popup. Reloaded on menu open and after each delete.
     var contextMovieSubs by remember { mutableStateOf<List<tv.own.owntv.core.database.dao.LinkedSubtitle>>(emptyList()) }
@@ -870,7 +871,7 @@ fun MoviesScreen(
         val canMove = selectedKey is LiveKey.Folder || selectedKey is LiveKey.Custom || selectedKey == LiveKey.Favorites
         val actions = buildList {
             add(MenuAction("play_trailer", stringResource(R.string.content_play_trailer), OwnTVIcon.PLAY_CIRCLE, group = VodGroupWatch) {
-                trailerKey?.let { contextMovie = null; trailerVideoKey = it }
+                trailerKey?.let { contextMovie = null; trailerTitle = m.name; trailerVideoKey = it }
             })
             // One-off external playback, independent of the global "External player" toggle.
             add(MenuAction("play_external", stringResource(R.string.content_play_external_short), OwnTVIcon.EXTERNAL, group = VodGroupWatch) {
@@ -1053,7 +1054,7 @@ fun MoviesScreen(
         }
     }
     trailerVideoKey?.let { key ->
-        TrailerPlayerScreen(videoKey = key, onExit = { trailerVideoKey = null })
+        TrailerPlayerScreen(videoKey = key, title = trailerTitle, onExit = { trailerVideoKey = null })
     }
 
     // Move mode overlay.

@@ -179,6 +179,7 @@ fun HomeScreen(
     val trendingVersionsFocus = remember { FocusRequester() }
     val trendingToast = rememberInAppToast()
     var trailerVideoKey by remember { mutableStateOf<String?>(null) }
+    var trailerTitle by remember { mutableStateOf<String?>(null) }
     var detailsItem by remember { mutableStateOf<TrendingHomeItem?>(null) }
     var detailsMetadata by remember { mutableStateOf<MetadataCacheEntity?>(null) }
     var detailsTmdbWins by remember { mutableStateOf(false) }
@@ -428,6 +429,7 @@ fun HomeScreen(
                                 },
                                 onTrailer = { item ->
                                     vm.stopPreview()
+                                    trailerTitle = item.snapshot.localizedTitle
                                     trailerVideoKey = item.snapshot.trailerKey
                                 },
                                 onDetails = { item ->
@@ -581,7 +583,7 @@ fun HomeScreen(
     }
 
     trailerVideoKey?.let { key ->
-        TrailerPlayerScreen(videoKey = key) {
+        TrailerPlayerScreen(videoKey = key, title = trailerTitle) {
             trailerVideoKey = null
             homeScope.launch {
                 kotlinx.coroutines.delay(60)

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,8 +35,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.CornerRadius
@@ -130,19 +135,24 @@ fun StageSurface(
     ) { content(focused) }
 }
 
-/** The PRIMARY (1.04) and POSTER (1.08, from 50% 40%) lift; FX and FILLED stay put. */
+/** The PRIMARY (1.04) and POSTER (1.08, from 50% 40%) lift; FX and FILLED stay put. An episode lifts 1.06 from 50% 30%. */
 @Composable
-private fun Modifier.stageLift(focused: Boolean, style: StageFocus): Modifier {
-    val lift = when (style) {
-        StageFocus.PRIMARY -> 1.04f
-        StageFocus.POSTER -> 1.08f
+private fun Modifier.stageLift(focused: Boolean, style: StageFocus, episode: Boolean = false): Modifier {
+    val lift = when {
+        episode -> 1.06f
+        style == StageFocus.PRIMARY -> 1.04f
+        style == StageFocus.POSTER -> 1.08f
         else -> 1f
     }
     val scale by animateFloatAsState(if (focused) lift else 1f, ownTvTween(170), label = "stageLift")
     return graphicsLayer {
         scaleX = scale
         scaleY = scale
-        transformOrigin = if (style == StageFocus.POSTER) TransformOrigin(0.5f, 0.4f) else TransformOrigin.Center
+        transformOrigin = when {
+            episode -> TransformOrigin(0.5f, 0.3f)
+            style == StageFocus.POSTER -> TransformOrigin(0.5f, 0.4f)
+            else -> TransformOrigin.Center
+        }
     }
 }
 
@@ -232,7 +242,9 @@ fun StageButton(
             if (icon != null) StageIcon(icon, color, textSize.mpx, iconFilled)
             if (text != null) Text(text, style = stageText(textSize, 700), color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (trailing != null) {
-                Text(trailing, style = stageText(textSize, 600), color = if (focused) a.onAccent else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // On a tinted button the trailing part is the label's accent at 70% ("· 12 min left").
+                val idle = if (tinted) a.accent.copy(alpha = 0.7f) else StageColors.Muted
+                Text(trailing, style = stageText(textSize, 600), color = if (focused) a.onAccent else idle, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (trailingIcon != null) StageIcon(trailingIcon, color, textSize.mpx)
         }
@@ -423,11 +435,13 @@ fun StageRow(
     horizontalPadding: Dp = 20.mpx,
     gap: Dp = 18.mpx,
     onLongClick: (() -> Unit)? = null,
+    /** The episode list's `.dl` rows are 24. */
+    radius: Dp = StageRadii.Row,
     content: @Composable RowScope.(focused: Boolean) -> Unit,
 ) {
     StageSurface(
         onClick = onClick,
-        radius = StageRadii.Row,
+        radius = radius,
         modifier = modifier.height(height),
         focusStyle = StageFocus.FX,
         onLongClick = onLongClick,
@@ -734,6 +748,145 @@ fun StageStill(
         if (line != null) {
             Spacer(Modifier.height((if (lineSize >= 16) 4 else 3).mpx))
             Text(line, style = stageText(lineSize, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** `.ep.w`: a watched episode's still at saturate(.55) brightness(.72). */
+private val WatchedFilter = ColorFilter.colorMatrix(
+    ColorMatrix().apply {
+        setToSaturation(0.55f)
+        timesAssign(ColorMatrix().apply { setToScale(0.72f, 0.72f, 0.72f, 1f) })
+    },
+)
+
+/**
+ * `.ep` (P6-01): the 16:9 still, radius 16, with the episode number in its corner, a ✓ for a watched
+ * one (its still dimmed), the 6 px progress bar for one in progress; the title 19/700 and the muted
+ * line ("Jan 21, 2024 · 24 min · 12 min left") under it. Focused: lifted 1.06 from 50% 30%, the POSTER
+ * ring and glow round the still. [artwork] gets the watched filter to apply to its image.
+ */
+@Composable
+fun StageEpisode(
+    title: String,
+    line: String?,
+    number: String,
+    watched: Boolean,
+    progress: Float?,
+    onClick: () -> Unit,
+    width: Dp,
+    height: Dp,
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
+    artwork: @Composable BoxScope.(ColorFilter?) -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val accent = stageAccent
+    val r = StageRadii.Poster
+    val badge = Color(8, 12, 14)
+    Column(
+        modifier
+            .width(width)
+            .stageLift(focused, StageFocus.POSTER, episode = true)
+            .stageClickable(interaction, true, onClick, onLongClick),
+    ) {
+        Box(
+            Modifier
+                .size(width, height)
+                .then(
+                    if (focused) {
+                        Modifier.stageFocusDecor(StageFocus.POSTER, r, accent)
+                    } else {
+                        Modifier.drawBehind {
+                            drawBoxShadow(Color.Black.copy(alpha = 0.45f), 26.mpx.toPx(), r.toPx(), dy = 10.mpx.toPx())
+                        }
+                    },
+                )
+                .clip(RoundedCornerShape(r)),
+        ) {
+            artwork(if (watched) WatchedFilter else null)
+            Text(
+                number,
+                style = stageText(15, 800),
+                color = StageColors.Text,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier
+                    .padding(10.mpx)
+                    .height(30.mpx)
+                    .defaultMinSize(minWidth = 30.mpx)
+                    .background(badge.copy(alpha = 0.92f), RoundedCornerShape(9.mpx))
+                    .padding(horizontal = 9.mpx)
+                    .wrapContentHeight(Alignment.CenterVertically),
+            )
+            if (watched) {
+                Box(
+                    Modifier.align(Alignment.TopEnd).padding(10.mpx).size(30.mpx).background(badge.copy(alpha = 0.9f), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) { StageIcon(OwnTVIcon.CHECK, accent.accent, 18.mpx) }
+            }
+            if (progress != null && progress > 0f && !watched) {
+                Box(
+                    Modifier.align(Alignment.BottomStart).fillMaxWidth().height(6.mpx)
+                        .background(Color.Black.copy(alpha = 0.55f)),
+                ) {
+                    Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).height(6.mpx).background(accent.accent))
+                }
+            }
+        }
+        Spacer(Modifier.height(12.mpx))
+        Text(title, style = stageText(19, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (line != null) {
+            Spacer(Modifier.height(3.mpx))
+            Text(line, style = stageText(15.5f, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/**
+ * `.menu .row2`: two choices side by side in a menu ("Oldest first | Newest first"), 46 high, 17/700.
+ * Idle white 6% in muted; the current one accent 18% with accent text and a 1.5 px accent-60% ring;
+ * focused = FILLED.
+ */
+@Composable
+fun StageMenuChoice(
+    options: List<String>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    /** Attached to the current choice, so a menu can open on it. */
+    focusRequester: FocusRequester? = null,
+) {
+    val a = stageAccent
+    Row(
+        modifier.fillMaxWidth().padding(start = 8.mpx, end = 8.mpx, top = 4.mpx, bottom = 8.mpx),
+        horizontalArrangement = Arrangement.spacedBy(8.mpx),
+    ) {
+        options.forEachIndexed { i, label ->
+            val on = i == selected
+            val r = 13.mpx
+            StageSurface(
+                onClick = { onSelect(i) },
+                radius = r,
+                modifier = Modifier.weight(1f).height(46.mpx).then(if (on && focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),
+                idle = if (on) {
+                    Modifier
+                        .background(a.accent.copy(alpha = 0.18f), RoundedCornerShape(r))
+                        .drawBehind { drawInnerRing(a.accent.copy(alpha = 0.6f), 1.5f * 1.mpx.toPx(), r.toPx()) }
+                } else {
+                    Modifier.background(Color.White.copy(alpha = 0.06f), RoundedCornerShape(r))
+                },
+                contentAlignment = Alignment.Center,
+            ) { focused ->
+                Text(
+                    label,
+                    style = stageText(17, 700),
+                    color = if (focused) a.onAccent else if (on) a.accent else StageColors.Muted,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

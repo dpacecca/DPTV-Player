@@ -999,9 +999,8 @@ fun OwnTVShell(
                   )
               }
           } else null
-          // Screens already redrawn for Stage own the whole canvas; a show's episodes page waits for P7.
-          val openedSeries by seriesVm.openedSeries.collectAsStateWithLifecycle()
-          val stageScreen = selectedSection in StageSections || (selectedSection == MainSection.SERIES && openedSeries == null)
+          // Screens already redrawn for Stage own the whole canvas.
+          val stageScreen = selectedSection in StageSections
           Box(Modifier.weight(1f).fillMaxWidth()) {
           Row(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -1909,7 +1908,7 @@ private fun OfflineBanner() {
     }
 
 /** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
-private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES)
+private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES, MainSection.SERIES)
 
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {

@@ -519,6 +519,11 @@ internal fun VodOptionsMenu(
     disabled: Set<String>,
     onDismiss: () -> Unit,
     values: Map<String, String> = emptyMap(),
+    /** P6-04 (an episode): 250 down, a 112×63 still, focus starting on Download. */
+    top: Dp = 60.mpx,
+    artWidth: Dp = 52.mpx,
+    artHeight: Dp = 78.mpx,
+    firstFocusKey: String = "favourite",
 ) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
@@ -528,12 +533,12 @@ internal fun VodOptionsMenu(
         R.string.content_menu_group_organise, R.string.content_menu_group_details,
     ).map { stringResource(it).uppercase(locale) }
     val ordered = arranged(menu, actions)
-    val focusKey = ordered.firstOrNull { it.key == "favourite" }?.key ?: ordered.firstOrNull { it.key !in disabled }?.key
-    GuideMenuHost(x = x, top = 60.mpx, width = 540.mpx, onDismiss = onDismiss) {
+    val focusKey = ordered.firstOrNull { it.key == firstFocusKey && it.key !in disabled }?.key ?: ordered.firstOrNull { it.key !in disabled }?.key
+    GuideMenuHost(x = x, top = top, width = 540.mpx, onDismiss = onDismiss) {
         StageMenuHeader(
             title = title, subtitle = subtitle,
             leading = {
-                Box(Modifier.size(52.mpx, 78.mpx).clip(RoundedCornerShape(9.mpx)).background(Color.White.copy(alpha = 0.06f))) {
+                Box(Modifier.size(artWidth, artHeight).clip(RoundedCornerShape(9.mpx)).background(Color.White.copy(alpha = 0.06f))) {
                     if (!posterUrl.isNullOrBlank()) AsyncImage(model = posterUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 }
             },

@@ -141,6 +141,7 @@ fun OwnTVPopup(
                     LocalDensity provides popupDensity,
                     LocalTvImeWatcher provides watcher,
                     LocalTvImeMetrics provides metrics,
+                    LocalStagePopup provides true,
                 ) {
                     PopupFontTheme(fontScale = fontScale) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
