@@ -177,7 +177,7 @@ If a channel stutters, shows artifacts or won't open, one press flips it to the 
 **remembers that channel's choice**. The pill always shows the engine actually playing.
 
 ### 🏛️ Which engine channels start on
-**Where:** Settings → Video player → Player → **Live TV player**
+**Where:** Settings → Player → **Live TV player**
 **ExoPlayer, then mpv** (default) · **mpv, then ExoPlayer** · **ExoPlayer only** · **mpv only**. The
 "only" choices switch off the automatic handover, which costs a few seconds of black each time it
 happens. **Live TV player per playlist** right below applies a different choice to one provider;
@@ -185,7 +185,7 @@ happens. **Live TV player per playlist** right below applies a different choice 
 
 > **A channel that won't play is worked through every combination** — up to four: each engine on each
 > stream format, each tried once. Then it stops and tells you, rather than spinning for ever.
-> **Settings → Video player → Live tuning → Give up on a channel after** sets how long that may take (30 s default);
+> **Settings → Live TV → Give up on a channel after** sets how long that may take (30 s default);
 > **Give up after, per playlist** gives one provider its own time.
 
 ### ⏳ "Too many connections"
@@ -256,7 +256,7 @@ Offers times counted back from now — `21:30`, `19:00`, `Sun 20:00`. The last r
 day/hour/minute picker. **This works even on channels with no guide at all.**
 
 ### ⏸️ Pause and rewind channels without catch-up
-**Where:** **Settings → Playback → Video Player → Live TV → Pause and rewind live TV**
+**Where:** **Settings → Live TV → Pause and rewind live TV**
 Off by default. While you watch a channel full screen, OwnTV saves it on this TV and plays it
 from that copy, so it still looks live — and you can **pause**, rewind and go forward on channels
 whose provider keeps no archive. Pause, the rewind/forward buttons, the bar, Left/Right and **Go live** work as on a catch-up channel. A dark stretch on the bar is a moment the connection
@@ -275,7 +275,7 @@ dropped; playback jumps over it.
 
 ### ⏭️ Catch-up plays on
 A finished catch-up programme continues to the next one, and hands over to the live channel once you
-catch up with the present. Controlled by **Settings → Video player → Resume & auto-play → Auto-play next episode**.
+catch up with the present. Controlled by **Settings → Watching & recording → Auto-play next episode**.
 
 ### 🕰️ Two clocks
 While replaying, the player shows **Programme time** (when it originally aired) next to **Current
@@ -298,7 +298,7 @@ sets a standing rule for that programme on that channel. Recordings appear in
 
 ## 🔲 Multiview — up to four channels
 
-**Turn it on first:** Settings → Playback → **Video player** → Multiview & mini-player → **Multiview**. It is off by default, and
+**Turn it on first:** Settings → Watching & recording → **Multiview**. It is off by default, and
 the button does not appear in the player until it is on. **Max tiles** on the same screen sets the
 ceiling — the grid still opens with two and grows only when you ask.
 
@@ -328,7 +328,7 @@ Partly-watched titles offer **Resume**. **Settings → Resume** chooses **Ask**,
 A series **opens on your last-watched episode**.
 
 ### ⏭️ Auto-play next episode
-**Where:** Settings → Video player → Resume & auto-play → **Auto-play next episode**
+**Where:** Settings → Watching & recording → **Auto-play next episode**
 Rolls into the next season too. In the last 30 seconds a card counts down, with **Play now** and
 **Cancel**.
 
@@ -346,7 +346,7 @@ filters the episode list.
 this once.
 
 ### 🔧 Which engine plays films
-**Where:** Settings → Video player → Player → **Movies & Series player**
+**Where:** Settings → Player → **Movies & Series player**
 Same four choices as Live TV, defaulting to **mpv, then ExoPlayer**. Note **ExoPlayer only cannot
 play DTS or TrueHD** — those need mpv. The **⇄** pill in the player flips the current film and
 remembers it.
@@ -479,7 +479,7 @@ No account, no internet. Browses USB and internal storage.
 Nudge earlier or later in 0.1 s and 0.5 s steps.
 
 ### 🗣️ Preferred languages
-**Where:** Settings → Video player → Languages & subtitles → **Preferred audio / subtitle language**
+**Where:** Settings → Sound & subtitles → **Preferred audio / subtitle language**
 Picks the right track automatically when a stream carries several. Each **profile** has its own, and
 the list has 50 languages. **Original language** (audio) plays a film or series in the language it
 was made in, when the stream has that track; otherwise the stream's main track. A track or subtitle
@@ -491,19 +491,19 @@ Nudge until lips match, then **Remember this delay** to keep it for that item. W
 including sound sent as-is to a soundbar.
 
 ### 🔊 Surround sound
-**Where:** Settings → Video player → Sound → **Surround sound**
+**Where:** Settings → Sound & subtitles → **Surround sound**
 **Auto** (recommended — tries surround, falls back to stereo if your TV can't) · **Stereo only** (the
 right answer for TV speakers) · **Surround** (send Dolby/DTS to a real receiver).
 
 ### 🌙 Night mode, Volume leveling and passthrough
-**Where:** Settings → Video player → Sound
+**Where:** Settings → Sound & subtitles
 **Night mode** turns loud scenes down and quiet dialogue up; **Volume leveling** brings every channel
 and film to the same loudness. Both are off by default and work on both engines, ExoPlayer and mpv.
 **Dolby and DTS passthrough** (on) sends Dolby/DTS undecoded to the TV or
 receiver on ExoPlayer; off, or while Night mode or leveling is on, OwnTV decodes it itself.
 
 ### 📺 Picture quality and tunneled playback
-**Where:** Settings → Video player → Picture
+**Where:** Settings → Picture
 **Maximum video quality** caps the picture when a stream offers several sizes; the player's
 **Quality** button picks one for what is playing now. **Tunneled playback** (experimental, off) only
 appears on a TV that supports it, and switches itself off for good if a channel fails with it.
@@ -585,35 +585,38 @@ Turn interface motion off for a snappier feel on a slower box.
 
 ## ⚙️ Settings worth knowing
 
-Settings is two columns — sections on the left, their settings on the right. **Quick** at the top is
-yours to build: **hold OK on any setting** and choose **Pin to Quick**, then Move it up or down. The
-**search pill** searches every setting at once, and a result you can simply switch on or off flips
-right there in the list.
+Settings lives under **More → Settings**: twelve group cards (Quick, Profile, Sources & guide,
+Appearance, Layout, Content & metadata, Player, Picture, Sound & subtitles, Live TV, Watching &
+recording, App). A group opens as one page — its settings on the left, and on the right an
+explanation of the setting you are on, with its choices. Switches and short choices change right in
+the row with **OK** or **◀ ▶**; a **›** opens a screen of its own. **Quick** is yours to build:
+**hold OK on any setting** and choose **Pin to Quick**. **Search all settings** lists every setting
+whose name contains what you type.
 
 | Setting | Where | Why |
 |---|---|---|
-| **Multiview** | Video player → Multiview & mini-player | Watch up to four channels at once. Off by default; also sets the tile ceiling |
-| **Live latency** | Video player → Live tuning | How close to the live edge to play. Lower = less delay, more stutter risk |
-| **Pre-buffer live streams** | Video player → Live tuning | Collect a few seconds first on a flaky provider |
-| **Give up on a channel after** | Video player → Live tuning | 30 s default — bounds how long a dead channel can spin (+ per playlist) |
+| **Multiview** | Watching & recording | Watch up to four channels at once. Off by default; also sets the tile ceiling |
+| **Live latency** | Live TV | How close to the live edge to play. Lower = less delay, more stutter risk |
+| **Pre-buffer live streams** | Live TV | Collect a few seconds first on a flaky provider |
+| **Give up on a channel after** | Live TV | 30 s default — bounds how long a dead channel can spin (+ per playlist) |
 | **Catch-up time zone per playlist** | Sources & guide | One provider's archive on a different clock (quarter-hour zones such as +05:30 included) |
-| **Hardware decoder** | Video player → Picture | On for smooth 4K; off only to diagnose |
-| **HDR (mpv only)** | Video player → Picture | Use HDR output when the video and TV support it. ExoPlayer always passes HDR through |
-| **Auto frame rate** | Video player → Frame rate | Match the TV's refresh rate to the content. Off by default |
-| **Pause during the display switch** · **Match resolution** | Video player → Frame rate | Films only: hold the film while the TV re-syncs (off–5 s); also switch to the film's resolution, never above the TV's own |
-| **Seek step / Live rewind step** | Video player → Controls | How far the skip buttons jump |
-| **Left and right rewind live TV** | Video player → Live TV | Off by default — Left/Right open the channel list and history |
-| **Film buffer** · **Network timeout** · **Reconnect attempts** | Video player → Streaming | Films, episodes and catch-up on a bad line. Auto / 1 = as before |
-| **Default volume** | Video player → Sound | 0–150%, where everything starts |
-| **Reset saved player choices / zoom / volume** | Video player → Player, Picture, Sound | Forget everything the player remembered per item |
-| **Reset saved live TV player choices** | Video player → Player | Every channel follows the Live TV player setting again |
-| **Forget learned stream fixes** | Video player → Player | For a provider that has fixed its streams. Catch-up lessons also expire after 14 days |
-| **Custom DNS** | Network → DNS | System, Google, Cloudflare, Quad9, or DNS-over-HTTPS |
-| **External player** | Video player → Player | Separate switches for Live TV, Movies and Series |
+| **Hardware decoder** | Picture | On for smooth 4K; off only to diagnose |
+| **HDR (mpv only)** | Picture | Use HDR output when the video and TV support it. ExoPlayer always passes HDR through |
+| **Auto frame rate** | Picture | Match the TV's refresh rate to the content. Off by default |
+| **Pause during the display switch** · **Match resolution** | Picture | Films only: hold the film while the TV re-syncs (off–5 s); also switch to the film's resolution, never above the TV's own |
+| **Seek step / Live rewind step** | Watching & recording | How far the skip buttons jump |
+| **Left and right rewind live TV** | Live TV | Off by default — Left/Right open the channel list and history |
+| **Film buffer** · **Network timeout** · **Reconnect attempts** | Player | Films, episodes and catch-up on a bad line. Auto / 1 = as before |
+| **Default volume** | Sound & subtitles | 0–150%, where everything starts |
+| **Reset saved player choices / zoom / volume** | Player, Picture, Sound & subtitles | Forget everything the player remembered per item |
+| **Reset saved live TV player choices** | Player | Every channel follows the Live TV player setting again |
+| **Forget learned stream fixes** | Player | For a provider that has fixed its streams. Catch-up lessons also expire after 14 days |
+| **Custom DNS** | App → DNS | System, Google, Cloudflare, Quad9, or DNS-over-HTTPS |
+| **External player** | Player | Separate switches for Live TV, Movies and Series |
 | **Weather** | Appearance → Weather | The top-bar chip, with a custom location and °C/°F |
 | **Check updates on startup** | App | Be told when a newer version is on GitHub |
 | **Error log** | App, last row | The last crash and recent playback failures — exportable |
-| **Detailed playback logging** | Video player → Diagnostics | Turn on before reproducing a playback bug |
+| **Detailed playback logging** | App | Turn on before reproducing a playback bug |
 
 ### 💾 Backup & Restore
 **Where:** ⋯ More → **Backup & Restore**

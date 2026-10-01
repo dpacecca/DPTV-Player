@@ -1,5 +1,18 @@
 package tv.own.owntv.features.shell.components
 
+import tv.own.owntv.features.settings.SettingValue
+import tv.own.owntv.features.settings.labelRes
+import tv.own.owntv.features.settings.AccentSwatches
+import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.features.settings.StageSettingRow
+import tv.own.owntv.features.settings.StageSettingsPage
+import tv.own.owntv.features.settings.StageSettingsHeading
+import tv.own.owntv.features.settings.StageSettingsNote
+import tv.own.owntv.features.settings.StageSearchResultRow
+import tv.own.owntv.features.settings.VideoGroup
+import tv.own.owntv.features.settings.VideoPlayerGroupRows
+import tv.own.owntv.features.settings.settingHelp
+import tv.own.owntv.features.settings.videoGroupCount
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -93,10 +106,8 @@ import tv.own.owntv.features.settings.LanguageSettingsViewModel
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.features.update.UpdateDialog
 import tv.own.owntv.features.settings.BackupScreen
-import tv.own.owntv.features.settings.ManageProfilesScreen
 import tv.own.owntv.features.settings.ManageSourcesScreen
 import tv.own.owntv.features.settings.SettingsViewModel
-import tv.own.owntv.features.settings.VideoPlayerSettingsScreen
 import tv.own.owntv.core.nav.MainSection
 import tv.own.owntv.ui.components.BrandLockup
 import tv.own.owntv.ui.components.BrowseMode
@@ -155,7 +166,7 @@ internal val LocalSettingsRowTone = staticCompositionLocalOf { TileTone.PRIMARY 
 private fun Toned(tone: TileTone, content: @Composable () -> Unit) =
     CompositionLocalProvider(LocalSettingsRowTone provides tone, content = content)
 
-private enum class SettingsTab { ROOT, RECORDING, LANGUAGE, SOURCES, EPG, PROFILES, BACKUP, LOCAL_SYNC, VIDEO, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS }
+private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, BACKUP, LOCAL_SYNC, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS }
 
 @Composable
 internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
@@ -257,8 +268,6 @@ fun SettingsScreen(
     // Batch 4 · Settings search + quick toggles. Empty query = normal grouped list; a non-blank
     // query swaps the list for flat results that carry their group context ("Playback › HDR").
     var searchQuery by remember { mutableStateOf("") }
-    // Search is a chip in the one-line header until it is opened.
-    var searchExpanded by remember { mutableStateOf(false) }
     val searchFieldFocus = remember { FocusRequester() }
     // While searching, Back clears the query (and returns focus to the field) instead of leaving Settings.
     BackHandler(enabled = tab == SettingsTab.ROOT && searchQuery.isNotBlank()) {
@@ -291,25 +300,20 @@ fun SettingsScreen(
     // clicked (in onClick, before any recomposition) and restore it on dialog close, so the list
     // doesn't visibly jump/scroll when the dialog opens or when we refocus the opener row afterward.
     // A lazy list carries its position as item index + offset into that item, so both are saved.
-    val listState = rememberLazyListState()
+    val pageScroll = rememberScrollState()
     // These belong to the two-pane Settings root, but stay remembered while a detail screen replaces
     // it. Otherwise Back briefly rebuilds Quick at row zero before restoring the real group/row.
     var selectedGroup by rememberSaveable { mutableIntStateOf(0) }
     var displayedGroup by rememberSaveable { mutableIntStateOf(0) }
-    val spineState = rememberLazyListState()
-    var savedIndex by remember { mutableIntStateOf(0) }
-    var savedOffset by remember { mutableIntStateOf(0) }
-    val saveScroll = {
-        savedIndex = listState.firstVisibleItemIndex
-        savedOffset = listState.firstVisibleItemScrollOffset
-    }
+    var savedScrollPx by remember { mutableIntStateOf(0) }
+    val saveScroll = { savedScrollPx = pageScroll.value }
+    // The rows column: fresh entry and a lost focus land here, on the page's first row.
+    val rowsFocus = remember { FocusRequester() }
     LaunchedEffect(start) {
         if (start == null) return@LaunchedEffect
         tab = SettingsTab.ROOT
         start.group?.let { selectedGroup = it; displayedGroup = it }
         if (start.search) {
-            searchExpanded = true
-            // The field is composed by the expand; ask until it takes focus.
             for (attempt in 0 until 10) { kotlinx.coroutines.delay(50); if (runCatching { searchFieldFocus.requestFocus() }.isSuccess) break }
         }
         onStartConsumed()
@@ -324,7 +328,7 @@ fun SettingsScreen(
         if (!anyDialogOpen) {
             // Focus back on the opener row, with the scroll offset held still the whole way — see
             // [restoreAfterDialogClose] for why doing those two in sequence made the highlight travel.
-            tv.own.owntv.ui.components.restoreAfterDialogClose(dialogReturn, listState, savedIndex, savedOffset)
+            tv.own.owntv.ui.components.restoreAfterDialogClose(dialogReturn, pageScroll, savedScrollPx)
             dialogReturn = null
         }
     }
@@ -415,64 +419,55 @@ fun SettingsScreen(
     // stale. From the entries there is nothing to keep in step. ROOT gets one it never uses, which
     // is cheaper than a list that can be wrong.
     val rowFocus = remember { SettingsTab.entries.associateWith { FocusRequester() } }
-    // Mini player is a popup on the Video player screen, not a screen of its own. The settings search
-    // still lists it by name, so it needs a way to say "open that popup on arrival".
+    // Mini player is a popup on the Watching & recording page, not a screen of its own. The settings
+    // search still lists it by name, so it needs a way to say "open that popup on arrival".
     var openMiniPlayer by rememberSaveable { mutableStateOf(false) }
-    // A Quick shortcut into Video player settings: which section to show, which row to focus there,
-    // and — for the way back — which Quick row it was.
-    var videoSection by rememberSaveable { mutableStateOf<Int?>(null) }
+    // A Quick pin or a search result that jumps to a Video player row: the row to focus on its page,
+    // and — for the way back — the Quick row it came from.
     var videoRowKey by rememberSaveable { mutableStateOf<String?>(null) }
     var deepReturnKey by rememberSaveable { mutableStateOf<String?>(null) }
     val deepRowFocus = remember { FocusRequester() }
+    val jumpVideo: (String, Boolean) -> Unit = { key, fromQuick ->
+        val ref = tv.own.owntv.features.settings.VIDEO_QUICK_ROWS.first { it.key == key }
+        deepReturnKey = if (fromQuick) key else null
+        videoRowKey = key
+        searchQuery = ""
+        selectedGroup = SettingsGroup.of(tv.own.owntv.features.settings.videoGroupOf(ref.section)).ordinal
+    }
+    // Back from a page reached through a Quick pin returns to that pin on Quick.
+    BackHandler(enabled = tab == SettingsTab.ROOT && deepReturnKey != null && selectedGroup != 0 && searchQuery.isBlank()) {
+        videoRowKey = null
+        openMiniPlayer = false
+        selectedGroup = 0
+    }
     // Opening a sub-screen the ordinary way cancels any pending Quick-shortcut return, or the Back
     // from it would aim at the shortcut instead of the row just used.
-    val open: (SettingsTab) -> Unit = { lastTab = it; deepReturnKey = null; videoSection = null; videoRowKey = null; tab = it }
+    val open: (SettingsTab) -> Unit = { lastTab = it; deepReturnKey = null; videoRowKey = null; tab = it }
     LaunchedEffect(openEpgAdd) {
         if (openEpgAdd) { consumeEpgAdd = true; open(SettingsTab.EPG); onEpgAddConsumed() }
     }
 
+    // Settings now has the Stage canvas (P10). The sub-screens it opens are not redrawn yet, so they keep
+    // the inset they had under the old top bar.
+    val sub = modifier.padding(start = 6.dp, end = 6.dp, bottom = 6.dp, top = StageContentTop)
     when (tab) {
-        SettingsTab.LANGUAGE -> { LanguageSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.SOURCES -> { ManageSourcesScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.EPG -> { tv.own.owntv.features.settings.EpgSourcesScreen(onBack = { tab = SettingsTab.ROOT; consumeEpgAdd = false }, modifier = modifier, startOnAdd = consumeEpgAdd); return }
-        SettingsTab.PROFILES -> { ManageProfilesScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.BACKUP -> { Toned(TileTone.TERTIARY) { BackupScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }; return }
-        SettingsTab.LOCAL_SYNC -> { Toned(TileTone.TERTIARY) { LocalSyncScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }; return }
-        SettingsTab.VIDEO -> {
-            Toned(TileTone.TERTIARY) {
-                VideoPlayerSettingsScreen(
-                    onBack = {
-                        tab = SettingsTab.ROOT
-                        openMiniPlayer = false
-                        videoSection = null
-                        videoRowKey = null
-                    },
-                    openMiniPlayer = openMiniPlayer,
-                    openSection = videoSection,
-                    focusRowKey = videoRowKey,
-                    modifier = modifier,
-                )
-            }
-            return
-        }
-        SettingsTab.RECORDING -> {
-            Toned(TileTone.TERTIARY) {
-                tv.own.owntv.features.settings.RecordingSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
-            }
-            return
-        }
-        SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.HOME -> { Toned(TileTone.SECONDARY) { HomeSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }; return }
-        SettingsTab.NETWORK -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }; return }
-        SettingsTab.DNS -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.DnsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }; return }
-        SettingsTab.METADATA -> { tv.own.owntv.features.settings.MetadataSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.OPEN_SUBTITLES -> { tv.own.owntv.features.settings.OpenSubtitlesAccountScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.WEATHER -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }; return }
-        SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-        SettingsTab.CONTENT_MENUS -> { tv.own.owntv.features.settings.ContentMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-            SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-            SettingsTab.GUIDE_WIDTH -> { tv.own.owntv.features.settings.GuideWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
-            SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier); return }
+        SettingsTab.LANGUAGE -> { LanguageSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
+        SettingsTab.SOURCES -> { ManageSourcesScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
+        SettingsTab.EPG -> { tv.own.owntv.features.settings.EpgSourcesScreen(onBack = { tab = SettingsTab.ROOT; consumeEpgAdd = false }, modifier = sub, startOnAdd = consumeEpgAdd); return }
+        SettingsTab.BACKUP -> { Toned(TileTone.TERTIARY) { BackupScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
+        SettingsTab.LOCAL_SYNC -> { Toned(TileTone.TERTIARY) { LocalSyncScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
+        SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
+        SettingsTab.HOME -> { Toned(TileTone.SECONDARY) { HomeSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
+        SettingsTab.NETWORK -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
+        SettingsTab.DNS -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.DnsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
+        SettingsTab.METADATA -> { tv.own.owntv.features.settings.MetadataSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
+        SettingsTab.OPEN_SUBTITLES -> { tv.own.owntv.features.settings.OpenSubtitlesAccountScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
+        SettingsTab.WEATHER -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
+        SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
+        SettingsTab.CONTENT_MENUS -> { tv.own.owntv.features.settings.ContentMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
+            SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
+            SettingsTab.GUIDE_WIDTH -> { tv.own.owntv.features.settings.GuideWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
+            SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
             SettingsTab.ROOT -> Unit
     }
 
@@ -534,15 +529,10 @@ fun SettingsScreen(
             onClick = { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
         ),
         RootGroup("group_profile", stringResource(R.string.settings_profile_group), OwnTVIcon.PERSON, stringResource(R.string.settings_group_summary_profile)),
-        RootRow(
-            tabRowKey(SettingsTab.PROFILES), TileTone.SECONDARY, OwnTVIcon.PERSON,
-            title = stringResource(R.string.profiles_title), desc = stringResource(R.string.settings_profiles_description),
-            focus = rowFocus.getValue(SettingsTab.PROFILES),
-            onClick = { open(SettingsTab.PROFILES) },
-        ),
         RootGroup("group_sources", stringResource(R.string.settings_group_sources), OwnTVIcon.PLAYLIST, stringResource(R.string.settings_group_summary_sources)),
         RootRow(
             tabRowKey(SettingsTab.SOURCES), TileTone.PRIMARY, OwnTVIcon.PLAYLIST,
+            heading = stringResource(R.string.settings_sources_title),
             title = stringResource(R.string.settings_playlists), desc = stringResource(R.string.settings_playlists_description),
             focus = rowFocus.getValue(SettingsTab.SOURCES),
             onClick = { open(SettingsTab.SOURCES) },
@@ -557,7 +547,7 @@ fun SettingsScreen(
         // sources, and sitting straight under the two source lists they read as if they were.
         RootRow(
             "epg_offset", TileTone.SECONDARY, OwnTVIcon.EPG,
-            heading = stringResource(R.string.content_epg),
+            heading = stringResource(R.string.settings_part_guide_catchup),
             title = stringResource(R.string.content_epg_time_offset),
             desc = stringResource(R.string.settings_epg_offset_root_description),
             chip = epgShiftLabel(epgOffset),
@@ -762,42 +752,18 @@ fun SettingsScreen(
             focus = rowFocus.getValue(SettingsTab.OPEN_SUBTITLES),
             onClick = { open(SettingsTab.OPEN_SUBTITLES) },
         ),
-        RootGroup("group_playback", stringResource(R.string.settings_playback_group), OwnTVIcon.VIDEO, stringResource(R.string.settings_group_summary_playback)),
-        RootRow(
-            tabRowKey(SettingsTab.VIDEO), TileTone.TERTIARY, OwnTVIcon.VIDEO,
-            title = stringResource(R.string.settings_video_player), desc = stringResource(R.string.settings_video_player_description),
-            focus = rowFocus.getValue(SettingsTab.VIDEO),
-            onClick = { open(SettingsTab.VIDEO) },
-        ),
-        // A row under Playback, not a group of its own. A group holding exactly one row still has to
-        // be opened to find out it holds one row, which is a press that tells the user nothing.
-        RootRow(
-            tabRowKey(SettingsTab.RECORDING), TileTone.TERTIARY, OwnTVIcon.LIVE_TV,
-            title = stringResource(R.string.recording_settings_group),
-            desc = stringResource(R.string.recording_description),
-            focus = rowFocus.getValue(SettingsTab.RECORDING),
-            onClick = { open(SettingsTab.RECORDING) },
-        ),
-        RootGroup("group_network", stringResource(R.string.settings_network_group), OwnTVIcon.NETWORK, stringResource(R.string.settings_group_summary_network)),
-        RootRow(
-            tabRowKey(SettingsTab.NETWORK), TileTone.SECONDARY, OwnTVIcon.NETWORK,
-            title = stringResource(R.string.common_proxy), desc = stringResource(R.string.settings_proxy_description),
-            focus = rowFocus.getValue(SettingsTab.NETWORK),
-            onClick = { open(SettingsTab.NETWORK) },
-        ),
-        RootRow(
-            tabRowKey(SettingsTab.DNS), TileTone.SECONDARY, OwnTVIcon.DNS,
-            title = stringResource(R.string.settings_dns),
-            desc = stringResource(R.string.settings_dns_description),
-            focus = rowFocus.getValue(SettingsTab.DNS),
-            onClick = { open(SettingsTab.DNS) },
-        ),
+        RootGroup("group_player", stringResource(R.string.settings_vp_cat_player), OwnTVIcon.PLAY, ""),
+        RootGroup("group_picture", stringResource(R.string.settings_vp_cat_picture), OwnTVIcon.VIDEO, ""),
+        RootGroup("group_sound", stringResource(R.string.settings_group_sound_subtitles), OwnTVIcon.HEADPHONES, ""),
+        RootGroup("group_live", stringResource(R.string.settings_live_tv), OwnTVIcon.LIVE_TV, ""),
+        RootGroup("group_watching", stringResource(R.string.settings_group_watching_recording), OwnTVIcon.REC, ""),
         // Plan Z — the whole "Data" group is gone. Backup and Local sync are places, not preferences,
         // and are More rows now; Clear history moved onto the History screen it acts on; the download
         // folder moved to the Downloads screen. With all four gone the group had nothing left in it.
         RootGroup("group_app", stringResource(R.string.settings_app_group), OwnTVIcon.INFO, stringResource(R.string.settings_group_summary_app)),
         RootRow(
             tabRowKey(SettingsTab.LANGUAGE), TileTone.PRIMARY, OwnTVIcon.LANGUAGE,
+            heading = stringResource(R.string.settings_group_app),
             title = stringResource(R.string.settings_language),
             desc = stringResource(R.string.settings_language_description),
             chip = languageChip,
@@ -836,6 +802,20 @@ fun SettingsScreen(
             chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY,
             onClick = { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
         ),
+        RootRow(
+            tabRowKey(SettingsTab.NETWORK), TileTone.SECONDARY, OwnTVIcon.NETWORK,
+            heading = stringResource(R.string.settings_group_network),
+            title = stringResource(R.string.common_proxy), desc = stringResource(R.string.settings_proxy_description),
+            focus = rowFocus.getValue(SettingsTab.NETWORK),
+            onClick = { open(SettingsTab.NETWORK) },
+        ),
+        RootRow(
+            tabRowKey(SettingsTab.DNS), TileTone.SECONDARY, OwnTVIcon.DNS,
+            title = stringResource(R.string.settings_dns),
+            desc = stringResource(R.string.settings_dns_description),
+            focus = rowFocus.getValue(SettingsTab.DNS),
+            onClick = { open(SettingsTab.DNS) },
+        ),
         // Plan Z — About and the error log left with the Data group. A page of facts and a log are
         // not preferences; both are More rows now, opening the very same dialogs.
     )
@@ -858,19 +838,14 @@ fun SettingsScreen(
         val binding = androidx.compose.runtime.key(ref.key) {
             tv.own.owntv.features.settings.videoQuickBinding(ref.key, settingsVm)
         }
-        val jump = {
-            lastTab = null
-            deepReturnKey = ref.key
-            videoSection = ref.section
-            videoRowKey = ref.key
-            tab = SettingsTab.VIDEO
-        }
+        val jump = { lastTab = null; jumpVideo(ref.key, true) }
         ref.key to RootRow(
             key = ref.key,
             tone = TileTone.TERTIARY,
             icon = ref.icon,
             title = stringResource(ref.titleRes),
-            desc = ref.descRes?.let { stringResource(it, *NO_ARGS) },
+            // Where it lives, so a pin never loses its home (P9-01 "Pinned from Player").
+            desc = stringResource(R.string.settings_pinned_from, stringResource(SettingsGroup.of(tv.own.owntv.features.settings.videoGroupOf(ref.section)).titleRes)),
             chip = binding?.chip,
             chipTone = if (binding?.primaryChip == true) TileTone.PRIMARY else TileTone.SECONDARY,
             chevron = binding?.onToggle == null,
@@ -896,24 +871,19 @@ fun SettingsScreen(
             }
         }
     }
+    // A pin that matches no Settings row at all (a row removed in an earlier release) is dropped, so
+    // Quick's count says what it lists. Rows that are only hidden for now keep their pins.
+    LaunchedEffect(quickPinned, rootItems.size) {
+        val known = rootItems.map { it.key }.toSet() + tv.own.owntv.features.settings.VIDEO_QUICK_ROWS.map { it.key } +
+            setOf("ambient_glow", "catchup_sources", "vp_tunneled", "vp_preview_audio", "vp_timeshift_window", "vp_multiview_tiles")
+        val kept = quickPinned.filter { it in known }
+        if (kept.size < quickPinned.size) settingsVm.setQuickPinnedKeys(kept)
+    }
     /** Which category each row key lives in, so a Back from a sub-screen can reselect its group. */
     val groupOfKey: Map<String, Int> = remember(categories) {
-        buildMap { categories.forEachIndexed { g, (_, rows) -> rows.forEach { put(it.key, g) } } }
-    }
-    // Opening the search chip has to carry focus into the field it was replaced by — one frame later,
-    // once that field exists.
-    LaunchedEffect(searchExpanded) {
-        if (searchExpanded) {
-            withFrameNanos { }
-            runCatching { searchFieldFocus.requestFocus() }
-        }
+        buildMap { categories.forEachIndexed { g, (_, rows) -> rows.forEach { if (g != 0) put(it.key, g) } } }
     }
     val selectedRows = categories.getOrNull(selectedGroup)?.second.orEmpty()
-    // Which column has the cursor, so the sheet's count tag can go accent and say so.
-    var sheetFocused by remember { mutableStateOf(false) }
-    // Requester on the *selected* category, so a directional entry from the sidebar lands on the
-    // group the user last used rather than on whatever row happens to be nearest.
-    val selectedCategoryFocus = remember { FocusRequester() }
     // The row whose hold-OK menu is open, or null.
     var menuRow by remember { mutableStateOf<RootRow?>(null) }
     // Closing the menu leaves focus nowhere, so the row it belonged to asks for it back.
@@ -925,68 +895,43 @@ fun SettingsScreen(
         if (menuReturnKey == null) return@LaunchedEffect
         kotlinx.coroutines.delay(60)
         // Unpinning removes the row from Quick, so its requester may no longer be attached to
-        // anything — then the group column takes focus rather than nothing at all.
+        // anything — then the page's first row takes focus rather than nothing at all.
         if (runCatching { menuReturnFocus.requestFocus() }.isFailure) {
-            runCatching { selectedCategoryFocus.requestFocus() }
+            runCatching { rowsFocus.requestFocus() }
         }
     }
-    // Back on the empty search field collapses it back to a chip and hands focus to the spine.
-    // Deliberately NOT tied to the field losing focus: the field hands focus to its own inner editor
-    // when OK opens the keyboard, so a focus-loss rule would slam it shut on the very keypress that
-    // starts typing.
-    BackHandler(enabled = tab == SettingsTab.ROOT && searchExpanded && searchQuery.isBlank()) {
-        searchExpanded = false
-        runCatching { selectedCategoryFocus.requestFocus() }
-    }
-    // Back inside the rows goes up a level to the groups rather than out of Settings — the same step
-    // Left makes, so whichever the user reaches for does the same thing.
-    BackHandler(enabled = tab == SettingsTab.ROOT && sheetFocused && searchQuery.isBlank()) {
-        runCatching { selectedCategoryFocus.requestFocus() }
-    }
-    // A genuinely new group starts at its first row. Recreating the root after a sub-screen does not:
-    // its group and list position were kept above the sub-screen dispatch, so leave them untouched.
+    // A genuinely new group starts at its top. Recreating the page after a sub-screen does not:
+    // its group and scroll were kept above the sub-screen dispatch, so leave them untouched.
     LaunchedEffect(selectedGroup) {
         if (displayedGroup != selectedGroup) {
-            runCatching { listState.scrollToItem(0) }
+            runCatching { pageScroll.scrollTo(0) }
             displayedGroup = selectedGroup
+            if (videoRowKey == null) for (attempt in 0 until 10) { withFrameNanos { }; if (runCatching { rowsFocus.requestFocus() }.getOrDefault(false)) break }
         }
     }
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back. This block
-    // only exists while the root list is showing, so coming back from a sub-screen is exactly when it
-    // runs. Fresh entry is handled separately below — it used to be left to the sidebar, which
-    // Settings no longer has a slot on.
+    // only exists while the page is showing, so coming back from a sub-screen is exactly when it runs.
     val returningRowFocus = when {
         searchQuery.isNotBlank() && (deepReturnKey != null || lastTab != null) -> searchFieldFocus
-        deepReturnKey != null -> deepRowFocus
+        deepReturnKey != null && selectedGroup == 0 -> deepRowFocus
         else -> lastTab?.let { rowFocus[it] }
     }
     LaunchedEffect(Unit) {
-        // Either the row that opened a sub-screen, or the Quick shortcut that jumped inside one.
-        val deep = deepReturnKey
-        val key = deep ?: lastTab?.let(::tabRowKey)
+        val key = lastTab?.let(::tabRowKey)
         val target = returningRowFocus ?: return@LaunchedEffect
         val group = key?.let(groupOfKey::get)
-        if (searchQuery.isBlank() && group != null) {
-            selectedGroup = group
-        }
-        // Wait by frames rather than showing another focus target for fixed delays. A lazy row may need
-        // a layout pass after its group is selected; once it lands, hold it for a few frames so a late
-        // focus-group entry cannot move the cursor to the category column.
+        if (searchQuery.isBlank() && group != null) selectedGroup = group
+        // By frames: the page may need a layout pass once its group is selected; once focus lands,
+        // hold it a few frames so a late entry cannot move it.
         var settledFrames = 0
         repeat(10) {
             withFrameNanos { }
-            if (searchQuery.isBlank() && group != null) {
-                val index = categories[group].second.indexOfFirst { it.key == key }
-                if (index >= 0 && listState.layoutInfo.visibleItemsInfo.none { it.index == index }) {
-                    runCatching { listState.scrollToItem(index) }
-                }
-            }
             if (runCatching { target.requestFocus() }.getOrDefault(false)) {
                 settledFrames++
                 if (settledFrames >= 3) {
                     lastTab = null
-                    deepReturnKey = null
+                    if (selectedGroup == 0) deepReturnKey = null
                     return@LaunchedEffect
                 }
             } else {
@@ -995,23 +940,13 @@ fun SettingsScreen(
         }
     }
 
-    // Plan Z — a fresh entry has nothing to fall back on any more. Settings used to be a sidebar
-    // item, so clicking it left focus in the sidebar and the user's next Right press fired the
-    // group's `onEnter` above. It is reached by OK on a More row now, and that row is gone the
-    // instant this screen replaces it — so focus was left orphaned. Ask for it here instead, on the
-    // group column, which is exactly where a directional entry used to land.
-    //
-    // Only on a fresh entry: coming back from a sub-screen is the block above's job, and both
-    // firing would fight over the cursor. `onBack` non-null is what says More is the parent.
+    // A fresh entry from More: the page's first row (a search start focuses the field instead).
     if (onBack != null) {
         LaunchedEffect(Unit) {
-            if (returningRowFocus != null) return@LaunchedEffect
-            // By frames rather than a fixed delay — the lazy spine may need a layout pass first.
+            if (returningRowFocus != null || start?.search == true) return@LaunchedEffect
             repeat(10) {
                 withFrameNanos { }
-                if (runCatching { selectedCategoryFocus.requestFocus() }.getOrDefault(false)) {
-                    return@LaunchedEffect
-                }
+                if (runCatching { rowsFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
             }
         }
     }
@@ -1027,15 +962,10 @@ fun SettingsScreen(
         // spacing stay translated rather than hard-coded here. It also lands in the search
         // haystack, so typing "video player" finds everything on that screen.
     val searchResults: List<SettingsSearchEntry> = if (searchQuery.isBlank()) emptyList() else {
-        val videoPlayerGroup = stringResource(
-            R.string.settings_breadcrumb,
-            stringResource(R.string.settings_group_playback),
-            stringResource(R.string.settings_video_player),
-        )
         val entries = listOfNotNull(
             SettingsSearchEntry(stringResource(R.string.settings_app_group), stringResource(R.string.settings_language), stringResource(R.string.settings_search_keywords_language), OwnTVIcon.LANGUAGE, TileTone.PRIMARY,
                 chip = languageChip, chipTone = TileTone.PRIMARY) { open(SettingsTab.LANGUAGE) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_profile), stringResource(R.string.profiles_title), stringResource(R.string.settings_search_keywords_profiles), OwnTVIcon.PERSON, TileTone.SECONDARY) { open(SettingsTab.PROFILES) },
+            SettingsSearchEntry(stringResource(R.string.settings_group_profile), stringResource(R.string.profiles_title), stringResource(R.string.settings_search_keywords_profiles), OwnTVIcon.PERSON, TileTone.SECONDARY) { searchQuery = ""; selectedGroup = SettingsGroup.PROFILE.ordinal },
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_playlists), stringResource(R.string.settings_search_keywords_playlists), OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { open(SettingsTab.SOURCES) },
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_epg_sources), stringResource(R.string.settings_search_keywords_epg), OwnTVIcon.EPG, TileTone.PRIMARY) { open(SettingsTab.EPG) },
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.content_epg_time_offset), stringResource(R.string.settings_search_keywords_epg_offset), OwnTVIcon.EPG, TileTone.SECONDARY,
@@ -1096,20 +1026,20 @@ fun SettingsScreen(
                 chip = stringResource(animationLevel.labelRes), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAnimations = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_weather), stringResource(R.string.settings_search_keywords_weather), OwnTVIcon.WEATHER, TileTone.SECONDARY,
                 chip = if (weatherEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.WEATHER) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_quick_live_preview), stringResource(R.string.settings_search_keywords_live_preview), OwnTVIcon.LIVE_TV, TileTone.TERTIARY,
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_live_preview"), stringResource(R.string.settings_quick_live_preview), stringResource(R.string.settings_search_keywords_live_preview), OwnTVIcon.LIVE_TV, TileTone.TERTIARY,
                 chip = if (livePreview) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { toggleLivePreview(searchFieldFocus) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_preview_audio), stringResource(R.string.settings_search_keywords_sound), OwnTVIcon.AUDIO, TileTone.SECONDARY,
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_preview_audio"), stringResource(R.string.settings_preview_audio), stringResource(R.string.settings_search_keywords_sound), OwnTVIcon.AUDIO, TileTone.SECONDARY,
                 chip = if (previewAudio) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setLivePreviewAudio(!previewAudio) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_quick_channel_numbers), stringResource(R.string.settings_search_keywords_channel_numbers), OwnTVIcon.LIVE_TV, TileTone.PRIMARY,
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_channel_numbers"), stringResource(R.string.settings_quick_channel_numbers), stringResource(R.string.settings_search_keywords_channel_numbers), OwnTVIcon.LIVE_TV, TileTone.PRIMARY,
                 chip = if (channelNumbers) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (channelNumbers) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setDirectTune(!channelNumbers) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_mini_player_root), stringResource(R.string.settings_search_keywords_mini), OwnTVIcon.PIP, TileTone.TERTIARY) { openMiniPlayer = true; open(SettingsTab.VIDEO) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_quick_hdr), stringResource(R.string.settings_search_keywords_hdr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_mini"), stringResource(R.string.settings_mini_player_root), stringResource(R.string.settings_search_keywords_mini), OwnTVIcon.PIP, TileTone.TERTIARY) { openMiniPlayer = true; jumpVideo("vp_mini", false) },
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_hdr"), stringResource(R.string.settings_quick_hdr), stringResource(R.string.settings_search_keywords_hdr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
                 chip = if (hdr) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setHdrEnabled(!hdr) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_auto_frame_rate), stringResource(R.string.settings_search_keywords_afr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_afr"), stringResource(R.string.settings_auto_frame_rate), stringResource(R.string.settings_search_keywords_afr), OwnTVIcon.VIDEO, TileTone.PRIMARY,
                 chip = if (autoFrameRate) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (autoFrameRate) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { toggleAutoFrameRate(searchFieldFocus) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_surround_sound), stringResource(R.string.settings_search_keywords_surround), OwnTVIcon.AUDIO, TileTone.SECONDARY,
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_surround"), stringResource(R.string.settings_surround_sound), stringResource(R.string.settings_search_keywords_surround), OwnTVIcon.AUDIO, TileTone.SECONDARY,
                 chip = surroundModeLabel(surroundMode), chipTone = if (surroundMode == SurroundMode.STEREO) TileTone.SECONDARY else TileTone.PRIMARY, showChevron = false) { settingsVm.cycleSurroundMode() },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_autoplay_next), stringResource(R.string.settings_search_keywords_autoplay), OwnTVIcon.AUTOPLAY_NEXT, TileTone.SECONDARY,
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_autoplay"), stringResource(R.string.settings_autoplay_next), stringResource(R.string.settings_search_keywords_autoplay), OwnTVIcon.AUTOPLAY_NEXT, TileTone.SECONDARY,
                 chip = if (autoPlayNext) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoPlayNext(!autoPlayNext) },
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_catchup), stringResource(R.string.settings_search_keywords_catchup), OwnTVIcon.CATCHUP, TileTone.SECONDARY,
                 chip = when (catchupTz) {
@@ -1120,19 +1050,18 @@ fun SettingsScreen(
                 chip = if (catchupOverrides == 0) stringResource(R.string.common_off)
                     else pluralStringResource(R.plurals.settings_live_preroll_overrides, catchupOverrides, catchupOverrides),
                 chipTone = if (catchupOverrides > 0) TileTone.PRIMARY else TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showCatchupSources = true } else null,
-            SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.settings_video_player), stringResource(R.string.settings_search_keywords_video), OwnTVIcon.VIDEO, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
             // Four screens that had no entry at all, so nothing on them could be found by name.
-            SettingsSearchEntry(stringResource(R.string.settings_group_playback), stringResource(R.string.recording_settings_group), stringResource(R.string.settings_search_keywords_recording), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.RECORDING) },
+            SettingsSearchEntry(stringResource(R.string.settings_group_watching_recording), stringResource(R.string.recording_settings_group), stringResource(R.string.settings_search_keywords_recording), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { searchQuery = ""; selectedGroup = SettingsGroup.WATCHING.ordinal },
             SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_open_subtitles), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.PRIMARY) { open(SettingsTab.OPEN_SUBTITLES) },
             SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_glass_effect), stringResource(R.string.settings_search_keywords_glass), OwnTVIcon.SPARKLE, TileTone.PRIMARY,
                 chip = if (glassOn) glassPresetLabel(glassConfig.preset) else stringResource(R.string.common_off), chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.GLASS_EFFECT) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_content_menus_title), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.MENU, TileTone.PRIMARY) { open(SettingsTab.CONTENT_MENUS) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_subtitle_appearance), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_live_latency), stringResource(R.string.settings_search_keywords_latency), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_live_preroll), stringResource(R.string.settings_search_keywords_live_preroll), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { open(SettingsTab.VIDEO) },
-            SettingsSearchEntry(videoPlayerGroup, stringResource(R.string.settings_detailed_playback_logging), stringResource(R.string.settings_search_keywords_detailed_logging), OwnTVIcon.INFO, TileTone.SECONDARY) { open(SettingsTab.VIDEO) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_network), stringResource(R.string.common_proxy), stringResource(R.string.settings_search_keywords_proxy), OwnTVIcon.NETWORK, TileTone.SECONDARY) { open(SettingsTab.NETWORK) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_network), stringResource(R.string.settings_dns), stringResource(R.string.settings_search_keywords_dns), OwnTVIcon.DNS, TileTone.SECONDARY) { open(SettingsTab.DNS) },
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_sub_style"), stringResource(R.string.settings_subtitle_appearance), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.TERTIARY) { jumpVideo("vp_sub_style", false) },
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_live_latency"), stringResource(R.string.settings_live_latency), stringResource(R.string.settings_search_keywords_latency), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { jumpVideo("vp_live_latency", false) },
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_preroll"), stringResource(R.string.settings_live_preroll), stringResource(R.string.settings_search_keywords_live_preroll), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { jumpVideo("vp_preroll", false) },
+            SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_logging"), stringResource(R.string.settings_detailed_playback_logging), stringResource(R.string.settings_search_keywords_detailed_logging), OwnTVIcon.INFO, TileTone.SECONDARY) { jumpVideo("vp_logging", false) },
+            SettingsSearchEntry(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.common_proxy), stringResource(R.string.settings_search_keywords_proxy), OwnTVIcon.NETWORK, TileTone.SECONDARY) { open(SettingsTab.NETWORK) },
+            SettingsSearchEntry(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.settings_dns), stringResource(R.string.settings_search_keywords_dns), OwnTVIcon.DNS, TileTone.SECONDARY) { open(SettingsTab.DNS) },
             // Settings inside a sub-screen, by their own names (kept out of line: this function is at the JVM size limit).
             *subScreenSearchEntries { t -> open(t) }.toTypedArray(),
             SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_app_startup), stringResource(R.string.settings_search_keywords_startup), OwnTVIcon.POWER, TileTone.SECONDARY,
@@ -1158,13 +1087,7 @@ fun SettingsScreen(
         val videoKeywords = stringResource(R.string.settings_search_keywords_video)
         // Volume, audio sync and audio language: "lip sync" or "loud" is what someone types for these.
         val audioKeywords = stringResource(R.string.settings_search_keywords_audio)
-        fun jumpTo(ref: tv.own.owntv.features.settings.VideoQuickRef): () -> Unit = {
-            lastTab = null
-            deepReturnKey = ref.key
-            videoSection = ref.section
-            videoRowKey = ref.key
-            tab = SettingsTab.VIDEO
-        }
+        fun jumpTo(ref: tv.own.owntv.features.settings.VideoQuickRef): () -> Unit = { lastTab = null; jumpVideo(ref.key, false) }
         val videoEntries = tv.own.owntv.features.settings.VIDEO_QUICK_ROWS
             .filterNot { it.key in bespokeVideoKeys }
             .map { ref ->
@@ -1175,7 +1098,7 @@ fun SettingsScreen(
                 }
                 val jump = jumpTo(ref)
                 SettingsSearchEntry(
-                    videoPlayerGroup,
+                    tv.own.owntv.features.settings.videoRowPath(ref.key),
                     stringResource(ref.titleRes),
                     if (ref.section == tv.own.owntv.features.settings.SECTION_SOUND || ref.key == "vp_audio_lang") audioKeywords else videoKeywords,
                     ref.icon,
@@ -1193,249 +1116,99 @@ fun SettingsScreen(
             titles.map { SettingsSearchEntry(group, stringResource(it), stringResource(keywords), icon, TileTone.TERTIARY, onClick = onClick) }
         val subStyleRef = tv.own.owntv.features.settings.VIDEO_QUICK_ROWS.first { it.key == "vp_sub_style" }
         val screenRowEntries =
-            rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_playback), stringResource(R.string.recording_settings_group)),
-                tv.own.owntv.features.settings.RECORDING_SEARCH_ROWS, R.string.settings_search_keywords_recording, OwnTVIcon.LIVE_TV) { open(SettingsTab.RECORDING) } +
-            rowsOf(stringResource(R.string.settings_breadcrumb, videoPlayerGroup, stringResource(R.string.settings_subtitle_appearance)),
+            rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_watching_recording), stringResource(R.string.recording_settings_group)),
+                tv.own.owntv.features.settings.RECORDING_SEARCH_ROWS, R.string.settings_search_keywords_recording, OwnTVIcon.LIVE_TV) { searchQuery = ""; selectedGroup = SettingsGroup.WATCHING.ordinal } +
+            rowsOf(stringResource(R.string.settings_breadcrumb, tv.own.owntv.features.settings.videoRowPath("vp_sub_style"), stringResource(R.string.settings_subtitle_appearance)),
                 tv.own.owntv.features.settings.SUBTITLE_APPEARANCE_SEARCH_ROWS, R.string.settings_search_keywords_subtitle_appearance, OwnTVIcon.SUBTITLE, jumpTo(subStyleRef)) +
-            rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_network), stringResource(R.string.common_proxy)),
+            rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.common_proxy)),
                 tv.own.owntv.features.settings.PROXY_SEARCH_ROWS, R.string.settings_search_keywords_proxy, OwnTVIcon.NETWORK) { open(SettingsTab.NETWORK) } +
-            rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_network), stringResource(R.string.settings_dns)),
+            rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.settings_dns)),
                 tv.own.owntv.features.settings.DNS_SEARCH_ROWS, R.string.settings_search_keywords_dns, OwnTVIcon.DNS) { open(SettingsTab.DNS) } +
             // The Catch-up popup's second row; its first (the time zone) is the Catch-up entry above.
             rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_sources), stringResource(R.string.settings_catchup)),
                 listOf(R.string.settings_catchup_player), R.string.settings_search_keywords_catchup, OwnTVIcon.CATCHUP) { saveScroll(); dialogReturn = searchFieldFocus; showCatchupTime = true }
-        val tokens = searchQuery.trim().lowercase().split(" ").filter { it.isNotBlank() }
-        (entries + videoEntries + screenRowEntries).filter { e -> tokens.all { t -> e.haystack.contains(t) } }
+        // A setting is found by its own name only: "play" lists every setting with "play" in its name (owner).
+        val needle = searchQuery.trim().lowercase()
+        (entries + videoEntries + screenRowEntries)
+            .filter { e -> e.title.lowercase().contains(needle) }
+            .distinctBy { it.group + it.title }
     }
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .roundedPanel(fillColor = ContentPanelFill)
-            // onEnter fires ONLY for directional entry into this group (sidebar D-pad, etc.), NOT for
-            // programmatic restores — those are handled by the dialog-return LaunchedEffect above (and
-            // dialogReturn is cleared there). So this only picks the entry fallback: while searching,
-            // the always-bound search field; otherwise the category column, at the group last used.
-            // Landing on the categories (not on a row) is the whole point of the two panes — one Right
-            // press then reaches the rows.
-            .focusProperties {
-                onEnter = {
-                    val target = returningRowFocus
-                        ?: if (searchQuery.isBlank()) selectedCategoryFocus else searchFieldFocus
-                    val landed = runCatching { target.requestFocus() }.getOrDefault(false)
-                    if (!landed && returningRowFocus != null) cancelFocusChange()
-                }
-            }
-            .focusGroup()
-            .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 10.dp),
-    ) {
-        // The panel head, spanning both columns: the title and what the two columns do, then search —
-        // a chip that opens into the real field on OK.
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.settings_title),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = stringResource(R.string.settings_header_hint),
-                    fontSize = 12.sp,
-                    color = colors.outline,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 3.dp),
-                )
-            }
-            if (searchExpanded || searchQuery.isNotBlank()) {
-                // Sized, not stretched: a field spanning the whole header reads as the subject of the
-                // screen, which it is not. Capped, and it gives way at 150% UI Zoom.
-                OwnTVTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    // Captioned by the header it sits in; a label line would make the header two rows.
-                    label = "",
-                    placeholder = stringResource(R.string.settings_search_hint),
-                    focusRequester = searchFieldFocus,
-                    corner = 13.dp,
-                    // The mockup's `flex:0 1 440px`: a fixed 440 dp measured before the title column,
-                    // so the field always ends flush with the right edge of the header instead of
-                    // splitting the width with the title and opening from the middle.
-                    modifier = Modifier.width(440.dp),
-                )
-            } else {
-                SearchChip(onClick = { searchExpanded = true })
-            }
+    val searching = searchQuery.isNotBlank()
+    val group = SettingsGroup.entries[selectedGroup.coerceIn(0, SettingsGroup.entries.size - 1)]
+    val inQuick = group == SettingsGroup.QUICK
+    val pageCount = when {
+        searching -> pluralStringResource(R.plurals.settings_match_count, searchResults.size, searchResults.size)
+        group.video != null -> videoGroupCount(group.video, settingsVm).let { n ->
+            val all = n + if (group == SettingsGroup.WATCHING) 4 else 0
+            pluralStringResource(R.plurals.settings_setting_count, all, all)
         }
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            // 294 dp is the design width, but at 150% UI Zoom the whole panel is not much wider than
-            // that — so it gives way rather than squeezing the sheet into a strip. The value column
-            // gives way with it, for the same reason.
-            val spineWidth = minOf(SettingsSkin.SpineWidth, maxWidth * 0.34f)
-            val valueColumn = minOf(SettingsSkin.ValueColumn, maxWidth * 0.22f)
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // --- The spine: Quick, then the nine groups, each with its icon, its one-line summary
-                // and how many rows it holds. It carries its OWN plate, the same one the sheet has —
-                // the two columns are a pair, and a bare list beside a panelled one reads as
-                // unfinished. Focus selects, so one Right press lands in the rows already showing.
-                // While searching it steps back rather than disappearing, so the shape of the screen
-                // does not change under the user mid-keystroke.
-                val paneShape = SettingsSkin.PaneShape
-                val searching = searchQuery.isNotBlank()
-                LazyColumn(
-                    state = spineState,
-                    modifier = Modifier
-                        .width(spineWidth)
-                        .fillMaxHeight()
-                        .alpha(if (searching) 0.4f else 1f)
-                        .clip(paneShape)
-                        .glass(surface = GlassSurface.CARDS, baseFill = colors.surfaceContainerLow, shape = paneShape)
-                        .border(1.dp, colors.outlineVariant, paneShape)
-                        .settingsScrollbar(spineState)
-                        .padding(start = 8.dp, end = 8.dp, top = 10.dp, bottom = 8.dp)
-                        // Coming back from the sheet must land on the group whose rows you were just
-                        // in — spatial focus search would otherwise pick whichever item happens to sit
-                        // level with the row you left, silently changing the selected group.
-                        .focusProperties {
-                            canFocus = !searching
-                            onEnter = { runCatching { selectedCategoryFocus.requestFocus() } }
-                        }
-                        .focusGroup(),
-                ) {
-                    item(key = "spine_head") { SpineHeader() }
-                    itemsIndexed(categories, key = { _, (g, _) -> g.key }) { i, (group, rows) ->
-                        // Quick is group zero and belongs to the user, not to the nine; a hairline
-                        // keeps it recognisably apart from them.
-                        if (i == 1) SpineSeparator()
-                        SpineItem(
-                            label = group.label,
-                            summary = group.summary,
-                            icon = group.icon,
-                            count = rows.size,
-                            selected = i == selectedGroup,
-                            active = rows.any { it.chip != null && it.chipTone != TileTone.SECONDARY },
-                            onFocused = { selectedGroup = i },
-                            modifier = if (i == selectedGroup) {
-                                Modifier.focusRequester(selectedCategoryFocus)
-                            } else {
-                                Modifier
-                            },
-                        )
-                    }
-                    item(key = "spine_foot") { SpineFooter() }
+        group == SettingsGroup.PROFILE -> tv.own.owntv.features.settings.profileCount().let { n ->
+            pluralStringResource(R.plurals.settings_profile_count, n, n)
+        }
+        else -> (selectedRows.size + if (group == SettingsGroup.APP) videoGroupCount(VideoGroup.DIAGNOSTICS, settingsVm) else 0).let { n ->
+            pluralStringResource(R.plurals.settings_setting_count, n, n)
+        }
+    }
+    val extras = stageRowExtras(
+        settingsVm, themeMode, uiZoomPercent, onSetZoom,
+        onOpenZoom = { saveScroll(); dialogReturn = zoomRowFocus; showZoom = true },
+        fontCustomization, onSetFontCustomization, playlistSources,
+    )
+    val quickHelp = tv.own.owntv.features.settings.SettingHelp(
+        title = stringResource(R.string.settings_group_quick),
+        text = stringResource(R.string.settings_help_quick),
+        hints = listOf(
+            stringResource(R.string.common_ok) to stringResource(R.string.settings_key_switch),
+            stringResource(R.string.content_key_hold_ok) to stringResource(R.string.settings_key_unpin),
+            stringResource(R.string.common_back) to stringResource(R.string.common_nav_settings),
+        ),
+    )
+    CompositionLocalProvider(tv.own.owntv.features.settings.LocalStageRows provides true) {
+        StageSettingsPage(
+            group = if (searching) stringResource(R.string.common_nav_settings) else stringResource(group.titleRes),
+            count = pageCount,
+            searchQuery = searchQuery,
+            onSearchQuery = { searchQuery = it },
+            scroll = pageScroll,
+            crumb = !searching,
+            searchFocus = searchFieldFocus,
+            rowsFocus = rowsFocus,
+            modifier = modifier,
+            panelTop = if (group == SettingsGroup.APPEARANCE && !searching) ({ tv.own.owntv.features.settings.SettingsLivePreview() }) else null,
+        ) {
+            when {
+                searching && searchResults.isEmpty() -> StageSettingsNote(stringResource(R.string.settings_no_settings_match, searchQuery.trim()), null)
+                searching -> searchResults.forEach { e ->
+                    StageSearchResultRow(e.icon, e.group, e.title, e.chip, onClick = e.onClick)
                 }
-                // --- The sheet: ONE container holding the selected group's rows — or, while
-                // searching, every match wherever it lives, with the path it came from.
-                val group = categories.getOrNull(selectedGroup)?.first
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(paneShape)
-                        .glass(surface = GlassSurface.CARDS, baseFill = colors.surfaceContainerLow, shape = paneShape)
-                        .border(1.dp, colors.outlineVariant, paneShape),
-                ) {
-                    SheetHeader(
-                        title = if (searching) stringResource(R.string.settings_results_title) else group?.label.orEmpty(),
-                        summary = if (searching) stringResource(R.string.settings_results_summary) else group?.summary.orEmpty(),
-                        tag = when {
-                            searching -> pluralStringResource(R.plurals.settings_match_count, searchResults.size, searchResults.size)
-                            group?.key == "group_quick" -> pluralStringResource(R.plurals.settings_pinned_count, selectedRows.size, selectedRows.size)
-                            else -> pluralStringResource(R.plurals.settings_setting_count, selectedRows.size, selectedRows.size)
-                        },
-                        tagHot = sheetFocused,
+                group.video != null -> {
+                    VideoPlayerGroupRows(
+                        group.video, pageScroll,
+                        openMiniPlayer = openMiniPlayer,
+                        focusRowKey = videoRowKey,
                     )
-                    if (searching && searchResults.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.settings_no_settings_match, searchQuery.trim()),
-                            fontSize = 13.sp,
-                            color = colors.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                    if (group == SettingsGroup.WATCHING) tv.own.owntv.features.settings.RecordingSettingsRows(pageScroll)
+                }
+                group == SettingsGroup.PROFILE -> tv.own.owntv.features.settings.ProfileSettingsRows()
+                // Only Quick can be empty, and only because the user emptied it.
+                selectedRows.isEmpty() -> StageSettingsNote(stringResource(R.string.settings_quick_empty_title), stringResource(R.string.settings_quick_empty_hint))
+                else -> {
+                    selectedRows.forEachIndexed { i, row ->
+                        row.heading?.let { heading ->
+                            val under = selectedRows.drop(i).let { rest -> 1 + rest.drop(1).takeWhile { it.heading == null }.size }
+                            StageSettingsHeading(heading, under, first = i == 0)
+                        }
+                        RootRowStage(
+                            row,
+                            // Inside Quick every row is pinned by definition — the dot would say nothing.
+                            pinned = !inQuick && row.key in quickPinned,
+                            quickHelp = if (inQuick) quickHelp else null,
+                            extra = extras[row.key],
+                            onLongClick = { menuRow = row },
+                            focus = if (row.key == menuReturnKey) menuReturnFocus else null,
                         )
-                    } else if (!searching && selectedRows.isEmpty()) {
-                        // Only Quick can be empty, and only because the user emptied it.
-                        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
-                            Text(
-                                text = stringResource(R.string.settings_quick_empty_title),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colors.onSurface,
-                            )
-                            Text(
-                                text = stringResource(R.string.settings_quick_empty_hint),
-                                fontSize = 12.5.sp,
-                                lineHeight = 17.sp,
-                                color = colors.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
-                        }
-                    } else {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .settingsScrollbar(listState)
-                                .onFocusChanged { sheetFocused = it.hasFocus }
-                                // Left is the way back to the groups. Spatial search would normally find
-                                // them, but a full-width row has no neighbour to its left once the ring
-                                // is inside the sheet's own plate — so the sheet says it explicitly.
-                                .onPreviewKeyEvent { e ->
-                                    if (e.type == KeyEventType.KeyDown && e.key == Key.DirectionLeft && !searching) {
-                                        runCatching { selectedCategoryFocus.requestFocus() }.isSuccess
-                                    } else {
-                                        false
-                                    }
-                                }
-                                .focusGroup(),
-                            contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            if (searching) {
-                                items(searchResults, key = { it.group + it.title }) { e ->
-                                    SettingsRow(
-                                        dense = true,
-                                        valueColumn = valueColumn,
-                                        tone = e.tone, icon = e.icon,
-                                        title = stringResource(R.string.settings_breadcrumb, e.group, e.title),
-                                        chip = e.chip, chipTone = e.chipTone,
-                                        showChevron = e.showChevron,
-                                        onClick = e.onClick,
-                                    )
-                                }
-                            } else {
-                                items(selectedRows, key = { it.key }) { row ->
-                                    row.heading?.let { heading ->
-                                        MonoText(
-                                            heading.uppercase(),
-                                            10.sp,
-                                            OwnTVTheme.colors.outline,
-                                            letterSpacing = 1.sp,
-                                            modifier = Modifier.padding(start = 8.dp, top = 14.dp, bottom = 6.dp),
-                                        )
-                                    }
-                                    RootItemContent(
-                                        row,
-                                        valueColumn,
-                                        // Inside Quick every row is pinned by definition — the dot there
-                                        // would say nothing. It only marks the copy in its home group.
-                                        pinned = group?.key != "group_quick" && row.key in quickPinned,
-                                        onLongClick = { menuRow = row },
-                                        focus = if (row.key == menuReturnKey) menuReturnFocus else null,
-                                    )
-                                }
-                            }
-                        }
                     }
+                    if (group == SettingsGroup.APP) VideoPlayerGroupRows(VideoGroup.DIAGNOSTICS, pageScroll, firstHeading = false)
                 }
             }
         }
@@ -1445,7 +1218,6 @@ fun SettingsScreen(
         val at = quickPinned.indexOf(row.key)
         // Order is a property of the Quick list, so it is only offered where that list is on screen.
         // In a row's home group the only thing the menu can usefully say is whether it is pinned.
-        val inQuick = categories.getOrNull(selectedGroup)?.first?.key == "group_quick"
         SettingsRowMenu(
             title = row.title,
             pinned = at >= 0,
@@ -1521,13 +1293,13 @@ fun SettingsScreen(
         )
     }
     if (showAccent) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAccent = false }) { AccentPaletteDialog(
+        tv.own.owntv.features.settings.AccentPopup(
             accent = accent,
             customAccent = customAccent,
             onPickPreset = { settingsVm.setAccent(it) },
             onPickCustom = { settingsVm.setCustomAccent(it) },
             onDismiss = { showAccent = false },
-        ) }
+        )
     }
     if (showZoom) {
         ZoomDialog(current = uiZoomPercent, onSet = onSetZoom, onDismiss = { showZoom = false })
@@ -2212,136 +1984,6 @@ private val AccentPresetChoices: List<tv.own.owntv.core.theme.AccentColor> =
     tv.own.owntv.core.theme.AccentColor.entries.take(6)
 
 /**
- * Accent picker: a handful of quick presets plus a full HSV color picker — a hue bar and a
- * saturation/brightness square (each an enter-to-edit D-pad control) with a live preview — and a
- * hex-code field for an exact color. The dialog scrolls so the on-screen keyboard never hides the
- * hex field. Presets clear the custom color; the picker/hex set it exactly (custom overrides the
- * preset in the theme).
- */
-@Composable
-private fun AccentPaletteDialog(
-    accent: tv.own.owntv.core.theme.AccentColor,
-    customAccent: String,
-    onPickPreset: (tv.own.owntv.core.theme.AccentColor) -> Unit,
-    onPickCustom: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val colors = OwnTVTheme.colors
-    val isDark = colors.isDark
-    val firstFocus = remember { FocusRequester() }
-
-    // Live HSV state seeded from the current custom color (or a pleasant default).
-    val hsv = remember {
-        FloatArray(3).also { out ->
-            val seed = tv.own.owntv.ui.theme.parseAccentHex(customAccent)?.toArgb() ?: 0xFF52DBC8.toInt()
-            android.graphics.Color.colorToHSV(seed, out)
-        }
-    }
-    var hue by remember { mutableStateOf(hsv[0]) }
-    var sat by remember { mutableStateOf(hsv[1]) }
-    var value by remember { mutableStateOf(hsv[2]) }
-    val pickedHex = tv.own.owntv.ui.components.hsvToHex(hue, sat, value)
-    var hexInput by remember { mutableStateOf(customAccent.removePrefix("#")) }
-    var hexError by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-    BackHandler { onDismiss() }
-
-    // Keep the sliders and hex field in step whenever the HSV picker moves.
-    fun syncHexFromPicker() { hexInput = pickedHex.removePrefix("#") }
-
-    // PopupFontTheme swaps in the selected popup family and applies the shared popup type scale.
-    tv.own.owntv.ui.theme.PopupFontTheme {
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            // dialogPanel already applies verticalScroll; the popup host keeps the panel above the
-            // on-screen keyboard so the hex field stays visible.
-            modifier = Modifier.dialogPanel(width = 640.dp, padding = 28.dp),
-        ) {
-            Text(stringResource(R.string.settings_accent_dialog), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(16.dp))
-
-            Text(stringResource(R.string.settings_presets), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AccentPresetChoices.forEachIndexed { i, ac ->
-                    val isSel = customAccent.isBlank() && ac == accent
-                    tv.own.owntv.ui.components.ColorSwatch(
-                        color = ac.primary(isDark),
-                        selected = isSel,
-                        onClick = { onPickPreset(ac); onDismiss() },
-                        modifier = if (i == 0) Modifier.focusRequester(firstFocus) else Modifier,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(20.dp))
-            Text(stringResource(R.string.settings_hex_code), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(8.dp))
-            // Kept above the picker on purpose: the on-screen keyboard covers the lower half of the
-            // screen, so the hex field must sit high enough to stay visible while the user types.
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("#", style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
-                tv.own.owntv.ui.components.OwnTVTextField(
-                    value = hexInput,
-                    onValueChange = { hexInput = it.take(6); hexError = false },
-                    label = stringResource(R.string.settings_hex),
-                    placeholder = "52DBC8",
-                    modifier = Modifier.width(200.dp),
-                )
-                OwnTVButton(stringResource(R.string.settings_apply), onClick = {
-                    val parsed = tv.own.owntv.ui.theme.parseAccentHex(hexInput)
-                    if (parsed != null) {
-                        onPickCustom("#" + hexInput.trim().removePrefix("#").uppercase())
-                        onDismiss()
-                    } else {
-                        hexError = true
-                    }
-                })
-            }
-            if (hexError) {
-                Spacer(Modifier.height(8.dp))
-                Text(stringResource(R.string.settings_hex_error), style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
-            }
-
-            Spacer(Modifier.height(20.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_color_picker), style = MaterialTheme.typography.labelLarge, color = colors.onSurfaceVariant)
-                    Spacer(Modifier.height(10.dp))
-                    // Hue bar: OK to enter, ◀ ▶ to shift the hue, OK/Back to exit.
-                    tv.own.owntv.ui.components.HueBar(hue = hue) { h -> hue = h; syncHexFromPicker(); hexError = false }
-                }
-                // Live preview of the currently picked color.
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, sat, value))))
-                        .border(2.dp, colors.outline, androidx.compose.foundation.shape.CircleShape),
-                )
-            }
-            Spacer(Modifier.height(14.dp))
-            // Saturation / Brightness square: OK to enter, D-pad to move the dot, OK/Back to exit.
-            tv.own.owntv.ui.components.SatValSquare(hue = hue, sat = sat, value = value) { s, v ->
-                sat = s; value = v; syncHexFromPicker(); hexError = false
-            }
-
-            Spacer(Modifier.height(24.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.settings_use_color), onClick = { onPickCustom(pickedHex); onDismiss() })
-            }
-        }
-    }
-    }
-}
-
-
-/**
  * Focus highlight presets (#121): the six accent presets plus gold and white, which are the two
  * colors people actually ask for when they want the cursor to shout. Hex, so a preset and a
  * hand-typed color are the same stored value — there is no second "preset" concept to keep in sync.
@@ -2750,7 +2392,7 @@ internal fun ClearHistoryDialog(
     }
 }
 
-private enum class FontPickerTarget { MAIN, POPUP }
+private enum class FontPickerTarget { MAIN }
 
 @Composable
 private fun fontFamilyLabel(family: AppFontFamily): String = stringResource(
@@ -2778,13 +2420,11 @@ private fun FontCustomizationDialog(
     var pickerReturn by remember { mutableStateOf<FontPickerTarget?>(null) }
     val firstFocus = remember { FocusRequester() }
     val mainFocus = remember { FocusRequester() }
-    val popupFocus = remember { FocusRequester() }
 
     LaunchedEffect(picker) {
         if (picker == null) {
             val target = when (pickerReturn) {
                 FontPickerTarget.MAIN -> mainFocus
-                FontPickerTarget.POPUP -> popupFocus
                 null -> firstFocus
             }
             kotlinx.coroutines.delay(50)
@@ -2898,15 +2538,6 @@ private fun FontCustomizationDialog(
                     pickerReturn = FontPickerTarget.MAIN
                     picker = FontPickerTarget.MAIN
                 }
-                Spacer(Modifier.height(10.dp))
-                FontChoiceRow(
-                    title = stringResource(R.string.settings_popup_font),
-                    family = draft.popupFamily,
-                    modifier = Modifier.focusRequester(popupFocus),
-                ) {
-                    pickerReturn = FontPickerTarget.POPUP
-                    picker = FontPickerTarget.POPUP
-                }
                 Spacer(Modifier.height(24.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OwnTVButton(
@@ -2922,16 +2553,13 @@ private fun FontCustomizationDialog(
             }
         }
     } else {
-        val target = picker ?: return
+        if (picker == null) return
         FontFamilyPickerDialog(
-            title = stringResource(
-                if (target == FontPickerTarget.MAIN) R.string.settings_main_interface_font
-                else R.string.settings_popup_font,
-            ),
-            selected = if (target == FontPickerTarget.MAIN) draft.mainFamily else draft.popupFamily,
+            title = stringResource(R.string.settings_main_interface_font),
+            selected = draft.mainFamily,
+            // One family for the interface and its popups (P10): popups follow the main font.
             onSelect = { family ->
-                draft = if (target == FontPickerTarget.MAIN) draft.copy(mainFamily = family)
-                else draft.copy(popupFamily = family)
+                draft = draft.copy(mainFamily = family, popupFamily = family)
                 picker = null
             },
             onDismiss = { picker = null },
@@ -4457,6 +4085,13 @@ private data class RootRow(
     val focus: FocusRequester? = null,
     /** A divider label drawn above this row, starting a sub-section inside its group. Not a row itself. */
     val heading: String? = null,
+    /** What the Stage row shows on its right when the chip alone does not say (switch, stepper, …). */
+    val value: SettingValue? = null,
+    /** The context panel's choices for a value picked from a list, and the recommended one. */
+    val choices: List<String> = emptyList(),
+    val recommended: Int = -1,
+    /** ◀ ▶ on a stepper or segmented value. */
+    val onStep: ((Int) -> Unit)? = null,
     val onClick: () -> Unit,
 ) : RootItem {
     /**
@@ -4496,654 +4131,49 @@ private fun subScreenSearchEntries(open: (SettingsTab) -> Unit): List<SettingsSe
 /** The list key of the row that opens [tab], so a Back from that sub-screen can find its index. */
 private fun tabRowKey(tab: SettingsTab) = "tab_${tab.name}"
 
+/**
+ * A Settings row on a Stage group page. The value is the row's own, or read from its chip: On / Off
+ * in place is a switch, a row that opens a screen keeps its › (honest chevrons), anything else was
+ * picked in a popup (▾).
+ */
 @Composable
-private fun RootItemContent(
+private fun RootRowStage(
     item: RootRow,
-    valueColumn: Dp,
-    pinned: Boolean = false,
-    onLongClick: (() -> Unit)? = null,
+    pinned: Boolean,
+    onLongClick: () -> Unit,
     /** Takes precedence over the row's own requester: used to give focus back after its menu closes. */
     focus: FocusRequester? = null,
+    /** On Quick the panel explains Quick itself, whichever pin has focus (P9-01). */
+    quickHelp: tv.own.owntv.features.settings.SettingHelp? = null,
+    extra: RowExtra? = null,
 ) {
-    SettingsRow(
-        dense = true,
-        valueColumn = valueColumn,
-        pinned = pinned,
-        onLongClick = onLongClick,
-        tone = item.tone,
+    val on = stringResource(R.string.common_on)
+    val off = stringResource(R.string.common_off)
+    val value = extra?.value ?: item.value ?: when {
+        item.showChevron || item.key == "catchup_sources" -> SettingValue.Opens(item.chip)
+        item.key == "epg_offset" -> SettingValue.Choice(item.chip.orEmpty())
+        item.chip == on || item.chip == off -> SettingValue.Switch(item.chip == on)
+        item.chip != null -> SettingValue.Choice(item.chip)
+        else -> null
+    }
+    val words = tv.own.owntv.features.settings.settingWords(item.key, item.title, item.desc).let {
+        if (quickHelp != null && item.key.startsWith("vp_")) tv.own.owntv.features.settings.SettingWords(it.title, item.desc) else it
+    }
+    StageSettingRow(
         icon = item.icon,
-        title = item.title,
-        desc = item.desc,
-        chip = item.chip,
-        chipTone = item.chipTone,
-        showChevron = item.showChevron,
-        onClick = item.onClick,
+        title = words.title,
+        desc = words.line,
+        value = value,
+        onClick = extra?.onClick ?: item.onClick,
+        onLongClick = onLongClick,
+        onStep = extra?.onStep ?: item.onStep,
+        pinned = pinned,
+        help = quickHelp ?: settingHelp(item.key, words.title, item.desc, value, extra?.choices ?: item.choices, chosen = extra?.chosen ?: -1, recommended = extra?.recommended ?: item.recommended).let { h ->
+            h.copy(text = extra?.help ?: h.text, hints = extra?.hints ?: h.hints, extra = extra?.extra)
+        },
         modifier = (focus ?: item.focus)?.let { Modifier.focusRequester(it) } ?: Modifier,
     )
 }
-
-// ---------------------------------------------------------------------------------------------
-// The Settings surface, built to audit/OwnTV_Settings_Final_Mockup.html. Every number below is the
-// mockup's own CSS value read as dp. The pieces are deliberately hand-drawn rather than inherited
-// from FocusableSurface's tonal ladder: the mockup designs Glass OFF as its own solid pass, not as
-// the frosted pass with the blur removed, so both material modes must land on the *same* silhouette.
-// ---------------------------------------------------------------------------------------------
-
-/** The value column, the count badges and the eyebrows. Fixed on purpose — see [SettingsMono]. */
-private val SettingsMono = FontFamily(Font(R.font.jetbrains_mono_semibold, FontWeight.SemiBold))
-
-/**
- * Design tokens, straight from the mockup's `:root`. `veil`/`veil2` are the neutral washes an idle
- * icon tile and a hovered row sit on; everything accent-tinted is derived from [primary] so a custom
- * accent reaches all of it.
- *
- * This is also the fix for "some icons take the accent and some don't": the old rows tinted their
- * tile from [TileTone], and only `PRIMARY` maps to a container that follows the accent —
- * `secondaryContainer`/`tertiaryContainer` are fixed palette constants. Tiles now have exactly two
- * states, neutral and accent, and the accent one is always the real accent.
- */
-internal object SettingsSkin {
-    val RowShape = RoundedCornerShape(14.dp)
-    val TileShape = RoundedCornerShape(11.dp)
-    val PaneShape = RoundedCornerShape(18.dp)
-    val TileSize = 34.dp
-    val GlyphSize = 17.dp
-    val RowMinHeight = 63.dp
-    val NavMinHeight = 57.dp
-    val ValueColumn = 170.dp
-    val SpineWidth = 294.dp
-
-    val veil: Color @Composable get() = OwnTVTheme.colors.onSurface.copy(alpha = 0.055f)
-    val veil2: Color @Composable get() = OwnTVTheme.colors.onSurface.copy(alpha = 0.030f)
-    /** The focus wash — `rgb(var(--rgb)/.09)` in the mockup. */
-    val focusWash: Color @Composable get() = OwnTVTheme.colors.primary.copy(alpha = 0.09f)
-    /** An active or focused icon tile — `rgb(var(--rgb)/.16)`. */
-    val tileHot: Color @Composable get() = OwnTVTheme.colors.primary.copy(alpha = 0.16f)
-}
-
-/**
- * The focus ring: `box-shadow:0 0 0 2px var(--ring)` plus the accent wash under it. Drawn here rather
- * than by [FocusableSurface] so the ring is identical with Glass on and off, and so it still honours
- * the user's Focus highlight colour and width.
- */
-@Composable
-internal fun Modifier.settingsFocusRing(focused: Boolean, shape: androidx.compose.ui.graphics.Shape): Modifier {
-    if (!focused) return this
-    val colors = OwnTVTheme.colors
-    return this
-        .background(SettingsSkin.focusWash, shape)
-        .border(tv.own.owntv.ui.theme.LocalFocusBorderWidth.current, colors.focusBorder, shape)
-}
-
-/**
- * A thin thumb down the inner edge of a scrolling column. Both columns scroll, and both have to be
- * *seen* to scroll: a hidden scrollbar on a ten-group spine reads as "that is all there is" from the
- * sofa, which is precisely the complaint this screen was rebuilt to answer.
- */
-@Composable
-private fun Modifier.settingsScrollbar(state: androidx.compose.foundation.lazy.LazyListState): Modifier {
-    val idle = OwnTVTheme.colors.onSurfaceVariant.copy(alpha = 0.20f)
-    return this.drawWithContent {
-        drawContent()
-        val info = state.layoutInfo
-        val total = info.totalItemsCount
-        val visible = info.visibleItemsInfo.size
-        if (total == 0 || visible == 0 || visible >= total) return@drawWithContent
-        val inset = 4.dp.toPx()
-        val trackHeight = size.height - inset * 2
-        val thumbHeight = (trackHeight * visible / total).coerceAtLeast(28.dp.toPx())
-        val first = info.visibleItemsInfo.first().index.toFloat()
-        val progress = (first / (total - visible).coerceAtLeast(1)).coerceIn(0f, 1f)
-        drawRoundRect(
-            color = idle,
-            topLeft = androidx.compose.ui.geometry.Offset(size.width - 6.dp.toPx(), inset + (trackHeight - thumbHeight) * progress),
-            size = androidx.compose.ui.geometry.Size(4.dp.toPx(), thumbHeight),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()),
-        )
-    }
-}
-
-/** The 34 dp rounded square every row and nav item leads with. Neutral, or accent when it matters. */
-@Composable
-internal fun SettingsIconTile(icon: OwnTVIcon, hot: Boolean, size: Dp = SettingsSkin.TileSize) {
-    val colors = OwnTVTheme.colors
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(SettingsSkin.TileShape)
-            .background(if (hot) SettingsSkin.tileHot else SettingsSkin.veil),
-        contentAlignment = Alignment.Center,
-    ) {
-        OwnTVIcon(
-            icon = icon,
-            tint = if (hot) colors.primary else colors.onSurfaceVariant,
-            modifier = Modifier.size(SettingsSkin.GlyphSize),
-        )
-    }
-}
-
-/** A mono label: the count badges, the sheet tag, the spine eyebrow. */
-@Composable
-internal fun MonoText(text: String, size: androidx.compose.ui.unit.TextUnit, color: Color, letterSpacing: androidx.compose.ui.unit.TextUnit = 0.sp, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        fontFamily = SettingsMono,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = size,
-        letterSpacing = letterSpacing,
-        color = color,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier,
-    )
-}
-
-/**
- * One group on the spine. Focus *is* the selection here — the TV pattern used by every other rail in
- * the app — so [onFocused] swaps the sheet while the user is still on the left. The selected item
- * keeps its highlight after focus moves right, which is what tells the user which group the rows on
- * the right belong to.
- */
-@Composable
-internal fun SpineItem(
-    label: String,
-    summary: String,
-    icon: OwnTVIcon,
-    count: Int,
-    selected: Boolean,
-    active: Boolean,
-    onFocused: () -> Unit,
-    modifier: Modifier = Modifier,
-    /**
-     * Shown instead of [count] when set — More's spine needs "Off", "2 days ago" and a version
-     * string where Settings only ever needs a number. Null keeps Settings' behaviour exactly.
-     */
-    badge: String? = null,
-    /**
-     * What OK does. Null = Settings' behaviour, where OK merely selects the group whose rows are
-     * already showing. More's rows *navigate*, so they pass one.
-     */
-    onClick: (() -> Unit)? = null,
-) {
-    val colors = OwnTVTheme.colors
-    val shape = SettingsSkin.RowShape
-    var focused by remember { mutableStateOf(false) }
-    val hot = focused || selected || active
-    FocusableSurface(
-        onClick = onClick ?: onFocused,
-        selected = selected,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 1.5.dp)
-            .onFocusChanged {
-                focused = it.isFocused
-                if (it.isFocused) onFocused()
-            },
-        shape = shape,
-        focusedContainerColor = Color.Transparent,
-        unfocusedContainerColor = Color.Transparent,
-        selectedContainerColor = Color.Transparent,
-        focusedScale = 1f,
-        showFocusBorder = false,
-        renderSelectionContainer = false,
-        contentAlignment = Alignment.CenterStart,
-    ) { _ ->
-        // The selected group's plate: `rgb(var(--rgb)/.12)` with a `.28` hairline and the 4 dp accent
-        // bar on the inner edge, pointing at the rows it owns.
-        if (selected) {
-            Box(
-                Modifier.matchParentSize()
-                    .background(colors.primary.copy(alpha = 0.12f), shape)
-                    .border(1.dp, colors.primary.copy(alpha = 0.28f), shape),
-            )
-        }
-        Box(Modifier.matchParentSize().settingsFocusRing(focused, shape))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = SettingsSkin.NavMinHeight)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            SettingsIconTile(icon, hot = hot)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    fontSize = 15.sp,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                    color = colors.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = summary,
-                    fontSize = 11.5.sp,
-                    lineHeight = 14.sp,
-                    color = colors.outline,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .heightIn(min = 24.dp)
-                    .widthIn(min = 26.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (hot) colors.primary.copy(alpha = 0.15f) else SettingsSkin.veil2)
-                    .padding(horizontal = 7.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                MonoText(badge ?: count.toString(), 11.5.sp, if (hot) colors.primary else colors.onSurfaceVariant)
-            }
-        }
-        if (selected) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(vertical = 9.dp)
-                    .fillMaxHeight()
-                    .width(4.dp)
-                    .clip(RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
-                    .background(colors.primary),
-            )
-        }
-    }
-}
-
-/**
- * The head of a stacked spine: where you came from, above the screen you are in, with the arrow that
- * takes you back there. Sits where the root spine's heading sits, so the column keeps its shape.
- */
-@Composable
-internal fun SpineBackRow(from: String, title: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = OwnTVTheme.colors
-    val shape = SettingsSkin.RowShape
-    var focused by remember { mutableStateOf(false) }
-    FocusableSurface(
-        onClick = onBack,
-        modifier = modifier.fillMaxWidth().padding(bottom = 8.dp).onFocusChanged { focused = it.isFocused },
-        shape = shape,
-        focusedContainerColor = Color.Transparent,
-        unfocusedContainerColor = Color.Transparent,
-        focusedScale = 1f,
-        showFocusBorder = false,
-        contentAlignment = Alignment.CenterStart,
-    ) { _ ->
-        Box(Modifier.matchParentSize().background(SettingsSkin.veil2, shape).border(1.dp, colors.outlineVariant, shape))
-        Box(Modifier.matchParentSize().settingsFocusRing(focused, shape))
-        Row(
-            modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            SettingsIconTile(OwnTVIcon.BACK, hot = focused)
-            Column(modifier = Modifier.weight(1f)) {
-                MonoText(from.uppercase(), 11.sp, colors.outline, letterSpacing = 1.1.sp)
-                Text(
-                    text = title,
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
-        }
-    }
-}
-
-/** The spine's own heading, above the groups. */
-@Composable
-private fun SpineHeader() {
-    val colors = OwnTVTheme.colors
-    Column(modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 4.dp, bottom = 12.dp)) {
-        MonoText(
-            stringResource(R.string.settings_spine_eyebrow).uppercase(),
-            10.5.sp,
-            colors.outline,
-            letterSpacing = 1.8.sp,
-        )
-        Text(
-            stringResource(R.string.settings_spine_title),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            color = colors.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 7.dp),
-        )
-        Text(
-            stringResource(R.string.settings_spine_hint),
-            fontSize = 11.5.sp,
-            lineHeight = 17.sp,
-            color = colors.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 5.dp),
-        )
-    }
-}
-
-/**
- * The sheet's own heading: the group the rows below belong to, one line saying what is in it, and the
- * count tag on the right — which goes accent while focus is in the rows, so the sheet says out loud
- * which of the two columns has the cursor.
- */
-@Composable
-internal fun SheetHeader(title: String, summary: String, tag: String, tagHot: Boolean) {
-    val colors = OwnTVTheme.colors
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(
-                summary,
-                fontSize = 12.5.sp,
-                lineHeight = 18.sp,
-                color = colors.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-        Box(
-            modifier = Modifier
-                .heightIn(min = 26.dp)
-                .clip(RoundedCornerShape(9.dp))
-                .background(if (tagHot) colors.primary.copy(alpha = 0.15f) else SettingsSkin.veil)
-                .border(1.dp, if (tagHot) colors.primary.copy(alpha = 0.30f) else colors.outlineVariant, RoundedCornerShape(9.dp))
-                .padding(horizontal = 11.dp, vertical = 4.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            MonoText(tag, 11.sp, if (tagHot) colors.primary else colors.onSurfaceVariant)
-        }
-    }
-}
-
-/** Collapsed search: the `.sbtn` chip beside the title that opens into the real field on OK. */
-@Composable
-private fun SearchChip(onClick: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    val shape = RoundedCornerShape(13.dp)
-    var focused by remember { mutableStateOf(false) }
-    FocusableSurface(
-        onClick = onClick,
-        modifier = Modifier.onFocusChanged { focused = it.isFocused },
-        shape = shape,
-        focusedContainerColor = Color.Transparent,
-        unfocusedContainerColor = Color.Transparent,
-        focusedScale = 1f,
-        showFocusBorder = false,
-        contentAlignment = Alignment.Center,
-    ) { _ ->
-        Box(
-            Modifier.matchParentSize()
-                .background(SettingsSkin.veil, shape)
-                .border(1.dp, if (focused) colors.primary else colors.outlineVariant, shape),
-        )
-        Box(Modifier.matchParentSize().settingsFocusRing(focused, shape))
-        Row(
-            modifier = Modifier.heightIn(min = 41.dp).padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            OwnTVIcon(
-                icon = OwnTVIcon.SEARCH,
-                tint = if (focused) colors.primary else colors.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
-            )
-            Text(
-                stringResource(R.string.settings_search_label),
-                fontSize = 13.sp,
-                color = if (focused) colors.onSurface else colors.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-/** The one hairline on the spine: Quick belongs to the user, the nine groups below it do not. */
-@Composable
-private fun SpineSeparator() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 7.dp)
-            .height(1.dp)
-            .background(OwnTVTheme.colors.outlineVariant),
-    )
-}
-
-/** The spine's foot: one quiet line saying the accent you are seeing is following your cursor. */
-@Composable
-private fun SpineFooter() {
-    val colors = OwnTVTheme.colors
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, top = 14.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Box(Modifier.size(5.dp).clip(RoundedCornerShape(50)).background(colors.primary))
-        Text(
-            stringResource(R.string.settings_spine_foot),
-            fontSize = 11.5.sp,
-            color = colors.outline,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun SettingsRow(
-    tone: TileTone,
-    icon: OwnTVIcon,
-    title: String,
-    desc: String? = null,
-    chip: String? = null,
-    chipTone: TileTone = TileTone.PRIMARY,
-    soon: Boolean = false,
-    showChevron: Boolean = false,
-    /** Square inside the sheet (one container, hairline separators); rounded as a standalone card. */
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
-    /** A row on the sheet, drawn to the mockup; false is the plain card used elsewhere. */
-    dense: Boolean = false,
-    /** The mockup's fixed value column, narrowed by the caller when the panel is tight. */
-    valueColumn: Dp = SettingsSkin.ValueColumn,
-    /** Marks the row with the accent dot that says "this one is also in Quick". */
-    pinned: Boolean = false,
-    /** Hold OK: opens the row menu. Null on rows that have nothing to offer there. */
-    onLongClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {},
-) {
-    if (dense) {
-        SheetRow(icon, title, desc, chip, chipTone, soon, showChevron, valueColumn, pinned, onLongClick, modifier, onClick)
-        return
-    }
-    val colors = OwnTVTheme.colors
-    FocusableSurface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = shape,
-        surface = GlassSurface.CARDS,
-        // Diagnostic + production-safe scrolling path: a full-width row must not move an aligned
-        // backdrop texture inside the scroll container. Focus still gets luminous tint and rim;
-        // the static parent panel retains real frost. This also avoids stale HWUI damage trails on
-        // affected Android TV GPUs.
-        glassFrostScale = 0f,
-        contentAlignment = Alignment.CenterStart,
-    ) { _ ->
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            // Tonal icon tile
-            val (tileBg, tileOn) = tone.colors()
-            Box(
-                modifier = Modifier
-                    .size(Dimens.IconTileSize)
-                    .clip(RoundedCornerShape(Dimens.IconTileCorner))
-                    .background(tileBg),
-                contentAlignment = Alignment.Center,
-            ) {
-                OwnTVIcon(icon = icon, tint = tileOn, modifier = Modifier.size(22.dp))
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (desc != null) {
-                    Text(
-                        desc,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(modifier = Modifier.widthIn(min = 78.dp), contentAlignment = Alignment.CenterEnd) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (soon) SoonChip()
-                        if (chip != null) ValueChip(chip, chipTone)
-                    }
-                }
-                if (showChevron) {
-                    OwnTVIcon(icon = OwnTVIcon.CHEVRON, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
-                }
-            }
-        }
-    }
-}
-
-/**
- * One row on the sheet, to the mockup: 34 dp tile · title and description · the value column · the
- * chevron. Three things go accent together — the tile, the value and the chevron — and they do it
- * both when the setting is *doing* something and when the row has focus. Nothing that is off or on
- * its default is ever accent, so scanning the column tells you what you have changed.
- */
-@Composable
-private fun SheetRow(
-    icon: OwnTVIcon,
-    title: String,
-    desc: String?,
-    chip: String?,
-    chipTone: TileTone,
-    soon: Boolean,
-    showChevron: Boolean,
-    valueColumn: Dp,
-    pinned: Boolean,
-    onLongClick: (() -> Unit)?,
-    modifier: Modifier,
-    onClick: () -> Unit,
-) {
-    val colors = OwnTVTheme.colors
-    val shape = SettingsSkin.RowShape
-    var focused by remember { mutableStateOf(false) }
-    // A held OK on the remote raises the long press while the key is still down, and a plain click when
-    // it is finally released — so without this the menu would open and the row would fire underneath it.
-    var longAt by remember { mutableLongStateOf(0L) }
-    // "Doing something" is already encoded: every row that is off or on its default sends SECONDARY.
-    val active = chip != null && chipTone != TileTone.SECONDARY
-    FocusableSurface(
-        onClick = { if (android.os.SystemClock.uptimeMillis() - longAt > 800) onClick() },
-        onLongClick = onLongClick?.let { handler -> { longAt = android.os.SystemClock.uptimeMillis(); handler() } },
-        modifier = modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
-        shape = shape,
-        focusedContainerColor = Color.Transparent,
-        unfocusedContainerColor = Color.Transparent,
-        focusedScale = 1f,
-        showFocusBorder = false,
-        contentAlignment = Alignment.CenterStart,
-    ) { _ ->
-        Box(Modifier.matchParentSize().settingsFocusRing(focused, shape))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = SettingsSkin.RowMinHeight)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            SettingsIconTile(icon, hot = focused || active)
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        title,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = colors.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    // The dot the mockup puts beside a title that is also sitting in Quick.
-                    if (pinned) {
-                        Box(
-                            Modifier
-                                .size(6.dp)
-                                .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(colors.primary),
-                        )
-                    }
-                }
-                if (desc != null) {
-                    Text(
-                        desc,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        color = colors.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 3.dp),
-                    )
-                }
-            }
-            Row(
-                modifier = Modifier.width(valueColumn),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (soon) SoonChip()
-                if (chip != null) ValueText(chip, active)
-            }
-            Box(modifier = Modifier.size(18.dp), contentAlignment = Alignment.Center) {
-                if (showChevron) {
-                    OwnTVIcon(
-                        icon = OwnTVIcon.CHEVRON,
-                        tint = when {
-                            focused -> colors.primary
-                            active -> colors.primary.copy(alpha = 0.75f)
-                            else -> colors.outline
-                        },
-                        modifier = Modifier.size(15.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
 /**
  * Hold OK on a sheet row: pin it to Quick, take it back out, or move it within Quick. Actions that
  * cannot apply are left out rather than greyed — a focusable row that refuses to do anything is worse
@@ -5160,63 +4190,40 @@ internal fun SettingsRowMenu(
     onMoveDown: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
     BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, fontScale = .50f) {
+    val first = remember { FocusRequester() }
+    LaunchedEffect(Unit) { withFrameNanos { }; runCatching { first.requestFocus() } }
+    // The Stage menu (playbook 11), as every other hold-OK menu.
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, stageLayout = true) {
         Box(
             Modifier.fillMaxSize().longPressMenuGuard().modalScrim().trapAllFocusExit().focusGroup(),
             contentAlignment = Alignment.Center,
         ) {
-            Column(Modifier.dialogPanel(width = 420.dp, padding = 16.dp)) {
-                MonoText(
-                    text = title.uppercase(),
-                    size = 10.sp,
-                    color = colors.onSurfaceVariant,
-                    letterSpacing = 1.5.sp,
-                )
-                Spacer(Modifier.height(10.dp))
-                tv.own.owntv.features.settings.Row2(
-                    icon = OwnTVIcon.SPARKLE,
-                    title = stringResource(
-                        if (pinned) R.string.settings_row_menu_unpin else R.string.settings_row_menu_pin,
-                    ),
+            tv.own.owntv.ui.stage.StageMenu(Modifier.width(520.mpx)) {
+                tv.own.owntv.ui.stage.StageMenuHeader(title = title, subtitle = null)
+                tv.own.owntv.ui.stage.StageMenuItem(
+                    stringResource(if (pinned) R.string.settings_row_menu_unpin else R.string.settings_row_menu_pin),
                     onClick = { onPinToggle(); onDismiss() },
+                    icon = OwnTVIcon.SPARKLE,
+                    modifier = Modifier.focusRequester(first),
                 )
                 if (canMoveUp) {
-                    Spacer(Modifier.height(6.dp))
-                    tv.own.owntv.features.settings.Row2(
-                        icon = OwnTVIcon.CHEVRON_UP,
-                        title = stringResource(R.string.settings_row_menu_move_up),
+                    tv.own.owntv.ui.stage.StageMenuItem(
+                        stringResource(R.string.settings_row_menu_move_up),
                         onClick = { onMoveUp(); onDismiss() },
+                        icon = OwnTVIcon.CHEVRON_UP,
                     )
                 }
                 if (canMoveDown) {
-                    Spacer(Modifier.height(6.dp))
-                    tv.own.owntv.features.settings.Row2(
-                        icon = OwnTVIcon.CHEVRON_DOWN,
-                        title = stringResource(R.string.settings_row_menu_move_down),
+                    tv.own.owntv.ui.stage.StageMenuItem(
+                        stringResource(R.string.settings_row_menu_move_down),
                         onClick = { onMoveDown(); onDismiss() },
+                        icon = OwnTVIcon.CHEVRON_DOWN,
                     )
                 }
             }
         }
     }
-}
-
-@Composable
-private fun SoonChip() {
-    val colors = OwnTVTheme.colors
-    Text(
-        text = stringResource(R.string.settings_soon),
-        style = MaterialTheme.typography.labelMedium,
-        color = colors.onSurfaceVariant,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(colors.surfaceContainerHighest)
-            .border(1.dp, colors.outlineVariant, RoundedCornerShape(8.dp))
-            .padding(horizontal = 10.dp, vertical = 4.dp),
-    )
 }
 
 /** Batch 4 · one searchable settings row: its group breadcrumb, title, extra keywords, and action. */
@@ -5230,44 +4237,7 @@ private class SettingsSearchEntry(
     val chipTone: TileTone = TileTone.PRIMARY,
     val showChevron: Boolean = true,
     val onClick: () -> Unit,
-) {
-    /** Lower-cased match target: group + title + keywords. */
-    val haystack: String = "$group $title $keywords".lowercase()
-}
-
-/**
- * A sheet value: monospaced so the whole column lines up under itself, accent when the row is set to
- * something and muted on its default/off state.
- */
-@Composable
-private fun ValueText(text: String, active: Boolean) {
-    val colors = OwnTVTheme.colors
-    Text(
-        text = text,
-        fontFamily = SettingsMono,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 13.sp,
-        letterSpacing = 0.13.sp,
-        color = if (active) colors.primary else colors.onSurfaceVariant,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-    )
-}
-
-@Composable
-private fun ValueChip(text: String, tone: TileTone) {
-    val (bg, on) = tone.colors()
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium,
-        color = on,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(bg)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-    )
-}
+)
 
 @Composable
 internal fun TileTone.colors(): Pair<Color, Color> {
@@ -5277,4 +4247,235 @@ internal fun TileTone.colors(): Pair<Color, Color> {
         TileTone.SECONDARY -> c.secondaryContainer to c.onSecondaryContainer
         TileTone.TERTIARY -> c.tertiaryContainer to c.onTertiaryContainer
     }
+}
+
+/** What a root row shows and does on its Stage page beyond its chip (P9-03 … P9-13). */
+private class RowExtra(
+    val value: SettingValue? = null,
+    val onStep: ((Int) -> Unit)? = null,
+    /** Replaces the row's click: a switch or segmented value changes in place instead of opening a popup. */
+    val onClick: (() -> Unit)? = null,
+    val choices: List<String> = emptyList(),
+    val chosen: Int = -1,
+    val recommended: Int = -1,
+    /** Panel text that needs an argument (Language: how many languages). */
+    val help: String? = null,
+    val hints: List<Pair<String, String>>? = null,
+    val extra: (@Composable () -> Unit)? = null,
+)
+
+/**
+ * The Stage values of the root rows, by row key: switches, steppers and segmented choices that change
+ * in place, the accent swatches, and the "opens a screen" values. Kept out of [SettingsScreen], which
+ * sits at the JVM's method size limit.
+ */
+@Composable
+private fun stageRowExtras(
+    vm: SettingsViewModel,
+    themeMode: ThemeMode,
+    uiZoomPercent: Int,
+    onSetZoom: (Int) -> Unit,
+    onOpenZoom: () -> Unit,
+    font: FontCustomization,
+    onSetFont: (FontCustomization) -> Unit,
+    playlists: List<tv.own.owntv.core.database.entity.SourceEntity>,
+): Map<String, RowExtra> {
+    val accent by vm.accent.collectAsStateWithLifecycle()
+    val customAccent by vm.customAccent.collectAsStateWithLifecycle()
+    val glass by vm.glassConfig.collectAsStateWithLifecycle()
+    val animation by vm.animationLevel.collectAsStateWithLifecycle()
+    val weatherOn by vm.weatherEnabled.collectAsStateWithLifecycle()
+    val weatherPlace by vm.weatherLocation.collectAsStateWithLifecycle()
+    val fahrenheit by vm.weatherFahrenheit.collectAsStateWithLifecycle()
+    val navStyle by vm.navStyle.collectAsStateWithLifecycle()
+    val navSize by vm.navSize.collectAsStateWithLifecycle()
+    val liveLayout by vm.liveLayout.collectAsStateWithLifecycle()
+    val liveView by vm.liveView.collectAsStateWithLifecycle()
+    val vodLayout by vm.vodLayout.collectAsStateWithLifecycle()
+    val appIcon by vm.appIcon.collectAsStateWithLifecycle()
+    val focusHighlight by vm.focusHighlight.collectAsStateWithLifecycle()
+    val focusWidth by vm.focusHighlightWidth.collectAsStateWithLifecycle()
+    val sep = stringResource(R.string.content_epg_bits_separator)
+    fun <T> cycle(all: List<T>, now: T, step: Int): T = all[(all.indexOf(now) + step).mod(all.size)]
+
+    val themes = ThemeMode.entries
+    val themeNames = themes.map { themeLabel(it) }
+    val liveLayouts = tv.own.owntv.core.settings.SettingsRepository.LiveLayout.entries
+    val liveViews = tv.own.owntv.core.settings.SettingsRepository.LiveView.entries
+    // In the mockup's order: Cinematic first.
+    val vodLayouts = listOf(tv.own.owntv.core.settings.SettingsRepository.VodLayout.CINEMATIC, tv.own.owntv.core.settings.SettingsRepository.VodLayout.SEPARATE)
+    val presets = tv.own.owntv.core.theme.AccentColor.entries
+    val presetColors = presets.map { it.primary(true) }
+    val current = tv.own.owntv.ui.theme.stageAccent.accent
+    val hex = if (customAccent.isNotBlank()) customAccent.uppercase() else String.format(java.util.Locale.ROOT, "#%06X", 0xFFFFFF and current.toArgb())
+    val focusColor = tv.own.owntv.ui.theme.stageAccent.focus
+    val accentStep: (Int) -> Unit = { step ->
+        vm.setCustomAccent("")
+        vm.setAccent(if (customAccent.isNotBlank()) (if (step > 0) presets.first() else presets.last()) else cycle(presets, accent, step))
+    }
+    val zoomStep: (Int) -> Unit = { step ->
+        val next = tv.own.owntv.core.theme.UiZoom.clamp(uiZoomPercent + step * tv.own.owntv.core.theme.UiZoom.STEP)
+        // Below the low-memory line the zoom popup asks first (#51); the row never steps past it alone.
+        if (next < tv.own.owntv.core.theme.UiZoom.LOW_RAM_WARN && uiZoomPercent >= tv.own.owntv.core.theme.UiZoom.LOW_RAM_WARN) onOpenZoom() else onSetZoom(next)
+    }
+    val popupStep: (Int) -> Unit = { step ->
+        onSetFont(font.copy(popupSizePercent = tv.own.owntv.core.theme.PopupSizeScale.clamp(font.popupSizePercent + step * tv.own.owntv.core.theme.PopupSizeScale.STEP)))
+    }
+    val languages = tv.own.owntv.core.i18n.SupportedLocales.all.count { it.packaged }
+    val valueStyle = tv.own.owntv.ui.theme.stageText(18, 700)
+    return mapOf(
+        "tab_SOURCES" to RowExtra(
+            SettingValue.Opens(pluralStringResource(R.plurals.more_playlist_count, playlists.size, playlists.size)),
+            extra = { tv.own.owntv.features.settings.PlaylistSyncList(playlists) },
+        ),
+        "theme" to RowExtra(
+            SettingValue.Segmented(themeNames, themes.indexOf(themeMode)),
+            onStep = { vm.setThemeMode(cycle(themes, themeMode, it)) },
+            onClick = { vm.setThemeMode(cycle(themes, themeMode, 1)) },
+        ),
+        "accent" to RowExtra(
+            SettingValue.Custom {
+                AccentSwatches(presetColors, current)
+                Text(hex, style = valueStyle, color = current, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.mpx))
+            },
+            onStep = accentStep,
+            hints = listOf(
+                stringResource(R.string.common_ok) to stringResource(R.string.settings_key_palette),
+                "◀ ▶" to stringResource(R.string.settings_presets),
+                stringResource(R.string.content_key_hold_ok) to stringResource(R.string.settings_row_menu_pin),
+                stringResource(R.string.common_back) to stringResource(R.string.common_nav_settings),
+            ),
+        ),
+        "focus_highlight" to RowExtra(SettingValue.Custom {
+            Box(Modifier.size(22.mpx).background(focusColor, androidx.compose.foundation.shape.CircleShape))
+            Text(focusWidthLabel(focusWidth), style = valueStyle, color = current, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            OwnTVIcon(OwnTVIcon.CHEVRON, tv.own.owntv.ui.theme.StageColors.Muted, Modifier.size(20.mpx))
+        }),
+        "tab_GLASS_EFFECT" to RowExtra(SettingValue.Opens(
+            if (glass.enabled) glassPresetLabel(glass.preset) + sep + stringResource(R.string.common_percent, (glass.alpha * 100).roundToInt())
+            else stringResource(R.string.common_off),
+        )),
+        "fonts" to RowExtra(SettingValue.Opens(fontFamilyLabel(font.mainFamily) + sep + stringResource(R.string.common_percent, font.sizePercent))),
+        "popup_size" to RowExtra(SettingValue.Stepper(stringResource(R.string.common_percent, font.popupSizePercent)), onStep = popupStep),
+        "ui_zoom" to RowExtra(SettingValue.Stepper(stringResource(R.string.common_percent, uiZoomPercent)), onStep = zoomStep),
+        "animations" to RowExtra(
+            SettingValue.Switch(animation == tv.own.owntv.core.theme.AnimationLevel.FULL),
+            onClick = {
+                vm.setAnimationLevel(
+                    if (animation == tv.own.owntv.core.theme.AnimationLevel.FULL) tv.own.owntv.core.theme.AnimationLevel.OFF
+                    else tv.own.owntv.core.theme.AnimationLevel.FULL,
+                )
+            },
+        ),
+        "tab_WEATHER" to RowExtra(SettingValue.Opens(
+            if (!weatherOn) stringResource(R.string.common_off)
+            else listOfNotNull(weatherPlace.ifBlank { null }, stringResource(if (fahrenheit) R.string.settings_degree_fahrenheit else R.string.settings_degree_celsius)).joinToString(sep),
+        )),
+        "navigation" to RowExtra(
+            SettingValue.Opens(navStyleLabel(navStyle) + sep + stringResource(navSize.labelRes)),
+            choices = listOf(stringResource(R.string.settings_nav_floating), stringResource(R.string.settings_nav_docked)),
+            chosen = navStyle.ordinal,
+            recommended = 0,
+        ),
+        "live_layout" to RowExtra(
+            SettingValue.Segmented(liveLayouts.map { stringResource(if (it == tv.own.owntv.core.settings.SettingsRepository.LiveLayout.STAGE) R.string.settings_live_layout_stage else R.string.settings_seg_separate) }, liveLayouts.indexOf(liveLayout)),
+            onStep = { vm.setLiveLayout(cycle(liveLayouts, liveLayout, it)) },
+            onClick = { vm.setLiveLayout(cycle(liveLayouts, liveLayout, 1)) },
+        ),
+        "live_opens_in" to RowExtra(
+            SettingValue.Segmented(liveViews.map { stringResource(if (it == tv.own.owntv.core.settings.SettingsRepository.LiveView.LIST) R.string.settings_view_list else R.string.settings_seg_guide) }, liveViews.indexOf(liveView)),
+            onStep = { vm.setLiveView(cycle(liveViews, liveView, it)) },
+            onClick = { vm.setLiveView(cycle(liveViews, liveView, 1)) },
+        ),
+        "vod_layout" to RowExtra(
+            SettingValue.Segmented(vodLayouts.map { stringResource(if (it == tv.own.owntv.core.settings.SettingsRepository.VodLayout.CINEMATIC) R.string.settings_vod_layout_cinematic else R.string.settings_seg_separate) }, vodLayouts.indexOf(vodLayout)),
+            onStep = { vm.setVodLayout(cycle(vodLayouts, vodLayout, it)) },
+            onClick = { vm.setVodLayout(cycle(vodLayouts, vodLayout, 1)) },
+        ),
+        "app_icon" to RowExtra(SettingValue.Opens(stringResource(appIcon.label))),
+        "check_updates" to RowExtra(SettingValue.Action(stringResource(R.string.settings_check_now))),
+        "tab_LANGUAGE" to RowExtra(help = pluralStringResource(R.plurals.settings_help_language, languages, languages)),
+    ) + serviceRowExtras(vm)
+}
+
+/** EPG Sources, Metadata, OpenSubtitles, Proxy and DNS: what each is set to, and the details in the panel. */
+@Composable
+private fun serviceRowExtras(vm: SettingsViewModel): Map<String, RowExtra> {
+    val epgVm: tv.own.owntv.features.settings.EpgSourcesViewModel = org.koin.androidx.compose.koinViewModel()
+    val feeds by epgVm.sources.collectAsStateWithLifecycle()
+    val mode by vm.metadataMode.collectAsStateWithLifecycle()
+    val tier by vm.metadataTier.collectAsStateWithLifecycle()
+    val budget by vm.metadataBudgetStatus.collectAsStateWithLifecycle()
+    LaunchedEffect(tier) { if (tier == tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER) vm.refreshMetadataBudget() }
+    val osVm: tv.own.owntv.features.settings.OpenSubtitlesViewModel = org.koin.androidx.compose.koinViewModel()
+    val os by osVm.state.collectAsStateWithLifecycle()
+    val proxy by vm.proxyConfig.collectAsStateWithLifecycle()
+    val dns by vm.dnsConfig.collectAsStateWithLifecycle()
+    val on = stringResource(R.string.common_on)
+    val off = stringResource(R.string.common_off)
+    val small = tv.own.owntv.ui.theme.stageText(17, 600)
+    @Composable fun line(label: String, value: String) = Row(Modifier.padding(top = 10.mpx)) {
+        Text(label, style = small, color = tv.own.owntv.ui.theme.StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Text(value, style = small, color = tv.own.owntv.ui.theme.StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+    val signedIn = os as? tv.own.owntv.features.settings.OpenSubtitlesViewModel.UiState.SignedIn
+    val dnsHost = dns.dohUrl.ifBlank { dns.host }.removePrefix("https://").substringBefore('/')
+    return mapOf(
+        "tab_EPG" to RowExtra(
+            SettingValue.Opens(pluralStringResource(R.plurals.settings_epg_feed_count, feeds.size, feeds.size)),
+            extra = {
+                // As Playlists draws its list: the name in bold, when it last synced in small muted type.
+                Column(Modifier.padding(top = 18.mpx), verticalArrangement = Arrangement.spacedBy(10.mpx)) {
+                    feeds.forEach { f ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(f.name, style = tv.own.owntv.ui.theme.stageText(18, 700), color = tv.own.owntv.ui.theme.StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                            f.lastSyncAt?.let {
+                                Text(
+                                    stringResource(R.string.settings_synced_at, tv.own.owntv.features.downloads.recordingWhen(it)),
+                                    style = tv.own.owntv.ui.theme.stageText(15, 500), color = tv.own.owntv.ui.theme.StageColors.Muted,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+        ),
+        "tab_METADATA" to RowExtra(
+            SettingValue.Opens(if (!mode.enrich) off else when (tier) {
+                tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER -> stringResource(R.string.settings_shared)
+                tv.own.owntv.core.metadata.MetadataConfig.Tier.OWN_KEY -> stringResource(R.string.settings_tier_key)
+                tv.own.owntv.core.metadata.MetadataConfig.Tier.SELF_HOST -> stringResource(R.string.settings_tier_self_host)
+            }),
+            extra = {
+                val b = budget
+                if (mode.enrich) Column(Modifier.padding(top = 8.mpx)) {
+                    line(stringResource(R.string.settings_metadata_connection), stringResource(when (tier) {
+                        tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER -> R.string.settings_tier_default
+                        tv.own.owntv.core.metadata.MetadataConfig.Tier.OWN_KEY -> R.string.settings_tier_key
+                        tv.own.owntv.core.metadata.MetadataConfig.Tier.SELF_HOST -> R.string.settings_tier_self_host
+                    }))
+                    // The shared service has a daily allowance; an own key or self-host has none to show.
+                    if (tier == tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER && b != null) {
+                        line(stringResource(R.string.settings_allowance_day), pluralStringResource(R.plurals.settings_allowance_value, b.remainingDay, b.remainingDay, b.limitDay))
+                    }
+                }
+            },
+        ),
+        "tab_OPEN_SUBTITLES" to RowExtra(
+            SettingValue.Opens(stringResource(if (signedIn != null) R.string.settings_open_subtitles_connected else R.string.settings_signed_out)),
+            extra = {
+                signedIn?.session?.let { s ->
+                    Column(Modifier.padding(top = 8.mpx)) {
+                        line(stringResource(R.string.player_subtitles_connected_as), s.username)
+                        s.remainingDownloads?.let { r ->
+                            line(stringResource(R.string.player_subtitles_downloads), pluralStringResource(R.plurals.player_subtitles_remaining_short, r, r))
+                        }
+                    }
+                }
+            },
+        ),
+        "tab_NETWORK" to RowExtra(SettingValue.Opens(if (proxy.usable) "${proxy.host}:${proxy.port}" else off)),
+        "tab_DNS" to RowExtra(SettingValue.Opens(if (dns.enabled && dnsHost.isNotBlank()) dnsHost else if (dns.enabled) on else off)),
+    )
 }

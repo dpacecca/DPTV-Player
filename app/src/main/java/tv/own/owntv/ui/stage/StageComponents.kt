@@ -433,16 +433,24 @@ fun StageSegmented(
 // Tags and playlist marks
 // ---------------------------------------------------------------------------------------------
 
-/** `.tag`: a provider or quality badge, 13/800 caps-spaced on white 8%. [onAccent] inside a focused item. */
+/** `.tag`: a provider or quality badge, 13/800 caps-spaced on white 8%. [onAccent] inside a focused item; [tint] for a coloured tag. */
 @Composable
-fun StageTag(text: String, onAccent: Color? = null) {
+fun StageTag(text: String, onAccent: Color? = null, tint: Color? = null) {
     Text(
         text,
         style = stageText(13, 800, 0.05.em),
-        color = onAccent ?: StageColors.TagText,
+        color = onAccent ?: tint ?: StageColors.TagText,
         maxLines = 1, overflow = TextOverflow.Ellipsis,
         modifier = Modifier
-            .background(if (onAccent != null) Color.Black.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.08f), RoundedCornerShape(StageRadii.Tag))
+            .background(
+                when {
+                    onAccent != null -> Color.Black.copy(alpha = 0.18f)
+                    // A coloured tag ("IN USE", "UP TO DATE"): the colour at 20% behind its own text.
+                    tint != null -> tint.copy(alpha = 0.2f)
+                    else -> Color.White.copy(alpha = 0.08f)
+                },
+                RoundedCornerShape(StageRadii.Tag),
+            )
             .padding(horizontal = 7.mpx, vertical = 3.mpx),
     )
 }

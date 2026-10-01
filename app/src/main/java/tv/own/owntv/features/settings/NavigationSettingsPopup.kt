@@ -191,7 +191,7 @@ private val MenuSections = listOf(
     MainSection.DOWNLOADS to OwnTVIcon.DOWNLOADS,
 )
 
-private val NavSize.labelRes: Int
+internal val NavSize.labelRes: Int
     get() = when (this) {
         NavSize.COMPACT -> R.string.settings_nav_size_compact
         NavSize.NORMAL -> R.string.settings_nav_size_normal

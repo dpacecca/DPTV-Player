@@ -45,6 +45,7 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.restoreAfterDialogClose
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.theme.mpx
 
 private enum class RecordingDialog { NONE, PRE_ROLL, POST_ROLL }
 
@@ -55,16 +56,16 @@ internal val RECORDING_SEARCH_ROWS: List<Int> = listOf(
 )
 
 /**
- * The three things recording can be told, and one thing it has to tell the user.
+ * The three things recording can be told, and one thing it has to tell the user — the RECORDING part
+ * of Settings › Watching & recording (P10), drawn inside that page under its own sub-heading.
  *
  * There is deliberately **no** "what to do when space runs low": that behaviour is fixed — a
  * recording stops with 500 MB free, keeps what it captured, and never deletes anything to make room.
  * A setting implies a choice, and there isn't one.
  */
 @Composable
-fun RecordingSettingsScreen(
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
+internal fun RecordingSettingsRows(
+    scrollState: androidx.compose.foundation.ScrollState,
     vm: SettingsViewModel = koinViewModel(),
     recordingsVm: RecordingsViewModel = koinViewModel(),
 ) {
@@ -72,17 +73,13 @@ fun RecordingSettingsScreen(
     val preRoll by vm.recordingPreRollMinutes.collectAsStateWithLifecycle()
     val postRoll by vm.recordingPostRollMinutes.collectAsStateWithLifecycle()
     val recordWatching by vm.recordWhatImWatching.collectAsStateWithLifecycle()
-    val colors = OwnTVTheme.colors
 
-    val firstFocus = remember { FocusRequester() }
     val preRollFocus = remember { FocusRequester() }
     val postRollFocus = remember { FocusRequester() }
     var dialog by remember { mutableStateOf(RecordingDialog.NONE) }
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
     var showWatchingWarning by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-    val scrollState = rememberScrollState()
     var savedScroll by remember { mutableIntStateOf(0) }
     LaunchedEffect(dialog) {
         if (dialog != RecordingDialog.NONE) {
@@ -92,80 +89,62 @@ fun RecordingSettingsScreen(
         restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
         dialogReturn = null
     }
-    BackHandler { onBack() }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .roundedPanel()
-            .focusProperties { onEnter = { runCatching { firstFocus.requestFocus() } } }
-            .focusGroup()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 40.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Header(title = stringResource(R.string.recording_settings_group), onBack = onBack)
-        Spacer(Modifier.height(4.dp))
+    StageSettingsHeading(stringResource(R.string.recording_settings_group), 4)
+    // Said here and nowhere else, because this is where a user wonders why a recording began at
+    // 20:03. Not a setting — the app cannot grant itself the permission — but the one place the
+    // consequence belongs.
+    if (!recordingsVm.timersAreExact) {
         Text(
-            stringResource(R.string.recording_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurfaceVariant,
-        )
-
-        // Said here and nowhere else, because this is the screen where a user wonders why a
-        // recording began at 20:03. Not a setting — the app cannot grant itself the permission —
-        // but the one place the consequence belongs.
-        if (!recordingsVm.timersAreExact) {
-            Spacer(Modifier.height(12.dp))
-            Text(
-                stringResource(R.string.settings_recording_timers_inexact),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFFEF4444),
-            )
-        }
-        Spacer(Modifier.height(16.dp))
-
-        Row2(
-            icon = OwnTVIcon.LIVE_TV,
-            title = stringResource(R.string.settings_recording_reserve),
-            desc = stringResource(R.string.settings_recording_reserve_description),
-            chip = stringResource(if (reserve) R.string.common_on else R.string.common_off),
-            primaryChip = reserve,
-            onClick = { vm.setRecordingReserveConnection(!reserve) },
-            modifier = Modifier.focusRequester(firstFocus),
-        )
-        // D3 — the player's record button does not exist until this is on, and turning it on is
-        // where the one-connection trade-off is explained and accepted. Turning it OFF needs no
-        // dialog: nothing is being traded away.
-        Row2(
-            icon = OwnTVIcon.PLAY,
-            title = stringResource(R.string.settings_record_watching),
-            desc = stringResource(R.string.settings_record_watching_description),
-            chip = stringResource(if (recordWatching) R.string.common_on else R.string.common_off),
-            primaryChip = recordWatching,
-            onClick = {
-                if (recordWatching) vm.setRecordWhatImWatching(false) else showWatchingWarning = true
-            },
-        )
-        Row2(
-            icon = OwnTVIcon.HISTORY,
-            title = stringResource(R.string.settings_recording_pre_roll),
-            desc = stringResource(R.string.settings_recording_pre_roll_description),
-            chip = pluralStringResource(R.plurals.recording_minutes, preRoll, preRoll),
-            chevron = true,
-            onClick = { dialogReturn = preRollFocus; dialog = RecordingDialog.PRE_ROLL },
-            modifier = Modifier.focusRequester(preRollFocus),
-        )
-        Row2(
-            icon = OwnTVIcon.HISTORY,
-            title = stringResource(R.string.settings_recording_post_roll),
-            desc = stringResource(R.string.settings_recording_post_roll_description),
-            chip = pluralStringResource(R.plurals.recording_minutes, postRoll, postRoll),
-            chevron = true,
-            onClick = { dialogReturn = postRollFocus; dialog = RecordingDialog.POST_ROLL },
-            modifier = Modifier.focusRequester(postRollFocus),
+            stringResource(R.string.settings_recording_timers_inexact),
+            style = tv.own.owntv.ui.theme.stageText(15.5f, 500),
+            color = tv.own.owntv.ui.theme.StageColors.Danger,
+            modifier = Modifier.padding(start = 22.mpx, bottom = 6.mpx),
         )
     }
+    Row2(
+        icon = OwnTVIcon.LIVE_TV,
+        title = stringResource(R.string.settings_recording_reserve),
+        desc = stringResource(R.string.settings_recording_reserve_description),
+        chip = stringResource(if (reserve) R.string.common_on else R.string.common_off),
+        primaryChip = reserve,
+        helpKey = "rec_reserve",
+        onClick = { vm.setRecordingReserveConnection(!reserve) },
+    )
+    // D3 — the player's record button does not exist until this is on, and turning it on is
+    // where the one-connection trade-off is explained and accepted. Turning it OFF needs no
+    // dialog: nothing is being traded away.
+    Row2(
+        icon = OwnTVIcon.PLAY,
+        title = stringResource(R.string.settings_record_watching),
+        desc = stringResource(R.string.settings_record_watching_description),
+        chip = stringResource(if (recordWatching) R.string.common_on else R.string.common_off),
+        primaryChip = recordWatching,
+        helpKey = "rec_watching",
+        onClick = {
+            if (recordWatching) vm.setRecordWhatImWatching(false) else showWatchingWarning = true
+        },
+    )
+    Row2(
+        icon = OwnTVIcon.HISTORY,
+        title = stringResource(R.string.settings_recording_pre_roll),
+        desc = stringResource(R.string.settings_recording_pre_roll_description),
+        chip = pluralStringResource(R.plurals.recording_minutes, preRoll, preRoll),
+        chevron = true,
+        helpKey = "rec_pre_roll",
+        onClick = { dialogReturn = preRollFocus; dialog = RecordingDialog.PRE_ROLL },
+        modifier = Modifier.focusRequester(preRollFocus),
+    )
+    Row2(
+        icon = OwnTVIcon.HISTORY,
+        title = stringResource(R.string.settings_recording_post_roll),
+        desc = stringResource(R.string.settings_recording_post_roll_description),
+        chip = pluralStringResource(R.plurals.recording_minutes, postRoll, postRoll),
+        chevron = true,
+        helpKey = "rec_post_roll",
+        onClick = { dialogReturn = postRollFocus; dialog = RecordingDialog.POST_ROLL },
+        modifier = Modifier.focusRequester(postRollFocus),
+    )
 
     // The auto-frame-rate precedent, and Multiview's after it: name the trade-off, then offer both
     // answers with the safer one first.

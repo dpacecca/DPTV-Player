@@ -207,36 +207,40 @@ private fun counted(nameRes: Int, n: Int) = stringResource(nameRes) + " " + n
 // ---------------------------------------------------------------------------------------------
 
 /**
- * The twelve groups of the new Settings (P10). [startGroup] is today's root group the card opens until
- * P10 redraws Settings: the five Playback cards all land on Playback, App also holds Network.
+ * The twelve Settings groups (P10), in the order of `SettingsGroup`: a card's index is the group it opens.
  */
-private data class SettingsGroupCard(val icon: OwnTVIcon, val nameRes: Int, val summaryRes: Int, val count: Int?, val startGroup: Int)
+private data class SettingsGroupCard(val icon: OwnTVIcon, val nameRes: Int, val summaryRes: Int, val count: Int?)
 
 private val SettingsCards = listOf(
-    SettingsGroupCard(OwnTVIcon.SPARKLE, R.string.settings_group_quick, R.string.settings_group_summary_quick, null, 0),
-    SettingsGroupCard(OwnTVIcon.PERSON, R.string.settings_group_profile, R.string.settings_card_profile, 3, 1),
-    SettingsGroupCard(OwnTVIcon.LIST, R.string.settings_group_sources, R.string.settings_card_sources, 8, 2),
-    SettingsGroupCard(OwnTVIcon.PALETTE, R.string.settings_group_appearance, R.string.settings_card_appearance, 9, 3),
-    SettingsGroupCard(OwnTVIcon.GRID, R.string.settings_group_layout, R.string.settings_card_layout, 10, 4),
-    SettingsGroupCard(OwnTVIcon.MOVIES, R.string.settings_group_content_metadata, R.string.settings_card_content, 3, 5),
-    SettingsGroupCard(OwnTVIcon.PLAY_CIRCLE, R.string.settings_vp_cat_player, R.string.settings_card_player, 11, 6),
-    SettingsGroupCard(OwnTVIcon.EXPAND, R.string.settings_vp_cat_picture, R.string.settings_card_picture, 9, 6),
-    SettingsGroupCard(OwnTVIcon.HEADPHONES, R.string.settings_group_sound_subtitles, R.string.settings_card_sound, 11, 6),
-    SettingsGroupCard(OwnTVIcon.LIVE_TV, R.string.settings_live_tv, R.string.settings_card_live, 12, 6),
-    SettingsGroupCard(OwnTVIcon.REC, R.string.settings_group_watching_recording, R.string.settings_card_watching, 11, 6),
-    SettingsGroupCard(OwnTVIcon.INFO, R.string.settings_group_app, R.string.settings_card_app, 9, 8),
+    SettingsGroupCard(OwnTVIcon.SPARKLE, R.string.settings_group_quick, R.string.settings_group_summary_quick, null),
+    SettingsGroupCard(OwnTVIcon.PERSON, R.string.settings_group_profile, R.string.settings_card_profile, 3),
+    SettingsGroupCard(OwnTVIcon.LIST, R.string.settings_group_sources, R.string.settings_card_sources, 8),
+    SettingsGroupCard(OwnTVIcon.PALETTE, R.string.settings_group_appearance, R.string.settings_card_appearance, 9),
+    SettingsGroupCard(OwnTVIcon.GRID, R.string.settings_group_layout, R.string.settings_card_layout, 10),
+    SettingsGroupCard(OwnTVIcon.MOVIES, R.string.settings_group_content_metadata, R.string.settings_card_content, 3),
+    SettingsGroupCard(OwnTVIcon.PLAY_CIRCLE, R.string.settings_vp_cat_player, R.string.settings_card_player, 11),
+    SettingsGroupCard(OwnTVIcon.EXPAND, R.string.settings_vp_cat_picture, R.string.settings_card_picture, 9),
+    SettingsGroupCard(OwnTVIcon.HEADPHONES, R.string.settings_group_sound_subtitles, R.string.settings_card_sound, 11),
+    SettingsGroupCard(OwnTVIcon.LIVE_TV, R.string.settings_live_tv, R.string.settings_card_live, 12),
+    SettingsGroupCard(OwnTVIcon.REC, R.string.settings_group_watching_recording, R.string.settings_card_watching, 11),
+    SettingsGroupCard(OwnTVIcon.INFO, R.string.settings_group_app, R.string.settings_card_app, 9),
 )
+
+/** The card last opened, so Back from its group lands on it again rather than on the search field. */
+private var lastOpenedCard: Int? = null
 
 @Composable
 internal fun SettingsPage(entry: FocusRequester, pinned: Int, onOpenGroup: (Int) -> Unit, onSearch: () -> Unit) {
+    val back = lastOpenedCard
+    val profiles = tv.own.owntv.features.settings.profileCount()
     Column(Modifier.fillMaxSize().focusGroup()) {
         PageHead(stringResource(R.string.common_nav_settings)) {
             Spacer(Modifier.weight(1f))
             Text(stringResource(R.string.more_settings_pin_hint), style = stageText(17, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         StageSurface(
-            onClick = onSearch, radius = 18.mpx,
-            modifier = Modifier.padding(top = 26.mpx).fillMaxWidth().height(60.mpx).focusRequester(entry),
+            onClick = { lastOpenedCard = null; onSearch() }, radius = 18.mpx,
+            modifier = Modifier.padding(top = 26.mpx).fillMaxWidth().height(60.mpx).then(if (back == null) Modifier.focusRequester(entry) else Modifier),
             focusStyle = StageFocus.FX,
             idle = Modifier.background(StageColors.ControlFill, RoundedCornerShape(18.mpx)),
         ) { focused ->
@@ -249,16 +253,17 @@ internal fun SettingsPage(entry: FocusRequester, pinned: Int, onOpenGroup: (Int)
             SettingsCards.chunked(3).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(20.mpx)) {
                     row.forEach { card ->
+                        val index = SettingsCards.indexOf(card)
                         StageTile(
-                            modifier = Modifier.weight(1f).height(150.mpx),
-                            onClick = { onOpenGroup(card.startGroup) },
+                            modifier = Modifier.weight(1f).height(150.mpx).then(if (index == back) Modifier.focusRequester(entry) else Modifier),
+                            onClick = { lastOpenedCard = index; onOpenGroup(index) },
                             padding = 0.mpx,
                         ) { focused ->
                             Column(Modifier.padding(horizontal = 26.mpx, vertical = 24.mpx)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     OwnTVIcon(card.icon, if (focused) StageColors.Text else StageColors.Muted, Modifier.size(28.mpx))
                                     Spacer(Modifier.weight(1f))
-                                    Text((card.count ?: pinned).toString(), style = stageText(17, 700), color = StageColors.Dim)
+                                    Text((if (index == 1) profiles else card.count ?: pinned).toString(), style = stageText(17, 700), color = StageColors.Dim)
                                 }
                                 Text(stringResource(card.nameRes), style = stageText(24, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 14.mpx))
                                 Text(stringResource(card.summaryRes), style = stageText(16, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.mpx))

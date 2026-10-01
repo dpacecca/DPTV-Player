@@ -1931,7 +1931,7 @@ private fun OfflineBanner() {
     }
 
 /** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
-private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS, MainSection.MORE)
+private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS, MainSection.MORE, MainSection.SETTINGS)
 
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {

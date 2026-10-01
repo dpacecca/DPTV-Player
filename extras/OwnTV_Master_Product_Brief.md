@@ -340,7 +340,11 @@ path in each result.
 - **Remote Shortcuts** — short and long presses of spare colour, number, channel and media keys
   mapped to 25 actions. Essential keys stay protected; the shipped CH+/− paging remains the default.
 - **Content** — clear watch history by type; per-source auto refresh; browsing and list toggles.
-- **Video player** is the complete playback list, so no playback setting lives on two screens.
+- **Twelve groups** under More → Settings (Quick, Profile, Sources & guide, Appearance, Layout,
+  Content & metadata, Player, Picture, Sound & subtitles, Live TV, Watching & recording, App). Each
+  group is one page: its rows on the left, an explanation of the focused row and its choices on the
+  right. The playback settings live in Player, Picture, Sound & subtitles, Live TV and Watching &
+  recording, so none of them sits two levels deep and none lives on two screens.
 - **Error log** (App) — the last crash plus a readable history of playback failures, fallbacks and
   reports, with optional detailed tracing. A crash is written to disk as it happens, so it survives
   the process dying. Export writes `Download/owntv-playback-report.txt`.
