@@ -91,19 +91,27 @@ fun HomeLiveRow(
     }
 }
 
+/**
+ * `.oncard`. Home's are 336 wide with the programme and the time left on two lines; More › Favourites
+ * draws them 420 wide with both on one line ([oneLine], "Resident Evil · 1 h 23 min left").
+ */
 @Composable
-private fun OnNowCard(
+internal fun OnNowCard(
     channel: ChannelEntity,
     programme: EpgProgrammeEntity?,
     now: Long,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    width: Dp = 336.mpx,
+    oneLine: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val a = stageAccent
     StageSurface(
         onClick = onClick,
         radius = StageRadii.Row,
-        modifier = modifier.size(336.mpx, 132.mpx),
+        modifier = modifier.size(width, 132.mpx),
+        onLongClick = onLongClick,
         focusStyle = StageFocus.FX,
         idle = Modifier.background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(StageRadii.Row)),
         contentAlignment = Alignment.TopStart,
@@ -116,14 +124,17 @@ private fun OnNowCard(
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 Text(channel.name, style = stageText(20, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (programme != null) {
+                    val left = timeLeftText(((programme.stopMs - now).coerceAtLeast(0L) + 59_999L) / 60_000L)
                     Spacer(Modifier.height(3.mpx))
-                    Text(programme.title, style = stageText(15, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Spacer(Modifier.height(3.mpx))
-                    Text(
-                        timeLeftText(((programme.stopMs - now).coerceAtLeast(0L) + 59_999L) / 60_000L),
-                        style = stageText(15, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(Modifier.height(10.mpx))
+                    if (oneLine) {
+                        Text(programme.title + stringResource(R.string.content_epg_bits_separator) + left, style = stageText(15, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Spacer(Modifier.height(12.mpx))
+                    } else {
+                        Text(programme.title, style = stageText(15, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Spacer(Modifier.height(3.mpx))
+                        Text(left, style = stageText(15, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Spacer(Modifier.height(10.mpx))
+                    }
                     val fraction = programmeProgress(programme, now)
                     Box(Modifier.fillMaxWidth().height(5.mpx).clip(RoundedCornerShape(3.mpx)).background(Color.White.copy(alpha = 0.12f))) {
                         // A 5 px bar: small enough to stay a brush (see GradientTextures).

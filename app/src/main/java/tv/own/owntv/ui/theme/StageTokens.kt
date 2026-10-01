@@ -43,6 +43,10 @@ object StageColors {
     val RatingStar = Color(0xFFFFCC4D)
     /** `.ok`: "✓ Ready to watch". */
     val Ok = Color(0xFF7BE3A4)
+    /** The amber of "⚠ Never" and the Never-backed-up card (`#ffb86b`). */
+    val Warn = Color(0xFFFFB86B)
+    /** `.danger`: Clear watch history, Clear log (`#ff8a7a`). */
+    val Danger = Color(0xFFFF8A7A)
 }
 
 /** Corner radii, in mockup pixels. Each phase adds the ones its screens use (rail, video, guide cell…). */

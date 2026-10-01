@@ -209,6 +209,9 @@ fun SettingsScreen(
     onBack: (() -> Unit)? = null,
     openEpgAdd: Boolean = false,
     onEpgAddConsumed: () -> Unit = {},
+    /** More › Settings (until P10 redraws this screen): open at a root group, or with search open. */
+    start: SettingsStart? = null,
+    onStartConsumed: () -> Unit = {},
 ) {
     // A cross-script language change recreates the Activity so Android can apply the new script's
     // shaping and font fallback. Keep the open settings sub-screen across that configuration change
@@ -299,6 +302,17 @@ fun SettingsScreen(
     val saveScroll = {
         savedIndex = listState.firstVisibleItemIndex
         savedOffset = listState.firstVisibleItemScrollOffset
+    }
+    LaunchedEffect(start) {
+        if (start == null) return@LaunchedEffect
+        tab = SettingsTab.ROOT
+        start.group?.let { selectedGroup = it; displayedGroup = it }
+        if (start.search) {
+            searchExpanded = true
+            // The field is composed by the expand; ask until it takes focus.
+            for (attempt in 0 until 10) { kotlinx.coroutines.delay(50); if (runCatching { searchFieldFocus.requestFocus() }.isSuccess) break }
+        }
+        onStartConsumed()
     }
     val anyDialogOpen = showZoom || showPopupSize || showFontCustomization || showTheme || showAccent || showUpdate || showCatchupTime || showCatchupSources || showCatchupSourceValue || showEpgOffset || showGuideDays || showAnimations || showStartup || showStartupChannelPicker || showAfrWarning || showLivePreviewPanelWarning || showBgImageChooser || showBgPicker || showAmbientGlow || showBrowsing || showFocusHighlight || showBgRemote || showVodLayout || showNavigation || showLiveLayout || stageSettings.open != null
     // When a dialog closes, restore focus to the row that opened it. NOTE: this restore crosses
@@ -1471,64 +1485,19 @@ fun SettingsScreen(
             UpdateDialog(onDismiss = { showUpdate = false }, checkOnOpen = true)
         }
     }
-    if (showCatchupTime) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showCatchupTime = false }) { CatchupTimeDialog(
-            mode = catchupTz,
-            offsetMinutes = catchupOffset,
-            offsetRange = settingsVm.catchupOffsetRangeMinutes,
-            offsetStep = settingsVm.catchupOffsetStepMinutes,
-            onSetMode = settingsVm::setCatchupTimezone,
-            onAdjustOffset = settingsVm::adjustCatchupOffset,
-            player = catchupPlayer,
-            onSetPlayer = settingsVm::setCatchupPlayer,
-            onDismiss = { showCatchupTime = false },
-        ) }
-    }
+    if (showCatchupTime) CatchupTimeHost(settingsVm, catchupTz, catchupOffset, catchupPlayer) { showCatchupTime = false }
     if (showCatchupSources) {
-        tv.own.owntv.features.settings.PickerDialog(
-            title = stringResource(R.string.settings_live_preroll_playlist_picker),
-            options = playlistSources.map { src ->
-                src.id.toString() to "${src.name}  ·  ${catchupOverrideLabel(src)}"
-            },
-            selected = catchupSource?.id?.toString() ?: "",
-            onSelect = { id ->
-                catchupSource = playlistSources.firstOrNull { it.id.toString() == id }
-                showCatchupSourceValue = catchupSource != null
-                showCatchupSources = false
-            },
-            onDismiss = { catchupSource = null; showCatchupSources = false },
-        )
+        CatchupSourcesHost(playlistSources, catchupSource, onPick = { picked ->
+            catchupSource = picked
+            showCatchupSourceValue = picked != null
+            showCatchupSources = false
+        }, onDismiss = { catchupSource = null; showCatchupSources = false })
     }
     if (showCatchupSourceValue) {
-        val src = playlistSources.firstOrNull { it.id == catchupSource?.id } ?: catchupSource
-        tv.own.owntv.features.settings.PickerDialog(
-            title = src?.name ?: stringResource(R.string.settings_catchup_timezone_per_playlist),
-            options = listOf(
-                CATCHUP_FOLLOW to stringResource(R.string.settings_live_preroll_follow),
-                SettingsRepository.CatchupTimezone.DEVICE.name to stringResource(R.string.settings_catchup_timezone_device),
-            ) + settingsVm.catchupOffsetChoicesMinutes.map { "$CATCHUP_MANUAL_PREFIX$it" to utcOffsetLabel(it) },
-            selected = when (src?.catchupTimezone) {
-                null -> CATCHUP_FOLLOW
-                SettingsRepository.CatchupTimezone.MANUAL.name -> "$CATCHUP_MANUAL_PREFIX${src?.catchupOffsetMin ?: 0}"
-                else -> src?.catchupTimezone ?: CATCHUP_FOLLOW
-            },
-            onSelect = { value ->
-                src?.let {
-                    when {
-                        value == CATCHUP_FOLLOW -> settingsVm.setSourceCatchupTimezone(it.id, null, null)
-                        value.startsWith(CATCHUP_MANUAL_PREFIX) -> settingsVm.setSourceCatchupTimezone(
-                            it.id, SettingsRepository.CatchupTimezone.MANUAL.name,
-                            value.removePrefix(CATCHUP_MANUAL_PREFIX).toIntOrNull() ?: 0,
-                        )
-                        else -> settingsVm.setSourceCatchupTimezone(it.id, value, null)
-                    }
-                }
-                showCatchupSources = true
-                showCatchupSourceValue = false
-            },
-            // Back goes back one level, to the playlist list — same as the Video player overrides.
-            onDismiss = { showCatchupSources = true; showCatchupSourceValue = false },
-        )
+        CatchupSourceValueHost(settingsVm, playlistSources.firstOrNull { it.id == catchupSource?.id } ?: catchupSource) {
+            showCatchupSources = true
+            showCatchupSourceValue = false
+        }
     }
     if (showEpgOffset) EpgOffsetRootDialog(settingsVm, epgOffset, onClose = { showEpgOffset = false })
     if (showGuideDays) GuideDaysDialog(settingsVm, guideDays, onClose = { showGuideDays = false })
@@ -2545,72 +2514,85 @@ private fun FocusHighlightDialog(
 }
 
 
-/** Widened for More's About pane, which shows the same repository line the dialog does. */
-internal const val GITHUB_REPO = "github.com/ahXN00/OwnTV"
-private const val TELEGRAM_LINK = "t.me/owntvplayer"
-
-/** About OwnTV: version, license, author and project link — all readable on screen (no TV browser). */
+/** The global catch-up time and player dialog, moved out of [SettingsScreen] unchanged (its body is at the JVM method limit). */
 @Composable
-internal fun AboutDialog(onDismiss: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    BackHandler { onDismiss() }
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier.dialogPanel(width = 520.dp, padding = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            BrandLockup(markSize = 48, textSize = 30)
-            Spacer(Modifier.height(6.dp))
-            Text(stringResource(R.string.settings_about_version, tv.own.owntv.BuildConfig.VERSION_NAME), style = MaterialTheme.typography.titleMedium, color = colors.primary)
-            Spacer(Modifier.height(14.dp))
-            Text(
-                stringResource(R.string.settings_about_description_full),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(14.dp))
-            Text(stringResource(R.string.settings_about_license), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
-            Spacer(Modifier.height(4.dp))
-            Text(GITHUB_REPO, style = MaterialTheme.typography.bodyMedium, color = colors.primary)
-            Spacer(Modifier.height(16.dp))
-            // Community: Telegram link + a QR, side-by-side to keep the dialog compact, so TV users can
-            // join from their phone — no TV browser needed.
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_join_telegram), style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
-                    Spacer(Modifier.height(2.dp))
-                    Text(TELEGRAM_LINK, style = MaterialTheme.typography.bodyMedium, color = colors.primary)
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        stringResource(R.string.settings_telegram_scan),
-                        style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                    )
-                }
-                Box(Modifier.clip(RoundedCornerShape(10.dp)).background(Color.White).padding(6.dp)) {
-                    Image(
-                        painter = androidx.compose.ui.res.painterResource(tv.own.owntv.R.drawable.telegram_qr),
-                        contentDescription = stringResource(R.string.settings_telegram_qr),
-                        modifier = Modifier.size(120.dp),
-                    )
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-            Text(
-                stringResource(R.string.settings_contributions),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(20.dp))
-            OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, modifier = Modifier.focusRequester(focus))
-        }
+private fun CatchupTimeHost(
+    settingsVm: SettingsViewModel,
+    mode: SettingsRepository.CatchupTimezone,
+    offsetMinutes: Int,
+    player: SettingsRepository.CatchupPlayer,
+    onDismiss: () -> Unit,
+) {
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+        CatchupTimeDialog(
+            mode = mode,
+            offsetMinutes = offsetMinutes,
+            offsetRange = settingsVm.catchupOffsetRangeMinutes,
+            offsetStep = settingsVm.catchupOffsetStepMinutes,
+            onSetMode = settingsVm::setCatchupTimezone,
+            onAdjustOffset = settingsVm::adjustCatchupOffset,
+            player = player,
+            onSetPlayer = settingsVm::setCatchupPlayer,
+            onDismiss = onDismiss,
+        )
     }
 }
+
+/** The playlist list behind "Catch-up time zone per playlist", moved out of [SettingsScreen] unchanged. */
+@Composable
+private fun CatchupSourcesHost(
+    sources: List<tv.own.owntv.core.database.entity.SourceEntity>,
+    current: tv.own.owntv.core.database.entity.SourceEntity?,
+    onPick: (tv.own.owntv.core.database.entity.SourceEntity?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    tv.own.owntv.features.settings.PickerDialog(
+        title = stringResource(R.string.settings_live_preroll_playlist_picker),
+        options = sources.map { src -> src.id.toString() to "${src.name}  ·  ${catchupOverrideLabel(src)}" },
+        selected = current?.id?.toString() ?: "",
+        onSelect = { id -> onPick(sources.firstOrNull { it.id.toString() == id }) },
+        onDismiss = onDismiss,
+    )
+}
+
+/** More's way into this screen until P10: a root group to open at, or the search field. */
+data class SettingsStart(val group: Int?, val search: Boolean)
+
+/** One playlist's catch-up time zone, moved out of [SettingsScreen] unchanged (its body is at the JVM method limit). */
+@Composable
+private fun CatchupSourceValueHost(settingsVm: SettingsViewModel, src: tv.own.owntv.core.database.entity.SourceEntity?, onDone: () -> Unit) {
+    tv.own.owntv.features.settings.PickerDialog(
+        title = src?.name ?: stringResource(R.string.settings_catchup_timezone_per_playlist),
+        options = listOf(
+            CATCHUP_FOLLOW to stringResource(R.string.settings_live_preroll_follow),
+            SettingsRepository.CatchupTimezone.DEVICE.name to stringResource(R.string.settings_catchup_timezone_device),
+        ) + settingsVm.catchupOffsetChoicesMinutes.map { "$CATCHUP_MANUAL_PREFIX$it" to utcOffsetLabel(it) },
+        selected = when (src?.catchupTimezone) {
+            null -> CATCHUP_FOLLOW
+            SettingsRepository.CatchupTimezone.MANUAL.name -> "$CATCHUP_MANUAL_PREFIX${src?.catchupOffsetMin ?: 0}"
+            else -> src?.catchupTimezone ?: CATCHUP_FOLLOW
+        },
+        onSelect = { value ->
+            src?.let {
+                when {
+                    value == CATCHUP_FOLLOW -> settingsVm.setSourceCatchupTimezone(it.id, null, null)
+                    value.startsWith(CATCHUP_MANUAL_PREFIX) -> settingsVm.setSourceCatchupTimezone(
+                        it.id, SettingsRepository.CatchupTimezone.MANUAL.name,
+                        value.removePrefix(CATCHUP_MANUAL_PREFIX).toIntOrNull() ?: 0,
+                    )
+                    else -> settingsVm.setSourceCatchupTimezone(it.id, value, null)
+                }
+            }
+            onDone()
+        },
+        // Back goes back one level, to the playlist list — same as the Video player overrides.
+        onDismiss = onDone,
+    )
+}
+
+/** The repository line More › About shows. */
+internal const val GITHUB_REPO = "github.com/ahXN00/OwnTV"
+internal const val TELEGRAM_LINK = "t.me/owntvplayer"
 
 /**
  * Read-only viewer for the persisted playback error history (B5): the last ~10 failures with their
@@ -2618,139 +2600,10 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
  * who can't pull logcat can read/report what happened after dismissing the error screen.
  */
 @Composable
-private fun String.playbackDisplayName(): String = when (trim().lowercase(java.util.Locale.ROOT)) {
+internal fun String.playbackDisplayName(): String = when (trim().lowercase(java.util.Locale.ROOT)) {
     "mpv" -> stringResource(R.string.settings_player_mpv)
     "exoplayer", "exo" -> stringResource(R.string.settings_player_exoplayer)
     else -> this
-}
-
-@Composable
-internal fun PlaybackErrorLogDialog(onDismiss: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var refresh by remember { mutableStateOf(0) }
-    var exportPath by remember { mutableStateOf<String?>(null) }
-    var exportFailed by remember { mutableStateOf(false) }
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val entries by androidx.compose.runtime.produceState<List<tv.own.owntv.player.PlaybackErrorLog.Entry>?>(initialValue = null, refresh) {
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            tv.own.owntv.player.PlaybackErrorLog.read(context)
-        }
-    }
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(entries) { if (entries != null) runCatching { focus.requestFocus() } }
-    BackHandler { onDismiss() }
-    val dateContext = LocalContext.current
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        // scroll = false: the entries live in a LazyColumn, which manages its own scrolling. A plain
-        // verticalScroll column can't work here — with 25 entries and nothing focusable inside them the
-        // panel grew past the screen and the D-pad had no way to move the scroll, so the oldest entries
-        // were simply unreachable.
-        Column(modifier = Modifier.dialogPanel(width = 640.dp, padding = 28.dp, scroll = false)) {
-            Text(stringResource(R.string.settings_playback_error_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(6.dp))
-            Text(
-                stringResource(R.string.settings_playback_error_description_full),
-                style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(14.dp))
-            val list = entries
-            when {
-                list == null -> Text(stringResource(R.string.settings_loading), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                list.isEmpty() -> Text(stringResource(R.string.settings_no_playback_errors), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                // Each entry is focusable even though there is nothing to activate: on a TV that is the
-                // only thing that makes a list scroll. Up from the buttons walks back through the history.
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(list) { e ->
-                        FocusableSurface(
-                            onClick = {},
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            contentAlignment = Alignment.CenterStart,
-                            surface = GlassSurface.DIALOGS,
-                        ) { _ ->
-                            Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
-                                // The kind matters at a glance now: a log full of "Event" lines next to one
-                                // "Error" tells a very different story from ten failures in a row.
-                                val kindLabel = when (e.kind) {
-                                    tv.own.owntv.player.PlaybackErrorLog.Kind.ERROR -> stringResource(R.string.settings_playback_kind_error)
-                                    tv.own.owntv.player.PlaybackErrorLog.Kind.EVENT -> stringResource(R.string.settings_playback_kind_event)
-                                    tv.own.owntv.player.PlaybackErrorLog.Kind.REPORT -> stringResource(R.string.settings_playback_kind_report)
-                                }
-                                Text(
-                                    stringResource(
-                                        R.string.settings_playback_entry_with_kind,
-                                        formatBestDateTime(dateContext, "dMMM", e.atMs),
-                                        kindLabel,
-                                        e.engine.playbackDisplayName(),
-                                        stringResource(if (e.live) R.string.settings_live else R.string.settings_vod),
-                                    ),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (e.kind == tv.own.owntv.player.PlaybackErrorLog.Kind.ERROR) colors.primary else colors.onSurfaceVariant,
-                                )
-                                val reasonText = e.reason?.displayText() ?: e.legacyReason
-                                reasonText?.let {
-                                    Spacer(Modifier.height(2.dp))
-                                    Text(it, style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
-                                }
-                                e.mediaSpec()?.let { spec ->
-                                    Spacer(Modifier.height(2.dp))
-                                    Text(spec.displayText(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                                } ?: e.spec?.let { legacySpec ->
-                                    Spacer(Modifier.height(2.dp))
-                                    Text(legacySpec, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                                }
-                                e.raw?.let {
-                                    Spacer(Modifier.height(2.dp))
-                                    Text(it, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                                }
-                                Spacer(Modifier.height(2.dp))
-                                Text(stringResource(R.string.settings_device_details, e.model, e.android), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
-            }
-            exportPath?.let {
-                Spacer(Modifier.height(12.dp))
-                Text(stringResource(R.string.settings_backup_saved_to, it), style = MaterialTheme.typography.bodySmall, color = colors.primary)
-            }
-            if (exportFailed) {
-                Spacer(Modifier.height(12.dp))
-                Text(stringResource(R.string.settings_backup_export_error), style = MaterialTheme.typography.bodySmall, color = colors.favorite)
-            }
-            Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Export also includes the live diagnostics ring, so keep it available when the visible
-                // error list is empty; an engine handoff can leave useful diagnostics without an entry.
-                OwnTVButton(stringResource(R.string.settings_export), onClick = {
-                    scope.launch {
-                        val path = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                            tv.own.owntv.player.PlaybackErrorLog.export(context)
-                        }
-                        exportPath = path
-                        exportFailed = path == null
-                    }
-                }, style = OwnTVButtonStyle.SECONDARY)
-                if (!entries.isNullOrEmpty()) {
-                    OwnTVButton(stringResource(R.string.settings_clear_log), onClick = {
-                        tv.own.owntv.player.PlaybackErrorLog.clear(context)
-                        exportPath = null
-                        exportFailed = false
-                        refresh++
-                    }, style = OwnTVButtonStyle.SECONDARY)
-                }
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, modifier = Modifier.focusRequester(focus))
-            }
-        }
-    }
 }
 
 /**

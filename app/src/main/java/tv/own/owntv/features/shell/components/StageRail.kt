@@ -441,15 +441,15 @@ private fun RailProfile(open: Boolean, name: String, line: String?, onSwitchProf
     }
 }
 
-/** `.frail .av`: the profile initial on the orange gradient, 20/800 in #2A0D12. */
+/** `.frail .av`: the profile initial on the orange gradient, 20/800 in #2A0D12; More's profile row draws it 58 / 24. */
 @Composable
-private fun RailAvatar(initial: String) {
+internal fun RailAvatar(initial: String, size: Int = 46, textSize: Int = 20) {
     Box(
         Modifier
-            .size(46.mpx)
+            .size(size.mpx)
             .background(Brush.linearGradient(listOf(Color(0xFFFFB35C), Color(0xFFFF5F7A))), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(initial, style = stageText(20, 800), color = Color(0xFF2A0D12), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(initial, style = stageText(textSize, 800), color = Color(0xFF2A0D12), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

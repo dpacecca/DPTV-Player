@@ -75,6 +75,17 @@ import tv.own.owntv.ui.components.trapVerticalFocusExit
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.animationsOn
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.em
+import tv.own.owntv.ui.stage.StageSwitch
+import tv.own.owntv.ui.stage.StageTile
+import tv.own.owntv.ui.theme.StageColors
+import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.theme.mpxSp
+import tv.own.owntv.ui.theme.stageText
 
 /**
  * Settings → Local sync. The television's half of swapping data with the phone over the home Wi-Fi.
@@ -88,117 +99,105 @@ import tv.own.owntv.ui.theme.animationsOn
  * waits for someone to press OK.
  */
 @Composable
-fun LocalSyncScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun LocalSyncScreen(
+    onBack: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    /** More › Local sync: what OK / ▶ on the sheet focuses. Settings passes none and gets focus on open. */
+    entry: FocusRequester? = null,
+) {
     val vm: LocalSyncViewModel = koinViewModel()
     val paired by vm.paired.collectAsStateWithLifecycle()
     val hosting by vm.hosting.collectAsStateWithLifecycle()
 
-    val firstFocus = remember { FocusRequester() }
+    val ownFocus = remember { FocusRequester() }
+    val firstFocus = entry ?: ownFocus
     val connectFocus = remember { FocusRequester() }
     val scrollState = rememberScrollState()
     // Deliberately NOT started on entry. Which device hosts is the user's choice, on both apps and in
     // the same words — a television that quietly opened a listener the moment you looked at the
     // screen was making that choice for you, and gave you no way to unmake it.
     //
-    // Landing focus on the first row was a 50 ms timer against Compose's own initial-focus pass, and
-    // on a real TV the timer lost: the screen opened with nothing focused at all, and the first
-    // D-pad press then escaped to the top bar. This is the same retry-per-frame the rest of the app
-    // uses to get focus back after a dialog — it keeps asking until a request is accepted, so there
-    // is no duration to guess.
-    LaunchedEffect(Unit) { restoreAfterDialogClose(firstFocus, scrollState, 0) }
+    // Opened from Settings, focus lands on the first row by retrying per frame until a request is
+    // accepted. In More the page is shown while the sheet still has focus, so it waits for OK / ▶.
+    if (entry == null) LaunchedEffect(Unit) { restoreAfterDialogClose(firstFocus, scrollState, 0) }
     // Which row to put focus back on when a step popup closes.
     val stepFocus = rememberDialogFocusRestore(anyDialogOpen = vm.step != null, scrollState = scrollState)
-    // The listener runs while this screen does, and not a moment longer.
+    // The listener runs while this page does, and not a moment longer.
     DisposableEffect(Unit) { onDispose { vm.stopHosting() } }
-    BackHandler { if (vm.step != null) vm.cancel() else onBack() }
+    BackHandler(enabled = vm.step != null || onBack != null) { if (vm.step != null) vm.cancel() else onBack?.invoke() }
 
+    val listening = hosting as? CompanionServerState.Listening
+    // P8-06: title and description, Sync mode and Connect side by side, the paired devices. The PIN and
+    // QR card appears beside the devices while Sync mode is on, so nothing below it moves.
     Column(
         modifier = modifier
-            .fillMaxSize()
-            .roundedPanel()
             .verticalScroll(scrollState)
-            .padding(horizontal = 40.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .focusGroup()
+            .trapVerticalFocusExit(),
     ) {
-        val listening = hosting as? CompanionServerState.Listening
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) {
-                Header(
-                    stringResource(R.string.local_sync_title),
-                    onBack,
-                    subtitle = stringResource(R.string.local_sync_description),
-                )
-            }
-            SyncModePill(on = listening != null)
-        }
-        Spacer(Modifier.height(12.dp))
-
-        // Two columns, because the PIN and the QR used to be injected *between* the rows: turning
-        // Sync mode on shoved the paired devices a third of a screen down while the user was
-        // looking at them. Beside the list, nothing moves — the card simply appears.
-        //
-        // focusGroup + trapVerticalFocusExit is the other half of the focus fix: with nothing
-        // focused, a D-pad Down found no target inside this pane and escaped to the top bar's
-        // Search chip. Cancelling the vertical exit pins focus to the pane's edge row instead.
+        Text(stringResource(R.string.local_sync_title), style = stageText(42, 800, (-1).mpxSp), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(stringResource(R.string.more_sync_description), style = stageText(18, 500), color = StageColors.Muted, modifier = Modifier.padding(top = 10.mpx))
         Row(
-            modifier = Modifier.focusGroup().trapVerticalFocusExit(),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            Modifier.padding(top = 26.mpx).fillMaxWidth().height(IntrinsicSize.Min),
+            horizontalArrangement = Arrangement.spacedBy(20.mpx),
         ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                // Only the second group is labelled, exactly as the More screen's preview pane
-                // already labels this same feature. A "This device" heading would be a new
-                // user-visible string, and those live in core and ship in 24 languages.
-                // One state, one switch. Sync mode is what makes this device reachable at all —
-                // every other action on this screen, in either direction, needs the FAR device to
-                // have it on too, which is why it is the first row and why the failure message
-                // names where to find it.
-                Row2(
-                    // A listening port and an announcement on the LAN — a network state, not an
-                    // archive.
-                    icon = OwnTVIcon.NETWORK,
-                    title = stringResource(R.string.local_sync_mode),
-                    desc = stringResource(R.string.local_sync_mode_description),
-                    chip = stringResource(if (listening != null) R.string.common_on else R.string.common_off),
-                    primaryChip = listening != null,
-                    modifier = Modifier.focusRequester(firstFocus),
-                    onClick = { if (listening != null) vm.stopHosting() else vm.startHosting() },
-                )
-                Row2(
-                    // This starts discovery. REFRESH reads as "sync again", the far end of the flow.
-                    icon = OwnTVIcon.SEARCH,
-                    title = stringResource(R.string.local_sync_connect),
-                    desc = stringResource(R.string.local_sync_connect_description),
-                    modifier = Modifier.focusRequester(connectFocus),
-                    onClick = { stepFocus.value = connectFocus; vm.beginPairing() },
-                )
+            SyncTile(
+                icon = OwnTVIcon.PHONE,
+                title = stringResource(R.string.local_sync_mode),
+                body = stringResource(R.string.more_sync_mode_description),
+                onClick = { if (listening != null) vm.stopHosting() else vm.startHosting() },
+                modifier = Modifier.weight(1f).fillMaxHeight().focusRequester(firstFocus),
+            ) { StageSwitch(on = listening != null) }
+            SyncTile(
+                icon = OwnTVIcon.SEARCH,
+                title = stringResource(R.string.local_sync_connect),
+                body = stringResource(R.string.local_sync_connect_description),
+                onClick = { stepFocus.value = connectFocus; vm.beginPairing() },
+                modifier = Modifier.weight(1f).fillMaxHeight().focusRequester(connectFocus),
+            ) { OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(20.mpx)) }
+        }
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.mpx)) {
+            Column(Modifier.weight(1f)) {
                 if (paired.isNotEmpty()) {
-                    GroupLabel(stringResource(R.string.local_sync_paired_devices))
-                    // Only the devices whose names collide get a code, so a normal household
-                    // never sees one.
+                    Text(
+                        stringResource(R.string.local_sync_paired_devices).uppercase(java.util.Locale.getDefault()),
+                        style = stageText(13, 800, 0.13.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 30.mpx, bottom = 12.mpx),
+                    )
+                    // Only the devices whose names collide get a code, so a normal household never sees one.
                     val codes = shortCodes(paired)
+                    val sep = stringResource(R.string.content_epg_bits_separator)
                     paired.forEach { device ->
                         val rowFocus = remember(device.id) { FocusRequester() }
-                        Row2(
-                            icon = OwnTVIcon.PHONE,
-                            title = codes[device.id]
-                                ?.let { stringResource(R.string.local_sync_device_with_code, device.name, it) }
-                                ?: device.name,
-                            desc = lastSyncedText(device.lastSyncAt),
-                            chevron = true,
-                            modifier = Modifier.focusRequester(rowFocus),
+                        tv.own.owntv.features.more.StageActionRow(
+                            height = 104.mpx,
+                            focus = rowFocus,
                             onClick = { stepFocus.value = rowFocus; vm.chooseDevice(device) },
+                            leading = { focused ->
+                                Box(Modifier.width(60.mpx), contentAlignment = Alignment.Center) {
+                                    OwnTVIcon(OwnTVIcon.PHONE, if (focused) StageColors.Text else StageColors.Muted, Modifier.size(34.mpx))
+                                }
+                            },
+                            title = codes[device.id]?.let { stringResource(R.string.local_sync_device_with_code, device.name, it) } ?: device.name,
+                            line = listOfNotNull(device.address.takeIf { it.isNotBlank() }, lastSyncedText(device.lastSyncAt)).joinToString(sep),
+                            actions = listOf(
+                                tv.own.owntv.features.more.RowAction(stringResource(R.string.settings_sync_now), OwnTVIcon.REFRESH) { stepFocus.value = rowFocus; vm.chooseDevice(device) },
+                                tv.own.owntv.features.more.RowAction(stringResource(R.string.more_sync_unpair), OwnTVIcon.CLOSE) { vm.unpair(device) },
+                            ),
                         )
                     }
                 }
                 if (vm.busy) BusyRow()
+                vm.error?.let { failure ->
+                    Text(stringResource(failure.messageRes()), style = stageText(17, 500), color = StageColors.Danger, modifier = Modifier.padding(top = 16.mpx))
+                    OwnTVButton(stringResource(R.string.settings_close), onClick = vm::dismissError, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.padding(top = 8.mpx))
+                }
             }
-            listening?.let { HostingCard(it, vm.deviceName) }
+            listening?.let { Box(Modifier.padding(top = 30.mpx)) { HostingCard(it, vm.deviceName) } }
         }
 
-        // Each step is a popup over the list, not a block spliced into it. Inline, the step's first
-        // action was never focused — the header's Back arrow is the first focusable in the tree and
-        // took the ring instead. A popup owns its focus, so it cannot. This also matches the phone,
-        // which puts every one of these steps in a bottom sheet.
+        // Each step is a popup over the page, not a block spliced into it: a popup owns its focus.
         when (val step = vm.step) {
             null -> Unit
             is LocalSyncViewModel.Step.FindDevice -> StepPopup(vm::cancel) { FindDeviceBlock(vm) }
@@ -208,19 +207,29 @@ fun LocalSyncScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             is LocalSyncViewModel.Step.Confirm -> StepPopup(vm::cancel) { ConfirmBlock(vm, step) }
             is LocalSyncViewModel.Step.Result -> StepPopup(vm::cancel) { ResultBlock(vm, step) }
         }
+        Spacer(Modifier.height(40.mpx))
+    }
+}
 
-        vm.error?.let { failure ->
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = stringResource(failure.messageRes()),
-                style = MaterialTheme.typography.bodyMedium,
-                color = DestructiveRed,
-            )
-            Spacer(Modifier.height(8.dp))
-            OwnTVButton(stringResource(R.string.settings_close), onClick = vm::dismissError, style = OwnTVButtonStyle.SECONDARY)
+/** A focusable `.tile2` with an icon, a 21/800 title, a 16 muted line and a control on the right (switch, ›). */
+@Composable
+private fun SyncTile(
+    icon: OwnTVIcon,
+    title: String,
+    body: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    trailing: @Composable () -> Unit,
+) {
+    StageTile(modifier = modifier, onClick = onClick) { focused ->
+        Row(horizontalArrangement = Arrangement.spacedBy(18.mpx), verticalAlignment = Alignment.CenterVertically) {
+            OwnTVIcon(icon, if (focused) StageColors.Text else StageColors.Muted, Modifier.size(30.mpx))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = stageText(21, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(body, style = stageText(16, 500), color = if (focused) StageColors.Text.copy(alpha = 0.8f) else StageColors.Muted, modifier = Modifier.padding(top = 2.mpx))
+            }
+            trailing()
         }
-
-        Spacer(Modifier.height(24.dp))
     }
 }
 
@@ -474,8 +483,8 @@ private fun HostingCard(state: CompanionServerState.Listening, deviceName: Strin
     Column(
         modifier = Modifier
             .width(HOSTING_CARD_WIDTH)
-            .clip(RoundedCornerShape(20.dp))
-            .background(colors.surfaceContainerHigh)
+            .clip(RoundedCornerShape(26.mpx))
+            .background(Color.White.copy(alpha = 0.05f))
             .padding(horizontal = 18.dp, vertical = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

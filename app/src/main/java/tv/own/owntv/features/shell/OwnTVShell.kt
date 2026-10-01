@@ -213,6 +213,9 @@ fun OwnTVShell(
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var downloadsEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    var moreEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    // More › Settings opens today's Settings at a group, or with its search open (until P10 redraws it).
+    var settingsStart by remember { mutableStateOf<tv.own.owntv.features.shell.components.SettingsStart?>(null) }
     // The playlist pill's place on screen, where the playlist menu redraws it above its scrim.
     var playlistPillBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var miniHasFocus by remember { mutableStateOf(false) }
@@ -822,7 +825,7 @@ fun OwnTVShell(
             // the first press: the fallback below simply moved focus to the rail and nothing else
             // happened. Handled here as well so the answer is the same whichever handler fires; a
             // sub-screen of Settings still wins, because its handler is composed deeper than this.
-            selectedSection == MainSection.SETTINGS -> onSelectSection(MainSection.MORE)
+            selectedSection == MainSection.SETTINGS -> { restoreFocus = true; onSelectSection(MainSection.MORE) }
             focusedLayer == ShellLayer.SIDEBAR -> showExit = true
             else -> runCatching { sidebarFocus.requestFocus() }
         }
@@ -1065,10 +1068,22 @@ fun OwnTVShell(
                     when {
                         // Plan Z — the hub the rail's last item now opens. Settings is a row in it.
                         selectedSection == MainSection.MORE -> tv.own.owntv.features.more.MoreScreen(
-                            onOpenSettings = { onSelectSection(MainSection.SETTINGS) },
-                            onFullscreen = { openFullscreen() },
+                            profileName = profileName.ifBlank { stringResource(R.string.common_own_tv_user) },
+                            playlistLabel = playlistLabel,
+                            onSwitchProfile = onSwitchProfile,
+                            onOpenSettings = { group, search ->
+                                settingsStart = tv.own.owntv.features.shell.components.SettingsStart(group, search)
+                                onSelectSection(MainSection.SETTINGS)
+                            },
+                            // The same paths Home uses, so the engine ladder, resume and Continue all apply.
+                            onPlayChannel = { id -> scope.launch { if (liveVm.ensurePlayingByIdAsync(id)) openFullscreen(MainSection.LIVE_TV) } },
+                            onPlayMovie = { id, pos -> scope.launch { if (movieVm.playByIdAsync(id, pos) && !movieVm.externalPlayerOn.value) openFullscreen(MainSection.MOVIES) } },
+                            onPlayEpisode = { seriesId, epId, pos -> scope.launch { if (seriesVm.playFromHomeAsync(seriesId, epId, pos) && !seriesVm.externalPlayerOn.value) openFullscreen(MainSection.SERIES) } },
+                            onOpenSeries = { id -> seriesVm.openSeriesById(id); restoreFocus = true; onSelectSection(MainSection.SERIES) },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
-                            previewEnabled = playerMode == PlayerMode.NONE,
+                            onEntryHook = { moreEntry = it },
+                            restoreFocus = restoreFocus,
+                            onRestored = { restoreFocus = false },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
@@ -1084,9 +1099,11 @@ fun OwnTVShell(
                             onOpenPlaylist = { /* Phase 6: open setup/playlist */ },
                             // Settings is reached through More now, so Back out of its root goes
                             // back there rather than to the rail — one level out, not two.
-                            onBack = { onSelectSection(MainSection.MORE) },
+                            onBack = { restoreFocus = true; onSelectSection(MainSection.MORE) },
                             openEpgAdd = openEpgAdd,
                             onEpgAddConsumed = { openEpgAdd = false },
+                            start = settingsStart,
+                            onStartConsumed = { settingsStart = null },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
@@ -1329,6 +1346,7 @@ fun OwnTVShell(
                     MainSection.EPG, MainSection.LIVE_TV -> guideEntry
                     MainSection.MOVIES, MainSection.SERIES -> vodEntry
                     MainSection.DOWNLOADS -> downloadsEntry
+                    MainSection.MORE -> moreEntry
                     else -> null
                 },
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
@@ -1913,7 +1931,7 @@ private fun OfflineBanner() {
     }
 
 /** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
-private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS)
+private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS, MainSection.MORE)
 
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {

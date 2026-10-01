@@ -159,7 +159,7 @@ fun StageSearchField(
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun StageKeyHints(hints: List<Pair<String, String>>, modifier: Modifier = Modifier) {
+fun StageKeyHints(hints: List<Pair<String, String>>, modifier: Modifier = Modifier, textSize: Int = 17) {
     androidx.compose.foundation.layout.FlowRow(
         modifier,
         horizontalArrangement = Arrangement.spacedBy(26.mpx),
@@ -177,7 +177,7 @@ fun StageKeyHints(hints: List<Pair<String, String>>, modifier: Modifier = Modifi
                     contentAlignment = Alignment.Center,
                 ) { Text(key, style = stageText(14, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                 Box(Modifier.size(8.mpx, 1.mpx))
-                Text(label, style = stageText(17, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(label, style = stageText(textSize, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
