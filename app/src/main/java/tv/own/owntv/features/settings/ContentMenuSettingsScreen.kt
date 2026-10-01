@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -40,6 +38,9 @@ import androidx.tv.material3.Text
 import kotlinx.coroutines.flow.first
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.res.pluralStringResource
+import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.core.menu.applyMenuOrder
 import tv.own.owntv.core.menu.catalogue
 import tv.own.owntv.core.model.ContentMenu
@@ -50,7 +51,6 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVPopup
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
-import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.PopupFontTheme
@@ -83,51 +83,58 @@ private fun menuIcon(menu: ContentMenu) = when (menu) {
 @Composable
 fun ContentMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: SettingsViewModel = koinViewModel()
-    val colors = OwnTVTheme.colors
     val scrollState = rememberScrollState()
     val rowFocus = remember { ContentMenu.entries.associateWith { FocusRequester() } }
     var openMenu by remember { mutableStateOf<ContentMenu?>(null) }
     LaunchedEffect(Unit) { runCatching { rowFocus.getValue(ContentMenu.LIVE).requestFocus() } }
-    BackHandler { onBack() }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .roundedPanel()
-            .focusProperties { onEnter = { runCatching { rowFocus.getValue(ContentMenu.LIVE).requestFocus() } } }
-            .focusGroup()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 40.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+    // P10B-19: four menu rows and Reset; the panel lists the focused menu's actions in their order.
+    val about = stringResource(R.string.settings_content_menus_description)
+    StageFullPage(
+        parents = listOf(stringResource(R.string.settings_group_layout)),
+        title = stringResource(R.string.settings_content_menus_title),
+        count = pluralStringResource(R.plurals.settings_setting_count, ContentMenu.entries.size, ContentMenu.entries.size),
+        onBack = onBack,
+        modifier = modifier,
+        scroll = scrollState,
     ) {
-        Header(title = stringResource(R.string.settings_content_menus_title), onBack = onBack)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            stringResource(R.string.settings_content_menus_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(16.dp))
-
         ContentMenu.entries.forEach { menu ->
             val saved by remember(menu) { vm.menuOrder(menu) }.collectAsStateWithLifecycle(emptyList())
-            Row2(
+            val refs = catalogue(menu)
+            val order = applyMenuOrder(refs.map { it.key }, saved) { it }
+            val labels = order.mapNotNull { k -> refs.firstOrNull { it.key == k }?.labelRes }
+            val title = menuTitle(menu)
+            val value = SettingValue.Opens(stringResource(if (saved.isEmpty()) R.string.settings_subtitle_default else R.string.settings_live_latency_custom))
+            StageSettingRow(
                 icon = menuIcon(menu),
-                title = menuTitle(menu),
-                chip = stringResource(
-                    if (saved.isEmpty()) R.string.settings_subtitle_default else R.string.settings_live_latency_custom,
-                ),
-                primaryChip = saved.isNotEmpty(),
-                chevron = true,
+                title = title,
+                desc = null,
+                value = value,
                 onClick = { openMenu = menu },
+                help = SettingHelp(
+                    title, about,
+                    hints = settingHints(value, pinnable = false),
+                    extra = {
+                        Column(Modifier.padding(top = 16.mpx), verticalArrangement = Arrangement.spacedBy(4.mpx)) {
+                            labels.forEachIndexed { i, res ->
+                                Row(Modifier.height(36.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx), verticalAlignment = Alignment.CenterVertically) {
+                                    Text((i + 1).toString(), style = tv.own.owntv.ui.theme.stageText(17, 700), color = tv.own.owntv.ui.theme.StageColors.Dim, modifier = Modifier.width(22.mpx))
+                                    Text(stringResource(res), style = tv.own.owntv.ui.theme.stageText(17, 500), color = tv.own.owntv.ui.theme.StageColors.Text)
+                                }
+                            }
+                        }
+                    },
+                ),
                 modifier = Modifier.focusRequester(rowFocus.getValue(menu)),
             )
         }
-        Spacer(Modifier.height(10.dp))
-        Row2(
+        val reset = stringResource(R.string.common_reset)
+        StageSettingRow(
             icon = OwnTVIcon.REFRESH,
-            title = stringResource(R.string.common_reset),
+            title = reset,
+            desc = null,
+            value = null,
             onClick = { ContentMenu.entries.forEach { vm.setMenuOrder(it, emptyList()) } },
+            help = SettingHelp(reset, about, hints = settingHints(null, pinnable = false)),
         )
     }
 

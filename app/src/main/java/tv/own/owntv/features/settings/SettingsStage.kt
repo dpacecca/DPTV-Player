@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,7 +37,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -106,6 +109,8 @@ data class SettingHelp(
     val hints: List<Pair<String, String>> = emptyList(),
     /** Drawn under the text: Playlists lists the playlists themselves (P9-03). */
     val extra: (@Composable () -> Unit)? = null,
+    /** Drawn under the key hints (P10B: Customize's span help, owner). */
+    val footer: (@Composable () -> Unit)? = null,
 )
 
 /** The focused row's help, published by each row and drawn by the page's panel. */
@@ -200,7 +205,17 @@ fun StageSettingsPage(
     /** A short title with no "Settings ›" before it (the search results page). */
     crumb: Boolean = true,
     panelTop: (@Composable ColumnScope.() -> Unit)? = null,
-    rows: @Composable ColumnScope.() -> Unit,
+    /** A full page's path between "Settings ›" and [group] ("Layout" for Settings › Layout › Panel widths). */
+    parents: List<String> = emptyList(),
+    /** A full page's own tools in the band, left of the search (which then narrows to 360). */
+    tools: (@Composable RowScope.() -> Unit)? = null,
+    searchAutoEdit: Boolean = false,
+    onSearchActivate: (() -> Unit)? = null,
+    /** A list page's tool row (P10B: Customize's tabs, Sort, Filter…), above the rows. */
+    toolbar: (@Composable RowScope.() -> Unit)? = null,
+    /** A list too long for one column (Customize): drawn in place of [rows], given the rows' position. */
+    list: (@Composable (Modifier) -> Unit)? = null,
+    rows: @Composable ColumnScope.() -> Unit = {},
 ) {
     val searching = searchQuery.isNotBlank()
     androidx.compose.runtime.LaunchedEffect(searching) { if (searching) panel.help = null }
@@ -214,31 +229,48 @@ fun StageSettingsPage(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
+                    // A long path shortens before it pushes the tools and the search off the band.
+                    Modifier.weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(14.mpx),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (crumb) {
-                        Text(stringResource(R.string.common_nav_settings), style = stageText(42, 800, (-1f / 46f).em), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Dim, Modifier.size(30.mpx))
+                        (listOf(stringResource(R.string.common_nav_settings)) + parents).forEach { p ->
+                            Text(p, style = stageText(42, 800, (-1f / 46f).em), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Dim, Modifier.size(30.mpx))
+                        }
                     }
-                    Text(group, style = stageText(42, 800, (-1f / 46f).em), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // The title shortens first; the tools and the search on the right never move.
+                    Text(group, style = stageText(42, 800, (-1f / 46f).em), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Text(count, style = stageText(17, 700), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.mpx))
                 }
-                Text(count, style = stageText(17, 700), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.mpx))
-                Spacer(Modifier.weight(1f))
+                if (tools != null) Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically, content = tools)
                 StageSearchField(
                     query = searchQuery,
                     onQueryChange = onSearchQuery,
                     placeholder = stringResource(R.string.more_settings_search),
-                    modifier = Modifier.widthIn(max = 520.mpx).focusRequester(searchFocus),
+                    modifier = Modifier.widthIn(max = if (tools != null) 360.mpx else 520.mpx).focusRequester(searchFocus),
                     height = 52.mpx,
                     radius = 18.mpx,
                     horizontalPadding = 20.mpx,
+                    autoEdit = searchAutoEdit,
+                    onActivate = onSearchActivate,
                 )
             }
-            CompositionLocalProvider(LocalBringIntoViewSpec provides edgeScrollSpec) {
+            val rowsTop = if (toolbar != null) 300.mpx else 210.mpx
+            if (toolbar != null) {
+                Row(
+                    Modifier.padding(start = w * 50, top = 210.mpx).width(w * 1060).height(84.mpx).padding(horizontal = 6.mpx),
+                    horizontalArrangement = Arrangement.spacedBy(8.mpx),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = toolbar,
+                )
+            }
+            if (list != null) list(Modifier.padding(start = w * 50, top = rowsTop).width(w * 1060).fillMaxHeight())
+            else CompositionLocalProvider(LocalBringIntoViewSpec provides edgeScrollSpec) {
                 Column(
                     Modifier
-                        .padding(start = w * 50, top = 210.mpx)
+                        .padding(start = w * 50, top = rowsTop)
                         .width(w * 1060)
                         .fillMaxHeight()
                         .focusRequester(rowsFocus)
@@ -300,6 +332,7 @@ private fun SettingPanelBody(help: SettingHelp) {
         }
     }
     if (help.hints.isNotEmpty()) StageKeyHints(help.hints, Modifier.padding(top = 20.mpx), textSize = 15)
+    help.footer?.invoke()
 }
 
 private val PanelText = Color(0xFFD3DCD8)
@@ -344,6 +377,10 @@ fun StageSettingRow(
     /** The small accent dot after the title: this row is also pinned to Quick. */
     pinned: Boolean = false,
     enabled: Boolean = true,
+    /** Part of a span being picked (P10B): a faint accent wash. */
+    marked: Boolean = false,
+    /** Keep the panel on this row while focus is in its actions (P10B list pages). */
+    keepPanel: Boolean = false,
 ) {
     val a = stageAccent
     val panel = LocalSettingsPanel.current
@@ -353,6 +390,8 @@ fun StageSettingRow(
         radius = StageRadii.Row,
         focusStyle = StageFocus.FX,
         enabled = enabled,
+        // A span member, or the row whose actions the panel is showing while focus is in them.
+        idle = if (marked || keepPanel) Modifier.background(a.accent.copy(alpha = 0.14f), RoundedCornerShape(StageRadii.Row)) else Modifier,
         onLongClick = onLongClick?.let { l -> { longAt = android.os.SystemClock.uptimeMillis(); l() } },
         modifier = modifier
             .fillMaxWidth()
@@ -372,7 +411,7 @@ fun StageSettingRow(
             ),
     ) { focused ->
         // While focused the panel follows this row, value changes included.
-        if (focused && panel != null) androidx.compose.runtime.SideEffect { panel.help = help }
+        if ((focused || keepPanel) && panel != null) androidx.compose.runtime.SideEffect { panel.help = help }
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 22.mpx),
             horizontalArrangement = Arrangement.spacedBy(18.mpx),
@@ -534,4 +573,231 @@ fun PlaylistSyncList(sources: List<tv.own.owntv.core.database.entity.SourceEntit
             }
         }
     }
+}
+
+/**
+ * Settings search from a full page (P10B): set by Settings. OK on a full page's search field calls it,
+ * and Settings opens its search with the keyboard up.
+ */
+val LocalSettingsSearch = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+/**
+ * A page Settings opens full screen (P10B, references P10B-01 … 21), drawn exactly as a group page:
+ * the band (Settings › [parents] › [title] + [count], [tools], search), the rows and the context panel.
+ * Back returns to the group it was opened from.
+ */
+@Composable
+fun StageFullPage(
+    parents: List<String>,
+    title: String,
+    count: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    scroll: ScrollState = androidx.compose.foundation.rememberScrollState(),
+    rowsFocus: FocusRequester = remember { FocusRequester() },
+    tools: (@Composable RowScope.() -> Unit)? = null,
+    panelTop: (@Composable ColumnScope.() -> Unit)? = null,
+    toolbar: (@Composable RowScope.() -> Unit)? = null,
+    list: (@Composable (Modifier) -> Unit)? = null,
+    /** Off when the page handles Back itself (Customize cancels a span first). */
+    handleBack: Boolean = true,
+    rows: @Composable ColumnScope.() -> Unit = {},
+) {
+    androidx.activity.compose.BackHandler(enabled = handleBack) { onBack() }
+    val search = LocalSettingsSearch.current
+    CompositionLocalProvider(LocalStageRows provides true) {
+        StageSettingsPage(
+            group = title,
+            count = count,
+            searchQuery = "",
+            onSearchQuery = {},
+            scroll = scroll,
+            modifier = modifier,
+            rowsFocus = rowsFocus,
+            parents = parents,
+            tools = tools,
+            panelTop = panelTop,
+            onSearchActivate = { search?.invoke() },
+            toolbar = toolbar,
+            list = list,
+            rows = rows,
+        )
+    }
+}
+
+/**
+ * `fld` (P10B): a text field as a settings row — the label as the title, the value (or the dim
+ * placeholder) as its line, "Edit" on the right while focused. TV behaviour as [OwnTVTextField]: D-pad
+ * focus only highlights the row, OK opens the keyboard, Back or Done ends editing and calls [onDone].
+ * A password row shows dots; ▶ shows or hides it.
+ */
+@Composable
+fun StageFieldRow(
+    icon: OwnTVIcon,
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    help: SettingHelp,
+    modifier: Modifier = Modifier,
+    placeholder: String = "",
+    password: Boolean = false,
+    keyboardType: androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
+    onDone: () -> Unit = {},
+) {
+    val a = stageAccent
+    val panel = LocalSettingsPanel.current
+    var editing by remember { mutableStateOf(false) }
+    var shown by remember { mutableStateOf(false) }
+    val rowFocus = remember { FocusRequester() }
+    val fieldFocus = remember { FocusRequester() }
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val imeWatcher = tv.own.owntv.ui.components.LocalTvImeWatcher.current
+    val bring = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    fun stop() {
+        if (!editing) return
+        editing = false
+        keyboard?.hide()
+        runCatching { rowFocus.requestFocus() }
+        onDone()
+    }
+    androidx.compose.runtime.LaunchedEffect(editing) {
+        if (editing) {
+            imeWatcher?.onImeRequested()
+            runCatching { fieldFocus.requestFocus() }
+            keyboard?.show()
+            kotlinx.coroutines.delay(120)
+            runCatching { bring.bringIntoView() }
+        } else {
+            imeWatcher?.onImeDismissed()
+        }
+    }
+    StageSurface(
+        onClick = { editing = true },
+        radius = StageRadii.Row,
+        focusStyle = StageFocus.FX,
+        // While the keyboard is up the field holds focus, so the row keeps its focused look itself.
+        highlighted = editing,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(84.mpx)
+            .focusRequester(rowFocus)
+            .then(
+                if (password) Modifier.onPreviewKeyEvent { e ->
+                    if (!editing && e.key == Key.DirectionRight) {
+                        if (e.type == KeyEventType.KeyDown) shown = !shown
+                        true
+                    } else false
+                } else Modifier,
+            ),
+    ) { focused ->
+        val hints = listOfNotNull(
+            stringResource(R.string.common_ok) to stringResource(R.string.common_edit),
+            if (password) "▶" to stringResource(if (shown) R.string.common_hide else R.string.common_show) else null,
+            stringResource(R.string.common_back) to stringResource(R.string.common_nav_settings),
+        )
+        if ((focused || editing) && panel != null) androidx.compose.runtime.SideEffect { panel.help = help.copy(hints = hints) }
+        val lit = focused || editing
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 22.mpx),
+            horizontalArrangement = Arrangement.spacedBy(18.mpx),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OwnTVIcon(icon, StageColors.Muted, Modifier.size(24.mpx))
+            Column(Modifier.weight(1f)) {
+                Text(label, style = stageText(21, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Box(Modifier.padding(top = 3.mpx)) {
+                    if (value.isEmpty() && !editing) {
+                        Text(placeholder, style = stageText(15.5f, 500), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = value,
+                        onValueChange = onValueChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .bringIntoViewRequester(bring)
+                            .focusRequester(fieldFocus)
+                            .focusProperties { canFocus = editing }
+                            .onFocusChanged { if (editing && !it.isFocused) stop() }
+                            .onPreviewKeyEvent {
+                                if (it.key == Key.Back) {
+                                    if (it.type == KeyEventType.KeyUp) stop()
+                                    true
+                                } else false
+                            },
+                        textStyle = stageText(15.5f, 500).copy(color = if (focused || editing) FocusedDesc else StageColors.Text),
+                        singleLine = true,
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(a.accent),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = keyboardType, imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { stop() }),
+                        visualTransformation = if (password && !shown) androidx.compose.ui.text.input.PasswordVisualTransformation()
+                            else androidx.compose.ui.text.input.VisualTransformation.None,
+                    )
+                }
+            }
+            if (lit && !editing) Text(stringResource(R.string.common_edit), style = stageText(18, 700), color = a.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** One action of a list page's focused item, drawn in the panel (P10B): Edit, Re-sync, Hide… */
+class StageAction(
+    val icon: OwnTVIcon,
+    val label: String,
+    val onClick: () -> Unit,
+    val onLongClick: (() -> Unit)? = null,
+    val danger: Boolean = false,
+)
+
+/**
+ * The focused item's actions as a column of pills in the panel. ▶ from the row reaches them; ◀ and
+ * Back return to the row ([back]). A held OK runs [StageAction.onLongClick] (starts a span).
+ */
+@Composable
+fun StageActionColumn(actions: List<StageAction>, back: FocusRequester?, first: FocusRequester? = null) {
+    val a = stageAccent
+    Column(Modifier.padding(top = 20.mpx), verticalArrangement = Arrangement.spacedBy(8.mpx)) {
+        actions.forEachIndexed { i, act ->
+            var longAt by remember { mutableLongStateOf(0L) }
+            StageSurface(
+                onClick = { if (android.os.SystemClock.uptimeMillis() - longAt > 800) act.onClick() },
+                radius = StageRadii.Pill,
+                idle = Modifier.background(StageColors.ControlFill, RoundedCornerShape(StageRadii.Pill)),
+                onLongClick = act.onLongClick?.let { l -> { longAt = android.os.SystemClock.uptimeMillis(); l() } },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.mpx)
+                    .then(if (i == 0 && first != null) Modifier.focusRequester(first) else Modifier)
+                    .focusProperties { if (back != null) left = back }
+                    .onPreviewKeyEvent { e ->
+                        if (back != null && e.key == Key.Back) {
+                            if (e.type == KeyEventType.KeyUp) runCatching { back.requestFocus() }
+                            true
+                        } else false
+                    },
+            ) { focused ->
+                Row(
+                    Modifier.padding(horizontal = 18.mpx),
+                    horizontalArrangement = Arrangement.spacedBy(10.mpx),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val c = when {
+                        focused -> a.onAccent
+                        act.danger -> StageColors.Danger
+                        else -> StageColors.Text
+                    }
+                    OwnTVIcon(act.icon, if (focused) a.onAccent else if (act.danger) StageColors.Danger else a.accent, Modifier.size(20.mpx))
+                    Text(act.label, style = stageText(18, 700), color = c, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+/** The panel's SPAN / MULTI-SELECT block (P10B, owner): how a span is picked, and the CH keys that reach its end. */
+@Composable
+fun SpanHelpBlock() {
+    Box(Modifier.padding(top = 18.mpx, bottom = 14.mpx).fillMaxWidth().height(1.mpx).background(Color.White.copy(alpha = 0.1f)))
+    SettingPanelHeading(stringResource(R.string.settings_span_heading))
+    Text(stringResource(R.string.settings_span_help), style = stageText(15, 500), color = StageColors.Muted)
+    Text(stringResource(R.string.settings_span_ch_help), style = stageText(15, 500), color = StageColors.Muted, modifier = Modifier.padding(top = 6.mpx))
 }

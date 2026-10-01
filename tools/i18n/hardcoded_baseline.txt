@@ -11,10 +11,6 @@
 1	app/src/main/java/tv/own/owntv/features/customize/BulkRenameDialogs.kt	SUFFIX
 2	app/src/main/java/tv/own/owntv/features/customize/BulkRenameDialogs.kt	▾
 1	app/src/main/java/tv/own/owntv/features/customize/BulkRenameDialogs.kt	✕
-1	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsScreen.kt	↑
-1	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsScreen.kt	↓
-1	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsScreen.kt	⤒
-1	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsScreen.kt	⤓
 3	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsViewModel.kt	\0
 1	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	ALPHA
 1	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	PLAYLIST

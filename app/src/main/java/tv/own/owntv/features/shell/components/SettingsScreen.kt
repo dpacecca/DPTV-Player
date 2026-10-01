@@ -268,6 +268,10 @@ fun SettingsScreen(
     // Batch 4 · Settings search + quick toggles. Empty query = normal grouped list; a non-blank
     // query swaps the list for flat results that carry their group context ("Playback › HDR").
     var searchQuery by remember { mutableStateOf("") }
+    // Search opened (from More, or a full page's search): the plain search page, even while the query
+    // is still empty — not the group that happens to be selected behind it (owner, P10B).
+    var searchMode by remember { mutableStateOf(false) }
+    var searchFromMore by remember { mutableStateOf(false) }
     val searchFieldFocus = remember { FocusRequester() }
     // While searching, Back clears the query (and returns focus to the field) instead of leaving Settings.
     BackHandler(enabled = tab == SettingsTab.ROOT && searchQuery.isNotBlank()) {
@@ -314,6 +318,8 @@ fun SettingsScreen(
         tab = SettingsTab.ROOT
         start.group?.let { selectedGroup = it; displayedGroup = it }
         if (start.search) {
+            searchMode = true
+            searchFromMore = true
             for (attempt in 0 until 10) { kotlinx.coroutines.delay(50); if (runCatching { searchFieldFocus.requestFocus() }.isSuccess) break }
         }
         onStartConsumed()
@@ -413,6 +419,8 @@ fun SettingsScreen(
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by rememberSaveable { mutableStateOf<SettingsTab?>(null) }
+    var searchAutoEdit by remember { mutableStateOf(false) }
+    LaunchedEffect(searchAutoEdit) { if (searchAutoEdit) { kotlinx.coroutines.delay(1000); searchAutoEdit = false } }
     // Built from the enum, not hand-listed. It used to be a literal map of twenty entries, and
     // adding SettingsTab.RECORDING without adding a line to it crashed the whole Settings screen
     // with "Key RECORDING is missing in the map" — a `getValue` on a map that had quietly gone
@@ -450,25 +458,32 @@ fun SettingsScreen(
     // Settings now has the Stage canvas (P10). The sub-screens it opens are not redrawn yet, so they keep
     // the inset they had under the old top bar.
     val sub = modifier.padding(start = 6.dp, end = 6.dp, bottom = 6.dp, top = StageContentTop)
+    // A full page's search hands over to Settings search, keyboard up (P10B).
+    val openSearch: () -> Unit = { lastTab = null; searchQuery = ""; searchMode = true; searchFromMore = false; searchAutoEdit = true; tab = SettingsTab.ROOT }
+    if (tab != SettingsTab.ROOT) {
+    CompositionLocalProvider(tv.own.owntv.features.settings.LocalSettingsSearch provides openSearch) {
     when (tab) {
-        SettingsTab.LANGUAGE -> { LanguageSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
-        SettingsTab.SOURCES -> { ManageSourcesScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
-        SettingsTab.EPG -> { tv.own.owntv.features.settings.EpgSourcesScreen(onBack = { tab = SettingsTab.ROOT; consumeEpgAdd = false }, modifier = sub, startOnAdd = consumeEpgAdd); return }
-        SettingsTab.BACKUP -> { Toned(TileTone.TERTIARY) { BackupScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
-        SettingsTab.LOCAL_SYNC -> { Toned(TileTone.TERTIARY) { LocalSyncScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
-        SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
-        SettingsTab.HOME -> { Toned(TileTone.SECONDARY) { HomeSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
-        SettingsTab.NETWORK -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
-        SettingsTab.DNS -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.DnsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
-        SettingsTab.METADATA -> { tv.own.owntv.features.settings.MetadataSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
-        SettingsTab.OPEN_SUBTITLES -> { tv.own.owntv.features.settings.OpenSubtitlesAccountScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
-        SettingsTab.WEATHER -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }; return }
-        SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
-        SettingsTab.CONTENT_MENUS -> { tv.own.owntv.features.settings.ContentMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
-            SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
-            SettingsTab.GUIDE_WIDTH -> { tv.own.owntv.features.settings.GuideWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
-            SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub); return }
+        SettingsTab.LANGUAGE -> { LanguageSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }
+        SettingsTab.SOURCES -> { ManageSourcesScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
+        SettingsTab.EPG -> { tv.own.owntv.features.settings.EpgSourcesScreen(onBack = { tab = SettingsTab.ROOT; consumeEpgAdd = false }, modifier = modifier, startOnAdd = consumeEpgAdd) }
+        SettingsTab.BACKUP -> { Toned(TileTone.TERTIARY) { BackupScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) } }
+        SettingsTab.LOCAL_SYNC -> { Toned(TileTone.TERTIARY) { LocalSyncScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) } }
+        SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
+        SettingsTab.HOME -> { Toned(TileTone.SECONDARY) { HomeSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) } }
+        SettingsTab.NETWORK -> { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
+        SettingsTab.DNS -> { tv.own.owntv.features.settings.DnsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
+        SettingsTab.METADATA -> { tv.own.owntv.features.settings.MetadataSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }
+        SettingsTab.OPEN_SUBTITLES -> { tv.own.owntv.features.settings.OpenSubtitlesAccountScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }
+        SettingsTab.WEATHER -> { Toned(TileTone.SECONDARY) { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) } }
+        SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }
+        SettingsTab.CONTENT_MENUS -> { tv.own.owntv.features.settings.ContentMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
+            SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
+            SettingsTab.GUIDE_WIDTH -> { tv.own.owntv.features.settings.GuideWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
+            SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }
             SettingsTab.ROOT -> Unit
+    }
+    }
+    return
     }
 
     // Only at the root: every sub-screen registers its own handler, which is nested deeper and
@@ -1133,10 +1148,16 @@ fun SettingsScreen(
             .filter { e -> e.title.lowercase().contains(needle) }
             .distinctBy { it.group + it.title }
     }
-    val searching = searchQuery.isNotBlank()
+    val searching = searchQuery.isNotBlank() || searchMode
+    // Back from an empty search: to More when it was opened there, else to the group page.
+    BackHandler(enabled = tab == SettingsTab.ROOT && searchMode && searchQuery.isBlank()) {
+        searchMode = false
+        if (searchFromMore) { searchFromMore = false; onBack?.invoke() }
+    }
     val group = SettingsGroup.entries[selectedGroup.coerceIn(0, SettingsGroup.entries.size - 1)]
     val inQuick = group == SettingsGroup.QUICK
     val pageCount = when {
+        searching && searchQuery.isBlank() -> ""
         searching -> pluralStringResource(R.plurals.settings_match_count, searchResults.size, searchResults.size)
         group.video != null -> videoGroupCount(group.video, settingsVm).let { n ->
             val all = n + if (group == SettingsGroup.WATCHING) 4 else 0
@@ -1174,9 +1195,11 @@ fun SettingsScreen(
             searchFocus = searchFieldFocus,
             rowsFocus = rowsFocus,
             modifier = modifier,
+            searchAutoEdit = searchAutoEdit,
             panelTop = if (group == SettingsGroup.APPEARANCE && !searching) ({ tv.own.owntv.features.settings.SettingsLivePreview() }) else null,
         ) {
             when {
+                searching && searchQuery.isBlank() -> Unit
                 searching && searchResults.isEmpty() -> StageSettingsNote(stringResource(R.string.settings_no_settings_match, searchQuery.trim()), null)
                 searching -> searchResults.forEach { e ->
                     StageSearchResultRow(e.icon, e.group, e.title, e.chip, onClick = e.onClick)

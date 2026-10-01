@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,9 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -43,6 +40,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
+import androidx.compose.ui.res.pluralStringResource
+import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.core.settings.PanelSection
 import tv.own.owntv.core.settings.PanelShares
 import tv.own.owntv.core.settings.PanelWidthLimits
@@ -61,7 +60,6 @@ import tv.own.owntv.ui.components.PreviewPanelFill
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.restoreAfterDialogClose
-import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -80,7 +78,6 @@ import tv.own.owntv.ui.theme.OwnTVTheme
 @Composable
 fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: SettingsViewModel = koinViewModel()
-    val colors = OwnTVTheme.colors
 
     var open by remember { mutableStateOf<PanelSection?>(null) }
     val rowFocus = remember { PanelSection.entries.associateWith { FocusRequester() } }
@@ -96,87 +93,80 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
         restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
         dialogReturn = null
     }
-    BackHandler { onBack() }
-
+    // P10B-17: one row per screen, named with the layout it uses now; the panel draws that layout at its widths.
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val rowWidth = maxWidth - BrowseContainerPadding * 2
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .roundedPanel()
-                .focusProperties { onEnter = { runCatching { rowFocus.getValue(PanelSection.LIVE).requestFocus() } } }
-                .focusGroup()
-                .verticalScroll(scrollState)
-                .padding(horizontal = 40.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+        val vodLayout by vm.vodLayout.collectAsStateWithLifecycle()
+        val cinematic = vodLayout == tv.own.owntv.core.settings.SettingsRepository.VodLayout.CINEMATIC
+        val liveLayout by vm.liveLayout.collectAsStateWithLifecycle()
+        val liveStage = liveLayout == tv.own.owntv.core.settings.SettingsRepository.LiveLayout.STAGE
+        val liveStageSaved by vm.liveStageWidths.collectAsStateWithLifecycle()
+        val detailsHeights = PanelSection.entries.associateWith {
+            vm.cinematicDetailsHeight(it).collectAsStateWithLifecycle().value
+        }
+        val sheetWidths = PanelSection.entries.associateWith {
+            vm.cinematicSheetWidth(it).collectAsStateWithLifecycle().value
+        }
+        val rules = stringResource(R.string.settings_panel_width_help, *NO_ARGS)
+        val sep = stringResource(R.string.content_epg_bits_separator)
+        StageFullPage(
+            parents = listOf(stringResource(R.string.settings_group_layout)),
+            title = stringResource(R.string.settings_panel_width),
+            count = pluralStringResource(R.plurals.settings_setting_count, PanelSection.entries.size, PanelSection.entries.size),
+            onBack = onBack,
+            modifier = Modifier,
+            scroll = scrollState,
         ) {
-            Header(title = stringResource(R.string.settings_panel_width), onBack = onBack)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                stringResource(R.string.settings_panel_width_screen_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(16.dp))
-
-            val vodLayout by vm.vodLayout.collectAsStateWithLifecycle()
-            val cinematic = vodLayout == tv.own.owntv.core.settings.SettingsRepository.VodLayout.CINEMATIC
-            val liveLayout by vm.liveLayout.collectAsStateWithLifecycle()
-            val liveStage = liveLayout == tv.own.owntv.core.settings.SettingsRepository.LiveLayout.STAGE
-            val liveStageSaved by vm.liveStageWidths.collectAsStateWithLifecycle()
-            val detailsHeights = PanelSection.entries.associateWith {
-                vm.cinematicDetailsHeight(it).collectAsStateWithLifecycle().value
-            }
-            val sheetWidths = PanelSection.entries.associateWith {
-                vm.cinematicSheetWidth(it).collectAsStateWithLifecycle().value
-            }
             PanelSection.entries.forEach { section ->
                 val enabled by vm.panelWidthEnabled.getValue(section).collectAsStateWithLifecycle()
                 val shares by vm.panelShares.getValue(section).collectAsStateWithLifecycle()
                 val current = shares ?: defaultPanelShares(section, rowWidth)
                 val stageWidths = (liveStageSaved ?: tv.own.owntv.core.settings.LiveStageWidths.DEFAULT)
                     .takeIf { section == PanelSection.LIVE && liveStage }
-                Row2(
+                val vodCinematic = cinematic && section != PanelSection.LIVE
+                val layoutName = stringResource(
+                    when {
+                        section == PanelSection.LIVE && liveStage -> R.string.settings_live_layout_stage
+                        vodCinematic -> R.string.settings_vod_layout_cinematic
+                        else -> R.string.settings_vod_layout_separate
+                    },
+                )
+                val title = sectionTitle(section) + sep + layoutName
+                val value = SettingValue.Opens(stringResource(if (enabled) R.string.settings_live_latency_custom else R.string.settings_subtitle_default))
+                StageSettingRow(
                     icon = when (section) {
                         PanelSection.LIVE -> OwnTVIcon.LIVE_TV
                         PanelSection.MOVIES -> OwnTVIcon.MOVIES
                         PanelSection.SERIES -> OwnTVIcon.SERIES
                     },
-                    title = sectionTitle(section),
+                    title = title,
                     desc = if (stageWidths != null) {
                         stringResource(R.string.settings_panel_width_summary_stage, stageWidths.sheet, stageWidths.list, stageWidths.preview)
-                    } else if (cinematic && section != PanelSection.LIVE) {
+                    } else if (vodCinematic) {
                         // Stage Cinematic: the categories are a sheet over the full-width titles.
                         stringResource(R.string.settings_panel_width_summary_cinematic, sheetWidths.getValue(section), detailsHeights.getValue(section))
                     } else stringResource(
                         R.string.settings_panel_width_summary,
                         current.category,
                         current.list,
-                        // In Cinematic the third number is a height held separately, so the summary
-                        // must show THAT value — not the preview share, which is always 0 there.
-                        if (cinematic && section != PanelSection.LIVE) {
-                            stringResource(R.string.settings_panel_width_details_height)
-                        } else {
-                            previewLabel(section)
-                        },
-                        if (cinematic && section != PanelSection.LIVE) detailsHeights.getValue(section) else current.preview,
+                        previewLabel(section),
+                        current.preview,
                     ),
-                    chip = stringResource(if (enabled) R.string.settings_live_latency_custom else R.string.settings_subtitle_default),
-                    primaryChip = enabled,
-                    chevron = true,
+                    value = value,
                     onClick = { dialogReturn = rowFocus.getValue(section); open = section },
+                    help = SettingHelp(
+                        title, rules,
+                        hints = settingHints(value, pinnable = false),
+                        extra = {
+                            androidx.compose.foundation.layout.Box(Modifier.padding(top = 18.mpx)) {
+                                if (stageWidths != null) StageWidthDiagram(stageWidths)
+                                else PanelWidthDiagram(current, vodCinematic, detailsHeights.getValue(section))
+                            }
+                        },
+                    ),
                     modifier = Modifier.focusRequester(rowFocus.getValue(section)),
                 )
             }
-
-            Spacer(Modifier.height(12.dp))
-            GroupLabel(stringResource(R.string.settings_how_it_works))
-            Text(
-                stringResource(R.string.settings_panel_width_help, *NO_ARGS),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-            )
         }
 
         open?.let { section ->

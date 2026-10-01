@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +34,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
+import androidx.compose.ui.res.pluralStringResource
+import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.core.settings.GuideWidthLimits
 import tv.own.owntv.core.settings.GuideWidthShares
 import tv.own.owntv.ui.components.OwnTVButton
@@ -43,7 +43,6 @@ import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
-import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 
@@ -61,47 +60,38 @@ fun GuideWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
     LaunchedEffect(showDialog) {
         if (!showDialog) runCatching { rowFocus.requestFocus() }
     }
-    BackHandler { onBack() }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .roundedPanel()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 40.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+    // P10B-18: the TV Guide row and Reset; the panel draws the two columns at their widths.
+    val rules = stringResource(R.string.settings_guide_width_help, *NO_ARGS)
+    StageFullPage(
+        parents = listOf(stringResource(R.string.settings_group_layout)),
+        title = stringResource(R.string.settings_guide_width),
+        count = pluralStringResource(R.plurals.settings_setting_count, 2, 2),
+        onBack = onBack,
+        modifier = modifier,
     ) {
-        Header(title = stringResource(R.string.settings_guide_width), onBack = onBack)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            stringResource(R.string.settings_guide_width_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = OwnTVTheme.colors.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(16.dp))
-        Row2(
+        val title = stringResource(R.string.content_epg_title)
+        val value = SettingValue.Opens(stringResource(if (enabled) R.string.settings_live_latency_custom else R.string.settings_subtitle_default))
+        StageSettingRow(
             icon = OwnTVIcon.EPG,
-            title = stringResource(R.string.content_epg_title),
-            desc = stringResource(
-                R.string.settings_guide_width_summary,
-                current.channels,
-                current.epg,
-            ),
-            chip = stringResource(
-                if (enabled) R.string.settings_live_latency_custom else R.string.settings_subtitle_default,
-            ),
-            primaryChip = enabled,
-            chevron = true,
-            modifier = Modifier.focusRequester(rowFocus),
+            title = title,
+            desc = stringResource(R.string.settings_guide_width_summary, current.channels, current.epg),
+            value = value,
             onClick = { showDialog = true },
+            help = SettingHelp(
+                title, rules,
+                hints = settingHints(value, pinnable = false),
+                extra = { androidx.compose.foundation.layout.Box(Modifier.padding(top = 18.mpx)) { GuideWidthDiagram(current) } },
+            ),
+            modifier = Modifier.focusRequester(rowFocus),
         )
-        Spacer(Modifier.height(12.dp))
-        GroupLabel(stringResource(R.string.settings_how_it_works))
-        Text(
-            stringResource(R.string.settings_guide_width_help, *NO_ARGS),
-            style = MaterialTheme.typography.bodyMedium,
-            color = OwnTVTheme.colors.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+        val reset = stringResource(R.string.common_reset)
+        StageSettingRow(
+            icon = OwnTVIcon.REFRESH,
+            title = reset,
+            desc = stringResource(R.string.settings_guide_width_summary, GuideWidthLimits.defaults.channels, GuideWidthLimits.defaults.epg),
+            value = null,
+            onClick = { vm.setGuideWidths(false, GuideWidthLimits.defaults) },
+            help = SettingHelp(reset, rules, hints = settingHints(null, pinnable = false)),
         )
     }
 

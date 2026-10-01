@@ -42,17 +42,19 @@
 1	file-path	app/src/main/java/tv/own/owntv/OwnTVApp.kt	image_cache
 1	performance	app/src/main/java/tv/own/owntv/OwnTVApp.kt	koin-started
 3	empty	app/src/main/java/tv/own/owntv/core/i18n/LocalizedContent.kt	\0
+1	empty	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsScreen.kt	\0
 1	assertion	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsViewModel.kt	EPISODE not applicable
 2	assertion	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsViewModel.kt	EPISODE not applicable to category items
-3	empty	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	\0
+4	empty	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	\0
 3	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	HIDE
+2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	NEW
+2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	PIN_CHANGE
+2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	PIN_REMOVE
+3	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	PIN_SET
 2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	SHOW
 1	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	confirm
 1	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	first
-1	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	↑
-1	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	↓
-1	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	⤒
-1	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	⤓
+1	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	▶
 1	empty	app/src/main/java/tv/own/owntv/features/customize/CustomizeViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/downloads/DownloadsScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/downloads/DownloadsScreen.kt	content://
@@ -267,7 +269,8 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/DeveloperScreen.kt	Forces a fresh TMDB trending download for every playlist, ignoring the multi-day fetch timer.
 1	technical	app/src/main/java/tv/own/owntv/features/settings/DeveloperScreen.kt	Rebuild Now Trending
 1	technical	app/src/main/java/tv/own/owntv/features/settings/DeveloperScreen.kt	Stage specimen
-3	empty	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesScreen.kt	\0
+4	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesScreen.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesScreen.kt	▶
 1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	add
 1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	manual_resync
 1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	update
@@ -281,7 +284,8 @@
 1	url	app/src/main/java/tv/own/owntv/features/settings/LocalSyncScreen.kt	http://
 1	technical	app/src/main/java/tv/own/owntv/features/settings/LocalSyncScreen.kt	localSyncBusy
 1	technical	app/src/main/java/tv/own/owntv/features/settings/LocalSyncScreen.kt	localSyncBusyAngle
-5	empty	app/src/main/java/tv/own/owntv/features/settings/ManageSourcesScreen.kt	\0
+7	empty	app/src/main/java/tv/own/owntv/features/settings/ManageSourcesScreen.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/settings/ManageSourcesScreen.kt	▶
 5	empty	app/src/main/java/tv/own/owntv/features/settings/MetadataSettingsScreen.kt	\0
 2	locale	app/src/main/java/tv/own/owntv/features/settings/MetadataSettingsScreen.kt	ar
 2	locale	app/src/main/java/tv/own/owntv/features/settings/MetadataSettingsScreen.kt	bg
@@ -326,7 +330,7 @@
 2	locale	app/src/main/java/tv/own/owntv/features/settings/MetadataSettingsScreen.kt	zh
 2	technical	app/src/main/java/tv/own/owntv/features/settings/MetadataSettingsScreen.kt	•
 1	technical	app/src/main/java/tv/own/owntv/features/settings/NavigationSettingsPopup.kt	$value ›
-7	empty	app/src/main/java/tv/own/owntv/features/settings/NetworkSettingsScreen.kt	\0
+5	empty	app/src/main/java/tv/own/owntv/features/settings/NetworkSettingsScreen.kt	\0
 2	empty	app/src/main/java/tv/own/owntv/features/settings/OpenSubtitlesAccountScreen.kt	\0
 1	locale	app/src/main/java/tv/own/owntv/features/settings/OpenSubtitlesAccountScreen.kt	${locale.language}-${locale.country}
 1	regex	app/src/main/java/tv/own/owntv/features/settings/OpenSubtitlesAccountScreen.kt	^(\\d{1,2}):(\\d{2}):(\\d{2})$
@@ -477,7 +481,9 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_volume_leveling
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_zoom
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsLivePreview.kt	w780
+2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsStage.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsStage.kt	·
+1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsStage.kt	▶
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsStage.kt	◀ ▶
 32	empty	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	FIT
@@ -674,7 +680,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/CategoryRail.kt	__rail_search__
 1	empty	app/src/main/java/tv/own/owntv/features/shell/components/MediaDetailsScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/MediaDetailsScreen.kt	·
-18	empty	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	\0
+20	empty	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	\0
 5	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#
 2	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#%06X
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#F5B400

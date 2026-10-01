@@ -34,6 +34,11 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
@@ -209,6 +214,17 @@ fun StageRail(
                             cancelFocusChange()
                         }
                     }
+                }
+                // ▶ always leaves for the content (P10B B1). The open rail can cover the content's left
+                // column (More's sheet), and then the D-pad search finds nothing to its right and focus
+                // simply stayed in the rail.
+                .onKeyEvent { e ->
+                    val out = if (rtl) Key.DirectionLeft else Key.DirectionRight
+                    if (e.key != out) return@onKeyEvent false
+                    if (e.type == KeyEventType.KeyDown) scope.launch {
+                        if (enterContent?.invoke() != true) runCatching { contentFocusRequester.requestFocus() }
+                    }
+                    true
                 }
                 .focusGroup()
                 .stageGlass(if (open) 34.mpx else 42.mpx, overContent = true)

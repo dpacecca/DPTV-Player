@@ -70,10 +70,16 @@ fun StageSearchField(
     height: Dp = 48.mpx,
     radius: Dp = 15.mpx,
     horizontalPadding: Dp = 18.mpx,
+    /** Open the keyboard as soon as the field appears (Settings search reached from a full page). */
+    autoEdit: Boolean = false,
+    /** Set = OK calls this instead of editing here (a full page's search hands over to Settings search). */
+    onActivate: (() -> Unit)? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pillFocused by interaction.collectIsFocusedAsState()
     var editing by remember { mutableStateOf(false) }
+    // After the page's own focus restore has run, so it cannot take the field straight back.
+    LaunchedEffect(autoEdit) { if (autoEdit) { kotlinx.coroutines.delay(250); editing = true } }
     val pillFocus = remember { FocusRequester() }
     val fieldFocus = remember { FocusRequester() }
     val bringIntoView = remember { BringIntoViewRequester() }
@@ -104,7 +110,7 @@ fun StageSearchField(
             .background(StageColors.ControlFill, RoundedCornerShape(radius))
             .then(if (pillFocused || editing) Modifier.drawBehind { drawOuterRing(focus, 2.mpx.toPx(), radius.toPx()) } else Modifier)
             .focusRequester(pillFocus)
-            .clickable(interaction, null) { editing = true },
+            .clickable(interaction, null) { if (onActivate != null) onActivate() else editing = true },
         contentAlignment = Alignment.CenterStart,
     ) {
         Row(

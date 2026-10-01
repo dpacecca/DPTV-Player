@@ -1,7 +1,6 @@
 package tv.own.owntv.features.settings
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -30,11 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.pluralStringResource
@@ -44,6 +40,8 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
+import tv.own.owntv.ui.theme.mpx
+import androidx.compose.ui.focus.onFocusChanged
 import tv.own.owntv.core.epg.EpgSource
 import tv.own.owntv.ui.components.DayStepperDialog
 import tv.own.owntv.core.settings.EpgAutoRefresh
@@ -94,8 +92,6 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
     val contextFocus = remember { FocusRequester() }
     val firstRowFocus = remember { FocusRequester() }
 
-    BackHandler { onBack() }
-
     // Grab focus inside the list (not on "Add EPG") whenever the list view is showing.
     LaunchedEffect(adding, editing, confirmDelete) {
         if (adding || editing != null || confirmDelete != null) return@LaunchedEffect
@@ -142,70 +138,52 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
                 adding = false; editing = null
             },
             onCancel = { adding = false; editing = null },
-            modifier = modifier,
+            // The form is not redrawn yet (P10B step 4): it keeps the old inset under the top bar.
+            modifier = modifier.padding(start = 6.dp, end = 6.dp, bottom = 6.dp, top = tv.own.owntv.features.shell.components.StageContentTop),
         )
+        BackHandler { adding = false; editing = null }
         return
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .roundedPanel()
-            // D-pad entry from outside should fall INSIDE the menu — last-acted row, else first row,
-            // else "Add EPG" (only when the list is empty). Previously this always went to "Add EPG".
-            .focusProperties {
-                onEnter = {
-                    val tid = contextId
-                    when {
-                        tid != null && sources.any { it.id == tid } -> runCatching { contextFocus.requestFocus() }
-                        sources.isNotEmpty() -> runCatching { firstRowFocus.requestFocus() }
-                        else -> runCatching { addFocus.requestFocus() }
-                    }
-                }
-            }
-            .focusGroup()
-            .padding(horizontal = 40.dp, vertical = 28.dp),
+    // P10B-11: the guides as rows; the focused one's Re-sync / Edit / Delete in the panel.
+    val actionsFocus = remember { FocusRequester() }
+    StageFullPage(
+        parents = listOf(stringResource(R.string.settings_group_sources)),
+        title = stringResource(R.string.settings_epg_sources_title),
+        count = "",
+        onBack = onBack,
+        modifier = modifier,
+        toolbar = {
+            tv.own.owntv.ui.stage.StageTool(
+                stringResource(R.string.content_epg_add), onClick = { adding = true },
+                icon = OwnTVIcon.ADD, boxed = true, modifier = Modifier.focusRequester(addFocus),
+            )
+        },
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.settings_epg_sources_title), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
-            Spacer(Modifier.weight(1f))
-            OwnTVButton(stringResource(R.string.content_epg_add), onClick = { adding = true }, icon = OwnTVIcon.ADD, modifier = Modifier.focusRequester(addFocus))
-        }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            stringResource(R.string.settings_epg_sources_description),
-            style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.widthIn(max = 700.dp),
-        )
-        Spacer(Modifier.height(20.dp))
-
-        if (sources.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.settings_epg_sources_empty), color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
-            }
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                itemsIndexed(sources, key = { _, it -> it.id }) { index, source ->
-                    val syncState by remember(source.id) { vm.observeSync(source.id) }
-                        .collectAsStateWithLifecycle(EpgSyncState.Idle)
-                    EpgRow(
-                        source = source,
-                        autoRefresh = autoRefreshMap[source.id] ?: EpgRefresh.OFF,
-                        counts = { vm.counts(source.id) },
-                        syncState = syncState,
-                        deleting = source.id in deletingIds,
-                        // Bind contextFocus to the acted-on row (restore target), firstRowFocus to row 0.
-                        rowModifier = when {
-                            source.id == contextId -> Modifier.focusRequester(contextFocus)
-                            index == 0 -> Modifier.focusRequester(firstRowFocus)
-                            else -> Modifier
-                        },
-                        onResync = { contextId = source.id; contextIndex = index; vm.resync(source) },
-                        onCancelSync = { contextId = source.id; contextIndex = index; vm.cancelSync(source) },
-                        onEdit = { contextId = source.id; contextIndex = index; editing = source },
-                        onDelete = { contextId = source.id; contextIndex = index; confirmDelete = source },
-                    )
-                }
-            }
+        if (sources.isEmpty()) StageSettingsNote(stringResource(R.string.settings_epg_sources_empty), null)
+        sources.forEachIndexed { index, source ->
+            val syncState by remember(source.id) { vm.observeSync(source.id) }
+                .collectAsStateWithLifecycle(EpgSyncState.Idle)
+            EpgRow(
+                source = source,
+                autoRefresh = autoRefreshMap[source.id] ?: EpgRefresh.OFF,
+                counts = { vm.counts(source.id) },
+                syncState = syncState,
+                deleting = source.id in deletingIds,
+                // Bind contextFocus to the acted-on row (restore target), firstRowFocus to row 0.
+                rowFocus = when {
+                    source.id == contextId -> contextFocus
+                    index == 0 -> firstRowFocus
+                    else -> null
+                },
+                actionsFocus = actionsFocus,
+                keepPanel = source.id == contextId,
+                onFocused = { contextId = source.id; contextIndex = index },
+                onResync = { contextId = source.id; contextIndex = index; vm.resync(source) },
+                onCancelSync = { contextId = source.id; contextIndex = index; vm.cancelSync(source) },
+                onEdit = { contextId = source.id; contextIndex = index; editing = source },
+                onDelete = { contextId = source.id; contextIndex = index; confirmDelete = source },
+            )
         }
     }
 
@@ -249,13 +227,15 @@ private fun EpgRow(
     counts: suspend () -> Triple<Int, Int, Int>,
     syncState: EpgSyncState,
     deleting: Boolean,
-    rowModifier: Modifier,
+    rowFocus: FocusRequester?,
+    actionsFocus: FocusRequester,
+    keepPanel: Boolean,
+    onFocused: () -> Unit,
     onResync: () -> Unit,
     onCancelSync: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
     val count by produceState<Triple<Int, Int, Int>?>(initialValue = null, source.id, source.lastSyncAt, source.lastError) {
         value = runCatching { counts() }.getOrNull()
     }
@@ -267,111 +247,97 @@ private fun EpgRow(
             null
         }
     }
-    Row(
-        modifier = rowModifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.surfaceContainerHigh).padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(source.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                if (deleting) {
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        stringResource(R.string.settings_epg_sources_deleting),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colors.onPrimaryContainer,
-                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (activeSync != null) {
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        syncPercent?.let { stringResource(R.string.settings_epg_sources_syncing_percent, it) } ?: stringResource(R.string.settings_epg_sources_syncing_label),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colors.onPrimaryContainer,
-                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (autoRefresh.mode != EpgAutoRefresh.OFF) {
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        stringResource(R.string.settings_sources_auto_refresh, epgRefreshLabel(autoRefresh)),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = colors.onPrimaryContainer,
-                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(colors.surfaceContainerHighest).padding(horizontal = 8.dp, vertical = 2.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            // A Stalker portal's own guide has no address to show — it comes through the portal
-            // session rather than being downloaded — so the row says what it is instead of printing
-            // the internal marker that stands in for its URL.
-            val subtitle = if (tv.own.owntv.core.repository.EpgRepository.stalkerSourceIdOf(source.url) != null) {
-                stringResource(R.string.settings_epg_sources_portal_guide)
-            } else {
-                source.url
-            }
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(4.dp))
-            val catchupNote = count?.third?.takeIf { it > 0 }?.let {
-                pluralStringResource(R.plurals.settings_epg_sources_catchup, it, it)
-            }
-            val status = when {
-                activeSync != null -> when {
-                    activeSync.programmes > 0 -> stringResource(
-                        R.string.settings_epg_sources_status_count,
-                        pluralStringResource(R.plurals.settings_epg_sources_status_count_channels, activeSync.channels, activeSync.channels),
-                        pluralStringResource(R.plurals.settings_epg_sources_status_count_programmes, activeSync.programmes, activeSync.programmes),
-                    )
-                    activeSync.channels > 0 -> pluralStringResource(
-                        R.plurals.settings_epg_sources_status_count_channels,
-                        activeSync.channels,
-                        activeSync.channels,
-                    )
-                    else -> stringResource(R.string.settings_epg_sources_connecting)
-                }
-                source.lastError != null -> stringResource(
-                    R.string.settings_epg_sources_error,
-                    classifySyncFailure(source.lastError, online = true).displayText(),
-                )
-                count != null && count!!.second > 0 -> {
-                    val counts = stringResource(
-                        R.string.settings_epg_sources_status_count,
-                        pluralStringResource(R.plurals.settings_epg_sources_status_count_channels, count!!.first, count!!.first),
-                        pluralStringResource(R.plurals.settings_epg_sources_status_count_programmes, count!!.second, count!!.second),
-                    )
-                    if (catchupNote != null) stringResource(R.string.settings_epg_sources_status_count_with_catchup, counts, catchupNote)
-                    else counts
-                }
-                source.lastSyncAt != null -> catchupNote?.let {
-                    stringResource(R.string.settings_epg_sources_status_synced_with_catchup, it)
-                } ?: stringResource(R.string.settings_epg_sources_status_synced)
-                else -> stringResource(R.string.settings_epg_sources_not_synced)
-            }
-            Text(status, style = MaterialTheme.typography.labelMedium, color = if (source.lastError != null && activeSync == null) Color(0xFFEF4444) else colors.primary)
-        }
-        Spacer(Modifier.width(12.dp))
-        // While the guide data is being deleted, hide the actions — the row is on its way out and a
-        // large delete can take a moment.
-        if (!deleting) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // One stable button whose label/action flips with syncState — same composable stays in
-                // the tree across the swap, so focus survives instead of escaping the row.
-                OwnTVButton(
-                    label = stringResource(if (syncState.isActive) R.string.common_cancel else R.string.settings_sources_resync),
-                    onClick = if (syncState.isActive) onCancelSync else onResync,
-                    style = OwnTVButtonStyle.SECONDARY,
-                )
-                OwnTVButton(stringResource(R.string.common_edit), onClick = onEdit, style = OwnTVButtonStyle.SECONDARY)
-                OwnTVButton(stringResource(R.string.common_delete), onClick = onDelete, style = OwnTVButtonStyle.SECONDARY)
-            }
-        }
+    val subtitle = if (tv.own.owntv.core.repository.EpgRepository.stalkerSourceIdOf(source.url) != null) {
+        stringResource(R.string.settings_epg_sources_portal_guide)
+    } else {
+        source.url
     }
+    val catchupNote = count?.third?.takeIf { it > 0 }?.let {
+        pluralStringResource(R.plurals.settings_epg_sources_catchup, it, it)
+    }
+    val status = when {
+        activeSync != null -> when {
+            activeSync.programmes > 0 -> stringResource(
+                R.string.settings_epg_sources_status_count,
+                pluralStringResource(R.plurals.settings_epg_sources_status_count_channels, activeSync.channels, activeSync.channels),
+                pluralStringResource(R.plurals.settings_epg_sources_status_count_programmes, activeSync.programmes, activeSync.programmes),
+            )
+            activeSync.channels > 0 -> pluralStringResource(
+                R.plurals.settings_epg_sources_status_count_channels,
+                activeSync.channels,
+                activeSync.channels,
+            )
+            else -> stringResource(R.string.settings_epg_sources_connecting)
+        }
+        source.lastError != null -> stringResource(
+            R.string.settings_epg_sources_error,
+            classifySyncFailure(source.lastError, online = true).displayText(),
+        )
+        count != null && count!!.second > 0 -> {
+            val counts = stringResource(
+                R.string.settings_epg_sources_status_count,
+                pluralStringResource(R.plurals.settings_epg_sources_status_count_channels, count!!.first, count!!.first),
+                pluralStringResource(R.plurals.settings_epg_sources_status_count_programmes, count!!.second, count!!.second),
+            )
+            if (catchupNote != null) stringResource(R.string.settings_epg_sources_status_count_with_catchup, counts, catchupNote)
+            else counts
+        }
+        source.lastSyncAt != null -> catchupNote?.let {
+            stringResource(R.string.settings_epg_sources_status_synced_with_catchup, it)
+        } ?: stringResource(R.string.settings_epg_sources_status_synced)
+        else -> stringResource(R.string.settings_epg_sources_not_synced)
+    }
+    val failed = source.lastError != null && activeSync == null
+    val badge = when {
+        deleting -> stringResource(R.string.settings_epg_sources_deleting)
+        activeSync != null -> syncPercent?.let { stringResource(R.string.settings_epg_sources_syncing_percent, it) }
+            ?: stringResource(R.string.settings_epg_sources_syncing_label)
+        autoRefresh.mode != EpgAutoRefresh.OFF -> stringResource(R.string.settings_sources_auto_refresh, epgRefreshLabel(autoRefresh))
+        else -> null
+    }
+    val back = rowFocus ?: remember { FocusRequester() }
+    // While the guide data is being deleted the actions go: the row is on its way out.
+    val actions = if (deleting) emptyList() else listOf(
+        StageAction(
+            OwnTVIcon.REFRESH,
+            stringResource(if (syncState.isActive) R.string.common_cancel else R.string.settings_sources_resync),
+            if (syncState.isActive) onCancelSync else onResync,
+        ),
+        StageAction(OwnTVIcon.PENCIL, stringResource(R.string.common_edit), onEdit),
+        StageAction(OwnTVIcon.TRASH, stringResource(R.string.common_delete), onDelete, danger = true),
+    )
+    StageSettingRow(
+        icon = OwnTVIcon.EPG,
+        title = source.name,
+        // A failed guide shows its error in red on the right, so the line under the name is its address.
+        desc = if (failed) subtitle else status,
+        value = when {
+            failed -> SettingValue.Custom {
+                Text(status, style = tv.own.owntv.ui.theme.stageText(18, 700), color = tv.own.owntv.ui.theme.StageColors.Danger, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 360.mpx))
+            }
+            badge != null -> SettingValue.Action(badge)
+            else -> null
+        },
+        onClick = { if (actions.isNotEmpty()) runCatching { actionsFocus.requestFocus() } },
+        keepPanel = keepPanel,
+        help = SettingHelp(
+            title = source.name,
+            // The address on one line, the counts under it (owner).
+            text = subtitle,
+            hints = listOf(
+                "▶" to stringResource(R.string.settings_key_actions),
+                stringResource(R.string.common_back) to stringResource(R.string.common_nav_settings),
+            ),
+            extra = {
+                Text(status, style = tv.own.owntv.ui.theme.stageText(17, 500), color = if (failed) tv.own.owntv.ui.theme.StageColors.Danger else tv.own.owntv.ui.theme.StageColors.Muted)
+                if (actions.isNotEmpty()) StageActionColumn(actions, back, actionsFocus)
+            },
+        ),
+        modifier = Modifier
+            .focusRequester(back)
+            .focusProperties { if (actions.isNotEmpty()) right = actionsFocus }
+            .onFocusChanged { if (it.isFocused) onFocused() },
+    )
 }
 
 @Composable
