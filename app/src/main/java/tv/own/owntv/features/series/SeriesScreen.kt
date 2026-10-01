@@ -1444,7 +1444,7 @@ private fun EpisodeView(
                 modifier = Modifier.weight(1f),
             ) {
                 items(seasons, key = { it }) { season ->
-                    SeasonTab(
+                    tv.own.owntv.ui.stage.StageTab(
                         label = if (season == 0) stringResource(R.string.content_season_specials) else stringResource(R.string.content_season, season),
                         count = localizedInteger(episodes.count { it.seasonNumber == season }, grouping = false),
                         selected = season == activeSeason,
@@ -1866,43 +1866,6 @@ private fun seriesTitleInfo(
     )
 }
 
-
-/**
- * `.ttab`: "Season 1 12" — 22/700 muted, the count 16 dim; the open season in full text colour with
- * a 4 px accent underline glowing at 70%. Focused = FILLED (the mockup draws no focused tab).
- */
-@Composable
-private fun SeasonTab(label: String, count: String, selected: Boolean, onClick: () -> Unit) {
-    val a = tv.own.owntv.ui.theme.stageAccent
-    tv.own.owntv.ui.stage.StageSurface(onClick = onClick, radius = 12.mpx) { focused ->
-        Row(
-            Modifier
-                .padding(horizontal = 12.mpx)
-                .padding(top = 6.mpx)
-                .then(
-                    if (selected) {
-                        Modifier.drawBehind {
-                            val h = 4.mpx.toPx()
-                            val bar = androidx.compose.ui.geometry.Rect(0f, size.height - h, size.width, size.height)
-                            val r = 2.mpx.toPx()
-                            if (!focused) drawBoxShadow(a.accent.copy(alpha = 0.7f), 12.mpx.toPx(), r, bounds = bar)
-                            drawRoundRect(
-                                if (focused) a.onAccent else a.accent, topLeft = bar.topLeft, size = bar.size,
-                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(r),
-                            )
-                        }
-                    } else Modifier,
-                )
-                .padding(bottom = 12.mpx),
-            horizontalArrangement = Arrangement.spacedBy(10.mpx),
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            val on = if (focused) a.onAccent else null
-            Text(label, style = stageText(22, 700), color = on ?: if (selected) StageColors.Text else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.alignByBaseline())
-            Text(count, style = stageText(16, 600), color = on ?: StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.alignByBaseline())
-        }
-    }
-}
 
 /**
  * The series page's backdrop: 1400 × 700 at the top right, dissolving into the page on its left (34%)

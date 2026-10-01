@@ -212,6 +212,7 @@ fun OwnTVShell(
     // The guide's entry hook: the TV Guide, or Live TV in Guide view (null while Live TV shows its list).
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    var downloadsEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The playlist pill's place on screen, where the playlist menu redraws it above its scrim.
     var playlistPillBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var miniHasFocus by remember { mutableStateOf(false) }
@@ -1219,8 +1220,11 @@ fun OwnTVShell(
                         selectedSection == MainSection.DOWNLOADS -> DownloadsScreen(
                             onFullscreen = { openFullscreen() },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
+                            onOpenGuide = { onSelectSection(MainSection.EPG) },
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
+                            onEntryHook = { downloadsEntry = it },
+                            contentStart = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 64.mpx else 150.mpx,
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -1324,6 +1328,7 @@ fun OwnTVShell(
                     MainSection.HOME -> homeEntry
                     MainSection.EPG, MainSection.LIVE_TV -> guideEntry
                     MainSection.MOVIES, MainSection.SERIES -> vodEntry
+                    MainSection.DOWNLOADS -> downloadsEntry
                     else -> null
                 },
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
@@ -1908,7 +1913,7 @@ private fun OfflineBanner() {
     }
 
 /** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
-private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES, MainSection.SERIES)
+private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS)
 
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {

@@ -41,6 +41,8 @@ object StageColors {
     val GlassTint = Color(0xFF121A1E)
     val GlassOff = Color(0xFF121A1C)
     val RatingStar = Color(0xFFFFCC4D)
+    /** `.ok`: "✓ Ready to watch". */
+    val Ok = Color(0xFF7BE3A4)
 }
 
 /** Corner radii, in mockup pixels. Each phase adds the ones its screens use (rail, video, guide cell…). */

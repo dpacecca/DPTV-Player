@@ -577,6 +577,12 @@ fun LiveScreen(
         val margin = fx(64)
         val row = screenW - margin * 2
         val previewShown = if (separate) panelShares?.preview != 0 else stageWidths?.preview != 0
+        val liveHints = listOf(
+            stringResource(R.string.common_ok) to stringResource(R.string.content_key_watch),
+            "◀" to stringResource(R.string.content_category_browser_title),
+            "▶" to stringResource(R.string.content_key_schedule),
+            stringResource(R.string.content_key_hold_ok) to stringResource(R.string.content_key_options),
+        )
         val gapCat = fx(26)
         val gapStage = if (separate) fx(30) else fx(34)
         val colW: Dp
@@ -840,19 +846,23 @@ fun LiveScreen(
                     }
                     }
                 }
-                if (lockedKey == null) {
+                // With the preview off the hints stay under the list, where there is nothing else to hold them.
+                if (lockedKey == null && !previewShown) {
                     tv.own.owntv.ui.stage.StageKeyHints(
-                        listOf(
-                            stringResource(R.string.common_ok) to stringResource(R.string.content_key_watch),
-                            "◀" to stringResource(R.string.content_category_browser_title),
-                            "▶" to stringResource(R.string.content_key_schedule),
-                            stringResource(R.string.content_key_hold_ok) to stringResource(R.string.content_key_options),
-                        ),
+                        liveHints,
                         // A clear gap under the list, and 40 from the bottom rather than the mockup's 26:
                         // TV panels overscan the very edge away (owner, 2026-09-30).
                         modifier = Modifier.padding(start = 16.mpx, top = 22.mpx, bottom = 40.mpx),
                     )
                 }
+            }
+
+            // Under the preview, bottom right (owner, 2026-10-01), so the list runs down to the bottom edge.
+            if (lockedKey == null && previewShown) {
+                tv.own.owntv.ui.stage.StageKeyHints(
+                    liveHints,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = margin, bottom = 40.mpx),
+                )
             }
 
             if (previewShown) {

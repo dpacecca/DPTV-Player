@@ -382,9 +382,6 @@ fun EpgScreen(
             .groupBy({ it.channelId }, { it.programmeStartMs }).mapValues { it.value.toSet() }
     }
 
-    val firstButton = remember { FocusRequester() }
-    val recordButton = remember { FocusRequester() }
-    val moreButton = remember { FocusRequester() }
     val dayTool = remember { FocusRequester() }
     val categoryTool = remember { FocusRequester() }
     val orderTool = remember { FocusRequester() }
@@ -440,47 +437,19 @@ fun EpgScreen(
             modifier = Modifier.width(640.mpx),
         )
         // … and the programme under the cursor, with what it can do.
-        if (topChannel != null) {
-            val chName = ProviderTags.parse(topChannel.name).name
-            GuideProgrammeBlock(
-                eyebrow = shown?.let { programmeEyebrow(it, chName, liveNow) },
-                title = shown?.title ?: chName,
-                details = if (shown == null) stringResource(R.string.content_epg_no_programme) else programmeDetailsLine(shown),
-                synopsis = shown?.description,
-                modifier = Modifier.padding(start = 46.mpx, top = 76.mpx).widthIn(max = 1080.mpx),
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
-                    val actions = shown?.let { actionsFor(topChannel, it) }
-                    val first = when {
-                        actions?.onReminder != null -> Triple(
-                            stringResource(if (actions.reminderSet) R.string.content_reminder_set else R.string.content_remind_me),
-                            OwnTVIcon.BELL, actions.onReminder,
-                        )
-                        actions?.onWatchFromStart != null -> Triple(stringResource(R.string.content_epg_watch_start), OwnTVIcon.REWIND, actions.onWatchFromStart)
-                        else -> null
-                    }
-                    if (first != null) {
-                        StageButton(first.first, onClick = first.third, icon = first.second, height = 56.mpx, textSize = 19, tinted = true, modifier = Modifier.focusRequester(firstButton))
-                    }
-                    if (actions != null && (actions.onRecord != null || actions.onRecordFromCatchup != null || actions.onSeries != null)) {
-                        StageButton(
-                            actions.recordLabel, onClick = { returnTo = { runCatching { recordButton.requestFocus() } }; recordMenuFor = topChannel to shown },
-                            icon = OwnTVIcon.REC, iconFilled = true, trailingIcon = OwnTVIcon.CHEVRON_DOWN, height = 56.mpx, textSize = 19,
-                            modifier = Modifier.focusRequester(recordButton),
-                        )
-                    }
-                    StageButton(
-                        stringResource(R.string.content_epg_watch_channel), onClick = { watch(topChannel) }, icon = OwnTVIcon.LIVE_TV, height = 56.mpx, textSize = 19,
-                        modifier = if (first == null) Modifier.focusRequester(firstButton) else Modifier,
-                    )
-                    run {
-                        StageButton(
-                            null, onClick = { returnTo = { runCatching { moreButton.requestFocus() } }; if (shown != null) menuFor = topChannel to shown else channelMenuFor = topChannel },
-                            icon = OwnTVIcon.MORE, round = true, height = 56.mpx, textSize = 19, modifier = Modifier.focusRequester(moreButton),
-                        )
-                    }
-                }
+        Box(Modifier.weight(1f).fillMaxHeight()) {
+            if (topChannel != null) {
+                val chName = ProviderTags.parse(topChannel.name).name
+                GuideProgrammeBlock(
+                    eyebrow = shown?.let { programmeEyebrow(it, chName, liveNow) },
+                    title = shown?.title ?: chName,
+                    details = if (shown == null) stringResource(R.string.content_epg_no_programme) else programmeDetailsLine(shown),
+                    synopsis = shown?.description,
+                    modifier = Modifier.padding(start = 46.mpx, top = 76.mpx).widthIn(max = 1080.mpx),
+                )
             }
+            // The key hints at the bottom right of the top area, level with the video's bottom edge (owner, 2026-10-01).
+            Box(Modifier.align(Alignment.BottomEnd)) { GuideKeyHints(cellMode = inCellMode && gridHasFocus) }
         }
 
         }
@@ -633,14 +602,6 @@ fun EpgScreen(
             }
         }
 
-        GuideBottomBar(
-            channel = if (inCellMode && gridHasFocus) topChannel else null,
-            programme = if (inCellMode && gridHasFocus) shown else null,
-            cellMode = inCellMode && gridHasFocus,
-            now = liveNow,
-            canCatchup = topChannel != null && shown != null && vm.canCatchup(topChannel, shown, liveNow),
-            modifier = Modifier.padding(start = fx(64), end = fx(64)),
-        )
         }
 
         // ◀ … Category ▾ (P4-03): Live TV's own list as the sheet, titled for the guide.
@@ -892,59 +853,26 @@ private fun GuideEmpty(title: String, body: String? = null, action: String? = nu
 }
 
 /**
- * The bar under the grid (owner, 2026-09-30 — not in the mockup): inside a row, the programme under the
- * cursor — title, time, length, channel, catch-up; at row level, how to move: OK Browse · ▲▼ Channels ·
- * ◀ Menu · Hold OK Options. In a row the keys are OK Watch · ◀ ▶ Programs · Back Channels.
+ * How to move, under the programme beside the video (owner, 2026-10-01: in place of the old action buttons,
+ * which could not be reached without leaving the channel — they are all in Hold OK's menu). At row level:
+ * OK Browse · ▲▼ Channels · ◀ Menu · Hold OK Options; inside a row: OK Watch · ◀ ▶ Programs · Back Channels.
  */
 @Composable
-private fun GuideBottomBar(
-    channel: ChannelEntity?,
-    programme: EpgProgrammeEntity?,
-    cellMode: Boolean,
-    now: Long,
-    canCatchup: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val formatTime = tv.own.owntv.ui.format.rememberSystemTimeFormatter()
-    Row(
-        modifier.fillMaxWidth().height(64.mpx).padding(bottom = 14.mpx),
-        horizontalArrangement = Arrangement.spacedBy(26.mpx),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.weight(1f)) {
-            if (programme != null && channel != null) {
-                val minutes = ((programme.stopMs - programme.startMs) / 60_000L).toInt()
-                val facts = listOfNotNull(
-                    stringResource(R.string.content_live_time_range_plain, formatTime(programme.startMs), formatTime(programme.stopMs)),
-                    minutes.takeIf { it > 0 }?.let { stringResource(R.string.player_duration_minutes, it) },
-                    ProviderTags.parse(channel.name).name,
-                    if (canCatchup) stringResource(R.string.content_epg_catchup) else null,
-                ).joinToString(" · ")
-                Text(
-                    androidx.compose.ui.text.buildAnnotatedString {
-                        withStyle(androidx.compose.ui.text.SpanStyle(color = StageColors.Text, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)) { append(programme.title) }
-                        append("  ")
-                        append(facts)
-                    },
-                    style = stageText(18, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        val hints = if (cellMode) {
-            listOf(
-                stringResource(R.string.common_ok) to stringResource(R.string.content_key_watch),
-                "◀ ▶" to stringResource(R.string.content_key_programmes),
-                stringResource(R.string.common_back) to stringResource(R.string.content_key_channels),
-                stringResource(R.string.content_key_hold_ok) to stringResource(R.string.content_key_options),
-            )
-        } else {
-            listOf(
-                stringResource(R.string.common_ok) to stringResource(R.string.content_key_browse),
-                "▲ ▼" to stringResource(R.string.content_key_channels),
-                "◀" to stringResource(R.string.content_key_menu),
-                stringResource(R.string.content_key_hold_ok) to stringResource(R.string.content_key_options),
-            )
-        }
-        tv.own.owntv.ui.stage.StageKeyHints(hints)
+private fun GuideKeyHints(cellMode: Boolean) {
+    val hints = if (cellMode) {
+        listOf(
+            stringResource(R.string.common_ok) to stringResource(R.string.content_key_watch),
+            "◀ ▶" to stringResource(R.string.content_key_programmes),
+            stringResource(R.string.common_back) to stringResource(R.string.content_key_channels),
+            stringResource(R.string.content_key_hold_ok) to stringResource(R.string.content_key_options),
+        )
+    } else {
+        listOf(
+            stringResource(R.string.common_ok) to stringResource(R.string.content_key_browse),
+            "▲ ▼" to stringResource(R.string.content_key_channels),
+            "◀" to stringResource(R.string.content_key_menu),
+            stringResource(R.string.content_key_hold_ok) to stringResource(R.string.content_key_options),
+        )
     }
+    tv.own.owntv.ui.stage.StageKeyHints(hints)
 }

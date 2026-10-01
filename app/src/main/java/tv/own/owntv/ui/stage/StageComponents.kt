@@ -339,6 +339,43 @@ fun StageTool(
 }
 
 /**
+ * `.ttab`: "Season 1 12", "Movies 3" — 22/700 muted, the count 16 dim; the open tab in full text colour
+ * with a 4 px accent underline glowing at 70%. Focused = FILLED (the mockup draws no focused tab).
+ */
+@Composable
+fun StageTab(label: String, count: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val a = stageAccent
+    StageSurface(onClick = onClick, radius = 12.mpx, modifier = modifier) { focused ->
+        Row(
+            Modifier
+                .padding(horizontal = 12.mpx)
+                .padding(top = 6.mpx)
+                .then(
+                    if (selected) {
+                        Modifier.drawBehind {
+                            val h = 4.mpx.toPx()
+                            val bar = Rect(0f, size.height - h, size.width, size.height)
+                            val r = 2.mpx.toPx()
+                            if (!focused) drawBoxShadow(a.accent.copy(alpha = 0.7f), 12.mpx.toPx(), r, bounds = bar)
+                            drawRoundRect(
+                                if (focused) a.onAccent else a.accent, topLeft = bar.topLeft, size = bar.size,
+                                cornerRadius = CornerRadius(r),
+                            )
+                        }
+                    } else Modifier,
+                )
+                .padding(bottom = 12.mpx),
+            horizontalArrangement = Arrangement.spacedBy(10.mpx),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            val on = if (focused) a.onAccent else null
+            Text(label, style = stageText(22, 700), color = on ?: if (selected) StageColors.Text else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.alignByBaseline())
+            Text(count, style = stageText(16, 600), color = on ?: StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.alignByBaseline())
+        }
+    }
+}
+
+/**
  * `.seg2`: two or more options in one white-6% capsule; the chosen one sits on white 13% in full text
  * colour. The mockup draws no focused segment; a focused one takes the FILLED treatment, as `.row2`
  * does in menus.

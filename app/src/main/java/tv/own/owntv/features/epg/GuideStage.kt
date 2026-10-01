@@ -145,7 +145,7 @@ internal fun GuideVideo(
     }
 }
 
-/** "Starts in 58 min · 20:05 – 21:40 · Sky Cinema Family" — or "Live now · …", or just the times once it has been on. */
+/** "Starts in 58 min · 20:05 – 21:40 · 95 min · Sky Cinema Family" — or "Live now · …", or just the times once it has been on. */
 @Composable
 internal fun programmeEyebrow(p: EpgProgrammeEntity, channelName: String, now: Long): String {
     val formatTime = rememberSystemTimeFormatter()
@@ -155,7 +155,8 @@ internal fun programmeEyebrow(p: EpgProgrammeEntity, channelName: String, now: L
         p.stopMs > now -> stringResource(R.string.content_live_now)
         else -> null
     }
-    return listOfNotNull(lead, range, channelName).joinToString(" · ")
+    val length = ((p.stopMs - p.startMs) / 60_000L).toInt().takeIf { it > 0 }?.let { stringResource(R.string.player_duration_minutes, it) }
+    return listOfNotNull(lead, range, length, channelName).joinToString(" · ")
 }
 
 /** The details line (G1): "Animation · Family · 2023 · FSK 0 · 95 min" — only what the feed provides. */
@@ -167,7 +168,7 @@ internal fun programmeDetailsLine(p: EpgProgrammeEntity): String? {
         .takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
 
-/** The programme block beside the video: eyebrow (accent, clock), title 60/800, details, 2-line synopsis, then [buttons]. */
+/** The programme block beside the video: eyebrow (accent, clock), title 60/800, details, 2-line synopsis. */
 @Composable
 internal fun GuideProgrammeBlock(
     eyebrow: String?,
@@ -175,7 +176,6 @@ internal fun GuideProgrammeBlock(
     details: String?,
     synopsis: String?,
     modifier: Modifier = Modifier,
-    buttons: @Composable () -> Unit,
 ) {
     val a = stageAccent
     Column(modifier) {
@@ -198,7 +198,6 @@ internal fun GuideProgrammeBlock(
             maxLines = 2, minLines = 2, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.widthIn(max = 1000.mpx).padding(top = 12.mpx, bottom = 20.mpx),
         )
-        buttons()
     }
 }
 
