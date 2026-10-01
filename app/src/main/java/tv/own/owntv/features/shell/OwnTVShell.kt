@@ -211,6 +211,7 @@ fun OwnTVShell(
     var homeEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The guide's entry hook: the TV Guide, or Live TV in Guide view (null while Live TV shows its list).
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The playlist pill's place on screen, where the playlist menu redraws it above its scrim.
     var playlistPillBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var miniHasFocus by remember { mutableStateOf(false) }
@@ -998,6 +999,9 @@ fun OwnTVShell(
                   )
               }
           } else null
+          // Screens already redrawn for Stage own the whole canvas; a show's episodes page waits for P7.
+          val openedSeries by seriesVm.openedSeries.collectAsStateWithLifecycle()
+          val stageScreen = selectedSection in StageSections || (selectedSection == MainSection.SERIES && openedSeries == null)
           Box(Modifier.weight(1f).fillMaxWidth()) {
           Row(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -1012,14 +1016,11 @@ fun OwnTVShell(
                     // A Stage screen's page, across the whole width — under a docked rail's reserve too.
                     // A wallpaper, when the user set one, shows through instead.
                     .then(
-                        if (selectedSection in StageSections && !glass.hasBackdrop) {
+                        if (stageScreen && !glass.hasBackdrop) {
                             Modifier.stageBackground(colors.primary)
                         } else Modifier,
                     ),
             ) {
-                // Screens already redrawn for Stage own the whole canvas: they lay themselves out under
-                // the floating rail and the top-right cluster, as the mockup does.
-                val stageScreen = selectedSection in StageSections
                 // Live TV's view (List / Guide, G14), and how a guide — the TV Guide or Live TV's Guide view —
                 // starts a channel or an archive programme: through LiveViewModel, the one live path.
                 val liveView by liveVm.liveView.collectAsStateWithLifecycle()
@@ -1203,6 +1204,7 @@ fun OwnTVShell(
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
                             onContentScrolled = { contentScrolled = it },
+                            onEntryHook = { vodEntry = it },
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -1211,6 +1213,7 @@ fun OwnTVShell(
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
+                            onEntryHook = { vodEntry = it },
                             modifier = Modifier.fillMaxSize(),
                         )
 
@@ -1321,6 +1324,7 @@ fun OwnTVShell(
                 enterContent = when (selectedSection) {
                     MainSection.HOME -> homeEntry
                     MainSection.EPG, MainSection.LIVE_TV -> guideEntry
+                    MainSection.MOVIES, MainSection.SERIES -> vodEntry
                     else -> null
                 },
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
@@ -1905,7 +1909,7 @@ private fun OfflineBanner() {
     }
 
 /** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
-private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG)
+private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES)
 
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {

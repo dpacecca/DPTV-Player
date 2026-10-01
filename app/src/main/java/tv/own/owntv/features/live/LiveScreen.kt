@@ -103,7 +103,6 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.ProviderChip
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.SearchBar
-import tv.own.owntv.ui.components.SortChip
 import tv.own.owntv.ui.components.TextInputDialog
 import tv.own.owntv.ui.components.formatCount
 import tv.own.owntv.ui.components.ContentPanelFill
@@ -524,6 +523,8 @@ fun LiveScreen(
     val (categoryEntries, groupsHeading) = liveCategoryEntries(railItems, railCounts)
     val headerLabel = if (selectedItem?.key is LiveKey.Folder || selectedItem?.key is LiveKey.Custom) ProviderTags.parse(selectedLabel).name else selectedLabel
 
+    // CH± in the categories moves the highlight only; OK picks (owner, 2026-10-01).
+    var catFocusIndex by remember { mutableStateOf<Int?>(null) }
     val categoriesModifier = Modifier
         .onFocusChanged {
             railPaneFocused = it.hasFocus
@@ -542,8 +543,8 @@ fun LiveScreen(
             downSkip = chNavDownSkip,
             isFocused = { railPaneFocused },
             lastIndex = { railItems.size - 1 },
-            currentTargetIndex = { selectedIndex },
-            onJumpToIndex = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
+            currentTargetIndex = { catFocusIndex ?: selectedIndex },
+            onJumpToIndex = { idx -> catFocusIndex = idx; railFocusRow = idx },
         )
     val onCategorySelect: (Int) -> Unit = { idx ->
         railItems.getOrNull(idx)?.let { vm.select(it.key) }
@@ -614,6 +615,7 @@ fun LiveScreen(
                 focusRequester = railFocus,
                 focusRowIndex = railFocusRow,
                 onRowFocused = { railFocusRow = null },
+                onRowFocus = { catFocusIndex = it },
                 modifier = categoriesModifier
                     .padding(start = margin, top = 128.mpx, bottom = 24.mpx)
                     .width(colW)
@@ -671,8 +673,12 @@ fun LiveScreen(
                                 if (target != null) {
                                     val item = channels.itemSnapshotList.items.firstOrNull { it.id == target }
                                     if (item != null) {
+                                        // The remembered channel is the focus target, so it moves with the jump;
+                                        // focus by row number, which holds whatever the row's other requesters are.
                                         vm.onChannelFocused(item)
-                                        runCatching { selFocus.requestFocus() }
+                                        if (rememberLive) perCategoryChannelIds[selectedKey] = item.id
+                                        withFrameNanos { }
+                                        runCatching { rowFocus(idx).requestFocus() }
                                     }
                                 } else {
                                     runCatching { firstItemFocus.requestFocus() }
@@ -880,6 +886,7 @@ fun LiveScreen(
                 focusRequester = railFocus,
                 focusRowIndex = railFocusRow,
                 onRowFocused = { railFocusRow = null },
+                onRowFocus = { catFocusIndex = it },
                 modifier = categoriesModifier
                     .padding(start = fx(24), top = 24.mpx, bottom = 24.mpx)
                     .width(sheetW)

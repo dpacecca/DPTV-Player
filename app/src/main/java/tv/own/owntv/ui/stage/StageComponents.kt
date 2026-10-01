@@ -634,6 +634,8 @@ fun StagePoster(
     modifier: Modifier = Modifier,
     rating: String? = null,
     onLongClick: (() -> Unit)? = null,
+    /** The Separate grid's smaller posters: 15.5 px title, the 66×28 chip. */
+    compact: Boolean = false,
     artwork: @Composable BoxScope.() -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -661,12 +663,12 @@ fun StagePoster(
                 .clip(RoundedCornerShape(r)),
         ) {
             artwork()
-            if (rating != null) StageRatingChip(rating, Modifier.padding(8.mpx))
+            if (rating != null) StageRatingChip(rating, Modifier.padding(8.mpx), small = compact)
         }
         Spacer(Modifier.height(12.mpx))
         Text(
             title,
-            style = stageText(17, if (focused) 700 else 600),
+            style = stageText(if (compact) 15.5f else 17f, if (focused) 700 else 600),
             color = if (focused) Color.White else StageColors.Muted,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -736,20 +738,20 @@ fun StageStill(
     }
 }
 
-/** `.pc .rt`: "★ 7.8" on near-black in the poster's top-left corner. */
+/** `.pc .rt`: "★ 7.8" on near-black in the poster's top-left corner; [small] = 66×28 at 14 px. */
 @Composable
-fun StageRatingChip(rating: String, modifier: Modifier = Modifier) {
+fun StageRatingChip(rating: String, modifier: Modifier = Modifier, small: Boolean = false) {
     Row(
         modifier
-            .height(32.mpx)
-            .defaultMinSize(minWidth = 76.mpx)
+            .height(if (small) 28.mpx else 32.mpx)
+            .defaultMinSize(minWidth = if (small) 66.mpx else 76.mpx)
             .background(Color(8, 12, 14).copy(alpha = 0.92f), RoundedCornerShape(10.mpx))
             .padding(horizontal = 10.mpx),
         horizontalArrangement = Arrangement.spacedBy(6.mpx),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StageIcon(OwnTVIcon.STAR, StageColors.RatingStar, 15.mpx, filled = true)
-        Text(rating, style = stageText(15, 800), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        StageIcon(OwnTVIcon.STAR, StageColors.RatingStar, if (small) 14.mpx else 15.mpx, filled = true)
+        Text(rating, style = stageText(if (small) 14 else 15, 800), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

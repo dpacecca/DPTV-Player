@@ -103,6 +103,8 @@ data class LiveRailItem(
     val title: String? = null,
     val icon: OwnTVIcon? = null,
     val providerName: String? = null,
+    /** The playlist a folder belongs to: its mark in the Movies / Series category list. */
+    val sourceId: Long? = null,
 )
 
 class LiveViewModel(

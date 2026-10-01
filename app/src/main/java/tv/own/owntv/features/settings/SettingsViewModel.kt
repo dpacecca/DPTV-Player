@@ -755,6 +755,16 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setCinematicDetailsHeight(s, percent) }
     }
 
+    /** Cinematic's categories sheet width — its own value, so the Separate widths are never touched. */
+    private val cinematicSheetWidths: Map<PanelSection, StateFlow<Int>> =
+        panelFlows(settings::cinematicSheetWidth, tv.own.owntv.core.settings.LiveStageWidths.DEFAULT.sheet)
+
+    fun cinematicSheetWidth(s: PanelSection): StateFlow<Int> = cinematicSheetWidths.getValue(s)
+
+    fun setCinematicSheetWidth(s: PanelSection, percent: Int) {
+        viewModelScope.launch { settings.setCinematicSheetWidth(s, percent) }
+    }
+
     val guideWidthEnabled: StateFlow<Boolean> = settings.guideWidthEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     val guideWidthShares: StateFlow<GuideWidthShares?> = settings.guideWidthShares

@@ -449,6 +449,8 @@ internal fun LiveCategories(
     focusRequester: FocusRequester? = null,
     focusRowIndex: Int? = null,
     onRowFocused: () -> Unit = {},
+    /** Which row has focus as the user moves (Movies / Series: CH± steps from it without selecting). */
+    onRowFocus: (Int) -> Unit = {},
     /** The sheet's heading and the line beside it; the TV Guide says "Guide category · Same list as Live TV". */
     sheetTitle: String = stringResource(R.string.content_category_browser_title),
     sheetHint: String = stringResource(R.string.common_nav_live_tv),
@@ -472,7 +474,14 @@ internal fun LiveCategories(
     }
     LaunchedEffect(focusRowIndex, visible) {
         val target = focusRowIndex ?: return@LaunchedEffect
-        visible.indexOf(target).takeIf { it >= 0 }?.let { runCatching { rowFocusers[it].requestFocus() } }
+        visible.indexOf(target).takeIf { it >= 0 }?.let { pos ->
+            // A row further than the screen (a CH± jump) is not composed yet: scroll to it first.
+            if (!runCatching { rowFocusers[pos].requestFocus() }.getOrDefault(false)) {
+                runCatching { listState.scrollToItem(pos + 1) } // +1: the search field is item 0
+                withFrameNanos { }
+                runCatching { rowFocusers[pos].requestFocus() }
+            }
+        }
         onRowFocused()
     }
     // Where the fixed entries end and the provider groups begin (the "GROUPS · DE" heading).
@@ -550,6 +559,7 @@ internal fun LiveCategories(
                 }
                 item(key = entry.item.key.toString()) {
                     val rowModifier = Modifier.focusRequester(rowFocusers[pos]).then(rightKey)
+                        .onFocusChanged { if (it.hasFocus) onRowFocus(index) }
                     val selected = index == selectedIndex
                     if (sheet) {
                         StageSheetItem(
