@@ -809,6 +809,18 @@ class SettingsViewModel(
     val bgImagePath: StateFlow<String> = settings.bgImagePath.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     val glassConfig: StateFlow<tv.own.owntv.core.theme.GlassConfig> = settings.glassConfig.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.theme.GlassConfig())
     fun setBgImagePath(path: String) { viewModelScope.launch { settings.setBgImagePath(path) } }
+
+    // --- Glass & background ---
+    val backgroundConfig: StateFlow<tv.own.owntv.core.theme.BackgroundConfig> =
+        settings.backgroundConfig.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.theme.BackgroundConfig())
+    /** A newly picked picture: Background becomes Picture, on Soft. */
+    fun setNewBackgroundPicture(path: String) { viewModelScope.launch { settings.setNewBackgroundPicture(path) } }
+    fun setBackgroundStyle(style: tv.own.owntv.core.theme.BackgroundStyle) { viewModelScope.launch { settings.setBackgroundStyle(style) } }
+    fun setPictureLook(look: tv.own.owntv.core.theme.PictureLook) { viewModelScope.launch { settings.setPictureLook(look) } }
+    fun setBackgroundDim(pct: Int) { viewModelScope.launch { settings.setBackgroundDim(pct) } }
+    fun setBackgroundBlur(pct: Int) { viewModelScope.launch { settings.setBackgroundBlur(pct) } }
+    fun setBackgroundAccentLight(on: Boolean) { viewModelScope.launch { settings.setBackgroundAccentLight(on) } }
+    fun resetGlassAndBackground(allSurfacesBits: Int) { viewModelScope.launch { settings.resetGlassAndBackground(allSurfacesBits) } }
     fun setGlassScopeBitmask(bits: Int) { viewModelScope.launch { settings.setGlassScopeBitmask(bits) } }
     fun setGlassPreset(preset: tv.own.owntv.core.theme.GlassPreset) { viewModelScope.launch { settings.setGlassPreset(preset) } }
     fun setGlassAlphaPercent(pct: Int, currentBlurPct: Int) {

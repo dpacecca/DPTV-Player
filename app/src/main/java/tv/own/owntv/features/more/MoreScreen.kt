@@ -155,7 +155,7 @@ fun MoreScreen(
                     modifier = Modifier.focusRequester(itemFocus.getValue(it)),
                 )
             }
-            item(MoreItem.SETTINGS, OwnTVIcon.SPARKLE, stringResource(R.string.common_nav_settings), null, false)
+            item(MoreItem.SETTINGS, OwnTVIcon.SETTINGS, stringResource(R.string.common_nav_settings), null, false)
             GroupLabel(stringResource(R.string.more_group_your_things))
             item(MoreItem.FAVORITES, OwnTVIcon.FAVORITE, stringResource(R.string.content_category_favorites), favorites.total.toString(), false)
             item(MoreItem.HISTORY, OwnTVIcon.HISTORY, stringResource(R.string.content_category_history), history.total.toString(), false)

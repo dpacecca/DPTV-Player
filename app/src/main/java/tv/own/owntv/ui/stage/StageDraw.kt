@@ -20,7 +20,14 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
+import androidx.compose.runtime.remember
+import tv.own.owntv.core.theme.BackgroundStyle
+import tv.own.owntv.ui.theme.GlassPositionElement
+import tv.own.owntv.ui.theme.GlassPositionState
+import tv.own.owntv.ui.theme.LocalBackground
+import tv.own.owntv.ui.theme.LocalBlurredBackdrop
 import tv.own.owntv.ui.theme.LocalGlass
+import tv.own.owntv.ui.theme.drawBackdropSlice
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.drawEllipticalGlow
 import tv.own.owntv.ui.theme.gradientWash
@@ -101,28 +108,32 @@ fun DrawScope.drawInnerRing(color: Color, width: Float, radius: Float) {
 }
 
 /**
- * The Stage page (`.mine .bg`): three soft lights over a dark 160° wash, or with Glass off one faint
- * accent light over #070B0A. Each light is a cached texture (see GradientTextures), never a brush.
- *
- * The 160° wash runs between three near-black stops that differ by at most 5 per channel, so it is
- * drawn as a vertical fade — inside the ±10 colour tolerance and one cheap texture.
+ * The page behind a Stage screen (`.mine .bg`), following Glass & background:
+ * - Stage colours: three soft lights over a dark 160° wash (the accent light is the switchable one);
+ * - Plain: #070B0A, with Accent light a faint 7% accent light (today's Glass-off page);
+ * - Picture: nothing here — MainActivity draws the picture under the whole app — except the Accent
+ *   light, drawn over the picture the way the mockup does (`wp-soft`).
+ * Each light is a cached texture (see GradientTextures), never a brush. The 160° wash runs between
+ * three near-black stops that differ by at most 5 per channel, so it is drawn as a vertical fade.
  */
 @Composable
 fun Modifier.stageBackground(accent: Color): Modifier {
-    val glass = LocalGlass.current.enabled
-    return if (glass) {
-        this
+    val bg = LocalBackground.current
+    return when {
+        bg.showsPicture -> if (bg.accentLight) drawBehindLights { w, h ->
+            light(accent, 0.22f, Offset(w * 0.08f, h * 0.04f), 900.mpx.toPx(), 620.mpx.toPx(), 0.62f)
+        } else this
+        bg.style == BackgroundStyle.PLAIN -> this
+            .drawBehind { drawRect(Color(0xFF070B0A)) }
+            .then(if (bg.accentLight) Modifier.drawBehindLights { _, _ ->
+                light(accent, 0.07f, Offset.Zero, 1200.mpx.toPx(), 700.mpx.toPx(), 0.60f)
+            } else Modifier)
+        else -> this
             .gradientWash(true, 0f to Color(0xFF0B1216), 0.55f to Color(0xFF06090B), 1f to Color(0xFF070A10))
             .drawBehindLights { w, h ->
                 light(Color(255, 160, 120), 0.07f, Offset(w * 0.70f, h * 0.18f), 700.mpx.toPx(), 500.mpx.toPx(), 0.60f)
                 light(Color(96, 120, 255), 0.16f, Offset(w, h), 1100.mpx.toPx(), 760.mpx.toPx(), 0.60f)
-                light(accent, 0.20f, Offset(w * 0.08f, h * 0.04f), 900.mpx.toPx(), 620.mpx.toPx(), 0.62f)
-            }
-    } else {
-        this
-            .drawBehind { drawRect(Color(0xFF070B0A)) }
-            .drawBehindLights { _, _ ->
-                light(accent, 0.07f, Offset.Zero, 1200.mpx.toPx(), 700.mpx.toPx(), 0.60f)
+                if (bg.accentLight) light(accent, 0.20f, Offset(w * 0.08f, h * 0.04f), 900.mpx.toPx(), 620.mpx.toPx(), 0.62f)
             }
     }
 }
@@ -143,26 +154,33 @@ private fun DrawScope.light(color: Color, alpha: Float, center: Offset, rx: Floa
 /**
  * The Stage glass panel (`.mine .glass`), for chrome only: rail, sheets, menus, pills, cards.
  *
- * Glass on: the #121A1E tint at the user's glass opacity (Balanced = .56, the mockup's value), a 1 px
- * top highlight (white 10%), a 1 px rim (white 7%) and the drop shadow `0 24 60` black 45%.
+ * Glass on: the #121A1E tint at the user's Glass opacity (56% = the mockup's), a 1 px top highlight
+ * (white 10%), a 1 px rim (white 7%) and the drop shadow `0 24 60` black 45%. Over a picture the panel
+ * first draws the matching slice of the blurred picture — the mockup's `backdrop-filter`, without a live
+ * blur pass (the G10 cannot afford one): the picture is blurred once when it is chosen.
  * Glass off: solid #121A1C, rim white 5%, shadow black 50%.
  *
- * No `backdrop-filter` blur of what sits behind the panel: a live blur costs the G10 GPU a full pass
- * per frame. Instead [overContent] chrome — the rail, menus and popups, which float over text — takes
- * the same tint at 92%, so the words behind it can never be read through it (seen on the TV, P1).
+ * [overContent] chrome — the rail, menus and popups, which float over text — keeps at least 80% so the
+ * words behind it are never readable through it; above that the user's opacity applies.
  */
 @Composable
 fun Modifier.stageGlass(radius: Dp, overContent: Boolean = false): Modifier {
     val config = LocalGlass.current
     val on = config.enabled
-    val fill = if (on) StageColors.GlassTint.copy(alpha = if (overContent) maxOf(config.alpha, 0.92f) else config.alpha) else StageColors.GlassOff
-    return drawWithCache {
+    val fill = if (on) StageColors.GlassTint.copy(alpha = if (overContent) maxOf(config.alpha, 0.80f) else config.alpha) else StageColors.GlassOff
+    val blurred = if (on && LocalBackground.current.showsPicture) LocalBlurredBackdrop.current else null
+    val frost = blurred?.frostFor(0.9f)
+    val position = if (frost != null) remember { GlassPositionState() } else null
+    return (if (position != null) this.then(GlassPositionElement(position)) else this).drawWithCache {
         val r = radius.toPx()
         val px = 1.mpx.toPx()
         val shape = roundRectPath(roundRect(size.toRect(), 0f, r))
         val shifted = roundRectPath(roundRect(size.toRect(), 0f, r, dy = px))
         onDrawBehind {
             drawBoxShadow(Color.Black.copy(alpha = if (on) 0.45f else 0.5f), 60.mpx.toPx(), r, dy = 24.mpx.toPx())
+            if (blurred != null && frost != null && position != null) {
+                clipPath(shape) { drawBackdropSlice(blurred, frost, position.bounds) }
+            }
             drawPath(shape, fill)
             if (on) {
                 // inset 0 1px 0: the sliver of the box its own copy, moved 1 px down, does not cover.
@@ -174,3 +192,4 @@ fun Modifier.stageGlass(radius: Dp, overContent: Boolean = false): Modifier {
         }
     }
 }
+

@@ -322,7 +322,9 @@ private fun SettingPanelBody(help: SettingHelp) {
             val on = i == help.chosen
             Row(Modifier.height(44.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx), verticalAlignment = Alignment.CenterVertically) {
                 StageRadio(on)
-                Text(label, style = stageText(18, 600), color = if (on) StageColors.Text else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(label, style = stageText(18, 600), color = if (on) StageColors.Text else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    // A long choice gives way to the RECOMMENDED tag, never the other way round.
+                    modifier = Modifier.weight(1f, fill = false))
                 if (i == help.recommended) {
                     Box(Modifier.padding(start = 6.mpx)) { StageTag(stringResource(R.string.settings_panel_recommended).uppercase()) }
                 }

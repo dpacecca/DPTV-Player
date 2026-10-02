@@ -1027,9 +1027,9 @@ fun OwnTVShell(
                     // the image shows through the gaps between the content panels.
                     .background(shellBase)
                     // A Stage screen's page, across the whole width — under a docked rail's reserve too.
-                    // A wallpaper, when the user set one, shows through instead.
+                    // Over a picture it draws only the Accent light; the picture shows through.
                     .then(
-                        if (stageScreen && !glass.hasBackdrop) {
+                        if (stageScreen) {
                             Modifier.stageBackground(colors.primary)
                         } else Modifier,
                     ),

@@ -630,8 +630,8 @@ fun SettingsScreen(
         // Glass Effect has enough controls to be a full settings screen; the root row only summarizes it.
         RootRow(
             tabRowKey(SettingsTab.GLASS_EFFECT), TileTone.PRIMARY, OwnTVIcon.SPARKLE,
-            title = stringResource(R.string.settings_glass_effect), desc = stringResource(R.string.settings_glass_description),
-            chip = if (glassOn) glassPresetLabel(glassConfig.preset) else stringResource(R.string.common_off),
+            title = stringResource(R.string.settings_glass_bg_title), desc = stringResource(R.string.settings_line_glass_bg),
+            chip = glassBackgroundSummary(settingsVm.backgroundConfig.collectAsStateWithLifecycle().value, glassConfig),
             chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY,
             focus = rowFocus.getValue(SettingsTab.GLASS_EFFECT),
             onClick = { open(SettingsTab.GLASS_EFFECT) },
@@ -1064,8 +1064,8 @@ fun SettingsScreen(
             // Four screens that had no entry at all, so nothing on them could be found by name.
             SettingsSearchEntry(stringResource(R.string.settings_group_watching_recording), stringResource(R.string.recording_settings_group), stringResource(R.string.settings_search_keywords_recording), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { searchQuery = ""; selectedGroup = SettingsGroup.WATCHING.ordinal },
             SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_open_subtitles), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.PRIMARY) { open(SettingsTab.OPEN_SUBTITLES) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_glass_effect), stringResource(R.string.settings_search_keywords_glass), OwnTVIcon.SPARKLE, TileTone.PRIMARY,
-                chip = if (glassOn) glassPresetLabel(glassConfig.preset) else stringResource(R.string.common_off), chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.GLASS_EFFECT) },
+            SettingsSearchEntry(stringResource(R.string.settings_group_appearance), stringResource(R.string.settings_glass_bg_title), stringResource(R.string.settings_search_keywords_glass), OwnTVIcon.SPARKLE, TileTone.PRIMARY,
+                chip = glassBackgroundSummary(settingsVm.backgroundConfig.collectAsStateWithLifecycle().value, glassConfig), chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.GLASS_EFFECT) },
             SettingsSearchEntry(stringResource(R.string.settings_group_layout), stringResource(R.string.settings_content_menus_title), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.MENU, TileTone.PRIMARY) { open(SettingsTab.CONTENT_MENUS) },
             SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_sub_style"), stringResource(R.string.settings_subtitle_appearance), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.TERTIARY) { jumpVideo("vp_sub_style", false) },
             SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_live_latency"), stringResource(R.string.settings_live_latency), stringResource(R.string.settings_search_keywords_latency), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { jumpVideo("vp_live_latency", false) },
@@ -1385,7 +1385,7 @@ fun SettingsScreen(
                         runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
                             .also { runCatching { file.delete() } }
                     }
-                    if (path != null) settingsVm.setBgImagePath(path)
+                    if (path != null) settingsVm.setNewBackgroundPicture(path)
                 }
                 showBgRemote = false
             },
@@ -1405,7 +1405,7 @@ fun SettingsScreen(
                     val path = withContext(Dispatchers.IO) {
                         runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
                     }
-                    if (path != null) settingsVm.setBgImagePath(path)
+                    if (path != null) settingsVm.setNewBackgroundPicture(path)
                 }
                 showBgPicker = false
             },
@@ -2947,47 +2947,31 @@ private fun GlassEffectSettingsScreen(onBack: () -> Unit, modifier: Modifier = M
     var showRemotePicker by remember { mutableStateOf(false) }
     val ingestScope = rememberCoroutineScope()
 
-    var showSurfaces by remember { mutableStateOf(false) }
-    GlassEffectPage(
+    val background by settingsVm.backgroundConfig.collectAsStateWithLifecycle()
+    GlassBackgroundPage(
+        background = background,
         glassOn = glassConfig.enabled,
-        preset = glassConfig.preset,
         alphaPercent = (glassConfig.alpha * 100).roundToInt(),
-        blurPercent = (glassConfig.blurStrength * 100).roundToInt(),
-        highlightPercent = (glassConfig.highlightStrength * 100).roundToInt(),
-        allowFullTransparency = glassConfig.allowFullTransparency,
-        depthEffects = glassConfig.depthEffects,
-        bgOn = bgImagePath.isNotBlank(),
-        scope = glassConfig.scope,
+        onSetStyle = { style ->
+            // Picture with no picture yet goes straight to the picker.
+            settingsVm.setBackgroundStyle(style)
+            if (style == tv.own.owntv.core.theme.BackgroundStyle.PICTURE && bgImagePath.isBlank()) showBackgroundChooser = true
+        },
+        onOpenPicture = { showBackgroundChooser = true },
+        onSetLook = settingsVm::setPictureLook,
+        onSetDim = settingsVm::setBackgroundDim,
+        onSetBlur = settingsVm::setBackgroundBlur,
+        onSetAccentLight = settingsVm::setBackgroundAccentLight,
         onToggleGlass = {
             settingsVm.setGlassScopeBitmask(
                 if (glassConfig.enabled) 0 else GlassConfig(ALL_GLASS_SURFACES).toBitmask(),
             )
         },
-        onSetPreset = settingsVm::setGlassPreset,
-        onSetAlpha = {
-            settingsVm.setGlassAlphaPercent(it, (glassConfig.blurStrength * 100).roundToInt())
-        },
-        onSetBlur = {
-            settingsVm.setGlassBlurPercent(it, (glassConfig.alpha * 100).roundToInt())
-        },
-        onSetHighlight = settingsVm::setGlassHighlightPercent,
-        onSetAllowFullTransparency = settingsVm::setGlassAllowFullTransparency,
-        onSetDepthEffects = settingsVm::setGlassDepthEffects,
-        onOpenSurfaces = { showSurfaces = true },
-        onResetBalanced = {
-            settingsVm.setGlassPreset(GlassPreset.BALANCED)
-            settingsVm.setGlassHighlightPercent((GlassConfig.DEFAULT_HIGHLIGHT_STRENGTH * 100).roundToInt())
-            settingsVm.setGlassAllowFullTransparency(false)
-            settingsVm.setGlassDepthEffects(true)
-            settingsVm.setGlassScopeBitmask(GlassConfig(ALL_GLASS_SURFACES).toBitmask())
-        },
-        onOpenBackground = { showBackgroundChooser = true },
+        onSetAlpha = { settingsVm.setGlassAlphaPercent(it, (glassConfig.blurStrength * 100).roundToInt()) },
+        onReset = { settingsVm.resetGlassAndBackground(GlassConfig(ALL_GLASS_SURFACES).toBitmask()) },
         onBack = onBack,
         modifier = modifier,
     )
-    if (showSurfaces) {
-        GlassSurfacesDialog(scope = glassConfig.scope, onSetScope = settingsVm::setGlassScopeBitmask, onDismiss = { showSurfaces = false })
-    }
 
     if (showBackgroundChooser) {
         tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showBackgroundChooser = false }) {
@@ -3015,7 +2999,7 @@ private fun GlassEffectSettingsScreen(onBack: () -> Unit, modifier: Modifier = M
                         runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
                             .also { runCatching { file.delete() } }
                     }
-                    if (path != null) settingsVm.setBgImagePath(path)
+                    if (path != null) settingsVm.setNewBackgroundPicture(path)
                 }
                 showRemotePicker = false
             },
@@ -3034,7 +3018,7 @@ private fun GlassEffectSettingsScreen(onBack: () -> Unit, modifier: Modifier = M
                     val path = withContext(Dispatchers.IO) {
                         runCatching { ingestBackgroundImage(file, destDir) }.getOrNull()
                     }
-                    if (path != null) settingsVm.setBgImagePath(path)
+                    if (path != null) settingsVm.setNewBackgroundPicture(path)
                 }
                 showLocalPicker = false
             },
@@ -4036,10 +4020,7 @@ private fun stageRowExtras(
             Text(focusWidthLabel(focusWidth), style = valueStyle, color = current, maxLines = 1, overflow = TextOverflow.Ellipsis)
             OwnTVIcon(OwnTVIcon.CHEVRON, tv.own.owntv.ui.theme.StageColors.Muted, Modifier.size(20.mpx))
         }),
-        "tab_GLASS_EFFECT" to RowExtra(SettingValue.Opens(
-            if (glass.enabled) glassPresetLabel(glass.preset) + sep + stringResource(R.string.common_percent, (glass.alpha * 100).roundToInt())
-            else stringResource(R.string.common_off),
-        )),
+        "tab_GLASS_EFFECT" to RowExtra(SettingValue.Opens(glassBackgroundSummary(vm.backgroundConfig.collectAsStateWithLifecycle().value, glass))),
         "fonts" to RowExtra(SettingValue.Opens(fontFamilyLabel(font.mainFamily) + sep + stringResource(R.string.common_percent, font.sizePercent))),
         "popup_size" to RowExtra(SettingValue.Stepper(stringResource(R.string.common_percent, font.popupSizePercent)), onStep = popupStep),
         "ui_zoom" to RowExtra(SettingValue.Stepper(stringResource(R.string.common_percent, uiZoomPercent)), onStep = zoomStep),

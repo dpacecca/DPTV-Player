@@ -75,9 +75,14 @@ internal fun SettingsLivePreview() {
             Modifier
                 .wrapContentSize(Alignment.TopStart, unbounded = true)
                 .requiredSize(1920.mpx, 1080.mpx)
-                .graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = TransformOrigin(0f, 0f) }
-                .stageBackground(a.accent),
+                .graphicsLayer { scaleX = scale; scaleY = scale; transformOrigin = TransformOrigin(0f, 0f) },
         ) {
+            // The user's picture, when Glass & background shows one, as behind the real Home.
+            val background = tv.own.owntv.ui.theme.LocalBackground.current
+            if (background.showsPicture) {
+                tv.own.owntv.ui.components.BackgroundPicture(background, tv.own.owntv.ui.theme.LocalBlurredBackdrop.current, Modifier.fillMaxSize())
+            }
+            Box(Modifier.fillMaxSize().stageBackground(a.accent))
             if (lead != null) {
                 AsyncImage(
                     model = backdropOf(lead),
@@ -153,7 +158,7 @@ internal fun SettingsLivePreview() {
 private fun titleOf(item: TrendingHomeItem?): String? =
     item?.snapshot?.let { it.localizedTitle.ifBlank { it.canonicalTitle } }
 
-private fun backdropOf(item: TrendingHomeItem): String? =
+internal fun backdropOf(item: TrendingHomeItem): String? =
     tv.own.owntv.core.metadata.MetadataImages.backdrop(item.snapshot.backdropPath, size = "w780")
         ?: when (item) {
             is TrendingHomeItem.Movie -> item.movie.backdropUrl ?: item.movie.posterUrl

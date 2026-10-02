@@ -22,8 +22,6 @@
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	BgImage
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	OwnTVHome
 1	compiler	app/src/main/java/tv/own/owntv/MainActivity.kt	RememberReturnType
-1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	background image load failed: ${it.result.throwable.message}
-1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	background image loaded: ${file.absolutePath} (${file.length()} bytes)
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	blur: bounds decode failed for $path
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	blur: crop/scale/blur threw ${t.javaClass.simpleName}: ${t.message}
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	blur: decodeFile returned null for $path
@@ -685,6 +683,8 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/AvatarPickerDialog.kt	\0
 2	empty	app/src/main/java/tv/own/owntv/features/shell/components/CategoryRail.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/CategoryRail.kt	__rail_search__
+1	technical	app/src/main/java/tv/own/owntv/features/shell/components/GlassEffectPage.kt	$l — $d
+2	technical	app/src/main/java/tv/own/owntv/features/shell/components/GlassEffectPage.kt	—
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/GlassEffectPage.kt	◀ ▶
 1	empty	app/src/main/java/tv/own/owntv/features/shell/components/MediaDetailsScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/MediaDetailsScreen.kt	·
@@ -878,6 +878,8 @@
 1	technical	app/src/main/java/tv/own/owntv/player/RecordingBadge.kt	recPulse
 1	file-path	app/src/main/java/tv/own/owntv/ui/components/BackgroundImageChooserDialog.kt	background_${System.currentTimeMillis()}.$ext
 1	file-path	app/src/main/java/tv/own/owntv/ui/components/BackgroundImageChooserDialog.kt	png
+1	log	app/src/main/java/tv/own/owntv/ui/components/BackgroundPicture.kt	BgImage
+1	log	app/src/main/java/tv/own/owntv/ui/components/BackgroundPicture.kt	background image load failed: ${it.result.throwable.message}
 1	log	app/src/main/java/tv/own/owntv/ui/components/DayStepperDialog.kt	+
 1	log	app/src/main/java/tv/own/owntv/ui/components/DayStepperDialog.kt	−
 1	performance	app/src/main/java/tv/own/owntv/ui/components/FocusableSurface.kt	focusContainer
