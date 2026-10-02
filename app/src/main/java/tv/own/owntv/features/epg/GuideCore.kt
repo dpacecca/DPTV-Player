@@ -1,5 +1,7 @@
 package tv.own.owntv.features.epg
 
+import tv.own.owntv.ui.theme.stageText
+import tv.own.owntv.ui.theme.StageColors
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -251,40 +253,38 @@ internal fun ProgrammeDetailDialog(
             onDismiss = { showPlayerChooser = false },
         )
     }
-    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 1008.mpx, modifier = Modifier.longPressMenuGuard()) {
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        eyebrow = channelName.uppercase(),
+        eyebrowAccent = true,
+        title = programme.title,
+        body = stringResource(R.string.content_epg_time_range, formatTime(programme.startMs), formatTime(programme.stopMs)),
+        width = 1008.mpx,
+        modifier = Modifier.longPressMenuGuard(),
+    ) {
         BackHandler { onDismiss() }
-
-
-                Text(channelName.uppercase(), style = MaterialTheme.typography.labelMedium, color = colors.primary, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(6.dp))
-                Text(programme.title, style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall, color = colors.onSurface)
-                Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
-                Text(stringResource(R.string.content_epg_time_range, formatTime(programme.startMs), formatTime(programme.stopMs)), style = if (compact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
                 if (!description.isNullOrBlank()) {
-                    Spacer(Modifier.height(if (compact) 10.dp else 14.dp))
-                    Text(description.orEmpty(), style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                    Text(description.orEmpty(), style = stageText(18, 400), color = StageColors.Muted)
                 }
                 // The clash, said before the user commits to anything. A live programme cannot wait
                 // its turn — "start when the other finishes" would mean "start half-way through"
                 // (D10) — so this is a warning at the moment of choosing, not a failure afterwards.
                 if (canRecord && clashWith != null && recording == null) {
-                    Spacer(Modifier.height(if (compact) 10.dp else 14.dp))
+                    Spacer(Modifier.height(14.mpx))
                     Text(
                         stringResource(R.string.recording_clash_with, clashWith),
                         style = if (compact) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
-                        // The app's warning red, the same one a failed download and a failed
-                        // restore already use. There is no named error role in OwnTVTheme.
-                        color = Color(0xFFEF4444),
+                        color = StageColors.Danger,
                     )
                 }
-                Spacer(Modifier.height(if (compact) 16.dp else 24.dp))
+                Spacer(Modifier.height(24.mpx))
                 // FlowRow so the actions wrap to a second line on narrower screens instead of the last
                 // button being clipped off the dialog edge (4 buttons don't fit one row when catch-up adds
                 // "Watch from start" + "Watch channel").
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.mpx, Alignment.End),
+                    verticalArrangement = Arrangement.spacedBy(14.mpx),
                 ) {
                     // Catch-up channels: replay this programme from its start (seekable archive playback).
                     if (canCatchup) {
@@ -357,12 +357,6 @@ internal fun ProgrammeDetailDialog(
                     )
                     OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, compact = compact)
                 }
-
-
-            // Scrollable: long XMLTV descriptions can exceed a small screen's height. widthIn (not a
-            // fixed width) keeps it responsive on narrow screens, so this uses .glass() directly rather
-            // than dialogPanel (which sets a fixed width) — same DIALOGS surface + fill hook.
-            val corner = if (compact) 16.dp else 20.dp
     }
 }
 
@@ -377,22 +371,22 @@ internal fun CatchupPlayerChooser(
     val colors = OwnTVTheme.colors
     val fr = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
-    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 612.mpx, scroll = false) {
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.settings_catchup_player),
+        body = stringResource(R.string.content_epg_player_choice_description),
+        width = 700.mpx,
+        buttons = { OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY) },
+    ) {
         BackHandler { onDismiss() }
-
-
-                    Text(stringResource(R.string.settings_catchup_player), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        stringResource(R.string.content_epg_player_choice_description),
-                        style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(14.dp))
-                    OwnTVButton(stringResource(R.string.content_epg_own_player), onClick = onInternal, icon = OwnTVIcon.PLAY, compact = true, modifier = Modifier.fillMaxWidth().focusRequester(fr))
-                    Spacer(Modifier.height(8.dp))
-                    OwnTVButton(stringResource(R.string.content_epg_external_player), onClick = onExternal, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
-                    Spacer(Modifier.height(8.dp))
-                    OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
+        tv.own.owntv.ui.stage.StagePopupOption(
+            title = stringResource(R.string.content_epg_own_player), onClick = onInternal,
+            modifier = Modifier.focusRequester(fr), leading = { tv.own.owntv.ui.stage.StagePopupIcon(OwnTVIcon.PLAY) },
+        )
+        tv.own.owntv.ui.stage.StagePopupOption(
+            title = stringResource(R.string.content_epg_external_player), onClick = onExternal,
+            leading = { tv.own.owntv.ui.stage.StagePopupIcon(OwnTVIcon.EXTERNAL) },
+        )
     }
 }
 

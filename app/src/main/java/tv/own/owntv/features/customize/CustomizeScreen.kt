@@ -596,22 +596,17 @@ private fun RangeHideDialog(count: Int, onHide: () -> Unit, onShow: () -> Unit, 
     val hideFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { hideFocus.requestFocus() } }
     BackHandler { onDismiss() }
-    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 864.mpx) {
-        Text(stringResource(R.string.settings_customize_hide_show_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-        Spacer(Modifier.height(6.dp))
-        Text(
-            pluralStringResource(R.plurals.settings_customize_selected_categories, count, count),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(22.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.settings_customize_hide_show_title),
+        body = pluralStringResource(R.plurals.settings_customize_selected_categories, count, count),
+        width = 864.mpx,
+        buttons = {
             OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-            Spacer(Modifier.weight(1f))
             OwnTVButton(stringResource(R.string.settings_customize_show), onClick = onShow, style = OwnTVButtonStyle.SECONDARY)
             OwnTVButton(stringResource(R.string.settings_customize_hide), onClick = onHide, modifier = Modifier.focusRequester(hideFocus))
-        }
-    }
+        },
+    )
 }
 
 @Composable
@@ -705,17 +700,16 @@ private fun PinConfirmDialog(
     val confirmFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { confirmFocus.requestFocus() } }
     BackHandler { onDismiss() }
-    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 522.mpx) {
-        Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-        Spacer(Modifier.height(6.dp))
-        Text(message, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-        Spacer(Modifier.height(14.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = title,
+        body = message,
+        width = 522.mpx,
+        buttons = {
             OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-            Spacer(Modifier.weight(1f))
             OwnTVButton(confirmLabel, onClick = onConfirm, modifier = Modifier.focusRequester(confirmFocus))
-        }
-    }
+        },
+    )
 }
 
 /**

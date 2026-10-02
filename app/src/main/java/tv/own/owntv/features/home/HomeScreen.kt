@@ -98,7 +98,6 @@ import tv.own.owntv.ui.stage.StagePoster
 import tv.own.owntv.ui.stage.StageStill
 import tv.own.owntv.ui.stage.StageSurface
 import tv.own.owntv.ui.stage.StageTag
-import tv.own.owntv.ui.theme.Dimens
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.dissolveEdges
@@ -307,12 +306,9 @@ fun HomeScreen(
         }
     }
 
-    // Cold-start "structure first": while the first load runs, paint the skeleton rather than flashing
-    // the empty state (which would look wrong, and vanish, for a user who does have history).
-    if (state.isLoading) {
-        HomeSkeleton(modifier = modifier.fillMaxSize())
-        return
-    }
+    // While the first load runs, nothing but the Stage background behind: not the empty state (which
+    // would look wrong, and vanish, for a user who does have history), and no placeholder blocks.
+    if (state.isLoading) return
     if (showAllHiddenState) {
         AllRowsHiddenState(modifier = modifier.fillMaxSize())
         return
@@ -1350,66 +1346,3 @@ private fun AllRowsHiddenState(
     }
 }
 
-/**
- * Instant structure painted while Home's data loads on a cold start (see [HomeUiState.isLoading]).
- * Static placeholders only — no shimmer/animation, on purpose: this is a low-end-TV first paint, where an
- * animating skeleton would just compete with the cold DB reads for the same weak CPU/GPU.
- */
-@Composable
-private fun HomeSkeleton(modifier: Modifier = Modifier) {
-    val colors = OwnTVTheme.colors
-    Column(
-        modifier = modifier
-            .background(colors.surface)
-            .padding(vertical = Dimens.ScreenPaddingV),
-        verticalArrangement = Arrangement.spacedBy(Dimens.GapLarge),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.HomeRowPaddingH)
-                .aspectRatio(21f / 9f)
-                .clip(RoundedCornerShape(Dimens.HeroCardCorner))
-                .background(colors.surfaceContainerLowest),
-        )
-        SkeletonRowPlaceholder(cardCount = 6, cardWidth = 150.dp, cardHeight = 220.dp)
-        SkeletonRowPlaceholder(cardCount = 6, cardWidth = 180.dp, cardHeight = 100.dp)
-    }
-}
-
-@Composable
-private fun SkeletonRowPlaceholder(
-    cardCount: Int,
-    cardWidth: Dp,
-    cardHeight: Dp,
-    modifier: Modifier = Modifier,
-) {
-    val placeholder = OwnTVTheme.colors.surfaceContainerLowest
-    Column(modifier.fillMaxWidth()) {
-        Box(
-            modifier = Modifier
-                .padding(start = Dimens.HomeRowPaddingH)
-                .width(150.dp)
-                .height(14.dp)
-                .clip(RoundedCornerShape(100))
-                .background(placeholder),
-        )
-        Spacer(Modifier.height(10.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.HomeRowPaddingH),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            repeat(cardCount) {
-                Box(
-                    modifier = Modifier
-                        .width(cardWidth)
-                        .height(cardHeight)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(placeholder),
-                )
-            }
-        }
-    }
-}

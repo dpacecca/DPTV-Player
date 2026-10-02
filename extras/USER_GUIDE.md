@@ -25,7 +25,7 @@ Welcome  →  Text size  →  Disclaimer  →  Set up OwnTV  →  Profile
 1. **Welcome** — the language picker is on this screen: one of 26, or keep **System default**.
    Press **Get started**.
 2. **Text size** — set UI Zoom and Font size while a sample sentence resizes, so you judge it from
-   your sofa, and pick the **App icon** colour. Changeable later in Settings → Look & Feel.
+   your sofa, and pick the **App icon** colour. Changeable later in Settings → Appearance.
 3. **Disclaimer** — OwnTV is a player; you bring the sources.
 4. **Set up OwnTV** — three ways to begin: **New profile**, **Restore a backup**, or
    **From another device** (copy everything off a TV you already have — see below). A restore asks
@@ -64,18 +64,21 @@ Enter the app immediately. A status pill at the bottom shows progress.
 
 ```
 ┌──────────┬──────────────┬─────────────────────────────┐
-│ Sidebar  │  Categories  │  Channels / posters         │  + preview pane
-│ Home     │  Favorites   │                             │
-│ Live TV  │  History     │                             │
-│ Movies   │  Catch-up    │                             │
-│ Series   │  All         │                             │
-│ Guide    │  …folders…   │                             │
+│ Rail     │  Categories  │  Channels / posters         │  + preview pane
+│ Search   │  Favorites   │                             │
+│ Home     │  History     │                             │
+│ Live TV  │  Catch-up    │                             │
+│ TV Guide │  All         │                             │
+│ Movies   │  …folders…   │                             │
+│ Series   │              │                             │
+│ Downloads│              │                             │
 │ ⋯ More   │              │                             │
+│ Profile  │              │                             │
 └──────────┴──────────────┴─────────────────────────────┘
       ← Left from a list jumps back to the column on its left
 ```
 
-**⋯ More** is the last sidebar item: Settings, Favourites, History, Backup, Local sync, Error log and
+**⋯ More** is the last item on the rail: Settings, Favourites, History, Backup, Local sync, Error log and
 About. Its right-hand panel *describes* each row before you open it — it never takes focus, so
 **Right does nothing there on purpose**.
 
@@ -99,7 +102,7 @@ About. Its right-hand panel *describes* each row before you open it — it never
 | **Back** | full-screen player | Leaves full screen (there is no exit button) |
 | **OK** | full-screen player | Shows / hides the controls |
 
-**Want different keys?** **Settings → Content → Remote Shortcuts** maps spare colour, number, channel
+**Want different keys?** **Settings → Layout → Remote shortcuts** maps spare colour, number, channel
 and media keys to 26 actions — **Previous channel** among them. D-pad, Back, OK, volume, Home and power stay protected.
 
 ---
@@ -107,14 +110,14 @@ and media keys to 26 actions — **Previous channel** among them. D-pad, Back, O
 ## 📥 Playlists & sources
 
 ### ➕ Add a playlist
-**Where:** Settings → Manage sources → Add source
+**Where:** Settings → Sources & guide → Playlists → Add Source
 First choose **Remote** or **Manual** (below), then fill the form: **Xtream** (server + user +
 password), **M3U** (URL or a local file), or **Stalker/Ministra** (portal URL + MAC).
 Under **User-Agent** there is an optional **Referer** — leave it empty unless your provider asks
 for one; it is then sent with every stream of that playlist.
 
 ### 📱 Remote — fill the form on your phone
-**Where:** Settings → Manage sources → Add source → **Remote**
+**Where:** Settings → Sources & guide → Playlists → Add Source → **Remote**
 The same option the first-run wizard offers, and it stays available forever — you do not have to
 type an Xtream password with the remote. The TV shows a QR code and a 6-digit PIN; scan it with any
 phone on the same Wi-Fi, fill the form in the browser there, or upload an `.m3u` file from a
@@ -132,7 +135,7 @@ Per section: **Now** (import first), **Later** (background), **Off** (never fetc
 defaults to Live now, Movies/Series later, because Stalker VOD has no bulk endpoint.
 
 ### 🔄 Re-sync
-**Where:** Settings → Manage sources → the playlist
+**Where:** Settings → Sources & guide → Playlists → the playlist
 **Resync now** adds and updates. **Resync and remove missing titles** also drops what the provider
 has stopped listing. Neither touches your favourites, history, resume points or manual order.
 
@@ -202,12 +205,12 @@ definition; that is the device's decision, not OwnTV's.
 ## 🗓️ TV Guide
 
 ### 📖 Open the guide
-**Where:** sidebar → **Guide**
+**Where:** the rail → **TV Guide**
 Opens scrolled to now, with an amber **NOW** marker about a third of the way across so the current
 programme has context on its left. **Jump to Now** (top-right) returns after browsing.
 
 ### ➕ Add guide data
-**Where:** Settings → EPG Sources
+**Where:** Settings → Sources & guide → EPG Sources
 The guide is opt-in. After importing a playlist you are offered a one-tap sync. Later, add XMLTV
 feeds here — **Fill from playlist** takes the URL your playlist already carries — and set each feed's
 User-Agent and refresh interval. The refresh interval can also be **every N days**, the same choice a
@@ -223,14 +226,14 @@ Auto-match does the bulk; the manual picker lists the most similar guide channel
 is matched to.
 
 ### 📅 Guide days to keep
-**Where:** Settings → Sources & guide → EPG → **Guide days to keep**
+**Where:** Settings → Sources & guide → **Guide days to keep**
 How many days of upcoming guide the app stores, 1–14, seven by default. The same number decides how
 much is downloaded, how much is kept, and how far the grid scrolls — so raising it gives you a longer
 guide, and lowering it frees space. Old programmes are kept only on channels with catch-up, since
 those are the only ones that can play them back.
 
 ### 🕰️ Guide time offset
-**Where:** Settings → EPG → **Guide time offset** (global) · long-press a channel (just that one)
+**Where:** Settings → Sources & guide → **EPG time offset** (global) · long-press a channel (just that one)
 For a provider publishing its guide in another time zone. A re-sync never undoes it.
 
 ### 📋 Other guide touches
@@ -310,7 +313,7 @@ tap another to move it. **Sound only** gives up a tile's picture and keeps its c
 A tile that cannot start says why rather than sitting blank.
 
 ### 🔌 How many channels your provider allows
-**Where:** Settings → Playlists → **Info**
+**Where:** Settings → Sources & guide → Playlists → **Info**
 OwnTV measures this once, at a playlist's first sync, and warns before refusing a stream. **Re-test**
 is inside Info — it stops anything playing and takes a few minutes.
 
@@ -324,7 +327,7 @@ Swaps the poster wall for a compact list. Inside a show, the same button swaps e
 episode pictures.
 
 ### ▶️ Resume
-Partly-watched titles offer **Resume**. **Settings → Resume** chooses **Ask**, **Auto** or **Never**.
+Partly-watched titles offer **Resume**. **Settings → Watching & recording → Resume playback** chooses **Ask**, **Auto** or **Never**.
 A series **opens on your last-watched episode**.
 
 ### ⏭️ Auto-play next episode
@@ -356,7 +359,7 @@ remembers it.
 ## 🎬 TMDB metadata
 
 ### 🖼️ Posters, plots, cast, trailers
-**Where:** Settings → **Metadata (TMDB)**
+**Where:** Settings → Content & metadata → **Metadata (TMDB)**
 **Metadata source** picks *Provider only*, *Provider + TMDB* or *TMDB only*. **Language** sets the
 language of plots and artwork — separate from the app's own language.
 
@@ -365,7 +368,7 @@ The built-in service is shared by everyone using OwnTV, so it has minute/hour/da
 the top of the page.
 
 ### 🔑 Use your own key instead — recommended
-**Where:** Settings → Metadata → **Get advanced TMDB info via remote**
+**Where:** Settings → Content & metadata → Metadata (TMDB) → **Get advanced TMDB info via remote**
 A free personal TMDB key removes the shared limit. It's 32 characters, so send it from your phone by
 QR + PIN rather than typing it. A self-hosted Cloudflare Worker also works (one is in the repo).
 
@@ -379,7 +382,7 @@ QR + PIN rather than typing it. A self-hosted Cloudflare Worker also works (one 
 ## 🏠 Home
 
 ### 🔥 Now Trending
-**Where:** the first Home row · Settings → Home screen → **Now Trending**
+**Where:** the first Home row · Settings → Layout → Home screen → **Now Trending**
 Current TMDB charts, filtered to titles your provider can actually play. Up to 10, refreshed every
 five to eight days. Needs TMDB metadata turned on.
 
@@ -392,12 +395,12 @@ and it expands into a preview — switch that off with **Play video in the hero 
 One press resumes the most recent thing — a film, the next episode, or your last channel.
 
 ### 🧩 Rearrange Home
-**Where:** Settings → **Home screen** (per profile)
+**Where:** Settings → Layout → **Home screen** (per profile)
 Reorder or hide rows, filter the hero, and switch channel rows between **Cards** and **On Now** (an
 inline mini-guide).
 
-### 🧭 Trim the sidebar
-**Where:** Settings → **Sidebar Menu Customization**
+### 🧭 Trim the rail
+**Where:** Settings → Layout → **Navigation**
 **Dynamic** adapts the menu to what the active playlist actually contains; **Static** lets you toggle
 each icon yourself.
 
@@ -406,7 +409,7 @@ each icon yourself.
 ## 🔎 Search · 🕐 History · 📥 Downloads
 
 ### 🔎 Search
-**Where:** sidebar → Search
+**Where:** the rail → Search
 Searches Live, Movies and Series together. With the box empty it shows a **Jump to** row. The first
 **Back** clears the query; a second leaves.
 
@@ -415,7 +418,7 @@ Searches Live, Movies and Series together. With the box empty it shows a **Jump 
 Long-press → **Remove from History** for one item, or **Clear** for all, by type.
 
 ### 📥 Downloads
-**Where:** sidebar → Downloads
+**Where:** the rail → Downloads
 Grouped Active · Waiting · Completed · Failed, with a storage bar. Long-press for **Pause · Resume ·
 Retry · Delete**. Downloads keep running when you leave the app.
 > **USB stick removed?** New downloads and recordings go to OwnTV's own folder until it is back — the
@@ -426,9 +429,13 @@ Retry · Delete**. Downloads keep running when you leave the app.
 
 ## 👥 Profiles
 
-**Where:** Settings → **Profiles**
+**Where:** Settings → **Profile**
 Each profile has its own favourites, history, resume points and layout. Add a **PIN lock**, or turn on
 **Kids mode** to hide adult folders, items and TMDB results everywhere.
+
+### 🙂 Change your avatar
+**Where:** ⋯ More → OK on your avatar · or hold OK on the avatar at the bottom of the rail
+Pick a drawn avatar, or **Your own picture** — a file on this TV or a photo sent from your phone.
 
 ### 🚀 Where a profile opens
 **Where:** Settings → App → **App startup**
@@ -468,15 +475,15 @@ by itself.)*
 ### 🔎 Search OpenSubtitles
 **Where:** player → Subtitles → **Search OpenSubtitles**
 Needs a free [opensubtitles.com](https://www.opensubtitles.com) account. Sign in at
-**Settings → OpenSubtitles** — by remote (QR + PIN) or by typing.
+**Settings → Content & metadata → OpenSubtitles** — by remote (QR + PIN) or by typing.
 
 ### 📁 Use a file you already have
 **Where:** player → Subtitles → **Select local subtitle file**
 No account, no internet. Browses USB and internal storage.
 
 ### ⏱️ Fix subtitle timing
-**Where:** player → ADJUST → **Subtitle timing**
-Nudge earlier or later in 0.1 s and 0.5 s steps.
+**Where:** player → Subtitles → **Subtitle timing**
+◀ ▶ move the subtitles 0.1 s earlier or later; OK sets them back to zero.
 
 ### 🗣️ Preferred languages
 **Where:** Settings → Sound & subtitles → **Preferred audio / subtitle language**
@@ -525,18 +532,18 @@ OwnTV logo in the app. **Restart now** switches at once: OwnTV closes and opens 
 Home, with the new colour. **Later** switches when you next leave the app. Some launchers take a moment to show the new banner.
 
 ### 🔦 Focus highlight
-**Where:** Settings → **Focus highlight**
+**Where:** Settings → Appearance → **Focus highlight**
 The colour and thickness of the ring around whatever is selected. Applies everywhere.
 
-### 🪟 Glass Effect
-**Where:** Settings → **Glass Effect**
-A frosted look with a live preview and six presets from **Ultra Clear** to **Opaque**. Choose which
-surfaces get it, and set your own background image (local file or URL).
-> Real frost needs a background image and **Android 12+**. Without those, panels are simply tinted.
-> **Surface transparency** sets how *solid* a surface is, so a lower number is more see-through.
+### 🪟 Glass & background
+**Where:** Settings → Appearance → **Glass & background**
+The background is **Stage** (soft colour light), **Picture** (your own image, from this TV or sent from
+a phone) or **Plain**. A picture comes in three looks — **Sharp**, **Soft** and **Dark** — with its own
+darkening and blur. Glass frosts the panels over it; its opacity and the surfaces it covers are yours to
+set, with a live preview beside the rows.
 
 ### 🔤 Font & size
-**Where:** Settings → Appearance → **Font customization**
+**Where:** Settings → Appearance → **Fonts & text size**
 Main text 60–140%, popup text and popup boxes independently, and a choice of bundled fonts.
 > Below **85% zoom** OwnTV warns first — very small sizes draw many more items and can exhaust a
 > low-memory TV.
@@ -555,7 +562,7 @@ photos — above a wide poster grid.
 - Live TV and the episode list inside a show are unchanged either way.
 
 ### 📐 Panel widths
-**Where:** Settings → **Panel Width Adjustment**
+**Where:** Settings → Layout → **Panel widths**
 How wide the category rail, list and preview pane are, per section. The third panel can be **0%** to
 hide it entirely. Each section must total 100%. The category rail can go as narrow as **10%** — with
 two columns (Cinematic, or the third panel at 0%) the second one may take up to 90% to make room.
@@ -565,7 +572,7 @@ two columns (Cinematic, or the third panel at 0%) the second one may take up to 
 > for another row of posters, raise it for more plot and cast. Set it to **0%** for posters only.
 
 ### 🗂️ Categories & items
-**Where:** long-press a category → **Customize**, or Settings → **Customize Categories & Items**
+**Where:** long-press a category → **Customize**, or Settings → Content & metadata → **Customize categories & items**
 Hide, rename, reorder, and **unhide**. Highlights:
 - **Bulk rename** — add or strip a prefix/suffix across a whole category, with **Auto cleanup** for
   country, quality and codec tags, a review step, and **Restore original names** as the undo.
@@ -578,7 +585,7 @@ Hide, rename, reorder, and **unhide**. Highlights:
 Put the actions you use most at the top.
 
 ### 🎞️ Animations
-**Where:** Settings → **Animations**
+**Where:** Settings → Appearance → **Animations**
 Turn interface motion off for a snappier feel on a slower box.
 
 ---
@@ -688,7 +695,7 @@ title. Markers: `S01E05` (also `s1e5`, `S01 E05`, `S01.E05`, `S01-E05`) and `1x0
 | "Too many connections" | Wait — OwnTV counts down and retries by itself. Don't press Retry |
 | Sound but a black picture | OwnTV switches engines by itself; if neither can, it says so |
 | Stalker portal refuses the login | Re-check the MAC, and the TV's **date & time** |
-| Guide is blank | **Settings → EPG** — add a feed and sync it, then run **Auto-match EPG** |
+| Guide is blank | **Settings → Sources & guide → EPG Sources** — add a feed and sync it, then run **Auto-match EPG** |
 | Audio out of sync | Player → Audio → **A/V sync**, then **Remember this delay** |
 | Update says there isn't enough space | In-app updates need room for the whole APK — free some and retry |
 

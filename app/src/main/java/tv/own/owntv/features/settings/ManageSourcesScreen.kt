@@ -1,5 +1,10 @@
 package tv.own.owntv.features.settings
 
+import androidx.compose.foundation.layout.widthIn
+import tv.own.owntv.ui.stage.stageGlass
+import tv.own.owntv.ui.theme.stageAccent
+import tv.own.owntv.ui.theme.stageText
+import tv.own.owntv.ui.theme.StageColors
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -22,12 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
-import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
 import androidx.compose.ui.focus.focusProperties
@@ -60,7 +63,6 @@ import tv.own.owntv.features.setup.RemoteSetupScreen
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVSpinner
-import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /** Phase 13 — list / add / re-sync / delete the active profile's IPTV sources. */
@@ -227,17 +229,17 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 SettingsViewModel.ImportState.Running -> CenterStatus {
                     val display = progress?.importProgressDisplay()
                     OwnTVSpinner(sizeDp = 56)
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(24.mpx))
                     Text(
                         stringResource(R.string.settings_sources_importing),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.onSurface,
+                        style = stageText(38, 800),
+                        color = StageColors.Text,
                     )
-                    Spacer(Modifier.height(6.dp))
-                    Text(display?.primaryText() ?: stringResource(R.string.settings_sources_preparing), style = MaterialTheme.typography.headlineSmall, color = colors.primary)
-                    Spacer(Modifier.height(4.dp))
-                    Text(display?.detailText() ?: stringResource(R.string.settings_sources_preparing), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(9.mpx))
+                    Text(display?.primaryText() ?: stringResource(R.string.settings_sources_preparing), style = stageText(30, 800), color = stageAccent.accent)
+                    Spacer(Modifier.height(6.mpx))
+                    Text(display?.detailText() ?: stringResource(R.string.settings_sources_preparing), style = stageText(18, 400), color = StageColors.Muted)
+                    Spacer(Modifier.height(30.mpx))
                     OwnTVButton(stringResource(R.string.common_cancel), onClick = { showAdd = false; vm.cancelImport() }, style = OwnTVButtonStyle.SECONDARY)
                 }
                 is SettingsViewModel.ImportState.Success -> {
@@ -246,18 +248,18 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         EpgSyncDialog(state = epgSync, onSync = vm::syncPendingEpg, onDismiss = vm::dismissPendingEpg)
                     } else if (s.warnings.isNotEmpty() || s.remainder.hasAny) {
                         CenterStatus {
-                            Text(stringResource(R.string.settings_sources_import_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                            Spacer(Modifier.height(8.dp))
-                            Text(s.counts.summaryText(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                            Text(stringResource(R.string.settings_sources_import_title), style = stageText(38, 800), color = StageColors.Text)
+                            Spacer(Modifier.height(12.mpx))
+                            Text(s.counts.summaryText(), style = stageText(18, 400), color = StageColors.Muted)
                             s.warnings.warningText()?.let { warning ->
-                                Spacer(Modifier.height(4.dp))
-                                Text(warning, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                                Spacer(Modifier.height(6.mpx))
+                                Text(warning, style = stageText(18, 400), color = StageColors.Muted)
                             }
                             s.remainder.remainderText()?.let { remainder ->
-                                Spacer(Modifier.height(4.dp))
-                                Text(remainder, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+                                Spacer(Modifier.height(6.mpx))
+                                Text(remainder, style = stageText(18, 400), color = StageColors.Muted)
                             }
-                            Spacer(Modifier.height(20.dp))
+                            Spacer(Modifier.height(30.mpx))
                             OwnTVButton(stringResource(R.string.common_done), onClick = { showAdd = false; vm.resetImport() })
                         }
                     } else {
@@ -265,11 +267,11 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     }
                 }
                 is SettingsViewModel.ImportState.Failed -> CenterStatus {
-                    Text(stringResource(R.string.settings_sources_import_failed), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                    Spacer(Modifier.height(8.dp))
-                    Text(s.failure.displayText(), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                    Spacer(Modifier.height(20.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.settings_sources_import_failed), style = stageText(38, 800), color = StageColors.Text)
+                    Spacer(Modifier.height(12.mpx))
+                    Text(s.failure.displayText(), style = stageText(18, 400), color = StageColors.Muted)
+                    Spacer(Modifier.height(30.mpx))
+                    Row(horizontalArrangement = Arrangement.spacedBy(14.mpx)) {
                         OwnTVButton(stringResource(R.string.common_back), onClick = { showAdd = false; vm.resetImport() }, style = OwnTVButtonStyle.SECONDARY)
                         OwnTVButton(stringResource(R.string.settings_sources_try_again), onClick = { vm.resetImport() }, modifier = Modifier.focusRequester(errorFocus))
                     }
@@ -507,8 +509,12 @@ private fun CatalogSyncState.Syncing.countsLabel(sourceType: SourceType, stored:
 
 @Composable
 private fun CenterStatus(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    Box(Modifier.padding(start = 6.dp, end = 6.dp, bottom = 6.dp, top = tv.own.owntv.features.shell.components.StageContentTop).fillMaxSize().roundedPanel(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, content = content)
+    Box(Modifier.padding(top = tv.own.owntv.features.shell.components.StageContentTop).fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            Modifier.widthIn(max = 1000.mpx).stageGlass(30.mpx).padding(horizontal = 60.mpx, vertical = 48.mpx),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            content = content,
+        )
     }
 }
 

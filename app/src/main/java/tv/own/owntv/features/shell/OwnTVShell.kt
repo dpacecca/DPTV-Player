@@ -1086,7 +1086,10 @@ fun OwnTVShell(
                         selectedSection == MainSection.MORE -> tv.own.owntv.features.more.MoreScreen(
                             profileName = profileName.ifBlank { stringResource(R.string.common_own_tv_user) },
                             playlistLabel = playlistLabel,
+                            avatarId = avatarId,
+                            avatarPath = avatarPath,
                             onSwitchProfile = onSwitchProfile,
+                            onPickAvatar = { showAvatarPicker = true },
                             onOpenSettings = { group, search ->
                                 settingsStart = tv.own.owntv.features.shell.components.SettingsStart(group, search)
                                 onSelectSection(MainSection.SETTINGS)
@@ -1356,6 +1359,8 @@ fun OwnTVShell(
                 profileLine = stringResource(R.string.shell_rail_profile_line, playlistLabel),
                 onSwitchProfile = onSwitchProfile,
                 onPickAvatar = { showAvatarPicker = true },
+                avatarId = avatarId,
+                avatarPath = avatarPath,
                 selectedItemFocusRequester = sidebarFocus,
                 contentFocusRequester = contentAreaFocus,
                 enterContent = when (selectedSection) {

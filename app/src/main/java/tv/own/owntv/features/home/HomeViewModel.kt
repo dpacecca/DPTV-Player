@@ -92,9 +92,9 @@ data class HomeUiState(
      * True until the first [HomeViewModel.loadHomeData] completes. Home's queries are profile-scoped and
      * already indexed, but on a cold boot their first reads come off slow eMMC (pages not yet in the OS
      * page cache) — that's the ~half-second gap between the shell painting and `home-data`. While that
-     * runs we render a skeleton so the landing screen paints its *structure* instantly instead of flashing
-     * the empty state (which looks wrong for a user who does have history). Flips to false the moment real
-     * data publishes, and stays false thereafter (refreshes don't re-skeleton).
+     * runs Home draws nothing over the background rather than flashing the empty state (which looks wrong
+     * for a user who does have history). Flips to false the moment real data publishes, and stays false
+     * thereafter (refreshes don't blank it again).
      */
     val isLoading: Boolean = true,
 )

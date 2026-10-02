@@ -1,5 +1,6 @@
 package tv.own.owntv.features.shell.components
 
+import androidx.compose.ui.draw.clip
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
@@ -134,6 +135,9 @@ fun StageRail(
     profileLine: String,
     onSwitchProfile: () -> Unit,
     onPickAvatar: () -> Unit,
+    /** The profile's drawn avatar (-1 = none) and its own picture (blank = none). */
+    avatarId: Int = -1,
+    avatarPath: String = "",
     selectedItemFocusRequester: FocusRequester,
     contentFocusRequester: FocusRequester,
     /** A screen's own way in, when it has one (Home returns to the exact control left from). */
@@ -262,7 +266,7 @@ fun StageRail(
             // Full height: the profile sits at the bottom, after the last separator.
             if (full) Spacer(Modifier.weight(1f))
             RailSeparator(open)
-            RailProfile(open, profileName, profileLine.takeIf { counts }, onSwitchProfile, onPickAvatar)
+            RailProfile(open, profileName, profileLine.takeIf { counts }, avatarId, avatarPath, onSwitchProfile, onPickAvatar)
         }
     }
 }
@@ -413,7 +417,7 @@ private fun RailActiveDot(modifier: Modifier) {
  * switch ›" under it from Size Wide up ([line]). OK switches profile; a long press changes the avatar.
  */
 @Composable
-private fun RailProfile(open: Boolean, name: String, line: String?, onSwitchProfile: () -> Unit, onPickAvatar: () -> Unit) {
+private fun RailProfile(open: Boolean, name: String, line: String?, avatarId: Int, avatarPath: String, onSwitchProfile: () -> Unit, onPickAvatar: () -> Unit) {
     val a = stageAccent
     val initial = name.trim().take(1).uppercase().ifEmpty { "?" }
     StageSurface(
@@ -421,10 +425,12 @@ private fun RailProfile(open: Boolean, name: String, line: String?, onSwitchProf
         onLongClick = onPickAvatar,
         radius = if (open) 20.mpx else 23.mpx,
         modifier = if (open) Modifier.fillMaxWidth() else Modifier.padding(top = 4.mpx).size(46.mpx),
+        // Alone in the capsule the avatar covers a fill, so it takes the ring instead.
+        focusStyle = if (open) StageFocus.FILLED else StageFocus.POSTER,
         contentAlignment = if (open) Alignment.CenterStart else Alignment.Center,
     ) { focused ->
         if (!open) {
-            RailAvatar(initial)
+            RailAvatar(initial, avatarId = avatarId, imagePath = avatarPath)
             return@StageSurface
         }
         Row(
@@ -432,7 +438,7 @@ private fun RailProfile(open: Boolean, name: String, line: String?, onSwitchProf
             horizontalArrangement = Arrangement.spacedBy(14.mpx),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            RailAvatar(initial)
+            RailAvatar(initial, avatarId = avatarId, imagePath = avatarPath)
             Column {
                 Text(name, style = stageText(19, 700), color = if (focused) a.onAccent else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (line != null) {
@@ -443,9 +449,16 @@ private fun RailProfile(open: Boolean, name: String, line: String?, onSwitchProf
     }
 }
 
-/** `.frail .av`: the profile initial on the orange gradient, 20/800 in #2A0D12; More's profile row draws it 58 / 24. */
+/**
+ * `.frail .av`: the profile's avatar or own picture in a circle; with neither, its initial on the orange
+ * gradient, 20/800 in #2A0D12. More's profile row draws it 58 / 24.
+ */
 @Composable
-internal fun RailAvatar(initial: String, size: Int = 46, textSize: Int = 20) {
+internal fun RailAvatar(initial: String, size: Int = 46, textSize: Int = 20, avatarId: Int = -1, imagePath: String = "") {
+    if (avatarId != -1 || imagePath.isNotBlank()) {
+        tv.own.owntv.ui.components.OwnTVAvatar(avatarId = avatarId, imagePath = imagePath, modifier = Modifier.size(size.mpx).clip(CircleShape))
+        return
+    }
     Box(
         Modifier
             .size(size.mpx)

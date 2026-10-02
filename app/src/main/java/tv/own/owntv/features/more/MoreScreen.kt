@@ -1,5 +1,6 @@
 package tv.own.owntv.features.more
 
+import androidx.compose.foundation.layout.size
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
@@ -78,7 +79,11 @@ private enum class MoreItem { SETTINGS, FAVORITES, HISTORY, BACKUP, LOCAL_SYNC, 
 fun MoreScreen(
     profileName: String,
     playlistLabel: String,
+    avatarId: Int,
+    avatarPath: String,
     onSwitchProfile: () -> Unit,
+    /** OK on the avatar: the avatar picker, with "Your own picture". */
+    onPickAvatar: () -> Unit,
     onOpenSettings: (group: Int?, search: Boolean) -> Unit,
     onPlayChannel: (Long) -> Unit,
     onPlayMovie: (Long, Long) -> Unit,
@@ -146,7 +151,7 @@ fun MoreScreen(
                 }
                 .focusGroup(),
         ) {
-            ProfileRow(profileName, playlistLabel, playlists, onSwitchProfile)
+            ProfileRow(profileName, playlistLabel, playlists, avatarId, avatarPath, onSwitchProfile, onPickAvatar)
             val item = @Composable { it: MoreItem, icon: OwnTVIcon, label: String, value: String?, warn: Boolean ->
                 StageGroupItem(
                     text = label, icon = icon, value = value, warn = warn,
@@ -215,15 +220,17 @@ fun MoreScreen(
     }
 }
 
-/** The sheet's head: avatar 58, name 24/800, "All playlists · 3 playlists", and **Switch**. */
+/** The sheet's head: avatar 58 (OK changes it), name 24/800, "All playlists · 3 playlists", and **Switch**. */
 @Composable
-private fun ProfileRow(name: String, playlistLabel: String, playlists: Int, onSwitch: () -> Unit) {
+private fun ProfileRow(name: String, playlistLabel: String, playlists: Int, avatarId: Int, avatarPath: String, onSwitch: () -> Unit, onPickAvatar: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(start = 14.mpx, end = 14.mpx, top = 4.mpx, bottom = 18.mpx),
         horizontalArrangement = Arrangement.spacedBy(16.mpx),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RailAvatar(name.take(1).uppercase(), size = 58, textSize = 24)
+        StageSurface(onClick = onPickAvatar, radius = 29.mpx, modifier = Modifier.size(58.mpx), focusStyle = tv.own.owntv.ui.stage.StageFocus.POSTER, contentAlignment = Alignment.Center) {
+            RailAvatar(name.take(1).uppercase(), size = 58, textSize = 24, avatarId = avatarId, imagePath = avatarPath)
+        }
         Column(Modifier.weight(1f)) {
             Text(name, style = stageText(24, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(

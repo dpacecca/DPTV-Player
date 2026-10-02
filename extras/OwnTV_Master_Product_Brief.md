@@ -206,10 +206,11 @@ player, TMDB, backup, auto refresh and the playlist switcher.
 
 ### 3.5 Layout
 
-A fixed, slim icon rail with the logo at the top and the profile avatar at the bottom; a top bar
-carrying the section chip, search, clock, weather, active playlist and Continue. Live TV, Movies and
+The **Stage** interface: a navigation rail with the logo at the top and the profile's avatar (or own
+picture) at the bottom — Docked or floating, Compact or wide, optionally widening over the content while
+it has focus — and a top-right cluster carrying Continue, the active playlist, clock and weather. Live TV, Movies and
 Series share **one rounded browse container** with category, list and preview regions. Hand-drawn
-duotone navigation icons. **Panel Width Adjustment** sets each section's three widths, with the
+duotone navigation icons. **Panel widths** sets each section's three widths, with the
 preview allowed to be 0% to hide it; the Guide's two columns split independently. Theme is
 Dark / Light / System.
 
@@ -221,7 +222,7 @@ panel floats on it as its own translucent plate, and a **read-only** detail bloc
 artwork with the name beneath it, rating, quality badges, genres, plot and cast photos — sits above a
 wide poster grid. It is deliberately grid-only and deliberately has no focusable children, so focus
 never leaves the grid and every action stays where it already is: OK plays, long-press opens the
-context menu, resume state reads as a badge and a poster sliver. Panel Width Adjustment resolves the
+context menu, resume state reads as a badge and a poster sliver. Panel widths resolves the
 same section into two columns there, with the detail block's height held as its own separate
 setting rather than as one of the three width shares. Live TV is never Cinematic.
 
@@ -320,21 +321,20 @@ that download failed rather than losing it silently.
 
 ## 8. Personalization & settings
 
-**Settings is a spine and a sheet**: the left spine lists **Quick** plus nine section headings, each
-with an icon and row count; only that section's rows compose on the right, inside one sheet with
-values right-aligned and a chevron only where a row opens another screen. Returning from a sub-screen
-restores focus to the exact row. A **search pill** searches every setting at once and names the full
-path in each result.
+**Settings is a set of group pages** (the twelve groups below): values sit right-aligned on each row,
+a chevron only where a row opens another page, and a simple value — a choice or a number — is edited
+in the page's side panel rather than in a popup. Returning from a sub-page restores focus to the exact
+row. A **search** box searches every setting at once and names the full path in each result.
 
 - **Appearance** — theme, any accent colour (preset, palette or hex, generating the whole theme), a
   separate **focus highlight** colour and thickness, UI zoom, and **font customization** (main text
   60–140%, popup text 50–120%, popup geometry 50–120%, six bundled families).
-- **App icon** (in the App group) — the flip-card icon and logo in eight colours (Eggshell by
-  default), changing the app row banner, the launch screen and every in-app logo after a restart.
-- **Glass Effect** — an opt-in, interaction-aware material on its own page with a live preview: six
-  clarity presets, 20–100% tint, ten real frost levels, adaptive readability, optional depth and
-  parallax, a local or remote wallpaper, and per-surface control. Real frost needs Android 12+ and a
-  background image; otherwise panels stay readably tinted.
+- **App icon** (in the App group) — the flip-card icon in eight colours (Eggshell by default) or
+  **Pixel**, the dot-matrix TV set, changing the app row banner, the launch screen and every in-app logo
+  after a restart. The logo's lowercase **owntv** wordmark is #227's, by @m3th0d93.
+- **Glass & background** — the background is **Stage** (soft accent light), **Picture** (a local or
+  phone-sent image in a Sharp, Soft or Dark look, with its own darkening and blur) or **Plain**; glass
+  frosts the panels over it, with an opacity, per-surface control and a live preview.
 - **Ambient Glow** — a separate radiance for the solid interface, available only with the explicit
   Dark theme while Glass is off.
 - **Remote Shortcuts** — short and long presses of spare colour, number, channel and media keys
@@ -375,7 +375,7 @@ checks protect placeholders, plural forms, formatting, overflow and release pack
 
 ## 10. Backup, sync & updates
 
-**Backup & Restore** writes a single `.own` container: the backup data, the Glass wallpaper and the
+**Backup & Restore** writes a single `.own` container: the backup data, the background picture and the
 downloaded subtitle files. An optional **backup password** encrypts the whole container
 (AES-256-GCM, PBKDF2); without one the file is unencrypted and every secret is omitted — source and
 proxy passwords, Stalker identity, TMDB and OpenSubtitles credentials, PIN hashes. Restore accepts

@@ -1,14 +1,11 @@
 package tv.own.owntv.features.multiview
 
+import androidx.compose.foundation.layout.width
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,12 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.ui.theme.mpx
-import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.longPressMenuGuard
@@ -56,7 +49,13 @@ fun MultiviewTileMenu(
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
 
-    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 880.mpx, modifier = Modifier.longPressMenuGuard()) {
+    // The long-press menu look (P4-05), as the channel and settings-row menus draw it.
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+      androidx.compose.foundation.layout.Box(
+        Modifier.fillMaxSize().longPressMenuGuard().modalScrim().trapAllFocusExit().focusGroup(),
+        contentAlignment = Alignment.Center,
+      ) {
+      tv.own.owntv.ui.stage.StageMenu(Modifier.width(560.mpx)) {
         MenuRow(
             label = stringResource(R.string.multiview_tile_change_channel),
             icon = OwnTVIcon.LIVE_TV,
@@ -82,6 +81,8 @@ fun MultiviewTileMenu(
             MenuRow(stringResource(R.string.multiview_tile_remove), OwnTVIcon.CLOSE, onRemove)
         }
         MenuRow(stringResource(R.string.content_close), OwnTVIcon.CLOSE, onDismiss)
+      }
+      }
     }
 }
 
@@ -92,15 +93,5 @@ private fun MenuRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = OwnTVTheme.colors
-    FocusableSurface(onClick = onClick, modifier = modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            OwnTVIcon(icon, tint = colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
-            Text(label, style = MaterialTheme.typography.bodyLarge, color = colors.onSurface)
-        }
-    }
+    tv.own.owntv.ui.stage.StageMenuItem(label, onClick = onClick, modifier = modifier, icon = icon)
 }
