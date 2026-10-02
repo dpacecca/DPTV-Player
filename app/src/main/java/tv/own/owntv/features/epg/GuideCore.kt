@@ -251,25 +251,10 @@ internal fun ProgrammeDetailDialog(
             onDismiss = { showPlayerChooser = false },
         )
     }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 1008.mpx, modifier = Modifier.longPressMenuGuard()) {
         BackHandler { onDismiss() }
-      CompactPopupFont(compact) {
-        Box(
-            // The dialog can be opened by a long-press on the programme cell; the OK key is often still
-            // held when it appears, which would instantly fire the focused action. Swallow OK until it's
-            // released once so the held long-press only reveals the dialog, then the user chooses.
-            Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup().longPressMenuGuard(),
-            contentAlignment = Alignment.Center,
-        ) {
-            // Scrollable: long XMLTV descriptions can exceed a small screen's height. widthIn (not a
-            // fixed width) keeps it responsive on narrow screens, so this uses .glass() directly rather
-            // than dialogPanel (which sets a fixed width) — same DIALOGS surface + fill hook.
-            val corner = if (compact) 16.dp else 20.dp
-            Column(
-                Modifier.widthIn(max = if (compact) 400.dp else 560.dp).clip(RoundedCornerShape(corner))
-                    .glass(surface = GlassSurface.DIALOGS, baseFill = colors.surfaceContainerHigh, shape = RoundedCornerShape(corner))
-                    .verticalScroll(rememberScrollState()).padding(if (compact) 18.dp else 28.dp),
-            ) {
+
+
                 Text(channelName.uppercase(), style = MaterialTheme.typography.labelMedium, color = colors.primary, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.height(6.dp))
                 Text(programme.title, style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall, color = colors.onSurface)
@@ -372,9 +357,12 @@ internal fun ProgrammeDetailDialog(
                     )
                     OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, compact = compact)
                 }
-            }
-        }
-      }
+
+
+            // Scrollable: long XMLTV descriptions can exceed a small screen's height. widthIn (not a
+            // fixed width) keeps it responsive on narrow screens, so this uses .glass() directly rather
+            // than dialogPanel (which sets a fixed width) — same DIALOGS surface + fill hook.
+            val corner = if (compact) 16.dp else 20.dp
     }
 }
 
@@ -389,15 +377,10 @@ internal fun CatchupPlayerChooser(
     val colors = OwnTVTheme.colors
     val fr = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 612.mpx, scroll = false) {
         BackHandler { onDismiss() }
-        PopupFontTheme(fontScale = 0.7f) {
-            Box(
-                Modifier.fillMaxSize().modalScrim()
-                    .trapAllFocusExit().focusGroup(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(Modifier.dialogPanel(width = 340.dp, corner = 16.dp, padding = 18.dp, scroll = false)) {
+
+
                     Text(stringResource(R.string.settings_catchup_player), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -410,9 +393,6 @@ internal fun CatchupPlayerChooser(
                     OwnTVButton(stringResource(R.string.content_epg_external_player), onClick = onExternal, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(8.dp))
                     OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, compact = true, modifier = Modifier.fillMaxWidth())
-                }
-            }
-        }
     }
 }
 

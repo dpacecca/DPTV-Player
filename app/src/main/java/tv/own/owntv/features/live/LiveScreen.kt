@@ -53,7 +53,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.graphicsLayer
@@ -67,9 +66,10 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
-import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.Key
 import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.ContentOrderEntity
@@ -92,10 +92,7 @@ import tv.own.owntv.ui.components.jumpLazyListTo
 import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.trapVerticalFocusExit
-import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.ChannelGenre
-import tv.own.owntv.ui.components.OwnTVButton
-import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.core.model.ContentMenu
 import tv.own.owntv.ui.components.MenuAction
 import tv.own.owntv.ui.components.arranged
@@ -108,14 +105,10 @@ import tv.own.owntv.ui.components.formatCount
 import tv.own.owntv.ui.components.ContentPanelFill
 import tv.own.owntv.ui.components.PreviewPanelFill
 import tv.own.owntv.ui.components.roundedPanel
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.gridFocusTarget
 import tv.own.owntv.ui.format.rememberBestDateFormatter
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.theme.Dimens
-import tv.own.owntv.core.theme.GlassSurface
-import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.LocalPopupFontFamily
 import tv.own.owntv.core.live.LiveKey
 import tv.own.owntv.core.live.EpgNowNext
@@ -1258,12 +1251,10 @@ private fun CatchupDialog(
     onJump: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
     val formatTime = rememberSystemTimeFormatter()
     val list by androidx.compose.runtime.produceState<List<tv.own.owntv.core.database.entity.EpgProgrammeEntity>?>(initialValue = null) {
         value = runCatching { loadProgrammes() }.getOrDefault(emptyList())
     }
-    androidx.activity.compose.BackHandler { onDismiss() }
     // "Choose exact time…" opens on top of this dialog, same as the player's route into it.
     var manualTime by remember { mutableStateOf(false) }
     if (manualTime) {
@@ -1279,76 +1270,44 @@ private fun CatchupDialog(
         if (list == null || (list!!.isEmpty() && jumpOffsetsSec.isEmpty())) return@LaunchedEffect
         kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() }
     }
-    // Popup(focusable = true) is a hard focus boundary: a stray D-pad press or the Live screen's own
-    // LaunchedEffect focus requests can no longer drop focus onto the channel grid behind the scrim
-    // (same fix as EpgMatchDialog / ChannelContextMenu). trapAllFocusExit() additionally blocks
-    // directional exits through the scrim. PopupFontTheme swaps in the selected popup family + scales fonts to
-    // match the other popup menus (0.75f), and the box is shrunk to that same denser size.
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
-        Box(
-            Modifier.fillMaxSize()
-                .modalScrim()
-                .trapAllFocusExit()
-                .focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-        // Inner list is height-capped to the screen (minus the dialog chrome) so the Close button
-        // stays reachable on small/low-res screens; the outer column can't verticalScroll (LazyColumn).
-        val listHeight = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 220.dp).coerceIn(140.dp, 300.dp)
-        Column(Modifier.dialogPanel(width = 460.dp, corner = 16.dp, padding = 18.dp, scroll = false)) {
-            Text(stringResource(R.string.content_catchup_title, channelName), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-            Spacer(Modifier.height(2.dp))
-            val noGuide = list?.isEmpty() == true && jumpOffsetsSec.isNotEmpty()
-            Text(
-                stringResource(if (noGuide) R.string.content_catchup_jump_prompt else R.string.content_catchup_prompt),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(12.dp))
-            when (val progs = list) {
-                null -> Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 28) }
-                else -> if (progs.isEmpty()) {
-                    // No guide for this channel. The archive still exists, so offer times to jump to;
-                    // only fall back to the "match your EPG" note when there is no archive window either.
-                    if (jumpOffsetsSec.isNotEmpty()) {
-                        CatchupJumpRows(
-                            offsetsSec = jumpOffsetsSec,
-                            firstFocus = firstFocus,
-                            onPick = onJump,
-                            modifier = Modifier.fillMaxWidth().height(listHeight),
-                            onChooseExact = { manualTime = true },
-                        )
-                    } else {
-                        Text(
-                            stringResource(R.string.content_catchup_empty),
-                            style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
-                        )
-                    }
+    val noGuide = list?.isEmpty() == true && jumpOffsetsSec.isNotEmpty()
+    // A Stage popup: its own window, so nothing behind can take focus (as EpgMatchDialog / the menus).
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.content_catchup_title, channelName),
+        body = stringResource(if (noGuide) R.string.content_catchup_jump_prompt else R.string.content_catchup_prompt),
+        eyebrow = null,
+        scroll = false,
+        buttons = { tv.own.owntv.ui.stage.StageButton(stringResource(R.string.content_close), onClick = onDismiss, height = 56.mpx, textSize = 19) },
+    ) {
+        when (val progs = list) {
+            null -> Box(Modifier.fillMaxWidth().height(100.mpx), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 28) }
+            else -> if (progs.isEmpty()) {
+                // No guide for this channel. The archive still exists, so offer times to jump to; only
+                // fall back to the "match your EPG" note when there is no archive window either.
+                if (jumpOffsetsSec.isNotEmpty()) {
+                    CatchupJumpRows(
+                        offsetsSec = jumpOffsetsSec,
+                        firstFocus = firstFocus,
+                        onPick = onJump,
+                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                        onChooseExact = { manualTime = true },
+                    )
                 } else {
-                    LazyColumn(Modifier.fillMaxWidth().height(listHeight), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        items(progs, key = { it.id }) { p ->
-                            FocusableSurface(
-                                onClick = { onPick(p) },
-                                modifier = if (p == progs.first()) Modifier.fillMaxWidth().focusRequester(firstFocus) else Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                contentAlignment = Alignment.CenterStart,
-                                surface = GlassSurface.DIALOGS,
-                            ) { _ ->
-                                Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-                                    Text(p.title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(formatCatchupTime(p.startMs, p.stopMs, formatTime), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-                                }
-                            }
-                        }
+                    Text(stringResource(R.string.content_catchup_empty), style = tv.own.owntv.ui.theme.stageText(18, 500), color = tv.own.owntv.ui.theme.StageColors.Muted)
+                }
+            } else {
+                LazyColumn(Modifier.fillMaxWidth().weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(2.mpx)) {
+                    items(progs, key = { it.id }) { p ->
+                        tv.own.owntv.ui.stage.StagePopupOption(
+                            title = p.title, subtitle = formatCatchupTime(p.startMs, p.stopMs, formatTime), onClick = { onPick(p) },
+                            modifier = if (p == progs.first()) Modifier.focusRequester(firstFocus) else Modifier,
+                            leading = { tv.own.owntv.ui.stage.StagePopupIcon(tv.own.owntv.ui.components.OwnTVIcon.CATCHUP) },
+                        )
                     }
                 }
             }
-            Spacer(Modifier.height(14.dp))
-            OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
         }
-        }
-    } // PopupFontTheme
     }
 }
 
@@ -1450,80 +1409,44 @@ internal fun EpgOffsetDialog(
     onSet: (Int?) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
     var minutes by remember { mutableStateOf(currentMinutes ?: globalMinutes) }
-    val doneFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { doneFocus.requestFocus() } }
-    androidx.activity.compose.BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.75f) {
-    androidx.compose.foundation.layout.Box(
-        // trapAllFocusExit, like every other dialog here: a D-pad press at the edge of a row must not
-        // walk out of the popup onto the screen behind the scrim.
-        Modifier.fillMaxSize().modalScrim()
-            .trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
+    val valueFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { valueFocus.requestFocus() } }
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.content_epg_time_offset),
+        body = stringResource(R.string.content_epg_offset_channel_description, channelName),
+        eyebrow = null,
+        width = 760.mpx,
+        buttons = {
+            if (currentMinutes != null) tv.own.owntv.ui.stage.StageButton(stringResource(R.string.content_epg_offset_use_global), onClick = { onSet(null); onDismiss() }, height = 56.mpx, textSize = 19)
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_cancel), onClick = onDismiss, height = 56.mpx, textSize = 19)
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_done), onClick = { onSet(minutes); onDismiss() }, height = 56.mpx, textSize = 19, tinted = true)
+        },
     ) {
-        Column(
-            Modifier.dialogPanel(width = 420.dp, corner = 16.dp, padding = 18.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        // ◀ ▶ shift by half an hour, -12 h … +14 h; Done keeps it.
+        tv.own.owntv.ui.stage.StageSurface(
+            onClick = { onSet(minutes); onDismiss() },
+            radius = 18.mpx,
+            focusStyle = tv.own.owntv.ui.stage.StageFocus.FX,
+            modifier = Modifier.fillMaxWidth().height(84.mpx).focusRequester(valueFocus).onPreviewKeyEvent { e ->
+                val d = when (e.key) { Key.DirectionLeft -> -1; Key.DirectionRight -> 1; else -> 0 }
+                if (d != 0 && e.type == KeyEventType.KeyDown) minutes = (minutes + d * 30).coerceIn(-12 * 60, 14 * 60)
+                d != 0
+            },
+            contentAlignment = Alignment.Center,
         ) {
-            Text(stringResource(R.string.content_epg_time_offset), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-            Spacer(Modifier.height(2.dp))
-            Text(
-                stringResource(R.string.content_epg_offset_channel_description, channelName),
-                style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
-            Spacer(Modifier.height(14.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(
-                    stringResource(R.string.content_epg_shift_minutes, "−", "30"),
-                    onClick = { minutes = (minutes - 30).coerceAtLeast(-12 * 60) },
-                    style = OwnTVButtonStyle.SECONDARY, compact = true,
-                )
-                Text(
-                    liveEpgShiftLabel(minutes),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = colors.primary,
-                    modifier = Modifier.width(120.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                )
-                OwnTVButton(
-                    stringResource(R.string.content_epg_shift_minutes, "+", "30"),
-                    onClick = { minutes = (minutes + 30).coerceAtMost(14 * 60) },
-                    style = OwnTVButtonStyle.SECONDARY, compact = true,
-                )
-            }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                stringResource(
-                    if (currentMinutes == null) R.string.content_epg_offset_following_global else R.string.content_epg_offset_channel_only,
-                    liveEpgShiftLabel(globalMinutes),
-                ),
-                style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(14.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OwnTVButton(
-                    stringResource(R.string.common_done),
-                    onClick = { onSet(minutes); onDismiss() },
-                    modifier = Modifier.weight(1f).focusRequester(doneFocus),
-                )
-                if (currentMinutes != null) {
-                    OwnTVButton(
-                        stringResource(R.string.content_epg_offset_use_global),
-                        onClick = { onSet(null); onDismiss() },
-                        style = OwnTVButtonStyle.SECONDARY,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.weight(1f))
+            Row(Modifier.fillMaxWidth().padding(horizontal = 22.mpx), verticalAlignment = Alignment.CenterVertically) {
+                tv.own.owntv.ui.components.OwnTVIcon(tv.own.owntv.ui.components.OwnTVIcon.CHEVRON, tv.own.owntv.ui.theme.StageColors.Muted, Modifier.size(26.mpx).graphicsLayer { rotationZ = 180f })
+                Text(liveEpgShiftLabel(minutes), style = tv.own.owntv.ui.theme.stageText(36, 800), color = tv.own.owntv.ui.theme.stageAccent.accent, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f))
+                tv.own.owntv.ui.components.OwnTVIcon(tv.own.owntv.ui.components.OwnTVIcon.CHEVRON, tv.own.owntv.ui.theme.StageColors.Muted, Modifier.size(26.mpx))
             }
         }
+        Text(
+            stringResource(if (currentMinutes == null) R.string.content_epg_offset_following_global else R.string.content_epg_offset_channel_only, liveEpgShiftLabel(globalMinutes)),
+            style = tv.own.owntv.ui.theme.stageText(15, 500), color = tv.own.owntv.ui.theme.StageColors.Muted, modifier = Modifier.padding(top = 12.mpx),
+        )
     }
-    } // PopupFontTheme
-    } // Popup
 }
 
 /** Remind me's value: "5 min before", or "At the start" when the reminder comes at the start. */

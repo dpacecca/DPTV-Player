@@ -2,7 +2,6 @@ package tv.own.owntv.features.shell
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,14 +17,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Alignment
@@ -41,7 +38,6 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.text.style.TextOverflow
 import tv.own.owntv.core.epg.displayLogoUrl
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -105,6 +101,10 @@ import tv.own.owntv.ui.theme.LocalGlass
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.core.theme.ThemeMode
 import tv.own.owntv.core.live.LiveKey
+import androidx.compose.foundation.border
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.style.TextOverflow
 
 /** Which layer currently holds focus (drives Back navigation). */
 private enum class ShellLayer { SIDEBAR, RAIL, CONTENT }
@@ -1800,52 +1800,45 @@ fun OwnTVShell(
       }
 
     if (showExit) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showExit = false }) {
-            ExitDialog(onConfirm = onExitApp, onDismiss = { showExit = false })
-        }
+        ExitDialog(onConfirm = onExitApp, onDismiss = { showExit = false })
     }
     if (showAvatarPicker) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAvatarPicker = false }) { AvatarPickerDialog(
+        AvatarPickerDialog(
                 selectedId = avatarId,
                 onSelect = onSetAvatar,
                 customPath = avatarPath,
                 onPickCustom = { showAvatarPicker = false; showAvatarChooser = true },
                 onClearCustom = { onClearCustomAvatar(); showAvatarPicker = false },
                 onDismiss = { showAvatarPicker = false },
-        ) }
+        )
     }
     // A picture for the profile, taken the same two ways the background image is: a file on this
     // television, or a photo a phone sends over the local network. Both hand over a File, which core
     // copies and scales — nothing here knows or cares which one it was.
     if (showAvatarChooser) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAvatarChooser = false }) {
-            tv.own.owntv.ui.components.BackgroundImageChooserDialog(
+        tv.own.owntv.ui.components.BackgroundImageChooserDialog(
                 hasImage = avatarPath.isNotBlank(),
                 onPickLocal = { showAvatarChooser = false; showAvatarFilePicker = true },
                 onPickRemote = { showAvatarChooser = false; showAvatarRemote = true },
                 onClear = { onClearCustomAvatar(); showAvatarChooser = false },
                 onDismiss = { showAvatarChooser = false },
             )
-        }
     }
     if (showAvatarFilePicker) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAvatarFilePicker = false }) {
-            tv.own.owntv.ui.components.StorageBrowser(
+        tv.own.owntv.ui.components.StorageBrowser(
                 title = stringResource(R.string.profiles_avatar_own_picture),
                 mode = tv.own.owntv.ui.components.BrowseMode.FILE,
                 fileExtensions = setOf("png", "jpg", "jpeg", "webp", "bmp"),
                 onPick = { file -> onSetCustomAvatar(file); showAvatarFilePicker = false },
                 onDismiss = { showAvatarFilePicker = false },
             )
-        }
     }
     if (showAvatarRemote) {
         // The same companion listener the background image uses — one PIN-protected upload page, so
         // a phone sends a profile picture exactly the way it already sends a wallpaper.
         val avatarRemoteVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.settings.SettingsViewModel>()
         val remoteState by avatarRemoteVm.remoteState.collectAsStateWithLifecycle()
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showAvatarRemote = false }) {
-            tv.own.owntv.ui.components.RemoteBackgroundDialog(
+        tv.own.owntv.ui.components.RemoteBackgroundDialog(
                 state = remoteState,
                 images = avatarRemoteVm.remoteImages,
                 onStart = avatarRemoteVm::startRemoteImageListener,
@@ -1856,7 +1849,6 @@ fun OwnTVShell(
                 },
                 onDismiss = { showAvatarRemote = false; showAvatarChooser = true },
             )
-        }
     }
     if (showPlaylistPicker) {
         tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { showPlaylistPicker = false }, stageLayout = true) {
@@ -1885,12 +1877,10 @@ fun OwnTVShell(
             restoreNoticeDismissed = true
             scope.launch { restoreSettings.clearRestoreMarker() }
         }
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = dismissRestoreNotice) {
-            IncompleteRestoreDialog(
+        IncompleteRestoreDialog(
                 description = description,
                 onDismiss = dismissRestoreNotice,
             )
-        }
     }
 
         val updateManager = koinInject<UpdateManager>()
@@ -1913,9 +1903,7 @@ fun OwnTVShell(
                 showStartupToast = false
                 updateManager.reset()
             }
-            tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = dismissChangelog) {
-                UpdateDialog(onDismiss = dismissChangelog, checkOnOpen = false)
-            }
+            UpdateDialog(onDismiss = dismissChangelog, checkOnOpen = false)
         } else if (showStartupToast && selectedSection != MainSection.SETTINGS && playerMode == PlayerMode.NONE) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
                 UpdateStatusToast(

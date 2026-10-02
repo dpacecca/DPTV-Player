@@ -50,6 +50,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tv.own.owntv.R
+import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.core.customize.BULK_RENAME_MAX_ROWS
 import tv.own.owntv.core.customize.BulkPreviewRow
 import tv.own.owntv.core.customize.BulkRenameSession
@@ -111,28 +112,18 @@ private fun BulkRenameChoicePopup(session: BulkRenameSession) {
     val addFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { addFocus.requestFocus() } }
     BackHandler { session.close() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { session.close() }) {
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(stringResource(R.string.settings_bulk_rename_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Text(
-                pluralStringResource(R.plurals.settings_bulk_rename_selected, count, count),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(8.dp))
-            OwnTVButton(stringResource(R.string.settings_bulk_rename_add_rule), onClick = { session.openBuilder() }, modifier = Modifier.fillMaxWidth().focusRequester(addFocus))
-            OwnTVButton(stringResource(R.string.settings_bulk_rename_auto_cleanup), onClick = { session.autoCleanup() }, modifier = Modifier.fillMaxWidth())
-            OwnTVButton(stringResource(R.string.settings_bulk_rename_restore_original), onClick = { session.requestRestore() }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            OwnTVButton(stringResource(R.string.common_cancel), onClick = { session.close() }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-        }
-    }
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = { session.close() }, title = null, eyebrow = null, width = 864.mpx) {
+        Text(stringResource(R.string.settings_bulk_rename_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Text(
+            pluralStringResource(R.plurals.settings_bulk_rename_selected, count, count),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        OwnTVButton(stringResource(R.string.settings_bulk_rename_add_rule), onClick = { session.openBuilder() }, modifier = Modifier.fillMaxWidth().focusRequester(addFocus))
+        OwnTVButton(stringResource(R.string.settings_bulk_rename_auto_cleanup), onClick = { session.autoCleanup() }, modifier = Modifier.fillMaxWidth())
+        OwnTVButton(stringResource(R.string.settings_bulk_rename_restore_original), onClick = { session.requestRestore() }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
+        OwnTVButton(stringResource(R.string.common_cancel), onClick = { session.close() }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -206,174 +197,168 @@ private fun BulkRuleBuilderDialog(session: BulkRenameSession) {
         session.submitRules(out, RenameRules.Options(trimLeftovers = trim, ignoreCase = ignoreCase))
     }
 
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { session.backToChoice() }) {
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(Modifier.dialogPanel(width = 760.dp, padding = 24.dp)) {
-            Text(stringResource(R.string.settings_bulk_rename_rules_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                stringResource(R.string.settings_bulk_rename_rules_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = { session.backToChoice() }, title = null, eyebrow = null, width = 1368.mpx) {
+                Text(stringResource(R.string.settings_bulk_rename_rules_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.settings_bulk_rename_rules_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(14.dp))
+
+                Column(
+                    Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    draft.forEachIndexed { i, rule ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusGroup()
+                                .then(if (i < rowFocusers.size) Modifier.focusRequester(rowFocusers[i]) else Modifier),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            OwnTVButton(
+                                label = stringResource(
+                                    if (rule.action == RenameRules.Action.ADD) R.string.settings_bulk_rename_action_add
+                                    else R.string.settings_bulk_rename_action_remove,
+                                ) + " ▾",
+                                onClick = { editing = i to RuleField.TYPE },
+                                style = OwnTVButtonStyle.SECONDARY,
+                                modifier = Modifier.width(120.dp),
+                            )
+                            OwnTVButton(
+                                label = stringResource(
+                                    if (rule.placement == RenameRules.Placement.PREFIX) R.string.settings_bulk_rename_before
+                                    else R.string.settings_bulk_rename_after,
+                                ) + " ▾",
+                                onClick = { editing = i to RuleField.PLACEMENT },
+                                style = OwnTVButtonStyle.SECONDARY,
+                                modifier = Modifier.width(120.dp),
+                            )
+                            OwnTVButton(
+                                label = rule.autoLabel?.let { label ->
+                                    stringResource(
+                                        when (label) {
+                                            RenameRules.AutoLabel.COUNTRY_PROVIDER -> R.string.settings_bulk_rename_auto_country_provider
+                                            RenameRules.AutoLabel.QUALITY_CODEC -> R.string.settings_bulk_rename_auto_quality_codec
+                                            RenameRules.AutoLabel.EMOJI_SYMBOLS -> R.string.settings_bulk_rename_auto_emoji_symbols
+                                        },
+                                    )
+                                } ?: rule.value.ifBlank { stringResource(R.string.settings_bulk_rename_value_example) },
+                                onClick = { editing = i to RuleField.VALUE },
+                                style = OwnTVButtonStyle.SECONDARY,
+                                modifier = Modifier.weight(1f),
+                            )
+                            OwnTVButton(
+                                "✕",
+                                onClick = {
+                                    val next = draft.toMutableList().apply { removeAt(i) }
+                                    draft = next
+                                    pendingRowFocus = if (next.isEmpty()) -1 else i.coerceAtMost(next.lastIndex)
+                                },
+                                style = OwnTVButtonStyle.SECONDARY,
+                            )
+                        }
+                    }
+                    OwnTVButton(
+                        stringResource(R.string.settings_bulk_rename_add_another_rule),
+                        onClick = {
+                            pendingRowFocus = draft.size
+                            draft = draft + RenameRules.Rule(RenameRules.Action.ADD, RenameRules.Placement.PREFIX, "")
+                        },
+                        style = OwnTVButtonStyle.SECONDARY,
+                        modifier = Modifier.fillMaxWidth().focusRequester(addRuleFocus),
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+
+                // The two options as toggle chips (Trim leftover spaces / Ignore case, both default ON).
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OwnTVButton(
+                        label = stringResource(
+                            if (trim) R.string.settings_bulk_rename_trim_spaces_selected
+                            else R.string.settings_bulk_rename_trim_spaces,
+                        ),
+                        onClick = { trim = !trim },
+                        style = if (trim) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                    )
+                    OwnTVButton(
+                        label = stringResource(
+                            if (ignoreCase) R.string.settings_bulk_rename_ignore_case_selected
+                            else R.string.settings_bulk_rename_ignore_case,
+                        ),
+                        onClick = { ignoreCase = !ignoreCase },
+                        style = if (ignoreCase) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
+                    )
+                }
+
+                errorRes?.let {
+                    Spacer(Modifier.height(6.dp))
+                    Text(stringResource(it), style = MaterialTheme.typography.bodySmall, color = colors.favorite)
+                }
+                Spacer(Modifier.height(16.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OwnTVButton(stringResource(R.string.common_cancel), onClick = { session.backToChoice() }, style = OwnTVButtonStyle.SECONDARY)
+                    Spacer(Modifier.weight(1f))
+                    OwnTVButton(stringResource(R.string.settings_bulk_rename_apply), onClick = { submit() })
+                }
+
+
+        when (editing?.second) {
+            RuleField.TYPE -> PickerDialog(
+                title = stringResource(R.string.settings_bulk_rename_rule_type),
+                options = listOf(
+                    "ADD" to stringResource(R.string.settings_bulk_rename_action_add),
+                    "REMOVE" to stringResource(R.string.settings_bulk_rename_action_remove),
+                ),
+                selected = draft[editing!!.first].action.name,
+                onSelect = { value ->
+                    runCatching { RenameRules.Action.valueOf(value) }.getOrNull()?.let { action ->
+                        val i = editing!!.first
+                        draft = draft.toMutableList().apply {
+                            set(i, get(i).copy(action = action, pattern = null, autoLabel = null))
+                        }
+                    }
+                    editing = null
+                },
+                onDismiss = { editing = null },
             )
-            Spacer(Modifier.height(14.dp))
-
-            Column(
-                Modifier.heightIn(max = 300.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                draft.forEachIndexed { i, rule ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusGroup()
-                            .then(if (i < rowFocusers.size) Modifier.focusRequester(rowFocusers[i]) else Modifier),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        OwnTVButton(
-                            label = stringResource(
-                                if (rule.action == RenameRules.Action.ADD) R.string.settings_bulk_rename_action_add
-                                else R.string.settings_bulk_rename_action_remove,
-                            ) + " ▾",
-                            onClick = { editing = i to RuleField.TYPE },
-                            style = OwnTVButtonStyle.SECONDARY,
-                            modifier = Modifier.width(120.dp),
-                        )
-                        OwnTVButton(
-                            label = stringResource(
-                                if (rule.placement == RenameRules.Placement.PREFIX) R.string.settings_bulk_rename_before
-                                else R.string.settings_bulk_rename_after,
-                            ) + " ▾",
-                            onClick = { editing = i to RuleField.PLACEMENT },
-                            style = OwnTVButtonStyle.SECONDARY,
-                            modifier = Modifier.width(120.dp),
-                        )
-                        OwnTVButton(
-                            label = rule.autoLabel?.let { label ->
-                                stringResource(
-                                    when (label) {
-                                        RenameRules.AutoLabel.COUNTRY_PROVIDER -> R.string.settings_bulk_rename_auto_country_provider
-                                        RenameRules.AutoLabel.QUALITY_CODEC -> R.string.settings_bulk_rename_auto_quality_codec
-                                        RenameRules.AutoLabel.EMOJI_SYMBOLS -> R.string.settings_bulk_rename_auto_emoji_symbols
-                                    },
-                                )
-                            } ?: rule.value.ifBlank { stringResource(R.string.settings_bulk_rename_value_example) },
-                            onClick = { editing = i to RuleField.VALUE },
-                            style = OwnTVButtonStyle.SECONDARY,
-                            modifier = Modifier.weight(1f),
-                        )
-                        OwnTVButton(
-                            "✕",
-                            onClick = {
-                                val next = draft.toMutableList().apply { removeAt(i) }
-                                draft = next
-                                pendingRowFocus = if (next.isEmpty()) -1 else i.coerceAtMost(next.lastIndex)
-                            },
-                            style = OwnTVButtonStyle.SECONDARY,
-                        )
+            RuleField.PLACEMENT -> PickerDialog(
+                title = stringResource(R.string.settings_bulk_rename_where),
+                options = listOf(
+                    "PREFIX" to stringResource(R.string.settings_bulk_rename_before),
+                    "SUFFIX" to stringResource(R.string.settings_bulk_rename_after),
+                ),
+                selected = draft[editing!!.first].placement.name,
+                onSelect = { value ->
+                    runCatching { RenameRules.Placement.valueOf(value) }.getOrNull()?.let { placement ->
+                        val i = editing!!.first
+                        draft = draft.toMutableList().apply {
+                            set(i, get(i).copy(placement = placement, pattern = null, autoLabel = null))
+                        }
                     }
-                }
-                OwnTVButton(
-                    stringResource(R.string.settings_bulk_rename_add_another_rule),
-                    onClick = {
-                        pendingRowFocus = draft.size
-                        draft = draft + RenameRules.Rule(RenameRules.Action.ADD, RenameRules.Placement.PREFIX, "")
-                    },
-                    style = OwnTVButtonStyle.SECONDARY,
-                    modifier = Modifier.fillMaxWidth().focusRequester(addRuleFocus),
-                )
-            }
-            Spacer(Modifier.height(12.dp))
-
-            // The two options as toggle chips (Trim leftover spaces / Ignore case, both default ON).
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OwnTVButton(
-                    label = stringResource(
-                        if (trim) R.string.settings_bulk_rename_trim_spaces_selected
-                        else R.string.settings_bulk_rename_trim_spaces,
-                    ),
-                    onClick = { trim = !trim },
-                    style = if (trim) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
-                )
-                OwnTVButton(
-                    label = stringResource(
-                        if (ignoreCase) R.string.settings_bulk_rename_ignore_case_selected
-                        else R.string.settings_bulk_rename_ignore_case,
-                    ),
-                    onClick = { ignoreCase = !ignoreCase },
-                    style = if (ignoreCase) OwnTVButtonStyle.PRIMARY else OwnTVButtonStyle.SECONDARY,
-                )
-            }
-
-            errorRes?.let {
-                Spacer(Modifier.height(6.dp))
-                Text(stringResource(it), style = MaterialTheme.typography.bodySmall, color = colors.favorite)
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(stringResource(R.string.common_cancel), onClick = { session.backToChoice() }, style = OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.settings_bulk_rename_apply), onClick = { submit() })
-            }
+                    editing = null
+                },
+                onDismiss = { editing = null },
+            )
+            RuleField.VALUE -> TextInputDialog(
+                title = stringResource(R.string.settings_bulk_rename_rule_value),
+                initial = draft[editing!!.first].value,
+                hint = stringResource(R.string.settings_bulk_rename_value_hint),
+                onConfirm = { value ->
+                    val i = editing!!.first
+                    draft = draft.toMutableList().apply {
+                        set(i, get(i).copy(value = value, pattern = null, autoLabel = null))
+                    }
+                    editing = null
+                },
+                onDismiss = { editing = null },
+            )
+            null -> Unit
         }
-    }
-
-    when (editing?.second) {
-        RuleField.TYPE -> PickerDialog(
-            title = stringResource(R.string.settings_bulk_rename_rule_type),
-            options = listOf(
-                "ADD" to stringResource(R.string.settings_bulk_rename_action_add),
-                "REMOVE" to stringResource(R.string.settings_bulk_rename_action_remove),
-            ),
-            selected = draft[editing!!.first].action.name,
-            onSelect = { value ->
-                runCatching { RenameRules.Action.valueOf(value) }.getOrNull()?.let { action ->
-                    val i = editing!!.first
-                    draft = draft.toMutableList().apply {
-                        set(i, get(i).copy(action = action, pattern = null, autoLabel = null))
-                    }
-                }
-                editing = null
-            },
-            onDismiss = { editing = null },
-        )
-        RuleField.PLACEMENT -> PickerDialog(
-            title = stringResource(R.string.settings_bulk_rename_where),
-            options = listOf(
-                "PREFIX" to stringResource(R.string.settings_bulk_rename_before),
-                "SUFFIX" to stringResource(R.string.settings_bulk_rename_after),
-            ),
-            selected = draft[editing!!.first].placement.name,
-            onSelect = { value ->
-                runCatching { RenameRules.Placement.valueOf(value) }.getOrNull()?.let { placement ->
-                    val i = editing!!.first
-                    draft = draft.toMutableList().apply {
-                        set(i, get(i).copy(placement = placement, pattern = null, autoLabel = null))
-                    }
-                }
-                editing = null
-            },
-            onDismiss = { editing = null },
-        )
-        RuleField.VALUE -> TextInputDialog(
-            title = stringResource(R.string.settings_bulk_rename_rule_value),
-            initial = draft[editing!!.first].value,
-            hint = stringResource(R.string.settings_bulk_rename_value_hint),
-            onConfirm = { value ->
-                val i = editing!!.first
-                draft = draft.toMutableList().apply {
-                    set(i, get(i).copy(value = value, pattern = null, autoLabel = null))
-                }
-                editing = null
-            },
-            onDismiss = { editing = null },
-        )
-        null -> Unit
-    }
     }
 }
 
@@ -392,146 +377,144 @@ private fun BulkReviewDialog(session: BulkRenameSession) {
     // Popup(focusable=true) creates a hard focus boundary — applying/declining removes rows from the
     // LazyColumn, but focus stays inside instead of escaping to the screen behind (same pattern and
     // reason as EpgMatchReviewDialog).
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { session.done() }) {
-        // Dense TV review: one-third smaller than the previous 0.75 scale.
-        PopupFontTheme(fontScale = 0.50f) {
-    Box(
-        Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        // scroll = false: this column holds a LazyColumn, which manages its own scrolling.
-                Column(Modifier.dialogPanel(width = 680.dp, corner = 16.dp, padding = 12.dp, scroll = false)) {
-            Text(stringResource(R.string.settings_bulk_rename_review), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-            Spacer(Modifier.height(2.dp))
-            Text(
-                stringResource(R.string.settings_bulk_rename_review_description),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(7.dp))
-            val listHeight = (LocalConfiguration.current.screenHeightDp.dp - 220.dp).coerceIn(160.dp, 320.dp)
-            Row(Modifier.fillMaxWidth()) {
-                // Left: the pending rows. Rows are removed on Apply/Decline; keys keep the list stable.
-                LazyColumn(
-                    Modifier.weight(1f).height(listHeight),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
-                ) {
-                    itemsIndexed(rows, key = { _, r -> r.key }) { index, r ->
-                        Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(colors.surface).padding(horizontal = 8.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(r.oldName, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                if (r.unchanged) {
-                                    Text(
-                                        if (r.blankRejected) stringResource(R.string.settings_bulk_rename_blank_rejected)
-                                        else stringResource(R.string.settings_bulk_rename_unchanged),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = colors.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                } else {
-                                    Text(
-                                        stringResource(R.string.settings_bulk_rename_result, r.newName),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = if (r.duplicate) colors.favorite else colors.primary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    if (r.duplicate) {
-                                        Text(
-                                            stringResource(R.string.settings_bulk_rename_duplicate),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = colors.favorite,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
-                                }
-                            }
-                            if (!r.unchanged) {
-                                FocusableSurface(
-                                    onClick = { session.applyRows(setOf(r.key)) },
-                                    modifier = if (index == firstChanged) Modifier.focusRequester(firstApplyFocus) else Modifier,
-                                    shape = RoundedCornerShape(8.dp),
-                                    unfocusedContainerColor = colors.primaryContainer,
-                                    contentAlignment = Alignment.Center,
-                                    surface = GlassSurface.DIALOGS,
-                                ) { _ -> Text(stringResource(R.string.settings_bulk_rename_apply), style = MaterialTheme.typography.labelMedium, color = colors.onPrimaryContainer, modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)) }
-                                FocusableSurface(
-                                    onClick = { session.declineRows(setOf(r.key)) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    unfocusedContainerColor = colors.surfaceContainerHigh,
-                                    contentAlignment = Alignment.Center,
-                                    surface = GlassSurface.DIALOGS,
-                                ) { _ -> Text(stringResource(R.string.settings_bulk_rename_decline), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)) }
-                            }
-                        }
-                    }
-                }
-                Spacer(Modifier.width(8.dp))
-                // Right: bulk actions, VERTICALLY CENTRED so D-pad right from any middle row lands
-                // here without scrolling (owner requirement for this dialog).
-                Column(
-                    Modifier.width(132.dp).height(listHeight),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            pluralStringResource(
-                                R.plurals.settings_bulk_rename_will_change,
-                                rows.count { !it.unchanged },
-                                rows.count { !it.unchanged },
-                            ),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = colors.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            pluralStringResource(
-                                R.plurals.settings_bulk_rename_unchanged_count,
-                                rows.count { it.unchanged },
-                                rows.count { it.unchanged },
-                            ),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = colors.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            pluralStringResource(
-                                R.plurals.settings_bulk_rename_duplicates_count,
-                                rows.count { it.duplicate },
-                                rows.count { it.duplicate },
-                            ),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = colors.favorite,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    OwnTVButton(
-                        stringResource(R.string.settings_bulk_rename_apply_all), onClick = { session.applyAll() }, icon = OwnTVIcon.PLAY,
-                        modifier = Modifier.fillMaxWidth().then(if (firstChanged == -1) Modifier.focusRequester(firstApplyFocus) else Modifier),
-                        compact = true,
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    OwnTVButton(stringResource(R.string.settings_bulk_rename_decline_all), onClick = { session.declineAll() }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth(), compact = true)
-                    Spacer(Modifier.height(6.dp))
-                    OwnTVButton(stringResource(R.string.settings_bulk_rename_edit_rules), onClick = { session.editRules() }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth(), compact = true)
-                    Spacer(Modifier.height(6.dp))
-                    OwnTVButton(stringResource(R.string.common_done), onClick = { session.done() }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth(), compact = true)
-                }
-            }
-        }
-    }
-    } // PopupFontTheme
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = { session.done() }, title = null, eyebrow = null, width = 1224.mpx, scroll = false) {
+           // Dense TV review: one-third smaller than the previous 0.75 scale.
+
+
+               Text(stringResource(R.string.settings_bulk_rename_review), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
+               Spacer(Modifier.height(2.dp))
+               Text(
+                   stringResource(R.string.settings_bulk_rename_review_description),
+                   style = MaterialTheme.typography.bodySmall,
+                   color = colors.onSurfaceVariant,
+               )
+               Spacer(Modifier.height(7.dp))
+               val listHeight = (LocalConfiguration.current.screenHeightDp.dp - 220.dp).coerceIn(160.dp, 320.dp)
+               Row(Modifier.fillMaxWidth()) {
+                   // Left: the pending rows. Rows are removed on Apply/Decline; keys keep the list stable.
+                   LazyColumn(
+                       Modifier.weight(1f).height(listHeight),
+                       verticalArrangement = Arrangement.spacedBy(3.dp),
+                   ) {
+                       itemsIndexed(rows, key = { _, r -> r.key }) { index, r ->
+                           Row(
+                               Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(colors.surface).padding(horizontal = 8.dp, vertical = 5.dp),
+                               verticalAlignment = Alignment.CenterVertically,
+                               horizontalArrangement = Arrangement.spacedBy(6.dp),
+                           ) {
+                               Column(Modifier.weight(1f)) {
+                                   Text(r.oldName, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                   if (r.unchanged) {
+                                       Text(
+                                           if (r.blankRejected) stringResource(R.string.settings_bulk_rename_blank_rejected)
+                                           else stringResource(R.string.settings_bulk_rename_unchanged),
+                                           style = MaterialTheme.typography.bodySmall,
+                                           color = colors.onSurfaceVariant,
+                                           maxLines = 1,
+                                           overflow = TextOverflow.Ellipsis,
+                                       )
+                                   } else {
+                                       Text(
+                                           stringResource(R.string.settings_bulk_rename_result, r.newName),
+                                           style = MaterialTheme.typography.bodySmall,
+                                           color = if (r.duplicate) colors.favorite else colors.primary,
+                                           maxLines = 1,
+                                           overflow = TextOverflow.Ellipsis,
+                                       )
+                                       if (r.duplicate) {
+                                           Text(
+                                               stringResource(R.string.settings_bulk_rename_duplicate),
+                                               style = MaterialTheme.typography.bodySmall,
+                                               color = colors.favorite,
+                                               maxLines = 1,
+                                               overflow = TextOverflow.Ellipsis,
+                                           )
+                                       }
+                                   }
+                               }
+                               if (!r.unchanged) {
+                                   FocusableSurface(
+                                       onClick = { session.applyRows(setOf(r.key)) },
+                                       modifier = if (index == firstChanged) Modifier.focusRequester(firstApplyFocus) else Modifier,
+                                       shape = RoundedCornerShape(8.dp),
+                                       unfocusedContainerColor = colors.primaryContainer,
+                                       contentAlignment = Alignment.Center,
+                                       surface = GlassSurface.DIALOGS,
+                                   ) { _ -> Text(stringResource(R.string.settings_bulk_rename_apply), style = MaterialTheme.typography.labelMedium, color = colors.onPrimaryContainer, modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)) }
+                                   FocusableSurface(
+                                       onClick = { session.declineRows(setOf(r.key)) },
+                                       shape = RoundedCornerShape(8.dp),
+                                       unfocusedContainerColor = colors.surfaceContainerHigh,
+                                       contentAlignment = Alignment.Center,
+                                       surface = GlassSurface.DIALOGS,
+                                   ) { _ -> Text(stringResource(R.string.settings_bulk_rename_decline), style = MaterialTheme.typography.labelMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)) }
+                               }
+                           }
+                       }
+                   }
+                   Spacer(Modifier.width(8.dp))
+                   // Right: bulk actions, VERTICALLY CENTRED so D-pad right from any middle row lands
+                   // here without scrolling (owner requirement for this dialog).
+                   Column(
+                       Modifier.width(132.dp).height(listHeight),
+                       verticalArrangement = Arrangement.Center,
+                       horizontalAlignment = Alignment.CenterHorizontally,
+                   ) {
+                       Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                           Text(
+                               pluralStringResource(
+                                   R.plurals.settings_bulk_rename_will_change,
+                                   rows.count { !it.unchanged },
+                                   rows.count { !it.unchanged },
+                               ),
+                               style = MaterialTheme.typography.labelLarge,
+                               color = colors.onSurface,
+                               maxLines = 1,
+                               overflow = TextOverflow.Ellipsis,
+                           )
+                           Text(
+                               pluralStringResource(
+                                   R.plurals.settings_bulk_rename_unchanged_count,
+                                   rows.count { it.unchanged },
+                                   rows.count { it.unchanged },
+                               ),
+                               style = MaterialTheme.typography.labelLarge,
+                               color = colors.onSurfaceVariant,
+                               maxLines = 1,
+                               overflow = TextOverflow.Ellipsis,
+                           )
+                           Text(
+                               pluralStringResource(
+                                   R.plurals.settings_bulk_rename_duplicates_count,
+                                   rows.count { it.duplicate },
+                                   rows.count { it.duplicate },
+                               ),
+                               style = MaterialTheme.typography.labelLarge,
+                               color = colors.favorite,
+                               maxLines = 1,
+                               overflow = TextOverflow.Ellipsis,
+                           )
+                       }
+                       Spacer(Modifier.height(8.dp))
+                       OwnTVButton(
+                           stringResource(R.string.settings_bulk_rename_apply_all), onClick = { session.applyAll() }, icon = OwnTVIcon.PLAY,
+                           modifier = Modifier.fillMaxWidth().then(if (firstChanged == -1) Modifier.focusRequester(firstApplyFocus) else Modifier),
+                           compact = true,
+                       )
+                       Spacer(Modifier.height(6.dp))
+                       OwnTVButton(stringResource(R.string.settings_bulk_rename_decline_all), onClick = { session.declineAll() }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth(), compact = true)
+                       Spacer(Modifier.height(6.dp))
+                       OwnTVButton(stringResource(R.string.settings_bulk_rename_edit_rules), onClick = { session.editRules() }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth(), compact = true)
+                       Spacer(Modifier.height(6.dp))
+                       OwnTVButton(stringResource(R.string.common_done), onClick = { session.done() }, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth(), compact = true)
+                   }
+               }
+
+
+           // scroll = false: this column holds a LazyColumn, which manages its own scrolling.
+
+
+        // PopupFontTheme
     } // Popup
 }
 
@@ -542,27 +525,20 @@ private fun BulkRestoreConfirmDialog(session: BulkRenameSession) {
     val restoreFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { restoreFocus.requestFocus() } }
     BackHandler { session.backToChoice() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { session.backToChoice() }) {
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(Modifier.dialogPanel(width = 420.dp, padding = 24.dp)) {
-            Text(stringResource(R.string.settings_bulk_rename_restore_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(6.dp))
-            Text(
-                stringResource(R.string.settings_bulk_rename_restore_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(18.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(stringResource(R.string.common_cancel), onClick = { session.backToChoice() }, style = OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.settings_bulk_rename_restore), onClick = { session.confirmRestore() }, modifier = Modifier.focusRequester(restoreFocus))
-            }
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = { session.backToChoice() }, title = null, eyebrow = null, width = 756.mpx) {
+        Text(stringResource(R.string.settings_bulk_rename_restore_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            stringResource(R.string.settings_bulk_rename_restore_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(18.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OwnTVButton(stringResource(R.string.common_cancel), onClick = { session.backToChoice() }, style = OwnTVButtonStyle.SECONDARY)
+            Spacer(Modifier.weight(1f))
+            OwnTVButton(stringResource(R.string.settings_bulk_rename_restore), onClick = { session.confirmRestore() }, modifier = Modifier.focusRequester(restoreFocus))
         }
-    }
     }
 }
 
@@ -573,20 +549,13 @@ private fun BulkRefusedDialog(session: BulkRenameSession) {
     val okFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { okFocus.requestFocus() } }
     BackHandler { session.dismissRefused() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { session.dismissRefused() }) {
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(Modifier.dialogPanel(width = 420.dp, padding = 24.dp)) {
-            Text(stringResource(R.string.settings_bulk_rename_too_many_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(6.dp))
-            Text(stringResource(R.string.settings_bulk_rename_too_many_description), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(18.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                OwnTVButton(stringResource(R.string.common_ok), onClick = { session.dismissRefused() }, modifier = Modifier.focusRequester(okFocus))
-            }
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = { session.dismissRefused() }, title = null, eyebrow = null, width = 756.mpx) {
+        Text(stringResource(R.string.settings_bulk_rename_too_many_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Spacer(Modifier.height(6.dp))
+        Text(stringResource(R.string.settings_bulk_rename_too_many_description), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        Spacer(Modifier.height(18.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            OwnTVButton(stringResource(R.string.common_ok), onClick = { session.dismissRefused() }, modifier = Modifier.focusRequester(okFocus))
         }
-    }
     }
 }

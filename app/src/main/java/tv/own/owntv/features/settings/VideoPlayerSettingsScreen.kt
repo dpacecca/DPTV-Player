@@ -8,20 +8,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,30 +25,19 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.foundation.focusGroup
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
-import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.MaterialTheme
@@ -79,13 +64,27 @@ import tv.own.owntv.features.shell.components.LocalSettingsRowTone
 import tv.own.owntv.features.shell.components.colors
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.Dimens
+import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.core.theme.GlassSurface
-import tv.own.owntv.ui.theme.glass
-import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.core.theme.AppFontFamily
 import tv.own.owntv.ui.theme.asComposeFamily
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import kotlinx.coroutines.launch
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
+import tv.own.owntv.ui.theme.glass
+import tv.own.owntv.ui.components.roundedPanel
 
 // The sections of this screen, in spine order. Kept small on purpose: a section is one screenful
 // on a television, so a long one is split rather than scrolled.
@@ -450,7 +449,7 @@ internal fun videoQuickBinding(key: String, vm: SettingsViewModel): VideoQuickBi
         }
         "vp_surround" -> {
             val mode by vm.surroundMode.collectAsStateWithLifecycle()
-            toggle(surroundModeLabel(mode), mode != SurroundMode.STEREO) { vm.cycleSurroundMode() }
+            link(surroundModeLabel(mode), mode != SurroundMode.STEREO)
         }
         "vp_passthrough" -> {
             val on by vm.audioPassthrough.collectAsStateWithLifecycle()
@@ -615,6 +614,7 @@ internal fun VideoPlayerGroupRows(
     val externalSeries by vm.externalPlayerSeries.collectAsStateWithLifecycle()
     val zoom by vm.defaultZoom.collectAsStateWithLifecycle()
     val subStyleOn by vm.subtitleStyleEnabled.collectAsStateWithLifecycle()
+    val openSubtitleStyle = LocalOpenSubtitleStyle.current
     val subScaleExo by vm.subtitleScaleExo.collectAsStateWithLifecycle()
     val subScaleMpv by vm.subtitleScaleMpv.collectAsStateWithLifecycle()
     val subFont by vm.subtitleFont.collectAsStateWithLifecycle()
@@ -1228,7 +1228,7 @@ internal fun VideoPlayerGroupRows(
                 SurroundMode.SURROUND -> stringResource(R.string.settings_surround_forced_description)
             },
             chip = surroundModeLabel(surroundMode), primaryChip = surroundMode != SurroundMode.STEREO,
-            onClick = { vm.cycleSurroundMode() },
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.SURROUND },
         )
         Row2(
             quickKey = "vp_passthrough",
@@ -1387,28 +1387,20 @@ internal fun VideoPlayerGroupRows(
             onSelect = { vm.setResumeMode(it); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
-        Dialog.SUB_STYLE -> SubtitleAppearanceDialog(
-                enabled = subStyleOn,
-                scaleExo = subScaleExo,
-                scaleMpv = subScaleMpv,
-                font = subFont,
-                color = subColor,
-            position = subPosition,
-            bgOpacity = subBgOpacity,
-                onToggle = { vm.setSubtitleStyleEnabled(it) },
-                onScaleExo = { vm.setSubtitleScaleExo(it) },
-                onScaleMpv = { vm.setSubtitleScaleMpv(it) },
-                onFont = { vm.setSubtitleFont(it) },
-                onColor = { vm.setSubtitleColor(it) },
-            onPosition = { vm.setSubtitlePosition(it) },
-            onBgOpacity = { vm.setSubtitleBgOpacity(it) },
-            onDismiss = { dialog = Dialog.NONE },
-        )
+        // A page of its own now (owner, P12): opened through the Settings screen, which owns the pages.
+        Dialog.SUB_STYLE -> LaunchedEffect(Unit) { dialog = Dialog.NONE; openSubtitleStyle?.invoke() }
         Dialog.SUB_LANG -> PickerDialog(
             title = stringResource(R.string.settings_preferred_subtitle_language),
             options = languageOptions(withOriginal = false),
             selected = subLang,
             onSelect = { vm.setPreferredSubLang(it); dialog = Dialog.NONE },
+            onDismiss = { dialog = Dialog.NONE },
+        )
+        Dialog.SURROUND -> PickerDialog(
+            title = stringResource(R.string.settings_surround_sound),
+            options = SurroundMode.entries.map { it.name to surroundModeLabel(it) },
+            selected = surroundMode.name,
+            onSelect = { vm.setSurroundMode(SurroundMode.valueOf(it)); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.AUDIO_LANG -> PickerDialog(
@@ -1809,13 +1801,11 @@ internal fun VideoPlayerGroupRows(
             onConfirm = { vm.clearSavedAudioDelay(); dialog = Dialog.NONE },
             onCancel = { dialog = Dialog.NONE },
         )
-        Dialog.AFR_WARNING -> tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { dialog = Dialog.NONE }) {
-            AutoFrameRateWarningDialog(
-                onEnable = { vm.setAutoFrameRate(true); dialog = Dialog.NONE },
-                onDismiss = { dialog = Dialog.NONE },
-            )
-        }
-        Dialog.MULTIVIEW_TILES -> tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { dialog = Dialog.NONE }) {
+        Dialog.AFR_WARNING -> AutoFrameRateWarningDialog(
+            onEnable = { vm.setAutoFrameRate(true); dialog = Dialog.NONE },
+            onDismiss = { dialog = Dialog.NONE },
+        )
+        Dialog.MULTIVIEW_TILES -> run {
             MultiviewTilesDialog(
                 current = multiviewTiles,
                 onPick = { tiles ->
@@ -1832,7 +1822,7 @@ internal fun VideoPlayerGroupRows(
                 onDismiss = { dialog = Dialog.NONE },
             )
         }
-        Dialog.MULTIVIEW_WARNING -> tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { dialog = Dialog.NONE }) {
+        Dialog.MULTIVIEW_WARNING -> run {
             MultiviewWarningDialog(
                 onUseAnyway = { vm.setMultiviewTiles(pendingTiles, acceptWarning = true); dialog = Dialog.NONE },
                 onKeepTwo = {
@@ -1841,9 +1831,7 @@ internal fun VideoPlayerGroupRows(
                 },
             )
         }
-        Dialog.LIVE_PREVIEW_PANEL -> tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { dialog = Dialog.NONE }) {
-            LivePreviewPanelHiddenDialog(onDismiss = { dialog = Dialog.NONE })
-        }
+        Dialog.LIVE_PREVIEW_PANEL -> LivePreviewPanelHiddenDialog(onDismiss = { dialog = Dialog.NONE })
         Dialog.NONE -> Unit
     }
 
@@ -1858,31 +1846,13 @@ internal fun VideoPlayerGroupRows(
 /** Acknowledgement popup when picking a below-Balanced live buffer (Low latency, or a low custom value). */
 @Composable
 private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    val firstFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-    BackHandler { onCancel() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onCancel) {
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(modifier = Modifier.dialogPanel(width = 500.dp, padding = 28.dp)) {
-            Text(stringResource(R.string.settings_low_latency_warning), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(12.dp))
-            Text(
-                stringResource(R.string.settings_low_latency_warning_description),
-                style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(20.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(stringResource(R.string.common_cancel), onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.settings_low_latency_understand), onClick = onConfirm, modifier = Modifier.focusRequester(firstFocus))
-            }
-        }
-    }
-    }
+    tv.own.owntv.ui.stage.StageConfirm(
+        title = stringResource(R.string.settings_low_latency_warning),
+        body = stringResource(R.string.settings_low_latency_warning_description),
+        confirm = stringResource(R.string.settings_low_latency_understand),
+        onConfirm = onConfirm,
+        onCancel = onCancel,
+    )
 }
 
 /** Confirmation before forgetting a whole set of remembered per-item choices (engine pins, zoom and
@@ -1890,31 +1860,14 @@ private fun LiveLatencyWarningDialog(onConfirm: () -> Unit, onCancel: () -> Unit
  *  setting, so a mis-press must not wipe choices the user made deliberately. */
 @Composable
 private fun ConfirmResetDialog(title: String, description: String, onConfirm: () -> Unit, onCancel: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    val firstFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-    BackHandler { onCancel() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onCancel) {
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(modifier = Modifier.dialogPanel(width = 500.dp, padding = 28.dp)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(12.dp))
-            Text(description, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(20.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(
-                    stringResource(R.string.common_cancel), onClick = onCancel,
-                    style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(firstFocus),
-                )
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.common_reset), onClick = onConfirm)
-            }
-        }
-    }
-    }
+    tv.own.owntv.ui.stage.StageConfirm(
+        title = title,
+        body = description,
+        confirm = stringResource(R.string.common_reset),
+        onConfirm = onConfirm,
+        onCancel = onCancel,
+        focusCancel = true,
+    )
 }
 
 /** The dialog a pinned row opens when Quick jumps into this screen. Null for rows that toggle. */
@@ -1957,7 +1910,7 @@ private fun dialogForQuickKey(key: String): Dialog? = when (key) {
     else -> null
 }
 
-private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, VOD_ENGINE_SOURCES, VOD_ENGINE_SOURCE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_TUNE_TIMEOUT_SOURCES, LIVE_TUNE_TIMEOUT_SOURCE, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, RESET_LIVE_PINS, FORGET_FIXES, AFR_WARNING, AFR_PAUSE, VOD_BUFFER, VOD_TIMEOUT, VOD_RECONNECTS, TIMESHIFT_WINDOW, MAX_QUALITY, LIVE_PREVIEW_PANEL, MINI_PLAYER, MULTIVIEW_TILES, MULTIVIEW_WARNING }
+private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, VOD_ENGINE_SOURCES, VOD_ENGINE_SOURCE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, SURROUND, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_TUNE_TIMEOUT_SOURCES, LIVE_TUNE_TIMEOUT_SOURCE, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, RESET_LIVE_PINS, FORGET_FIXES, AFR_WARNING, AFR_PAUSE, VOD_BUFFER, VOD_TIMEOUT, VOD_RECONNECTS, TIMESHIFT_WINDOW, MAX_QUALITY, LIVE_PREVIEW_PANEL, MINI_PLAYER, MULTIVIEW_TILES, MULTIVIEW_WARNING }
 
 /** "Auto" for 0, else seconds ("60s") — the film buffer and network timeout choices (N18). */
 @Composable
@@ -2114,6 +2067,16 @@ internal fun Row2(
 ) {
     val colors = OwnTVTheme.colors
     val pin = if (quickKey != null) LocalQuickPin.current else null
+    // Inside a popup (Local sync's steps, …) the row is a Stage popup row, so old popups follow the new design.
+    if (tv.own.owntv.ui.components.LocalStagePopup.current && !LocalStageRows.current) {
+        tv.own.owntv.ui.stage.StagePopupOption(
+            title = title, subtitle = desc, onClick = onClick, modifier = modifier,
+            danger = titleTint != null,
+            leading = { tv.own.owntv.ui.stage.StagePopupIcon(icon, iconTint ?: tv.own.owntv.ui.theme.StageColors.Text) },
+            trailing = chip?.let { c -> { _ -> Text(if (chevron) "$c ›" else c, style = tv.own.owntv.ui.theme.stageText(18, 700), color = if (primaryChip) tv.own.owntv.ui.theme.stageAccent.accent else tv.own.owntv.ui.theme.StageColors.Muted, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) } },
+        )
+        return
+    }
     if (LocalStageRows.current) {
         // An On / Off chip is a switch; any other chip is a choice made in a picker (▾).
         val onOff = chip == stringResource(R.string.common_on) || chip == stringResource(R.string.common_off)
@@ -2242,7 +2205,11 @@ internal fun Row2(
     }
 }
 
-/** A single-select list dialog (value → label). */
+/**
+ * A single-select list dialog (value → label), as a Stage popup: the page's eyebrow, the title, an
+ * optional line, then one row per choice with a radio (the current one focused first). OK picks;
+ * Back closes. [searchable] adds a search field that filters the labels live.
+ */
 @Composable
 internal fun PickerDialog(
     title: String,
@@ -2255,10 +2222,12 @@ internal fun PickerDialog(
     leadingIcons: Map<String, OwnTVIcon> = emptyMap(),
     subtitle: String? = null,
     descriptions: Map<String, String> = emptyMap(),
-    /** Drawn under an option's description — the layout chooser's little bar preview. */
+    /** Drawn under an option — the layout chooser's little bar preview. */
     optionPreview: (@Composable (String) -> Unit)? = null,
 ) {
-    val colors = OwnTVTheme.colors
+    // On a Stage settings page the choices open in the page's panel, not in a popup (owner, P12).
+    val picker = PanelPicker(options, selected, onSelect, descriptions, searchable, optionPreview)
+    if (panelEditor(onDismiss) { help -> PanelChoices(picker, help, onDismiss) }) return
     val fr = remember { FocusRequester() }
     val searchFr = remember { FocusRequester() }
     var query by remember { mutableStateOf("") }
@@ -2269,89 +2238,51 @@ internal fun PickerDialog(
         options
     }
     val selIndex = shown.indexOfFirst { it.first == selected }.coerceAtLeast(0)
+    val list = androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = selIndex)
     LaunchedEffect(shown, selected, searchable) {
         // Nested pickers attach in the same frame their opener loses focus. Wait until this popup's
         // focus window exists, otherwise focus remains on the Add/Remove or Prefix/Suffix button.
         kotlinx.coroutines.delay(80)
         runCatching { (if (searchable) searchFr else fr).requestFocus() }
     }
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        tv.own.owntv.ui.theme.PopupFontTheme {
-            Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
-                Column(
-                    // Descriptions need room to breathe; a 280dp column would wrap them to five lines.
-                    modifier = Modifier.dialogPanel(width = if (descriptions.isEmpty()) 280.dp else 420.dp, corner = 16.dp, padding = 14.dp, scroll = false),
-                ) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-            if (subtitle != null) {
-                Spacer(Modifier.height(4.dp))
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-            }
-            Spacer(Modifier.height(10.dp))
-            if (searchable) {
-                tv.own.owntv.ui.components.SearchBar(
-                    query = query,
-                    onQueryChange = { query = it },
-                    placeholder = stringResource(R.string.common_search_hint),
-                    modifier = Modifier.fillMaxWidth().focusRequester(searchFr),
-                    surface = GlassSurface.DIALOGS,
-                )
-                Spacer(Modifier.height(12.dp))
-            }
-            // Cap the list to the screen (minus dialog chrome) so Close stays reachable on small screens.
-            val listMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 220.dp).coerceIn(140.dp, 240.dp)
-            LazyColumn(Modifier.fillMaxWidth().heightIn(max = listMax), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                itemsIndexed(shown, key = { _, o -> o.first }) { index, (value, label) ->
-                    val isSel = value == selected
-                    FocusableSurface(
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = title,
+        body = subtitle,
+        width = if (descriptions.isEmpty() && optionPreview == null) 760.mpx else 880.mpx,
+        scroll = false,
+    ) {
+        if (searchable) {
+            tv.own.owntv.ui.stage.StageSearchField(
+                query = query,
+                onQueryChange = { query = it },
+                placeholder = stringResource(R.string.common_search_hint),
+                modifier = Modifier.fillMaxWidth().focusRequester(searchFr),
+                height = 56.mpx,
+                radius = 18.mpx,
+            )
+            Spacer(Modifier.height(14.mpx))
+        }
+        LazyColumn(Modifier.fillMaxWidth().weight(1f, fill = false), state = list, verticalArrangement = Arrangement.spacedBy(4.mpx)) {
+            itemsIndexed(shown, key = { _, o -> o.first }) { index, (value, label) ->
+                val isSel = value == selected
+                Column {
+                    tv.own.owntv.ui.stage.StagePopupOption(
+                        title = label,
+                        subtitle = descriptions[value],
                         onClick = { onSelect(value) },
-                        modifier = if (index == selIndex) Modifier.fillMaxWidth().focusRequester(fr) else Modifier.fillMaxWidth(),
-                        selected = isSel,
-                        shape = RoundedCornerShape(12.dp),
-                        selectedContainerColor = colors.primaryContainer,
-                        contentAlignment = Alignment.CenterStart,
-                        surface = GlassSurface.DIALOGS,
-                    ) { _ ->
-                        Column(Modifier.fillMaxWidth()) {
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        leadingIcons[value]?.let { icon ->
-                            OwnTVIcon(
-                                icon,
-                                tint = if (isSel) colors.onPrimaryContainer else colors.onSurfaceVariant,
-                                modifier = Modifier.padding(end = 8.dp).size(18.dp),
-                            )
-                        }
-                        Text(label, style = MaterialTheme.typography.bodyMedium, color = if (isSel) colors.onPrimaryContainer else colors.onSurface, modifier = Modifier.weight(1f))
-                        trailingLabels[value]?.let {
-                            tv.own.owntv.ui.components.ProviderChip(
-                                name = it,
-                                maxWidth = 92.dp,
-                                compact = true,
-                                modifier = Modifier.padding(end = 8.dp),
-                            )
-                        }
-                        if (isSel) OwnTVIcon(OwnTVIcon.STAR, tint = colors.onPrimaryContainer, filled = true, modifier = Modifier.size(14.dp))
-                        }
-                        descriptions[value]?.let { desc ->
-                            Text(
-                                desc,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (isSel) colors.onPrimaryContainer else colors.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
-                            )
-                        }
-                        optionPreview?.let { preview ->
-                            Box(Modifier.padding(start = 10.dp, end = 10.dp, bottom = 10.dp)) { preview(value) }
-                        }
-                        }
+                        modifier = if (index == selIndex) Modifier.focusRequester(fr) else Modifier,
+                        leading = { focused ->
+                            tv.own.owntv.ui.stage.StagePopupRadio(on = isSel, focused = focused)
+                            leadingIcons[value]?.let { tv.own.owntv.ui.stage.StagePopupIcon(it) }
+                        },
+                        trailing = trailingLabels[value]?.let { name ->
+                            { _ -> tv.own.owntv.ui.components.ProviderChip(name = name, maxWidth = 160.mpx, compact = true) }
+                        },
+                    )
+                    optionPreview?.let { preview ->
+                        Box(Modifier.padding(start = 64.mpx, end = 22.mpx, top = 4.mpx, bottom = 10.mpx)) { preview(value) }
                     }
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-            }
                 }
             }
         }
@@ -2372,51 +2303,17 @@ private fun ExternalPlayerDialog(
     onToggle: (tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection, Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
-    val fr = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { fr.requestFocus() } }
-    BackHandler { onDismiss() }
-    val rows = listOf(
-        Triple(tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.LIVE_TV, stringResource(R.string.common_nav_live_tv), live),
-        Triple(tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.MOVIES, stringResource(R.string.common_nav_movies), movies),
-        Triple(tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.SERIES, stringResource(R.string.common_nav_series), series),
+    val sections = listOf(
+        tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.LIVE_TV to (stringResource(R.string.common_nav_live_tv) to live),
+        tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.MOVIES to (stringResource(R.string.common_nav_movies) to movies),
+        tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.SERIES to (stringResource(R.string.common_nav_series) to series),
     )
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
-            Column(modifier = Modifier.dialogPanel(width = 300.dp, corner = 16.dp, padding = 14.dp, scroll = false)) {
-                Text(stringResource(R.string.settings_external_player), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    stringResource(R.string.settings_external_player_description),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(10.dp))
-                rows.forEachIndexed { index, (section, label, enabled) ->
-                    if (index > 0) Spacer(Modifier.height(4.dp))
-                    FocusableSurface(
-                        onClick = { onToggle(section, !enabled) },
-                        modifier = if (index == 0) Modifier.fillMaxWidth().focusRequester(fr) else Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        contentAlignment = Alignment.CenterStart,
-                        surface = GlassSurface.DIALOGS,
-                    ) { _ ->
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(label, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface, modifier = Modifier.weight(1f))
-                            Text(
-                                if (enabled) stringResource(R.string.common_on) else stringResource(R.string.common_off),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (enabled) colors.primary else colors.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    OwnTVButton(stringResource(R.string.content_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                }
-            }
-        }
+    val switches: @Composable () -> Unit = {
+        PanelSwitches(sections.map { (section, v) -> Triple(v.first, v.second) { onToggle(section, !v.second) } }, onDone = onDismiss)
     }
+    // Three switches: in the page's panel (owner, P12), a Stage popup elsewhere.
+    if (panelEditor(onDismiss) { switches() }) return
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = stringResource(R.string.settings_external_player), body = stringResource(R.string.settings_external_player_description)) { switches() }
 }
 
 /** A +/- stepper dialog for an integer value. */
@@ -2432,45 +2329,12 @@ internal fun StepperDialog(
     onReset: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
-    val plusEnabled = value < max
-    val minusEnabled = value > min
-    val steppers = tv.own.owntv.ui.components.rememberStepperFocus(plusEnabled, minusEnabled)
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
-        Column(
-            modifier = Modifier.dialogPanel(width = 360.dp, corner = 16.dp, padding = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                StepBtn("–", enabled = minusEnabled, modifier = Modifier.focusRequester(steppers.minus)) { onSet((value - step).coerceAtLeast(min)) }
-                Text(
-                    format(value),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = colors.primary,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                )
-                StepBtn("+", enabled = plusEnabled, modifier = Modifier.focusRequester(steppers.plus)) { onSet((value + step).coerceAtMost(max)) }
-            }
-            Spacer(Modifier.height(14.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OwnTVButton(stringResource(R.string.common_reset), onClick = onReset, style = OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
-            }
-        }
+    val stepper: @Composable () -> Unit = {
+        PanelStepper(format(value), onStep = { d -> onSet((value + d * step).coerceIn(min, max)) }, onReset = onReset, onDone = onDismiss)
     }
-    }
+    // On a Stage settings page the value is changed in the page's panel (owner, P12); elsewhere a Stage popup.
+    if (panelEditor(onDismiss) { stepper() }) return
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = title) { stepper() }
 }
 
 /** The quick text-color presets offered above the full picker (label → "#RRGGBB"). */
@@ -2511,187 +2375,153 @@ private fun subtitlePositionName(position: SubtitleStyle.Position): String = str
 )
 
 /**
- * Subtitle appearance (#96) — the menu for the whole custom look: a master toggle, then size, text
- * color, screen position and background transparency, each opening its own popup, with a live
- * preview above them all.
+ * Settings › Sound & subtitles › Subtitle appearance as a Stage page (owner, P12): the custom look's
+ * switch, then — while it is on — each engine's size, font, colour, position and background, with the
+ * live preview at the top of the panel. Simple values open in the panel; the colour opens the Stage
+ * colour popup. Every change writes through at once, as before.
  *
- * Two levels of opt-in, and both matter. The master toggle gates everything: while it's off none of
- * these values reach any renderer, so subtitles keep their stock look — most importantly the styling
- * broadcasters embed in Live TV (CEA-608/teletext) cues, which can only be overridden by discarding
- * embedded styles wholesale. Each option then carries its own "Default", so turning the toggle on
- * still changes nothing until something is actually picked.
- *
- * Every control writes through immediately, so a change is visible on a paused stream behind the
- * dialog rather than only on the next channel change.
+ * Two levels of opt-in, and both matter: while the switch is off none of these values reach a
+ * renderer, so Live TV keeps the broadcaster's own (CEA-608/teletext) styling; each option then has
+ * its own "Default".
  */
-@Composable
-private fun SubtitleAppearanceDialog(
-    enabled: Boolean,
-    scaleExo: Float,
-    scaleMpv: Float,
-    font: AppFontFamily?,
-    color: String,
-    position: SubtitleStyle.Position,
-    bgOpacity: Int,
-    onToggle: (Boolean) -> Unit,
-    onScaleExo: (Float) -> Unit,
-    onScaleMpv: (Float) -> Unit,
-    onFont: (AppFontFamily?) -> Unit,
-    onColor: (String) -> Unit,
-    onPosition: (SubtitleStyle.Position) -> Unit,
-    onBgOpacity: (Int) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val colors = OwnTVTheme.colors
-    var child by remember { mutableStateOf(SubDialog.NONE) }
-    // Which row opened the popup that is closing: closing a child returns focus to it, the same
-    // contract the settings list itself follows.
-    var lastChild by remember { mutableStateOf(SubDialog.NONE) }
-    val toggleFocus = remember { FocusRequester() }
-    val rowFocus = remember { SubDialog.entries.associateWith { FocusRequester() } }
-    LaunchedEffect(child) {
-        if (child == SubDialog.NONE) {
-            withFrameNanos { }
-            kotlinx.coroutines.delay(60)
-            runCatching {
-                (if (lastChild == SubDialog.NONE) toggleFocus else rowFocus.getValue(lastChild)).requestFocus()
-            }
-        }
-    }
+/** Opens Subtitle appearance's page; provided by the Settings screen. */
+val LocalOpenSubtitleStyle = androidx.compose.runtime.staticCompositionLocalOf<(() -> Unit)?> { null }
 
-    // A child popup replaces this panel rather than stacking over it: focus stays unambiguous on a
-    // D-pad, and the popups that need one carry their own preview, so nothing is lost by hiding this.
-    if (child != SubDialog.NONE) {
-        val close = { child = SubDialog.NONE }
-            when (child) {
-                SubDialog.SIZE -> SubtitleSizeDialog(
-                    scaleExo = scaleExo, scaleMpv = scaleMpv, font = font, color = color,
-                    bgOpacity = bgOpacity, onScaleExo = onScaleExo, onScaleMpv = onScaleMpv, onDismiss = close,
-                )
-                SubDialog.FONT -> PickerDialog(
-                    title = stringResource(R.string.settings_subtitle_font),
-                    options = listOf("" to stringResource(R.string.settings_subtitle_default)) +
-                        AppFontFamily.entries.map { it.name to subtitleFontFamilyLabel(it) },
-                    selected = font?.name.orEmpty(),
-                    onSelect = { selected ->
-                        onFont(AppFontFamily.entries.firstOrNull { it.name == selected })
-                        close()
-                    },
+@Composable
+fun SubtitleStylePage(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val vm: SettingsViewModel = koinViewModel()
+    val enabled by vm.subtitleStyleEnabled.collectAsStateWithLifecycle()
+    val scaleExo by vm.subtitleScaleExo.collectAsStateWithLifecycle()
+    val scaleMpv by vm.subtitleScaleMpv.collectAsStateWithLifecycle()
+    val font by vm.subtitleFont.collectAsStateWithLifecycle()
+    val color by vm.subtitleColor.collectAsStateWithLifecycle()
+    val position by vm.subtitlePosition.collectAsStateWithLifecycle()
+    val bgOpacity by vm.subtitleBgOpacity.collectAsStateWithLifecycle()
+    var editing by remember { mutableStateOf<SubEdit?>(null) }
+    val first = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
+    val sizes = SUB_SIZES.map { it.first.toString() to stringResource(it.second) }
+    StageFullPage(
+        parents = listOf(stringResource(R.string.settings_group_sound_subtitles)),
+        title = stringResource(R.string.settings_subtitle_appearance),
+        count = pluralStringResource(R.plurals.settings_setting_count, if (enabled) 8 else 1, if (enabled) 8 else 1),
+        onBack = onBack,
+        modifier = modifier,
+        // The point of every row is how the subtitle looks, so the preview stays at the top of the panel.
+        panelTop = { Box(Modifier.padding(bottom = 20.mpx)) { SubtitlePreview(enabled = enabled, scale = scaleExo, font = font, color = color, position = position, bgOpacity = bgOpacity) } },
+    ) {
+        val custom = stringResource(R.string.settings_subtitle_customize)
+        val customValue = SettingValue.Switch(enabled)
+        StageSettingRow(
+            icon = OwnTVIcon.SUBTITLE, title = custom, desc = stringResource(R.string.settings_subtitle_customize_off),
+            value = customValue, onClick = { vm.setSubtitleStyleEnabled(!enabled) },
+            help = settingHelp(null, custom, stringResource(R.string.settings_subtitle_customize_description), customValue, pinnable = false),
+            modifier = Modifier.focusRequester(first),
+        )
+        if (enabled) {
+            SubStyleRow(stringResource(R.string.settings_subtitle_size) + dotSeparator() + stringResource(R.string.settings_player_exoplayer),
+                stringResource(R.string.settings_subtitle_size_description), SettingValue.Choice(subSizeName(scaleExo)), sizes.map { it.second }) { editing = SubEdit.SIZE_EXO }
+            SubStyleRow(stringResource(R.string.settings_subtitle_size) + dotSeparator() + stringResource(R.string.settings_player_mpv),
+                stringResource(R.string.settings_subtitle_size_description), SettingValue.Choice(subSizeName(scaleMpv)), sizes.map { it.second }) { editing = SubEdit.SIZE_MPV }
+            val fonts = listOf("" to stringResource(R.string.settings_subtitle_default)) + AppFontFamily.entries.map { it.name to subtitleFontFamilyLabel(it) }
+            SubStyleRow(stringResource(R.string.settings_subtitle_font), stringResource(R.string.settings_choose_font),
+                SettingValue.Choice(font?.let { subtitleFontFamilyLabel(it) } ?: stringResource(R.string.settings_subtitle_default)), fonts.map { it.second }) { editing = SubEdit.FONT }
+            SubStyleRow(stringResource(R.string.settings_subtitle_color_short), stringResource(R.string.settings_subtitle_color_description),
+                SettingValue.Opens(subColorLabel(color)), emptyList()) { editing = SubEdit.COLOR }
+            val positions = listOf(SubtitleStyle.Position.DEFAULT) + SubtitleStyle.Position.ANCHORS
+            SubStyleRow(stringResource(R.string.settings_subtitle_position_short), stringResource(R.string.settings_subtitle_position_description),
+                SettingValue.Choice(subtitlePositionName(position)), positions.map { subtitlePositionName(it) }) { editing = SubEdit.POSITION }
+            SubStyleRow(stringResource(R.string.settings_subtitle_background_transparency), stringResource(R.string.settings_subtitle_background_description),
+                SettingValue.Stepper(subOpacityLabel(bgOpacity)), emptyList(), onStep = { d -> vm.setSubtitleBgOpacity(stepSubOpacity(bgOpacity, d)) }) { editing = SubEdit.BACKGROUND }
+            val reset = stringResource(R.string.settings_subtitle_reset_all)
+            StageSettingRow(
+                icon = OwnTVIcon.REFRESH, title = reset, desc = null, value = null,
+                onClick = {
+                    vm.setSubtitleScaleExo(SubtitleStyle.SCALE_DEFAULT)
+                    vm.setSubtitleScaleMpv(SubtitleStyle.SCALE_DEFAULT)
+                    vm.setSubtitleFont(null)
+                    vm.setSubtitleColor(SubtitleStyle.COLOR_DEFAULT)
+                    vm.setSubtitlePosition(SubtitleStyle.Position.DEFAULT)
+                    vm.setSubtitleBgOpacity(SubtitleStyle.OPACITY_DEFAULT)
+                },
+                help = SettingHelp(reset, stringResource(R.string.settings_subtitle_customize_description), hints = settingHints(null, pinnable = false)),
+            )
+        }
+
+        val close = { editing = null }
+        when (editing) {
+            SubEdit.SIZE_EXO, SubEdit.SIZE_MPV -> {
+                val exo = editing == SubEdit.SIZE_EXO
+                PickerDialog(
+                    title = stringResource(R.string.settings_subtitle_size),
+                    options = sizes,
+                    selected = nearestSubSize(if (exo) scaleExo else scaleMpv).first.toString(),
+                    onSelect = { v -> if (exo) vm.setSubtitleScaleExo(v.toFloat()) else vm.setSubtitleScaleMpv(v.toFloat()); close() },
                     onDismiss = close,
                 )
-                SubDialog.COLOR -> SubtitleColorDialog(color = color, onColor = onColor, onDismiss = close)
-            SubDialog.POSITION -> SubtitlePositionDialog(position = position, onSelect = onPosition, onDismiss = close)
-                SubDialog.TRANSPARENCY -> SubtitleTransparencyDialog(
-                    scale = scaleExo, font = font, color = color, position = position,
-                bgOpacity = bgOpacity, onSet = onBgOpacity, onDismiss = close,
-            )
-            SubDialog.NONE -> Unit
-        }
-        return
-    }
-
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier.fillMaxSize().modalScrim()
-                .trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(modifier = Modifier.dialogPanel(width = 640.dp, padding = 28.dp)) {
-                Text(stringResource(R.string.settings_subtitle_appearance), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    stringResource(R.string.settings_subtitle_customize_description),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(16.dp))
-
-                // The overview sits above every row, including the master toggle, so the effect of a
-                // change is judged against a picture instead of guessed from a chip.
-        SubtitlePreview(enabled = enabled, scale = scaleExo, font = font, color = color, position = position, bgOpacity = bgOpacity)
-                Spacer(Modifier.height(16.dp))
-
-                Row2(
-                    icon = OwnTVIcon.SUBTITLE,
-                    title = stringResource(R.string.settings_subtitle_customize),
-                    desc = stringResource(R.string.settings_subtitle_customize_off),
-                    chip = stringResource(if (enabled) R.string.common_on else R.string.common_off),
-                    primaryChip = enabled,
-                    modifier = Modifier.focusRequester(toggleFocus),
-                    onClick = { onToggle(!enabled) },
-                )
-
-                if (enabled) {
-                    val open = { target: SubDialog -> lastChild = target; child = target }
-                    Spacer(Modifier.height(2.dp))
-            Row2(
-                icon = OwnTVIcon.SUBTITLE,
-                title = stringResource(R.string.settings_subtitle_size),
-                        desc = stringResource(R.string.settings_subtitle_size_description),
-                        chip = subSizePairName(scaleExo, scaleMpv),
-                        primaryChip = SubtitleStyle.hasScale(scaleExo) || SubtitleStyle.hasScale(scaleMpv),
-                        chevron = true,
-                        modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.SIZE)),
-                onClick = { open(SubDialog.SIZE) },
-            )
-            Row2(
-                icon = OwnTVIcon.SUBTITLE,
+            }
+            SubEdit.FONT -> PickerDialog(
                 title = stringResource(R.string.settings_subtitle_font),
-                desc = stringResource(R.string.settings_choose_font),
-                chip = font?.let { subtitleFontFamilyLabel(it) } ?: stringResource(R.string.settings_subtitle_default),
-                primaryChip = font != null,
-                chevron = true,
-                modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.FONT)),
-                onClick = { open(SubDialog.FONT) },
+                options = listOf("" to stringResource(R.string.settings_subtitle_default)) + AppFontFamily.entries.map { it.name to subtitleFontFamilyLabel(it) },
+                selected = font?.name.orEmpty(),
+                onSelect = { v -> vm.setSubtitleFont(AppFontFamily.entries.firstOrNull { it.name == v }); close() },
+                onDismiss = close,
             )
-            Row2(
-                        icon = OwnTVIcon.SUBTITLE,
-                        title = stringResource(R.string.settings_subtitle_color_short),
-                        desc = stringResource(R.string.settings_subtitle_color_description),
-                        chip = subColorLabel(color), primaryChip = SubtitleStyle.hasColor(color), chevron = true,
-                        modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.COLOR)),
-                        onClick = { open(SubDialog.COLOR) },
-                    )
-                    Row2(
-                        icon = OwnTVIcon.SUBTITLE,
-                        title = stringResource(R.string.settings_subtitle_position_short),
-                        desc = stringResource(R.string.settings_subtitle_position_description),
-                        chip = subtitlePositionName(position), primaryChip = position != SubtitleStyle.Position.DEFAULT, chevron = true,
-                        modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.POSITION)),
-                        onClick = { open(SubDialog.POSITION) },
-                    )
-                    Row2(
-                        icon = OwnTVIcon.SUBTITLE,
-                        title = stringResource(R.string.settings_subtitle_background_transparency),
-                        desc = stringResource(R.string.settings_subtitle_background_description),
-                        chip = subOpacityLabel(bgOpacity), primaryChip = SubtitleStyle.hasOpacity(bgOpacity), chevron = true,
-                        modifier = Modifier.focusRequester(rowFocus.getValue(SubDialog.TRANSPARENCY)),
-                        onClick = { open(SubDialog.TRANSPARENCY) },
-                    )
-                }
-
-                Spacer(Modifier.height(20.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                    Spacer(Modifier.weight(1f))
-                    if (enabled) {
-                        OwnTVButton(stringResource(R.string.settings_subtitle_reset_all), style = OwnTVButtonStyle.SECONDARY, onClick = {
-                        onScaleExo(SubtitleStyle.SCALE_DEFAULT)
-                        onScaleMpv(SubtitleStyle.SCALE_DEFAULT)
-                        onFont(null)
-                        onColor(SubtitleStyle.COLOR_DEFAULT)
-                            onPosition(SubtitleStyle.Position.DEFAULT)
-                            onBgOpacity(SubtitleStyle.OPACITY_DEFAULT)
-                        })
-                    }
+            SubEdit.POSITION -> PickerDialog(
+                title = stringResource(R.string.settings_subtitle_position),
+                options = (listOf(SubtitleStyle.Position.DEFAULT) + SubtitleStyle.Position.ANCHORS).map { it.name to subtitlePositionName(it) },
+                selected = position.name,
+                onSelect = { v -> vm.setSubtitlePosition(SubtitleStyle.Position.valueOf(v)); close() },
+                onDismiss = close,
+            )
+            SubEdit.BACKGROUND -> panelEditor(close) {
+                PanelStepper(
+                    value = subOpacityLabel(bgOpacity),
+                    onStep = { d -> vm.setSubtitleBgOpacity(stepSubOpacity(bgOpacity, d)) },
+                    onReset = { vm.setSubtitleBgOpacity(SubtitleStyle.OPACITY_DEFAULT) },
+                    onDone = close,
+                )
+            }
+            SubEdit.COLOR -> {
+                val start = remember { color }
+                val white = Color(SubtitleStyle.colorArgb("#FFFFFF"))
+                StageColorPopup(
+                    eyebrow = stringResource(R.string.settings_subtitle_appearance),
+                    title = stringResource(R.string.settings_subtitle_color),
+                    // "Default" hands the colour back to the stream and the player.
+                    presets = listOf(ColorChoice(white, stringResource(R.string.settings_subtitle_default)) { vm.setSubtitleColor(SubtitleStyle.COLOR_DEFAULT) }) +
+                        SUB_COLOR_PRESETS.map { (label, hex) -> ColorChoice(Color(SubtitleStyle.colorArgb(hex)), stringResource(label)) { vm.setSubtitleColor(hex) } },
+                    start = if (SubtitleStyle.hasColor(start)) Color(SubtitleStyle.colorArgb(start)) else white,
+                    current = if (SubtitleStyle.hasColor(color)) Color(SubtitleStyle.colorArgb(color)) else white,
+                    onLive = { vm.setSubtitleColor(it) },
+                    onCancel = { vm.setSubtitleColor(start) },
+                    onDone = { hex -> if (hex != null) vm.setSubtitleColor(hex) },
+                    onDismiss = close,
+                ) {
+                    Box(Modifier.padding(top = 20.mpx)) { SubtitlePreview(enabled = true, scale = scaleExo, font = font, color = color, position = position, bgOpacity = bgOpacity, height = 110.dp) }
                 }
             }
+            null -> Unit
         }
     }
 }
 
-/** The four options of [SubtitleAppearanceDialog], each opening its own popup. */
-private enum class SubDialog { NONE, SIZE, FONT, COLOR, POSITION, TRANSPARENCY }
+/** A row of the subtitle page: its value on the right, its choices in the panel. */
+@Composable
+private fun SubStyleRow(title: String, line: String, value: SettingValue, choices: List<String>, onStep: ((Int) -> Unit)? = null, onClick: () -> Unit) {
+    StageSettingRow(
+        icon = OwnTVIcon.SUBTITLE, title = title, desc = line, value = value, onClick = onClick, onStep = onStep,
+        help = settingHelp(null, title, line, value, choices, pinnable = false),
+    )
+}
+
+/** ±10% on the background; from "Default" either way adopts the mid value first, so neither is a dead end. */
+private fun stepSubOpacity(current: Int, d: Int): Int =
+    if (!SubtitleStyle.hasOpacity(current)) SubtitleStyle.OPACITY_START
+    else (current + d * SubtitleStyle.OPACITY_STEP).coerceIn(SubtitleStyle.OPACITY_MIN, SubtitleStyle.OPACITY_MAX)
+
+/** What the subtitle page is editing in the panel or the colour popup. */
+private enum class SubEdit { SIZE_EXO, SIZE_MPV, FONT, COLOR, POSITION, BACKGROUND }
 
 @Composable
 private fun subtitleFontFamilyLabel(family: AppFontFamily): String = stringResource(
@@ -2705,400 +2535,6 @@ private fun subtitleFontFamilyLabel(family: AppFontFamily): String = stringResou
         AppFontFamily.PLUS_JAKARTA_SANS -> R.string.settings_font_plus_jakarta_sans
     },
 )
-
-/**
- * Subtitle text color — the same D-pad-tuned picker the accent color uses (shared controls live in
- * `ui.components`), plus a "Use default" escape that hands the color back to the stream and player.
- */
-@Composable
-private fun SubtitleColorDialog(color: String, onColor: (String) -> Unit, onDismiss: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    val firstFocus = remember { FocusRequester() }
-    // Seeded once from the stored color; the picker writes straight through to settings, so this is
-    // only the working position of the hue bar / square between key presses.
-    val hsv = remember {
-        FloatArray(3).also {
-            android.graphics.Color.colorToHSV(SubtitleStyle.colorArgb(color.ifBlank { "#FFFFFF" }), it)
-        }
-    }
-    var hue by remember { mutableStateOf(hsv[0]) }
-    var sat by remember { mutableStateOf(hsv[1]) }
-    var value by remember { mutableStateOf(hsv[2]) }
-    var hexInput by remember { mutableStateOf(color.removePrefix("#")) }
-    var hexError by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
-    BackHandler { onDismiss() }
-
-    fun applyPicked(hex: String) {
-        hexInput = hex.removePrefix("#")
-        hexError = false
-        onColor(hex)
-    }
-
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(modifier = Modifier.dialogPanel(width = 440.dp, corner = 16.dp, padding = 18.dp)) {
-                Text(stringResource(R.string.settings_subtitle_color), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    stringResource(R.string.settings_subtitle_color_default_description),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SUB_COLOR_PRESETS.forEachIndexed { index, (_, hex) ->
-                        tv.own.owntv.ui.components.ColorSwatch(
-                            color = Color(SubtitleStyle.colorArgb(hex)),
-                            selected = color.equals(hex, ignoreCase = true),
-                            modifier = if (index == 0) Modifier.focusRequester(firstFocus) else Modifier,
-                            onClick = {
-                                android.graphics.Color.colorToHSV(SubtitleStyle.colorArgb(hex), hsv)
-                                hue = hsv[0]; sat = hsv[1]; value = hsv[2]
-                                applyPicked(hex)
-                            },
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(14.dp))
-                // Hex field above the picker: the on-screen keyboard covers the lower half of the
-                // screen, so it has to stay high enough to remain visible while typing.
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("#", style = MaterialTheme.typography.titleMedium, color = colors.onSurfaceVariant)
-                    tv.own.owntv.ui.components.OwnTVTextField(
-                        value = hexInput,
-                        onValueChange = { hexInput = it.take(6); hexError = false },
-                        label = stringResource(R.string.settings_subtitle_hex),
-                        placeholder = "FFFFFF",
-                        modifier = Modifier.width(170.dp),
-                    )
-                    OwnTVButton(stringResource(R.string.settings_apply), onClick = {
-                        val hex = "#" + hexInput.trim().removePrefix("#").uppercase()
-                        if (tv.own.owntv.ui.theme.parseAccentHex(hex) != null) {
-                            android.graphics.Color.colorToHSV(SubtitleStyle.colorArgb(hex), hsv)
-                            hue = hsv[0]; sat = hsv[1]; value = hsv[2]
-                            applyPicked(hex)
-                        } else {
-                            hexError = true
-                        }
-                    })
-                }
-                if (hexError) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(stringResource(R.string.settings_subtitle_color_hex_hint), style = MaterialTheme.typography.bodySmall, color = Color(0xFFEF4444))
-                }
-
-                Spacer(Modifier.height(14.dp))
-                tv.own.owntv.ui.components.HueBar(hue = hue) { h ->
-                    hue = h
-                    applyPicked(tv.own.owntv.ui.components.hsvToHex(hue, sat, value))
-                }
-                Spacer(Modifier.height(12.dp))
-                tv.own.owntv.ui.components.SatValSquare(hue = hue, sat = sat, value = value) { s, v ->
-                    sat = s; value = v
-                    applyPicked(tv.own.owntv.ui.components.hsvToHex(hue, sat, value))
-                }
-
-                Spacer(Modifier.height(16.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OwnTVButton(stringResource(R.string.settings_subtitle_use_default), style = OwnTVButtonStyle.SECONDARY, onClick = {
-                        hexInput = ""
-                        hexError = false
-                        onColor(SubtitleStyle.COLOR_DEFAULT)
-                    })
-                    Spacer(Modifier.weight(1f))
-                    OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
-                }
-            }
-        }
-    }
-}
-
-/**
- * Subtitle position — Default plus the six fixed anchors, drawn as miniature screens so the choice
- * is made by looking rather than by reading a label.
- */
-@Composable
-private fun SubtitlePositionDialog(
-    position: SubtitleStyle.Position,
-    onSelect: (SubtitleStyle.Position) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val colors = OwnTVTheme.colors
-    val selectedFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { selectedFocus.requestFocus() } }
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier.fillMaxSize().modalScrim()
-                .trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(modifier = Modifier.dialogPanel(width = 430.dp, corner = 16.dp, padding = 18.dp, scroll = false)) {
-                Text(stringResource(R.string.settings_subtitle_position), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    stringResource(R.string.settings_subtitle_position_default_description),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(12.dp))
-                PositionCell(
-                    position = SubtitleStyle.Position.DEFAULT,
-                    selected = position == SubtitleStyle.Position.DEFAULT,
-                    modifier = Modifier.fillMaxWidth().let {
-                        if (position == SubtitleStyle.Position.DEFAULT) it.focusRequester(selectedFocus) else it
-                    },
-                    onClick = { onSelect(SubtitleStyle.Position.DEFAULT) },
-                )
-                SubtitleStyle.Position.ANCHORS.chunked(3).forEach { anchorRow ->
-                    Spacer(Modifier.height(8.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        anchorRow.forEach { anchor ->
-                            PositionCell(
-                                position = anchor,
-                                selected = position == anchor,
-                                modifier = Modifier.weight(1f).let {
-                                    if (position == anchor) it.focusRequester(selectedFocus) else it
-                                },
-                                onClick = { onSelect(anchor) },
-                            )
-                        }
-                    }
-                }
-                Spacer(Modifier.height(16.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
-                }
-            }
-        }
-    }
-}
-
-/** One cell of the position picker: a miniature screen with the subtitle bar where it will land. */
-@Composable
-private fun PositionCell(
-    position: SubtitleStyle.Position,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    val colors = OwnTVTheme.colors
-    val isDefault = position == SubtitleStyle.Position.DEFAULT
-    FocusableSurface(
-        onClick = onClick,
-        modifier = modifier.height(if (isDefault) 40.dp else 64.dp),
-        selected = selected,
-        shape = RoundedCornerShape(12.dp),
-        selectedContainerColor = colors.primaryContainer,
-        surface = GlassSurface.DIALOGS,
-        contentAlignment = Alignment.Center,
-    ) { _ ->
-        val labelColor = if (selected) colors.onPrimaryContainer else colors.onSurface
-        if (isDefault) {
-            Text(
-                subtitlePositionName(position), style = MaterialTheme.typography.labelMedium, color = labelColor,
-                textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
-            )
-        } else {
-            Column(Modifier.fillMaxSize().padding(6.dp)) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentAlignment = position.alignment(),
-                ) {
-                    Box(
-                        Modifier.width(28.dp).height(4.dp).clip(RoundedCornerShape(2.dp))
-                            .background(if (selected) colors.onPrimaryContainer else colors.outline),
-                    )
-                }
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    subtitlePositionName(position), style = MaterialTheme.typography.labelSmall, color = labelColor,
-                    textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-    }
-}
-
-/**
- * Subtitle size — one row per engine, because mpv and Media3's SubtitleView draw the same multiplier
- * at visibly different sizes. There is no conversion between them worth guessing at, so the user gets
- * a control for each and sets them once against a preview that shows both at the same time.
- *
- * OK cycles a row through the four sizes in place rather than opening a picker: a third popup on top
- * of a popup on top of a dialog is two extra Back presses, and with a live preview a four-value
- * control reads better as a cycle. Same pattern as the transparency popup below.
- */
-@Composable
-private fun SubtitleSizeDialog(
-    scaleExo: Float,
-    scaleMpv: Float,
-    font: AppFontFamily?,
-    color: String,
-    bgOpacity: Int,
-    onScaleExo: (Float) -> Unit,
-    onScaleMpv: (Float) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val colors = OwnTVTheme.colors
-    val firstRow = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { firstRow.requestFocus() } }
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier.fillMaxSize().modalScrim()
-                .trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(modifier = Modifier.dialogPanel(width = 520.dp, corner = 16.dp, padding = 18.dp, scroll = false)) {
-                Text(stringResource(R.string.settings_subtitle_size), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    stringResource(R.string.settings_subtitle_size_description),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(12.dp))
-                SubtitleSizePreview(
-                    scaleExo = scaleExo, scaleMpv = scaleMpv, font = font, color = color, bgOpacity = bgOpacity,
-                )
-                Spacer(Modifier.height(14.dp))
-                Row2(
-                    icon = OwnTVIcon.SUBTITLE,
-                    title = stringResource(R.string.settings_player_exoplayer),
-                    chip = subSizeName(scaleExo), primaryChip = SubtitleStyle.hasScale(scaleExo),
-                    modifier = Modifier.focusRequester(firstRow),
-                    onClick = { onScaleExo(nextSubSize(scaleExo)) },
-                )
-                Row2(
-                    icon = OwnTVIcon.SUBTITLE,
-                    title = stringResource(R.string.settings_player_mpv),
-                    chip = subSizeName(scaleMpv), primaryChip = SubtitleStyle.hasScale(scaleMpv),
-                    onClick = { onScaleMpv(nextSubSize(scaleMpv)) },
-                )
-                Spacer(Modifier.height(14.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
-                }
-            }
-        }
-    }
-}
-
-/** Both engines' sizes on one stand-in frame — the whole point of the setting is seeing the difference. */
-@Composable
-private fun SubtitleSizePreview(
-    scaleExo: Float,
-    scaleMpv: Float,
-    font: AppFontFamily?,
-    color: String,
-    bgOpacity: Int,
-) {
-    val textColor = if (SubtitleStyle.hasColor(color)) Color(SubtitleStyle.colorArgb(color)) else Color.White
-    val boxColor = if (SubtitleStyle.hasOpacity(bgOpacity)) {
-        Color(SubtitleStyle.backgroundArgb(bgOpacity))
-    } else {
-        Color.Black.copy(alpha = 0.45f)
-    }
-    Column(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(SUB_PREVIEW_BRUSH)
-            .padding(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        listOf(
-            stringResource(R.string.settings_player_exoplayer) to scaleExo,
-            stringResource(R.string.settings_player_mpv) to scaleMpv,
-        ).forEach { (engine, scale) ->
-            Text(engine, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.75f))
-            Text(
-                stringResource(R.string.settings_subtitle_preview_sample),
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = MaterialTheme.typography.bodyLarge.fontSize * scale,
-                    fontFamily = font?.asComposeFamily() ?: MaterialTheme.typography.bodyLarge.fontFamily,
-                ),
-                color = textColor,
-                modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(boxColor)
-                    .padding(horizontal = 10.dp, vertical = 3.dp),
-            )
-        }
-    }
-}
-
-/**
- * Background transparency — a ±10% stepper. "Default" is its own state rather than a value in the
- * range: it means the box is left to the renderer (and, on Live TV, to the broadcaster).
- */
-@Composable
-private fun SubtitleTransparencyDialog(
-    scale: Float,
-    font: AppFontFamily?,
-    color: String,
-    position: SubtitleStyle.Position,
-    bgOpacity: Int,
-    onSet: (Int) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val colors = OwnTVTheme.colors
-    val isDefault = !SubtitleStyle.hasOpacity(bgOpacity)
-    // From "Default" either button adopts the mid value first, so neither is ever a dead end.
-    val effective = if (isDefault) SubtitleStyle.OPACITY_START else bgOpacity
-    val minusEnabled = isDefault || effective > SubtitleStyle.OPACITY_MIN
-    val plusEnabled = isDefault || effective < SubtitleStyle.OPACITY_MAX
-    val steppers = tv.own.owntv.ui.components.rememberStepperFocus(plusEnabled, minusEnabled)
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier.fillMaxSize().modalScrim()
-                .trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                modifier = Modifier.dialogPanel(width = 380.dp, corner = 16.dp, padding = 18.dp, scroll = false),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(stringResource(R.string.settings_subtitle_background_transparency), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    stringResource(R.string.settings_subtitle_background_description),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(12.dp))
-        SubtitlePreview(
-            enabled = true, scale = scale, font = font, color = color, position = position,
-                    bgOpacity = bgOpacity, height = 92.dp,
-                )
-                Spacer(Modifier.height(14.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StepBtn("–", enabled = minusEnabled, modifier = Modifier.focusRequester(steppers.minus)) {
-                        onSet(
-                            if (isDefault) SubtitleStyle.OPACITY_START
-                            else (effective - SubtitleStyle.OPACITY_STEP).coerceAtLeast(SubtitleStyle.OPACITY_MIN),
-                        )
-                    }
-                    Text(
-                        subOpacityLabel(bgOpacity), style = MaterialTheme.typography.titleMedium,
-                        color = colors.primary, modifier = Modifier.width(100.dp), textAlign = TextAlign.Center,
-                    )
-                    StepBtn("+", enabled = plusEnabled, modifier = Modifier.focusRequester(steppers.plus)) {
-                        onSet(
-                            if (isDefault) SubtitleStyle.OPACITY_START
-                            else (effective + SubtitleStyle.OPACITY_STEP).coerceAtMost(SubtitleStyle.OPACITY_MAX),
-                        )
-                    }
-                }
-                Spacer(Modifier.height(14.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OwnTVButton(stringResource(R.string.settings_subtitle_use_default), style = OwnTVButtonStyle.SECONDARY, onClick = { onSet(SubtitleStyle.OPACITY_DEFAULT) })
-                    Spacer(Modifier.weight(1f))
-                    OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
-                }
-            }
-        }
-    }
-}
 
 /**
  * A stand-in video frame with a sample subtitle drawn the way the renderers will draw it — same
@@ -3156,15 +2592,3 @@ private fun SubtitlePreview(
     }
 }
 
-@Composable
-internal fun StepBtn(label: String, enabled: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    FocusableSurface(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.size(40.dp),
-        shape = RoundedCornerShape(12.dp),
-        contentAlignment = Alignment.Center,
-        surface = GlassSurface.DIALOGS,
-    ) { _ -> Text(label, style = MaterialTheme.typography.titleMedium, color = if (enabled) colors.onSurface else colors.outline) }
-}

@@ -29,6 +29,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
 import tv.own.owntv.R
+import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.core.ui.findActivity
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -88,35 +89,29 @@ fun AutoFrameRatePrompt(
     }
 
     val (currentHz, targetHz) = offer ?: return
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    BackHandler { onDismiss() }
-    val colors = OwnTVTheme.colors
-    Box(
-        Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(Modifier.dialogPanel(width = 520.dp, padding = 28.dp)) {
-            Text(stringResource(R.string.player_frame_rate_prompt_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(10.dp))
-            Text(
-                stringResource(
-                    R.string.player_frame_rate_prompt_description,
-                    fps?.roundToInt() ?: 0,
-                    currentHz.roundToInt(),
-                    targetHz.roundToInt(),
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(22.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(stringResource(R.string.settings_not_now), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.player_frame_rate_turn_on), onClick = onEnable, modifier = Modifier.focusRequester(focus))
-            }
-        }
-    }
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 936.mpx) {
+        val focus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+        BackHandler { onDismiss() }
+        val colors = OwnTVTheme.colors
+
+                Text(stringResource(R.string.player_frame_rate_prompt_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    stringResource(
+                        R.string.player_frame_rate_prompt_description,
+                        fps?.roundToInt() ?: 0,
+                        currentHz.roundToInt(),
+                        targetHz.roundToInt(),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(22.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OwnTVButton(stringResource(R.string.settings_not_now), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+                    Spacer(Modifier.weight(1f))
+                    OwnTVButton(stringResource(R.string.player_frame_rate_turn_on), onClick = onEnable, modifier = Modifier.focusRequester(focus))
+                }
     }
 }

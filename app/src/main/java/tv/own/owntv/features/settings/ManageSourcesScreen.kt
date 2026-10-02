@@ -8,12 +8,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.focusGroup
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,12 +58,9 @@ import tv.own.owntv.features.setup.AddSourceChooserScreen
 import tv.own.owntv.features.setup.AddSourceScreen
 import tv.own.owntv.features.setup.RemoteSetupScreen
 import tv.own.owntv.ui.components.OwnTVButton
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.roundedPanel
-import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 
 /** Phase 13 — list / add / re-sync / delete the active profile's IPTV sources. */
@@ -530,25 +525,11 @@ internal fun ConfirmDialog(
      */
     @StringRes confirmLabel: Int = R.string.common_delete,
 ) {
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    val colors = OwnTVTheme.colors
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    BackHandler { onDismiss() }
-    Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
-        Column(Modifier.dialogPanel(width = 460.dp, padding = 28.dp)) {
-            Text(title, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(10.dp))
-            Text(message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(22.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.focusRequester(focus))
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(confirmLabel), onClick = onConfirm)
-            }
-        }
-    }
-    }
+    // Focus starts on Cancel: a mis-press must not delete anything.
+    tv.own.owntv.ui.stage.StageConfirm(
+        title = title, body = message, confirm = stringResource(confirmLabel),
+        onConfirm = onConfirm, onCancel = onDismiss, focusCancel = true,
+    )
 }
 
 /**
@@ -570,33 +551,22 @@ private fun ResyncChoiceDialog(
     onClean: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    BackHandler { onDismiss() }
-    Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
-        Column(Modifier.dialogPanel(width = 520.dp, padding = 28.dp)) {
-            Text(stringResource(R.string.settings_sources_resync_title_full, sourceName), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(10.dp))
-            Text(
-                stringResource(R.string.settings_sources_resync_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(22.dp))
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OwnTVButton(stringResource(R.string.settings_sources_resync_now_full), onClick = onNormal, modifier = Modifier.fillMaxWidth().focusRequester(focus))
-                OwnTVButton(
-                    stringResource(R.string.settings_sources_resync_remove_full),
-                    onClick = onClean,
-                    style = OwnTVButtonStyle.SECONDARY,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY, modifier = Modifier.fillMaxWidth())
-            }
-        }
-    }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { focus.requestFocus() } }
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.settings_sources_resync_title_full, sourceName),
+        body = stringResource(R.string.settings_sources_resync_description),
+        buttons = { tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_cancel), onClick = onDismiss, height = 56.mpx, textSize = 19) },
+    ) {
+        tv.own.owntv.ui.stage.StagePopupOption(
+            title = stringResource(R.string.settings_sources_resync_now_full), onClick = onNormal, modifier = Modifier.focusRequester(focus),
+            leading = { tv.own.owntv.ui.stage.StagePopupIcon(OwnTVIcon.REFRESH) },
+        )
+        tv.own.owntv.ui.stage.StagePopupOption(
+            title = stringResource(R.string.settings_sources_resync_remove_full), onClick = onClean, danger = true,
+            leading = { tv.own.owntv.ui.stage.StagePopupIcon(OwnTVIcon.TRASH, tv.own.owntv.ui.theme.StageColors.Danger) },
+        )
     }
 }
 
@@ -619,92 +589,62 @@ internal fun SourceTestDialog(
     /** Abandon a measurement in progress. Falls back to simply closing when not supplied. */
     onSkip: (() -> Unit)? = null,
 ) {
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    val colors = OwnTVTheme.colors
     val focus = remember { FocusRequester() }
-    // Keyed on *which* button carries the requester, not on first composition.
-    //
-    // While measuring that button is Skip; when the measurement finishes it becomes OK, and the node
-    // holding the requester is therefore removed and replaced. A one-shot request left focus on a
-    // node that no longer existed, so the finished dialog could not be dismissed with the remote at
-    // all — the press went nowhere. A frame is waited for because the replacement must exist before
-    // it can be asked to take focus.
+    // Keyed on *which* button carries the requester, not on first composition: while measuring it is
+    // Skip, then OK replaces it — a one-shot request left focus on a node that no longer existed, so
+    // the finished dialog could not be dismissed. A frame is waited for so the replacement exists.
     val measuring = state is SourceTestUi.Measuring
     LaunchedEffect(measuring) {
         withFrameNanos { }
+        kotlinx.coroutines.delay(60)
         runCatching { focus.requestFocus() }
     }
-    BackHandler { onDismiss() }
-    Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
-        Column(Modifier.dialogPanel(width = 520.dp, padding = 28.dp)) {
-            Text(stringResource(R.string.settings_sources_test_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(4.dp))
-            Text(state.sourceName, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(18.dp))
-            when (state) {
-                is SourceTestUi.Running -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    OwnTVSpinner(sizeDp = 22)
-                    Spacer(Modifier.width(12.dp))
-                    Text(stringResource(R.string.setup_testing), style = MaterialTheme.typography.bodyLarge, color = colors.onSurfaceVariant)
-                }
-                // The measurement is slow by nature, so it says which stream it is on rather than
-                // spinning silently for two minutes and looking like a hang.
-                is SourceTestUi.Measuring -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    OwnTVSpinner(sizeDp = 22)
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        stringResource(
-                            R.string.settings_sources_probe_running,
-                            state.progress.stream,
-                            state.progress.maxStreams,
-                        ),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = colors.onSurfaceVariant,
-                    )
-                }
-                is SourceTestUi.Done -> SourceTestReport(state.result, state.limit)
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.settings_sources_test_title),
+        body = state.sourceName,
+        buttons = {
+            // Only once the quick check has finished: a measurement on top of a running request would
+            // race it for the same connection.
+            if (onRetest != null && state is SourceTestUi.Done) {
+                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_sources_retest), onClick = onRetest, height = 56.mpx, textSize = 19)
             }
-            Spacer(Modifier.height(22.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // While measuring, the only honest button is one that abandons it: OK would suggest
-                // the answer is already in. Nobody should be trapped for two minutes by a provider
-                // that is simply slow.
-                if (state is SourceTestUi.Measuring) {
-                    OwnTVButton(
-                        stringResource(R.string.settings_sources_probe_skip),
-                        onClick = onSkip ?: onDismiss,
-                        modifier = Modifier.focusRequester(focus),
-                    )
-                } else {
-                    OwnTVButton(stringResource(R.string.common_ok), onClick = onDismiss, modifier = Modifier.focusRequester(focus))
-                }
-                // Only once the quick check has finished: starting a two-minute measurement on top of
-                // a request that is still running would race it for the same connection.
-                if (onRetest != null && state is SourceTestUi.Done) {
-                    OwnTVButton(
-                        stringResource(R.string.settings_sources_retest),
-                        onClick = onRetest,
-                        style = OwnTVButtonStyle.SECONDARY,
-                    )
-                }
+            // While measuring, the only honest button abandons it: OK would suggest the answer is in.
+            if (state is SourceTestUi.Measuring) {
+                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_sources_probe_skip), onClick = onSkip ?: onDismiss, height = 56.mpx, textSize = 19, tinted = true, modifier = Modifier.focusRequester(focus))
+            } else {
+                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_ok), onClick = onDismiss, height = 56.mpx, textSize = 19, tinted = true, modifier = Modifier.focusRequester(focus))
             }
+        },
+    ) {
+        val line = tv.own.owntv.ui.theme.stageText(18, 500)
+        when (state) {
+            is SourceTestUi.Running -> Row(verticalAlignment = Alignment.CenterVertically) {
+                OwnTVSpinner(sizeDp = 22)
+                Spacer(Modifier.width(16.mpx))
+                Text(stringResource(R.string.setup_testing), style = line, color = tv.own.owntv.ui.theme.StageColors.Muted)
+            }
+            // Slow by nature, so it says which stream it is on rather than looking like a hang.
+            is SourceTestUi.Measuring -> Row(verticalAlignment = Alignment.CenterVertically) {
+                OwnTVSpinner(sizeDp = 22)
+                Spacer(Modifier.width(16.mpx))
+                Text(stringResource(R.string.settings_sources_probe_running, state.progress.stream, state.progress.maxStreams), style = line, color = tv.own.owntv.ui.theme.StageColors.Muted)
+            }
+            is SourceTestUi.Done -> SourceTestReport(state.result, state.limit)
         }
-    }
     }
 }
 
 @Composable
 private fun SourceTestReport(result: SourceTestResult, limit: tv.own.owntv.core.live.ConnectionLimit?) {
-    val colors = OwnTVTheme.colors
     val res = LocalContext.current.resources
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.mpx)) {
         Text(
-            result.headline(res),
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (result is SourceTestResult.Ok) colors.onSurface else colors.favorite,
+            result.headline(res), style = tv.own.owntv.ui.theme.stageText(20, 700),
+            color = if (result is SourceTestResult.Ok) tv.own.owntv.ui.theme.StageColors.Ok else tv.own.owntv.ui.theme.StageColors.Danger,
         )
         result.detailLines(res, limit).forEach {
-            Text(it, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            Text(it, style = tv.own.owntv.ui.theme.stageText(17, 500), color = tv.own.owntv.ui.theme.StageColors.Muted)
         }
     }
 }

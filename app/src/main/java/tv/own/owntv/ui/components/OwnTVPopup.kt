@@ -35,8 +35,8 @@ import tv.own.owntv.ui.theme.PopupFontTheme
  * Popup chrome and the user-selected popup typography are reduced together here. Keeping the scale in the host means
  * nested popups (Rule builder -> Rule value) cannot silently return to full application size.
  *
- * [stageLayout] is for the Stage menus, which are drawn in mockup pixels at the screen's own scale and
- * anchored to the control that opened them: no popup scale, no centring, the whole window to place in.
+ * [stageLayout] is for the Stage popups and menus, which are drawn in mockup pixels at the screen's own
+ * scale times the user's Popup size, and placed by their caller: no 0.70 host scale, no centring.
  */
 @Composable
 fun OwnTVPopup(
@@ -45,6 +45,8 @@ fun OwnTVPopup(
     dismissOnClickOutside: Boolean = true,
     fontScale: Float = 0.70f,
     stageLayout: Boolean = false,
+    /** Stage popups follow Popup size and popup font size (the drawn size = 100%). False for a full-screen player. */
+    stageScaled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     // The app's own density (2.0 × UI Zoom). A dialog window starts again from the display's density,
@@ -113,7 +115,13 @@ fun OwnTVPopup(
         val availableHeightDp = with(baseDensity) { availableHeightPx.toDp() }
 
         if (stageLayout) {
-            CompositionLocalProvider(LocalDensity provides appDensity, LocalTvImeWatcher provides watcher, LocalTvImeMetrics provides metrics) {
+            // Popup size scales the whole popup; popup font size its text, in place of the main font size.
+            val stageDensity = if (!stageScaled) appDensity else Density(
+                density = appDensity.density * tv.own.owntv.ui.theme.LocalPopupSizeScaleFactor.current,
+                fontScale = appDensity.fontScale / tv.own.owntv.ui.theme.LocalUiFontScaleFactor.current *
+                    tv.own.owntv.ui.theme.LocalPopupFontScaleFactor.current,
+            )
+            CompositionLocalProvider(LocalDensity provides stageDensity, LocalTvImeWatcher provides watcher, LocalTvImeMetrics provides metrics, LocalStagePopup provides true) {
                 Box(Modifier.fillMaxSize()) { content() }
             }
             return@Dialog

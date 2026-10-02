@@ -1,22 +1,12 @@
 package tv.own.owntv.features.settings
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,12 +21,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
-import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.ui.theme.mpx
@@ -46,16 +34,10 @@ import tv.own.owntv.ui.components.DayStepperDialog
 import tv.own.owntv.core.settings.EpgAutoRefresh
 import tv.own.owntv.core.settings.EpgRefresh
 import tv.own.owntv.core.settings.PlaylistRefresh
-import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.rememberDialogFocusRestore
-import tv.own.owntv.ui.components.OwnTVButton
-import tv.own.owntv.ui.components.OwnTVButtonStyle
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.trapAllFocusExit
-import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.core.sync.work.EpgSyncState
 import tv.own.owntv.core.util.classifySyncFailure
@@ -497,49 +479,28 @@ private fun PlaylistEpgPicker(
     onPick: (EpgSourcesViewModel.PlaylistEpg) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    val colors = OwnTVTheme.colors
     val options by produceState<List<EpgSourcesViewModel.PlaylistEpg>?>(initialValue = null) { value = runCatching { load() }.getOrDefault(emptyList()) }
-    val firstFocus = remember { FocusRequester() }
-    LaunchedEffect(options) { if (!options.isNullOrEmpty()) runCatching { firstFocus.requestFocus() } }
-    BackHandler { onDismiss() }
-
-    Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
-        Column(Modifier.dialogPanel(width = 560.dp, corner = 20.dp, padding = 24.dp, scroll = false)) {
-            Text(stringResource(R.string.settings_epg_sources_fill_playlist), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(14.dp))
-            val opts = options
-            when {
-                opts == null -> Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 28) }
-                opts.isEmpty() -> Text(stringResource(R.string.settings_epg_sources_none_playlist), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                else -> LazyColumn(Modifier.fillMaxWidth().height(280.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(opts) { opt ->
-                        FocusableSurface(
-                            onClick = { onPick(opt) },
-                            modifier = if (opt == opts.first()) Modifier.fillMaxWidth().focusRequester(firstFocus) else Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            contentAlignment = Alignment.CenterStart,
-                            surface = GlassSurface.DIALOGS,
-                        ) { _ ->
-                            Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp)) {
-                                Text(opt.name, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                                // A portal guide has no address to show — say what it is instead.
-                                val subtitle = if (tv.own.owntv.core.repository.EpgRepository.stalkerSourceIdOf(opt.url) != null) {
-                                    stringResource(R.string.settings_epg_sources_portal_guide)
-                                } else {
-                                    opt.url
-                                }
-                                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                        }
-                    }
+    // A list picked from: in the page's panel (owner, P12), a Stage popup elsewhere.
+    val list: @Composable () -> Unit = {
+        val firstFocus = remember { FocusRequester() }
+        LaunchedEffect(options) { if (!options.isNullOrEmpty()) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } } }
+        val opts = options
+        when {
+            opts == null -> Box(Modifier.fillMaxWidth().height(80.mpx), contentAlignment = Alignment.Center) { OwnTVSpinner(sizeDp = 28) }
+            opts.isEmpty() -> Text(stringResource(R.string.settings_epg_sources_none_playlist), style = tv.own.owntv.ui.theme.stageText(17, 500), color = tv.own.owntv.ui.theme.StageColors.Muted)
+            else -> Column(Modifier.trapAllFocusExit().focusGroup()) {
+                opts.forEach { opt ->
+                    // A portal guide has no address to show — say what it is instead.
+                    val line = if (tv.own.owntv.core.repository.EpgRepository.stalkerSourceIdOf(opt.url) != null) stringResource(R.string.settings_epg_sources_portal_guide) else opt.url
+                    tv.own.owntv.ui.stage.StagePopupOption(
+                        title = opt.name, subtitle = line, onClick = { onPick(opt) },
+                        modifier = if (opt == opts.first()) Modifier.focusRequester(firstFocus) else Modifier,
+                        leading = { tv.own.owntv.ui.stage.StagePopupIcon(OwnTVIcon.EPG) },
+                    )
                 }
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
             }
         }
     }
-    }
+    if (panelEditor(onDismiss) { list() }) return
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = stringResource(R.string.settings_epg_sources_fill_playlist)) { list() }
 }

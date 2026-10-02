@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
+import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.dialogPanel
@@ -55,39 +56,32 @@ fun MultiviewTileMenu(
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     BackHandler { onDismiss() }
 
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup().longPressMenuGuard(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(Modifier.dialogPanel(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            MenuRow(
-                label = stringResource(R.string.multiview_tile_change_channel),
-                icon = OwnTVIcon.LIVE_TV,
-                onClick = onChangeChannel,
-                modifier = Modifier.focusRequester(focus),
-            )
-            // Growing the grid is a deliberate act, which is what makes the Settings number a
-            // ceiling rather than a size: four allowed does not mean four every time.
-            if (onAddTile != null) {
-                MenuRow(stringResource(R.string.multiview_add_channel), OwnTVIcon.ADD, onAddTile)
-            }
-            if (filled) {
-                MenuRow(stringResource(R.string.multiview_tile_fullscreen), OwnTVIcon.EXPAND, onFullscreen)
-                MenuRow(stringResource(R.string.multiview_audio_tile), OwnTVIcon.VOLUME_HIGH, onSound)
-                // Give up this tile's picture and keep only its sound — or take the picture back.
-                MenuRow(
-                    label = stringResource(
-                        if (soundOnly) R.string.multiview_tile_show_picture else R.string.multiview_tile_sound_only,
-                    ),
-                    icon = OwnTVIcon.HEADPHONES,
-                    onClick = onSoundOnly,
-                )
-                MenuRow(stringResource(R.string.multiview_tile_remove), OwnTVIcon.CLOSE, onRemove)
-            }
-            MenuRow(stringResource(R.string.content_close), OwnTVIcon.CLOSE, onDismiss)
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 880.mpx, modifier = Modifier.longPressMenuGuard()) {
+        MenuRow(
+            label = stringResource(R.string.multiview_tile_change_channel),
+            icon = OwnTVIcon.LIVE_TV,
+            onClick = onChangeChannel,
+            modifier = Modifier.focusRequester(focus),
+        )
+        // Growing the grid is a deliberate act, which is what makes the Settings number a
+        // ceiling rather than a size: four allowed does not mean four every time.
+        if (onAddTile != null) {
+            MenuRow(stringResource(R.string.multiview_add_channel), OwnTVIcon.ADD, onAddTile)
         }
-    }
+        if (filled) {
+            MenuRow(stringResource(R.string.multiview_tile_fullscreen), OwnTVIcon.EXPAND, onFullscreen)
+            MenuRow(stringResource(R.string.multiview_audio_tile), OwnTVIcon.VOLUME_HIGH, onSound)
+            // Give up this tile's picture and keep only its sound — or take the picture back.
+            MenuRow(
+                label = stringResource(
+                    if (soundOnly) R.string.multiview_tile_show_picture else R.string.multiview_tile_sound_only,
+                ),
+                icon = OwnTVIcon.HEADPHONES,
+                onClick = onSoundOnly,
+            )
+            MenuRow(stringResource(R.string.multiview_tile_remove), OwnTVIcon.CLOSE, onRemove)
+        }
+        MenuRow(stringResource(R.string.content_close), OwnTVIcon.CLOSE, onDismiss)
     }
 }
 

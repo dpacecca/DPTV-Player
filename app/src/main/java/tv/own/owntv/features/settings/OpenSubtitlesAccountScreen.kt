@@ -1,45 +1,30 @@
 package tv.own.owntv.features.settings
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
-import tv.own.owntv.ui.components.OwnTVButton
-import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVTextField
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.modalScrim
-import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
@@ -468,45 +453,27 @@ private fun openSubtitlesResetLabel(raw: String?): String {
 /** Remote (a browser on the same Wi-Fi) or Enter here (type on the TV) — the one door into sign-in. */
 @Composable
 private fun OpenSubtitlesSetupChooser(onRemote: () -> Unit, onLocal: () -> Unit, onDismiss: () -> Unit) {
-    val colors = OwnTVTheme.colors
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(
-            Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(Modifier.dialogPanel(width = 520.dp, padding = 28.dp)) {
-                Text(stringResource(R.string.settings_open_subtitles_setup_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    stringResource(R.string.settings_open_subtitles_setup_description),
-                    style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(16.dp))
-                Row2(
-                    icon = OwnTVIcon.SHARE,
-                    title = stringResource(R.string.settings_open_subtitles_setup_remote),
-                    desc = stringResource(R.string.settings_open_subtitles_setup_remote_description),
-                    chevron = true,
-                    modifier = Modifier.focusRequester(firstFocus),
-                    onClick = onRemote,
-                )
-                Spacer(Modifier.height(8.dp))
-                Row2(
-                    icon = OwnTVIcon.PERSON,
-                    title = stringResource(R.string.settings_open_subtitles_setup_local),
-                    desc = stringResource(R.string.settings_open_subtitles_setup_local_description),
-                    chevron = true,
-                    onClick = onLocal,
-                )
-                Spacer(Modifier.height(18.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                }
-            }
-        }
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.settings_open_subtitles_setup_title),
+        body = stringResource(R.string.settings_open_subtitles_setup_description),
+        buttons = { tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_cancel), onClick = onDismiss, height = 56.mpx, textSize = 19) },
+    ) {
+        Row2(
+            icon = OwnTVIcon.SHARE,
+            title = stringResource(R.string.settings_open_subtitles_setup_remote),
+            desc = stringResource(R.string.settings_open_subtitles_setup_remote_description),
+            modifier = Modifier.focusRequester(firstFocus),
+            onClick = onRemote,
+        )
+        Row2(
+            icon = OwnTVIcon.PERSON,
+            title = stringResource(R.string.settings_open_subtitles_setup_local),
+            desc = stringResource(R.string.settings_open_subtitles_setup_local_description),
+            onClick = onLocal,
+        )
     }
 }
 
@@ -522,42 +489,29 @@ private fun OpenSubtitlesApiPopup(
     onSave: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, fontScale = .50f) {
-        Box(
-            Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-        Column(Modifier.dialogPanel(width = 560.dp, padding = 20.dp)) {
-            Text(stringResource(R.string.settings_open_subtitles_advanced), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(4.dp))
-            Text(stringResource(R.string.settings_open_subtitles_advanced_description), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(12.dp))
-            Row2(
-                icon = OwnTVIcon.SHARE,
-                title = stringResource(R.string.settings_open_subtitles_setup_remote),
-                desc = stringResource(R.string.settings_metadata_key_from_phone_desc),
-                chevron = true,
-                modifier = Modifier.focusRequester(firstFocus),
-                onClick = onRemote,
-            )
-            Spacer(Modifier.height(8.dp))
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.settings_open_subtitles_advanced),
+        body = stringResource(R.string.settings_open_subtitles_advanced_description),
+        buttons = {
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_remove_custom_access), onClick = onRemove, height = 56.mpx, textSize = 19)
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_cancel), onClick = onDismiss, height = 56.mpx, textSize = 19)
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_save), onClick = onSave, height = 56.mpx, textSize = 19, tinted = true)
+        },
+    ) {
+        Row2(
+            icon = OwnTVIcon.SHARE,
+            title = stringResource(R.string.settings_open_subtitles_setup_remote),
+            desc = stringResource(R.string.settings_metadata_key_from_phone_desc),
+            modifier = Modifier.focusRequester(firstFocus),
+            onClick = onRemote,
+        )
+        Column(Modifier.padding(top = 10.mpx), verticalArrangement = Arrangement.spacedBy(12.mpx)) {
             OwnTVTextField(value = key, onValueChange = onKeyChange, label = stringResource(R.string.settings_open_subtitles_api_key), placeholder = stringResource(R.string.settings_metadata_optional), modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
             OwnTVTextField(value = url, onValueChange = onUrlChange, label = stringResource(R.string.settings_worker_server_url), placeholder = stringResource(R.string.settings_metadata_optional), modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
-            Text(stringResource(R.string.settings_open_subtitles_access_priority), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(14.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(stringResource(R.string.settings_remove_custom_access), onRemove, style = OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.common_cancel), onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                OwnTVButton(stringResource(R.string.common_save), onSave)
-            }
-        }
+            Text(stringResource(R.string.settings_open_subtitles_access_priority), style = tv.own.owntv.ui.theme.stageText(15, 500), color = tv.own.owntv.ui.theme.StageColors.Muted)
         }
     }
 }
@@ -586,104 +540,60 @@ private fun OpenSubtitlesSignInDialog(
     onSubmit: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
     val fieldFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { fieldFocus.requestFocus() } }
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, fontScale = .50f) {
-        Box(
-            Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            // dialogPanel already scrolls (scroll = true by default), which is what keeps Sign in
-            // reachable once the TV keyboard covers the lower half. Adding another verticalScroll
-            // here would be an illegal same-direction nest.
-            Column(Modifier.dialogPanel(width = 520.dp, padding = 20.dp)) {
-                Text(stringResource(R.string.player_subtitles_sign_in_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    stringResource(R.string.player_subtitles_sign_in_to_use),
-                    style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(12.dp))
-                OwnTVTextField(
-                    value = username, onValueChange = onUsernameChange,
-                    label = stringResource(R.string.player_subtitles_username), modifier = Modifier.fillMaxWidth(), focusRequester = fieldFocus,
-                )
-                Spacer(Modifier.height(8.dp))
-                OwnTVTextField(
-                    value = password, onValueChange = onPasswordChange,
-                    label = stringResource(R.string.player_subtitles_password), isPassword = true, modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(10.dp))
-                Row2(
-                    icon = OwnTVIcon.SUBTITLE, title = stringResource(R.string.player_subtitles_stay_signed_in),
-                    desc = stringResource(R.string.player_subtitles_session),
-                    chip = if (staySignedIn) stringResource(R.string.common_on) else stringResource(R.string.common_off), primaryChip = staySignedIn,
-                    onClick = { onStayChange(!staySignedIn) },
-                )
-                Spacer(Modifier.height(14.dp))
-                // Optional, and labelled as such: almost nobody has their own key, and a required-looking
-                // empty field right above Sign in reads like something is missing.
-                Text(
-                    stringResource(R.string.settings_open_subtitles_advanced),
-                    style = MaterialTheme.typography.titleSmall, color = colors.onSurface,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    stringResource(R.string.settings_open_subtitles_advanced_description),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(8.dp))
-                OwnTVTextField(
-                    value = apiKey, onValueChange = onApiKeyChange,
-                    label = stringResource(R.string.settings_open_subtitles_api_key),
-                    placeholder = stringResource(R.string.settings_metadata_optional),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(8.dp))
-                OwnTVTextField(
-                    value = serverUrl, onValueChange = onServerUrlChange,
-                    label = stringResource(R.string.settings_worker_server_url),
-                    placeholder = stringResource(R.string.settings_metadata_optional),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    stringResource(R.string.settings_open_subtitles_access_priority),
-                    style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(14.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                    Spacer(Modifier.weight(1f))
-                    OwnTVButton(stringResource(R.string.player_subtitles_sign_in), onClick = onSubmit)
-                }
-            }
+    LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { fieldFocus.requestFocus() } }
+    // One Stage popup; it scrolls and moves above the TV keyboard, so Sign in stays reachable while typing.
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.player_subtitles_sign_in_title),
+        body = stringResource(R.string.player_subtitles_sign_in_to_use),
+        buttons = {
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_cancel), onClick = onDismiss, height = 56.mpx, textSize = 19)
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.player_subtitles_sign_in), onClick = onSubmit, height = 56.mpx, textSize = 19, tinted = true)
+        },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.mpx)) {
+            OwnTVTextField(
+                value = username, onValueChange = onUsernameChange,
+                label = stringResource(R.string.player_subtitles_username), modifier = Modifier.fillMaxWidth(), focusRequester = fieldFocus,
+            )
+            OwnTVTextField(
+                value = password, onValueChange = onPasswordChange,
+                label = stringResource(R.string.player_subtitles_password), isPassword = true, modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        tv.own.owntv.ui.stage.StagePopupOption(
+            title = stringResource(R.string.player_subtitles_stay_signed_in), subtitle = stringResource(R.string.player_subtitles_session),
+            onClick = { onStayChange(!staySignedIn) }, modifier = Modifier.padding(top = 8.mpx),
+            trailing = { tv.own.owntv.ui.stage.StageSwitch(staySignedIn) },
+        )
+        // Optional, and labelled as such: almost nobody has their own key, and a required-looking empty
+        // field right above Sign in reads like something is missing.
+        tv.own.owntv.ui.stage.StagePopupDivider()
+        tv.own.owntv.ui.stage.StagePopupLabel(stringResource(R.string.settings_open_subtitles_advanced).uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]))
+        Text(stringResource(R.string.settings_open_subtitles_advanced_description), style = tv.own.owntv.ui.theme.stageText(15, 500), color = tv.own.owntv.ui.theme.StageColors.Muted, modifier = Modifier.padding(bottom = 12.mpx))
+        Column(verticalArrangement = Arrangement.spacedBy(12.mpx)) {
+            OwnTVTextField(
+                value = apiKey, onValueChange = onApiKeyChange,
+                label = stringResource(R.string.settings_open_subtitles_api_key),
+                placeholder = stringResource(R.string.settings_metadata_optional), modifier = Modifier.fillMaxWidth(),
+            )
+            OwnTVTextField(
+                value = serverUrl, onValueChange = onServerUrlChange,
+                label = stringResource(R.string.settings_worker_server_url),
+                placeholder = stringResource(R.string.settings_metadata_optional), modifier = Modifier.fillMaxWidth(),
+            )
+            Text(stringResource(R.string.settings_open_subtitles_access_priority), style = tv.own.owntv.ui.theme.stageText(15, 500), color = tv.own.owntv.ui.theme.StageColors.Muted)
         }
     }
 }
 
 @Composable
 private fun ErrorDialog(message: String, onDismiss: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(
-            Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(Modifier.dialogPanel(width = 420.dp, padding = 24.dp)) {
-                Text(stringResource(R.string.settings_open_subtitles), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                Spacer(Modifier.height(10.dp))
-                Text(message, style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-                Spacer(Modifier.height(18.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    OwnTVButton(stringResource(R.string.settings_close), onClick = onDismiss, modifier = Modifier.focusRequester(focus))
-                }
-            }
-        }
-    }
+    tv.own.owntv.ui.stage.StageNotice(
+        title = stringResource(R.string.settings_open_subtitles),
+        body = message,
+        ok = stringResource(R.string.settings_close),
+        onDismiss = onDismiss,
+    )
 }

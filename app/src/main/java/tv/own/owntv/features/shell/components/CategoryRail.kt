@@ -1,5 +1,6 @@
 package tv.own.owntv.features.shell.components
 
+import tv.own.owntv.ui.theme.mpx
 import androidx.compose.runtime.Immutable
 
 import androidx.compose.animation.animateColorAsState
@@ -476,25 +477,12 @@ fun CategoryContextMenu(
     onMove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    OwnTVPopup(onDismissRequest = onDismiss) {
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 504.mpx, scroll = false, modifier = Modifier.longPressMenuGuard()) {
         val colors = OwnTVTheme.colors
         val focus = remember { FocusRequester() }
         LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
         androidx.activity.compose.BackHandler { onDismiss() }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .modalScrim()
-                .trapAllFocusExit()
-                .focusGroup()
-                .longPressMenuGuard(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                modifier = Modifier
-                    .dialogPanel(width = 280.dp, scroll = false),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
+
                 Text(
                     categoryName,
                     style = MaterialTheme.typography.titleMedium,
@@ -529,8 +517,6 @@ fun CategoryContextMenu(
                     icon = OwnTVIcon.CLOSE,
                     modifier = Modifier.fillMaxWidth(),
                 )
-            }
-        }
     }
 }
 

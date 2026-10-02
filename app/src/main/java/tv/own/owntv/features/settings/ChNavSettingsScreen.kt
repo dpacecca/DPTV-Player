@@ -2,13 +2,7 @@ package tv.own.owntv.features.settings
 
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
@@ -19,7 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -28,9 +21,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
@@ -40,17 +31,9 @@ import tv.own.owntv.core.settings.RemoteShortcutBinding
 import tv.own.owntv.core.settings.RemoteShortcutBindings
 import tv.own.owntv.core.settings.RemoteShortcutPress
 import tv.own.owntv.ui.components.NumberInputDialog
-import tv.own.owntv.ui.components.OwnTVButton
-import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
-import tv.own.owntv.ui.components.OwnTVPopup
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.restoreAfterDialogClose
-import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.format.localizedInteger
-import tv.own.owntv.ui.theme.OwnTVTheme
-import tv.own.owntv.ui.theme.PopupFontTheme
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.stageText
@@ -276,72 +259,50 @@ private fun RemoteButtonCapturePopup(
     var pressedAt by remember { mutableStateOf(0L) }
     BackHandler { onDismiss() }
 
-    OwnTVPopup(onDismissRequest = onDismiss, fontScale = .60f) {
-        PopupFontTheme {
-            LaunchedEffect(focus) {
-                withFrameNanos { }
-                focus.requestFocus()
-            }
-            val captureKeyEvent: (androidx.compose.ui.input.key.KeyEvent) -> Boolean = { event ->
-                val keyCode = event.nativeKeyEvent.keyCode
-                if (RemoteShortcutBindings.isProtectedKey(keyCode)) {
-                    false
-                } else {
-                    when (event.type) {
-                        KeyEventType.KeyDown -> {
-                            if (activeKey == AndroidKeyEvent.KEYCODE_UNKNOWN) {
-                                activeKey = keyCode
-                                pressedAt = System.currentTimeMillis()
-                            }
-                            activeKey == keyCode
-                        }
-                        KeyEventType.KeyUp -> {
-                            if (activeKey != keyCode) false
-                            else {
-                                val press = if (System.currentTimeMillis() - pressedAt >= CAPTURE_LONG_PRESS_MS) {
-                                    RemoteShortcutPress.LONG
-                                } else RemoteShortcutPress.SHORT
-                                activeKey = AndroidKeyEvent.KEYCODE_UNKNOWN
-                                onCaptured(keyCode, press)
-                                true
-                            }
-                        }
-                        else -> activeKey == keyCode
+    // A Stage popup that takes the next key press; the panel catches it before the focused button does.
+    LaunchedEffect(focus) {
+        withFrameNanos { }
+        kotlinx.coroutines.delay(60)
+        runCatching { focus.requestFocus() }
+    }
+    val captureKeyEvent: (androidx.compose.ui.input.key.KeyEvent) -> Boolean = { event ->
+        val keyCode = event.nativeKeyEvent.keyCode
+        if (RemoteShortcutBindings.isProtectedKey(keyCode)) {
+            false
+        } else {
+            when (event.type) {
+                KeyEventType.KeyDown -> {
+                    if (activeKey == AndroidKeyEvent.KEYCODE_UNKNOWN) {
+                        activeKey = keyCode
+                        pressedAt = System.currentTimeMillis()
+                    }
+                    activeKey == keyCode
+                }
+                KeyEventType.KeyUp -> {
+                    if (activeKey != keyCode) false
+                    else {
+                        val press = if (System.currentTimeMillis() - pressedAt >= CAPTURE_LONG_PRESS_MS) {
+                            RemoteShortcutPress.LONG
+                        } else RemoteShortcutPress.SHORT
+                        activeKey = AndroidKeyEvent.KEYCODE_UNKNOWN
+                        onCaptured(keyCode, press)
+                        true
                     }
                 }
-            }
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .modalScrim()
-                    .trapAllFocusExit()
-                    .focusGroup()
-                    .onPreviewKeyEvent(captureKeyEvent),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    Modifier.dialogPanel(width = 520.dp, padding = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(stringResource(R.string.settings_remote_shortcuts_capture_title), style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        stringResource(R.string.settings_remote_shortcuts_capture_description),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = OwnTVTheme.colors.onSurfaceVariant,
-                    )
-                    OwnTVButton(
-                        stringResource(R.string.common_cancel),
-                        onClick = onDismiss,
-                        style = OwnTVButtonStyle.SECONDARY,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focus)
-                            .onPreviewKeyEvent(captureKeyEvent),
-                    )
-                }
+                else -> activeKey == keyCode
             }
         }
     }
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.settings_remote_shortcuts_capture_title),
+        body = stringResource(R.string.settings_remote_shortcuts_capture_description),
+        width = 760.mpx,
+        modifier = Modifier.onPreviewKeyEvent(captureKeyEvent),
+        buttons = {
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_cancel), onClick = onDismiss, height = 56.mpx, textSize = 19, modifier = Modifier.focusRequester(focus))
+        },
+    )
 }
 
 @Composable

@@ -12,11 +12,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import tv.own.owntv.ui.components.trapAllFocusExit
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,11 +29,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +42,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -68,6 +68,9 @@ import tv.own.owntv.ui.theme.StageRadii
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 /*
  * Stage Settings (P10, references P9-01 … P9-13): a group is one page. The band (crumb as the title,
@@ -113,10 +116,35 @@ data class SettingHelp(
     val footer: (@Composable () -> Unit)? = null,
 )
 
+/**
+ * What a row of a Stage settings page opens in the panel instead of a popup (owner, P12): a choice
+ * list, a stepper. [owner] tells the one that opened it from a later one; [content] is drawn under the
+ * row's heading and text.
+ */
+class PanelEditor(
+    val owner: Any,
+    val onDismiss: () -> Unit,
+    val content: @Composable androidx.compose.foundation.layout.ColumnScope.(help: SettingHelp?) -> Unit,
+)
+
+/** A choice list for [PanelChoices]. */
+class PanelPicker(
+    val options: List<Pair<String, String>>,
+    val selected: String,
+    val onSelect: (String) -> Unit,
+    val descriptions: Map<String, String>,
+    val searchable: Boolean,
+    /** Drawn under an option (the layout chooser's little bar preview). */
+    val preview: (@Composable (String) -> Unit)? = null,
+)
+
 /** The focused row's help, published by each row and drawn by the page's panel. */
 @Stable
 class SettingsPanelState {
     var help by mutableStateOf<SettingHelp?>(null)
+    var editor by mutableStateOf<PanelEditor?>(null)
+    /** The row that opened [editor]: focus goes back to it when the list closes. */
+    var opener: FocusRequester? = null
 }
 
 val LocalSettingsPanel = staticCompositionLocalOf<SettingsPanelState?> { null }
@@ -223,7 +251,11 @@ fun StageSettingsPage(
 ) {
     val searching = searchQuery.isNotBlank()
     androidx.compose.runtime.LaunchedEffect(searching) { if (searching) panel.help = null }
-    CompositionLocalProvider(LocalSettingsPanel provides panel) {
+    // Popups opened from this page are labelled with its path, "SETTINGS · PLAYER" (P1-06).
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    val from = ((if (settingsRoot) listOf(stringResource(R.string.common_nav_settings)) else emptyList()) + parents).lastOrNull()
+    val eyebrow = (if (from != null) stringResource(R.string.settings_breadcrumb_eyebrow, from, group) else group).uppercase(locale)
+    CompositionLocalProvider(LocalSettingsPanel provides panel, tv.own.owntv.ui.stage.LocalPopupEyebrow provides eyebrow) {
         BoxWithConstraints(modifier.fillMaxSize()) {
             // The mockup's 1920 px frame as fractions of the real width, so other zooms reflow.
             val w = maxWidth / 1920f
@@ -287,16 +319,22 @@ fun StageSettingsPage(
                 )
             }
             val help = panel.help
-            if (help != null || panelTop != null) {
+            val editor = panel.editor
+            if (help != null || panelTop != null || editor != null) {
                 Column(
                     Modifier
                         .padding(start = w * 1160, top = 240.mpx)
                         .width(w * 696)
+                        .heightIn(max = maxHeight - 280.mpx)
                         .stageGlass(30.mpx)
                         .padding(26.mpx),
                 ) {
-                    if (panelTop != null) panelTop()
-                    if (help != null) SettingPanelBody(help)
+                    if (editor != null) SettingPanelEditor(editor, help, onClosed = { panel.opener?.let { r -> runCatching { r.requestFocus() } } })
+                    else {
+                        // A row that brings its own picture (Popup size's sample) shows it in place of the page's.
+                        if (panelTop != null && help?.extra == null) panelTop()
+                        if (help != null) SettingPanelBody(help)
+                    }
                 }
             }
         }
@@ -333,6 +371,199 @@ private fun SettingPanelBody(help: SettingHelp) {
     }
     if (help.hints.isNotEmpty()) StageKeyHints(help.hints, Modifier.padding(top = 20.mpx), textSize = 15)
     help.footer?.invoke()
+}
+
+/**
+ * Opens [content] in the page's panel while this is composed — the way a settings row edits its value
+ * without a popup (owner, P12). Returns false off a Stage settings page or inside a popup, where the
+ * caller draws its own popup instead.
+ */
+@Composable
+fun panelEditor(onDismiss: () -> Unit, content: @Composable androidx.compose.foundation.layout.ColumnScope.(help: SettingHelp?) -> Unit): Boolean {
+    val panel = LocalSettingsPanel.current
+    if (panel == null || tv.own.owntv.ui.components.LocalStagePopup.current) return false
+    val token = remember { Any() }
+    val editor = PanelEditor(token, onDismiss, content)
+    androidx.compose.runtime.SideEffect { panel.editor = editor }
+    androidx.compose.runtime.DisposableEffect(panel) { onDispose { if (panel.editor?.owner === token) panel.editor = null } }
+    return true
+}
+
+/** The panel while a row's editor is open: the row's heading and text, a line, then the editor. Back closes it; focus returns to the row after. */
+@Composable
+private fun androidx.compose.foundation.layout.ColumnScope.SettingPanelEditor(editor: PanelEditor, help: SettingHelp?, onClosed: () -> Unit) {
+    val view = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.DisposableEffect(editor.owner) { onDispose { view.post { onClosed() } } }
+    androidx.activity.compose.BackHandler { editor.onDismiss() }
+    if (help != null && help.title.isNotEmpty()) SettingPanelHeading(help.title)
+    if (help != null) Text(help.text, style = stageText(17, 500).copy(lineHeight = 27.mpxSpLine()), color = PanelText, maxLines = 3, overflow = TextOverflow.Ellipsis)
+    Box(Modifier.padding(top = 22.mpx, bottom = 16.mpx).fillMaxWidth().height(1.mpx).background(Color.White.copy(alpha = 0.1f)))
+    editor.content(this, help)
+}
+
+/**
+ * A choice list in the panel: CHOICES as focusable rows — focus starts on the current one, ▲ ▼ move,
+ * OK picks, ◀ or Back closes without a change. Focus never leaves the list.
+ */
+@Composable
+fun androidx.compose.foundation.layout.ColumnScope.PanelChoices(picker: PanelPicker, help: SettingHelp?, onDismiss: () -> Unit) {
+    var query by remember { mutableStateOf("") }
+    val shown = if (picker.searchable && query.isNotBlank()) {
+        picker.options.filter { it.second.contains(query.trim(), ignoreCase = true) }
+    } else picker.options
+    val selIndex = shown.indexOfFirst { it.first == picker.selected }.coerceAtLeast(0)
+    val recommended = help?.choices?.getOrNull(help.recommended)
+    val first = remember { FocusRequester() }
+    val search = remember { FocusRequester() }
+    val list = androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = (selIndex - 2).coerceAtLeast(0))
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        // The list is composed in the frame the row is clicked; focus it once it is placed.
+        kotlinx.coroutines.delay(60)
+        runCatching { (if (picker.searchable) search else first).requestFocus() }
+    }
+    SettingPanelHeading(stringResource(R.string.settings_panel_choices))
+    Column(
+        Modifier.weight(1f, fill = false).trapAllFocusExit().focusGroup().onPreviewKeyEvent { e ->
+            if (e.key == Key.DirectionLeft && e.type == KeyEventType.KeyDown) { onDismiss(); true } else false
+        },
+    ) {
+        if (picker.searchable) {
+            tv.own.owntv.ui.stage.StageSearchField(
+                query = query,
+                onQueryChange = { query = it },
+                placeholder = stringResource(R.string.common_search_hint),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 10.mpx).focusRequester(search),
+            )
+        }
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f, fill = false), state = list, verticalArrangement = Arrangement.spacedBy(2.mpx)) {
+            items(shown.size, key = { shown[it].first }) { i ->
+                val (value, label) = shown[i]
+                val on = value == picker.selected
+                StageSurface(
+                    onClick = { picker.onSelect(value) },
+                    radius = 14.mpx,
+                    focusStyle = StageFocus.FX,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.mpx).then(if (i == selIndex) Modifier.focusRequester(first) else Modifier),
+                ) { focused ->
+                    Row(Modifier.padding(horizontal = 14.mpx, vertical = 8.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx), verticalAlignment = Alignment.CenterVertically) {
+                        StageRadio(on)
+                        Column(Modifier.weight(1f, fill = false)) {
+                            Text(label, style = stageText(18, 600), color = if (on || focused) StageColors.Text else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            picker.descriptions[value]?.let { Text(it, style = stageText(14.5f, 500), color = StageColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+                            picker.preview?.let { Box(Modifier.padding(top = 8.mpx)) { it(value) } }
+                        }
+                        if (label == recommended) StageTag(stringResource(R.string.settings_panel_recommended).uppercase())
+                    }
+                }
+            }
+        }
+    }
+    StageKeyHints(
+        listOf(
+            "▲ ▼" to stringResource(R.string.content_key_select),
+            stringResource(R.string.common_ok) to stringResource(R.string.settings_key_change),
+            stringResource(R.string.common_back) to stringResource(R.string.common_cancel),
+        ),
+        Modifier.padding(top = 18.mpx), textSize = 15,
+    )
+}
+
+/**
+ * A number changed in the panel: the value 40/800 in accent between ◀ ▶ — ◀ ▶ change it at once (as the
+ * old popup's − / + did), then Reset and Done. Back or Done closes.
+ */
+@Composable
+fun PanelStepper(
+    value: String,
+    onStep: (Int) -> Unit,
+    onReset: (() -> Unit)?,
+    onDone: () -> Unit,
+    /** Drawn above the value: what the setting does, live (Popup size's sample popup). */
+    preview: (@Composable () -> Unit)? = null,
+    /** The value is kept only on OK (the day steppers): the button says OK and Back cancels. */
+    confirm: Boolean = false,
+) {
+    val a = stageAccent
+    val first = remember { FocusRequester() }
+    androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
+    preview?.let { Box(Modifier.fillMaxWidth().padding(bottom = 18.mpx), contentAlignment = Alignment.Center) { it() } }
+    Column(Modifier.trapAllFocusExit().focusGroup()) {
+        StageSurface(
+            onClick = onDone,
+            radius = 18.mpx,
+            focusStyle = StageFocus.FX,
+            modifier = Modifier.fillMaxWidth().height(84.mpx).focusRequester(first).onPreviewKeyEvent { e ->
+                val d = when (e.key) { Key.DirectionLeft -> -1; Key.DirectionRight -> 1; else -> 0 }
+                if (d != 0 && e.type == KeyEventType.KeyDown) onStep(d)
+                d != 0
+            },
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 22.mpx), verticalAlignment = Alignment.CenterVertically) {
+                OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(26.mpx).graphicsLayer { rotationZ = 180f })
+                Text(value, style = stageText(36, 800), color = a.accent, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f))
+                OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(26.mpx))
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 16.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx, Alignment.End)) {
+            if (onReset != null) tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_reset), onClick = onReset, height = 52.mpx, textSize = 18)
+            tv.own.owntv.ui.stage.StageButton(stringResource(if (confirm) R.string.common_ok else R.string.common_done), onClick = onDone, height = 52.mpx, textSize = 18, tinted = true)
+        }
+    }
+    StageKeyHints(
+        listOf(
+            "◀ ▶" to stringResource(R.string.settings_key_change),
+            stringResource(R.string.common_back) to stringResource(if (confirm) R.string.common_cancel else R.string.common_done),
+        ),
+        Modifier.padding(top = 18.mpx), textSize = 15,
+    )
+}
+
+/** A few on/off values in the panel (External player's sections): one switch row each, then Done. */
+@Composable
+fun PanelSwitches(items: List<Triple<String, Boolean, () -> Unit>>, onDone: () -> Unit) {
+    val first = remember { FocusRequester() }
+    androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
+    Column(Modifier.trapAllFocusExit().focusGroup()) {
+        items.forEachIndexed { i, (label, on, toggle) ->
+            tv.own.owntv.ui.stage.StagePopupOption(
+                title = label, onClick = toggle,
+                modifier = if (i == 0) Modifier.focusRequester(first) else Modifier,
+                trailing = { tv.own.owntv.ui.stage.StageSwitch(on) },
+            )
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 16.mpx), horizontalArrangement = Arrangement.End) {
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_done), onClick = onDone, height = 52.mpx, textSize = 18, tinted = true)
+        }
+    }
+}
+
+/**
+ * The exit question as a real popup draws it at [sizePercent] and the user's popup font size, not
+ * focusable: Popup size's live sample in the panel.
+ */
+@Composable
+fun PopupSizeSample(sizePercent: Int) {
+    val base = androidx.compose.ui.platform.LocalDensity.current
+    val sized = androidx.compose.ui.unit.Density(
+        density = base.density * tv.own.owntv.core.theme.PopupSizeScale.factor(sizePercent),
+        fontScale = base.fontScale / tv.own.owntv.ui.theme.LocalUiFontScaleFactor.current * tv.own.owntv.ui.theme.LocalPopupFontScaleFactor.current,
+    )
+    val a = stageAccent
+    CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides sized) {
+        Column(Modifier.width(560.mpx).stageGlass(30.mpx, overContent = true).padding(30.mpx)) {
+            Text(stringResource(R.string.content_exit_owntv), style = stageText(38, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(stringResource(R.string.content_exit_confirmation), style = stageText(18, 400), color = StageColors.Muted, modifier = Modifier.padding(top = 10.mpx))
+            Row(Modifier.fillMaxWidth().padding(top = 46.mpx), horizontalArrangement = Arrangement.spacedBy(14.mpx, Alignment.End)) {
+                Box(Modifier.height(56.mpx).background(a.accent, RoundedCornerShape(StageRadii.Button)).padding(horizontal = 26.mpx), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.common_cancel), style = stageText(19, 700), color = a.onAccent, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+                Box(Modifier.height(56.mpx).background(a.accent.copy(alpha = 0.2f), RoundedCornerShape(StageRadii.Button)).padding(horizontal = 26.mpx), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.common_exit), style = stageText(19, 700), color = a.accent, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
 }
 
 private val PanelText = Color(0xFFD3DCD8)
@@ -408,15 +639,24 @@ fun StageSettingRow(
     val a = stageAccent
     val panel = LocalSettingsPanel.current
     var longAt by remember { mutableLongStateOf(0L) }
+    val self = remember { FocusRequester() }
     StageSurface(
-        onClick = { if (android.os.SystemClock.uptimeMillis() - longAt > 800) onClick() },
+        onClick = {
+            if (android.os.SystemClock.uptimeMillis() - longAt > 800) {
+                // A choice list this opens in the panel hands focus back here when it closes.
+                panel?.opener = self
+                onClick()
+            }
+        },
         radius = StageRadii.Row,
         focusStyle = StageFocus.FX,
         enabled = enabled,
         // A span member, or the row whose actions the panel is showing while focus is in them.
-        idle = if (marked || keepPanel) Modifier.background(a.accent.copy(alpha = 0.14f), RoundedCornerShape(StageRadii.Row)) else Modifier,
+        // …or the row whose choices are open in the panel.
+        idle = if (marked || keepPanel || (panel?.editor != null && panel.opener === self)) Modifier.background(a.accent.copy(alpha = 0.14f), RoundedCornerShape(StageRadii.Row)) else Modifier,
         onLongClick = onLongClick?.let { l -> { longAt = android.os.SystemClock.uptimeMillis(); l() } },
         modifier = modifier
+            .focusRequester(self)
             .fillMaxWidth()
             .height(84.mpx)
             .then(

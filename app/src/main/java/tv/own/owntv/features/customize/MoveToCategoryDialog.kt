@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
+import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
@@ -68,106 +69,97 @@ fun MoveToCategoryDialog(
     val newCatFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { newCatFocus.requestFocus() } }
     BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 1008.mpx) {
+        Text(stringResource(R.string.settings_move_category_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            stringResource(R.string.settings_move_category_description, originName),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(16.dp))
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            // Do not trap the list's vertical exit: Down from its last destination must
+            // reach the keep-in-origin toggle and the footer buttons. The dialog-level
+            // trapAllFocusExit above already prevents focus from escaping the popup.
+            modifier = Modifier.height(320.dp),
         ) {
-            Column(
-                Modifier.dialogPanel(width = 560.dp, padding = 28.dp),
-            ) {
-                Text(stringResource(R.string.settings_move_category_title), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    stringResource(R.string.settings_move_category_description, originName),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(16.dp))
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    // Do not trap the list's vertical exit: Down from its last destination must
-                    // reach the keep-in-origin toggle and the footer buttons. The dialog-level
-                    // trapAllFocusExit above already prevents focus from escaping the popup.
-                    modifier = Modifier.height(320.dp),
-                ) {
-                    item(key = "new") {
-                        FocusableSurface(
-                            onClick = onNewCategory,
-                            shape = MaterialTheme.shapes.medium,
-                            modifier = Modifier.fillMaxWidth().focusRequester(newCatFocus),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            Text(
-                                stringResource(R.string.settings_move_category_new),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = colors.onSurface,
-                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
-                            )
-                        }
-                    }
-                    items(moveTargets, key = { it.id }) { target ->
-                        val selected = selectedTarget == target.id
-                        FocusableSurface(
-                            onClick = { selectedTarget = target.id },
-                            selected = selected,
-                            shape = MaterialTheme.shapes.medium,
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            Row(
-                                Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    if (selected) "● " else "○ ",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = if (selected) colors.primary else colors.onSurfaceVariant,
-                                )
-                                Text(
-                                    target.displayName,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = colors.onSurface,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Text(
-                                    stringResource(R.string.common_number_grouped, target.count),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = colors.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-                Spacer(Modifier.height(14.dp))
-                // "Keep in origin" toggle — checked = copy (item stays in its provider folder / favorites).
+            item(key = "new") {
                 FocusableSurface(
-                    onClick = { keepInOrigin = !keepInOrigin },
-                    selected = keepInOrigin,
+                    onClick = onNewCategory,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth().focusRequester(newCatFocus),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        stringResource(R.string.settings_move_category_new),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = colors.onSurface,
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                    )
+                }
+            }
+            items(moveTargets, key = { it.id }) { target ->
+                val selected = selectedTarget == target.id
+                FocusableSurface(
+                    onClick = { selectedTarget = target.id },
+                    selected = selected,
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.CenterStart,
                 ) {
-                    Text(
-                        (if (keepInOrigin) "☑ " else "☐ ") +
-                            stringResource(R.string.settings_move_category_keep, originName),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onSurface,
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
-                    )
-                }
-                Spacer(Modifier.height(20.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                    Spacer(Modifier.weight(1f))
-                    OwnTVButton(
-                        stringResource(R.string.settings_move_category_action),
-                        onClick = { selectedTarget?.let { onMove(it, keepInOrigin) } },
-                        enabled = selectedTarget != null,
-                        style = OwnTVButtonStyle.SECONDARY,
-                    )
+                    Row(
+                        Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            if (selected) "● " else "○ ",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (selected) colors.primary else colors.onSurfaceVariant,
+                        )
+                        Text(
+                            target.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = colors.onSurface,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            stringResource(R.string.common_number_grouped, target.count),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
                 }
             }
+        }
+        Spacer(Modifier.height(14.dp))
+        // "Keep in origin" toggle — checked = copy (item stays in its provider folder / favorites).
+        FocusableSurface(
+            onClick = { keepInOrigin = !keepInOrigin },
+            selected = keepInOrigin,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Text(
+                (if (keepInOrigin) "☑ " else "☐ ") +
+                    stringResource(R.string.settings_move_category_keep, originName),
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurface,
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+            )
+        }
+        Spacer(Modifier.height(20.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+            Spacer(Modifier.weight(1f))
+            OwnTVButton(
+                stringResource(R.string.settings_move_category_action),
+                onClick = { selectedTarget?.let { onMove(it, keepInOrigin) } },
+                enabled = selectedTarget != null,
+                style = OwnTVButtonStyle.SECONDARY,
+            )
         }
     }
 }

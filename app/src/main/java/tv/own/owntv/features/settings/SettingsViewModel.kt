@@ -47,7 +47,6 @@ import tv.own.owntv.core.util.throttleLatest
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.settings.ChNavLimits
-import tv.own.owntv.core.settings.EpgAutoRefresh
 import tv.own.owntv.core.settings.EpgRefresh
 import tv.own.owntv.core.settings.PanelSection
 import tv.own.owntv.core.settings.PanelShares
@@ -58,6 +57,7 @@ import tv.own.owntv.core.settings.SubtitleStyle
 import tv.own.owntv.core.theme.AccentColor
 import tv.own.owntv.core.theme.ThemeMode
 import tv.own.owntv.core.theme.UiZoom
+import tv.own.owntv.core.settings.EpgAutoRefresh
 
 /** Phase 13 — manage IPTV sources (list / add / re-sync / delete) for the active profile. */
 class SettingsViewModel(
@@ -318,6 +318,12 @@ class SettingsViewModel(
     // user's old choice carries into the three-state setting.
     val surroundMode: StateFlow<SurroundMode> = settings.surroundMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SurroundMode.AUTO)
+
+    /** Picked from its list. Like [cycleSurroundMode], it gives the audio output another chance. */
+    fun setSurroundMode(mode: SurroundMode) {
+        AudioOutputPolicy.clearLatch()
+        viewModelScope.launch { settings.setSurroundMode(mode) }
+    }
 
     /** Cycle Auto → Stereo only → Surround → Auto. Any change clears the session's stereo latch: the
      *  user touching this control is explicitly asking the audio output for another chance. */

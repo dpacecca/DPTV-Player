@@ -22,12 +22,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -66,6 +64,8 @@ import tv.own.owntv.ui.theme.mpxSp
 import tv.own.owntv.ui.theme.ownTvTween
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 /**
  * In-app YouTube trailer player (plan §7.3 / U4) in the Stage design: a fullscreen WebView-backed IFrame
@@ -213,7 +213,7 @@ fun TrailerPlayerScreen(videoKey: String, title: String? = null, onExit: () -> U
     // did, and every decoded frame was then copied through the GPU instead ("no buffers currently
     // available in the reader queue" / "CopySharedImage: Source shared image is not accessable") and
     // dropped frames continuously. The HUD is drawn over the video, never under it.
-    OwnTVPopup(onDismissRequest = onExit, stageLayout = true) {
+    OwnTVPopup(onDismissRequest = onExit, stageLayout = true, stageScaled = false) {
         LaunchedEffect(Unit) { runCatching { playFocus.requestFocus() } }
         BackHandler { onExit() }
         BoxWithConstraints(

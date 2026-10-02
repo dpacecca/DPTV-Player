@@ -1,14 +1,11 @@
 package tv.own.owntv.features.subtitles
 
+import tv.own.owntv.ui.theme.mpx
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -24,10 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -42,12 +37,8 @@ import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.OwnTVTextField
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.modalScrim
-import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
-import tv.own.owntv.ui.theme.PopupFontTheme
 
 /**
  * OpenSubtitles search overlay, opened from the player HUD's ADD SUBTITLES entry (subtitle plan §6).
@@ -71,16 +62,8 @@ fun SubtitleSearchScreen(
     var editing by remember { mutableStateOf(false) }
     BackHandler { if (editing) editing = false else onDismiss() }
 
-    PopupFontTheme {
-        Box(
-            modifier
-                .fillMaxSize()
-                .modalScrim()
-                .trapAllFocusExit()
-                .focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(Modifier.dialogPanel(width = 620.dp, padding = 24.dp)) {
+
+        tv.own.owntv.ui.stage.StagePopup(onDismiss = { if (editing) editing = false else onDismiss() }, title = null, eyebrow = null, width = 1116.mpx) {
                 Text(stringResource(tv.own.owntv.R.string.player_subtitles_search_title), style = MaterialTheme.typography.titleLarge, color = OwnTVTheme.colors.onSurface)
                 Spacer(Modifier.height(4.dp))
                 quotaNote?.let { quota ->
@@ -150,8 +133,7 @@ fun SubtitleSearchScreen(
                     OpenSubtitlesAttribution()
                 }
             }
-        }
-    }
+    
 
     // Sign-in is handled in Settings → Video player → Subtitles → OpenSubtitles only.
 }

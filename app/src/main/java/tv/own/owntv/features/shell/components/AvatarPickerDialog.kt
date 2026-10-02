@@ -1,29 +1,20 @@
 package tv.own.owntv.features.shell.components
 
+import tv.own.owntv.ui.theme.mpx
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,8 +26,6 @@ import tv.own.owntv.ui.components.OwnTVAvatar
 import tv.own.owntv.ui.components.ProfileIcon
 import tv.own.owntv.ui.components.OwnTVAvatars
 import tv.own.owntv.ui.components.longPressMenuGuard
-import tv.own.owntv.ui.components.modalScrim
-import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 
@@ -57,28 +46,7 @@ fun AvatarPickerDialog(
     val selectedFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { selectedFocus.requestFocus() } }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .modalScrim()
-            // Opened by a long-press of OK — without this guard the still-held release would instantly
-            // confirm the focused avatar (the "auto-selects first, no pause" bug). longPressMenuGuard
-            // swallows OK/Enter until the key is released once, so the user navigates + OK to pick.
-            .longPressMenuGuard()
-            .trapAllFocusExit()
-            .focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = 640.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(colors.surfaceContainerHigh)
-                // Scrollable: the avatar grid is taller than small/low-res screens.
-                .verticalScroll(rememberScrollState())
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 1152.mpx, modifier = Modifier.longPressMenuGuard()) {
             Text(
                 text = stringResource(R.string.content_avatar_picker_title),
                 style = MaterialTheme.typography.titleLarge,
@@ -172,5 +140,4 @@ fun AvatarPickerDialog(
                 Spacer(Modifier.height(14.dp))
             }
         }
-    }
 }

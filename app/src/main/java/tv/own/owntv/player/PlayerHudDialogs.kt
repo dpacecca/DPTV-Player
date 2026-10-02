@@ -41,6 +41,11 @@ import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import tv.own.owntv.R
+import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.theme.stageText
+import tv.own.owntv.ui.theme.stageAccent
+import tv.own.owntv.ui.theme.StageColors
+import tv.own.owntv.ui.stage.stageGlass
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
@@ -376,13 +381,9 @@ internal fun VolumeDialog(player: PlaybackEngine, onDismiss: () -> Unit) {
         minusEnabled = volume > 0,
     )
     // Real dialog window for the same focus isolation as DialogScaffold (see there).
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 880.mpx) {
         // Slightly stronger than the default wash: this one sits over moving video.
-        Box(
-            Modifier.fillMaxSize().modalScrim(strength = 1.2f).trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(Modifier.dialogPanel(padding = 28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+
                 Text(stringResource(R.string.player_volume), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                 Spacer(Modifier.height(20.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -396,8 +397,6 @@ internal fun VolumeDialog(player: PlaybackEngine, onDismiss: () -> Unit) {
                     Spacer(Modifier.weight(1f))
                     OwnTVButton(stringResource(R.string.common_done), onClick = onDismiss)
                 }
-            }
-        }
     }
 }
 
@@ -408,39 +407,36 @@ internal fun VolumeDialog(player: PlaybackEngine, onDismiss: () -> Unit) {
  */
 @Composable
 internal fun SubtitleTimingDialog(player: PlaybackEngine, onDismiss: () -> Unit) {
-    val colors = OwnTVTheme.colors
     val delay by player.subDelayMs.collectAsStateWithLifecycle()
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { requestFocusRetrying(focus) }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        tv.own.owntv.ui.theme.PopupFontTheme {
-            // No scrim by design — the video stays undimmed behind so speech and subtitles can be
-            // compared while the offset is nudged. Only the focus trap is added.
-            Box(
-                Modifier.fillMaxSize().padding(bottom = 56.dp).trapAllFocusExit().focusGroup(),
-                contentAlignment = Alignment.BottomCenter,
+    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, stageLayout = true) {
+        // No wash by design — the video stays undimmed behind so speech and subtitles can be compared
+        // while the offset is nudged. A Stage glass panel at the bottom; only the focus trap is added.
+        Box(
+            Modifier.fillMaxSize().padding(bottom = 90.mpx).trapAllFocusExit().focusGroup(),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            Column(
+                Modifier.width(1080.mpx).stageGlass(30.mpx, overContent = true).padding(30.mpx),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(Modifier.dialogPanel(width = 560.dp, padding = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.player_subtitle_timing), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-                    Spacer(Modifier.height(10.dp))
-                    Text(formatSubDelay(delay), style = MaterialTheme.typography.headlineLarge, color = colors.accent)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        when {
-                            delay > 0 -> stringResource(R.string.player_subtitles_later)
-                            delay < 0 -> stringResource(R.string.player_subtitles_earlier)
-                            else -> stringResource(R.string.player_no_offset)
-                        },
-                        style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(18.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OwnTVButton(stringResource(R.string.player_subtitle_delay_negative, 0.5), onClick = { player.adjustSubtitleDelay(-500) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
-                        OwnTVButton(stringResource(R.string.player_subtitle_delay_negative, 0.1), onClick = { player.adjustSubtitleDelay(-100) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
-                        OwnTVButton(stringResource(R.string.common_reset), onClick = { player.resetSubtitleDelay() }, modifier = Modifier.focusRequester(focus))
-                        OwnTVButton(stringResource(R.string.player_subtitle_delay_positive, 0.1), onClick = { player.adjustSubtitleDelay(100) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
-                        OwnTVButton(stringResource(R.string.player_subtitle_delay_positive, 0.5), onClick = { player.adjustSubtitleDelay(500) }, style = tv.own.owntv.ui.components.OwnTVButtonStyle.SECONDARY)
-                    }
+                Text(stringResource(R.string.player_subtitle_timing), style = stageText(26, 800), color = StageColors.Text)
+                Text(formatSubDelay(delay), style = stageText(44, 800), color = stageAccent.accent, modifier = Modifier.padding(top = 8.mpx))
+                Text(
+                    when {
+                        delay > 0 -> stringResource(R.string.player_subtitles_later)
+                        delay < 0 -> stringResource(R.string.player_subtitles_earlier)
+                        else -> stringResource(R.string.player_no_offset)
+                    },
+                    style = stageText(17, 500), color = StageColors.Muted,
+                )
+                Row(Modifier.padding(top = 22.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
+                    tv.own.owntv.ui.stage.StageButton(stringResource(R.string.player_subtitle_delay_negative, 0.5), onClick = { player.adjustSubtitleDelay(-500) }, height = 56.mpx, textSize = 19)
+                    tv.own.owntv.ui.stage.StageButton(stringResource(R.string.player_subtitle_delay_negative, 0.1), onClick = { player.adjustSubtitleDelay(-100) }, height = 56.mpx, textSize = 19)
+                    tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_reset), onClick = { player.resetSubtitleDelay() }, height = 56.mpx, textSize = 19, tinted = true, modifier = Modifier.focusRequester(focus))
+                    tv.own.owntv.ui.stage.StageButton(stringResource(R.string.player_subtitle_delay_positive, 0.1), onClick = { player.adjustSubtitleDelay(100) }, height = 56.mpx, textSize = 19)
+                    tv.own.owntv.ui.stage.StageButton(stringResource(R.string.player_subtitle_delay_positive, 0.5), onClick = { player.adjustSubtitleDelay(500) }, height = 56.mpx, textSize = 19)
                 }
             }
         }
@@ -473,24 +469,19 @@ private fun DialogScaffold(
     // HUD behind it (play button, catch-all focusable, stream-info chips) can compete for or steal
     // focus — which is what intermittently locked the subtitle/audio pickers out of focus on
     // codec-heavy (HDR/DTS) streams. Back is handled by the window itself via onDismissRequest.
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 468.mpx, scroll = false) {
         // Compact glass popup matching the storage picker: smaller font + narrow box.
-        tv.own.owntv.ui.theme.PopupFontTheme(fontScale = 0.72f) {
-            Box(
-                modifier = Modifier.fillMaxSize().modalScrim(strength = 1.2f).trapAllFocusExit().focusGroup(),
-                contentAlignment = Alignment.Center,
-            ) {
-                // Glass effect panel (same translucent chrome as the volume/timing dialogs) — the
-                // inner LazyColumn manages its own scroll, so scroll = false.
-                Column(modifier = Modifier.dialogPanel(width = 260.dp, corner = 16.dp, padding = 14.dp, scroll = false)) {
+
+
                     Text(title, style = MaterialTheme.typography.titleSmall, color = colors.onSurface)
                     Spacer(Modifier.height(8.dp))
                     // Cap to the screen (minus dialog chrome) so all rows stay reachable on small screens.
                     val listMax = (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp - 160.dp).coerceIn(140.dp, 240.dp)
                     LazyColumn(state = state, modifier = Modifier.heightIn(max = listMax), verticalArrangement = Arrangement.spacedBy(4.dp), content = content)
-                }
-            }
-        }
+
+
+                // Glass effect panel (same translucent chrome as the volume/timing dialogs) — the
+                // inner LazyColumn manages its own scroll, so scroll = false.
     }
 }
 

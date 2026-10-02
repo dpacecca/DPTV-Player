@@ -1,12 +1,5 @@
 package tv.own.owntv.features.settings
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -18,24 +11,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import tv.own.owntv.ui.components.trapAllFocusExit
-import tv.own.owntv.ui.components.modalScrim
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.OwnTVButtonStyle
-import tv.own.owntv.ui.components.OwnTVButton
-import androidx.compose.ui.Alignment
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
@@ -44,7 +26,6 @@ import tv.own.owntv.ui.components.NumberInputDialog
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.restoreAfterDialogClose
 import tv.own.owntv.ui.components.roundedPanel
-import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.mpx
 
 private enum class RecordingDialog { NONE, PRE_ROLL, POST_ROLL }
@@ -201,49 +182,13 @@ private const val MAX_ROLL_MINUTES = tv.own.owntv.core.recording.RecordingSchedu
  */
 @Composable
 private fun RecordWatchingWarningDialog(onKeepOff: () -> Unit, onTurnOn: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    BackHandler { onKeepOff() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onKeepOff) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .modalScrim()
-            .trapAllFocusExit()
-            .focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(Modifier.dialogPanel(width = 520.dp, padding = 28.dp)) {
-            Text(
-                stringResource(R.string.settings_record_watching_warning_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = colors.onSurface,
-            )
-            Spacer(Modifier.height(10.dp))
-            Text(
-                stringResource(R.string.settings_record_watching_warning_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(22.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                OwnTVButton(
-                    stringResource(R.string.settings_record_watching_keep_off),
-                    onClick = onKeepOff,
-                    modifier = Modifier.focusRequester(focus),
-                )
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(
-                    stringResource(R.string.settings_record_watching_turn_on),
-                    onClick = onTurnOn,
-                    style = OwnTVButtonStyle.SECONDARY,
-                )
-            }
-        }
-    }
-    }
+    tv.own.owntv.ui.stage.StageConfirm(
+        title = stringResource(R.string.settings_record_watching_warning_title),
+        body = stringResource(R.string.settings_record_watching_warning_description),
+        cancel = stringResource(R.string.settings_record_watching_keep_off),
+        confirm = stringResource(R.string.settings_record_watching_turn_on),
+        onConfirm = onTurnOn,
+        onCancel = onKeepOff,
+        focusCancel = true,
+    )
 }

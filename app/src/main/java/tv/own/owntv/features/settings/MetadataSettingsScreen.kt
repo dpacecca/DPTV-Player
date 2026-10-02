@@ -1,18 +1,13 @@
 package tv.own.owntv.features.settings
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,29 +16,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
-import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.core.metadata.MetadataConfig
-import tv.own.owntv.ui.components.OwnTVButton
-import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVTextField
-import tv.own.owntv.ui.components.companionLockedText
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.displayText
-import tv.own.owntv.ui.components.modalScrim
-import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
@@ -447,38 +431,29 @@ private fun AdvancedMetadataPopup(
     onSave: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, fontScale = .50f) {
-      Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
-        Column(Modifier.dialogPanel(width = 560.dp, padding = 20.dp)) {
-            Text(stringResource(R.string.settings_metadata_remote_advanced), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(4.dp))
-            Text(stringResource(R.string.settings_metadata_server_description), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            Spacer(Modifier.height(12.dp))
-            Row2(
-                icon = OwnTVIcon.SHARE,
-                title = stringResource(R.string.settings_metadata_key_from_phone),
-                desc = stringResource(R.string.settings_metadata_key_from_phone_desc),
-                chevron = true,
-                modifier = Modifier.focusRequester(firstFocus),
-                onClick = onRemote,
-            )
-            Spacer(Modifier.height(8.dp))
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.settings_metadata_remote_advanced),
+        body = stringResource(R.string.settings_metadata_server_description),
+        buttons = {
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_metadata_clear_advanced_title), onClick = onRemove, height = 56.mpx, textSize = 19)
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_cancel), onClick = onDismiss, height = 56.mpx, textSize = 19)
+            tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_save), onClick = onSave, height = 56.mpx, textSize = 19, tinted = true)
+        },
+    ) {
+        Row2(
+            icon = OwnTVIcon.SHARE,
+            title = stringResource(R.string.settings_metadata_key_from_phone),
+            desc = stringResource(R.string.settings_metadata_key_from_phone_desc),
+            modifier = Modifier.focusRequester(firstFocus),
+            onClick = onRemote,
+        )
+        Column(Modifier.padding(top = 10.mpx), verticalArrangement = Arrangement.spacedBy(12.mpx)) {
             OwnTVTextField(value = key, onValueChange = onKeyChange, label = stringResource(R.string.settings_tmdb_api_key), placeholder = stringResource(R.string.settings_metadata_optional), modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
             OwnTVTextField(value = url, onValueChange = onUrlChange, label = stringResource(R.string.settings_worker_server_url), placeholder = "https://your-worker.example.workers.dev", modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(14.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(stringResource(R.string.settings_metadata_clear_advanced_title), onRemove, style = OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.common_cancel), onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                OwnTVButton(stringResource(R.string.common_save), onSave)
-            }
         }
-      }
     }
 }
 
@@ -501,94 +476,17 @@ internal fun CompanionKeyDialog(
     onStop: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val colors = OwnTVTheme.colors
     val closeFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         onStart(tv.own.owntv.core.companion.CompanionLink.DEFAULT_PORT)
+        kotlinx.coroutines.delay(60)
         runCatching { closeFocus.requestFocus() }
     }
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { onStop() } }
-    BackHandler { onDismiss() }
-
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-      Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
-        Column(
-            Modifier.dialogPanel(width = 520.dp, padding = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-            stringResource(titleRes),
-                style = MaterialTheme.typography.titleLarge,
-                color = colors.onSurface,
-            )
-            Spacer(Modifier.height(10.dp))
-            when (state) {
-                tv.own.owntv.core.companion.CompanionServerState.Idle,
-                tv.own.owntv.core.companion.CompanionServerState.Starting,
-                -> Text(
-                    stringResource(R.string.settings_opening_server),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                )
-                is tv.own.owntv.core.companion.CompanionServerState.Listening -> {
-                    Text(
-                        stringResource(R.string.settings_enter_pin_browser),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = colors.onSurfaceVariant,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        state.pin,
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        color = colors.primary,
-                        letterSpacing = androidx.compose.ui.unit.TextUnit(8f, androidx.compose.ui.unit.TextUnitType.Sp),
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    state.qr?.let { qr ->
-                        androidx.compose.foundation.Image(
-                            bitmap = qr.asImageBitmap(),
-                            contentDescription = stringResource(R.string.settings_companion_qr),
-                            modifier = Modifier
-                                .size(176.dp)
-                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
-                                .background(androidx.compose.ui.graphics.Color.White)
-                                .padding(9.dp),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-                        )
-                        Spacer(Modifier.height(10.dp))
-                    }
-                    Text(
-                        stringResource(R.string.settings_open_url),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                    state.urls.forEach {
-                        Text(it, style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                    }
-                }
-                is tv.own.owntv.core.companion.CompanionServerState.Failed -> Text(
-                    state.failure.displayText(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.favorite,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                )
-                tv.own.owntv.core.companion.CompanionServerState.Locked -> Text(
-                    tv.own.owntv.ui.components.companionLockedText(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.favorite,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                )
-            }
-            Spacer(Modifier.height(20.dp))
-            OwnTVButton(
-                stringResource(R.string.common_cancel),
-                onClick = onDismiss,
-                style = OwnTVButtonStyle.SECONDARY,
-                modifier = Modifier.focusRequester(closeFocus),
-            )
-        }
-      }
-    }
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = stringResource(titleRes),
+        width = 820.mpx,
+        buttons = { tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_cancel), onClick = onDismiss, height = 56.mpx, textSize = 19, modifier = Modifier.focusRequester(closeFocus)) },
+    ) { tv.own.owntv.ui.components.StageCompanionStatus(state) }
 }

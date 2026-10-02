@@ -1,13 +1,11 @@
 package tv.own.owntv.features.profiles
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,11 +35,9 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import tv.own.owntv.R
+import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.core.database.entity.ProfileEntity
 import tv.own.owntv.ui.components.FocusableSurface
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.modalScrim
-import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.OwnTVAvatar
 import tv.own.owntv.ui.components.OwnTVAvatars
 import tv.own.owntv.ui.components.OwnTVButton
@@ -60,23 +55,8 @@ internal fun ProfileScrim(
     padding: androidx.compose.ui.unit.Dp = 28.dp,
     content: @Composable () -> Unit,
 ) {
-    BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .modalScrim()
-                .trapAllFocusExit()
-                .focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            // Scrollable so small/low-res screens can still reach the lower controls (Kids
-            // toggle / PIN / Create were clipped and unreachable on a cut-off screen).
-            Column(
-                modifier = Modifier.dialogPanel(width = width, padding = padding),
-            ) { content() }
-        }
-    }
+    // The Stage popup frame (owner, P12); it scrolls, so small screens still reach the lower controls.
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = (width.value * 1.8f).mpx) { content() }
 }
 
 /** Numeric PIN entry. Calls [onSubmit] with the entered digits. [compact] renders the small

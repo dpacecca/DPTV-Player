@@ -1,12 +1,9 @@
 package tv.own.owntv.features.setup
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,13 +23,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
@@ -57,18 +52,14 @@ import tv.own.owntv.ui.components.BrandMark
 import tv.own.owntv.ui.components.BrowseMode
 import tv.own.owntv.ui.components.OwnTVAvatar
 import tv.own.owntv.ui.components.OwnTVAvatars
-import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.StorageBrowser
 import tv.own.owntv.ui.components.detailText
 import tv.own.owntv.ui.components.displayText
 import tv.own.owntv.ui.format.localizedInteger
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.primaryText
 import tv.own.owntv.ui.components.remainderText
 import tv.own.owntv.ui.components.summaryText
-import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.warningText
 import tv.own.owntv.ui.stage.stageBackground
 import tv.own.owntv.ui.theme.StageColors
@@ -396,20 +387,14 @@ private fun DisplaySizeStep(onNext: () -> Unit, onBack: () -> Unit) {
 
     // OK on App icon: the icon tiles in a popup (no restart question — nothing is on the home screen yet).
     if (pickIcon) {
-        tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = { pickIcon = false }) {
-            BackHandler { pickIcon = false }
-            val tileFocus = remember { FocusRequester() }
-            LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { tileFocus.requestFocus() } }
-            Box(Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(), contentAlignment = Alignment.Center) {
-                Column(Modifier.dialogPanel(width = 460.dp, padding = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.settings_app_icon), style = stageText(26, 800), color = StageColors.Text, modifier = Modifier.padding(bottom = 16.mpx))
-                    tv.own.owntv.ui.components.AppIconPicker(
-                        selected = appIcon,
-                        onPick = { vm.setAppIcon(it); pickIcon = false },
-                        firstFocus = tileFocus,
-                    )
-                }
-            }
+        val tileFocus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { tileFocus.requestFocus() } }
+        tv.own.owntv.ui.stage.StagePopup(onDismiss = { pickIcon = false }, title = stringResource(R.string.settings_app_icon), eyebrow = null, width = 880.mpx) {
+            tv.own.owntv.ui.components.AppIconPicker(
+                selected = appIcon,
+                onPick = { vm.setAppIcon(it); pickIcon = false },
+                firstFocus = tileFocus,
+            )
         }
     }
 
@@ -417,45 +402,24 @@ private fun DisplaySizeStep(onNext: () -> Unit, onBack: () -> Unit) {
     // button, focus locked in every D-pad direction — OK accepts and applies the pending step, Back
     // cancels and leaves the zoom where it was.
     pendingLowZoom?.let { target ->
-        val acceptFocus = remember { FocusRequester() }
-        LaunchedEffect(Unit) { runCatching { acceptFocus.requestFocus() } }
-        BackHandler {
-            pendingLowZoom = null
-            runCatching { zoomFocus.requestFocus() }
-        }
-        Box(
-            modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                modifier = Modifier.dialogPanel(width = 460.dp, padding = 28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(stringResource(R.string.settings_low_zoom_warning_title), style = stageText(26, 800), color = StageColors.Text)
-                Text(
-                    stringResource(R.string.settings_low_zoom_warning, UiZoom.LOW_RAM_WARN, UiZoom.LOW_RAM_WARN),
-                    style = stageText(17, 500), color = StageColors.Muted,
-                    modifier = Modifier.padding(top = 10.mpx, bottom = 20.mpx),
-                )
-                OwnTVButton(
-                    stringResource(R.string.settings_low_zoom_accept),
-                    onClick = {
-                        lowZoomAccepted = true
-                        pendingLowZoom = null
-                        vm.setZoom(target)
-                        runCatching { zoomFocus.requestFocus() }
-                    },
-                    modifier = Modifier
-                        .focusRequester(acceptFocus)
-                        .focusProperties {
-                            up = FocusRequester.Cancel
-                            down = FocusRequester.Cancel
-                            start = FocusRequester.Cancel
-                            end = FocusRequester.Cancel
-                        },
-                )
-            }
-        }
+        // The same low-memory question Settings asks, as a Stage question with focus on Cancel.
+        tv.own.owntv.ui.stage.StageConfirm(
+            title = stringResource(R.string.settings_low_zoom_warning_title),
+            body = stringResource(R.string.settings_low_zoom_warning, UiZoom.LOW_RAM_WARN, UiZoom.LOW_RAM_WARN),
+            confirm = stringResource(R.string.settings_low_zoom_accept),
+            onConfirm = {
+                lowZoomAccepted = true
+                pendingLowZoom = null
+                vm.setZoom(target)
+                runCatching { zoomFocus.requestFocus() }
+            },
+            onCancel = {
+                pendingLowZoom = null
+                runCatching { zoomFocus.requestFocus() }
+            },
+            focusCancel = true,
+            eyebrow = null,
+        )
     }
 }
 

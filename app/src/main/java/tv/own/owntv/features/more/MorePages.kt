@@ -27,14 +27,12 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +64,6 @@ import tv.own.owntv.core.update.UpdateManager
 import tv.own.owntv.features.downloads.recordingWhen
 import tv.own.owntv.features.home.ChannelPlate
 import tv.own.owntv.features.home.OnNowCard
-import tv.own.owntv.features.home.durationText
 import tv.own.owntv.features.home.timeLeftText
 import tv.own.owntv.features.shell.components.ClearHistoryDialog
 import tv.own.owntv.features.shell.components.GITHUB_REPO
@@ -100,6 +97,9 @@ import tv.own.owntv.ui.theme.mpxSp
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 import tv.own.owntv.ui.format.formatBestDateTime
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import tv.own.owntv.features.home.durationText
 
 // ---------------------------------------------------------------------------------------------
 // Shared parts
@@ -529,9 +529,7 @@ internal fun HistoryPage(
         }
     }
     if (showClear) {
-        OwnTVPopup(onDismissRequest = { showClear = false }) {
-            ClearHistoryDialog(onClear = { t -> onClearHistory(t); showClear = false }, onDismiss = { showClear = false })
-        }
+        ClearHistoryDialog(onClear = { t -> onClearHistory(t); showClear = false }, onDismiss = { showClear = false })
     }
 }
 
@@ -703,8 +701,6 @@ internal fun AboutPage(vm: MoreCountsViewModel, entry: FocusRequester, onOpenLan
         }
     }
     if (showUpdate) {
-        OwnTVPopup(onDismissRequest = { showUpdate = false }) {
-            UpdateDialog(onDismiss = { showUpdate = false }, checkOnOpen = true)
-        }
+        UpdateDialog(onDismiss = { showUpdate = false }, checkOnOpen = true)
     }
 }

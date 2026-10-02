@@ -1,20 +1,16 @@
 package tv.own.owntv.features.settings
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,10 +49,6 @@ import tv.own.owntv.core.i18n.SupportedLocale
 import tv.own.owntv.core.i18n.SupportedLocales
 import tv.own.owntv.ui.components.FocusableSurface
 import tv.own.owntv.ui.components.OwnTVIcon
-import tv.own.owntv.ui.components.OwnTVPopup
-import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.modalScrim
-import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.StageColors
@@ -66,9 +58,8 @@ import tv.own.owntv.ui.stage.StageTag
 import androidx.compose.ui.res.pluralStringResource
 
 /**
- * Setup's Language row (P10B-W1): the current language with ▾, OK opens the list. The list itself uses
- * [OwnTVPopup], so it follows the same popup scale, centering, focus isolation and keyboard-safe geometry
- * as the rest of OwnTV.
+ * Setup's Language row (P10B-W1): the current language with ▾, OK opens the list in a Stage popup (there
+ * is no settings panel in the wizard).
  */
 @Composable
 fun FirstRunLanguageSelector(modifier: Modifier = Modifier) {
@@ -125,60 +116,32 @@ private fun FirstRunLanguagePopup(
         kotlinx.coroutines.delay(80)
         runCatching { selectedFocus.requestFocus() }
     }
-    BackHandler { onDismiss() }
-
-    OwnTVPopup(onDismissRequest = onDismiss) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .modalScrim()
-                .trapAllFocusExit()
-                .focusGroup(),
-            contentAlignment = Alignment.Center,
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = stringResource(R.string.settings_language), width = 760.mpx, scroll = false) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+            verticalArrangement = Arrangement.spacedBy(4.mpx),
         ) {
-            Column(
-                modifier = Modifier.dialogPanel(
-                    width = 330.dp,
-                    corner = 18.dp,
-                    padding = 18.dp,
-                    scroll = false,
-                ),
-            ) {
-                Text(
-                    text = stringResource(R.string.settings_language),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = OwnTVTheme.colors.onSurface,
+            item(key = SupportedLocales.SYSTEM_DEFAULT_TAG) {
+                LanguageRow(
+                    endonym = stringResource(R.string.settings_language_system_default),
+                    englishName = stringResource(R.string.settings_language_system_default_description),
+                    coverage = null,
+                    selected = currentTag.isEmpty(),
+                    onClick = { choose(SupportedLocales.SYSTEM_DEFAULT_TAG) },
+                    modifier = if (currentTag.isEmpty()) Modifier.focusRequester(selectedFocus) else Modifier,
                 )
-                Spacer(Modifier.height(12.dp))
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 460.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    item(key = SupportedLocales.SYSTEM_DEFAULT_TAG) {
-                        LanguageRow(
-                            endonym = stringResource(R.string.settings_language_system_default),
-                            englishName = stringResource(R.string.settings_language_system_default_description),
-                            coverage = null,
-                            selected = currentTag.isEmpty(),
-                            onClick = { choose(SupportedLocales.SYSTEM_DEFAULT_TAG) },
-                            modifier = if (currentTag.isEmpty()) Modifier.focusRequester(selectedFocus) else Modifier,
-                        )
-                    }
-                    items(viewModel.pickerRows, key = { it.languageTag }) { locale ->
-                        val selected = locale.languageTag == currentTag
-                        LanguageRow(
-                            endonym = locale.endonym,
-                            englishName = locale.englishName,
-                            coverage = null,
-                            selected = selected,
-                            onClick = { choose(locale.languageTag) },
-                            modifier = if (selected) Modifier.focusRequester(selectedFocus) else Modifier,
-                        )
-                    }
-                }
+            }
+            items(viewModel.pickerRows, key = { it.languageTag }) { locale ->
+                val selected = locale.languageTag == currentTag
+                LanguageRow(
+                    endonym = locale.endonym,
+                    englishName = locale.englishName,
+                    coverage = null,
+                    selected = selected,
+                    onClick = { choose(locale.languageTag) },
+                    modifier = if (selected) Modifier.focusRequester(selectedFocus) else Modifier,
+                )
             }
         }
     }

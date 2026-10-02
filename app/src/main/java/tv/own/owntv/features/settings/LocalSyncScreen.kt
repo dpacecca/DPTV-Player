@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -67,7 +66,6 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVPopup
 import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.dialogPanel
-import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.rememberDialogFocusRestore
 import tv.own.owntv.ui.components.restoreAfterDialogClose
 import tv.own.owntv.ui.components.trapAllFocusExit
@@ -406,25 +404,13 @@ private fun SyncModePill(on: Boolean) {
  */
 @Composable
 private fun StepPopup(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
-    OwnTVPopup(onDismissRequest = onDismiss) {
-        val panel = remember { FocusRequester() }
-        // Requesting focus on the panel group hands it to the panel's first focusable child, so every
-        // step lands on its own first control without each block naming one. Retried per frame: the
-        // popup's window does not own focus for the first frame or two after it opens.
-        LaunchedEffect(Unit) { restoreAfterDialogClose(panel) }
-        Box(
-            Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                modifier = Modifier
-                    .dialogPanel(width = STEP_PANEL_WIDTH, padding = 28.dp)
-                    .focusGroup()
-                    .focusRequester(panel),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-                content = content,
-            )
-        }
+    val panel = remember { FocusRequester() }
+    // Requesting focus on the group hands it to the step's first focusable child, so every step lands
+    // on its own first control without each block naming one. Retried per frame: the popup's window
+    // does not own focus for the first frame or two after it opens.
+    LaunchedEffect(Unit) { restoreAfterDialogClose(panel) }
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = stringResource(R.string.local_sync_title).uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]), width = 880.mpx) {
+        Column(Modifier.focusGroup().focusRequester(panel), verticalArrangement = Arrangement.spacedBy(2.mpx), content = content)
     }
 }
 

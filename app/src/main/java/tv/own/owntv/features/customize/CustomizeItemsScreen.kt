@@ -381,30 +381,21 @@ private fun ItemsRangeHideDialog(count: Int, onHide: () -> Unit, onShow: () -> U
     val hideFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { hideFocus.requestFocus() } }
     BackHandler { onDismiss() }
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    Box(
-        modifier = Modifier.fillMaxSize().modalScrim().trapAllFocusExit().focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            Modifier.dialogPanel(width = 480.dp, padding = 28.dp),
-        ) {
-            Text(stringResource(R.string.settings_customize_hide_show_items), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-            Spacer(Modifier.height(6.dp))
-            Text(
-                pluralStringResource(R.plurals.settings_customize_selected_items, count, count),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(22.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
-                Spacer(Modifier.weight(1f))
-                OwnTVButton(stringResource(R.string.common_show), onClick = onShow, style = OwnTVButtonStyle.SECONDARY)
-                OwnTVButton(stringResource(R.string.common_hide), onClick = onHide, modifier = Modifier.focusRequester(hideFocus))
-            }
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = null, eyebrow = null, width = 864.mpx) {
+        Text(stringResource(R.string.settings_customize_hide_show_items), style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            pluralStringResource(R.plurals.settings_customize_selected_items, count, count),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(22.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OwnTVButton(stringResource(R.string.common_cancel), onClick = onDismiss, style = OwnTVButtonStyle.SECONDARY)
+            Spacer(Modifier.weight(1f))
+            OwnTVButton(stringResource(R.string.common_show), onClick = onShow, style = OwnTVButtonStyle.SECONDARY)
+            OwnTVButton(stringResource(R.string.common_hide), onClick = onHide, modifier = Modifier.focusRequester(hideFocus))
         }
-    }
     }
 }
 
