@@ -471,7 +471,7 @@ private fun AppIconSwatches(icons: List<AppIcon>, chosen: AppIcon) {
                     .size(34.mpx)
                     .then(if (icon == chosen) Modifier.border(2.mpx, a.accent, RoundedCornerShape(9.mpx)) else Modifier),
                 contentAlignment = Alignment.Center,
-            ) { BrandMark(icon, 30.mpx) }
+            ) { BrandMark(icon, 30.mpx, followAccent = false) }
         }
         if (icons.size > shown.size) {
             Text("+" + localizedInteger(icons.size - shown.size, grouping = false), style = stageText(17, 700), color = StageColors.Muted)

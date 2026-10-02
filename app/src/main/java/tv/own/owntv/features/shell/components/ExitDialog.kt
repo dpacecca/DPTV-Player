@@ -30,7 +30,6 @@ import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVButton
 import tv.own.owntv.ui.components.OwnTVButtonStyle
-import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 
@@ -50,7 +49,8 @@ fun ExitDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .modalScrim()
+            // No scrim (owner, 2026-10-02): the popup host lays it out in the TV-safe band, so a scrim
+            // here left the screen edges undimmed. The solid panel reads on its own.
             .trapAllFocusExit()
             .focusGroup(),
         contentAlignment = Alignment.Center,

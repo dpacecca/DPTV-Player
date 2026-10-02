@@ -847,12 +847,12 @@ class SettingsViewModel(
 
     // --- Stage navigation (the rail's style, size, length, hide delay) ---
     val navStyle: StateFlow<tv.own.owntv.core.settings.SettingsRepository.NavStyle> =
-        settings.navStyle.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING)
+        settings.navStyle.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED)
     fun setNavStyle(style: tv.own.owntv.core.settings.SettingsRepository.NavStyle) {
         viewModelScope.launch { settings.setNavStyle(style) }
     }
     val navSize: StateFlow<tv.own.owntv.core.settings.SettingsRepository.NavSize> =
-        settings.navSize.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavSize.NORMAL)
+        settings.navSize.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT)
     fun setNavSize(size: tv.own.owntv.core.settings.SettingsRepository.NavSize) {
         viewModelScope.launch { settings.setNavSize(size) }
     }
@@ -861,6 +861,10 @@ class SettingsViewModel(
     fun setNavLength(length: tv.own.owntv.core.settings.SettingsRepository.NavLength) {
         viewModelScope.launch { settings.setNavLength(length) }
     }
+    val navWiden: StateFlow<tv.own.owntv.core.settings.SettingsRepository.NavSize?> =
+        settings.navWiden.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavSize.NORMAL)
+    fun setNavWiden(size: tv.own.owntv.core.settings.SettingsRepository.NavSize?) { viewModelScope.launch { settings.setNavWiden(size) } }
+
     val navHideAfterMs: StateFlow<Int> =
         settings.navHideAfterMs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavHideAfter.DEFAULT_MS)
     fun setNavHideAfterMs(ms: Int) {
@@ -892,6 +896,8 @@ class SettingsViewModel(
 
     val appIcon: StateFlow<AppIcon> = settings.appIcon.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppIcon.DEFAULT)
     fun setAppIcon(icon: AppIcon) { viewModelScope.launch { settings.setAppIcon(icon) } }
+    val brandAccentTriangle: StateFlow<Boolean> = settings.brandAccentTriangle.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+    fun setBrandAccentTriangle(on: Boolean) { viewModelScope.launch { settings.setBrandAccentTriangle(on) } }
 
     // Docked mini-player: size (% of screen width) and screen position.
     val miniPlayerSizePct: StateFlow<Int> =

@@ -336,6 +336,7 @@ fun SettingsScreen(
     }
     val settingsVm: SettingsViewModel = koinViewModel()
     val appIcon by settingsVm.appIcon.collectAsStateWithLifecycle()
+    val brandAccent by settingsVm.brandAccentTriangle.collectAsStateWithLifecycle()
     val languageVm: LanguageSettingsViewModel = koinViewModel()
     val currentLocaleTag by languageVm.currentTag.collectAsStateWithLifecycle()
     val languageChip = languageChipText(currentLocaleTag)
@@ -788,6 +789,12 @@ fun SettingsScreen(
             chip = stringResource(appIcon.label), chipTone = TileTone.SECONDARY,
             focus = appIconRowFocus,
             onClick = { saveScroll(); dialogReturn = appIconRowFocus; showAppIcon = true },
+        ),
+        RootRow(
+            "brand_accent", TileTone.SECONDARY, OwnTVIcon.PALETTE,
+            title = stringResource(R.string.settings_brand_accent), desc = stringResource(R.string.settings_line_brand_accent),
+            chip = stringResource(if (brandAccent) R.string.common_on else R.string.common_off), chipTone = TileTone.SECONDARY,
+            onClick = { settingsVm.setBrandAccentTriangle(!brandAccent) },
         ),
         RootRow(
             "app_startup", TileTone.SECONDARY, OwnTVIcon.POWER,
@@ -1548,6 +1555,7 @@ private fun NavigationPopupHost(settingsVm: SettingsViewModel, onDismiss: () -> 
     val navStyle by settingsVm.navStyle.collectAsStateWithLifecycle()
     val navSize by settingsVm.navSize.collectAsStateWithLifecycle()
     val navLength by settingsVm.navLength.collectAsStateWithLifecycle()
+    val navWiden by settingsVm.navWiden.collectAsStateWithLifecycle()
     val navHideAfterMs by settingsVm.navHideAfterMs.collectAsStateWithLifecycle()
     val navMenuMode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
     val navMenuHidden by settingsVm.navMenuHidden.collectAsStateWithLifecycle()
@@ -1558,6 +1566,8 @@ private fun NavigationPopupHost(settingsVm: SettingsViewModel, onDismiss: () -> 
         onSize = settingsVm::setNavSize,
         length = navLength,
         onLength = settingsVm::setNavLength,
+        widen = navWiden,
+        onWiden = settingsVm::setNavWiden,
         hideAfterMs = navHideAfterMs,
         onHideAfterMs = settingsVm::setNavHideAfterMs,
         menuMode = navMenuMode,
@@ -3962,6 +3972,7 @@ private fun stageRowExtras(
     val liveView by vm.liveView.collectAsStateWithLifecycle()
     val vodLayout by vm.vodLayout.collectAsStateWithLifecycle()
     val appIcon by vm.appIcon.collectAsStateWithLifecycle()
+    val brandAccent by vm.brandAccentTriangle.collectAsStateWithLifecycle()
     val focusHighlight by vm.focusHighlight.collectAsStateWithLifecycle()
     val focusWidth by vm.focusHighlightWidth.collectAsStateWithLifecycle()
     val sep = stringResource(R.string.content_epg_bits_separator)
@@ -4041,7 +4052,7 @@ private fun stageRowExtras(
             SettingValue.Opens(navStyleLabel(navStyle) + sep + stringResource(navSize.labelRes)),
             choices = listOf(stringResource(R.string.settings_nav_floating), stringResource(R.string.settings_nav_docked)),
             chosen = navStyle.ordinal,
-            recommended = 0,
+            recommended = 1,
         ),
         "live_layout" to RowExtra(
             SettingValue.Segmented(liveLayouts.map { stringResource(if (it == tv.own.owntv.core.settings.SettingsRepository.LiveLayout.STAGE) R.string.settings_live_layout_stage else R.string.settings_seg_separate) }, liveLayouts.indexOf(liveLayout)),
@@ -4059,6 +4070,7 @@ private fun stageRowExtras(
             onClick = { vm.setVodLayout(cycle(vodLayouts, vodLayout, 1)) },
         ),
         "app_icon" to RowExtra(SettingValue.Opens(stringResource(appIcon.label))),
+        "brand_accent" to RowExtra(SettingValue.Switch(brandAccent), onClick = { vm.setBrandAccentTriangle(!brandAccent) }),
         "check_updates" to RowExtra(SettingValue.Action(stringResource(R.string.settings_check_now))),
         "tab_LANGUAGE" to RowExtra(help = pluralStringResource(R.plurals.settings_help_language, languages, languages)),
     ) + serviceRowExtras(vm)

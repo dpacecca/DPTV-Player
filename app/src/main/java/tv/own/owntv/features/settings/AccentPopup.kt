@@ -57,9 +57,9 @@ import tv.own.owntv.ui.components.hsvToHex
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.stage.StageButton
-import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StageProgress
 import tv.own.owntv.ui.stage.StageSurface
+import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StageTag
 import tv.own.owntv.ui.stage.drawOuterRing
 import tv.own.owntv.ui.stage.stageGlass
@@ -228,6 +228,7 @@ fun StageColorPopup(
                     ColorField(
                         hue = hue, sat = sat, value = value,
                         onHue = { moved = true; hue = it },
+                        onSat = { moved = true; sat = it },
                         onValue = { moved = true; value = it },
                     )
                     Text(
@@ -259,6 +260,38 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(text.uppercase(), style = stageText(13, 800, 0.12.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = modifier.padding(bottom = 12.mpx))
 }
 
+/**
+ * The keys of a box you enter with OK: OK toggles editing, Back leaves it, and while editing ◀ ▶ go to
+ * [onX] and ▲ ▼ to [onY] (all consumed, so focus stays put). Outside editing every key passes on.
+ */
+private fun boxKeys(
+    e: androidx.compose.ui.input.key.KeyEvent,
+    editing: Boolean,
+    setEditing: (Boolean) -> Unit,
+    onY: ((Int) -> Unit)? = null,
+    onX: (Int) -> Unit,
+): Boolean {
+    val ok = e.key == Key.DirectionCenter || e.key == Key.Enter || e.key == Key.NumPadEnter
+    // Back leaves on its release: the popup closes on Back's release, so that one must be consumed here.
+    if (e.key == Key.Back) {
+        if (!editing) return false
+        if (e.type == KeyEventType.KeyUp) setEditing(false)
+        return true
+    }
+    if (e.type != KeyEventType.KeyDown) return editing && (ok || e.key in Arrows)
+    return when {
+        ok -> { setEditing(!editing); true }
+        !editing -> false
+        e.key == Key.DirectionLeft -> { onX(-1); true }
+        e.key == Key.DirectionRight -> { onX(1); true }
+        e.key == Key.DirectionUp -> { onY?.invoke(-1); true }
+        e.key == Key.DirectionDown -> { onY?.invoke(1); true }
+        else -> false
+    }
+}
+
+private val Arrows = setOf(Key.DirectionLeft, Key.DirectionRight, Key.DirectionUp, Key.DirectionDown)
+
 /** A 62 px preset swatch with its name; the chosen one ringed white over a 50% dark ring. */
 @Composable
 private fun Swatch(color: Color, label: String, chosen: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -286,66 +319,84 @@ private fun Swatch(color: Color, label: String, chosen: Boolean, onClick: () -> 
 }
 
 /**
- * The saturation/brightness field and the hue bar as one focus stop (P9-05): ◀ ▶ move the hue, ▲ ▼
- * move the point. At the top or bottom of the field ▲ / ▼ hand focus on, so nothing traps the cursor.
+ * The saturation/brightness square and the hue bar, each its own focus stop (owner, 2026-10-02): focus
+ * rings it, OK goes in, then the square moves its point freely (◀ ▶ saturation, ▲ ▼ brightness) and the
+ * bar its hue (◀ ▶); OK or Back comes out. Outside, the D-pad only moves focus, so nothing changes by
+ * passing over them.
  */
 @Composable
-private fun ColorField(hue: Float, sat: Float, value: Float, onHue: (Float) -> Unit, onValue: (Float) -> Unit) {
-    val interaction = remember { MutableInteractionSource() }
-    val focused by interaction.collectIsFocusedAsState()
-    val ring = stageAccent.focus
+private fun ColorField(hue: Float, sat: Float, value: Float, onHue: (Float) -> Unit, onSat: (Float) -> Unit, onValue: (Float) -> Unit) {
     val hueColor = Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, 1f, 1f)))
-    Column(
-        Modifier
-            .drawBehind { if (focused) drawOuterRing(ring, 2.mpx.toPx(), 22.mpx.toPx()) }
-            .onKeyEvent { e ->
-                if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
-                when (e.key) {
-                    Key.DirectionLeft -> { onHue(((hue - 4f) % 360f + 360f) % 360f); true }
-                    Key.DirectionRight -> { onHue((hue + 4f) % 360f); true }
-                    Key.DirectionUp -> if (value < 1f) { onValue((value + 0.04f).coerceAtMost(1f)); true } else false
-                    Key.DirectionDown -> if (value > 0f) { onValue((value - 0.04f).coerceAtLeast(0f)); true } else false
-                    else -> false
-                }
+    Column {
+        EditBox(
+            radius = 22.mpx,
+            onX = { dx -> onSat((sat + dx * 0.04f).coerceIn(0f, 1f)) },
+            onY = { dy -> onValue((value - dy * 0.04f).coerceIn(0f, 1f)) },
+        ) {
+            BoxWithConstraints(
+                Modifier
+                    .fillMaxWidth()
+                    .height(330.mpx)
+                    .clip(RoundedCornerShape(22.mpx))
+                    .background(Brush.horizontalGradient(listOf(Color.White, hueColor)))
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black))),
+            ) {
+                val dot = 30.mpx
+                Box(
+                    Modifier
+                        .offset(x = (maxWidth - dot) * sat.coerceIn(0f, 1f), y = (maxHeight - dot) * (1f - value).coerceIn(0f, 1f))
+                        .size(dot)
+                        .drawBehind {
+                            val r = size.minDimension / 2f
+                            drawCircle(Color.Black.copy(alpha = 0.5f), radius = r + 2.mpx.toPx(), style = androidx.compose.ui.graphics.drawscope.Stroke(2.mpx.toPx()))
+                            drawCircle(Color.White, radius = r - 1.5f.mpx.toPx(), style = androidx.compose.ui.graphics.drawscope.Stroke(3.mpx.toPx()))
+                        },
+                )
             }
-            .focusable(interactionSource = interaction),
-    ) {
-        BoxWithConstraints(
-            Modifier
-                .fillMaxWidth()
-                .height(330.mpx)
-                .clip(RoundedCornerShape(22.mpx))
-                .background(Brush.horizontalGradient(listOf(Color.White, hueColor)))
-                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black))),
-        ) {
-            val dot = 30.mpx
-            Box(
-                Modifier
-                    .offset(x = (maxWidth - dot) * sat.coerceIn(0f, 1f), y = (maxHeight - dot) * (1f - value).coerceIn(0f, 1f))
-                    .size(dot)
-                    .drawBehind {
-                        val r = size.minDimension / 2f
-                        drawCircle(Color.Black.copy(alpha = 0.5f), radius = r + 2.mpx.toPx(), style = androidx.compose.ui.graphics.drawscope.Stroke(2.mpx.toPx()))
-                        drawCircle(Color.White, radius = r - 1.5f.mpx.toPx(), style = androidx.compose.ui.graphics.drawscope.Stroke(3.mpx.toPx()))
-                    },
-            )
         }
-        BoxWithConstraints(
-            Modifier
-                .padding(top = 22.mpx)
-                .fillMaxWidth()
-                .height(26.mpx)
-                .background(
-                    Brush.horizontalGradient((0..360 step 60).map { Color(android.graphics.Color.HSVToColor(floatArrayOf(it.toFloat(), 1f, 1f))) }),
-                    RoundedCornerShape(13.mpx),
-                ),
+        EditBox(
+            radius = 13.mpx,
+            modifier = Modifier.padding(top = 22.mpx),
+            onX = { dx -> onHue(((hue + dx * 4f) % 360f + 360f) % 360f) },
         ) {
-            Box(
+            BoxWithConstraints(
                 Modifier
-                    .offset(x = (maxWidth - 12.mpx) * (hue / 360f).coerceIn(0f, 1f), y = (-4).mpx)
-                    .size(12.mpx, 34.mpx)
-                    .background(Color.White, RoundedCornerShape(6.mpx)),
-            )
+                    .fillMaxWidth()
+                    .height(26.mpx)
+                    .background(
+                        Brush.horizontalGradient((0..360 step 60).map { Color(android.graphics.Color.HSVToColor(floatArrayOf(it.toFloat(), 1f, 1f))) }),
+                        RoundedCornerShape(13.mpx),
+                    ),
+            ) {
+                Box(
+                    Modifier
+                        .offset(x = (maxWidth - 12.mpx) * (hue / 360f).coerceIn(0f, 1f), y = (-4).mpx)
+                        .size(12.mpx, 34.mpx)
+                        .background(Color.White, RoundedCornerShape(6.mpx)),
+                )
+            }
         }
     }
+}
+
+/** One focus stop you enter with OK ([boxKeys]): the focus ring around it, in the accent while editing. */
+@Composable
+private fun EditBox(
+    radius: androidx.compose.ui.unit.Dp,
+    onX: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    onY: ((Int) -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    var editing by remember { mutableStateOf(false) }
+    LaunchedEffect(focused) { if (!focused) editing = false }
+    val a = stageAccent
+    Box(
+        modifier
+            .drawBehind { if (focused) drawOuterRing(if (editing) a.accent else a.focus, if (editing) 3.mpx.toPx() else 2.mpx.toPx(), radius.toPx()) }
+            .onKeyEvent { e -> boxKeys(e, editing, { editing = it }, onY, onX) }
+            .focusable(interactionSource = interaction),
+    ) { content() }
 }

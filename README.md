@@ -252,6 +252,11 @@ Subtitle search & download is powered by [OpenSubtitles.com](https://www.opensub
 **This product uses the OpenSubtitles API but is not endorsed or certified by OpenSubtitles.** You sign
 in with your own OpenSubtitles account and are subject to their terms and download quotas.
 
+### 🎨 Brand
+
+The lowercase **owntv** wordmark was designed for OwnTV by [@m3th0d93](https://github.com/m3th0d93)
+in [issue #227](https://github.com/ahXN00/OwnTV/issues/227).
+
 ### ▶️ Playback engines
 
 - **[mpv](https://mpv.io/)** (via [libmpv](https://github.com/mpv-android/mpv-android), built on

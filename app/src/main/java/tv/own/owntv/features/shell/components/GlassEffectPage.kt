@@ -195,7 +195,7 @@ internal fun GlassBackgroundPage(
         )
 
         val resetTitle = stringResource(tv.own.owntv.R.string.common_reset)
-        val resetLine = stringResource(R.string.settings_line_glass_reset, stringResource(R.string.common_percent, 56))
+        val resetLine = stringResource(R.string.settings_line_glass_reset, stringResource(R.string.common_percent, tv.own.owntv.core.settings.SettingsRepository.GLASS_ALPHA_DEFAULT_PCT))
         StageSettingRow(
             icon = OwnTVIcon.REFRESH,
             title = resetTitle,

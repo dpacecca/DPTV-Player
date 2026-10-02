@@ -223,6 +223,16 @@ open class MainActivity : ComponentActivity() {
             val uiZoomPercent by viewModel.uiZoomPercent.collectAsStateWithLifecycle()
             val fontCustomization by viewModel.fontCustomization.collectAsStateWithLifecycle()
             val animationLevel by viewModel.animationLevel.collectAsStateWithLifecycle()
+            // Animations Off also stills the launch screen. Android shows it before the app runs, so the
+            // choice can only be handed over for the next launch, and only from Android 13 on (P11).
+            LaunchedEffect(animationLevel) {
+                if (android.os.Build.VERSION.SDK_INT >= 33) {
+                    val still = animationLevel == tv.own.owntv.core.theme.AnimationLevel.OFF
+                    splashScreen.setSplashScreenTheme(
+                        if (still) stillLaunchTheme(tv.own.owntv.core.brand.AppIconSwitcher.applied(this@MainActivity)) else 0,
+                    )
+                }
+            }
             val bgImagePath by viewModel.bgImagePath.collectAsStateWithLifecycle()
             val glassConfig by viewModel.glassConfig.collectAsStateWithLifecycle()
             val background by viewModel.backgroundConfig.collectAsStateWithLifecycle()

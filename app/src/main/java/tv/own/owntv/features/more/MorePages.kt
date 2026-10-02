@@ -1,7 +1,6 @@
 package tv.own.owntv.features.more
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,17 +42,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.em
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -80,7 +75,10 @@ import tv.own.owntv.features.shell.components.playbackDisplayName
 import tv.own.owntv.features.update.UpdateDialog
 import tv.own.owntv.player.PlaybackErrorLog
 import tv.own.owntv.player.displayText
+import tv.own.owntv.ui.components.BrandMark
 import tv.own.owntv.ui.components.MoveOrderOverlay
+import tv.own.owntv.ui.components.Wordmark
+import tv.own.owntv.ui.components.rememberAppliedIcon
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVPopup
 import tv.own.owntv.ui.components.displayText
@@ -223,7 +221,7 @@ private val SettingsCards = listOf(
     SettingsGroupCard(OwnTVIcon.HEADPHONES, R.string.settings_group_sound_subtitles, R.string.settings_card_sound, 11),
     SettingsGroupCard(OwnTVIcon.LIVE_TV, R.string.settings_live_tv, R.string.settings_card_live, 12),
     SettingsGroupCard(OwnTVIcon.REC, R.string.settings_group_watching_recording, R.string.settings_card_watching, 11),
-    SettingsGroupCard(OwnTVIcon.INFO, R.string.settings_group_app, R.string.settings_card_app, 9),
+    SettingsGroupCard(OwnTVIcon.INFO, R.string.settings_group_app, R.string.settings_card_app, 10),
 )
 
 /** The card last opened, so Back from its group lands on it again rather than on the search field. */
@@ -645,17 +643,11 @@ internal fun AboutPage(vm: MoreCountsViewModel, entry: FocusRequester, onOpenLan
 
     Column(Modifier.fillMaxSize().focusGroup()) {
         Row(horizontalArrangement = Arrangement.spacedBy(40.mpx), verticalAlignment = Alignment.CenterVertically) {
-            SignalMark(Modifier.size(150.mpx))
+            // The app's own icon (150) and the #227 wordmark (300).
+            BrandMark(rememberAppliedIcon(), 150.mpx)
             Column {
-                // The wordmark stays live text until P11 brings the #227 drawing (D5).
-                Text(
-                    buildAnnotatedString {
-                        withStyle(SpanStyle(color = Color(0xFFFFF6EE))) { append(stringResource(R.string.brand_own)) }
-                        withStyle(SpanStyle(color = accent)) { append(stringResource(R.string.brand_tv)) }
-                    },
-                    style = stageText(64, 800, (-2).mpxSp), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-                Row(Modifier.padding(top = 10.mpx), horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
+                Wordmark(300.mpx)
+                Row(Modifier.padding(top = 16.mpx), horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.settings_about_version, BuildConfig.VERSION_NAME), style = stageText(22, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     // Only what a real check said: no tag before one has run.
                     val tag = when (updateState) {
@@ -715,51 +707,4 @@ internal fun AboutPage(vm: MoreCountsViewModel, entry: FocusRequester, onOpenLan
             UpdateDialog(onDismiss = { showUpdate = false }, checkOnOpen = true)
         }
     }
-}
-
-/**
- * The Signal mark (static; P11 animates it): the TV-set silhouette as a dot grid, the triangle in the
- * accent, side dots and the red record dot — `screens.js` `markSignal()`, on its 100 × 100 grid.
- */
-@Composable
-internal fun SignalMark(modifier: Modifier = Modifier) {
-    val accent = stageAccent.accent
-    val dots = remember { signalDots() }
-    Canvas(modifier) {
-        val u = size.minDimension / 100f
-        dots.forEach { (x, y, kind) ->
-            val color = when (kind) { 0 -> Color(0xFFF5EDDA); 1 -> accent; else -> Color(0xFFCBB795) }
-            drawCircle(color, 2.1f * u, Offset(x * u, y * u))
-        }
-        drawCircle(Color(0xFFE24B36), 4.2f * u, Offset(76f * u, 24f * u))
-    }
-}
-
-/** The mark's dots: (x, y, 0 body / 1 triangle / 2 side). */
-private fun signalDots(): List<Triple<Float, Float, Int>> {
-    fun inRoundRect(x: Float, y: Float): Boolean {
-        if (x < 10 || x > 90 || y < 12 || y > 88) return false
-        val cx = x.coerceIn(28f, 72f)
-        val cy = y.coerceIn(30f, 70f)
-        return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= 18f * 18f
-    }
-    fun inTriangle(x: Float, y: Float): Boolean {
-        fun s(px: Float, py: Float, qx: Float, qy: Float, rx: Float, ry: Float) = (px - rx) * (qy - ry) - (qx - rx) * (py - ry)
-        val d1 = s(x, y, 38f, 30f, 38f, 70f)
-        val d2 = s(x, y, 38f, 70f, 72f, 50f)
-        val d3 = s(x, y, 72f, 50f, 38f, 30f)
-        return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))
-    }
-    val out = mutableListOf<Triple<Float, Float, Int>>()
-    var y = 14f
-    while (y <= 86f) {
-        var x = 14f
-        while (x <= 86f) {
-            if (inRoundRect(x, y) && (x - 76) * (x - 76) + (y - 24) * (y - 24) >= 40) out += Triple(x, y, if (inTriangle(x, y)) 1 else 0)
-            x += 4.5f
-        }
-        y += 4.5f
-    }
-    for (x in listOf(5f, 95f)) for (sy in listOf(45.5f, 50f, 54.5f)) out += Triple(x, sy, 2)
-    return out
 }

@@ -1263,7 +1263,7 @@ private fun HeroFallbackPane(
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            BrandLockup(markSize = 72, textSize = 42)
+            BrandLockup(markSize = 72)
             Spacer(Modifier.height(14.dp))
             Text(
                 text = stringResource(R.string.home_no_preview),
@@ -1296,7 +1296,7 @@ private fun EmptyHomeState(
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            BrandLockup(markSize = 84, textSize = 48)
+            BrandLockup(markSize = 84)
             Spacer(Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.home_start_watching),
@@ -1329,7 +1329,7 @@ private fun AllRowsHiddenState(
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            BrandLockup(markSize = 84, textSize = 48)
+            BrandLockup(markSize = 84)
             Spacer(Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.home_no_rows),

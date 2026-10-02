@@ -206,8 +206,9 @@ fun OwnTVShell(
     // player returns to the exact control the user left rather than to the top of the screen.
     val shellContentFocus = remember { FocusRequester() }
     // Stage navigation (P1, P1b): where the rail sits, what it shows, its length, the floating hide delay.
-    val navStyle by settingsRepo.navStyle.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.SettingsRepository.NavStyle.FLOATING)
-    val navSize by settingsRepo.navSize.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.SettingsRepository.NavSize.NORMAL)
+    val navStyle by settingsRepo.navStyle.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED)
+    val navSize by settingsRepo.navSize.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT)
+    val navWiden by settingsRepo.navWiden.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.SettingsRepository.NavSize.NORMAL)
     val navLength by settingsRepo.navLength.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.SettingsRepository.NavLength.FIT)
     val navHideAfterMs by settingsRepo.navHideAfterMs.collectAsStateWithLifecycle(
         initialValue = tv.own.owntv.core.settings.SettingsRepository.NavHideAfter.DEFAULT_MS,
@@ -653,8 +654,13 @@ fun OwnTVShell(
         }
     }
     // Docked always shows its Size; Floating rests as the capsule, opens at its Size while it holds
-    // focus and hides once focus has been in the content for the delay. Compact stays the capsule.
+    // focus and hides once focus has been in the content for the delay. Compact stays the capsule —
+    // except Docked + Compact with Widen on focus, which opens at that size over the content (the content
+    // keeps the compact room, so nothing behind it moves).
+    val widenDocked = navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT && navWiden != null && railFocused
+    val railSize = if (widenDocked) navWiden ?: navSize else navSize
     val railState = when {
+        widenDocked -> tv.own.owntv.features.shell.components.RailState.OPEN
         navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED -> tv.own.owntv.features.shell.components.RailState.PINNED
         railFocused -> tv.own.owntv.features.shell.components.RailState.OPEN
         railIdleHidden -> tv.own.owntv.features.shell.components.RailState.HIDDEN
@@ -1339,7 +1345,7 @@ fun OwnTVShell(
             )
             tv.own.owntv.features.shell.components.StageRail(
                 state = railState,
-                size = navSize,
+                size = railSize,
                 length = navLength,
                 selected = selectedSection,
                 visibleSections = visibleSections,

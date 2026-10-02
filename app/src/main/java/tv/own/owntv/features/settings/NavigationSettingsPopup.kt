@@ -55,7 +55,7 @@ import tv.own.owntv.ui.theme.stageText
 
 /**
  * Settings › Layout › Navigation (P1-06, P1-18, P1-19): Floating or Docked as radio rows, then the rail's
- * Size and Length, Menu items (Dynamic / Static; Static lists the sections as toggles) and, for Floating
+ * Size and Length (Docked + Compact adds Widen on focus, owner 2026-10-02), Menu items (Dynamic / Static; Static lists the sections as toggles) and, for Floating
  * only, the hide delay. OK on a value row steps to its next choice.
  */
 @Composable
@@ -66,6 +66,8 @@ fun NavigationSettingsPopup(
     onSize: (NavSize) -> Unit,
     length: NavLength,
     onLength: (NavLength) -> Unit,
+    widen: NavSize?,
+    onWiden: (NavSize?) -> Unit,
     hideAfterMs: Int,
     onHideAfterMs: (Int) -> Unit,
     menuMode: NavMenuMode,
@@ -134,6 +136,17 @@ fun NavigationSettingsPopup(
                     onClick = { onLength(if (length == NavLength.FIT) NavLength.FULL else NavLength.FIT) },
                     leading = { OwnTVIcon(OwnTVIcon.SORT, StageColors.Text, Modifier.size(21.mpx)) },
                 )
+                // Docked + Compact: the size the rail opens to, over the content, while it has focus.
+                if (style == NavStyle.DOCKED && size == NavSize.COMPACT) {
+                    val widths = listOf(null, NavSize.NORMAL, NavSize.WIDE, NavSize.EXTRA_WIDE)
+                    NavOption(
+                        title = stringResource(R.string.settings_nav_widen),
+                        subtitle = stringResource(R.string.settings_nav_widen_desc),
+                        value = widen?.let { stringResource(it.labelRes) } ?: stringResource(R.string.common_off),
+                        onClick = { onWiden(widths[(widths.indexOf(widen) + 1) % widths.size]) },
+                        leading = { OwnTVIcon(OwnTVIcon.EXPAND, StageColors.Text, Modifier.size(21.mpx)) },
+                    )
+                }
                 val static = menuMode == NavMenuMode.STATIC
                 NavOption(
                     title = stringResource(R.string.settings_nav_menu_items),

@@ -167,7 +167,10 @@ private fun DrawScope.light(color: Color, alpha: Float, center: Offset, rx: Floa
 fun Modifier.stageGlass(radius: Dp, overContent: Boolean = false): Modifier {
     val config = LocalGlass.current
     val on = config.enabled
-    val fill = if (on) StageColors.GlassTint.copy(alpha = if (overContent) maxOf(config.alpha, 0.80f) else config.alpha) else StageColors.GlassOff
+    // Over content (sheets, the rail, menus) the opacity is scaled into 55-100% rather than floored at 80%:
+    // the floor made every setting below 80% look the same (owner, 2026-10-02), the scale keeps text
+    // readable and still answers each step (50% -> 78%).
+    val fill = if (on) StageColors.GlassTint.copy(alpha = if (overContent) 0.55f + 0.45f * config.alpha.coerceIn(0f, 1f) else config.alpha) else StageColors.GlassOff
     val blurred = if (on && LocalBackground.current.showsPicture) LocalBlurredBackdrop.current else null
     val frost = blurred?.frostFor(0.9f)
     val position = if (frost != null) remember { GlassPositionState() } else null

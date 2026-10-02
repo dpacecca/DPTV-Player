@@ -47,8 +47,8 @@ fun AppIconPicker(
 ) {
     var focusedIcon by remember { mutableStateOf<AppIcon?>(null) }
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        // Two rows of four: eight tiles in one row are wider than the Settings panel.
-        AppIcon.entries.chunked(4).forEachIndexed { row, icons ->
+        // Two rows of five (the 8 colours, Signal, Pixel): ten tiles in one row are wider than the panel.
+        AppIcon.entries.chunked(5).forEachIndexed { row, icons ->
             if (row > 0) Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 icons.forEach { icon ->
@@ -60,7 +60,7 @@ fun AppIconPicker(
                             .then(if (icon == selected && firstFocus != null) Modifier.focusRequester(firstFocus) else Modifier),
                     ) { focused ->
                         LaunchedEffect(focused) { if (focused) focusedIcon = icon }
-                        BrandMark(icon, 56.dp)
+                        BrandMark(icon, 56.dp, followAccent = false)
                     }
                 }
             }
@@ -145,7 +145,7 @@ private fun RestartContent(icon: AppIcon, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val restartFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { restartFocus.requestFocus() } }
-    BrandMark(icon, 72.dp)
+    BrandMark(icon, 72.dp, followAccent = false)
     Spacer(Modifier.height(14.dp))
     Text(
         stringResource(R.string.app_icon_restart_title),

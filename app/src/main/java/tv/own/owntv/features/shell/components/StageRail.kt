@@ -48,11 +48,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.em
 import androidx.tv.material3.Text
 import kotlinx.coroutines.launch
 import tv.own.owntv.R
@@ -61,12 +58,12 @@ import tv.own.owntv.core.settings.SettingsRepository.NavLength
 import tv.own.owntv.core.settings.SettingsRepository.NavSize
 import tv.own.owntv.ui.components.BrandMark
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.Wordmark
 import tv.own.owntv.ui.components.rememberAppliedIcon
 import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StageSurface
 import tv.own.owntv.ui.stage.drawBoxShadow
 import tv.own.owntv.ui.stage.stageGlass
-import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.ownTvTween
@@ -309,25 +306,14 @@ private fun ColumnScope.RailBrand(open: Boolean) {
         BrandMark(icon, 50.mpx, Modifier.padding(bottom = 12.mpx))
         return
     }
-    val colors = OwnTVTheme.colors
     Row(
         Modifier.padding(start = 10.mpx, end = 10.mpx, bottom = 18.mpx),
         horizontalArrangement = Arrangement.spacedBy(14.mpx),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BrandMark(icon, 50.mpx)
-        // Interim wordmark (the live-text lockup) until the Brand phase brings the #227 one (P11, D5).
-        Text(
-            buildAnnotatedString {
-                withStyle(androidx.compose.ui.text.SpanStyle(color = colors.textPrimary)) { append(stringResource(R.string.brand_own)) }
-                withStyle(androidx.compose.ui.text.SpanStyle(color = Color(if (colors.isDark) icon.accent else icon.accentOnLight))) {
-                    append(stringResource(R.string.brand_tv))
-                }
-            },
-            style = stageText(36, 800, (-0.025).em),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        // The #227 wordmark, 130 wide (`.brandrow`, `wordmarkC()`).
+        Wordmark(130.mpx)
     }
 }
 
