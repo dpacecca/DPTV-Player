@@ -170,6 +170,14 @@ fun OwnTVShell(
     var playerMode by remember { mutableStateOf(PlayerMode.NONE) }
     // Deep-link: the Guide's "Add EPG" button switches to Settings and opens EPG Sources → add.
     var openEpgAdd by remember { mutableStateOf(false) }
+    // Setup's "Add a TV guide" (P10B-W9) lands on the same page once the shell is up.
+    LaunchedEffect(Unit) {
+        if (PendingShellRequest.addEpg) {
+            PendingShellRequest.addEpg = false
+            openEpgAdd = true
+            onSelectSection(MainSection.SETTINGS)
+        }
+    }
     // One-shot: set when leaving the player so the returning browse screen re-focuses the item you played.
     var restoreFocus by remember { mutableStateOf(false) }
     var restoreTrendingSearchFocus by remember { mutableStateOf(false) }
@@ -179,6 +187,7 @@ fun OwnTVShell(
     // mini-player's own controls. Read straight from settings so both entry points stay in sync.
     val settingsRepo = koinInject<tv.own.owntv.core.settings.SettingsRepository>()
     val remoteShortcutsEnabled by settingsRepo.chNavEnabled.collectAsStateWithLifecycle(initialValue = true)
+    val clockColors by settingsRepo.clockColors.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.ClockColors())
     val remoteShortcutBindings by settingsRepo.remoteShortcutBindings.collectAsStateWithLifecycle(
         initialValue = RemoteShortcutBindings.defaults,
     )
@@ -860,6 +869,7 @@ fun OwnTVShell(
     CompositionLocalProvider(
         LocalContentScrolled provides contentScrolled,
         LocalRemoteShortcuts provides remoteShortcutEnvironment,
+        tv.own.owntv.features.shell.components.LocalClockWeather provides (weatherInfo to weatherFahrenheit),
     ) {
     Box(
         modifier = modifier.fillMaxSize().background(shellBase)
@@ -1322,6 +1332,7 @@ fun OwnTVShell(
                 pillsFocusable = focusedLayer == ShellLayer.SIDEBAR || clusterFocused || selectedSection == MainSection.HOME,
                 weatherInfo = weatherInfo,
                 weatherFahrenheit = weatherFahrenheit,
+                clockColors = clockColors,
                 playlistDownFocusRequester = homeFirstRowFocus.takeIf { selectedSection == MainSection.HOME },
                 onPlaylistPillBounds = { playlistPillBounds = it },
                 modifier = Modifier.align(Alignment.TopEnd).onFocusChanged { clusterFocused = it.hasFocus }.focusGroup(),

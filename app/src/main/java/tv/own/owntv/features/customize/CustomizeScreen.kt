@@ -30,6 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import kotlinx.coroutines.launch
@@ -342,7 +345,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 value = SettingValue.Action(unhide),
                                 onClick = { vm.unhideChannel(key) },
                                 help = SettingHelp(label.ifBlank { key }, stringResource(R.string.settings_customize_unhide_description), hints = settingHints(SettingValue.Action(unhide), pinnable = false)),
-                                modifier = if (hiddenIndex == 0) Modifier.focusProperties { up = firstFocus } else Modifier,
+                                modifier = if (hiddenIndex == 0) Modifier.upTo(firstFocus) else Modifier,
                             )
                         }
                     }
@@ -686,7 +689,7 @@ private fun CategoryRow(
         ),
         modifier = Modifier
             .focusRequester(focusRequester)
-            .then(if (upFocusRequester != null) Modifier.focusProperties { up = upFocusRequester } else Modifier)
+            .then(if (upFocusRequester != null) Modifier.upTo(upFocusRequester) else Modifier)
             .focusProperties { right = actionsFocus }
             .onFocusChanged { if (it.isFocused) onRowFocused() },
     )
@@ -731,4 +734,14 @@ private fun PinConfirmDialog(
         }
     }
     }
+}
+
+/**
+ * ▲ from the list's first row goes to the tool row above. A plain `focusProperties { up = … }` is not
+ * enough: the list's [trapVerticalFocusExit] cancels every move that leaves it, that one included.
+ */
+internal fun Modifier.upTo(target: FocusRequester): Modifier = onPreviewKeyEvent { e ->
+    if (e.key != androidx.compose.ui.input.key.Key.DirectionUp) return@onPreviewKeyEvent false
+    if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown) runCatching { target.requestFocus() }
+    true
 }

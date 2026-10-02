@@ -1000,6 +1000,10 @@ class SettingsViewModel(
         settings.weatherFahrenheit.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
     fun setWeatherFahrenheit(fahrenheit: Boolean) { viewModelScope.launch { settings.setWeatherFahrenheit(fahrenheit) } }
 
+    val clockColors: StateFlow<tv.own.owntv.core.settings.ClockColors> =
+        settings.clockColors.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.ClockColors())
+    fun setClockColor(part: tv.own.owntv.core.settings.ClockPart, value: String) { viewModelScope.launch { settings.setClockColor(part, value) } }
+
     // Per-section "remember last item per category" (default OFF). OFF resets the browse list to the top
     // when switching category; ON keeps a separate scroll position per category. The Live toggle also
     // gates the last-focused-channel restore on re-entry.

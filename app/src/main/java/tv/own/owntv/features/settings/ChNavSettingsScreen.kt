@@ -7,13 +7,10 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,9 +22,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -52,11 +47,13 @@ import tv.own.owntv.ui.components.OwnTVPopup
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.restoreAfterDialogClose
-import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.format.localizedInteger
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.PopupFontTheme
+import tv.own.owntv.ui.theme.StageColors
+import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.theme.stageText
 
 private enum class ChNavDialog { NONE, ENABLED, UP_SKIP, DOWN_SKIP, CAPTURE, ACTION, RESET }
 
@@ -67,11 +64,10 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val upSkip by vm.chNavUpSkip.collectAsStateWithLifecycle()
     val downSkip by vm.chNavDownSkip.collectAsStateWithLifecycle()
     val bindings by vm.remoteShortcutBindings.collectAsStateWithLifecycle()
-    val colors = OwnTVTheme.colors
-
     val firstFocus = remember { FocusRequester() }
     val upSkipFocus = remember { FocusRequester() }
     val downSkipFocus = remember { FocusRequester() }
+    val bindingFocus = remember { mutableMapOf<Pair<Int, RemoteShortcutPress>, FocusRequester>() }
     var dialog by remember { mutableStateOf(ChNavDialog.NONE) }
     var pendingBinding by remember { mutableStateOf<RemoteShortcutBinding?>(null) }
     var editingExisting by remember { mutableStateOf(false) }
@@ -88,110 +84,108 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
         dialogReturn = null
     }
-    BackHandler { onBack() }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .roundedPanel()
-            .focusProperties { onEnter = { runCatching { firstFocus.requestFocus() } } }
-            .focusGroup()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 40.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+    // P10B-20: the switch, the button assignments as rows, the two skip counts; how it works in the panel.
+    val back = stringResource(R.string.common_back)
+    val layout = stringResource(R.string.settings_group_layout)
+    val pageHints = listOf(stringResource(R.string.common_ok) to stringResource(R.string.settings_key_change), back to layout)
+    val about = stringResource(R.string.settings_remote_shortcuts_description)
+    StageFullPage(
+        parents = listOf(layout),
+        title = stringResource(R.string.settings_remote_shortcuts),
+        count = "",
+        onBack = onBack,
+        modifier = modifier,
+        scroll = scrollState,
+        rowsFocus = firstFocus,
     ) {
-        Header(title = stringResource(R.string.settings_remote_shortcuts), onBack = onBack)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            stringResource(R.string.settings_remote_shortcuts_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(16.dp))
-
-        Row2(
+        val onTitle = stringResource(R.string.settings_remote_shortcuts_enabled)
+        val onValue = SettingValue.Switch(enabled)
+        val howItWorks = stringResource(R.string.settings_remote_shortcuts_help)
+        StageSettingRow(
             icon = OwnTVIcon.CH_NAV,
-            title = stringResource(R.string.settings_remote_shortcuts_enabled),
-            desc = stringResource(R.string.settings_remote_shortcuts_enabled_description),
-            chip = stringResource(if (enabled) R.string.common_on else R.string.common_off),
-            primaryChip = enabled,
-            chevron = true,
-            onClick = { dialogReturn = firstFocus; dialog = ChNavDialog.ENABLED },
-            modifier = Modifier.focusRequester(firstFocus),
+            title = onTitle,
+            desc = stringResource(R.string.settings_line_remote_shortcuts_on),
+            value = onValue,
+            onClick = { vm.setChNavEnabled(!enabled) },
+            help = settingHelp(null, onTitle, stringResource(R.string.settings_remote_shortcuts_enabled_description), onValue, pinnable = false).copy(
+                extra = {
+                    Text(howItWorks, style = stageText(15, 500), color = StageColors.Muted, modifier = Modifier.padding(top = 14.mpx))
+                },
+            ),
         )
 
-        Spacer(Modifier.height(10.dp))
-        GroupLabel(stringResource(R.string.settings_remote_shortcuts_assignments))
-        bindings.sortedWith(compareBy<RemoteShortcutBinding> { it.keyCode }.thenBy { it.press.ordinal }).forEach { binding ->
-            val buttonLabel = remoteButtonLabel(binding.keyCode)
+        val sorted = bindings.sortedWith(compareBy<RemoteShortcutBinding> { it.keyCode }.thenBy { it.press.ordinal })
+        StageSettingsHeading(stringResource(R.string.settings_remote_shortcuts_assignments), sorted.size)
+        val separator = dotSeparator()
+        sorted.forEach { binding ->
+            val focus = bindingFocus.getOrPut(binding.keyCode to binding.press) { FocusRequester() }
             val pressLabel = stringResource(
                 if (binding.press == RemoteShortcutPress.SHORT) R.string.settings_remote_shortcuts_short_press
                 else R.string.settings_remote_shortcuts_long_press,
             )
-            val keycapColor = remoteButtonKeycapColor(binding.keyCode)
-            Row2(
+            val title = remoteButtonLabel(binding.keyCode) + separator + pressLabel
+            val value = SettingValue.Opens(null)
+            StageSettingRow(
                 icon = remoteButtonIcon(binding.keyCode, binding.action),
-                iconBadge = pressLabel.take(1).uppercase(),
-                accentIconBadge = binding.press == RemoteShortcutPress.LONG,
-                keycapColor = keycapColor,
-                keycapLabel = if (keycapColor != null) buttonLabel.take(1).uppercase() else null,
-                title = buttonLabel,
-                desc = stringResource(
-                    R.string.settings_remote_shortcuts_binding,
-                    pressLabel,
-                    remoteActionLabel(binding.action),
-                ),
-                chevron = true,
+                title = title,
+                desc = remoteActionLabel(binding.action),
+                value = value,
                 onClick = {
+                    dialogReturn = focus
                     pendingBinding = binding
                     editingExisting = true
                     dialog = ChNavDialog.ACTION
                 },
+                modifier = Modifier.focusRequester(focus),
+                help = SettingHelp(title, about, hints = pageHints),
             )
         }
-        Row2(
+        val addTitle = stringResource(R.string.settings_remote_shortcuts_add)
+        val addDesc = stringResource(R.string.settings_remote_shortcuts_add_description)
+        StageSettingRow(
             icon = OwnTVIcon.ADD,
-            title = stringResource(R.string.settings_remote_shortcuts_add),
-            desc = stringResource(R.string.settings_remote_shortcuts_add_description),
-            chevron = true,
+            title = addTitle,
+            desc = addDesc,
+            value = SettingValue.Opens(null),
             onClick = { editingExisting = false; dialog = ChNavDialog.CAPTURE },
+            help = SettingHelp(addTitle, addDesc, hints = settingHints(SettingValue.Opens(null), pinnable = false)),
         )
-        Row2(
+        val resetTitle = stringResource(R.string.settings_remote_shortcuts_reset)
+        val resetDesc = stringResource(R.string.settings_remote_shortcuts_reset_description)
+        StageSettingRow(
             icon = OwnTVIcon.REFRESH,
-            title = stringResource(R.string.settings_remote_shortcuts_reset),
-            desc = stringResource(R.string.settings_remote_shortcuts_reset_description),
-            chevron = true,
+            title = resetTitle,
+            desc = resetDesc,
+            value = null,
             onClick = { dialog = ChNavDialog.RESET },
+            help = SettingHelp(resetTitle, resetDesc, hints = settingHints(null, pinnable = false)),
         )
 
-        Spacer(Modifier.height(10.dp))
-        GroupLabel(stringResource(R.string.settings_skip_counts))
-        Row2(
-            OwnTVIcon.PAGE_TOWARD_FIRST,
-            stringResource(R.string.settings_ch_nav_up),
-            stringResource(R.string.settings_ch_nav_up_description),
-            localizedInteger(upSkip, grouping = false),
-            chevron = true,
+        StageSettingsHeading(stringResource(R.string.settings_skip_counts), 2)
+        val upTitle = stringResource(R.string.settings_ch_nav_up)
+        val upDesc = stringResource(R.string.settings_ch_nav_up_description)
+        val upValue = SettingValue.Opens(localizedInteger(upSkip, grouping = false))
+        StageSettingRow(
+            icon = OwnTVIcon.PAGE_TOWARD_FIRST,
+            title = upTitle,
+            desc = upDesc,
+            value = upValue,
             onClick = { dialogReturn = upSkipFocus; dialog = ChNavDialog.UP_SKIP },
             modifier = Modifier.focusRequester(upSkipFocus),
+            help = settingHelp(null, upTitle, upDesc, upValue, pinnable = false),
         )
-        Row2(
-            OwnTVIcon.PAGE_TOWARD_LAST,
-            stringResource(R.string.settings_ch_nav_down),
-            stringResource(R.string.settings_ch_nav_down_description),
-            localizedInteger(downSkip, grouping = false),
-            chevron = true,
+        val downTitle = stringResource(R.string.settings_ch_nav_down)
+        val downDesc = stringResource(R.string.settings_ch_nav_down_description)
+        val downValue = SettingValue.Opens(localizedInteger(downSkip, grouping = false))
+        StageSettingRow(
+            icon = OwnTVIcon.PAGE_TOWARD_LAST,
+            title = downTitle,
+            desc = downDesc,
+            value = downValue,
             onClick = { dialogReturn = downSkipFocus; dialog = ChNavDialog.DOWN_SKIP },
             modifier = Modifier.focusRequester(downSkipFocus),
-        )
-
-        Spacer(Modifier.height(12.dp))
-        GroupLabel(stringResource(R.string.settings_how_it_works))
-        Text(
-            stringResource(R.string.settings_remote_shortcuts_help),
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+            help = settingHelp(null, downTitle, downDesc, downValue, pinnable = false),
         )
     }
 
@@ -406,14 +400,6 @@ private fun remoteButtonIcon(keyCode: Int, fallbackAction: RemoteShortcutAction)
         -> OwnTVIcon.LIVE_DOT
         else -> remoteActionIcon(fallbackAction)
     }
-}
-
-private fun remoteButtonKeycapColor(keyCode: Int): Color? = when (keyCode) {
-    AndroidKeyEvent.KEYCODE_PROG_RED -> Color(0xFFE53935)
-    AndroidKeyEvent.KEYCODE_PROG_GREEN -> Color(0xFF43A047)
-    AndroidKeyEvent.KEYCODE_PROG_YELLOW -> Color(0xFFFDD835)
-    AndroidKeyEvent.KEYCODE_PROG_BLUE -> Color(0xFF1E88E5)
-    else -> null
 }
 
 @Composable

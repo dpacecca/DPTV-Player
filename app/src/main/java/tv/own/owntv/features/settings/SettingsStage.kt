@@ -215,6 +215,10 @@ fun StageSettingsPage(
     toolbar: (@Composable RowScope.() -> Unit)? = null,
     /** A list too long for one column (Customize): drawn in place of [rows], given the rows' position. */
     list: (@Composable (Modifier) -> Unit)? = null,
+    /** Off: the path starts at [parents] ("Add a source › Type it here", P10B-08 … 12), not at Settings. */
+    settingsRoot: Boolean = true,
+    /** Off where there is no Settings to search (the setup wizard reuses the Add a source pages). */
+    showSearch: Boolean = true,
     rows: @Composable ColumnScope.() -> Unit = {},
 ) {
     val searching = searchQuery.isNotBlank()
@@ -235,17 +239,18 @@ fun StageSettingsPage(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (crumb) {
-                        (listOf(stringResource(R.string.common_nav_settings)) + parents).forEach { p ->
-                            Text(p, style = stageText(42, 800, (-1f / 46f).em), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        // Two steps only (owner): the page it came from, then this one.
+                        ((if (settingsRoot) listOf(stringResource(R.string.common_nav_settings)) else emptyList()) + parents).takeLast(1).forEach { p ->
+                            Text(p, style = stageText(42, 800, (-1f / 46f).em), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                             OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Dim, Modifier.size(30.mpx))
                         }
                     }
-                    // The title shortens first; the tools and the search on the right never move.
-                    Text(group, style = stageText(42, 800, (-1f / 46f).em), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    // The path before the title shortens first (it is measured last); the tools and the search never move.
+                    Text(group, style = stageText(42, 800, (-1f / 46f).em), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(count, style = stageText(17, 700), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.mpx))
                 }
                 if (tools != null) Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically, content = tools)
-                StageSearchField(
+                if (showSearch) StageSearchField(
                     query = searchQuery,
                     onQueryChange = onSearchQuery,
                     placeholder = stringResource(R.string.more_settings_search),
@@ -306,7 +311,7 @@ fun SettingPanelHeading(text: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun SettingPanelBody(help: SettingHelp) {
-    SettingPanelHeading(help.title)
+    if (help.title.isNotEmpty()) SettingPanelHeading(help.title)
     Text(help.text, style = stageText(17, 500).copy(lineHeight = 27.mpxSpLine()), color = PanelText)
     help.extra?.invoke()
     if (help.choices.isNotEmpty()) {
@@ -316,14 +321,7 @@ private fun SettingPanelBody(help: SettingHelp) {
         help.choices.forEachIndexed { i, label ->
             val on = i == help.chosen
             Row(Modifier.height(44.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx), verticalAlignment = Alignment.CenterVertically) {
-                // `.radio`: a 2 px dim ring; the chosen one a 7 px accent ring.
-                Box(
-                    Modifier.size(22.mpx).drawBehind {
-                        val r = size.minDimension / 2f
-                        val ring = (if (on) 7 else 2) * 1.mpx.toPx()
-                        drawCircle(if (on) a.accent else StageColors.Dim, radius = r - ring / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(ring))
-                    },
-                )
+                StageRadio(on)
                 Text(label, style = stageText(18, 600), color = if (on) StageColors.Text else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (i == help.recommended) {
                     Box(Modifier.padding(start = 6.mpx)) { StageTag(stringResource(R.string.settings_panel_recommended).uppercase()) }
@@ -337,6 +335,28 @@ private fun SettingPanelBody(help: SettingHelp) {
 
 private val PanelText = Color(0xFFD3DCD8)
 
+/** A "label  value" line in the panel (OpenSubtitles' account details). */
+@Composable
+fun SettingPanelLine(label: String, value: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.mpx)) {
+        Text(label, style = stageText(16, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(value, style = stageText(16, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** `.radio`: a 22 px circle, a 2 px dim ring; the chosen one a 7 px accent ring. */
+@Composable
+fun StageRadio(on: Boolean) {
+    val a = stageAccent
+    Box(
+        Modifier.size(22.mpx).drawBehind {
+            val r = size.minDimension / 2f
+            val ring = (if (on) 7 else 2) * 1.mpx.toPx()
+            drawCircle(if (on) a.accent else StageColors.Dim, radius = r - ring / 2f, style = androidx.compose.ui.graphics.drawscope.Stroke(ring))
+        },
+    )
+}
+
 @Composable
 private fun Int.mpxSpLine() = with(androidx.compose.ui.platform.LocalDensity.current) { this@mpxSpLine.mpx.toSp() }
 
@@ -345,13 +365,14 @@ private fun Int.mpxSpLine() = with(androidx.compose.ui.platform.LocalDensity.cur
  * [first] = the page's first heading (2 px above instead of 18).
  */
 @Composable
-fun StageSettingsHeading(text: String, count: Int, first: Boolean = false) {
+fun StageSettingsHeading(text: String, count: Int?, first: Boolean = false) {
     Row(
         Modifier.padding(start = 22.mpx, top = if (first) 2.mpx else 18.mpx, bottom = 8.mpx),
         horizontalArrangement = Arrangement.spacedBy(10.mpx),
     ) {
         Text(text.uppercase(), style = stageText(13, 800, 0.13.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(count.toString(), style = stageText(13, 800, 0.13.em), color = HeadingCount, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // A heading over a single setting carries no count (P10B-01 NOW TRENDING).
+        if (count != null) Text(count.toString(), style = stageText(13, 800, 0.13.em), color = HeadingCount, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -601,6 +622,8 @@ fun StageFullPage(
     list: (@Composable (Modifier) -> Unit)? = null,
     /** Off when the page handles Back itself (Customize cancels a span first). */
     handleBack: Boolean = true,
+    /** Off for a page opened from another page: its path starts at that page (P10B-03, 06, 08 … 12). */
+    settingsRoot: Boolean = true,
     rows: @Composable ColumnScope.() -> Unit = {},
 ) {
     androidx.activity.compose.BackHandler(enabled = handleBack) { onBack() }
@@ -620,6 +643,9 @@ fun StageFullPage(
             onSearchActivate = { search?.invoke() },
             toolbar = toolbar,
             list = list,
+            settingsRoot = settingsRoot,
+            // A full page outside Settings (the setup wizard) has nowhere to hand its search to.
+            showSearch = search != null,
             rows = rows,
         )
     }
@@ -643,6 +669,10 @@ fun StageFieldRow(
     password: Boolean = false,
     keyboardType: androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
     onDone: () -> Unit = {},
+    /** Where Back goes, for the key hint ("Add a source" on a form, P10B-10). */
+    backLabel: String? = null,
+    /** "▶ Start Import" on a form whose button sits in the panel; a password row's ▶ shows the text instead. */
+    submitHint: Pair<String, String>? = null,
 ) {
     val a = stageAccent
     val panel = LocalSettingsPanel.current
@@ -692,8 +722,8 @@ fun StageFieldRow(
     ) { focused ->
         val hints = listOfNotNull(
             stringResource(R.string.common_ok) to stringResource(R.string.common_edit),
-            if (password) "▶" to stringResource(if (shown) R.string.common_hide else R.string.common_show) else null,
-            stringResource(R.string.common_back) to stringResource(R.string.common_nav_settings),
+            if (password) "▶" to stringResource(if (shown) R.string.common_hide else R.string.common_show) else submitHint,
+            stringResource(R.string.common_back) to (backLabel ?: stringResource(R.string.common_nav_settings)),
         )
         if ((focused || editing) && panel != null) androidx.compose.runtime.SideEffect { panel.help = help.copy(hints = hints) }
         val lit = focused || editing
@@ -801,3 +831,7 @@ fun SpanHelpBlock() {
     Text(stringResource(R.string.settings_span_help), style = stageText(15, 500), color = StageColors.Muted)
     Text(stringResource(R.string.settings_span_ch_help), style = stageText(15, 500), color = StageColors.Muted, modifier = Modifier.padding(top = 6.mpx))
 }
+
+/** " · " between two parts of a line (the eyebrow format with both parts empty, so it is localised). */
+@Composable
+fun dotSeparator(): String = stringResource(R.string.settings_breadcrumb_eyebrow, "", "")

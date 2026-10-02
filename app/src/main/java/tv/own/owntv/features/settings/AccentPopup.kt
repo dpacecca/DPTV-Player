@@ -87,29 +87,77 @@ fun AccentPopup(
     // What to put back on Cancel.
     val startPreset = remember { accent }
     val startCustom = remember { customAccent }
-    val seed = remember {
-        FloatArray(3).also { out ->
-            val c = parseAccentHex(customAccent) ?: accent.primary(true)
-            android.graphics.Color.colorToHSV(c.toArgb(), out)
+    StageColorPopup(
+        eyebrow = stringResource(R.string.settings_group_appearance),
+        title = stringResource(R.string.settings_accent),
+        presets = AccentColor.entries.map { ac ->
+            ColorChoice(ac.primary(true), stringResource(ac.labelRes)) { onPickCustom(""); onPickPreset(ac) }
+        },
+        start = parseAccentHex(customAccent) ?: accent.primary(true),
+        current = stageAccent.accent,
+        onLive = onPickCustom,
+        onCancel = { if (startCustom.isBlank()) { onPickCustom(""); onPickPreset(startPreset) } else onPickCustom(startCustom) },
+        onDone = { hex -> if (hex != null) onPickCustom(hex) },
+        onDismiss = onDismiss,
+    ) {
+        // What the accent tints, drawn rather than focusable: the primary button, a progress bar, a tag.
+        Row(horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
+            val a = stageAccent
+            Row(
+                Modifier
+                    .height(54.mpx)
+                    .drawBehind { drawOuterRing(a.focus, 3.mpx.toPx(), 22.mpx.toPx()) }
+                    .background(a.accent, RoundedCornerShape(22.mpx))
+                    .padding(horizontal = 26.mpx),
+                horizontalArrangement = Arrangement.spacedBy(10.mpx),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OwnTVIcon(OwnTVIcon.PLAY, a.onAccent, Modifier.size(19.mpx), filled = true)
+                Text(stringResource(R.string.home_trending_play), style = stageText(19, 700), color = a.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            StageProgress(0.6f, Modifier.width(190.mpx))
+            StageTag(stringResource(R.string.player_live), tint = a.accent)
         }
     }
+}
+
+/** One preset swatch of [StageColorPopup]: its colour, its name and what picking it stores. */
+class ColorChoice(val color: Color, val label: String, val pick: () -> Unit)
+
+/**
+ * The Stage colour picker (P9-05), shared by Accent color and the clock colours (P10B): presets, the
+ * colour in use ("Yours"), a hex code and the HSV field, with [preview] under them. [onLive] receives the
+ * picked hex a beat after the picker moves; Cancel / Back call [onCancel]; "Use this color" calls
+ * [onDone] with the picked hex, or null when a preset was the last choice (already stored).
+ */
+@Composable
+fun StageColorPopup(
+    eyebrow: String,
+    title: String,
+    presets: List<ColorChoice>,
+    start: Color,
+    current: Color,
+    onLive: (String) -> Unit,
+    onCancel: () -> Unit,
+    onDone: (String?) -> Unit,
+    onDismiss: () -> Unit,
+    preview: @Composable () -> Unit,
+) {
+    val seed = remember { FloatArray(3).also { android.graphics.Color.colorToHSV(start.toArgb(), it) } }
     var hue by remember { mutableFloatStateOf(seed[0]) }
     var sat by remember { mutableFloatStateOf(seed[1]) }
     var value by remember { mutableFloatStateOf(seed[2]) }
     var moved by remember { mutableStateOf(false) }
     val picked = hsvToHex(hue, sat, value)
     var hexInput by remember { mutableStateOf(picked.removePrefix("#")) }
-    // The picker re-tints the app as it moves, a beat behind so a held key does not write every step.
+    // The picker applies as it moves, a beat behind so a held key does not write every step.
     LaunchedEffect(hue, sat, value) {
         if (!moved) return@LaunchedEffect
         kotlinx.coroutines.delay(120)
-        onPickCustom(picked)
+        onLive(picked)
         hexInput = picked.removePrefix("#")
     }
-    val cancel = {
-        if (startCustom.isBlank()) { onPickCustom(""); onPickPreset(startPreset) } else onPickCustom(startCustom)
-        onDismiss()
-    }
+    val cancel = { onCancel(); onDismiss() }
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
 
@@ -129,20 +177,32 @@ fun AccentPopup(
                 horizontalArrangement = Arrangement.spacedBy(34.mpx),
             ) {
                 Column(Modifier.width(520.mpx)) {
-                    Text(stringResource(R.string.settings_group_appearance).uppercase(), style = stageText(15, 800, 0.12.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(stringResource(R.string.settings_accent), style = stageText(38, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.mpx, bottom = 22.mpx))
+                    Text(eyebrow.uppercase(), style = stageText(15, 800, 0.12.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(title, style = stageText(38, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.mpx, bottom = 22.mpx))
                     SectionLabel(stringResource(R.string.settings_presets))
-                    Row(Modifier.padding(bottom = 26.mpx), horizontalArrangement = Arrangement.spacedBy(16.mpx)) {
-                        AccentColor.entries.forEachIndexed { i, ac ->
+                    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                    androidx.compose.foundation.layout.FlowRow(
+                        Modifier.padding(bottom = 26.mpx),
+                        horizontalArrangement = Arrangement.spacedBy(16.mpx),
+                        verticalArrangement = Arrangement.spacedBy(14.mpx),
+                    ) {
+                        presets.forEachIndexed { i, choice ->
                             Swatch(
-                                color = ac.primary(true),
-                                label = stringResource(ac.labelRes),
+                                color = choice.color,
+                                label = choice.label,
                                 chosen = false,
-                                onClick = { moved = false; onPickCustom(""); onPickPreset(ac); val hsv = FloatArray(3); android.graphics.Color.colorToHSV(ac.primary(true).toArgb(), hsv); hue = hsv[0]; sat = hsv[1]; value = hsv[2]; hexInput = hsvToHex(hue, sat, value).removePrefix("#") },
+                                onClick = {
+                                    moved = false
+                                    choice.pick()
+                                    val hsv = FloatArray(3)
+                                    android.graphics.Color.colorToHSV(choice.color.toArgb(), hsv)
+                                    hue = hsv[0]; sat = hsv[1]; value = hsv[2]
+                                    hexInput = hsvToHex(hue, sat, value).removePrefix("#")
+                                },
                                 modifier = if (i == 0) Modifier.focusRequester(firstFocus) else Modifier,
                             )
                         }
-                        Swatch(stageAccent.accent, stringResource(R.string.settings_accent_yours), chosen = true, onClick = {})
+                        Swatch(current, stringResource(R.string.settings_accent_yours), chosen = true, onClick = {})
                     }
                     SectionLabel(stringResource(R.string.settings_hex_code))
                     OwnTVTextField(
@@ -162,24 +222,7 @@ fun AccentPopup(
                         modifier = Modifier.width(300.mpx),
                     )
                     SectionLabel(stringResource(R.string.settings_panel_width_preview), Modifier.padding(top = 26.mpx))
-                    // What the accent tints, drawn rather than focusable: the primary button, a progress bar, a tag.
-                    Row(horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
-                        val a = stageAccent
-                        Row(
-                            Modifier
-                                .height(54.mpx)
-                                .drawBehind { drawOuterRing(a.focus, 3.mpx.toPx(), 22.mpx.toPx()) }
-                                .background(a.accent, RoundedCornerShape(22.mpx))
-                                .padding(horizontal = 26.mpx),
-                            horizontalArrangement = Arrangement.spacedBy(10.mpx),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            OwnTVIcon(OwnTVIcon.PLAY, a.onAccent, Modifier.size(19.mpx), filled = true)
-                            Text(stringResource(R.string.home_trending_play), style = stageText(19, 700), color = a.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                        StageProgress(0.6f, Modifier.width(190.mpx))
-                        StageTag(stringResource(R.string.player_live), tint = a.accent)
-                    }
+                    preview()
                 }
                 Column(Modifier.weight(1f)) {
                     ColorField(
@@ -198,7 +241,7 @@ fun AccentPopup(
                         StageButton(stringResource(R.string.common_cancel), onClick = cancel, height = 56.mpx, textSize = 19)
                         StageButton(
                             stringResource(R.string.settings_use_color),
-                            onClick = { if (moved) onPickCustom(picked); onDismiss() },
+                            onClick = { onDone(if (moved) picked else null); onDismiss() },
                             height = 56.mpx, textSize = 19, tinted = true,
                         )
                     }

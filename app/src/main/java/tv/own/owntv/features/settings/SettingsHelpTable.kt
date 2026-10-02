@@ -106,6 +106,7 @@ internal val SETTING_LINE: Map<String, Int> = mapOf(
 /** A row's name where the page words it differently from the app's older screens. */
 internal val SETTING_TITLE: Map<String, Int> = mapOf(
     "fonts" to R.string.settings_title_fonts,
+    "tab_WEATHER" to R.string.settings_title_date_time_weather,
     "vp_reset_live_pins" to R.string.settings_title_saved_live_choices,
     "vp_reset_pins" to R.string.settings_title_saved_choices,
     "vp_forget_fixes" to R.string.settings_title_learned_fixes,

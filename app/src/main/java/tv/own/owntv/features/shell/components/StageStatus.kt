@@ -34,7 +34,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
 import tv.own.owntv.R
+import tv.own.owntv.core.settings.ClockColors
 import tv.own.owntv.core.weather.WeatherInfo
+import androidx.compose.runtime.staticCompositionLocalOf
+import tv.own.owntv.ui.theme.parseAccentHex
+import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.stage.StagePill
 import tv.own.owntv.ui.theme.StageColors
@@ -65,6 +69,7 @@ fun StageStatusCluster(
     pillsFocusable: Boolean,
     weatherInfo: WeatherInfo?,
     weatherFahrenheit: Boolean,
+    clockColors: ClockColors,
     modifier: Modifier = Modifier,
     playlistDownFocusRequester: FocusRequester? = null,
     onPlaylistPillBounds: (Rect) -> Unit = {},
@@ -102,13 +107,30 @@ fun StageStatusCluster(
                     },
             )
         }
-        StageClock(weatherInfo, weatherFahrenheit)
+        StageClock(weatherInfo, weatherFahrenheit, clockColors)
     }
 }
 
-/** `.status .clk` 40/700 tabular, and "Tue 29 Sep · ☀ 26° Düsseldorf" 17 px muted under it, right-aligned. */
+/** The shell's weather and °F choice, for the clock preview on Settings › Date, time & weather. */
+val LocalClockWeather = staticCompositionLocalOf<Pair<WeatherInfo?, Boolean>> { null to false }
+
+/** A stored clock colour: blank = [default], "accent" = the accent, else the hex code. */
 @Composable
-private fun StageClock(weatherInfo: WeatherInfo?, fahrenheit: Boolean) {
+fun clockColor(stored: String, default: Color): Color = when (stored) {
+    "" -> default
+    ClockColors.ACCENT -> stageAccent.accent
+    else -> parseAccentHex(stored) ?: default
+}
+
+/**
+ * `.status .clk` 40/700 tabular, and "Tue 29 Sep · ☀ 26° Düsseldorf" 17 px under it, right-aligned. Each
+ * part takes its colour from [colors] (Settings › Appearance › Date, time & weather).
+ */
+@Composable
+fun StageClock(weatherInfo: WeatherInfo?, fahrenheit: Boolean, colors: ClockColors) {
+    val timeColor = clockColor(colors.time, StageColors.Text)
+    val dateColor = clockColor(colors.date, StageColors.Muted)
+    val weatherColor = clockColor(colors.weather, StageColors.Muted)
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -145,7 +167,7 @@ private fun StageClock(weatherInfo: WeatherInfo?, fahrenheit: Boolean) {
         Text(
             time,
             style = stageText(40, 700, (-0.5).mpxSp).copy(fontFeatureSettings = "tnum", shadow = shadow, lineHeight = 40.mpxSp),
-            color = StageColors.Text,
+            color = timeColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -155,7 +177,7 @@ private fun StageClock(weatherInfo: WeatherInfo?, fahrenheit: Boolean) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val sub: TextStyle = stageText(17, 400).copy(shadow = shadow)
-            Text(date, style = sub, color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(date, style = sub, color = dateColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (weatherInfo != null) {
                 Text("·", style = sub, color = StageColors.Muted.copy(alpha = 0.5f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 WeatherConditionIcon(weatherInfo, Modifier.size(17.mpx))
@@ -167,7 +189,7 @@ private fun StageClock(weatherInfo: WeatherInfo?, fahrenheit: Boolean) {
                         stringResource(R.string.common_weather_degrees_city, degrees, "").trim()
                     },
                     style = sub,
-                    color = StageColors.Muted,
+                    color = weatherColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

@@ -169,6 +169,7 @@ fun CustomizeItemsScreen(
     }
     StageFullPage(
         parents = listOf(stringResource(R.string.settings_customize_title)),
+        settingsRoot = false,
         title = selectedCategory!!.displayName,
         count = "",
         onBack = onBack,
@@ -477,7 +478,7 @@ private fun ItemRow(
         ),
         modifier = Modifier
             .focusRequester(focusRequester)
-            .then(if (upFocusRequester != null) Modifier.focusProperties { up = upFocusRequester } else Modifier)
+            .then(if (upFocusRequester != null) Modifier.upTo(upFocusRequester) else Modifier)
             .focusProperties { right = actionsFocus }
             .onFocusChanged { if (it.isFocused) onRowFocused() },
     )

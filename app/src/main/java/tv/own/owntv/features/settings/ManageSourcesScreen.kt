@@ -157,8 +157,6 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         }
     }
 
-    // The add / edit forms are not redrawn yet (P10B step 4): they keep the old inset under the top bar.
-    val oldInset = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 6.dp, top = tv.own.owntv.features.shell.components.StageContentTop)
     Box(modifier = modifier.fillMaxSize()) {
         if (editingSource != null) {
             val src = editingSource!!
@@ -189,7 +187,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     editingSource = null
                 },
                 onBack = { editingSource = null },
-                modifier = oldInset,
+                modifier = Modifier,
             )
         } else if (showAdd) {
             when (val s = importState) {
@@ -198,7 +196,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         onRemote = { addMode = AddMode.REMOTE },
                         onManual = { addMode = AddMode.MANUAL },
                         onBack = { showAdd = false },
-                        modifier = oldInset,
+                        modifier = Modifier,
                     )
                     AddMode.REMOTE -> RemoteSetupScreen(
                         state = vm.remoteState.collectAsStateWithLifecycle().value,
@@ -208,7 +206,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         // A remote submission hands off to the pre-filled Manual form.
                         onPayloadReceived = { addMode = AddMode.MANUAL },
                         onBack = { vm.stopRemoteListener(); addMode = null },
-                        modifier = oldInset,
+                        modifier = Modifier,
                     )
                     AddMode.MANUAL -> AddSourceScreen(
                         onStartXtream = { n, server, u, p, ua, ref, epg, autoRefresh, live, movies, series, isDefault, preferHls ->
@@ -227,7 +225,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         // A newly-added playlist can be made default only when others already exist.
                         showDefaultToggle = sources.isNotEmpty(),
                         onBack = { addMode = null },
-                        modifier = oldInset,
+                        modifier = Modifier,
                         initial = vm.lastFailedSource, // pre-fill on retry — no re-typing after a typo
                     )
                 }

@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,8 +54,6 @@ import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
-import tv.own.owntv.ui.components.OwnTVTextField
-import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
@@ -138,10 +135,8 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
                 adding = false; editing = null
             },
             onCancel = { adding = false; editing = null },
-            // The form is not redrawn yet (P10B step 4): it keeps the old inset under the top bar.
-            modifier = modifier.padding(start = 6.dp, end = 6.dp, bottom = 6.dp, top = tv.own.owntv.features.shell.components.StageContentTop),
+            modifier = modifier,
         )
-        BackHandler { adding = false; editing = null }
         return
     }
 
@@ -350,7 +345,6 @@ internal fun EpgSourceForm(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = OwnTVTheme.colors
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var url by remember { mutableStateOf(initial?.url ?: "") }
     var ua by remember { mutableStateOf(initial?.userAgent ?: "") }
@@ -361,46 +355,95 @@ internal fun EpgSourceForm(
     var showManualDays by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
-    BackHandler { onCancel() }
-
-    // Both pickers here open from controls further down the form, so closing one used to drop focus
-    // back on the Name field at the top and scroll the form with it.
+    // Both pickers open from rows further down the form; closing one returns focus to its row.
     val scrollState = rememberScrollState()
     val dialogFocus = rememberDialogFocusRestore(showPlaylistPicker || showAutoRefreshPicker, scrollState)
     val autoRefreshRowFocus = remember { FocusRequester() }
+    val fillFocus = remember { FocusRequester() }
+    val submitFocus = remember { FocusRequester() }
 
-    Column(
-        modifier = modifier.fillMaxSize().roundedPanel()
-            .verticalScroll(scrollState) // scroll so lower fields/buttons stay reachable on small screens / large zoom
-            .padding(horizontal = 40.dp, vertical = 28.dp),
+    // P10B-12: the fields as rows, Add & sync in the panel (▶ from any row).
+    val parent = stringResource(R.string.settings_epg_sources_title)
+    val ok = stringResource(R.string.common_ok)
+    val back = stringResource(R.string.common_back)
+    val fieldHelp = stringResource(R.string.settings_form_field_help)
+    val submitLabel = stringResource(if (initial == null) R.string.settings_epg_sources_add_sync else R.string.settings_epg_sources_save_sync)
+    val submitButton: @Composable () -> Unit = {
+        if (url.isNotBlank()) {
+            StageActionColumn(listOf(StageAction(OwnTVIcon.DOWNLOADS, submitLabel, { onSave(name, url, ua, autoRefresh, useLogos) })), back = null, first = submitFocus)
+        }
+    }
+    val toSubmit = Modifier.focusProperties { right = submitFocus }
+    // ▶ reaches the panel's button from any row; said in the keys while the button is there.
+    val submitHint = if (url.isNotBlank()) "▶" to submitLabel else null
+    fun keys(vararg k: Pair<String, String>) = listOfNotNull(*k.dropLast(1).toTypedArray(), submitHint, k.last())
+    StageFullPage(
+        parents = listOf(parent),
+        title = stringResource(if (initial == null) R.string.content_epg_add else R.string.settings_epg_sources_edit),
+        count = "",
+        onBack = onCancel,
+        modifier = modifier,
+        scroll = scrollState,
+        rowsFocus = firstFocus,
+        settingsRoot = false,
     ) {
-        Text(stringResource(if (initial == null) R.string.settings_epg_sources_add else R.string.settings_epg_sources_edit), style = MaterialTheme.typography.headlineLarge, color = colors.onSurface)
-        Spacer(Modifier.height(20.dp))
-        OwnTVTextField(name, { name = it }, label = stringResource(R.string.settings_epg_sources_name), placeholder = stringResource(R.string.settings_epg_sources_name_hint), modifier = Modifier.fillMaxWidth().widthIn(max = 680.dp).focusRequester(firstFocus))
-        Spacer(Modifier.height(14.dp))
-        val fillButtonFocus = remember { FocusRequester() }
-        OwnTVTextField(url, { url = it }, label = stringResource(R.string.settings_epg_sources_url), placeholder = stringResource(R.string.settings_epg_sources_url_hint), modifier = Modifier.fillMaxWidth().widthIn(max = 680.dp).focusProperties { down = fillButtonFocus })
-        Spacer(Modifier.height(8.dp))
-        OwnTVButton(stringResource(R.string.settings_epg_sources_fill_playlist), onClick = { dialogFocus.value = fillButtonFocus; showPlaylistPicker = true }, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.PLAYLIST, modifier = Modifier.focusRequester(fillButtonFocus))
-        Spacer(Modifier.height(14.dp))
-        OwnTVTextField(ua, { ua = it }, label = stringResource(R.string.settings_epg_sources_user_agent), placeholder = stringResource(R.string.settings_epg_sources_user_agent_hint), modifier = Modifier.fillMaxWidth().widthIn(max = 680.dp))
-
-        Spacer(Modifier.height(14.dp))
-        // Auto-refresh dropdown — same Off/Startup/staleness-threshold semantics as playlist sources.
-        EpgAutoRefreshRow(selected = autoRefresh, modifier = Modifier.focusRequester(autoRefreshRowFocus)) {
-            dialogFocus.value = autoRefreshRowFocus
-            showAutoRefreshPicker = true
-        }
-
-        Spacer(Modifier.height(10.dp))
+        val nameLabel = stringResource(R.string.settings_epg_sources_name)
+        StageFieldRow(
+            OwnTVIcon.PENCIL, nameLabel, name, { name = it },
+            SettingHelp(nameLabel, stringResource(R.string.settings_help_epg_name) + " " + fieldHelp, extra = submitButton),
+            placeholder = stringResource(R.string.settings_epg_sources_name_hint), backLabel = parent, submitHint = submitHint, modifier = toSubmit,
+        )
+        val urlLabel = stringResource(R.string.settings_epg_sources_url)
+        StageFieldRow(
+            OwnTVIcon.PENCIL, urlLabel, url, { url = it },
+            SettingHelp(urlLabel, fieldHelp, extra = submitButton),
+            placeholder = stringResource(R.string.settings_epg_sources_url_hint), keyboardType = androidx.compose.ui.text.input.KeyboardType.Uri,
+            backLabel = parent, submitHint = submitHint, modifier = toSubmit,
+        )
+        val fillTitle = stringResource(R.string.settings_epg_sources_fill_playlist)
+        val fillLine = stringResource(R.string.settings_line_fill_from_playlist)
+        StageSettingRow(
+            icon = OwnTVIcon.LIST,
+            title = fillTitle,
+            desc = fillLine,
+            value = SettingValue.Opens(null),
+            onClick = { dialogFocus.value = fillFocus; showPlaylistPicker = true },
+            modifier = Modifier.focusRequester(fillFocus).then(toSubmit),
+            help = SettingHelp(fillTitle, fillLine, hints = keys(ok to stringResource(R.string.settings_key_open), back to parent), extra = submitButton),
+        )
+        val uaLabel = stringResource(R.string.settings_epg_sources_user_agent)
+        StageFieldRow(
+            OwnTVIcon.PENCIL, uaLabel, ua, { ua = it },
+            SettingHelp(uaLabel, fieldHelp, extra = submitButton),
+            placeholder = stringResource(R.string.settings_epg_sources_user_agent_hint), backLabel = parent, submitHint = submitHint, modifier = toSubmit,
+        )
+        val refreshTitle = stringResource(R.string.settings_epg_sources_auto_refresh_title)
+        StageSettingRow(
+            icon = OwnTVIcon.REFRESH,
+            title = refreshTitle,
+            desc = stringResource(R.string.settings_line_epg_auto_refresh),
+            value = SettingValue.Choice(epgRefreshLabel(autoRefresh)),
+            onClick = { dialogFocus.value = autoRefreshRowFocus; showAutoRefreshPicker = true },
+            modifier = Modifier.focusRequester(autoRefreshRowFocus).then(toSubmit),
+            help = SettingHelp(
+                refreshTitle, stringResource(R.string.settings_epg_sources_auto_refresh_description),
+                hints = keys(ok to stringResource(R.string.settings_key_change), back to parent), extra = submitButton,
+            ),
+        )
         // Per-feed logo override: this guide's <icon src> replaces the playlist's channel logos.
-        EpgUseLogosRow(enabled = useLogos) { useLogos = !useLogos }
-
-        Spacer(Modifier.height(24.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OwnTVButton(stringResource(R.string.common_cancel), onClick = onCancel, style = OwnTVButtonStyle.SECONDARY)
-            OwnTVButton(stringResource(if (initial == null) R.string.settings_epg_sources_add_sync else R.string.settings_epg_sources_save_sync), onClick = { onSave(name, url, ua, autoRefresh, useLogos) }, enabled = url.isNotBlank())
-        }
+        val logosTitle = stringResource(R.string.settings_epg_sources_use_logos)
+        StageSettingRow(
+            icon = OwnTVIcon.LIVE_TV,
+            title = logosTitle,
+            desc = stringResource(R.string.settings_line_epg_logos),
+            value = SettingValue.Switch(useLogos),
+            onClick = { useLogos = !useLogos },
+            modifier = toSubmit,
+            help = SettingHelp(
+                logosTitle, stringResource(R.string.settings_epg_sources_logos_description),
+                hints = keys(ok to stringResource(R.string.settings_key_switch), back to parent), extra = submitButton,
+            ),
+        )
     }
 
     if (showPlaylistPicker) {
@@ -445,60 +488,6 @@ internal fun EpgSourceForm(
             onConfirm = { autoRefresh = EpgRefresh(EpgAutoRefresh.MANUAL, it); showManualDays = false },
             onDismiss = { showManualDays = false },
         )
-    }
-}
-
-/** Per-EPG-source toggle: use this feed's own channel logos instead of the playlist's. */
-@Composable
-private fun EpgUseLogosRow(enabled: Boolean, onClick: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    FocusableSurface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().widthIn(max = 680.dp),
-        shape = RoundedCornerShape(14.dp),
-        surface = GlassSurface.CARDS,
-        contentAlignment = Alignment.CenterStart,
-    ) { _ ->
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.settings_epg_sources_use_logos), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                Text(
-                    stringResource(R.string.settings_epg_sources_logos_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                )
-            }
-            Text(stringResource(if (enabled) R.string.settings_epg_sources_on else R.string.settings_epg_sources_off), style = MaterialTheme.typography.titleMedium, color = if (enabled) colors.primary else colors.onSurfaceVariant)
-        }
-    }
-}
-
-/** A focusable settings row showing the current EPG auto-refresh selection; opens a picker on click. */
-@Composable
-private fun EpgAutoRefreshRow(selected: EpgRefresh, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    FocusableSurface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth().widthIn(max = 680.dp),
-        shape = RoundedCornerShape(14.dp),
-        surface = GlassSurface.CARDS,
-        contentAlignment = Alignment.CenterStart,
-    ) { _ ->
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.settings_epg_sources_auto_refresh_title), style = MaterialTheme.typography.titleMedium, color = colors.onSurface)
-                Text(
-                    stringResource(R.string.settings_epg_sources_auto_refresh_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                )
-            }
-            Text(
-                epgRefreshLabel(selected),
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.primary,
-            )
-        }
     }
 }
 

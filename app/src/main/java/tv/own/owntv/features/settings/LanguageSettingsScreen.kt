@@ -1,10 +1,5 @@
 package tv.own.owntv.features.settings
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -26,10 +21,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,16 +32,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -62,20 +52,24 @@ import tv.own.owntv.core.companion.CompanionLink
 import tv.own.owntv.core.i18n.SupportedLocale
 import tv.own.owntv.core.i18n.SupportedLocales
 import tv.own.owntv.ui.components.FocusableSurface
-import tv.own.owntv.ui.components.OwnTVButton
-import tv.own.owntv.ui.components.OwnTVButtonStyle
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVPopup
-import tv.own.owntv.ui.components.SearchBar
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
-import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
+import tv.own.owntv.ui.theme.StageColors
+import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.theme.stageText
+import tv.own.owntv.ui.stage.StageTag
+import androidx.compose.ui.res.pluralStringResource
 
-/** Compact first-launch dropdown. The list itself uses [OwnTVPopup], so it follows the same popup
- * scale, typography, centering, focus isolation, and keyboard-safe geometry as the rest of OwnTV. */
+/**
+ * Setup's Language row (P10B-W1): the current language with ▾, OK opens the list. The list itself uses
+ * [OwnTVPopup], so it follows the same popup scale, centering, focus isolation and keyboard-safe geometry
+ * as the rest of OwnTV.
+ */
 @Composable
 fun FirstRunLanguageSelector(modifier: Modifier = Modifier) {
     val viewModel: LanguageSettingsViewModel = koinViewModel()
@@ -83,74 +77,23 @@ fun FirstRunLanguageSelector(modifier: Modifier = Modifier) {
     val selectedLocale = remember(currentTag, viewModel.pickerRows) {
         viewModel.pickerRows.firstOrNull { it.languageTag == currentTag }
     }
-    val triggerFocus = remember { FocusRequester() }
     var showPicker by remember { mutableStateOf(false) }
-    var restoreFocus by remember { mutableStateOf(false) }
-    val colors = OwnTVTheme.colors
-
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(80)
-        runCatching { triggerFocus.requestFocus() }
-    }
+    var wasOpen by remember { mutableStateOf(false) }
+    val rowFocus = remember { FocusRequester() }
+    // Back on the row when the list closes, not wherever the window's focus search lands.
     LaunchedEffect(showPicker) {
-        if (!showPicker && restoreFocus) {
-            kotlinx.coroutines.delay(80)
-            runCatching { triggerFocus.requestFocus() }
-            restoreFocus = false
-        }
+        if (showPicker) wasOpen = true
+        else if (wasOpen) { wasOpen = false; kotlinx.coroutines.delay(80); runCatching { rowFocus.requestFocus() } }
     }
-
-    FocusableSurface(
-        onClick = {
-            restoreFocus = true
-            showPicker = true
-        },
-        modifier = modifier
-            .width(284.dp)
-            .height(61.dp)
-            .focusRequester(triggerFocus),
-        shape = RoundedCornerShape(20.dp),
-        focusedContainerColor = colors.primaryContainer,
-        unfocusedContainerColor = colors.surfaceContainerHigh,
-        focusedScale = 1.03f,
-        glowElevation = 14,
-        surface = GlassSurface.CARDS,
-        glassIdleRimAlpha = 0.12f,
-        contentAlignment = Alignment.CenterStart,
-    ) { focused ->
-        val foreground = if (focused) colors.onPrimaryContainer else colors.onSurface
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 17.dp, vertical = 11.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(13.dp),
-        ) {
-            OwnTVIcon(
-                icon = OwnTVIcon.LANGUAGE,
-                tint = if (focused) foreground else colors.primary,
-                modifier = Modifier.size(28.dp),
-            )
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = selectedLocale?.endonym ?: stringResource(R.string.settings_language_system_default),
-                    style = MaterialTheme.typography.labelLarge.copy(fontFamily = FontFamily.SansSerif),
-                    color = foreground,
-                )
-                Text(
-                    text = selectedLocale?.englishName ?: stringResource(R.string.settings_language_system_default_description),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = foreground.copy(alpha = 0.78f),
-                )
-            }
-            OwnTVIcon(
-                icon = OwnTVIcon.CHEVRON,
-                tint = foreground.copy(alpha = 0.8f),
-                modifier = Modifier.size(18.dp).rotate(90f),
-            )
-        }
-    }
-
+    val rows = viewModel.pickerRows.size
+    StageSettingRow(
+        icon = OwnTVIcon.LANGUAGE,
+        title = stringResource(R.string.settings_language),
+        desc = pluralStringResource(R.plurals.more_about_languages, rows, rows),
+        value = SettingValue.Choice(selectedLocale?.endonym ?: stringResource(R.string.settings_language_system_default)),
+        onClick = { showPicker = true },
+        modifier = modifier.focusRequester(rowFocus),
+    )
     if (showPicker) {
         FirstRunLanguagePopup(
             viewModel = viewModel,
@@ -242,267 +185,132 @@ private fun FirstRunLanguagePopup(
 }
 
 /**
- * In-app language picker. System default is pinned first; remaining rows are A–Z by English name.
- * Same-script switches recompose instantly via [tv.own.owntv.core.i18n.LocalizedContent];
- * cross-script switches trigger one [android.app.Activity.recreate].
+ * Settings › App › Language (P10B-21): System default, then every language A–Z by English name, each
+ * with a radio; OK uses it. Same-script switches recompose instantly via
+ * [tv.own.owntv.core.i18n.LocalizedContent]; cross-script switches trigger one
+ * [android.app.Activity.recreate]. The panel explains the focused choice and carries the translation
+ * project's QR code, link and language-request note.
  */
 @Composable
 fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val viewModel: LanguageSettingsViewModel = koinViewModel()
     val currentTag by viewModel.currentTag.collectAsStateWithLifecycle()
-    var query by remember { mutableStateOf("") }
-    var showContribution by remember { mutableStateOf(false) }
-
-    val systemLabel = stringResource(R.string.settings_language_system_default)
-    val systemDesc = stringResource(R.string.settings_language_system_default_description)
-    val filtered = remember(query, viewModel.pickerRows) {
-        val q = query.trim()
-        if (q.isEmpty()) {
-            viewModel.pickerRows
-        } else {
-            viewModel.pickerRows.filter { locale ->
-                locale.endonym.contains(q, ignoreCase = true) ||
-                    locale.englishName.contains(q, ignoreCase = true) ||
-                    locale.languageTag.contains(q, ignoreCase = true)
-            }
-        }
-    }
-    val showSystemDefault = remember(query, systemLabel, systemDesc) {
-        val q = query.trim()
-        q.isEmpty() ||
-            systemLabel.contains(q, ignoreCase = true) ||
-            systemDesc.contains(q, ignoreCase = true)
-    }
+    val rows = viewModel.pickerRows
 
     val selectedFocus = remember { FocusRequester() }
-    val searchFocus = remember { FocusRequester() }
-    // Land on the currently selected row once when the screen opens; fall back to search if the
-    // row was filtered out. requestFocus() reports failure via Boolean, not exceptions.
-    fun requestPreferredFocus() {
-        if (!selectedFocus.requestFocus()) {
-            searchFocus.requestFocus()
-        }
-    }
-    // Changing locale replaces the localized Compose subtree, and a cross-script change also
-    // recreates the Activity. Wait for the newly selected row to own selectedFocus, then restore
-    // focus there instead of allowing Compose's fallback search to land on the main sidebar.
+    val rowsFocus = remember { FocusRequester() }
+    // Changing locale replaces the localized Compose subtree, and a cross-script change also recreates
+    // the Activity. Wait for the newly selected row to own selectedFocus, then restore focus there
+    // instead of letting Compose's fallback search land on the rail.
     LaunchedEffect(currentTag) {
         kotlinx.coroutines.delay(80)
-        requestPreferredFocus()
+        if (!selectedFocus.requestFocus()) rowsFocus.requestFocus()
     }
-    BackHandler { onBack() }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .roundedPanel()
-            .focusProperties {
-                onEnter = { requestPreferredFocus() }
-            }
-            .focusGroup()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 40.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+    val systemName = remember {
+        val system = android.content.res.Resources.getSystem().configuration.locales[0]
+        system.getDisplayName(system).replaceFirstChar { it.titlecase(system) }
+    }
+    val hints = listOf(
+        stringResource(R.string.common_ok) to stringResource(R.string.settings_key_use),
+        stringResource(R.string.common_back) to stringResource(R.string.settings_group_app),
+    )
+    val translate: @Composable () -> Unit = { TranslateBlock() }
+    StageFullPage(
+        parents = listOf(stringResource(R.string.settings_group_app)),
+        title = stringResource(R.string.settings_language),
+        count = pluralStringResource(R.plurals.more_about_languages, rows.size, rows.size),
+        onBack = onBack,
+        modifier = modifier,
+        rowsFocus = rowsFocus,
     ) {
-        Header(title = stringResource(R.string.settings_language), onBack = onBack)
-        Spacer(Modifier.height(12.dp))
-
-        SearchBar(
-            query = query,
-            onQueryChange = { query = it },
-            placeholder = stringResource(R.string.settings_language_search_hint),
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(searchFocus),
-            surface = GlassSurface.CARDS,
+        val systemLabel = stringResource(R.string.settings_language_system_default)
+        LanguageStageRow(
+            icon = OwnTVIcon.CHECK,
+            title = systemLabel,
+            line = stringResource(R.string.settings_language_system_default_description),
+            coverage = null,
+            selected = currentTag.isEmpty(),
+            help = SettingHelp(systemLabel, stringResource(R.string.settings_language_system_help, systemName), hints = hints, extra = translate),
+            onClick = { viewModel.setLocale(SupportedLocales.SYSTEM_DEFAULT_TAG) },
+            modifier = if (currentTag.isEmpty()) Modifier.focusRequester(selectedFocus) else Modifier,
         )
-        Spacer(Modifier.height(12.dp))
-
-        Spacer(Modifier.height(16.dp))
-        OwnTVButton(
-            label = stringResource(R.string.settings_language_help_translate),
-            onClick = { showContribution = true },
-            modifier = Modifier.fillMaxWidth(),
-            style = OwnTVButtonStyle.SECONDARY,
-        )
-        Spacer(Modifier.height(12.dp))
-        Divider()
-        Spacer(Modifier.height(12.dp))
-
-        if (showSystemDefault) {
-            LanguageRow(
-                endonym = systemLabel,
-                englishName = systemDesc,
-                coverage = null,
-                selected = currentTag.isEmpty(),
-                onClick = { viewModel.setLocale(SupportedLocales.SYSTEM_DEFAULT_TAG) },
-                modifier = if (currentTag.isEmpty()) {
-                    Modifier.focusRequester(selectedFocus)
-                } else {
-                    Modifier
-                },
-            )
-            if (filtered.isNotEmpty()) {
-                Divider()
-            }
-        }
-
-        filtered.forEach { locale ->
+        rows.forEach { locale ->
             val selected = locale.languageTag == currentTag
-            LanguageRow(
-                endonym = locale.endonym,
-                englishName = locale.englishName,
+            LanguageStageRow(
+                icon = OwnTVIcon.LANGUAGE,
+                title = locale.endonym,
+                line = locale.englishName,
                 coverage = coverageBadgePercent(locale),
                 selected = selected,
+                help = SettingHelp(locale.endonym, stringResource(R.string.settings_language_pick_help, locale.endonym), hints = hints, extra = translate),
                 onClick = { viewModel.setLocale(locale.languageTag) },
                 modifier = if (selected) Modifier.focusRequester(selectedFocus) else Modifier,
             )
         }
-    }
-
-    if (showContribution) {
-        TranslationContributionDialog(onDismiss = { showContribution = false })
     }
 }
 
 internal fun coverageBadgePercent(locale: SupportedLocale): Int? =
     SupportedLocales.coverageBadgePercent(locale)
 
-internal fun openContributionLink(context: Context, url: String): Boolean = runCatching {
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    context.startActivity(intent)
-    true
-}.getOrDefault(false)
-
-internal fun copyContributionLink(context: Context, url: String): Boolean = runCatching {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.settings_language_help_translate), url))
-    true
-}.getOrDefault(false)
-
+/** A language as a settings row: SansSerif so CJK / Arabic / Hebrew endonyms get the platform fallbacks. */
 @Composable
-private fun TranslationContributionDialog(onDismiss: () -> Unit) {
-    val colors = OwnTVTheme.colors
-    val context = LocalContext.current
+private fun LanguageStageRow(
+    icon: OwnTVIcon,
+    title: String,
+    line: String,
+    coverage: Int?,
+    selected: Boolean,
+    help: SettingHelp,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    StageSettingRow(
+        icon = icon,
+        title = title,
+        desc = line,
+        value = SettingValue.Custom {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.mpx), verticalAlignment = Alignment.CenterVertically) {
+                if (coverage != null) StageTag(stringResource(R.string.settings_language_coverage, coverage))
+                StageRadio(selected)
+            }
+        },
+        onClick = onClick,
+        modifier = modifier,
+        help = help,
+    )
+}
+
+/** The panel's HELP TRANSLATE block (P10B-21, owner): QR and link to the project, then the request note. */
+@Composable
+private fun TranslateBlock() {
     val url = SupportedLocales.CONTRIBUTION_PROJECT_URL
-    val requestUrl = SupportedLocales.LANGUAGE_REQUEST_URL
-    val urlFocus = remember { FocusRequester() }
     val qr = remember(url) { CompanionLink.renderQr(url) }
-    var status by remember { mutableStateOf<Int?>(null) }
-    var copyUrl by remember { mutableStateOf(url) }
-
-    LaunchedEffect(Unit) { urlFocus.requestFocus() }
-    BackHandler { onDismiss() }
-
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .modalScrim()
-            .trapAllFocusExit()
-            .focusGroup(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier.dialogPanel(width = 760.dp, padding = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                stringResource(R.string.settings_language_help_translate),
-                style = MaterialTheme.typography.titleLarge,
-                color = colors.primary,
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.settings_language_contribution_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.primary,
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.settings_language_request_workflow),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(16.dp))
-            if (qr != null) {
-                Box(
-                    Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White)
-                        .padding(8.dp),
-                ) {
-                    Image(
-                        bitmap = qr.asImageBitmap(),
-                        contentDescription = stringResource(R.string.settings_language_contribution_qr_description),
-                        modifier = Modifier.size(220.dp),
-                    )
-                }
-            } else {
-                Text(
-                    stringResource(R.string.settings_language_contribution_qr_failed),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.height(14.dp))
-            // The URL is itself a focusable action so TV users can activate it with OK; the copy
-            // action below provides a second accessible way to transfer the exact same URL.
-            OwnTVButton(
-                label = url,
-                onClick = {
-                    status = if (openContributionLink(context, url)) {
-                        null
-                    } else {
-                        copyUrl = url
-                        R.string.settings_language_contribution_open_failed
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(urlFocus),
-                style = OwnTVButtonStyle.SECONDARY,
-            )
-            Spacer(Modifier.height(10.dp))
-            OwnTVButton(
-                label = stringResource(R.string.settings_language_request_new),
-                onClick = {
-                    status = if (openContributionLink(context, requestUrl)) {
-                        null
-                    } else {
-                        copyUrl = requestUrl
-                        R.string.settings_language_contribution_open_failed
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                style = OwnTVButtonStyle.SECONDARY,
-            )
-            status?.let {
-                Spacer(Modifier.height(8.dp))
-                Text(stringResource(it), style = MaterialTheme.typography.bodySmall)
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OwnTVButton(
-                    label = stringResource(R.string.settings_language_contribution_copy),
-                    onClick = {
-                        status = if (copyContributionLink(context, copyUrl)) {
-                            R.string.settings_language_contribution_copied
-                        } else {
-                            R.string.settings_language_contribution_copy_failed
-                        }
-                    },
-                    style = OwnTVButtonStyle.SECONDARY,
-                )
-                OwnTVButton(
-                    label = stringResource(R.string.settings_close),
-                    onClick = onDismiss,
-                    style = OwnTVButtonStyle.SECONDARY,
+    Box(Modifier.padding(top = 22.mpx, bottom = 16.mpx).fillMaxWidth().height(1.mpx).background(Color.White.copy(alpha = 0.1f)))
+    SettingPanelHeading(stringResource(R.string.settings_language_help_translate))
+    Row(horizontalArrangement = Arrangement.spacedBy(20.mpx), verticalAlignment = Alignment.CenterVertically) {
+        if (qr != null) {
+            Box(
+                Modifier.size(150.mpx).clip(RoundedCornerShape(16.mpx)).background(Color.White).padding(8.mpx),
+            ) {
+                Image(
+                    bitmap = qr.asImageBitmap(),
+                    contentDescription = stringResource(R.string.settings_language_contribution_qr_description),
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.settings_language_contribution_description), style = stageText(16, 500), color = StageColors.Muted)
+            Text(url.removePrefix("https://"), style = stageText(18, 700), color = StageColors.Text, modifier = Modifier.padding(top = 4.mpx))
+        }
     }
-    }
+    Text(
+        stringResource(R.string.settings_language_request_workflow),
+        style = stageText(15, 500), color = StageColors.Muted,
+        modifier = Modifier.padding(top = 14.mpx),
+    )
 }
 
 @Composable

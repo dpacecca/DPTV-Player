@@ -72,7 +72,6 @@ import tv.own.owntv.ui.components.rememberDialogFocusRestore
 import tv.own.owntv.ui.components.restoreAfterDialogClose
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.components.trapVerticalFocusExit
-import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.animationsOn
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -277,25 +276,59 @@ fun SetupLocalSyncScreen(onRestored: () -> Unit, onBack: () -> Unit, modifier: M
 
     // Cancelling with the remote and cancelling with a button do the same thing — except once the
     // data has landed, when there is nothing left to cancel and Back means the same as Done.
-    BackHandler { if (step is LocalSyncViewModel.Step.Result) onRestored() else vm.cancel() }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .roundedPanel()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 40.dp, vertical = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+    val leave = { if (step is LocalSyncViewModel.Step.Result) onRestored() else vm.cancel() }
+    var manual by remember { mutableStateOf("") }
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(step is LocalSyncViewModel.Step.FindDevice) { kotlinx.coroutines.delay(80); runCatching { firstFocus.requestFocus() } }
+    val finding = step is LocalSyncViewModel.Step.FindDevice
+    // P10B-W5: the wizard frame; the devices found and the address as rows, Cancel and Continue below.
+    tv.own.owntv.features.setup.WizardFrame(
+        step = tv.own.owntv.features.setup.WizardStep.PROFILE,
+        title = stringResource(R.string.setup_sync_device),
+        sub = stringResource(R.string.local_sync_find_hint),
+        back = tv.own.owntv.features.setup.WizardAction(stringResource(R.string.common_cancel), leave),
+        next = if (finding) {
+            tv.own.owntv.features.setup.WizardAction(
+                stringResource(R.string.settings_backup_continue),
+                { if (manual.isNotBlank()) vm.chooseAddress(manual.trim(), portOf(manual)) },
+                enabled = manual.isNotBlank(),
+            )
+        } else null,
     ) {
-        Header(
-            stringResource(R.string.setup_sync_device),
-            onBack = { if (step is LocalSyncViewModel.Step.Result) onRestored() else vm.cancel() },
-        )
-        Spacer(Modifier.height(12.dp))
-
         when (step) {
             null -> Unit
-            is LocalSyncViewModel.Step.FindDevice -> FindDeviceBlock(vm)
+            is LocalSyncViewModel.Step.FindDevice -> {
+                if (vm.found.isEmpty()) {
+                    StageSettingRow(
+                        icon = OwnTVIcon.REFRESH,
+                        title = stringResource(R.string.local_sync_searching),
+                        desc = stringResource(R.string.setup_device_appear),
+                        value = SettingValue.Custom { Text("…", style = tv.own.owntv.ui.theme.stageText(18, 700), color = tv.own.owntv.ui.theme.StageColors.Dim) },
+                        onClick = {},
+                        modifier = Modifier.focusRequester(firstFocus),
+                    )
+                } else {
+                    vm.found.forEachIndexed { i, device ->
+                        // A device already paired says so instead of showing an address the user has no
+                        // use for, and opens its actions rather than asking for a PIN it does not need.
+                        val known = vm.pairedMatch(device)
+                        StageSettingRow(
+                            icon = OwnTVIcon.PHONE,
+                            title = device.name,
+                            desc = if (known != null) stringResource(R.string.local_sync_already_paired) else device.address,
+                            value = SettingValue.Opens(null),
+                            onClick = { vm.choose(device) },
+                            modifier = if (i == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                        )
+                    }
+                }
+                val addressLabel = stringResource(R.string.local_sync_manual_address_label)
+                StageFieldRow(
+                    OwnTVIcon.PENCIL, addressLabel, manual, { manual = it },
+                    SettingHelp(addressLabel, stringResource(R.string.settings_form_field_help)),
+                    placeholder = stringResource(R.string.setup_device_address_hint),
+                )
+            }
             is LocalSyncViewModel.Step.EnterPin -> PinBlock(vm)
             // Answered above; drawing anything for it would flash a list the user never chose from.
             is LocalSyncViewModel.Step.ChooseDirection -> Unit
@@ -307,21 +340,17 @@ fun SetupLocalSyncScreen(onRestored: () -> Unit, onBack: () -> Unit, modifier: M
         }
 
         vm.error?.let { failure ->
-            Spacer(Modifier.height(12.dp))
             Text(
                 text = stringResource(failure.messageRes()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = DestructiveRed,
+                modifier = Modifier.padding(top = 12.dp),
             )
-            Spacer(Modifier.height(8.dp))
             OwnTVButton(stringResource(R.string.settings_close), onClick = vm::dismissError, style = OwnTVButtonStyle.SECONDARY)
         }
-
         if (vm.busy) {
-            Spacer(Modifier.height(12.dp))
-            Text(stringResource(R.string.local_sync_working), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+            Text(stringResource(R.string.local_sync_working), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant, modifier = Modifier.padding(top = 12.dp))
         }
-        Spacer(Modifier.height(24.dp))
     }
 }
 
