@@ -295,8 +295,9 @@ fun SettingsScreen(
     val pageScroll = rememberScrollState()
     // These belong to the two-pane Settings root, but stay remembered while a detail screen replaces
     // it. Otherwise Back briefly rebuilds Quick at row zero before restoring the real group/row.
-    var selectedGroup by rememberSaveable { mutableIntStateOf(0) }
-    var displayedGroup by rememberSaveable { mutableIntStateOf(0) }
+    // Start on the card More opened, not Quick: waiting for the start effect drew Quick for a few frames first.
+    var selectedGroup by rememberSaveable { mutableIntStateOf(start?.group ?: 0) }
+    var displayedGroup by rememberSaveable { mutableIntStateOf(start?.group ?: 0) }
     var savedScrollPx by remember { mutableIntStateOf(0) }
     val saveScroll = { savedScrollPx = pageScroll.value }
     // The rows column: fresh entry and a lost focus land here, on the page's first row.
@@ -319,7 +320,9 @@ fun SettingsScreen(
     // If it's left set, the next directional entry (e.g. sidebar→here) would re-route to a stale row.
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
     LaunchedEffect(showZoom, showPopupSize, showTheme, showAccent, showUpdate, showCatchupTime, showCatchupSources, showCatchupSourceValue, showEpgOffset, showGuideDays, showAnimations, showStartup, showStartupChannelPicker, showAfrWarning, showLivePreviewPanelWarning, showBgImageChooser, showBgPicker, showAmbientGlow, showFocusHighlight, showBgRemote, showVodLayout, showNavigation, showLiveLayout, stageSettings.open) {
-        if (!anyDialogOpen) {
+        // Only after a popup really closed: on first composition there is no opener, and holding a stale
+        // offset for the settle frames bounced the page (owner's video, 2026-10-03).
+        if (!anyDialogOpen && dialogReturn != null) {
             // Focus back on the opener row, with the scroll offset held still the whole way — see
             // [restoreAfterDialogClose] for why doing those two in sequence made the highlight travel.
             tv.own.owntv.ui.components.restoreAfterDialogClose(dialogReturn, pageScroll, savedScrollPx)
@@ -939,6 +942,13 @@ fun SettingsScreen(
         val target = returningRowFocus ?: return@LaunchedEffect
         val group = key?.let(groupOfKey::get)
         if (searchQuery.isBlank() && group != null) selectedGroup = group
+        // Subtitle appearance's row sits in the Sound & subtitles rows, below the fold: the page comes
+        // back at the top, so put the offset it had back while focus lands.
+        if (lastTab == SettingsTab.SUBTITLE_STYLE && searchQuery.isBlank()) {
+            tv.own.owntv.ui.components.restoreAfterDialogClose(target, pageScroll, savedScrollPx)
+            lastTab = null
+            return@LaunchedEffect
+        }
         // By frames: the page may need a layout pass once its group is selected; once focus lands,
         // hold it a few frames so a late entry cannot move it.
         var settledFrames = 0
@@ -1182,7 +1192,8 @@ fun SettingsScreen(
     CompositionLocalProvider(
         tv.own.owntv.features.settings.LocalStageRows provides true,
         // Subtitle appearance is a page of its own, opened from the Sound & subtitles rows (P12).
-        tv.own.owntv.features.settings.LocalOpenSubtitleStyle provides { open(SettingsTab.SUBTITLE_STYLE) },
+        tv.own.owntv.features.settings.LocalOpenSubtitleStyle provides { saveScroll(); open(SettingsTab.SUBTITLE_STYLE) },
+        tv.own.owntv.features.settings.LocalSubtitleStyleRowFocus provides rowFocus.getValue(SettingsTab.SUBTITLE_STYLE),
     ) {
         StageSettingsPage(
             panel = panel,

@@ -281,6 +281,26 @@ fun DownloadsScreen(
             )
         }
 
+        // Where this tab's files go (owner): the folder in use plus core's fixed subfolder, right under
+        // the Download folder tool that changes it, in the free band above the Recordings card.
+        storage?.let { info ->
+            val sub = when (tab) {
+                DownloadsTab.MOVIES -> MediaFolders.MOVIES
+                DownloadsTab.SERIES -> MediaFolders.SERIES
+                DownloadsTab.RECORDINGS -> MediaFolders.TV
+            }
+            val root = remember(downloadRoot, info.usingFallback) {
+                downloadRoot.takeUnless { info.usingFallback }?.let(StorageAccess::folderLabel)
+                    ?: StorageAccess.defaultRoot(context).absolutePath
+            }
+            Text(
+                root.trimEnd('/') + "/" + sub,
+                style = stageText(16, 500), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                modifier = Modifier.padding(start = fx(1100), top = 168.mpx).width(fx(1856) - fx(1100) - 14.mpx),
+            )
+        }
+
         // The list: 1110 wide from the content edge, laid out wider by the focused row's glow and padded back.
         val glowRoom = 24.mpx
         val glowWide = Modifier.layout { measurable, constraints ->

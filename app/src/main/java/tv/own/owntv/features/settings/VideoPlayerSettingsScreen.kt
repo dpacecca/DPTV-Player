@@ -730,7 +730,9 @@ internal fun VideoPlayerGroupRows(
             // Re-assert this here because the picker→popup transition lets focus dip back into the
             // list, firing onEnter and clearing dialogReturn before the popup grabs focus.
             dialogReturn = dialogRowFocus.getValue(Dialog.LIVE_LATENCY)
-        } else {
+        } else if (dialogReturn != null) {
+            // Only after a popup really closed: on the page's first composition savedScroll is 0, and
+            // holding it there for the settle frames bounced a page coming back scrolled to the top.
             // Don't steal focus back to the row while the low-latency warning popup is up — it keeps
             // focus itself. Restore only once it (and every dialog) is closed, holding the scroll
             // offset still while focus lands — see [restoreAfterDialogClose].
@@ -1296,7 +1298,8 @@ internal fun VideoPlayerGroupRows(
             icon = OwnTVIcon.SUBTITLE, title = stringResource(R.string.settings_subtitle_appearance),
             desc = stringResource(R.string.settings_subtitle_appearance_description),
             chip = stringResource(if (subStyleOn) R.string.common_on else R.string.common_off), primaryChip = subStyleOn, chevron = true,
-            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SUB_STYLE)),
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SUB_STYLE))
+                .then(LocalSubtitleStyleRowFocus.current?.let { Modifier.focusRequester(it) } ?: Modifier),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.SUB_STYLE },
         )
                     }
@@ -2386,6 +2389,8 @@ private fun subtitlePositionName(position: SubtitleStyle.Position): String = str
  */
 /** Opens Subtitle appearance's page; provided by the Settings screen. */
 val LocalOpenSubtitleStyle = androidx.compose.runtime.staticCompositionLocalOf<(() -> Unit)?> { null }
+/** The Settings screen's return target for that page: Back lands on the row that opened it. */
+val LocalSubtitleStyleRowFocus = androidx.compose.runtime.staticCompositionLocalOf<FocusRequester?> { null }
 
 @Composable
 fun SubtitleStylePage(onBack: () -> Unit, modifier: Modifier = Modifier) {

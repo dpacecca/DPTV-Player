@@ -64,7 +64,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             savedScroll = scrollState.value
             return@LaunchedEffect
         }
-        restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
+        if (dialogReturn != null) restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
         dialogReturn = null
     }
 

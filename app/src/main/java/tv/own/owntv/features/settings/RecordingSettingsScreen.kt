@@ -67,7 +67,7 @@ internal fun RecordingSettingsRows(
             savedScroll = scrollState.value
             return@LaunchedEffect
         }
-        restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
+        if (dialogReturn != null) restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
         dialogReturn = null
     }
 

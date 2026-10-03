@@ -146,7 +146,7 @@ fun rememberDialogFocusRestore(
             savedScroll.intValue = scrollState?.value ?: 0
             return@LaunchedEffect
         }
-        restoreAfterDialogClose(target.value, scrollState, savedScroll.intValue)
+        if (target.value != null) restoreAfterDialogClose(target.value, scrollState, savedScroll.intValue)
         target.value = null
     }
     return target

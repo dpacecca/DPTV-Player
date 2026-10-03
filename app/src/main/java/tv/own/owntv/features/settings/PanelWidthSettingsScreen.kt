@@ -89,7 +89,7 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
     var savedScroll by remember { mutableIntStateOf(0) }
     LaunchedEffect(open) {
         if (open != null) { savedScroll = scrollState.value; return@LaunchedEffect }
-        restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
+        if (dialogReturn != null) restoreAfterDialogClose(dialogReturn, scrollState, savedScroll)
         dialogReturn = null
     }
     // P10B-17: one row per screen, named with the layout it uses now; the panel draws that layout at its widths.
