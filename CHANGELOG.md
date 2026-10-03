@@ -12,6 +12,18 @@
 ### ✨ New features
 - **🎨 A completely new interface**
 - **⚙️ Settings rearranged into twelve groups**
+- **⏪ Resume a saved channel: ask, always or never**
+- **🗂️ Remove a channel from a custom category**
+
+### 🐛 Fixes
+- **Catch-up that shows no picture no longer reports a fast-start error (#229)**
+- **Faster channel switching on providers that mix HLS and TS channels**
+- **Custom categories in the player's channel list and the Multiview picker**
+- **Hiding a provider category no longer empties custom categories**
+- **Category search kept after watching a channel**
+- **Left always returns to the rail**
+- **Channel logos in the player's channel list match Live TV**
+- **Brand accent, Subtitle style and DNS presets found by Settings search**
 
 ## v5.0.4 — 2026-09-26
 

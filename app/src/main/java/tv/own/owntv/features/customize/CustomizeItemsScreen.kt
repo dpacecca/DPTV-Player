@@ -86,6 +86,7 @@ fun CustomizeItemsScreen(
     val selectedCategory by parentVm.selectedCategory.collectAsStateWithLifecycle()
     val section by parentVm.section.collectAsStateWithLifecycle()
     val isLive = section == MediaType.LIVE
+    val catInfo by vm.catInfo.collectAsStateWithLifecycle()
     val rangeAnchorKey by vm.rangeAnchorKey.collectAsStateWithLifecycle()
     val rangeMode by vm.rangeMode.collectAsStateWithLifecycle()
     val rangeEndKey by vm.rangeEndKey.collectAsStateWithLifecycle()
@@ -286,6 +287,7 @@ fun CustomizeItemsScreen(
                                 }
                             },
                             onMove = { dialogReturn = rowFocusers[row.key]; movingItem = row },
+                            onRemoveFromCategory = if (catInfo?.isCustom == true) ({ vm.removeFromCategory(row) }) else null,
                             onToggleHidden = { vm.setItemHidden(row, !row.hidden) },
                             onHideLongPress = { dialogReturn = rowFocusers[row.key]; vm.beginRange(row) },
                             onPickRangeEnd = {
@@ -418,6 +420,8 @@ private fun ItemRow(
     onPickRenameEnd: () -> Unit,
     // "Move to…" (issue #87): send this item into a user's combined category.
     onMove: () -> Unit,
+    // Only in a custom category: take the item out of it alone.
+    onRemoveFromCategory: (() -> Unit)?,
     onToggleHidden: () -> Unit,
     onHideLongPress: () -> Unit,
     onPickRangeEnd: () -> Unit,
@@ -435,6 +439,7 @@ private fun ItemRow(
         // Live TV channels get a per-row Rename; Movies/Series rename the whole category from the tool row.
         if (isLive) StageAction(OwnTVIcon.PENCIL, stringResource(R.string.settings_customize_rename), { if (inRenameRange) onPickRenameEnd() else onRename() }, onRenameLongPress) else null,
         StageAction(OwnTVIcon.FOLDER, stringResource(R.string.settings_customize_move_to), onMove),
+        onRemoveFromCategory?.let { StageAction(OwnTVIcon.CLOSE, stringResource(R.string.content_remove_from_category), it) },
         StageAction(
             OwnTVIcon.EYE_OFF,
             stringResource(if (row.hidden) R.string.common_show else R.string.common_hide),

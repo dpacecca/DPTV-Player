@@ -609,6 +609,8 @@ fun EpgScreen(
             val railCounts by liveVm.railCounts.collectAsStateWithLifecycle()
             val (sheetEntries, _) = liveCategoryEntries(railItems, railCounts)
             LiveCategories(
+                searchQuery = vm.categoryQuery.collectAsStateWithLifecycle().value,
+                onSearchQueryChange = vm::setCategoryQuery,
                 entries = sheetEntries,
                 selectedIndex = railItems.indexOfFirst { it.key == (categoryKey ?: LiveKey.All) }.coerceAtLeast(0),
                 groupsHeading = groupsHeading,

@@ -51,7 +51,6 @@ import tv.own.owntv.core.epg.CatchupUrl
 import tv.own.owntv.core.live.StreamGrant
 import tv.own.owntv.core.recording.RecordingSchedule
 import tv.own.owntv.core.customize.SectionCustomizations
-import tv.own.owntv.core.customize.applyCustomizations
 import tv.own.owntv.core.customize.CategoryMove
 import tv.own.owntv.core.customize.CategoryRailEditor
 import tv.own.owntv.core.customize.MoveKind
@@ -66,7 +65,6 @@ import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.database.entity.ChannelEntity
-import tv.own.owntv.core.database.entity.CategoryEntity
 import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.core.database.entity.FavoriteEntity
 import tv.own.owntv.core.database.entity.SourceEntity
@@ -605,8 +603,7 @@ class LiveViewModel(
                 if (cust.hiddenItems.isEmpty() && cust.itemNames.isEmpty() && hiddenCats.isEmpty() && movedFrom.isEmpty()) paging
                 else paging
                     .filter { ch ->
-                        CustomizeKeys.channel(ch) !in cust.hiddenItems &&
-                        (ch.categoryId == null || ch.categoryId !in hiddenCats) &&
+                        isChannelVisible(ch, cust, hiddenCats, key) &&
                             // Moved-out items leave ONLY their origin folder (they stay in All/search).
                             (movedFrom[CustomizeKeys.channel(ch)]?.let { origin ->
                                 key !is LiveKey.Folder || origin != folderContextKeys.value[key.id]
@@ -963,25 +960,49 @@ class LiveViewModel(
     val zapListKey: StateFlow<LiveKey?> = zapList.key
 
     // --- Category browser (second Left press shows all categories) ---
+    /** The categories' search text. Here, not in the list, so it survives the player: the browse UI
+     *  is removed while a channel plays full screen, and a search lost on return meant pressing Up
+     *  through dozens of categories to reach the field again. */
+    private val _categoryQuery = MutableStateFlow("")
+    val categoryQuery: StateFlow<String> = _categoryQuery.asStateFlow()
+    fun setCategoryQuery(query: String) { _categoryQuery.value = query }
+
     private val _showCategoryBrowser = MutableStateFlow(false)
     val showCategoryBrowser: StateFlow<Boolean> = _showCategoryBrowser.asStateFlow()
 
-    /** Categories for the category browser (with customizations applied). */
-    val browserCategories: StateFlow<List<Pair<CategoryEntity, String>>> = ctx
-        .flatMapLatest { c ->
-            if (c.profileId < 0) flowOf(emptyList())
-            else combine(categoryDao.observe(c.sourceIds, MediaType.LIVE), custom) { cats, cust ->
-                cats.applyCustomizations(cust)
-            }
-        }
+    /** Categories for the in-player category browser and the Multiview picker: the Live rail's own
+     *  folders, so custom categories, renames, hides, kids filtering and the order all match it. */
+    val browserCategories: StateFlow<List<Pair<LiveKey, String>>> = railItems
+        .map { items -> items.filter { it.key is LiveKey.Folder || it.key is LiveKey.Custom }.map { it.key to it.title.orEmpty() } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun showCategories() { _showCategoryBrowser.value = true }
     fun hideCategoryBrowser() { _showCategoryBrowser.value = false }
 
-    /** Load channels for an arbitrary category into the zap list. */
-    fun loadChannelsForCategory(categoryId: Long) =
-        zapList.armForCategory(categoryId) { _showCategoryBrowser.value = false }
+    /** Load channels for a category picked in the browser into the zap list. */
+    fun loadChannelsForCategory(key: LiveKey) {
+        val close = { _showCategoryBrowser.value = false }
+        when (key) {
+            is LiveKey.Folder -> zapList.armForCategory(key.id, close)
+            is LiveKey.Custom -> {
+                val title = browserCategories.value.firstOrNull { it.first == key }?.second.orEmpty()
+                zapList.armForCustom(key, title, { channelsInCustom(key) }, close)
+            }
+            else -> Unit
+        }
+    }
+
+    /** One custom category in its rail order, with the hide/rename treatment the Live list gives it. */
+    private suspend fun channelsInCustom(key: LiveKey.Custom): List<ChannelEntity> {
+        val c = ctx.value
+        if (c.profileId < 0) return emptyList()
+        val cs = custResolved.value
+        return withContext(Dispatchers.IO) {
+            customCategoryDao.snapshotChannels(c.profileId, key.id, c.sourceIds.ifEmpty { listOf(-1L) }, ZAP_LIST_LIMIT)
+        }
+            .filter { isChannelVisible(it, cs.cust, cs.hiddenCats, key) }
+            .map { ch -> cs.cust.itemNames[CustomizeKeys.channel(ch)]?.let { ch.copy(name = it) } ?: ch }
+    }
 
     /** One provider category, in its manual order — the in-player category browser's pick. */
     private suspend fun channelsInCategory(categoryId: Long): List<ChannelEntity> {
@@ -1085,7 +1106,10 @@ class LiveViewModel(
         val customizations = customize.observe(current.profileId, MediaType.LIVE).first()
         if (CustomizeKeys.channel(channel) in customizations.hiddenItems) return false
         val category = channel.categoryId?.let { categoryDao.getById(it) }
-        return category == null || CustomizeKeys.category(category) !in customizations.hiddenCategories
+        if (category == null || CustomizeKeys.category(category) !in customizations.hiddenCategories) return true
+        // Its folder is hidden, but a custom category the user kept it in still shows it (as the lists do).
+        return customCategoryDao.contextsOf(current.profileId, MediaType.LIVE, channel.id)
+            .any { it !in customizations.hiddenCategories }
     }
 
     /** Open a channel fullscreen, preserving the browse context it was launched from. The channel's
@@ -1916,6 +1940,19 @@ class LiveViewModel(
         sortBeforeMove = null
         if (previous != SettingsRepository.SortMode.PLAYLIST) {
             viewModelScope.launch { settings.setSortLive(previous) }
+        }
+    }
+
+    /** Take [channel] out of the custom category [key] only. If it had been moved out of its provider
+     *  folder into here, it goes back there — the same as deleting the whole category does. */
+    fun removeFromCustomCategory(channel: ChannelEntity, key: LiveKey.Custom) {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            userDataWriter.removeCustomCategoryMember(pid, MediaType.LIVE, key.id, channel.id)
+            val itemKey = CustomizeKeys.channel(channel)
+            custom.value.movedFromOrigin[itemKey]?.let { origin ->
+                customize.setItemMovedFromOrigin(pid, MediaType.LIVE, itemKey, origin, moved = false)
+            }
         }
     }
 

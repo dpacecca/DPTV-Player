@@ -120,6 +120,11 @@ class EpgViewModel(
     private val reminderManager: tv.own.owntv.core.reminder.ReminderManager,
 ) : ViewModel() {
 
+    /** The categories' search text, held here so it survives the player (see LiveViewModel). */
+    private val _categoryQuery = kotlinx.coroutines.flow.MutableStateFlow("")
+    val categoryQuery: kotlinx.coroutines.flow.StateFlow<String> = _categoryQuery
+    fun setCategoryQuery(query: String) { _categoryQuery.value = query }
+
     /** The one candidate set the picker and both auto-match paths read — see [GuideCandidates]. */
     private val guideCandidates = GuideCandidates(epgDao)
 

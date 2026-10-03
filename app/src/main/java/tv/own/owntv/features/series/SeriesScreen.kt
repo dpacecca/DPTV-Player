@@ -692,6 +692,8 @@ private fun SeriesGrid(
                     showChevron = false, modifier = Modifier.padding(start = fx(84), top = 52.mpx).width(fx(860)),
                 )
                 LiveCategories(
+                    searchQuery = vm.categoryQuery.collectAsStateWithLifecycle().value,
+                    onSearchQueryChange = vm::setCategoryQuery,
                     entries = categoryEntries,
                     selectedIndex = selectedIndex,
                     groupsHeading = groupsHeading,
@@ -841,6 +843,8 @@ private fun SeriesGrid(
 
         if (categoriesOpen) {
             LiveCategories(
+                searchQuery = vm.categoryQuery.collectAsStateWithLifecycle().value,
+                onSearchQueryChange = vm::setCategoryQuery,
                 entries = categoryEntries,
                 selectedIndex = selectedIndex,
                 groupsHeading = groupsHeading,

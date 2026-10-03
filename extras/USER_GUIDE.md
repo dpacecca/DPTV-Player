@@ -99,6 +99,8 @@ About. Its right-hand panel *describes* each row before you open it — it never
 | **Up / Down** | full-screen live, controls hidden | Same as CH+/CH− |
 | **0–9** | full-screen live | Type a channel number to tune. OK submits, Back cancels |
 | **CH+ / CH−** | any browse list | Page by 10 items. **Long-press** jumps to first/last |
+| **Back** | category list with a search typed | Clears the search and jumps to the search box. The search stays while you watch a channel |
+| **Left** | anywhere in a screen, nothing further left | Back to the rail |
 | **Back** | full-screen player | Leaves full screen (there is no exit button) |
 | **OK** | full-screen player | Shows / hides the controls |
 
@@ -271,6 +273,8 @@ dropped; playback jumps over it.
 - **The delete rules:**
   - Leave the channel and its copy is kept for **5 minutes**. Come back within them and OwnTV asks
     **Continue where you left off?** — **Resume** plays on from where you left, **Go live** jumps to now.
+    **Settings → Live TV → Resume a saved channel** turns the question into **Always resume** or
+    **Never resume**.
   - Watch another channel for **2 minutes** and the copy you left is deleted at once — you have moved on.
   - After 5 minutes it is deleted anyway, and every copy is deleted when OwnTV starts.
 - Catch-up channels still rewind into the provider's archive. Protected (DRM) and encrypted channels
@@ -577,6 +581,8 @@ Hide, rename, reorder, and **unhide**. Highlights:
 - **Bulk rename** — add or strip a prefix/suffix across a whole category, with **Auto cleanup** for
   country, quality and codec tags, a review step, and **Restore original names** as the undo.
 - **Custom combined categories** — **＋ New category**, then **Move to category…** from any item.
+  **Remove from this category** (long-press a channel inside it, or here) takes it out of that category
+  only. Hiding a channel's own provider category no longer hides it from your custom categories.
 - **Span select** — long-press a **Hide** or **move** button to act on a whole block at once.
 - **PIN lock** this screen with **Set PIN**.
 

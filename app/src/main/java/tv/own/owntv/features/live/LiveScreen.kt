@@ -231,6 +231,7 @@ fun LiveScreen(
         if (!rememberLive) runCatching { listState.scrollToItem(0) }
     }
     val catListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val categoryQuery by vm.categoryQuery.collectAsStateWithLifecycle()
     val chromeScrollThresholdPx = with(LocalDensity.current) { 8.dp.roundToPx() }
     val contentScrolled by remember(effectiveListState, catListState, chromeScrollThresholdPx) {
         androidx.compose.runtime.derivedStateOf {
@@ -615,6 +616,8 @@ fun LiveScreen(
                 focusRowIndex = railFocusRow,
                 onRowFocused = { railFocusRow = null },
                 onRowFocus = { catFocusIndex = it },
+                searchQuery = categoryQuery,
+                onSearchQueryChange = vm::setCategoryQuery,
                 modifier = categoriesModifier
                     .padding(start = margin, top = 128.mpx, bottom = 24.mpx)
                     .width(colW)
@@ -890,6 +893,8 @@ fun LiveScreen(
                 focusRowIndex = railFocusRow,
                 onRowFocused = { railFocusRow = null },
                 onRowFocus = { catFocusIndex = it },
+                searchQuery = categoryQuery,
+                onSearchQueryChange = vm::setCategoryQuery,
                 modifier = categoriesModifier
                     .padding(start = fx(24), top = 24.mpx, bottom = 24.mpx)
                     .width(sheetW)
@@ -1044,6 +1049,7 @@ fun LiveScreen(
                 contextChannel = null
             },
             onRemoveFromHistory = { vm.removeFromHistory(ch.id); contextChannel = null },
+            onRemoveFromCategory = (selectedKey as? LiveKey.Custom)?.let { k -> { vm.removeFromCustomCategory(ch, k); contextChannel = null } },
             onDismiss = { contextChannel = null },
         )
     }
@@ -1148,6 +1154,8 @@ private fun ChannelContextMenu(
     // "Move to category…" (issue #87): send this channel into a user's combined category.
     onMoveToCategory: () -> Unit,
     onRemoveFromHistory: () -> Unit,
+    // Only inside a custom category: take the channel out of that category alone.
+    onRemoveFromCategory: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     val focus = remember { androidx.compose.ui.focus.FocusRequester() }
@@ -1178,6 +1186,9 @@ private fun ChannelContextMenu(
         if (canMove) {
             add(MenuAction("move", stringResource(R.string.content_move), OwnTVIcon.MOVE, group = organise, onClick = onMove))
             add(MenuAction("move_to_category", stringResource(R.string.content_move_to_category), OwnTVIcon.FOLDER, group = organise, onClick = onMoveToCategory))
+        }
+        if (onRemoveFromCategory != null) {
+            add(MenuAction("remove_from_category", stringResource(R.string.content_remove_from_category), OwnTVIcon.CLOSE, group = organise, onClick = onRemoveFromCategory))
         }
     }
     val values = mapOf("catchup" to catchupValue, "match_epg" to matchValue, "epg_offset" to offsetValue)

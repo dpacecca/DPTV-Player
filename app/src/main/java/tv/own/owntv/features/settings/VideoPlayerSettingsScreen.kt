@@ -210,6 +210,7 @@ internal val VIDEO_QUICK_ROWS: List<VideoQuickRef> = listOf(
     VideoQuickRef("vp_preview_audio", SECTION_LIVE, OwnTVIcon.AUDIO, R.string.settings_preview_audio, R.string.settings_preview_audio_description),
     VideoQuickRef("vp_timeshift", SECTION_LIVE, OwnTVIcon.REWIND, R.string.settings_timeshift, R.string.settings_timeshift_description),
     VideoQuickRef("vp_timeshift_window", SECTION_LIVE, OwnTVIcon.REWIND, R.string.settings_timeshift_window, R.string.settings_timeshift_window_description),
+    VideoQuickRef("vp_timeshift_resume", SECTION_LIVE, OwnTVIcon.PLAY, R.string.settings_timeshift_resume, R.string.settings_timeshift_resume_description),
     VideoQuickRef("vp_live_left_right", SECTION_LIVE, OwnTVIcon.SEEK_BACK, R.string.settings_live_left_right_rewinds, R.string.settings_live_left_right_rewinds_description),
     VideoQuickRef("vp_live_latency", SECTION_LIVE_TUNING, OwnTVIcon.LIVE_TV, R.string.settings_live_latency, R.string.settings_live_latency_description),
     VideoQuickRef("vp_latency_sources", SECTION_LIVE_TUNING, OwnTVIcon.LIVE_TV, R.string.settings_live_latency_per_playlist, R.string.settings_live_latency_per_playlist_description),
@@ -435,6 +436,10 @@ internal fun videoQuickBinding(key: String, vm: SettingsViewModel): VideoQuickBi
             val minutes by vm.timeshiftWindowMinutes.collectAsStateWithLifecycle()
             link(stringResource(R.string.player_duration_minutes, minutes))
         }
+        "vp_timeshift_resume" -> {
+            val mode by vm.timeshiftResumeMode.collectAsStateWithLifecycle()
+            link(stringResource(resumeModeLabelRes(mode)))
+        }
         "vp_volume" -> {
             val volume by vm.defaultVolume.collectAsStateWithLifecycle()
             link(stringResource(R.string.player_percent, volume))
@@ -604,6 +609,7 @@ internal fun VideoPlayerGroupRows(
     val liveLeftRightRewinds by vm.liveLeftRightRewinds.collectAsStateWithLifecycle()
     val timeshiftEnabled by vm.timeshiftEnabled.collectAsStateWithLifecycle()
     val timeshiftWindowMinutes by vm.timeshiftWindowMinutes.collectAsStateWithLifecycle()
+    val timeshiftResumeMode by vm.timeshiftResumeMode.collectAsStateWithLifecycle()
     val afrPauseSecs by vm.afrPauseSecs.collectAsStateWithLifecycle()
     val vodBufferSecs by vm.vodBufferSecs.collectAsStateWithLifecycle()
     val vodNetworkTimeoutSecs by vm.vodNetworkTimeoutSecs.collectAsStateWithLifecycle()
@@ -1034,6 +1040,15 @@ internal fun VideoPlayerGroupRows(
             chip = stringResource(R.string.player_duration_minutes, timeshiftWindowMinutes), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.TIMESHIFT_WINDOW)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.TIMESHIFT_WINDOW },
+        )
+        if (timeshiftEnabled) Row2(
+            quickKey = "vp_timeshift_resume",
+            choices = tv.own.owntv.core.settings.SettingsRepository.ResumeMode.entries.map { stringResource(resumeModeLabelRes(it)) }, chosen = timeshiftResumeMode.ordinal,
+            icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_timeshift_resume),
+            desc = stringResource(R.string.settings_timeshift_resume_description),
+            chip = stringResource(resumeModeLabelRes(timeshiftResumeMode)), chevron = true,
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.TIMESHIFT_RESUME)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.TIMESHIFT_RESUME },
         )
         Row2(
             quickKey = "vp_live_left_right",
@@ -1763,6 +1778,13 @@ internal fun VideoPlayerGroupRows(
             onSelect = { choice -> choice.toIntOrNull()?.let { vm.setTimeshiftWindowMinutes(it) }; dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
+        Dialog.TIMESHIFT_RESUME -> PickerDialog(
+            title = stringResource(R.string.settings_timeshift_resume),
+            options = tv.own.owntv.core.settings.SettingsRepository.ResumeMode.entries.map { it.name to stringResource(resumeModeLabelRes(it)) },
+            selected = timeshiftResumeMode.name,
+            onSelect = { vm.setTimeshiftResumeMode(it); dialog = Dialog.NONE },
+            onDismiss = { dialog = Dialog.NONE },
+        )
         Dialog.VOD_RECONNECTS -> PickerDialog(
             title = stringResource(R.string.settings_vod_reconnects),
             options = vm.vodReconnectChoices.map { it.toString() to stringResource(R.string.settings_vod_reconnects_value, it) },
@@ -1913,7 +1935,7 @@ private fun dialogForQuickKey(key: String): Dialog? = when (key) {
     else -> null
 }
 
-private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, VOD_ENGINE_SOURCES, VOD_ENGINE_SOURCE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, SURROUND, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_TUNE_TIMEOUT_SOURCES, LIVE_TUNE_TIMEOUT_SOURCE, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, RESET_LIVE_PINS, FORGET_FIXES, AFR_WARNING, AFR_PAUSE, VOD_BUFFER, VOD_TIMEOUT, VOD_RECONNECTS, TIMESHIFT_WINDOW, MAX_QUALITY, LIVE_PREVIEW_PANEL, MINI_PLAYER, MULTIVIEW_TILES, MULTIVIEW_WARNING }
+private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, VOD_ENGINE_SOURCES, VOD_ENGINE_SOURCE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, SURROUND, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_TUNE_TIMEOUT_SOURCES, LIVE_TUNE_TIMEOUT_SOURCE, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, RESET_LIVE_PINS, FORGET_FIXES, AFR_WARNING, AFR_PAUSE, VOD_BUFFER, VOD_TIMEOUT, VOD_RECONNECTS, TIMESHIFT_WINDOW, TIMESHIFT_RESUME, MAX_QUALITY, LIVE_PREVIEW_PANEL, MINI_PLAYER, MULTIVIEW_TILES, MULTIVIEW_WARNING }
 
 /** "Auto" for 0, else seconds ("60s") — the film buffer and network timeout choices (N18). */
 @Composable

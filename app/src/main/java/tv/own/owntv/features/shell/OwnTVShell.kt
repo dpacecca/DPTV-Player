@@ -159,6 +159,8 @@ fun OwnTVShell(
 
     val scope = rememberCoroutineScope()
     val sidebarFocus = remember { FocusRequester() }
+    val contentFocusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val contentLtr = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Ltr
     val homeFirstRowFocus = remember { FocusRequester() }
     var focusedLayer by remember { mutableStateOf(ShellLayer.SIDEBAR) }
     var showExit by remember { mutableStateOf(false) }
@@ -1075,6 +1077,17 @@ fun OwnTVShell(
                                     },
                                     top = if (stageScreen) 0.dp else tv.own.owntv.features.shell.components.StageContentTop,
                                 )
+                                // ◀ with nothing further left in the content goes back to the rail, however the
+                                // content was entered. The D-pad search alone missed it whenever the open rail
+                                // overlapped the content's left edge, which left Back as the only way out.
+                                .onKeyEvent { e ->
+                                    val back = if (contentLtr) Key.DirectionLeft else Key.DirectionRight
+                                    if (e.key != back || e.type != KeyEventType.KeyDown) return@onKeyEvent false
+                                    if (!contentFocusManager.moveFocus(if (contentLtr) androidx.compose.ui.focus.FocusDirection.Left else androidx.compose.ui.focus.FocusDirection.Right)) {
+                                        runCatching { sidebarFocus.requestFocus() }
+                                    }
+                                    true
+                                }
                                 .focusRequester(contentAreaFocus)
                                 .focusRestorer()
                                 .focusGroup(),
@@ -1438,8 +1451,8 @@ fun OwnTVShell(
                   // which is the whole point of the grid. Back here leaves the picker entirely.
                   tv.own.owntv.features.shell.components.CategoryBrowserOverlay(
                       categories = browserCategories,
-                      currentCategoryId = grid.tiles.getOrNull(tile)?.channel?.categoryId,
-                      onSelect = { catId -> liveVm.loadChannelsForCategory(catId) },
+                      currentKey = grid.tiles.getOrNull(tile)?.channel?.categoryId?.let { tv.own.owntv.core.live.LiveKey.Folder(it) },
+                      onSelect = { key -> liveVm.loadChannelsForCategory(key) },
                       onDismiss = { liveVm.hideCategoryBrowser(); multiviewPickFor = null },
                       modifier = Modifier.fillMaxSize(),
                   )
@@ -1751,8 +1764,8 @@ fun OwnTVShell(
                         // Second Left — every Live TV category.
                         tv.own.owntv.features.shell.components.CategoryBrowserOverlay(
                             categories = browserCategories,
-                            currentCategoryId = previewChannel?.categoryId,
-                            onSelect = { catId -> liveVm.loadChannelsForCategory(catId) },
+                            currentKey = previewChannel?.categoryId?.let { tv.own.owntv.core.live.LiveKey.Folder(it) },
+                            onSelect = { key -> liveVm.loadChannelsForCategory(key) },
                             onDismiss = { liveVm.hideCategoryBrowser() },
                             modifier = Modifier.fillMaxSize(),
                         )

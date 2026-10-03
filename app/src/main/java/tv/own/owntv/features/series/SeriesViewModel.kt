@@ -106,6 +106,11 @@ class SeriesViewModel(
     private val subtitleController: tv.own.owntv.core.subtitles.SubtitleController,
 ) : ViewModel() {
 
+    /** The categories' search text, held here so it survives the player (see LiveViewModel). */
+    private val _categoryQuery = kotlinx.coroutines.flow.MutableStateFlow("")
+    val categoryQuery: kotlinx.coroutines.flow.StateFlow<String> = _categoryQuery
+    fun setCategoryQuery(query: String) { _categoryQuery.value = query }
+
     data class SeriesMoveState(val items: List<SeriesEntity>, val activeIndex: Int, val contextKey: String)
     private val _moveState = MutableStateFlow<SeriesMoveState?>(null)
     val moveState: StateFlow<SeriesMoveState?> = _moveState.asStateFlow()

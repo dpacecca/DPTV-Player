@@ -21,7 +21,7 @@ import tv.own.owntv.ui.components.OwnTVIcon
 
 /** This screen's rows as Settings search finds them. */
 internal val DNS_SEARCH_ROWS: List<Int> =
-    listOf(R.string.settings_dns_use_custom, R.string.settings_dns_server, R.string.settings_dns_test)
+    listOf(R.string.settings_dns_use_custom, R.string.settings_presets, R.string.settings_dns_server, R.string.settings_dns_test)
 
 @Composable
 fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {

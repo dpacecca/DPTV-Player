@@ -454,8 +454,14 @@ internal fun LiveCategories(
     /** The sheet's heading and the line beside it; the TV Guide says "Guide category · Same list as Live TV". */
     sheetTitle: String = stringResource(R.string.content_category_browser_title),
     sheetHint: String = stringResource(R.string.common_nav_live_tv),
+    /** The category search, held by the screen's view model so it survives the player (issue: a
+     *  search for one of 100 categories was gone on return). Null = kept here, for this composition. */
+    searchQuery: String? = null,
+    onSearchQueryChange: ((String) -> Unit)? = null,
 ) {
-    var query by remember { mutableStateOf("") }
+    var localQuery by remember { mutableStateOf("") }
+    val query = searchQuery ?: localQuery
+    val setQuery: (String) -> Unit = onSearchQueryChange ?: { localQuery = it }
     val visible = remember(entries, query) {
         val q = query.trim()
         if (q.isEmpty()) entries.indices.toList() else entries.indices.filter { entries[it].label.contains(q, ignoreCase = true) }
@@ -483,6 +489,16 @@ internal fun LiveCategories(
             }
         }
         onRowFocused()
+    }
+    // The search stays until it is cleared: Back inside the list clears it and returns to the field,
+    // so a long filtered list is one press from the top. With no search, Back does what it always did.
+    androidx.activity.compose.BackHandler(enabled = hasFocus && query.isNotEmpty()) {
+        setQuery("")
+        scope.launch {
+            runCatching { listState.scrollToItem(0) }
+            withFrameNanos { }
+            runCatching { searchFocus.requestFocus() }
+        }
     }
     // Where the fixed entries end and the provider groups begin (the "GROUPS · DE" heading).
     val firstGroup = entries.indexOfFirst { it.item.key is tv.own.owntv.core.live.LiveKey.Folder || it.item.key is tv.own.owntv.core.live.LiveKey.Custom }
@@ -512,7 +528,7 @@ internal fun LiveCategories(
                 .fillMaxWidth()
                 .weight(1f)
                 .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
-                .onFocusChanged { hasFocus = it.hasFocus; if (!it.hasFocus) query = "" }
+                .onFocusChanged { hasFocus = it.hasFocus }
                 .focusProperties {
                     onEnter = {
                         val pos = visible.indexOf(selectedIndex)
@@ -534,7 +550,7 @@ internal fun LiveCategories(
             item(key = "__search__") {
                 StageSearchField(
                     query = query,
-                    onQueryChange = { query = it },
+                    onQueryChange = setQuery,
                     placeholder = stringResource(R.string.content_search_categories).trimEnd('…'),
                     modifier = Modifier
                         .fillMaxWidth()

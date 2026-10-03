@@ -100,6 +100,11 @@ class MovieViewModel(
     private val subtitleController: tv.own.owntv.core.subtitles.SubtitleController,
 ) : ViewModel() {
 
+    /** The categories' search text, held here so it survives the player (see LiveViewModel). */
+    private val _categoryQuery = kotlinx.coroutines.flow.MutableStateFlow("")
+    val categoryQuery: kotlinx.coroutines.flow.StateFlow<String> = _categoryQuery
+    fun setCategoryQuery(query: String) { _categoryQuery.value = query }
+
     data class MovieMoveState(val items: List<MovieEntity>, val activeIndex: Int, val contextKey: String)
     private val _moveState = MutableStateFlow<MovieMoveState?>(null)
     val moveState: StateFlow<MovieMoveState?> = _moveState.asStateFlow()

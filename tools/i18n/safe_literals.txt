@@ -68,7 +68,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	▲ ▼
 1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	◀
 1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	◀ ▶
-1	empty	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	\0
+2	empty	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	${channel.id}|$shift
 1	log	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	EpgViewModel
 1	log	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	Stalker catch-up resolve failed channelId=${channel.id}
@@ -124,6 +124,7 @@
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	move_to_category
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	play_external
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	record
+1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	remove_from_category
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	remove_history
 1	preference-key	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	rename
 3	technical	app/src/main/java/tv/own/owntv/features/live/LiveScreen.kt	·
@@ -137,7 +138,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveStage.kt	tnum
 2	technical	app/src/main/java/tv/own/owntv/features/live/LiveStage.kt	·
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveStage.kt	· $left
-3	empty	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	\0
+4	empty	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	#$it
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	LiveEngine
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	OwnTVHome
@@ -159,7 +160,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/more/MoreScreen.kt	DEV
 1	technical	app/src/main/java/tv/own/owntv/features/more/MoreScreen.kt	Developer
 1	technical	app/src/main/java/tv/own/owntv/features/more/MoreScreen.kt	▶
-2	empty	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	\0
+3	empty	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	${StorageAccess.sanitize(movie.name)}.${movie.containerExt ?: StorageAccess.extOf(movie.streamUrl)}
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	MOVIE
 1	log	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	OwnTVHome
@@ -227,7 +228,7 @@
 1	url	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	w780
 6	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	·
 1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	◀
-2	empty	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	\0
+3	empty	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	${StorageAccess.sanitize(ep.name.ifBlank { "episode-${ep.episodeNumber}" })}.$ext
 1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	${StorageAccess.sanitize(episode.name.ifBlank { "episode-${episode.episodeNumber}" })}.$ext
 3	technical	app/src/main/java/tv/own/owntv/features/series/SeriesViewModel.kt	EPISODE
@@ -613,6 +614,7 @@
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_sub_style
 3	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_surround
 3	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_timeshift
+3	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_timeshift_resume
 3	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_timeshift_window
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_tune_timeout
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_tune_timeout_sources
@@ -779,8 +781,9 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	vp_multiview_tiles
 3	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	vp_preroll
 3	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	vp_preview_audio
-5	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	vp_sub_style
+4	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	vp_sub_style
 2	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	vp_surround
+1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	vp_timeshift_resume
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	vp_timeshift_window
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	vp_tunneled
 2	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	webp
