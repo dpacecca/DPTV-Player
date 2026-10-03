@@ -84,6 +84,7 @@ import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.core.live.LiveTimeshift
 import tv.own.owntv.core.live.LiveKey
+import tv.own.owntv.features.search.positionOf
 import tv.own.owntv.core.live.isChannelVisible
 import tv.own.owntv.core.live.liveCountFlow
 import tv.own.owntv.core.live.livePagingSource
@@ -859,6 +860,33 @@ class LiveViewModel(
         _previewChannel.value = channel
     }
 
+    /** Search's "Go to channel": the list scrolls to [reveal] and focuses it, then calls [revealDone]. */
+    private val _reveal = MutableStateFlow<tv.own.owntv.features.search.Reveal?>(null)
+    val reveal: StateFlow<tv.own.owntv.features.search.Reveal?> = _reveal.asStateFlow()
+
+    /** Open [channel] where it lives: its own category, or All channels when that category is not in
+     *  the rail or the channel is not in it. It becomes the preview, as if the user had walked there. */
+    fun revealChannel(channel: ChannelEntity) {
+        _search.value = ""
+        _previewArmed.value = true
+        _previewChannel.value = channel
+        viewModelScope.launch {
+            val c = ctx.first { it.profileId >= 0 }
+            val sort = settings.sortLive.first()
+            val folder = channel.categoryId?.let { LiveKey.Folder(it) }
+            val inRail = folder != null &&
+                kotlinx.coroutines.withTimeoutOrNull(2_000) { railItems.first { list -> list.any { it.key == folder } } } != null
+            for (key in listOfNotNull(folder.takeIf { inRail }, LiveKey.All)) {
+                val position = pagingSource(key, c, "", sort).positionOf(channel.id, { it.id }) ?: continue
+                if (lockedKey == null) _selected.value = key
+                _reveal.value = tv.own.owntv.features.search.Reveal(key, channel.id, position)
+                return@launch
+            }
+        }
+    }
+
+    fun revealDone() { _reveal.value = null }
+
     // The in-pane preview only plays once the user has actually focused a channel — so restoring the last
     // focused channel on startup positions focus & the details pane WITHOUT auto-previewing on launch (#6).
     private val _previewArmed = MutableStateFlow(false)
@@ -1136,7 +1164,7 @@ class LiveViewModel(
         ensurePlaying(channel)
     }
 
-    /** Tune a channel picked outside the Live TV list — the Guide, or a Search result (F05). Same as
+    /** Tune a channel picked outside the Live TV list — the Guide (F05). Same as
      *  [ensurePlaying] except history is written straight away: this is a deliberate one-shot pick (you
      *  chose a channel, or "Watch channel" in a programme dialog), not the zap-through-a-category flow
      *  the history debounce exists to filter, and such a channel was not reliably landing in History.

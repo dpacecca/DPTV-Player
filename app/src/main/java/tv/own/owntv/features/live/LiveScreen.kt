@@ -462,6 +462,32 @@ fun LiveScreen(
         }
         onRestored()
     }
+    // Search's "Go to channel": scroll to where the channel sits so that part of the list loads, find
+    // its row by id and focus it. The list can still be the old category's for a moment, so focus is
+    // re-asserted for a short while; nothing found after ~5 s lands on the first row.
+    val reveal by vm.reveal.collectAsStateWithLifecycle()
+    LaunchedEffect(reveal, selectedKey) {
+        val r = reveal ?: return@LaunchedEffect
+        if (selectedKey != r.key) return@LaunchedEffect
+        if (rememberLive) perCategoryChannelIds[selectedKey] = r.id
+        var found = false
+        for (attempt in 0 until 50) {
+            if (channels.itemCount > 0) {
+                val idx = channels.itemSnapshotList.indexOfFirst { it?.id == r.id }
+                if (idx >= 0) {
+                    revealRow(idx)
+                    withFrameNanos { }
+                    if (runCatching { selFocus.requestFocus() }.getOrDefault(false)) found = true
+                    if (found && attempt >= 8) break
+                } else {
+                    runCatching { effectiveListState.scrollToItem(r.position.coerceAtMost(channels.itemCount - 1)) }
+                }
+            }
+            delay(100)
+        }
+        if (!found) runCatching { firstItemFocus.requestFocus() }
+        vm.revealDone()
+    }
 
     val selectedIndex = railItems.indexOfFirst { it.key == selectedKey }.coerceAtLeast(0)
     val selectedItem = railItems.getOrNull(selectedIndex)

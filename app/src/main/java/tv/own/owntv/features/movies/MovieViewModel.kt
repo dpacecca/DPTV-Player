@@ -72,6 +72,7 @@ import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.core.live.LiveKey
+import tv.own.owntv.features.search.positionOf
 import tv.own.owntv.core.live.parseLiveKey
 import tv.own.owntv.core.live.serialize
 import tv.own.owntv.core.settings.SourceOverrides
@@ -536,6 +537,32 @@ class MovieViewModel(
     }
     fun setSearchQuery(query: String) { _search.value = query }
     fun onMovieFocused(movie: MovieEntity) { _selectedMovie.value = movie }
+
+    /** Search's "Go to movie": the titles scroll to [reveal] and focus it, then call [revealDone]. */
+    private val _reveal = MutableStateFlow<tv.own.owntv.features.search.Reveal?>(null)
+    val reveal: StateFlow<tv.own.owntv.features.search.Reveal?> = _reveal.asStateFlow()
+
+    /** Open [movie] where it lives: its own category, or All movies when that category is not in the
+     *  rail or the movie is not in it. It becomes the selected title (Cinematic's top shows it). */
+    fun revealMovie(movie: MovieEntity) {
+        _search.value = ""
+        _selectedMovie.value = movie
+        viewModelScope.launch {
+            val c = ctx.first { it.profileId >= 0 }
+            val sort = settings.sortMovies.first()
+            val folder = movie.categoryId?.let { LiveKey.Folder(it) }
+            val inRail = folder != null &&
+                kotlinx.coroutines.withTimeoutOrNull(2_000) { railItems.first { list -> list.any { it.key == folder } } } != null
+            for (key in listOfNotNull(folder.takeIf { inRail }, LiveKey.All)) {
+                val position = pagingSource(key, c, "", sort).positionOf(movie.id, { it.id }) ?: continue
+                if (lockedKey == null) select(key)
+                _reveal.value = tv.own.owntv.features.search.Reveal(key, movie.id, position)
+                return@launch
+            }
+        }
+    }
+
+    fun revealDone() { _reveal.value = null }
 
     /**
      * Manual "Refetch TMDB details" (plan §11.2 U5a): clear this movie's cached match/details (incl. a 7-day

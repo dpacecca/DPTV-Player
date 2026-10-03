@@ -1845,7 +1845,7 @@ private fun rememberAirDateLabel(
  * What the hero and the details card show for [series], with the §7.1 / §4.1 precedence: provider first,
  * TMDB filling the gaps — flipped when the source mode is TMDB-only. A show has no runtime of its own.
  */
-private fun seriesTitleInfo(
+internal fun seriesTitleInfo(
     series: tv.own.owntv.core.database.entity.SeriesEntity,
     meta: tv.own.owntv.core.database.entity.MetadataCacheEntity?,
     tmdbWins: Boolean,

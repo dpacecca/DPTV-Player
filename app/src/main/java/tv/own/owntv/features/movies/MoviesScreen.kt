@@ -337,6 +337,31 @@ fun MoviesScreen(
         }
         onRestored()
     }
+    // Search's "Go to movie": the same as Live TV's — scroll to where the movie sits, find its title by
+    // id and focus it, re-asserting while the old category's titles may still be showing.
+    val reveal by vm.reveal.collectAsStateWithLifecycle()
+    LaunchedEffect(reveal, selectedKey) {
+        val r = reveal ?: return@LaunchedEffect
+        if (selectedKey != r.key) return@LaunchedEffect
+        if (rememberMovies) perCategoryMovieIds[selectedKey] = r.id
+        var found = false
+        for (attempt in 0 until 50) {
+            if (movies.itemCount > 0) {
+                val idx = movies.itemSnapshotList.indexOfFirst { it?.id == r.id }
+                if (idx >= 0) {
+                    if (!gridPaneFocused) scrollToIndex(idx)
+                    withFrameNanos { }
+                    if (runCatching { selFocus.requestFocus() }.getOrDefault(false)) found = true
+                    if (found && attempt >= 8) break
+                } else {
+                    scrollToIndex(r.position.coerceAtMost(movies.itemCount - 1))
+                }
+            }
+            delay(100)
+        }
+        if (!found) runCatching { firstItemFocus.requestFocus() }
+        vm.revealDone()
+    }
     // Closing the long-press context menu must return focus inside this pane, never the CategoryRail.
     //   - Item still present (Favourite toggle / Download / Cancel): re-focus the same item by id.
     //   - Item removed (Remove from history, or un-Favourite on the Favorites category): the paged
@@ -1184,7 +1209,7 @@ private fun jsonList(json: String?): List<String> {
  * What the hero and the details card show for [movie], with the §7.1 / §4.1 precedence: provider first,
  * TMDB filling the gaps — flipped when the source mode is TMDB-only. Genres, cast and title art are TMDB's.
  */
-private fun movieTitleInfo(
+internal fun movieTitleInfo(
     movie: MovieEntity,
     meta: tv.own.owntv.core.database.entity.MetadataCacheEntity?,
     tmdbWins: Boolean,

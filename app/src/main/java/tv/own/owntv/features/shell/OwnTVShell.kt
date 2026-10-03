@@ -182,6 +182,7 @@ fun OwnTVShell(
     }
     // One-shot: set when leaving the player so the returning browse screen re-focuses the item you played.
     var restoreFocus by remember { mutableStateOf(false) }
+    var searchReturn by remember { mutableStateOf<MainSection?>(null) }
     var restoreTrendingSearchFocus by remember { mutableStateOf(false) }
     var trendingSearchActive by remember { mutableStateOf(false) }
     val player = koinInject<OwnTVPlayer>()
@@ -830,6 +831,21 @@ fun OwnTVShell(
         }
     }
 
+    // The section a Search result opened ("Go to"), so the first Back there returns to Search. Leaving
+    // that section any other way forgets it. The series page closes itself on Back (its own handler),
+    // so for a series the return follows the show closing.
+    fun returnToSearch() {
+        searchReturn = null
+        onSelectSection(MainSection.SEARCH)
+    }
+    LaunchedEffect(selectedSection) {
+        if (selectedSection != MainSection.SEARCH && selectedSection != searchReturn) searchReturn = null
+    }
+    val openedSeries by seriesVm.openedSeries.collectAsStateWithLifecycle()
+    LaunchedEffect(openedSeries == null) {
+        if (openedSeries == null && searchReturn == MainSection.SERIES && selectedSection == MainSection.SERIES) returnToSearch()
+    }
+
     BackHandler {
         when {
             playerMode == PlayerMode.FULLSCREEN -> exitPlayer()
@@ -843,6 +859,8 @@ fun OwnTVShell(
             // happened. Handled here as well so the answer is the same whichever handler fires; a
             // sub-screen of Settings still wins, because its handler is composed deeper than this.
             selectedSection == MainSection.SETTINGS -> { restoreFocus = true; onSelectSection(MainSection.MORE) }
+            // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
+            searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
             focusedLayer == ShellLayer.SIDEBAR -> showExit = true
             else -> runCatching { sidebarFocus.requestFocus() }
         }
@@ -1190,23 +1208,30 @@ fun OwnTVShell(
 
                         selectedSection == MainSection.SEARCH -> SearchScreen(
                             vm = searchVm,
-                            onFullscreen = { openFullscreen() },
-                            // Open the actual series (its episode list), then switch to the Series section —
-                            // the screen shares this SeriesViewModel, so it shows the opened show.
+                            liveVm = liveVm,
+                            previewEnabled = playerMode == PlayerMode.NONE,
+                            // OK on a result goes to it (issue #233) and Back comes back here once
+                            // (searchReturn). The series page is the same SeriesViewModel the Series
+                            // section shows; a channel or movie is revealed in its own category.
                             onOpenSeries = { series ->
-                                trendingSearchActive = false
                                 seriesVm.openSeries(series)
+                                searchReturn = MainSection.SERIES
                                 onSelectSection(MainSection.SERIES)
                             },
-                            // A channel found in Search tunes through the same LiveViewModel path as one
-                            // opened from Live TV or the Guide (F05) — Prefer HLS, the ExoPlayer→mpv
-                            // ladder, compatibility-mode pins, the external-player toggle, and CH+/- zap.
-                            onPlayChannel = { ch ->
+                            onGoToChannel = { ch ->
                                 restoreFocus = false
-                                liveVm.watchFromGuide(ch)
-                                zapSource = MainSection.LIVE_TV
-                                homeVm.stopPreview()
-                                if (playerMode != PlayerMode.MINI && !liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
+                                if (liveView == tv.own.owntv.core.settings.SettingsRepository.LiveView.GUIDE) {
+                                    liveVm.setLiveView(tv.own.owntv.core.settings.SettingsRepository.LiveView.LIST)
+                                }
+                                liveVm.revealChannel(ch)
+                                searchReturn = MainSection.LIVE_TV
+                                onSelectSection(MainSection.LIVE_TV)
+                            },
+                            onGoToMovie = { movie ->
+                                restoreFocus = false
+                                movieVm.revealMovie(movie)
+                                searchReturn = MainSection.MOVIES
+                                onSelectSection(MainSection.MOVIES)
                             },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                             returnToHomeOnBack = trendingSearchActive,
@@ -1954,7 +1979,7 @@ private fun OfflineBanner() {
     }
 
 /** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
-private val StageSections = setOf(MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS, MainSection.MORE, MainSection.SETTINGS)
+private val StageSections = setOf(MainSection.SEARCH, MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS, MainSection.MORE, MainSection.SETTINGS)
 
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {
