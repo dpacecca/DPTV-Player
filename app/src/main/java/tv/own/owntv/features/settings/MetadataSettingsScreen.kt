@@ -397,7 +397,8 @@ private fun MetadataTestLabel(state: SettingsViewModel.MetadataTestState) {
         is SettingsViewModel.MetadataTestState.Ok -> stringResource(
             R.string.settings_metadata_match_result,
             state.title,
-            state.year?.let { stringResource(R.string.settings_metadata_year, it) } ?: "",
+            // The space lives here: Weblate trims it from the start of the string resource.
+            state.year?.let { " " + stringResource(R.string.settings_metadata_year, it) } ?: "",
             state.tmdbId,
         ) to colors.primary
         is SettingsViewModel.MetadataTestState.Fail -> when (val failure = state.failure) {
