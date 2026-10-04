@@ -7,7 +7,7 @@
 > Issue numbers that are part of a title are fine; explanatory parentheticals are not. The detail —
 > what, why, files and verification — belongs in the commit message, never here.
 
-## Unreleased
+## v5.1.0 — 2026-10-04
 
 ### ✨ New features
 - **🎨 A completely new interface**
@@ -24,6 +24,7 @@
 - **Left always returns to the rail**
 - **Channel logos in the player's channel list match Live TV**
 - **Brand accent, Subtitle style and DNS presets found by Settings search**
+- **Play in external player finds VLC and MX Player on Android 11 and newer**
 
 ## v5.0.4 — 2026-09-26
 

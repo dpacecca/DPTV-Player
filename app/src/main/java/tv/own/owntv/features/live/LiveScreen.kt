@@ -315,8 +315,8 @@ fun LiveScreen(
             val step = ((info.visibleItemsInfo.firstOrNull()?.size ?: 0) + info.mainAxisItemSpacing).toFloat()
             val delta = when {
                 row == null -> if (i > (info.visibleItemsInfo.lastOrNull()?.index ?: 0)) step else -step
-                row.offset - step < info.viewportStartOffset -> (row.offset - step - info.viewportStartOffset).toFloat()
-                row.offset + row.size + step > info.viewportEndOffset -> (row.offset + row.size + step - info.viewportEndOffset).toFloat()
+                row.offset - step < info.viewportStartOffset -> row.offset - step - info.viewportStartOffset
+                row.offset + row.size + step > info.viewportEndOffset -> row.offset + row.size + step - info.viewportEndOffset
                 else -> 0f
             }
             if (delta != 0f) runCatching { effectiveListState.scrollBy(delta) }

@@ -2096,8 +2096,8 @@ private fun CatchupSourceValueHost(settingsVm: SettingsViewModel, src: tv.own.ow
         ) + settingsVm.catchupOffsetChoicesMinutes.map { "$CATCHUP_MANUAL_PREFIX$it" to utcOffsetLabel(it) },
         selected = when (src?.catchupTimezone) {
             null -> CATCHUP_FOLLOW
-            SettingsRepository.CatchupTimezone.MANUAL.name -> "$CATCHUP_MANUAL_PREFIX${src?.catchupOffsetMin ?: 0}"
-            else -> src?.catchupTimezone ?: CATCHUP_FOLLOW
+            SettingsRepository.CatchupTimezone.MANUAL.name -> "$CATCHUP_MANUAL_PREFIX${src.catchupOffsetMin ?: 0}"
+            else -> src.catchupTimezone ?: CATCHUP_FOLLOW
         },
         onSelect = { value ->
             src?.let {

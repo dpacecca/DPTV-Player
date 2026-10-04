@@ -586,7 +586,7 @@ internal fun LiveCategories(
                             selected = selected,
                             maxLines = 2,
                             tags = if (entry.name?.tags.isNullOrEmpty()) null else { focused ->
-                                entry.name!!.tags.forEach { StageTag(it, onAccent = if (focused) a.onAccent else null) }
+                                entry.name.tags.forEach { StageTag(it, onAccent = if (focused) a.onAccent else null) }
                             },
                             trailing = entry.mark?.let { m -> { _ -> StagePlaylistMark(m) } },
                             onLongClick = { onLongSelect(index) },

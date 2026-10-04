@@ -612,8 +612,8 @@ internal class VodStepper(private val scope: CoroutineScope, private val state: 
             val step = ((info.visibleItemsInfo.firstOrNull()?.size ?: 0) + info.mainAxisItemSpacing).toFloat()
             val delta = when {
                 item == null -> if (i > (info.visibleItemsInfo.lastOrNull()?.index ?: 0)) step else -step
-                item.offset - step < info.viewportStartOffset -> (item.offset - step - info.viewportStartOffset).toFloat()
-                item.offset + item.size + step > info.viewportEndOffset -> (item.offset + item.size + step - info.viewportEndOffset).toFloat()
+                item.offset - step < info.viewportStartOffset -> item.offset - step - info.viewportStartOffset
+                item.offset + item.size + step > info.viewportEndOffset -> item.offset + item.size + step - info.viewportEndOffset
                 else -> 0f
             }
             if (delta != 0f) runCatching { list.scrollBy(delta) }

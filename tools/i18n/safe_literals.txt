@@ -698,7 +698,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#F5B400
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#FFFFFF
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	$CATCHUP_MANUAL_PREFIX$it
-1	protocol	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	$CATCHUP_MANUAL_PREFIX${src?.catchupOffsetMin ?: 0}
+1	protocol	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	$CATCHUP_MANUAL_PREFIX${src.catchupOffsetMin ?: 0}
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	${proxy.host}:${proxy.port}
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	${src.name} · ${catchupOverrideLabel(src)}
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	${stringResource(R.string.settings_glass_depth_title)}: ${stringResource(if (depthEffects) R.string.common_on else R.string.common_off)}
