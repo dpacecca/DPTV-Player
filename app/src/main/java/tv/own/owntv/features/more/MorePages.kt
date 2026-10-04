@@ -117,7 +117,7 @@ private fun PageHead(title: String, trailing: @Composable RowScope.() -> Unit = 
 /** A dim caps heading inside a page ("WHAT'S INCLUDED"). */
 @Composable
 internal fun PageLabel(text: String, modifier: Modifier = Modifier) {
-    Text(text.uppercase(java.util.Locale.getDefault()), style = stageText(13, 800, 0.13.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = modifier)
+    Text(text.uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]), style = stageText(13, 800, 0.13.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = modifier)
 }
 
 /** `.tool.box` on a focused row ("▶ Resume", "✕ Remove"): 44 high, 16/700. */
@@ -483,7 +483,7 @@ internal fun HistoryPage(
                 val left = when {
                     e.durationMs > 0 && e.positionMs > 0 -> timeLeftText(((e.durationMs - e.positionMs).coerceAtLeast(0L) + 59_999L) / 60_000L)
                     // "0:14 watched": hours and minutes, as the mockup writes it.
-                    e.positionMs > 0 -> (e.positionMs / 60_000L).let { m -> stringResource(R.string.content_watched_duration, String.format(java.util.Locale.getDefault(), "%d:%02d", m / 60, m % 60)) }
+                    e.positionMs > 0 -> (e.positionMs / 60_000L).let { m -> stringResource(R.string.content_watched_duration, String.format(androidx.compose.ui.platform.LocalConfiguration.current.locales[0], "%d:%02d", m / 60, m % 60)) }
                     else -> null
                 }
                 val line = when (e.type) {
@@ -594,7 +594,7 @@ internal fun ErrorLogPage(setEntry: (() -> Boolean) -> Unit, onCountChanged: () 
                         titleSize = 21,
                         leading = {
                             Text(
-                                kind.first.uppercase(java.util.Locale.getDefault()),
+                                kind.first.uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]),
                                 style = stageText(13, 800, 0.05.em), color = kind.second, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.widthIn(min = 72.mpx)
                                     .background(if (kind.second == StageColors.TagText) Color.White.copy(alpha = 0.08f) else kind.second.copy(alpha = 0.16f), RoundedCornerShape(6.mpx))
@@ -654,7 +654,7 @@ internal fun AboutPage(vm: MoreCountsViewModel, entry: FocusRequester, onOpenLan
                         else -> null
                     }
                     tag?.let {
-                        Text(it.uppercase(java.util.Locale.getDefault()), style = stageText(13, 800, 0.05.em), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        Text(it.uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]), style = stageText(13, 800, 0.05.em), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.background(accent.copy(alpha = 0.2f), RoundedCornerShape(6.mpx)).padding(horizontal = 7.mpx, vertical = 3.mpx))
                     }
                 }

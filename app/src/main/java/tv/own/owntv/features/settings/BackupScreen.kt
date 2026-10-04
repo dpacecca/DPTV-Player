@@ -270,7 +270,7 @@ fun BackupScreen(
         }
 
         Text(
-            stringResource(R.string.more_backup_included).uppercase(java.util.Locale.getDefault()),
+            stringResource(R.string.more_backup_included).uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]),
             style = stageText(13, 800, 0.13.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 28.mpx, bottom = 12.mpx),
         )

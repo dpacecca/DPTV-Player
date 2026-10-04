@@ -1342,12 +1342,12 @@ private fun EpisodeView(
         ?.takeIf { it.positionMs > 0 && it.durationMs > 0 && target.id !in completedIds }
     // The episode's own title: the provider's without its show/code prefix, TMDB's where that leaves
     // nothing (or first, in TMDB-first mode), else "Episode 3".
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val resources = androidx.compose.ui.platform.LocalResources.current
     val epName: (EpisodeEntity, tv.own.owntv.core.database.entity.MetadataCacheEntity?) -> String = { ep, meta ->
         val tmdb = meta?.title?.takeIf { it.isNotBlank() }
         val own = EpisodeTitles.clean(ep.name, series.name)
         (if (metadataMode.tmdbWins) tmdb ?: own else own ?: tmdb)
-            ?: context.getString(R.string.player_episode_number, ep.episodeNumber)
+            ?: resources.getString(R.string.player_episode_number, ep.episodeNumber)
     }
     val durationSecs: (EpisodeEntity) -> Int? = { ep ->
         ep.durationSecs?.takeIf { it > 0 } ?: episodeProgress[ep.id]?.durationMs?.takeIf { it > 0 }?.let { (it / 1000).toInt() }

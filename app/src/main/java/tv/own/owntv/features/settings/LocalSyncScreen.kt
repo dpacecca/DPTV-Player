@@ -158,7 +158,7 @@ fun LocalSyncScreen(
             Column(Modifier.weight(1f)) {
                 if (paired.isNotEmpty()) {
                     Text(
-                        stringResource(R.string.local_sync_paired_devices).uppercase(java.util.Locale.getDefault()),
+                        stringResource(R.string.local_sync_paired_devices).uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]),
                         style = stageText(13, 800, 0.13.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 30.mpx, bottom = 12.mpx),
                     )

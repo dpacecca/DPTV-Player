@@ -102,7 +102,7 @@ internal fun ProfileSettingsRows() {
             onClick = { returnTo = p.id; editing = p },
             onLongClick = if (profiles.size > 1) ({ returnTo = p.id; confirmDelete = p }) else null,
             help = help,
-            modifier = Modifier.focusRequester(rowFocus.getOrPut(p.id) { FocusRequester() }),
+            modifier = Modifier.focusRequester(remember(p.id) { rowFocus.getOrPut(p.id) { FocusRequester() } }),
         )
     }
     StageSettingRow(

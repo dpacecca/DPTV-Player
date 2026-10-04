@@ -592,7 +592,7 @@ private fun PosterPanel(info: VodTitleInfo, series: Boolean, modifier: Modifier 
             Box(Modifier.fillMaxSize().gradientWash(true, 0f to Color.Transparent, 0.58f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.72f)))
             Box(Modifier.fillMaxSize().drawBehind { drawInnerRing(Color.White.copy(alpha = 0.08f), 1.mpx.toPx(), videoR.toPx()) })
             Text(
-                stringResource(if (series) R.string.search_series else R.string.search_movie).uppercase(java.util.Locale.getDefault()),
+                stringResource(if (series) R.string.search_series else R.string.search_movie).uppercase(androidx.compose.ui.platform.LocalConfiguration.current.locales[0]),
                 style = stageText(13, 800, 0.05.em), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -640,7 +640,7 @@ private fun Launcher(
     onClearRecent: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val locale = java.util.Locale.getDefault()
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     Column(modifier.focusGroup()) {
         GroupHeading(stringResource(R.string.search_jump_to).uppercase(locale), Modifier.padding(top = 8.mpx, bottom = 10.mpx))
         Row(horizontalArrangement = Arrangement.spacedBy(10.mpx)) {

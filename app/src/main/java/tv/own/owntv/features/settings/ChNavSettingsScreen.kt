@@ -102,7 +102,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         StageSettingsHeading(stringResource(R.string.settings_remote_shortcuts_assignments), sorted.size)
         val separator = dotSeparator()
         sorted.forEach { binding ->
-            val focus = bindingFocus.getOrPut(binding.keyCode to binding.press) { FocusRequester() }
+            val focus = remember(binding.keyCode, binding.press) { bindingFocus.getOrPut(binding.keyCode to binding.press) { FocusRequester() } }
             val pressLabel = stringResource(
                 if (binding.press == RemoteShortcutPress.SHORT) R.string.settings_remote_shortcuts_short_press
                 else R.string.settings_remote_shortcuts_long_press,
