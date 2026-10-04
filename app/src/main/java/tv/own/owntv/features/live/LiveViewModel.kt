@@ -1400,6 +1400,9 @@ class LiveViewModel(
         // tune would land half a second later and drag the user off the channel they just chose.
         pendingZapTuneJob?.cancel()
         pendingZapTuneJob = null
+        // Before the full-screen player is first drawn: a channel ExoPlayer is already previewing opens on
+        // ExoPlayer's surface straight away, instead of on mpv's until the tune below gets there.
+        live.expectPromotion(channel)
         // T6 — the controller's one tune job: a quicker second pick cancels the first wherever it has
         // got to, so two picks can no longer finish in the wrong order.
         live.launch { playChannel(channel) }
