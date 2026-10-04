@@ -685,6 +685,13 @@ Hide, rename, reorder, and **unhide**. Highlights:
 - **Custom combined categories** — **＋ New category**, then **Move to category…** from any item.
   **Remove from this category** (long-press a channel inside it, or here) takes it out of that category
   only. Hiding a channel's own provider category no longer hides it from your custom categories.
+- **Restore to playlist default** — long-press a category → **Restore to playlist default**
+  brings back its hidden items, returns items you moved out to another category, and clears your
+  custom order. It lists what it will change first, or says the category is already at the default.
+  In Settings → **Customize categories & items**, **⋯ More → Restore playlist defaults** does the same
+  for every category of the playlist(s) shown (the playlist picker at the top right), in the section you
+  are on (Live TV, Movies or Series): hidden categories and items, renames, category order and custom
+  order. Other playlists, combined categories, favorites and guide matches are kept.
 - **Span select** — long-press a **Hide** or **move** button to act on a whole block at once.
 - **PIN lock** this screen with **Set PIN**.
 

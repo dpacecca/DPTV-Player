@@ -273,8 +273,10 @@ category search box. **Customize** (per profile) hides, renames and reorders cat
 individual items, recovers hidden ones, filters to All/Visible/Hidden, and can be **PIN-locked**.
 **Bulk rename** applies ordered prefix/suffix rules with automatic cleanup, a review step and a
 restore-original undo. **Custom combined categories** gather items from anywhere. A category can also
-be hidden or moved straight from the browse screen by holding OK. All customizations survive
-re-syncs. Removing a channel from a custom category is recorded so a sync cannot bring it back, and
+be hidden, moved or restored to the playlist's default (hidden items, items moved out and custom
+order are listed and undone together) straight from the browse screen by holding OK; **Restore
+playlist defaults** in Customize's More menu does the same for the playlists shown in a section. All
+customizations survive re-syncs. Removing a channel from a custom category is recorded so a sync cannot bring it back, and
 hiding a provider category no longer empties custom categories. Custom categories also appear in the
 player's channel list and the Multiview picker. A typed category search is kept while a channel plays;
 Back in the list clears it.
