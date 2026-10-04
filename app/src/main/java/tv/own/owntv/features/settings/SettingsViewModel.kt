@@ -875,7 +875,7 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setNavLength(length) }
     }
     val navWiden: StateFlow<tv.own.owntv.core.settings.SettingsRepository.NavSize?> =
-        settings.navWiden.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.SettingsRepository.NavSize.NORMAL)
+        settings.navWiden.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     fun setNavWiden(size: tv.own.owntv.core.settings.SettingsRepository.NavSize?) { viewModelScope.launch { settings.setNavWiden(size) } }
 
     val navHideAfterMs: StateFlow<Int> =
