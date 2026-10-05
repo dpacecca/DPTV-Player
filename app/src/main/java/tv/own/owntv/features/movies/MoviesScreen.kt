@@ -99,6 +99,9 @@ import tv.own.owntv.features.live.displayLabel
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.Text
 import tv.own.owntv.R
+import tv.own.owntv.features.customize.categoryRestoreSummary
+import tv.own.owntv.features.customize.CategoryRestorePlan
+import androidx.compose.runtime.produceState
 import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.database.entity.ContentOrderEntity
 import tv.own.owntv.core.database.entity.DownloadEntity
@@ -1113,12 +1116,17 @@ fun MoviesScreen(
     }
 
     contextCategory?.let { item ->
+        val restorePlan by produceState<CategoryRestorePlan?>(null, item.key) { value = vm.categoryRestorePlan(item.key) }
         CategoryContextMenu(
             categoryName = item.displayLabel(R.string.content_category_all_movies),
             canHide = item.key is LiveKey.Folder || item.key is LiveKey.Custom,
             canMove = item.key is LiveKey.Folder || item.key is LiveKey.Custom,
             onHide = { vm.hideCategory(item.key); contextCategory = null },
             onMove = { vm.enterCategoryMoveMode(item.key); contextCategory = null },
+            // Always offered: the plan is read in the background and only fills in the confirmation.
+            resetLabel = stringResource(if (item.key is LiveKey.Custom) R.string.content_category_restore_custom else R.string.content_category_restore_playlist),
+            resetLines = restorePlan?.let { categoryRestoreSummary(it) },
+            onReset = { vm.restoreCategory(item.key); contextCategory = null },
             onDismiss = { contextCategory = null }
         )
     }

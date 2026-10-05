@@ -47,6 +47,9 @@ import androidx.paging.map
 import tv.own.owntv.core.customize.CustomizationStore
 import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.features.customize.MoveTarget
+import tv.own.owntv.features.customize.CategoryRestorePlan
+import tv.own.owntv.features.customize.planCategoryRestore
+import tv.own.owntv.features.customize.restoreCategoryToDefault
 import tv.own.owntv.core.epg.CatchupUrl
 import tv.own.owntv.core.live.StreamGrant
 import tv.own.owntv.core.recording.RecordingSchedule
@@ -653,6 +656,35 @@ class LiveViewModel(
     fun hideCategory(key: LiveKey) {
         viewModelScope.launch {
             categoryEditor.hide(currentProfileId() ?: return@launch, MediaType.LIVE, key)
+        }
+    }
+
+    /** The content_order / movedFromOrigin context behind a rail key, or null for All / Favorites / History. */
+    private fun categoryContextKey(key: LiveKey): String? = when (key) {
+        is LiveKey.Folder -> folderContextKeys.value[key.id]
+        is LiveKey.Custom -> key.id
+        else -> null
+    }
+
+    /** What restoring [key]'s category to the playlist default would undo (empty when nothing). */
+    suspend fun categoryRestorePlan(key: LiveKey): CategoryRestorePlan {
+        val contextKey = categoryContextKey(key) ?: return CategoryRestorePlan()
+        val pid = currentProfileId() ?: return CategoryRestorePlan()
+        return planCategoryRestore(customize, contentOrderDao, pid, MediaType.LIVE, contextKey, customCategoryDao) {
+            when (key) {
+                is LiveKey.Folder -> channelDao.snapshotByCategoryManual(key.id, pid, contextKey, Int.MAX_VALUE)
+                    .mapTo(HashSet()) { CustomizeKeys.channel(it) }
+                else -> customCategoryDao.stableItemKeys(pid, contextKey).toSet()
+            }
+        }
+    }
+
+    /** Back to the playlist's order and contents (see [restoreCategoryToDefault]). */
+    fun restoreCategory(key: LiveKey) {
+        val contextKey = categoryContextKey(key) ?: return
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            restoreCategoryToDefault(customize, contentOrderDao, pid, MediaType.LIVE, contextKey, categoryRestorePlan(key))
         }
     }
 
@@ -1400,6 +1432,9 @@ class LiveViewModel(
         // tune would land half a second later and drag the user off the channel they just chose.
         pendingZapTuneJob?.cancel()
         pendingZapTuneJob = null
+        // Before the full-screen player is first drawn: a channel ExoPlayer is already previewing opens on
+        // ExoPlayer's surface straight away, instead of on mpv's until the tune below gets there.
+        live.expectPromotion(channel)
         // T6 — the controller's one tune job: a quicker second pick cancels the first wherever it has
         // got to, so two picks can no longer finish in the wrong order.
         live.launch { playChannel(channel) }
