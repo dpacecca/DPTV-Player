@@ -21,6 +21,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -117,6 +118,11 @@ private const val PLAYER_SHORTCUT_LONG_PRESS_MS = 600L
  *  20 × 300 ms = 6 s, comfortably past the slowest observed HDR/DTS track report, then it stops. */
 private const val TRACK_POLL_MS = 300L
 private const val TRACK_POLL_TRIES = 20
+
+/** A stall shorter than this is an ordinary re-buffer and gets the plain spinner. Past it, a line under the
+ *  spinner says the stream is reconnecting by itself, so a long outage doesn't look like a hung app.
+ *  Counted from the stall, which itself only starts once the buffer (~10s) has run dry. */
+private const val RECONNECT_NOTICE_AFTER_MS = 10_000L
 
 internal enum class HudDialog { NONE, AUDIO, SUBS, SPEED, ZOOM, QUALITY, VOLUME, JUMP_BACK, SLEEP_TIMER }
 
@@ -230,6 +236,7 @@ fun PlayerHud(
     val error by player.error.collectAsStateWithLifecycle()
     val errorInfo by player.errorInfo.collectAsStateWithLifecycle()
     val providerBackOff by player.providerBackOff.collectAsStateWithLifecycle()
+    val stalledSinceMs by player.stalledSinceMs.collectAsStateWithLifecycle()
     val nav by player.nav.collectAsStateWithLifecycle()
     val volume by player.volume.collectAsStateWithLifecycle()
     val videoRes by player.videoRes.collectAsStateWithLifecycle()
@@ -815,6 +822,23 @@ fun PlayerHud(
             // why nothing is happening yet, so nobody reaches for Retry (or thinks the channel is dead).
             buffering -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 OwnTVSpinner(sizeDp = 56)
+                val stalledSince = stalledSinceMs
+                if (providerBackOff == null && stalledSince != null) {
+                    val showNotice by produceState(false, stalledSince) {
+                        delay(RECONNECT_NOTICE_AFTER_MS - (android.os.SystemClock.elapsedRealtime() - stalledSince))
+                        value = true
+                    }
+                    if (showNotice) {
+                        Spacer(Modifier.height(14.dp))
+                        Text(
+                            stringResource(R.string.player_reconnecting),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.85f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(0.7f),
+                        )
+                    }
+                }
                 providerBackOff?.let { wait ->
                     Spacer(Modifier.height(14.dp))
                     Text(
