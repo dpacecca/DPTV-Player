@@ -572,21 +572,23 @@ private fun RestoreConfirmPopup(
                     ),
                     style = tv.own.owntv.ui.theme.stageText(18, 600),
                     color = tv.own.owntv.ui.theme.StageColors.MenuItemText,
-                    modifier = Modifier.padding(horizontal = 14.mpx, vertical = 6.mpx),
+                    modifier = Modifier.padding(start = 14.mpx, end = 14.mpx, top = 8.mpx, bottom = 12.mpx),
                 )
                 lines?.forEach { line ->
                     androidx.compose.foundation.layout.Row(
-                        modifier = Modifier.padding(start = 22.mpx, end = 14.mpx, bottom = 4.mpx),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(10.mpx),
+                        modifier = Modifier.padding(start = 22.mpx, end = 14.mpx, bottom = 10.mpx),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.mpx),
                     ) {
                         androidx.compose.foundation.layout.Box(
-                            Modifier.padding(top = 9.mpx).size(6.mpx).clip(CircleShape)
+                            Modifier.size(6.mpx).clip(CircleShape)
                                 .background(tv.own.owntv.ui.theme.StageColors.Muted),
                         )
                         Text(line, style = tv.own.owntv.ui.theme.stageText(17, 500), color = tv.own.owntv.ui.theme.StageColors.Muted)
                     }
                 }
+                // Room between what will change and what to do about it.
+                androidx.compose.foundation.layout.Spacer(Modifier.height(18.mpx))
                 // Restore is only offered once the lines are known and there is something to undo.
                 if (!lines.isNullOrEmpty()) {
                     tv.own.owntv.ui.stage.StageMenuItem(
