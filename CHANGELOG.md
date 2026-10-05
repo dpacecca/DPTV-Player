@@ -7,6 +7,16 @@
 > Issue numbers that are part of a title are fine; explanatory parentheticals are not. The detail —
 > what, why, files and verification — belongs in the commit message, never here.
 
+## Unreleased
+
+### ✨ New features
+- **↩️ Restore a category, or the playlists shown, to the playlist default** (community PR #235 by @tvdev-android)
+- **🔄 "Stream interrupted. Reconnecting…" while a live channel recovers** (community PR #237 by @tvdev-android)
+
+### 🐛 Fixes
+- **⚡ Opening a channel from its preview goes straight to full screen, no black gap** (community PR #242 by @tvdev-android)
+- **Customize no longer keeps a removed item's actions on screen**
+
 ## v5.1.0 — 2026-10-04
 
 ### ✨ New features

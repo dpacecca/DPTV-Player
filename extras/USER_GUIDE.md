@@ -193,6 +193,8 @@ under **Advanced device identification**.
 **Where:** Live TV → focus a channel → **OK**
 The preview pane plays it first; OK goes full screen with no reload. Beside the video: the programme,
 its progress and time left, the synopsis, and what's on next and later.
+If the stream stalls, the last picture stays on screen; after about 10 seconds the player says
+**Stream interrupted. Reconnecting…** and the picture comes back by itself when the network does.
 
 ### 🗂️ Categories
 **Where:** Live TV → **Left**
