@@ -338,6 +338,8 @@ dropped; playback jumps over it.
 ### ⏭️ Catch-up plays on
 A finished catch-up programme continues to the next one, and hands over to the live channel once you
 catch up with the present. Controlled by **Settings → Watching & recording → Auto-play next episode**.
+If you replay a programme that is still on air and the provider stops sending it partway, the
+channel switches to live by itself instead of freezing.
 
 ### 🕰️ Two clocks
 While replaying, the player shows **Programme time** (when it originally aired) next to **Current

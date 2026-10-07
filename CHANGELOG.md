@@ -16,6 +16,8 @@
 ### 🐛 Fixes
 - **⚡ Opening a channel from its preview goes straight to full screen, no black gap** (community PR #242 by @tvdev-android)
 - **Customize no longer keeps a removed item's actions on screen**
+- **🎞️ Catch-up plays on the hardware decoder and freezes on its first frame less often (#229)**
+- **📡 A catch-up of a programme still on air switches to live instead of freezing**
 
 ## v5.1.0 — 2026-10-04
 

@@ -1117,6 +1117,7 @@ class LiveViewModel(
             }
         }
         viewModelScope.launch { player.archiveEnded.collect { continueAfterCatchup() } }
+        viewModelScope.launch { player.archiveStalled.collect { liveAfterStall() } }
         // T17 / decision 5: on a 2 GB TV the preview pane decodes at most 720p — a second full-size
         // decoder re-tuning on every focus step is the heaviest background cost there. Lifted the moment
         // the channel goes full-screen, so the promoted stream switches up to its full variant.
@@ -1667,6 +1668,21 @@ class LiveViewModel(
                 CatchupContinue.Next.Stop -> Unit // no guide beyond here — stop, as before
             }
         }
+    }
+
+    /**
+     * The archive on screen stopped arriving ([OwnTVPlayer.archiveStalled]). A replay of a programme
+     * still on air, or a rewind close to now, goes live instead of freezing; anything else stays with
+     * the player's own recovery. The rule is core's [CatchupContinue.liveAfterStall].
+     */
+    private fun liveAfterStall() {
+        val programmeStop = if (_catchupActive.value) playingCatchupProgramme?.stopMs else null
+        val rewound = timeshift.offsetSec.value != null
+        if (programmeStop == null && !rewound) return
+        val watching = if (rewound) timeshift.watchingWallMs.value else null
+        if (!CatchupContinue.liveAfterStall(programmeStop, watching, System.currentTimeMillis())) return
+        _catchupActive.value = false // as [continueAfterCatchup]: the channel is tuned live, not replayed
+        goToLive()
     }
 
     // ---- Live rewind / timeshift: the view model's half ---------------------------------------------
