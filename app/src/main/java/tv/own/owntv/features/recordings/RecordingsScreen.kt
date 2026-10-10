@@ -82,7 +82,7 @@ internal fun LazyListScope.recordingItems(
                 onClick = if (r.status == RecordingStatus.COMPLETED) ({ onPlay(r) }) else null,
                 art = {
                     // The channel's logo on its plate, as everywhere a channel is named.
-                    Box(Modifier.fillMaxSize().background(Color(0xFF0F1518)).padding(14.mpx), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxSize().background(tv.own.owntv.ui.stage.stageStillBack).padding(14.mpx), contentAlignment = Alignment.Center) {
                         tv.own.owntv.features.live.LivePlate(r.channelIconUrl, 162.mpx, 79.mpx)
                     }
                 },

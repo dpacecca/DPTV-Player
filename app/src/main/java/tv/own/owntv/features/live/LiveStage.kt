@@ -1,5 +1,7 @@
 package tv.own.owntv.features.live
 
+import tv.own.owntv.ui.theme.stageTone
+import tv.own.owntv.ui.theme.stageShadow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
@@ -67,6 +69,7 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.components.trapVerticalFocusExit
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
+import tv.own.owntv.ui.stage.shownColor
 import tv.own.owntv.ui.stage.PlaylistMark
 import tv.own.owntv.ui.stage.StageGroupLabel
 import tv.own.owntv.ui.stage.StageLiveBadge
@@ -151,14 +154,14 @@ internal fun LiveStageRow(
             Text(
                 channel.number?.toString().orEmpty(),
                 style = stageText(20, 600).copy(textAlign = TextAlign.End, fontFeatureSettings = Tabular),
-                color = if (focused) Color(0xFFE6F2EE) else StageColors.Dim,
+                color = if (focused) stageTone(Color(0xFFE6F2EE), StageColors.FxLine) else StageColors.Dim,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.width(50.mpx),
             )
         }
         LivePlate(channel.displayLogoUrl, 76.mpx, 54.mpx)
         Column(Modifier.weight(1f)) {
-            Text(name.name, style = stageText(22, 700), color = if (focused) Color.White else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(name.name, style = stageText(22, 700), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val title = now?.title ?: nowTitle
             if (title != null) {
                 val left = now?.let { timeLeftText(minutesLeft(it)) }
@@ -166,9 +169,9 @@ internal fun LiveStageRow(
                 Text(
                     buildAnnotatedString {
                         append(title)
-                        if (left != null) withStyle(SpanStyle(color = (if (focused) Color(0xFFD9E6E1) else StageColors.Muted).copy(alpha = 0.6f))) { append(" · $left") }
+                        if (left != null) withStyle(SpanStyle(color = (if (focused) StageColors.FxLine else StageColors.Muted).copy(alpha = 0.6f))) { append(" · $left") }
                     },
-                    style = stageText(17, 400), color = if (focused) Color(0xFFD9E6E1) else StageColors.Muted,
+                    style = stageText(17, 400), color = if (focused) StageColors.FxLine else StageColors.Muted,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -250,13 +253,14 @@ internal fun LiveStagePane(
         previewState != tv.own.owntv.player.LivePreviewEngine.State.IDLE
     val loading = showVideo && previewState == tv.own.owntv.player.LivePreviewEngine.State.LOADING
     val videoR = 28.mpx
+    val videoShadow = tv.own.owntv.ui.theme.stageShadow(0.55f)
     Column(modifier) {
         Box(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
                 .drawBehind {
-                    drawBoxShadow(Color.Black.copy(alpha = 0.55f), 80.mpx.toPx(), videoR.toPx(), dy = 30.mpx.toPx())
+                    drawBoxShadow(videoShadow, 80.mpx.toPx(), videoR.toPx(), dy = 30.mpx.toPx())
                 }
                 .clip(RoundedCornerShape(videoR))
                 .background(Color.Black),
@@ -318,7 +322,7 @@ internal fun LiveStagePane(
                 }
                 now.description?.takeIf { it.isNotBlank() }?.let {
                     Text(
-                        it, style = stageText(19, 400).copy(lineHeight = (19 * 1.55f).mpxSp), color = Color(0xFFCCD6D2),
+                        it, style = stageText(19, 400).copy(lineHeight = (19 * 1.55f).mpxSp), color = stageTone(Color(0xFFCCD6D2), StageColors.Body),
                         maxLines = 3, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 18.mpx),
                     )
@@ -643,7 +647,7 @@ private fun LiveColumnItem(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.mpx)) {
                 Text(
                     entry.label, style = stageText(18.5f, 600),
-                    color = on ?: if (selected) a.accent else Color(0xFFCDD7D3),
+                    color = on ?: if (selected) a.accent else stageTone(Color(0xFFCDD7D3), StageColors.ItemText),
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
                 // Tags on their own line, so a long name is never cut for them (owner, 2026-09-30).
@@ -651,7 +655,7 @@ private fun LiveColumnItem(
                 if (tags.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(6.mpx)) { tags.forEach { StageTag(it, onAccent = on) } }
             }
             entry.count?.let { Text(tv.own.owntv.ui.components.formatCount(it), style = stageText(15, 700), color = on ?: StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-            entry.mark?.let { m -> Box(Modifier.size(7.mpx).background(m.color, RoundedCornerShape(50))) }
+            entry.mark?.let { m -> Box(Modifier.size(7.mpx).background(m.shownColor, RoundedCornerShape(50))) }
         }
     }
 }

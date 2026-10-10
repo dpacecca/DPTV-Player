@@ -261,7 +261,9 @@ screens entirely — there is no "classic" mode. Every screen sits on a full-wid
 - **Panel widths** — named by the layout each screen uses: Separate layouts keep three shares
   (the third may be 0%), Live TV Stage sizes list + preview and the categories sheet on its own scale,
   Cinematic sizes the sheet and the details height. The Guide's two columns split independently.
-  Theme is System / Dark / Light.
+  Theme is System / Dark / Light. Light repaints the whole app — pages, glass, focus rings (the accent with a
+  page-coloured gap), the player HUD and its lists — from one dark/light Stage palette; video stays as it is,
+  white TMDB title art is redrawn in dark ink, and a background picture fades towards the paper.
 
 **Live TV layout** is **Stage** (categories as a sheet on ◀) or **Separate** (an always-visible
 column). **Movies & Series layout** is shared by both sections: **Separate panels** — category column,

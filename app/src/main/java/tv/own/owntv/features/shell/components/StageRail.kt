@@ -175,7 +175,7 @@ fun StageRail(
 
     Box(modifier.fillMaxSize()) {
         if (state == RailState.OPEN && open) {
-            Box(Modifier.fillMaxSize().background(Color(2, 5, 6).copy(alpha = 0.55f)))
+            Box(Modifier.fillMaxSize().background(StageColors.Scrim))
         }
         if (state == RailState.HIDDEN) RailEdgeGlow(Modifier.align(Alignment.CenterStart))
 
@@ -328,7 +328,7 @@ private fun RailSeparator(open: Boolean) {
         Modifier
             .then(if (open) Modifier.fillMaxWidth().padding(horizontal = 14.mpx, vertical = 10.mpx) else Modifier.padding(vertical = 8.mpx).width(34.mpx))
             .height(1.mpx)
-            .background(Color.White.copy(alpha = 0.12f)),
+            .background(StageColors.Ink.copy(alpha = 0.12f)),
     )
 }
 
@@ -363,7 +363,7 @@ private fun RailItem(
         val iconTint = when {
             focused -> a.onAccent
             active || accentIcon -> a.accent
-            else -> Color(0xFFC4CFCA)
+            else -> StageColors.NavText
         }
         if (!open) {
             OwnTVIcon(icon, iconTint, Modifier.size(27.mpx))

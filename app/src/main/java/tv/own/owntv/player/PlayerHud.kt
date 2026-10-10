@@ -1,5 +1,7 @@
 package tv.own.owntv.player
 
+import tv.own.owntv.ui.theme.hudShade
+import tv.own.owntv.ui.theme.hudInk
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -646,16 +648,16 @@ fun PlayerHud(
             Box(Modifier.align(Alignment.TopStart).fillMaxWidth().height(210.dp)
                 .gradientWash(
                     vertical = true,
-                    0.0f to Color.Black.copy(alpha = 0.72f),
-                    0.5f to Color.Black.copy(alpha = 0.68f),
+                    0.0f to hudShade(0.72f),
+                    0.5f to hudShade(0.68f),
                     1.0f to Color.Transparent,
                 ))
             Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(260.dp)
                 .gradientWash(
                     vertical = true,
                     0.0f to Color.Transparent,
-                    0.45f to Color.Black.copy(alpha = 0.68f),
-                    1.0f to Color.Black.copy(alpha = 0.78f),
+                    0.45f to hudShade(0.68f),
+                    1.0f to hudShade(0.78f),
                 ))
 
             // The active engine (MPV/EXO) leads the mini chips so users can always tell which player is on.
@@ -748,11 +750,11 @@ fun PlayerHud(
                 Text(
                     msg,
                     style = MaterialTheme.typography.labelLarge,
-                    color = Color.White,
+                    color = hudInk,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color.Black.copy(alpha = 0.55f))
+                        .background(hudShade(0.55f))
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }

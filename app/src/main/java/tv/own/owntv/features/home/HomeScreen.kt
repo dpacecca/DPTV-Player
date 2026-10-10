@@ -1,5 +1,7 @@
 package tv.own.owntv.features.home
 
+import tv.own.owntv.ui.theme.stageTone
+import tv.own.owntv.ui.stage.backdropLeftWash
 import android.graphics.SurfaceTexture
 import android.view.Surface
 import android.view.TextureView
@@ -70,7 +72,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
-import coil3.compose.AsyncImagePainter
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import tv.own.owntv.R
@@ -695,16 +696,7 @@ private fun TrendingBackdrop(item: TrendingHomeItem, folded: Boolean, modifier: 
         ) {
             AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             if (!folded) {
-                val wash = Color(5, 8, 10)
-                Box(
-                    Modifier.fillMaxSize().gradientWash(
-                        false,
-                        0f to wash.copy(alpha = 0.70f),
-                        0.30f to wash.copy(alpha = 0.35f),
-                        0.60f to wash.copy(alpha = 0f),
-                        1f to wash.copy(alpha = 0f),
-                    ),
-                )
+                Box(Modifier.fillMaxSize().backdropLeftWash(0f to 0.70f, 0.30f to 0.35f, 0.60f to 0f, 1f to 0f))
             }
         }
     }
@@ -838,12 +830,10 @@ private fun TrendingHero(
             var logoFailed by remember(extras.logoUrl) { mutableStateOf(false) }
             val showLogo = !extras.logoUrl.isNullOrBlank() && !logoFailed
             if (showLogo) {
-                AsyncImage(
-                    model = extras.logoUrl,
+                tv.own.owntv.ui.stage.StageTitleArt(
+                    url = extras.logoUrl,
                     contentDescription = snapshot.localizedTitle,
-                    contentScale = ContentScale.Fit,
-                    alignment = Alignment.CenterStart,
-                    onState = { if (it is AsyncImagePainter.State.Error) logoFailed = true },
+                    onFailed = { logoFailed = true },
                     modifier = Modifier.fillMaxWidth().height(170.mpx),
                 )
             } else {
@@ -862,7 +852,7 @@ private fun TrendingHero(
             Spacer(Modifier.height(18.mpx))
             Row(horizontalArrangement = Arrangement.spacedBy(16.mpx), verticalAlignment = Alignment.CenterVertically) {
                 val metaStyle = stageText(21, 600)
-                val metaColor = Color(0xFFD3DCD8)
+                val metaColor = stageTone(Color(0xFFD3DCD8), StageColors.Body)
                 meta.forEachIndexed { i, part ->
                     if (i > 0) Text("•", style = metaStyle, color = metaColor.copy(alpha = 0.4f))
                     Text(part, style = metaStyle, color = metaColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -881,7 +871,7 @@ private fun TrendingHero(
                 Text(
                     overview,
                     style = stageText(22, 400).copy(lineHeight = (22 * 1.55f).mpxSp),
-                    color = Color(0xFFC9D3CF),
+                    color = StageColors.Body,
                     // Four lines as drawn; a title that needs a second line (112 high) takes three of
                     // them, so the pager still ends above the Keep watching heading.
                     // The title art is 170 high, 58 more than one title line, so it costs two of them.
@@ -1002,7 +992,7 @@ private fun TrendingPager(count: Int, activeIndex: Int, progress: Float, onNavig
                     Modifier
                         .size(if (i == activeIndex) 70.mpx else 34.mpx, 5.mpx)
                         .clip(RoundedCornerShape(3.mpx))
-                        .background(Color.White.copy(alpha = if (focused) 0.28f else 0.18f)),
+                        .background(StageColors.Ink.copy(alpha = if (focused) 0.28f else 0.18f)),
                 ) {
                     Box(
                         Modifier.fillMaxWidth(fill).height(5.mpx)
@@ -1098,7 +1088,7 @@ private fun keepWatchingLine(item: HeroItem): String? {
 private fun StillArtwork(still: HomeStill) {
     when (still) {
         is HomeStill.Picture -> AsyncImage(model = still.url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        is HomeStill.Logo -> Box(Modifier.fillMaxSize().background(Color(0xFF0F1518)), contentAlignment = Alignment.Center) {
+        is HomeStill.Logo -> Box(Modifier.fillMaxSize().background(tv.own.owntv.ui.stage.stageStillBack), contentAlignment = Alignment.Center) {
             tv.own.owntv.ui.components.ChannelLogoTile(
                 logoUrl = still.url,
                 modifier = Modifier.fillMaxSize(0.5f).clip(RoundedCornerShape(12.mpx)),
@@ -1106,7 +1096,7 @@ private fun StillArtwork(still: HomeStill) {
                 fill = Color.Transparent,
             ) {}
         }
-        HomeStill.None -> Box(Modifier.fillMaxSize().background(Color(0xFF0F1518)), contentAlignment = Alignment.Center) {
+        HomeStill.None -> Box(Modifier.fillMaxSize().background(tv.own.owntv.ui.stage.stageStillBack), contentAlignment = Alignment.Center) {
             OwnTVIcon(OwnTVIcon.PLAY_CIRCLE, tint = StageColors.Dim, modifier = Modifier.size(40.mpx))
         }
     }

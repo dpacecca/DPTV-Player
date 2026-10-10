@@ -83,7 +83,7 @@ fun CategoryBrowserOverlay(
 
     BackHandler { onDismiss() }
 
-    val shade = Color(2, 5, 6)
+    val shade = tv.own.owntv.ui.theme.stageTone(Color(2, 5, 6), Color(244, 247, 245))
     Box(
         modifier = modifier
             .fillMaxSize()

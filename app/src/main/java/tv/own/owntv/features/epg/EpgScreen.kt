@@ -71,6 +71,7 @@ import tv.own.owntv.features.live.liveEpgShiftLabel
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.stage.StageButton
+import tv.own.owntv.ui.stage.shownColor
 import tv.own.owntv.ui.stage.stageFocusLook
 import tv.own.owntv.ui.stage.StageSearchField
 import tv.own.owntv.ui.stage.StageTool
@@ -554,7 +555,7 @@ fun EpgScreen(
                                     vm = vm,
                                     channel = channel,
                                     name = rowName(channel),
-                                    dot = playlistMarks[channel.sourceId]?.color,
+                                    dot = playlistMarks[channel.sourceId]?.shownColor,
                                     labelWidth = labelW,
                                     numberWidth = numberWidth,
                                     windowStart = state.windowStart,

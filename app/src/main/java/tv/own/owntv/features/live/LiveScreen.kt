@@ -1268,7 +1268,7 @@ private fun ChannelContextMenu(
     ).map { it.uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale) }
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, stageLayout = true) {
         BoxWithConstraints(
-            Modifier.fillMaxSize().background(Color(2, 5, 6).copy(alpha = 0.55f)).longPressMenuGuard(),
+            Modifier.fillMaxSize().background(tv.own.owntv.ui.theme.StageColors.Scrim).longPressMenuGuard(),
         ) {
             val w = maxWidth
             tv.own.owntv.ui.stage.StageMenu(
@@ -1422,7 +1422,7 @@ internal fun EpgMatchDialog(
     // The Stage picker: a menu panel over the scrim, focus trapped inside, the list capped so Close stays reachable.
     tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, stageLayout = true) {
         androidx.compose.foundation.layout.Box(
-            Modifier.fillMaxSize().background(Color(2, 5, 6).copy(alpha = 0.55f)),
+            Modifier.fillMaxSize().background(tv.own.owntv.ui.theme.StageColors.Scrim),
             contentAlignment = Alignment.Center,
         ) {
             tv.own.owntv.ui.stage.StageMenu(Modifier.width(640.mpx).trapAllFocusExit().focusGroup()) {

@@ -187,7 +187,7 @@ fun BackupScreen(
                         Modifier
                             .background(StageColors.Warn.copy(alpha = 0.1f), cardShape)
                             .border(1.5.mpx, StageColors.Warn.copy(alpha = 0.35f), cardShape)
-                    } else Modifier.background(Color.White.copy(alpha = 0.05f), cardShape),
+                    } else Modifier.background(StageColors.Ink.copy(alpha = 0.05f), cardShape),
                 )
                 .padding(24.mpx),
             horizontalArrangement = Arrangement.spacedBy(20.mpx),

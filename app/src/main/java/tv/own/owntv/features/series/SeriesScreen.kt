@@ -2,6 +2,7 @@
 
 package tv.own.owntv.features.series
 
+import tv.own.owntv.ui.stage.backdropLeftWash
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.PaddingValues
@@ -1440,7 +1441,7 @@ private fun EpisodeView(
             )
             info.plot?.takeIf { it.isNotBlank() }?.let {
                 Text(
-                    it, style = stageText(19.5f, 400).copy(lineHeight = (19.5f * 1.55f).mpxSp), color = Color(0xFFC9D3CF),
+                    it, style = stageText(19.5f, 400).copy(lineHeight = (19.5f * 1.55f).mpxSp), color = StageColors.Body,
                     maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 860.mpx),
                 )
             }
@@ -1625,7 +1626,7 @@ private fun EpisodeView(
                                 Column(Modifier.weight(1f)) {
                                     Text(
                                         stringResource(R.string.content_episode_numbered, localizedInteger(ep.episodeNumber, grouping = false), title),
-                                        style = stageText(24, 700), color = if (focused) Color.White else StageColors.Text,
+                                        style = stageText(24, 700), color = if (focused) StageColors.FxText else StageColors.Text,
                                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                                     )
                                     Text(
@@ -1919,7 +1920,7 @@ internal fun seriesTitleInfo(
  */
 @Composable
 private fun EpisodesBackdrop(url: String?, modifier: Modifier = Modifier) {
-    val wash = Color(5, 8, 10)
+    val wash = StageColors.Wash
     Box(modifier.fillMaxWidth(1400f / 1920f).aspectRatio(2f).dissolveEdges(start = 0.34f, bottom = 0.38f)) {
         if (!url.isNullOrBlank()) {
             AsyncImage(
@@ -1927,7 +1928,7 @@ private fun EpisodesBackdrop(url: String?, modifier: Modifier = Modifier) {
                 alignment = androidx.compose.ui.BiasAlignment(1f, -0.4f), modifier = Modifier.fillMaxSize(),
             )
         }
-        Box(Modifier.fillMaxSize().gradientWash(false, 0f to wash.copy(alpha = 0.8f), 0.34f to wash.copy(alpha = 0.3f), 0.6f to wash.copy(alpha = 0f), 1f to wash.copy(alpha = 0f)))
+        Box(Modifier.fillMaxSize().backdropLeftWash(0f to 0.8f, 0.34f to 0.3f, 0.6f to 0f, 1f to 0f))
         Box(Modifier.fillMaxSize().gradientWash(true, 0f to wash.copy(alpha = 0f), 0.6f to wash.copy(alpha = 0f), 0.97f to wash.copy(alpha = 0.9f), 1f to wash.copy(alpha = 0.9f)))
     }
 }
@@ -1945,7 +1946,7 @@ private fun episodeStillUrl(
 
 @Composable
 private fun EpisodeStill(url: String?, filter: androidx.compose.ui.graphics.ColorFilter?) {
-    Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.06f)), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(StageColors.Ink.copy(alpha = 0.06f)), contentAlignment = Alignment.Center) {
         if (!url.isNullOrBlank()) {
             AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, colorFilter = filter, modifier = Modifier.fillMaxSize())
         } else {

@@ -112,7 +112,7 @@ internal fun OnNowCard(
         modifier = modifier.size(width, 132.mpx),
         onLongClick = onLongClick,
         focusStyle = StageFocus.FX,
-        idle = Modifier.background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(StageRadii.Row)),
+        idle = Modifier.background(StageColors.Ink.copy(alpha = 0.05f), RoundedCornerShape(StageRadii.Row)),
         contentAlignment = Alignment.TopStart,
     ) {
         Row(
@@ -135,7 +135,7 @@ internal fun OnNowCard(
                         Spacer(Modifier.height(10.mpx))
                     }
                     val fraction = programmeProgress(programme, now)
-                    Box(Modifier.fillMaxWidth().height(5.mpx).clip(RoundedCornerShape(3.mpx)).background(Color.White.copy(alpha = 0.12f))) {
+                    Box(Modifier.fillMaxWidth().height(5.mpx).clip(RoundedCornerShape(3.mpx)).background(StageColors.Ink.copy(alpha = 0.12f))) {
                         // A 5 px bar: small enough to stay a brush (see GradientTextures).
                         Box(
                             Modifier.fillMaxWidth(fraction).height(5.mpx).clip(RoundedCornerShape(3.mpx))

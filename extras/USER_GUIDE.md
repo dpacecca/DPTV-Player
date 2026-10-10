@@ -634,7 +634,9 @@ appears on a TV that supports it, and switches itself off for good if a channel 
 
 ### 🎨 Theme & accent
 **Where:** Settings → Appearance
-**System**, **Dark** or **Light** (◀ ▶ on the row), plus an **Accent color**: presets, a hex code, or a
+**System** (follows the TV's own dark/light setting), **Dark** or **Light** (◀ ▶ on the row) — Light turns
+the pages, panels and the player's controls and lists paper-white with dark text and an accent ring on the
+focused item; the video and posters stay as they are — plus an **Accent color**: presets, a hex code, or a
 colour square and hue bar (OK enters each, OK or Back leaves); the screen re-tints live and **Cancel**
 restores. The accent reaches the player too — seek bar, active buttons, badges. A live preview of Home
 beside the rows shows each change before you leave it.

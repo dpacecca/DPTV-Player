@@ -376,7 +376,7 @@ private fun DisplaySizeStep(onNext: () -> Unit, onBack: () -> Unit) {
                 .padding(top = 14.mpx)
                 .fillMaxWidth()
                 .height(84.mpx)
-                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(20.mpx))
+                .background(StageColors.Ink.copy(alpha = 0.05f), RoundedCornerShape(20.mpx))
                 .padding(horizontal = 22.mpx),
             horizontalArrangement = Arrangement.spacedBy(18.mpx),
             verticalAlignment = Alignment.CenterVertically,

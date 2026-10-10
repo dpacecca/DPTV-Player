@@ -1,5 +1,6 @@
 package tv.own.owntv.ui.components
 
+import tv.own.owntv.ui.theme.StageColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
@@ -52,7 +53,7 @@ internal fun TimeWheel(
         onClick = { editing = !editing },
         radius = 16.mpx,
         focusStyle = tv.own.owntv.ui.stage.StageFocus.FX,
-        idle = if (editing) Modifier.background(a.accent.copy(alpha = 0.18f), RoundedCornerShape(16.mpx)) else Modifier.background(Color.White.copy(alpha = 0.06f), RoundedCornerShape(16.mpx)),
+        idle = if (editing) Modifier.background(a.accent.copy(alpha = 0.18f), RoundedCornerShape(16.mpx)) else Modifier.background(StageColors.Ink.copy(alpha = 0.06f), RoundedCornerShape(16.mpx)),
         modifier = modifier
             .height(120.mpx)
             .onFocusChanged { if (!it.isFocused) editing = false }

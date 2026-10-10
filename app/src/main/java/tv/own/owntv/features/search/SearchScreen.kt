@@ -1,5 +1,7 @@
 package tv.own.owntv.features.search
 
+import tv.own.owntv.ui.theme.stageTone
+import tv.own.owntv.ui.theme.stageShadow
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
@@ -573,9 +575,9 @@ private fun SearchRow(
     StageRow(onClick = onClick, onLongClick = {}, height = 84.mpx, horizontalPadding = 18.mpx, gap = 18.mpx, modifier = modifier.fillMaxWidth()) { focused ->
         leading()
         Column(Modifier.weight(1f)) {
-            Text(title, style = stageText(21, 700), color = if (focused) Color.White else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, style = stageText(21, 700), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(4.mpx))
-            Text(line, style = stageText(16, 400), color = if (focused) Color(0xFFD9E6E1) else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(line, style = stageText(16, 400), color = if (focused) StageColors.FxLine else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.mpx), verticalAlignment = Alignment.CenterVertically) {
             tags.forEach { StageTag(it) }
@@ -587,7 +589,7 @@ private fun SearchRow(
 /** A result's poster, 50 × 74, radius 8. */
 @Composable
 private fun SmallPoster(url: String?, placeholder: OwnTVIcon) {
-    Box(Modifier.size(50.mpx, 74.mpx).clip(RoundedCornerShape(8.mpx)).background(Color.White.copy(alpha = 0.06f)), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(50.mpx, 74.mpx).clip(RoundedCornerShape(8.mpx)).background(StageColors.Ink.copy(alpha = 0.06f)), contentAlignment = Alignment.Center) {
         if (!url.isNullOrBlank()) AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         else OwnTVIcon(placeholder, StageColors.Dim, Modifier.size(22.mpx))
     }
@@ -601,12 +603,13 @@ private fun SmallPoster(url: String?, placeholder: OwnTVIcon) {
 @Composable
 private fun PosterPanel(info: VodTitleInfo, series: Boolean, modifier: Modifier = Modifier) {
     val videoR = 28.mpx
+    val videoShadow = tv.own.owntv.ui.theme.stageShadow(0.55f)
     Column(modifier) {
         BoxWithConstraints(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .drawBehind { drawBoxShadow(Color.Black.copy(alpha = 0.55f), 80.mpx.toPx(), videoR.toPx(), dy = 30.mpx.toPx()) }
+                .drawBehind { drawBoxShadow(videoShadow, 80.mpx.toPx(), videoR.toPx(), dy = 30.mpx.toPx()) }
                 .clip(RoundedCornerShape(videoR))
                 .background(Color.Black),
         ) {
@@ -657,7 +660,7 @@ private fun PosterPanel(info: VodTitleInfo, series: Boolean, modifier: Modifier 
             )
             info.plot?.takeIf { it.isNotBlank() }?.let {
                 Text(
-                    it, style = stageText(19, 400).copy(lineHeight = (19 * 1.55f).mpxSp), color = Color(0xFFCCD6D2),
+                    it, style = stageText(19, 400).copy(lineHeight = (19 * 1.55f).mpxSp), color = stageTone(Color(0xFFCCD6D2), StageColors.Body),
                     maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 18.mpx, bottom = 22.mpx),
                 )
             }
@@ -716,7 +719,7 @@ private fun RecentRow(term: String, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OwnTVIcon(OwnTVIcon.HISTORY, if (focused) a.onAccent else StageColors.Muted, Modifier.size(20.mpx))
-            Text(term, style = stageText(18.5f, 600), color = if (focused) a.onAccent else Color(0xFFCDD7D3), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(term, style = stageText(18.5f, 600), color = if (focused) a.onAccent else stageTone(Color(0xFFCDD7D3), StageColors.ItemText), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

@@ -555,7 +555,7 @@ internal fun StageDownloadRow(
             ) {
                 Box(Modifier.size(190.mpx, 107.mpx).clip(RoundedCornerShape(14.mpx))) { art() }
                 Column(Modifier.weight(1f)) {
-                    Text(title, style = stageText(24, 700), color = if (hasFocus) Color.White else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(title, style = stageText(24, 700), color = if (hasFocus) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(line, style = stageText(17, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.mpx))
                     path?.takeIf { it.isNotBlank() }?.let {
                         Text(StorageAccess.folderLabel(it) ?: it, style = stageText(15, 500), color = StageColors.Dim, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.mpx))
@@ -609,7 +609,7 @@ private fun RecordingsCard(recordings: List<RecordingEntity>, recorded: Int, onO
             height = 58.mpx, textSize = 20, modifier = Modifier.padding(top = 22.mpx),
         )
         if (next != null) {
-            Box(Modifier.padding(top = 28.mpx, bottom = 22.mpx).fillMaxWidth().height(1.mpx).background(Color.White.copy(alpha = 0.1f)))
+            Box(Modifier.padding(top = 28.mpx, bottom = 22.mpx).fillMaxWidth().height(1.mpx).background(StageColors.Ink.copy(alpha = 0.1f)))
             Row(horizontalArrangement = Arrangement.spacedBy(10.mpx), verticalAlignment = Alignment.CenterVertically) {
                 tv.own.owntv.ui.components.OwnTVIcon(OwnTVIcon.CLOCK, StageColors.Muted, Modifier.size(18.mpx))
                 Text(stringResource(R.string.recording_group_scheduled), style = stageText(18, 700), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -1,5 +1,6 @@
 package tv.own.owntv.features.shell.components
 
+import tv.own.owntv.ui.theme.StageColors
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
@@ -50,7 +51,7 @@ fun StagePlaylistMenu(
     LaunchedEffect(Unit) { runCatching { selectedFocus.requestFocus() } }
     BackHandler { onDismiss() }
 
-    Box(Modifier.fillMaxSize().background(Color(2, 5, 6).copy(alpha = 0.55f))) {
+    Box(Modifier.fillMaxSize().background(StageColors.Scrim)) {
         if (pillBounds != null) {
             val density = androidx.compose.ui.platform.LocalDensity.current
             with(density) {
