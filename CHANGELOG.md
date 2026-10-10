@@ -51,6 +51,9 @@
 - **↩️ Back from a series page returns to the show you opened**
 - **🏷️ Provider tags such as "|MULTI|" no longer lead film and series titles on their pages**
 - **⏺️ Recordings of some HLS channels were a few kB and would not play (#243)**
+- **💥 Error log and Backup & Restore no longer close the app on a 24-hour clock**
+- **⏯️ The remote's Play/Pause key pauses and resumes again**
+- **🔎 Search finds "Spider-Man" from "Spider-M" and lists every match, not the first 40**
 
 ## v5.1.0 — 2026-10-04
 

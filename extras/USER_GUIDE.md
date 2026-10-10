@@ -509,7 +509,9 @@ switch channel rows between **Cards** and **On now** (an inline mini-guide).
 ### 🔎 Search
 **Where:** the rail → Search
 Searches Live, Movies and Series together, with tabs **All / Live TV / Movies / Series** and their
-counts. A channel shows Live TV's preview beside the results; a film or show shows its poster panel.
+counts — every match, up to 500 of each kind. Words match from their start, and a dash or other mark
+counts as a gap: "Spider-M" finds every Spider-Man. A channel shows Live TV's preview beside the
+results; a film or show shows its poster panel.
 **OK takes you to the item** — the channel in its own category, the film in its grid, the series page
 — where play, download and every option live; **Back** returns to Search with your query kept.
 **On TV** lists programmes from the stored guide whose title matches, on now or within the next 12
