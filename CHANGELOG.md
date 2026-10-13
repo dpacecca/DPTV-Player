@@ -7,6 +7,12 @@
 > Issue numbers that are part of a title are fine; explanatory parentheticals are not. The detail —
 > what, why, files and verification — belongs in the commit message, never here.
 
+<!-- Upstream OwnTV (ahXN00/OwnTV) unreleased notes, carried over verbatim by the fork squash.
+     These are NOT Sportio releases — Sportio versions are the "## v1.0.x" sections below. The
+     block itself is kept identical to upstream on purpose (fewer conflicts when the fork is
+     resynced / when upstream PRs are opened). The release workflows extract notes per tag
+     (`^## <tag>`), so these lines never reach a release body or the in-app update dialog. -->
+
 ## Unreleased
 
 ### ✨ New features
@@ -55,6 +61,22 @@
 - **⏯️ The remote's Play/Pause key pauses and resumes again**
 - **🔎 Search finds "Spider-Man" from "Spider-M" and lists every match, not the first 40**
 
+<!-- Sportio release history, newest first. v1.0.5 re-publishes v1.0.3's notes under the new repo
+     home (trenntl/SportioTV); the old repo (SportioTV) carried a bridge v1.0.4
+     that only redirected the in-app updater, so it has no section here. Everything from
+     "## v5.1.0" downwards is the inherited OwnTV upstream history, not Sportio releases. -->
+
+## v1.0.5 — 2026-10-13
+
+### New features
+
+- **Fixture-to-channel matching across channel names and guide text**
+- **Language filter for matched channels, exact event channels always pass**
+
+### Fixes
+
+- **Single-team mentions no longer surface news and film channels**
+
 ## v1.0.3 — 2026-10-13
 
 ### New features
@@ -78,17 +100,6 @@
 ### Fixes
 
 - **Formula 1 races match Sky Sports channels; tennis players show their country flag**
-
-## v1.0.5 — 2026-10-13
-
-### New features
-
-- **Fixture-to-channel matching across channel names and guide text**
-- **Language filter for matched channels, exact event channels always pass**
-
-### Fixes
-
-- **Single-team mentions no longer surface news and film channels**
 
 ## v5.1.0 — 2026-10-04
 
