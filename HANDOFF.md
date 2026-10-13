@@ -24,4 +24,7 @@
 - Handy-Verwaltung (Companion `/select`) seit 2026-10-13 dreistufig: Start (aktive Ligen
   mit Zähler) → Liga mit Tabs Teams/Spieler → „Alle verwalten" (Region-Akkordeons, Suche);
   ein Submit. Details: `docs/sport-hub-plan.md` §7.7.
+- v1.0.6 (2026-10-13): released — Core 1.0.70 (Maven + Release) und App v1.0.6 (APKs live).
+  CI beider Repos grün; Update-Kette gegen v1.0.5 geprüft: gleiche Signatur
+  (CN=Sportio, SHA-256 identisch), versionCode 10005 → 10006.
 - Arbeitsstand: Ordner hängt an `trenntl/SportioTV` (Backup-Branches vorhanden), Core frisch geklont (Build grün), READMEs + User Guide als Sportio neu, Naming-Freeze in `docs/BRANDING.md`.

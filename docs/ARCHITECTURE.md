@@ -10,7 +10,7 @@
   `SportioTV` (Alt-Stand vor dem Privacy-Umzug);
   lokale Sicherungen `backup/pre-migration`, `backup/handoff-fa451b2b`.
 - `C:\Users\<user>\OwnTV\OwnTV_Core-main` — Core-Fork, eigenes Repo
-  `https://github.com/trenntl/SportioTV_Core`, Stand Tag `core-1.0.69` —
+  `https://github.com/trenntl/SportioTV_Core`, Stand Tag `core-1.0.70` —
   identisch zum App-Pin `owntvCore` in `gradle/libs.versions.toml:82`.
   Composite-Build via `owntv.corePath`, daher kein Publish nötig.
 - Upstream-Referenz: `ahXN00/OwnTV` (App), `ahXN00/OwnTV_Core` (Core),
