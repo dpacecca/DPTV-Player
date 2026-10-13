@@ -79,6 +79,17 @@
 
 - **Formula 1 races match Sky Sports channels; tennis players show their country flag**
 
+## v1.0.5 — 2026-10-13
+
+### New features
+
+- **Fixture-to-channel matching across channel names and guide text**
+- **Language filter for matched channels, exact event channels always pass**
+
+### Fixes
+
+- **Single-team mentions no longer surface news and film channels**
+
 ## v5.1.0 — 2026-10-04
 
 ### ✨ New features
