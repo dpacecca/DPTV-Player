@@ -28,10 +28,11 @@ $env:ANDROID_HOME="C:\Users\<user>\Android\Sdk"; $env:ANDROID_SDK_ROOT=$env:ANDR
 - `OwnTV_Core-main/` ↔ `https://github.com/trenntl/SportioTV_Core` (eigener Repo,
   Branch `main`). Lokal ist ein reiner Source-Stand (ohne `.github/`, `docs/`, `AGENTS.md`);
   per `.gitignore` bewusst **nicht** Teil des App-Repos (Composite-Build über `owntv.corePath`).
-- Agents führen **kein** `git` aus (Toolchain-Regel in `../AGENTS.md`); Init/Remote/Push macht
-  der User in eigener Shell. GitHub-Auth nur per
+- Git liegt portable unter `tools-setup/git-portable/` (MinGit, gitignored).
+  Init/Remote/Push laufen damit in PowerShell; Auth nur per
   `-c http.extraHeader="Authorization: Basic <base64(x-access-token:TOKEN)>"`, nie Token auf
-  Platte oder in URLs (Verbot in `../AGENTS.md` §6).
+  Platte oder in URLs (Verbot in `../AGENTS.md` §6). Repo-lokale Identity ist
+  Noreply (`git config user.email ...@users.noreply.github.com`).
 
 ## Builds
 
