@@ -42,7 +42,9 @@
     <string name="sport_region_rest">Sonstige</string>
     <string name="sport_favourites">Favoriten</string>
     <string name="sport_manage_on_phone">Am Handy verwalten</string>
-    <string name="sport_phone_title">Ligen &amp; Teams</string>
+    <string name="sport_phone_title">Sport verwalten</string>
+    <string name="sport_phone_teams">Teams</string>
+    <string name="sport_phone_players">Spieler</string>
     <string name="sport_versus">vs</string>
     <string name="sport_tab_live">Live</string>
     <string name="sport_tab_upcoming">Demnächst</string>

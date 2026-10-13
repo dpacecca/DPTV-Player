@@ -126,6 +126,8 @@ fun SportsScreen(
 
     // Phone picker payload: labels/regions resolved here, where stringResource is available.
     val phoneTitle = stringResource(R.string.sport_phone_title)
+    val phoneTeamGroup = stringResource(R.string.sport_phone_teams)
+    val phonePlayerGroup = stringResource(R.string.sport_phone_players)
     val phoneLeagueItems = SportsLeagues.map { league ->
         CompanionSelectItem(
             id = league.id,
@@ -443,7 +445,14 @@ fun SportsScreen(
                 onManageOnPhone = {
                     showSettings = false
                     showPhone = true
-                    vm.startPhonePicker(CompanionLink.DEFAULT_PORT, phoneTitle, phoneLeagueItems, phoneLeagueLabels)
+                    vm.startPhonePicker(
+                        CompanionLink.DEFAULT_PORT,
+                        phoneTitle,
+                        phoneLeagueItems,
+                        phoneLeagueLabels,
+                        phoneTeamGroup,
+                        phonePlayerGroup,
+                    )
                 },
                 onDismiss = { showSettings = false },
             )

@@ -16,7 +16,9 @@
   UFC/ATP/WTA-Duelle. Follow nur bei Duellen (`followed_players`), Leaderboards bewusst ohne.
 - Handy-Verwaltung per QR (`CompanionMode.SELECT_ITEMS`, Core): Ligen + Teams je
   aktiver Liga + Spieler/Kämpfer aus geladenen Duellen, ein Submit
-  (`team:`/`player:`-Präfixe).
+  (`team:`/`player:`-Präfixe). Seite seit 2026-10-13 dreistufig: Start (aktive
+  Ligen mit Zähler) → Liga mit Tabs Teams/Spieler → „Alle verwalten"
+  (Region-Akkordeons, Suche); Details §7.7 in `sport-hub-plan.md`.
 - Sprachfilter: bis zu 20 Sender pro Spiel (`DefaultLimit = 20`), Filter nach
   bevorzugter Sprache aus Länderkürzel am Kanalnamen (`DE:`/`UK|`/`FR/`),
   einmaliger Dialog beim ersten Fixture mit Treffern, danach Sport-Einstellungen.

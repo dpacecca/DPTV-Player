@@ -367,12 +367,18 @@ class SportsViewModel(
      * Serve the pick list (leagues + every active league's teams and athletes) to a phone on the same
      * Wi-Fi. Teams come from ESPN's `/teams`; athletes from the already-loaded duel fixtures. Chosen
      * ids reconcile the active leagues, followed teams and followed athletes in one submit.
+     *
+     * Teams and athletes are children of their league ([CompanionSelectItem.parentId]), so the phone
+     * page opens one level per league instead of one endless list; [teamGroup] and [playerGroup]
+     * label the two tabs inside it.
      */
     fun startPhonePicker(
         port: Int,
         title: String,
         leagueItems: List<CompanionSelectItem>,
         leagueLabels: Map<String, String>,
+        teamGroup: String,
+        playerGroup: String,
     ) {
         viewModelScope.launch {
             val shownLeagues = activeLeagues.value
@@ -380,10 +386,14 @@ class SportsViewModel(
             shownLeagues.mapNotNull { sportsLeagueById(it) }
                 .sortedBy { leagueLabels[it.id] ?: it.id }
                 .forEach { league ->
-                    val group = leagueLabels[league.id] ?: league.id
                     runCatching { api.teams(league) }.getOrDefault(emptyList()).forEach { team ->
                         val key = SportsPrefs.teamKey(league.id, team.abbreviation)
-                        extra.add(CompanionSelectItem(TeamItemPrefix + key, team.name, group, key in followedTeams.value))
+                        extra.add(
+                            CompanionSelectItem(
+                                TeamItemPrefix + key, team.name, teamGroup,
+                                key in followedTeams.value, parentId = league.id,
+                            ),
+                        )
                     }
                     val seen = HashSet<String>()
                     boards.value[league.id].let { it as? BoardState.Content }?.board?.fixtures.orEmpty()
@@ -394,7 +404,12 @@ class SportsViewModel(
                             val id = entry.id ?: return@forEach
                             val key = SportsPrefs.playerKey(league.id, id)
                             if (seen.add(key)) {
-                                extra.add(CompanionSelectItem(PlayerItemPrefix + key, entry.name, group, key in followedPlayers.value))
+                                extra.add(
+                                    CompanionSelectItem(
+                                        PlayerItemPrefix + key, entry.name, playerGroup,
+                                        key in followedPlayers.value, parentId = league.id,
+                                    ),
+                                )
                             }
                         }
                 }

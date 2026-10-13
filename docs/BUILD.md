@@ -47,6 +47,19 @@ $env:ANDROID_HOME="C:\Users\<user>\Android\Sdk"; $env:ANDROID_SDK_ROOT=$env:ANDR
 - Release-Signing: Keystore `keystore/sportio-release.jks` (Alias `sportio`), nie committen.
   Details in `RELEASE.md`.
 - Gates vor jedem Build grün halten, siehe `../AGENTS.md` §5.
+- Tests: `.\gradlew.bat :app:testStandardDebugUnitTest` (App-Repo) sowie
+  `.\gradlew.bat :core:testDebugUnitTest :player-core:testDebugUnitTest` (Core-Repo).
+  Bekannt (2026-10-13): `TimeshiftManagerTest` („saves a live stream into keyframe
+  pieces…") schlägt im **Gesamtlauf** fehl und ist **isoliert** grün
+  (`--tests "tv.own.owntv.core.timeshift.TimeshiftManagerTest"`) — Timing-Test
+  (800-ms-Fenster erwartet ≥2 Keyframe-Pieces); auf sauberem HEAD (eigener Worktree)
+  reproduziert, also vorbestehend und nicht release-blockierend.
+- Emulator-APK-Grenze: das Test-AVD `SportioTV` trägt ein **release-signiertes**
+  `tv.sportio.app` (v1.0.2, mit Daten). Ein `adb install -r` des Debug-APKs scheitert
+  dort an der **Signatur** (nicht am versionCode), Debug-Tests brauchen also erst eine
+  Deinstallation inkl. App-Datenverlust. Ein release-signiertes Gegen-APK ist lokal
+  nicht baubar — die Keystore-Zugangsdaten (`owntv.keystore*`) liegen nicht auf der
+  Maschine.
 
 ## Installation
 

@@ -580,6 +580,82 @@ URL (PIN wird am Telefon getippt).
   Fehler) in die Core-Locales; i18n-Gate im Core-Repo
   (`OwnTV_Core-main/tools/i18n`).
 
+### 7.7 Companion-Phone-UI v2 — Multilevel-Layout ✅ umgesetzt (2026-10-13)
+
+**Problem (gelöst):** `CompanionHtml.selectItemsPage` rendert alle Items als *eine* Liste
+(`<h2>` je `group` + Checkbox-Matrix + Suche). Auf dem Testgerät 493 Zeilen
+(81 Ligen, 69 Teams, 343 Spieler): Teams/Spieler einer Liga stehen irgendwo
+zwischen hunderten Zeilen und sind ohne Suche praktisch unerreichbar.
+
+**Umgesetztes Layout (Handy, drei Ebenen, ein `<form>`):**
+
+| Ebene | Route (`location.hash`) | Inhalt |
+|---|---|---|
+| 1 „Start" | `#/` | nur Zeilen **mit Kindern** (= aktive Ligen mit Teams/Spielern) als Drilldown-Zeilen mit Zähler-Badge; Zeile „Alle verwalten (5/15)" → Ebene 3; Leerzustand, wenn nichts da ist |
+| 2 „Liga" | `#/p/<id>` | Zurück-Pfeil, Liganame, Tabs **Teams / Spieler** (nur bei >1 Gruppe) mit lokaler Suche und „Alle auswählen"/„Auswahl aufheben", Checkbox-Zeilen |
+| 3 „Alle verwalten" | `#/all` | alle Top-Level-Zeilen als Checkbox, nach Region als `<details>`-Akkordeons, Suche; Gruppen mit Auswahl starten offen |
+
+- Alle Ebenen liegen in einem Dokument und einem `<form>`; inaktive Ebenen sind nur
+  `hidden`. Ein Submit an `POST /select` trägt weiterhin den kompletten Zustand —
+  Protokoll und `applyPhoneSelection` (Präfixe `team:`/`player:`) unverändert.
+- Sticky Bottom-Bar mit Zähler-Badge (`(3)`) für ungespeicherte Änderungen;
+  Zurück-Pfeil nutzt `history.back()`, Hash-Routing lässt die Android-Zurück-Geste
+  die Ebenen ablaufen (beim Laden wird Ebene 1 als Basis-History-Eintrag gesetzt).
+- Suche je Ebene filtert clientseitig; Enter im Suchfeld wird abgefangen, damit es
+  die Auswahl nicht abschickt.
+
+**Datenmodell (Core):** `CompanionSelectItem.parentId: String? = null` — `null` =
+Ebene 1, sonst Kind dieser Zeile. Innerhalb einer Elternseite ist `group` das
+Tab-Label (App liefert „Teams"/„Spieler").
+
+**Umsetzung:**
+
+| Datei | Änderung |
+|---|---|
+| Core `companion/CompanionMode.kt` | `CompanionSelectItem.parentId` (Default `null`, source-kompatibel) |
+| Core `companion/CompanionSelectHtml.kt` (neu) | komplette Body-Renderung (Ebenen, Gruppen, Escaping) + CSS-Klassen + JS (Hash-Router, Tabs, Filter, Badges) — `Context`-frei, Labels kommen als `Labels`-Datenklasse |
+| Core `companion/CompanionHtml.kt` | CSS um Picker-Regeln erweitert (Sticky-Bars, Zeilen, Akkordeon, Tabs); `selectItemsPage` delegiert an `CompanionSelectHtml`; neue `Copy`-Felder |
+| Core `res/values(+de)/strings_setup.xml` | `companion_select_back/-manage_all/-all/-none/-empty` |
+| Core-Test `CompanionSelectHtmlTest.kt` (neu) | 7 JVM-Tests: Ebenen-Split, Kinder-Zuordnung, Tabs, Escaping, ein-Checkbox-pro-Zeile, Zähler, Leerzustand |
+| App `SportsViewModel.kt` | Team-/Spieler-Items mit `parentId = league.id`; `group` = Segment-Label (`teamGroup`/`playerGroup`) |
+| App `SportsScreen.kt` | neue Labels auflösen und durchreichen; `SportsPhoneDialog` (QR/PIN) unverändert |
+| App `values(+de)/strings.xml` | `sport_phone_teams/-players`; `sport_phone_title` → „Sport verwalten"/„Manage sports" |
+
+Abweichung zum Entwurf: statt `companion_select_my_leagues/-manage_leagues/-changes`
+generischere Keys (`manage_all`, Zähler als reine Zahl im Badge ohne Plural-String),
+damit der Core-Modus sport-agnostisch bleibt; Ebene 1 listet nur Zeilen mit Kindern
+(Zeilen ohne Kinder haben nichts zu konfigurieren und stehen nur in Ebene 3).
+
+**Akzeptanz (2026-10-13):** Core-`testDebugUnitTest` inkl. 7 neuer Tests grün; App
+`:app:testStandardDebugUnitTest` + beide Debug-APKs + `lintStandardDebug` grün;
+i18n-`verify --bootstrap` in beiden Repos grün (Core 249 Baseline unverändert,
++20 safe-Einträge). Layout/JS zusätzlich im Desktop-Browser gegen die echte
+CSS/HTML-Ausgabe geprüft (Ebenenwechsel, Tab-Umschaltung, Suche je Ebene, Badges,
+Zähler, Zurück-Pfeil und `history.back()`, Enter im Suchfeld) — der Check fand
+einen echten Bug (`(' '+el.className+' ').indexOf(' lv ') > 0` matcht bei
+Einzel-Klassen nie, Treffer liegt auf Index 0 → jetzt `>= 0`).
+
+**Offen:** Emulator-Ende-zu-Ende (TV-UI → QR/PIN → Handy-Seite). Auf dem
+Test-AVD liegt ein release-signiertes `tv.sportio.app` (v1.0.2) mit Daten; das
+Debug-APK lässt sich nur nach Deinstallation (Datenverlust) darüber installieren,
+und lokal fehlen die Release-Keystore-Zugangsdaten für ein signiertes
+Release-APK. Der Klickpfad wurde deshalb im Desktop-Browser gegen die echte
+Renderer-Ausgabe gefahren.
+
+**Risiken / Phase B (weiter offen):**
+
+1. Neu aktivierte Liga hat keine Kinder (Teams/Spieler werden beim Öffnen nur für die
+   *vorher* aktiven Ligen geladen) → deren Detailseite fehlt bis zum nächsten Öffnen.
+   Phase B: Core-Route `GET /select/items?parent=<id>` + Provider-Callback +
+   Lazy-Loading in der App.
+2. Payload bleibt ~500 Items; DOM unkritisch, aber der Vorab-Fetch beim Öffnen
+   bleibt (Phase B löst beides, vgl. Risiko 10 in §13).
+3. Die Core-Änderung ist eine Fork-Änderung → in `docs/ARCHITECTURE.md`
+   (Core-Fork-Liste) ergänzt.
+
+**Nicht-Ziele:** keine neuen Endpunkte/Mode-Enums, kein Server-Zustand, kein
+Umbau am TV-Picker (`SportPickerDialog`), kein Live-Refresh der Handy-Seite.
+
 ---
 
 ## 8. Einzelsport-Renderer (Parse + UI) ✅ umgesetzt (Phase 5)

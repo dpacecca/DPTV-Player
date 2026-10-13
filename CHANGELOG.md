@@ -66,6 +66,17 @@
      that only redirected the in-app updater, so it has no section here. Everything from
      "## v5.1.0" downwards is the inherited OwnTV upstream history, not Sportio releases. -->
 
+## v1.0.6 — 2026-10-13
+
+### New features
+
+- **Sports hub on the phone: a league opens its own teams and players**
+- **"Manage all" page with search for the complete league list**
+
+### Fixes
+
+- **The Sports hub phone page no longer runs hundreds of entries into one endless column**
+
 ## v1.0.5 — 2026-10-13
 
 ### New features

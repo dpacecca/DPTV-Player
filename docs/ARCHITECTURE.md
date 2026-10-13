@@ -39,7 +39,9 @@
    (Recording-/Reminder-URIs unverändert).
 6. `SettingsRepository.kt` — `updateCheckOnStart` wieder `true` (eigenes Release-Repo).
 7. compileSdk 37.2 wie App. 8. `CompanionMode.SELECT_ITEMS` — generischer
-   Pick-Listen-Modus für Handy-Verwaltung (`/select`-Route, `companion_select_*`).
+   Pick-Listen-Modus für Handy-Verwaltung (`/select`-Route, `companion_select_*`),
+   seit 2026-10-13 dreistufig (`CompanionSelectItem.parentId` +
+   `CompanionSelectHtml`: Start → Zeile mit Tabs → „Alle verwalten", ein Submit).
 9. `EpgDao.searchGuide` — `title LIKE OR description LIKE` im Zeitfenster
    (nur mehrwortige Teamnamen in Beschreibung, `EpgMinTokenLength=4`).
 
