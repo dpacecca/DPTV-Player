@@ -2,7 +2,7 @@
 clear space. Parses the path data's coordinate extremes directly."""
 import re, io, os, glob
 
-ROOT = r"C:\Users\<user>\OwnTV\docs\brand\assets\svg"
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "docs", "brand", "assets", "svg"))
 
 NUM = re.compile(r'[-+]?\d*\.?\d+')
 

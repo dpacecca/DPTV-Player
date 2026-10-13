@@ -43,7 +43,15 @@ android {
     // the repo. Gradle only reads gradle.properties from GRADLE_USER_HOME or the project dir, so this
     // one is loaded by hand. Declared here because defaultConfig below already needs it.
     val localSigningProps = Properties().apply {
-        val f = File("E:/local/OwnTV_Gradle/owntv-signing.properties")
+        // Override via -Powntv.signingProps=... or the OWNTV_SIGNING_PROPS env var. Default:
+        // ~/.gradle/owntv-signing.properties, outside the repo.
+        val configured = System.getenv("OWNTV_SIGNING_PROPS")
+            ?: providers.gradleProperty("owntv.signingProps").orNull
+        val f = if (configured != null) {
+            File(configured)
+        } else {
+            File(System.getProperty("user.home"), ".gradle/owntv-signing.properties")
+        }
         if (f.isFile) f.inputStream().use { load(it) }
     }
 
@@ -125,7 +133,7 @@ android {
     // properties as a local fallback. Put the local ones in the USER-WIDE file — never in the repo:
     //
     //   C:\Users\<you>\.gradle\gradle.properties
-    //     owntv.keystoreFile=E:\\local\\Github_Keystore\\owntv.keystore
+    //     owntv.keystoreFile=C:\\path\\to\\your-release.keystore
     //     owntv.keystorePassword=...
     //     owntv.keyAlias=...
     //     owntv.keyPassword=...

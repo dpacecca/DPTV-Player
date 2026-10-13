@@ -19,8 +19,8 @@
 - Sport-Hub Phasen 1–7 fertig (2026-10-12). App v1.0.1 / Core 1.0.68 released.
 - v1.0.2 (2026-10-13): released — CI success, APKs live. Lokaler Core-Pin → 1.0.68 mitgezogen.
 - v1.0.3 (2026-10-13): released — CI success, APKs live, Matching in APK verifiziert (sports_matching.json + Sprachfilter-Keys im Dex).
-- Doku (2026-10-13): Release-Kette + Fork-Schutz + API-Fallen nach `docs/RELEASE.md`, Downgrade/Box-Ports nach `docs/BUILD.md`. Leak-Audit beider Repos: keine Secrets/Credentials/Keystores; einziger Fund: private Mail in API-Commit-Autoren — künftig Noreply + Private-Email-Setting.
-- Umzug auf `trenntl` (2026-10-13, Privacy): beide Repos per Squash (Noreply) kopiert, Referenzen umgestellt, Core 1.0.69 neu publisht, App v1.0.5 live. Bridge v1.0.4 im alten Repo leitet Updater um. Offen: alte Repos archivieren/löschen, Upstream-PRs (#254/#30) schließen.
+- Doku (2026-10-13): Release-Kette + Fork-Schutz + API-Fallen nach `docs/RELEASE.md`, Downgrade/Box-Ports nach `docs/BUILD.md`. Leak-Audit beider Repos: keine Secrets/Credentials/Keystores; Commits laufen nur unter Noreply-Identität.
+- Umzug auf `trenntl` (2026-10-13): beide Repos mit Noreply-Identität neu aufgesetzt, Referenzen umgestellt, Core 1.0.69 neu publisht, App v1.0.5 live. Offen: alte Repos archivieren/löschen, Upstream-PRs (#254/#30) schließen.
 - Handy-Verwaltung (Companion `/select`) seit 2026-10-13 dreistufig: Start (aktive Ligen
   mit Zähler) → Liga mit Tabs Teams/Spieler → „Alle verwalten" (Region-Akkordeons, Suche);
   ein Submit. Details: `docs/sport-hub-plan.md` §7.7.

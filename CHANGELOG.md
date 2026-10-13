@@ -62,7 +62,7 @@
 - **🔎 Search finds "Spider-Man" from "Spider-M" and lists every match, not the first 40**
 
 <!-- Sportio release history, newest first. v1.0.5 re-publishes v1.0.3's notes under the new repo
-     home (trenntl/SportioTV); the old repo (SportioTV) carried a bridge v1.0.4
+     home (trenntl/SportioTV); the previous repository carried a bridge v1.0.4
      that only redirected the in-app updater, so it has no section here. Everything from
      "## v5.1.0" downwards is the inherited OwnTV upstream history, not Sportio releases. -->
 

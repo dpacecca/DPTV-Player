@@ -1,7 +1,7 @@
 # docs/BUILD.md — Bauen, Installieren, Emulator (Stand: 2026-10-13)
 
 > Zweck: alle Befehle für Build, Installation und Emulator an einem Ort.
-> Quelle: destilliert aus `README-CUSTOM.md` + `HANDOFF.md` (Build-/Emulator-Kapitel).
+> Quelle: destilliert aus den Build-/Emulator-Kapiteln der internen Notizen.
 
 ## Voraussetzungen (einmalig)
 
@@ -21,10 +21,10 @@ $env:ANDROID_HOME="C:\Users\<user>\Android\Sdk"; $env:ANDROID_SDK_ROOT=$env:ANDR
 
 ## Repos (Stand: 2026-10-13, verifiziert per GitHub-API gegen `main`)
 
-- Ordner-Root (`C:\Users\<user>\OwnTV`) ↔ `https://github.com/trenntl/SportioTV`
+- Ordner-Root (Repo-Klon) ↔ `https://github.com/trenntl/SportioTV`
   (öffentlicher Fork, Branch `main`). Alle Remote-Top-Level-Einträge sind lokal vorhanden;
   lokal zusätzlich nur Git-ignoriertes (`OwnTV_Core-main/`, `tools-setup/`, `*.apk`, `*.zip`,
-  `build/`, `local.properties`, `keystore/`) plus lokale Doku (`HANDOFF.md`, `README-CUSTOM.md`).
+  `build/`, `local.properties`, `keystore/`) plus lokale Doku (`HANDOFF.md`).
 - `OwnTV_Core-main/` ↔ `https://github.com/trenntl/SportioTV_Core` (eigener Repo,
   Branch `main`). Lokal ist ein reiner Source-Stand (ohne `.github/`, `docs/`, `AGENTS.md`);
   per `.gitignore` bewusst **nicht** Teil des App-Repos (Composite-Build über `owntv.corePath`).
@@ -70,7 +70,7 @@ $env:ANDROID_HOME="C:\Users\<user>\Android\Sdk"; $env:ANDROID_SDK_ROOT=$env:ANDR
   installieren. Details siehe `RELEASE.md` §Versionierung.
 - Start: `adb shell am start -n tv.sportio.app/tv.own.owntv.MainActivity`
   (geht nur bei enablter Activity; nach Icon-Farb-Update ggf. frisch installieren,
-  da Xiaomi pro-Benutzer Component-States über Updates behält — siehe `ARCHITECTURE.md`).
+  da manche Hersteller pro-Benutzer Component-States über Updates behalten — siehe `ARCHITECTURE.md`).
 - Offizielle OwnTV (`tv.own.owntv`) kollidiert NICHT mit Sportio (`tv.sportio.app`),
   aber Upstream-PR-Builds nutzen `tv.own.owntv` und kollidieren mit offiziellem OwnTV
   auf echter Box (Signatur) — dort nicht installieren.
@@ -91,11 +91,10 @@ adb shell monkey -p tv.sportio.app -c android.intent.category.LEANBACK_LAUNCHER 
 
 ## TV-Box (Android TV)
 
-- Box auf `<box-ip>`, Ports wechseln bei jedem Reboot — nie cachen,
+- Box-IP als `<box-ip>` einsetzen; Ports wechseln bei jedem Reboot — nie cachen,
   immer neu per `adb mdns services` suchen (`_adb-tls-pairing._tcp`,
   `_adb-tls-connect._tcp`, `_adb._tcp` auf 5555).
 - Koppeln: `adb pair <box-ip>:<pairing-port> <code>`, danach `adb devices`.
-  Anzeige `10.2.0.2` auf dem TV ignorieren.
 - Kopplungs-Port ≠ Verbindungs-Port: Der Kopplungs-Dialog zeigt Code +
   Kopplungs-Port; der Verbindungs-Port steht separat auf der
   Drahtlos-Debugging-Übersicht (`adb connect <box-ip>:<verbindungs-port>`).

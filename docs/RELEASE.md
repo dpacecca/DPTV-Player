@@ -79,9 +79,11 @@ und Fork-Seiten behalten:
   exakt einhalten (Needles `checked the app's **Settings**`,
   `searched existing issues/PRs`, `[x]` mit Apostroph).
 
-## Konto-Umzug (2026-10-13, altes Konto → 	renntl)
+## Repo-Umzug (2026-10-13)
 
-- Neues Konto, Historie per Squash (1 Noreply-Commit) ohne private Mail übernommen.
-- Bridge 1.0.4 im alten Repo (nur eleaseRepo-Flip) leitet alte Installationen um; neues Repo startet bei 1.0.5 (Code monoton!). Gleiches Keystore → nahtlose Updates.
-- Neues Repo braucht: Secrets (siehe Signing), gh-pages-Branch (sonst scheitert der Maven-Push!), Fork-Actions-Banner im Actions-Tab (sonst 0 Runs).
+- Historie per Squash (1 Noreply-Commit) ins neue Repo übernommen.
+- Das Vorgänger-Repo trug nur eine Bridge v1.0.4 (reiner `releaseRepo`-Flip) für alte Installationen;
+  das neue Repo startet bei v1.0.5 (Code monoton!). Gleiches Keystore -> nahtlose Updates.
+- Neues Repo braucht: Secrets (siehe Signing), gh-pages-Branch (sonst scheitert der Maven-Push!),
+  Fork-Actions-Banner im Actions-Tab (sonst 0 Runs).
 - Alte Repos: archivieren, später löschen (erst das entfernt die alte Historie).

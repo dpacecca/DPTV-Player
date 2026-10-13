@@ -31,7 +31,6 @@
 | `archive/i18n-phase4a-seed-translations.md` | Seed-Plan, superseded |
 | `archive/i18n-apk-size-baseline.md` | Phase-0-Referenz, nur Historie |
 | `../HANDOFF.md` | Auf Status-Zeiger geschrumpft, Wissen liegt in `docs/` |
-| `../README-CUSTOM.md` | Inhalt nach `BUILD.md`/`BRANDING.md` gewandert, Datei wird entfernt |
 
 ## Upstream-Texte (ausserhalb `docs/`, bewusst behalten)
 

@@ -6,7 +6,7 @@ This recomputes the authoritative ramp from the colour maths and then diffs all 
 import re, io, json, os, collections, sys
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-ROOT = r"C:\Users\<user>\OwnTV\docs\brand"
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "docs", "brand"))
 GUIDE = os.path.join(ROOT, "BRAND_GUIDE_SPORTIO.md")
 TOKENS = os.path.join(ROOT, "sportio.tokens.json")
 KOTLIN = os.path.join(ROOT, "SportioPalette.kt")

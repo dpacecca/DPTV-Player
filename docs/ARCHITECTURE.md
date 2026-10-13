@@ -5,11 +5,10 @@
 
 ## Repos und Ordner
 
-- `C:\Users\<user>\OwnTV` — diese App (Sportio-Fork), eigenes Repo
-  `https://github.com/trenntl/SportioTV`. Remote `old` →
-  `SportioTV` (Alt-Stand vor dem Privacy-Umzug);
-  lokale Sicherungen `backup/pre-migration`, `backup/handoff-fa451b2b`.
-- `C:\Users\<user>\OwnTV\OwnTV_Core-main` — Core-Fork, eigenes Repo
+- Repo-Root = diese App (Sportio-Fork), eigenes Repo
+  `https://github.com/trenntl/SportioTV`. Lokale Sicherungen
+  `backup/pre-migration`, `backup/handoff-fa451b2b`.
+- `OwnTV_Core-main/` — Core-Fork, eigenes Repo
   `https://github.com/trenntl/SportioTV_Core`, Stand Tag `core-1.0.70` —
   identisch zum App-Pin `owntvCore` in `gradle/libs.versions.toml:82`.
   Composite-Build via `owntv.corePath`, daher kein Publish nötig.
@@ -62,7 +61,7 @@
   Spiel-Wechsel stoppen (`LaunchedEffect(selectedFixture?.id)` mit Null-Sentinel).
 - **Guide-Discovery:** EPG-Pfad (B) läuft immer, unabhängig vom Namens-Cap;
   kein Guard, der B bei vollem Namens-Cap überspringt.
-- **Box Component-States:** Xiaomi behält pro-Benutzer disabled-States über
+- **Box Component-States:** manche Hersteller behalten pro-Benutzer disabled-States über
   Updates/Reboots (`AppIconSwitcher`) — bei `Error type 3`: deinstallieren +
   frisch installieren, `pm enable` blockt.
 - **ESPN-Datum:** `Instant.parse("2026-10-11T13:30Z")` wirft (Sekunden fehlen) —

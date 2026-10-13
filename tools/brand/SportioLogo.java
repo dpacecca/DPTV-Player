@@ -65,10 +65,11 @@ public class SportioLogo {
     static File dirSvg, dirPng, dirAndroid;
 
     public static void main(String[] args) throws Exception {
-        File ttf = new File("C:/Users/<user>/OwnTV/app/src/main/res/font/plus_jakarta_sans_variable.ttf");
+        File ttf = new File("app/src/main/res/font/plus_jakarta_sans_variable.ttf");
         face800 = Font.createFont(Font.TRUETYPE_FONT, ttf).deriveFont(1000f).deriveFont(Font.BOLD);
 
-        File root = new File("C:/Users/<user>/OwnTV/docs/brand/assets");
+        // Run from the repo root: `java -cp out SportioLogo`.
+        File root = new File("docs/brand/assets");
         dirSvg = mkdirs(root + "/svg");
         dirPng = mkdirs(root + "/png");
         dirAndroid = mkdirs(root + "/android");

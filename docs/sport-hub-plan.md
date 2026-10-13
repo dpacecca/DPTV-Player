@@ -865,7 +865,7 @@ Neue `sport_*`-Keys (in `values` **und** `values-de`):
 - Emulator (`SportioTV`, x86_64): Start, Hub öffnen → nur 16 Ligen +
   ihre Requests; Liga aktivieren (ger.2) → erscheint + lädt; Tabs prüfen;
   Favourites mit gefolgtem Team prüfen; Golf-Liga aktivieren → Leaderboard.
-- Box (Xiaomi, ARM-APK): gleicher Flow mit echter Quelle; Kanal-Start aus
+- Box (Android TV, ARM-APK): gleicher Flow mit echter Quelle; Kanal-Start aus
   Favourites/Detail prüfen (Regressionstest für den 12.10.-Fix).
 - Logcat-Marker: `SportsHub board ok/failed`, `nodate`, `noteams`.
 - Kein `refreshAll()`-Sturm: Requests im Logcat/Netz zählen (nur aktive).
@@ -907,7 +907,7 @@ Neue `sport_*`-Keys (in `values` **und** `values-de`):
 
 - Aktuelle Implementierung: `app/src/main/java/tv/own/owntv/features/sport/`
 - Fix-Historie/Umgebung: `HANDOFF.md`
-- Produkt-/Build-Doku: `README-CUSTOM.md`
+- Produkt-/Build-Doku: `docs/BUILD.md`
 - ESPN-API:
   - Scoreboard: `https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard`
   - Standings: `https://site.web.api.espn.com/apis/v2/sports/{sport}/{league}/standings`
