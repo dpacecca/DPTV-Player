@@ -20,8 +20,5 @@
 - v1.0.2 (2026-10-13): released — CI success, APKs live. Lokaler Core-Pin → 1.0.68 mitgezogen.
 - v1.0.3 (2026-10-13): released — CI success, APKs live, Matching in APK verifiziert (sports_matching.json + Sprachfilter-Keys im Dex).
 - Doku (2026-10-13): Release-Kette + Fork-Schutz + API-Fallen nach `docs/RELEASE.md`, Downgrade/Box-Ports nach `docs/BUILD.md`. Leak-Audit beider Repos: keine Secrets/Credentials/Keystores; einziger Fund: private Mail in API-Commit-Autoren — künftig Noreply + Private-Email-Setting.
-- Doku-Restruktur (A, nur Doku, kein Code): `AGENTS.md` + `docs/`-Struktur angelegt,
-  i18n-Phasenpläne → `docs/archive/`. Offen: `README.md`-Umschreibung (Sportio),
-  `README-CUSTOM.md`-Entfernung, Upstream-PRs (#254/#30) ungemergt.
-- Naming: Freeze beschlossen (2026-10-13) — kein Code-Rename, Begründung in `docs/BRANDING.md`.
-- Kein git-Repo in diesem Ordner (bewusst). Upstream-PR-Klone: `C:\Users\<user>\OwnTV-upstream\`.
+- Umzug auf `trenntl` (2026-10-13, Privacy): beide Repos per Squash (Noreply) kopiert, Referenzen umgestellt, Core 1.0.69 neu publisht, App v1.0.5 live. Bridge v1.0.4 im alten Repo leitet Updater um. Offen: alte Repos archivieren/löschen, Upstream-PRs (#254/#30) schließen.
+- Arbeitsstand: Ordner hängt an `trenntl/SportioTV` (Backup-Branches vorhanden), Core frisch geklont (Build grün), READMEs + User Guide als Sportio neu, Naming-Freeze in `docs/BRANDING.md`.
