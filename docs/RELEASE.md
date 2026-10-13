@@ -22,8 +22,8 @@
 - Core-Pin: `gradle/libs.versions.toml` → `owntvCore` (Stand: 1.0.69; App v1.0.3.
   Lokal ignoriert bei gesetztem `owntv.corePath`). Core-Änderung (z. B. `EpgDao`)
   braucht Core-Bump + App-Pin-Mitziehen.
-- App-Releases: `SportioTV` (aktuell Tag `v1.0.3`), Core-Releases:
-  `SportioTV_Core` (aktuell Tag `core-1.0.69`).
+- App-Releases: `trenntl/SportioTV` (aktuell Tag `v1.0.3`), Core-Releases:
+  `trenntl/SportioTV_Core` (aktuell Tag `core-1.0.69`).
 
 ## Release-Ablauf (gesichert 2026-10-13, Kette v1.0.2 → v1.0.3)
 
@@ -48,7 +48,7 @@ und Fork-Seiten behalten:
 
 - App: `settings.gradle.kts` (Sportio-Maven!), `.github/workflows/android.yml`
   (Sportio-Naming!), `automerge-core-bump.yml` / `pr-checklist.yml` (Bot-Login
-  `old-repo`), `CoreBuildInfo.releaseRepo` (Core, Updater-Ziel!).
+  `trenntl`), `CoreBuildInfo.releaseRepo` (Core, Updater-Ziel!).
 - Core: `publish.yml` / `bump-consumers.yml` / `tools/publish_pages.py`
   (publisht sonst ins Upstream-Repo), `community.json` + i18n-Skripte
   (Generator-Output!), `SupportedLocales.kt` + README-Marker (Freshness-Gate).
@@ -68,12 +68,12 @@ und Fork-Seiten behalten:
 
 ## In-App-Updates
 
-- `CoreBuildInfo.releaseRepo = "SportioTV"` (`OwnTVApp.kt`),
+- `CoreBuildInfo.releaseRepo = "trenntl/SportioTV"` (`OwnTVApp.kt`),
   `updateCheckOnStart = true` (Core `SettingsRepository.kt`).
 - Release-Artefakt: `Sportio.apk` (arm). `Sportio.apk` im Repo-Root ist nur ein
   lokales Build-Produkt und wird nicht committet (siehe `.gitignore`).
 - Upstream-PRs (`ahXN00/OwnTV#254`, `ahXN00/OwnTV_Core#30`, Account
-  `old-repo`) laufen aus separaten Klonen unter
+  `trenntl`) laufen aus separaten Klonen unter
   `C:\Users\<user>\OwnTV-upstream\`, nicht aus diesem Ordner. PR-Template-Boxen
   exakt einhalten (Needles `checked the app's **Settings**`,
   `searched existing issues/PRs`, `[x]` mit Apostroph).

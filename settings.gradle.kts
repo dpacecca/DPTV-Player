@@ -30,11 +30,11 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         // Sportio's own Maven repository — public, no login: tv.own.owntv:core and :player-core
-        // (built from https://github.com/SportioTV_Core).
+        // (built from https://github.com/trenntl/SportioTV_Core).
         // Served from SportioTV_Core's gh-pages branch.
         maven {
             name = "Sportio"
-            url = uri("https://old-repo.github.io/SportioTV_Core/maven")
+            url = uri("https://trenntl.github.io/SportioTV_Core/maven")
             content { includeGroup("tv.own.owntv") }
         }
         // Upstream OwnTV's Maven repository — public, no login. Here only for

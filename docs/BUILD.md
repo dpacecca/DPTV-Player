@@ -21,11 +21,11 @@ $env:ANDROID_HOME="C:\Users\<user>\Android\Sdk"; $env:ANDROID_SDK_ROOT=$env:ANDR
 
 ## Repos (Stand: 2026-10-13, verifiziert per GitHub-API gegen `main`)
 
-- Ordner-Root (`C:\Users\<user>\OwnTV`) ↔ `https://github.com/SportioTV`
+- Ordner-Root (`C:\Users\<user>\OwnTV`) ↔ `https://github.com/trenntl/SportioTV`
   (öffentlicher Fork, Branch `main`). Alle Remote-Top-Level-Einträge sind lokal vorhanden;
   lokal zusätzlich nur Git-ignoriertes (`OwnTV_Core-main/`, `tools-setup/`, `*.apk`, `*.zip`,
   `build/`, `local.properties`, `keystore/`) plus lokale Doku (`HANDOFF.md`, `README-CUSTOM.md`).
-- `OwnTV_Core-main/` ↔ `https://github.com/SportioTV_Core` (eigener Repo,
+- `OwnTV_Core-main/` ↔ `https://github.com/trenntl/SportioTV_Core` (eigener Repo,
   Branch `main`). Lokal ist ein reiner Source-Stand (ohne `.github/`, `docs/`, `AGENTS.md`);
   per `.gitignore` bewusst **nicht** Teil des App-Repos (Composite-Build über `owntv.corePath`).
 - Agents führen **kein** `git` aus (Toolchain-Regel in `../AGENTS.md`); Init/Remote/Push macht

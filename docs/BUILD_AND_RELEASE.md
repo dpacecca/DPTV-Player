@@ -163,10 +163,10 @@ Without the keystore secrets CI still runs tests and lint and can build a debug 
    - `Sportio-v1.0.1.apk` (arm)
    - `Sportio.apk` (stable "latest" copy)
    - `Sportio-x86_64-v1.0.1.apk`
-3. The in-app updater reads `SportioTV` releases and picks the APK that matches the
+3. The in-app updater reads `trenntl/SportioTV` releases and picks the APK that matches the
    device ABI (assets are matched on `.apk` and the `x86_64` marker).
 
-**Always-latest download:** `https://github.com/SportioTV/releases/latest/download/Sportio.apk`
+**Always-latest download:** `https://github.com/trenntl/SportioTV/releases/latest/download/Sportio.apk`
 
 ### Releasing core
 
@@ -182,7 +182,7 @@ Without the keystore secrets CI still runs tests and lint and can build a debug 
 
 ## 9. Installing on a device
 
-Grab the signed APK from the [latest release](https://github.com/SportioTV/releases/latest).
+Grab the signed APK from the [latest release](https://github.com/trenntl/SportioTV/releases/latest).
 
 - **Fire TV** — install *Downloader* (AFTVnews), enter the release URL, allow unknown sources.
 - **Android TV / Google TV** — Downloader from Play, or sideload via *Send files to TV*, USB, or

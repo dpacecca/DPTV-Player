@@ -97,7 +97,7 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
         // Sportio's own releases: the in-app updater asks this repo (never upstream, whose APK could
         // not install over this package id anyway). Core's updateCheckOnStart default is on, so the
         // app checks shortly after launch; the Settings toggle can still turn it off.
-        tv.own.owntv.core.CoreBuildInfo.releaseRepo = "SportioTV"
+        tv.own.owntv.core.CoreBuildInfo.releaseRepo = "trenntl/SportioTV"
         // First thing after the context exists: a crash from here on leaves a trace on disk that the
         // user can export from Settings, instead of being lost with the process.
         tv.own.owntv.core.util.CrashRecorder.diagnostics = { tv.own.owntv.player.LiveDiagnosticsLog.snapshot() }

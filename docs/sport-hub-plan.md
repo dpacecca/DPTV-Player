@@ -78,7 +78,7 @@ Status: **Phase 1 umgesetzt (2026-10-12); Phasen 2–7 geplant.**
   sauberer für das i18n-Gate und die Projektregel „UI-Text in Resources".
 - **Alle Phasen 1–7 erledigt (2026-10-12).** Keystore/Signing vorhanden
   (`keystore/sportio-release.jks`, Alias `sportio`); signierter Release gebaut. In-App-Updates
-  aktiv: `releaseRepo = SportioTV`, `updateCheckOnStart` an, Release `v1.0.0`
+  aktiv: `releaseRepo = trenntl/SportioTV`, `updateCheckOnStart` an, Release `v1.0.0`
   veröffentlicht. Siehe §11.
 - **Nachtrag (2026-10-13): Kanal-Matching für Tennis/MMA-Duelle.** `Fixture.tournament`
   (Event-Name) + Doppel-Roster-Split (`roster.displayName`) + Tennis-Hint (`extraChannelRes`
@@ -778,7 +778,7 @@ Neue `sport_*`-Keys (in `values` **und** `values-de`):
       Box-Test bewusst zurückgestellt (User: nur Emulator testen).
 - [x] `HANDOFF.md` + dieses Dokument aktualisiert.
 - **Signing/Updates vorhanden:** `keystore/sportio-release.jks` (Alias `sportio`); `:app:assembleRelease`
-  baut signiert (verifiziert CN=Sportio). `releaseRepo = SportioTV`,
+  baut signiert (verifiziert CN=Sportio). `releaseRepo = trenntl/SportioTV`,
   `updateCheckOnStart` an; Repo-Release `v1.0.0` (`Sportio.apk`, `Sportio-x86_64-v1.0.0.apk`).
 
 ---

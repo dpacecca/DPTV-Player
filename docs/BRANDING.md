@@ -10,7 +10,7 @@
 - `app_name = Sportio`, `brand_own = Sport`, `brand_tv = io`
   (`res/values/donottranslate.xml`); `sport_*`-Strings in `values/` + `values-de/`.
 - Deep-Links `sportio://` (18x im Manifest), `CoreBuildInfo.releaseRepo =
-  "SportioTV"` (`OwnTVApp.kt`), eigener Keystore.
+  "trenntl/SportioTV"` (`OwnTVApp.kt`), eigener Keystore.
 - Palette: Core `SportioPalette` (Pitch #4FEE94 / PitchDeep #0E6B41,
   Dark-Page #060B07), `AccentColor.SPORTIO` (einziges Preset, alte lösen nach Grün
   auf), `AppIcon.SPORTIO` (einzige Activity, `sportio_banner`, `sportio_mark`),

@@ -17,7 +17,7 @@ jobs:
     # them. Both conditions matter — the branch name alone is trivially spoofable by anyone opening
     # a PR, so the author must be the maintainer too. Dependabot's monthly Actions update is exempt
     # for the same reason; its author login cannot be taken by anyone else.
-    if: "!(startsWith(github.event.pull_request.head.ref, 'bump/core-') && github.event.pull_request.user.login == 'old-repo') && github.event.pull_request.user.login != 'dependabot[bot]'"
+    if: "!(startsWith(github.event.pull_request.head.ref, 'bump/core-') && github.event.pull_request.user.login == 'trenntl') && github.event.pull_request.user.login != 'dependabot[bot]'"
     runs-on: ubuntu-latest
     steps:
       - name: Ensure required boxes are checked

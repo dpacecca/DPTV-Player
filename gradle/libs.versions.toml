@@ -75,7 +75,7 @@ orgJson = "20260814"
 junitExt = "1.3.0"
 espressoCore = "3.7.0"
 
-# --- Sportio core library (https://github.com/SportioTV_Core) ---
+# --- Sportio core library (https://github.com/trenntl/SportioTV_Core) ---
 # Both artifacts always ship on the same version; never split them. Bumping this is how the TV app
 # takes a core change. For local work, owntv.corePath in ~/.gradle/gradle.properties substitutes
 # core's source for these artifacts, and this number is then ignored.

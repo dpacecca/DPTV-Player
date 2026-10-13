@@ -55,7 +55,7 @@ jobs:
 
           NUMBER=$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state open \
                      --json number,author,isDraft \
-                     -q '.[] | select(.author.login == "old-repo" and .isDraft == false) | .number')
+                     -q '.[] | select(.author.login == "trenntl" and .isDraft == false) | .number')
           if [ -z "$NUMBER" ]; then
             echo "No open, non-draft pin-bump pull request by the maintainer on $HEAD_BRANCH."
             exit 0
