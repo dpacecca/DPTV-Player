@@ -7,7 +7,7 @@ name: i18n
 #   validate  — the Kotlin-side checks: locale-stable number formatting and bounded text overflow.
 #               The strings themselves live in the core repository now, so locales.json schema,
 #               placeholder/plural parity, translation coverage and the toolkit's own regression
-#               tests run there — see ahXN00/OwnTV_Core's i18n workflow.
+#               tests run there — see SportioTV_Core's i18n workflow.
 #   pseudo    — inspects the BUILT debug and release APKs and proves pseudolocales survived
 #               localeFilters in debug and are absent in release. The flag being set is not proof.
 #

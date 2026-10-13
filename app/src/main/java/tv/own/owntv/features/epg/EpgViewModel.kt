@@ -599,7 +599,7 @@ class EpgViewModel(
         }
     }
 
-    /** "Play catch-up in…" in the programme menu steps through Ask · OwnTV player · External player. */
+    /** "Play catch-up in…" in the programme menu steps through Ask · Sportio player · External player. */
     fun setCatchupPlayer(mode: SettingsRepository.CatchupPlayer) {
         viewModelScope.launch { settings.setCatchupPlayer(mode) }
     }

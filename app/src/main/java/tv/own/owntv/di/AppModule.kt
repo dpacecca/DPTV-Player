@@ -1,5 +1,6 @@
 package tv.own.owntv.di
 
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
@@ -28,6 +29,13 @@ import tv.own.owntv.features.settings.DeleteSubtitlesViewModel
 import tv.own.owntv.features.settings.EpgSourcesViewModel
 import tv.own.owntv.features.settings.HomeSettingsViewModel
 import tv.own.owntv.features.settings.LanguageSettingsViewModel
+import tv.own.owntv.features.sport.EspnApi
+import tv.own.owntv.features.sport.LiveSourceIdsProvider
+import tv.own.owntv.features.sport.ProfileLiveSourceIdsProvider
+import tv.own.owntv.features.sport.SportsMatcher
+import tv.own.owntv.features.sport.SportsPrefs
+import tv.own.owntv.features.sport.SportsViewModel
+import tv.own.owntv.features.sport.SportsVocab
 import tv.own.owntv.features.settings.OpenSubtitlesViewModel
 import tv.own.owntv.features.settings.SettingsViewModel
 import tv.own.owntv.features.setup.DisplaySizeViewModel
@@ -161,4 +169,15 @@ val appModule = module {
     viewModelOf(::MoreCountsViewModel)
     // The counts beside the sections in the open Stage rail.
     viewModelOf(::RailCountsViewModel)
+    // Sports hub (Lume-style): ESPN fixtures/scores/standings matched to the user's channels.
+    singleOf(::EspnApi)
+    // Static matcher vocabulary (team aliases/exonyms + stop-words) from res/raw/sports_matching.json.
+    // Takes a Context, resolved from androidContext().
+    single { SportsVocab.load(androidContext()) }
+    // The matcher's source lookup, behind a seam so SportsMatcher itself takes no Android-bound
+    // repository (and is unit-testable with fake DAOs). This binding keeps production behaviour.
+    single<LiveSourceIdsProvider> { ProfileLiveSourceIdsProvider(get(), get()) }
+    singleOf(::SportsMatcher)
+    singleOf(::SportsPrefs)
+    viewModelOf(::SportsViewModel)
 }

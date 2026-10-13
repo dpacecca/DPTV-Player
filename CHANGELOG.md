@@ -55,6 +55,30 @@
 - **⏯️ The remote's Play/Pause key pauses and resumes again**
 - **🔎 Search finds "Spider-Man" from "Spider-M" and lists every match, not the first 40**
 
+## v1.0.3 — 2026-10-13
+
+### New features
+
+- **Fixture-to-channel matching across channel names and guide text**
+- **Language filter for matched channels, exact event channels always pass**
+
+### Fixes
+
+- **Single-team mentions no longer surface news and film channels**
+
+## v1.0.2 — 2026-10-12
+
+### New features
+
+- **Sports Hub: full 81-league ESPN catalogue, 16 active by default, with an Add leagues picker**
+- **Live / Upcoming / Past tabs and a Favourites rail (active leagues + followed teams and athletes)**
+- **Single-sport view: tennis matches listed individually, Formula 1 races with circuit only**
+- **Manage leagues, teams and athletes from a phone (QR companion page)**
+
+### Fixes
+
+- **Formula 1 races match Sky Sports channels; tennis players show their country flag**
+
 ## v5.1.0 — 2026-10-04
 
 ### ✨ New features

@@ -155,9 +155,7 @@ private val MenuSections = listOf(
     MainSection.HOME to OwnTVIcon.HOME,
     MainSection.LIVE_TV to OwnTVIcon.LIVE_TV,
     MainSection.EPG to OwnTVIcon.EPG,
-    MainSection.MOVIES to OwnTVIcon.MOVIES,
-    MainSection.SERIES to OwnTVIcon.SERIES,
-    MainSection.DOWNLOADS to OwnTVIcon.DOWNLOADS,
+    MainSection.SPORT to OwnTVIcon.SPORT,
 )
 
 internal val NavSize.labelRes: Int

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Sportio</string>
+    <string name="brand_own" translatable="false">Sport</string>
+    <string name="brand_tv" translatable="false">io</string>
+    <string name="sport_league_soccer_ger_1" translatable="false">Bundesliga</string>
+    <string name="sport_league_soccer_eng_1" translatable="false">Premier League</string>
+    <string name="sport_league_soccer_esp_1" translatable="false">LaLiga</string>
+    <string name="sport_league_soccer_ita_1" translatable="false">Serie A</string>
+    <string name="sport_league_soccer_fra_1" translatable="false">Ligue 1</string>
+    <string name="sport_league_soccer_uefa_champions" translatable="false">UEFA Champions League</string>
+    <string name="sport_league_soccer_uefa_europa" translatable="false">UEFA Europa League</string>
+    <string name="sport_league_football_nfl" translatable="false">NFL</string>
+    <string name="sport_league_basketball_nba" translatable="false">NBA</string>
+    <string name="sport_league_baseball_mlb" translatable="false">MLB</string>
+    <string name="sport_league_hockey_nhl" translatable="false">NHL</string>
+    <string name="sport_league_tennis_atp" translatable="false">ATP</string>
+    <string name="sport_league_tennis_wta" translatable="false">WTA</string>
+    <string name="sport_league_racing_f1" translatable="false">Formula 1</string>
+    <string name="sport_league_mma_ufc" translatable="false">UFC</string>
+    <string name="sport_league_golf_pga" translatable="false">PGA Tour</string>
+    <string name="sport_league_soccer_ger_2" translatable="false">2. Bundesliga</string>
+    <string name="sport_league_soccer_eng_2" translatable="false">EFL Championship</string>
+    <string name="sport_league_soccer_esp_2" translatable="false">LaLiga 2</string>
+    <string name="sport_league_soccer_ita_2" translatable="false">Serie B</string>
+    <string name="sport_league_soccer_fra_2" translatable="false">Ligue 2</string>
+    <string name="sport_league_soccer_ned_1" translatable="false">Eredivisie</string>
+    <string name="sport_league_soccer_por_1" translatable="false">Primeira Liga</string>
+    <string name="sport_league_soccer_tur_1" translatable="false">Süper Lig</string>
+    <string name="sport_league_soccer_sco_1" translatable="false">Scottish Premiership</string>
+    <string name="sport_league_soccer_bel_1" translatable="false">Belgian Pro League</string>
+    <string name="sport_league_soccer_aut_1" translatable="false">Austrian Bundesliga</string>
+    <string name="sport_league_soccer_sui_1" translatable="false">Swiss Super League</string>
+    <string name="sport_league_soccer_gre_1" translatable="false">Greek Super League</string>
+    <string name="sport_league_soccer_rus_1" translatable="false">Russian Premier League</string>
+    <string name="sport_league_soccer_den_1" translatable="false">Danish Superliga</string>
+    <string name="sport_league_soccer_nor_1" translatable="false">Eliteserien</string>
+    <string name="sport_league_soccer_swe_1" translatable="false">Allsvenskan</string>
+    <string name="sport_league_soccer_mex_1" translatable="false">Liga MX</string>
+    <string name="sport_league_soccer_usa_1" translatable="false">MLS</string>
+    <string name="sport_league_soccer_arg_1" translatable="false">Liga Profesional</string>
+    <string name="sport_league_soccer_bra_1" translatable="false">Brasileirão Série A</string>
+    <string name="sport_league_soccer_jpn_1" translatable="false">J.League</string>
+    <string name="sport_league_soccer_chn_1" translatable="false">Chinese Super League</string>
+    <string name="sport_league_soccer_aus_1" translatable="false">A-League Men</string>
+    <string name="sport_league_soccer_ind_1" translatable="false">Indian Super League</string>
+    <string name="sport_league_soccer_rsa_1" translatable="false">South African Premiership</string>
+    <string name="sport_league_soccer_uefa_europa_conf" translatable="false">UEFA Conference League</string>
+    <string name="sport_league_soccer_uefa_champions_qual" translatable="false">UEFA Champions League Qualifying</string>
+    <string name="sport_league_soccer_uefa_super_cup" translatable="false">UEFA Super Cup</string>
+    <string name="sport_league_soccer_uefa_euro" translatable="false">UEFA European Championship</string>
+    <string name="sport_league_soccer_uefa_nations" translatable="false">UEFA Nations League</string>
+    <string name="sport_league_soccer_eng_fa" translatable="false">FA Cup</string>
+    <string name="sport_league_soccer_eng_league_cup" translatable="false">EFL Cup</string>
+    <string name="sport_league_soccer_ger_dfb_pokal" translatable="false">DFB-Pokal</string>
+    <string name="sport_league_soccer_esp_copa_del_rey" translatable="false">Copa del Rey</string>
+    <string name="sport_league_soccer_ita_coppa_italia" translatable="false">Coppa Italia</string>
+    <string name="sport_league_soccer_esp_super_cup" translatable="false">Supercopa de España</string>
+    <string name="sport_league_soccer_ita_super_cup" translatable="false">Supercoppa Italiana</string>
+    <string name="sport_league_soccer_fifa_world" translatable="false">FIFA World Cup</string>
+    <string name="sport_league_soccer_fifa_wwc" translatable="false">FIFA Women\'s World Cup</string>
+    <string name="sport_league_soccer_afc_champions" translatable="false">AFC Champions League Elite</string>
+    <string name="sport_league_soccer_caf_champions" translatable="false">CAF Champions League</string>
+    <string name="sport_league_soccer_afc_asian_cup" translatable="false">AFC Asian Cup</string>
+    <string name="sport_league_soccer_caf_nations" translatable="false">Africa Cup of Nations</string>
+    <string name="sport_league_soccer_concacaf_champions" translatable="false">Concacaf Champions Cup</string>
+    <string name="sport_league_soccer_eng_w_1" translatable="false">Women\'s Super League</string>
+    <string name="sport_league_soccer_esp_w_1" translatable="false">Liga F</string>
+    <string name="sport_league_soccer_fra_w_1" translatable="false">Première Ligue</string>
+    <string name="sport_league_soccer_usa_nwsl" translatable="false">NWSL</string>
+    <string name="sport_league_soccer_uefa_wchampions" translatable="false">UEFA Women\'s Champions League</string>
+    <string name="sport_league_basketball_wnba" translatable="false">WNBA</string>
+    <string name="sport_league_basketball_euroleague" translatable="false">EuroLeague</string>
+    <string name="sport_league_basketball_mens_college_basketball" translatable="false">NCAA Men\'s Basketball</string>
+    <string name="sport_league_basketball_womens_college_basketball" translatable="false">NCAA Women\'s Basketball</string>
+    <string name="sport_league_football_college_football" translatable="false">NCAA Football</string>
+    <string name="sport_league_baseball_college_baseball" translatable="false">NCAA Baseball</string>
+    <string name="sport_league_australian_football_afl" translatable="false">AFL</string>
+    <string name="sport_league_rugby_270557" translatable="false">United Rugby Championship</string>
+    <string name="sport_league_volleyball_womens_college_volleyball" translatable="false">NCAA Women\'s Volleyball</string>
+    <string name="sport_league_golf_lpga" translatable="false">LPGA</string>
+    <string name="sport_league_golf_liv" translatable="false">LIV Golf</string>
+    <string name="sport_league_golf_eur" translatable="false">DP World Tour</string>
+    <string name="sport_league_mma_pfl" translatable="false">PFL</string>
+    <string name="sport_league_racing_nhra" translatable="false">NHRA</string>
+    <string name="sport_league_cricket_8039" translatable="false">Cricket World Cup</string>
+    <string name="sport_channel_sky_main_event" translatable="false">Sky Sports Main Event</string>
+    <string name="sport_channel_tennis" translatable="false">Tennis</string>
+</resources>

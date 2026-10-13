@@ -21,7 +21,7 @@ import java.io.File
 
 /**
  * Remote restore: opens the LAN companion server in backup-upload mode and shows the PIN, a QR of the
- * URL, and the URL text so another device on the same Wi-Fi can send an OwnTV backup file to the TV. When an
+ * URL, and the URL text so another device on the same Wi-Fi can send a Sportio backup file to the TV. When an
  * upload arrives, [onBackupReceived] hands the saved file off to the normal restore flow (section
  * picker, password prompt). The listener stops automatically when this screen leaves composition.
  *

@@ -20,6 +20,7 @@ val AccentColor.labelRes: Int
         AccentColor.VIOLET -> R.string.settings_accent_violet
         AccentColor.GREEN -> R.string.settings_accent_green
         AccentColor.AMBER -> R.string.settings_accent_amber
+        AccentColor.SPORTIO -> R.string.settings_accent_sportio
     }
 
 fun AccentColor.primary(isDark: Boolean) = Color(roles(isDark).primary)

@@ -157,16 +157,16 @@ fun AddSourceScreen(
     var autoRefresh by remember(initialAutoRefresh) { mutableStateOf(initialAutoRefresh) }
     var isDefault by remember(initialIsDefault) { mutableStateOf(initialIsDefault) }
     var preferHls by remember(initial) { mutableStateOf(initial?.preferHls == true) }
-    // Edit: On(=Now)/Off from persisted flags. Add: default all Now for Xtream; Stalker defaults
-    // Live Now + Movies/Series Later when the kind switches (see LaunchedEffect below).
+    // Edit: On(=Now)/Off from persisted flags. Add: Live defaults Now; Movies/Series default
+    // Off — this is a TV-only build, VOD is never synced for new sources (see submit below).
     var syncLive by remember(initial) {
         mutableStateOf(if (initial?.syncLive == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
     }
     var syncMovies by remember(initial) {
-        mutableStateOf(if (initial?.syncMovies == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
+        mutableStateOf(if (initial == null) SyncScopeChoice.Off else if (initial.syncMovies == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
     }
     var syncSeries by remember(initial) {
-        mutableStateOf(if (initial?.syncSeries == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
+        mutableStateOf(if (initial == null) SyncScopeChoice.Off else if (initial.syncSeries == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
     }
     var hasRemoteStalkerScopes by remember { mutableStateOf(false) }
     var showFileBrowser by remember { mutableStateOf(false) }
@@ -406,13 +406,16 @@ fun AddSourceScreen(
 
     // P10B-10: every field is a row (label + value or placeholder, OK = keyboard); Start import sits in the
     // panel, reached with ▶ from any row. Everything the old form offered stays, below the drawn rows.
+    // TV-only build: Movies/Series are never synced — the VOD rows are hidden and submit
+    // forces Off, so imports stay live-only and sources load fast. (The rows stay in the
+    // codebase for the upstream edition.)
     val submit = {
         when (kind) {
-            SourceKind.XTREAM -> onStartXtream(name, server, username, password, userAgent, referer, epgUrl, autoRefresh, syncLive, syncMovies, syncSeries, isDefault, preferHls)
+            SourceKind.XTREAM -> onStartXtream(name, server, username, password, userAgent, referer, epgUrl, autoRefresh, syncLive, SyncScopeChoice.Off, SyncScopeChoice.Off, isDefault, preferHls)
             SourceKind.M3U -> onStartM3u(name, m3uUrl, userAgent, referer, epgUrl, autoRefresh, isDefault)
             SourceKind.STALKER -> onStartStalker?.invoke(
                 name, portalUrl, mac, stalkerSerialNumber, stalkerDeviceId, stalkerDeviceId2,
-                stalkerSignature, userAgent, referer, autoRefresh, isDefault, syncLive, syncMovies, syncSeries,
+                stalkerSignature, userAgent, referer, autoRefresh, isDefault, syncLive, SyncScopeChoice.Off, SyncScopeChoice.Off,
             )
         }
     }
@@ -622,8 +625,7 @@ fun AddSourceScreen(
             StageSettingsHeading(stringResource(R.string.setup_what_to_sync), 3)
             val scopeHelp = stringResource(if (editing) R.string.setup_sync_off_editing else R.string.setup_sync_choices)
             SyncScopeStageRow(OwnTVIcon.LIVE_TV, stringResource(R.string.setup_live_tv), stringResource(R.string.setup_channels_categories), syncLive, editing, help(stringResource(R.string.setup_live_tv), scopeHelp, changeKeys), toSubmit) { syncLive = it }
-            SyncScopeStageRow(OwnTVIcon.MOVIES, stringResource(R.string.setup_movies), stringResource(R.string.setup_vod_movie_catalog), syncMovies, editing, help(stringResource(R.string.setup_movies), scopeHelp, changeKeys), toSubmit) { syncMovies = it }
-            SyncScopeStageRow(OwnTVIcon.SERIES, stringResource(R.string.setup_series), stringResource(R.string.setup_tv_series_catalog), syncSeries, editing, help(stringResource(R.string.setup_series), scopeHelp, changeKeys), toSubmit) { syncSeries = it }
+            // TV-only build: no Movies/Series rows — submit forces both Off (see above).
         }
         if (!editing && hideNewCatsProfile >= 0) {
             val hideTitle = stringResource(R.string.setup_hide_new_categories)

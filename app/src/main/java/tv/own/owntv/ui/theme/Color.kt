@@ -5,10 +5,10 @@ import tv.own.owntv.core.theme.AccentColor
 import tv.own.owntv.core.theme.OwnTVPalette
 
 /**
- * Material 3 tonal palette for OwnTV (teal-seeded). NEUTRAL + secondary/tertiary roles are
- * theme-only; the `primary` roles are seeded per [AccentColor] (default teal == these values).
+ * Material 3 tonal palette for Sportio (green-seeded). NEUTRAL + secondary/tertiary roles are
+ * theme-only; the `primary` roles are Sportio's fixed signature green.
  *
- * Dark uses a near-black background (#040e0b) so the panel colours (Phase 6) pop against
+ * Dark uses a near-black pitch green (#060b07) so the panel colours (Phase 6) pop against
  * the deep dark surface while keeping a subtle green undertone.
  *
  * **The values themselves live in core**, in [OwnTVPalette], because the mobile app renders the
@@ -16,7 +16,7 @@ import tv.own.owntv.core.theme.OwnTVPalette
  * Compose's [Color], which core cannot do — it carries the Compose runtime, not `compose-ui`.
  */
 
-// Brand mark color (the OwnTV play logo) — constant.
+// Brand mark color (the Sportio play logo) — constant.
 val AccentCyan = Color(OwnTVPalette.AccentCyan)
 
 // ---------------- DARK (M3 dark over near-black #040e0b) ----------------

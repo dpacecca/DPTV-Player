@@ -3,11 +3,11 @@ package tv.own.owntv.ui.theme
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import tv.own.owntv.core.theme.AccentColor
+import tv.own.owntv.core.theme.SportioPalette
 
 /**
- * OwnTV's resolved Material 3 color roles for the current theme + accent. Read as `OwnTVTheme.colors`.
+ * Sportio's resolved Material 3 color roles for the current theme. Read as `OwnTVTheme.colors`.
  *
  * Exposes the full M3 surface-container tiers and primary/secondary/tertiary roles the MD3 UI needs.
  * A few legacy aliases (`panel`/`card`/`rail`/`textPrimary`/`textSecondary`/`accent`) map onto M3
@@ -50,9 +50,9 @@ data class OwnTVColors(
     /**
      * The accent as it must look on the player's chrome, which is always dark scrim over video no
      * matter which theme the app is in. [primary] can't be used there: on the light theme it is the
-     * deep tone M3 picks for a light surface (teal becomes #006B5E), which all but disappears against
-     * a dark HUD. This is the same accent resolved for dark surfaces, so the seek bar and the active
-     * buttons stay readable — and on the dark theme it is simply [primary].
+     * deep tone M3 picks for a light surface (Sportio deep green #0E6B41), which all but disappears
+     * against a dark HUD. This is the same accent resolved for dark surfaces, so the seek bar and the
+     * active buttons stay readable — and on the dark theme it is simply [primary].
      */
     val accentOnVideo: Color,
     /** Text/icon colour for content drawn ON [accentOnVideo] — e.g. the count inside a badge. */
@@ -75,38 +75,14 @@ data class OwnTVColors(
 fun parseAccentHex(hex: String): Color? =
     tv.own.owntv.core.theme.parseAccentHex(hex)?.let { Color(it) }
 
-/** The four M3 primary roles, resolved either from a preset or generated from a custom seed. */
-private data class AccentRoles(
-    val primary: Color,
-    val onPrimary: Color,
-    val primaryContainer: Color,
-    val onPrimaryContainer: Color,
-)
-
 /**
- * Generate tonal primary roles from an arbitrary seed color (the custom hex accent).
- * The derivation is core's [tv.own.owntv.core.theme.accentRolesFromSeed]; this only wraps its
- * values in [Color].
- */
-private fun rolesFrom(seed: Color, isDark: Boolean): AccentRoles {
-    val roles = tv.own.owntv.core.theme.accentRolesFromSeed(
-        seed = seed.toArgb().toLong() and 0xFFFFFFFFL,
-        isDark = isDark,
-    )
-    return AccentRoles(
-        primary = Color(roles.primary),
-        onPrimary = Color(roles.onPrimary),
-        primaryContainer = Color(roles.primaryContainer),
-        onPrimaryContainer = Color(roles.onPrimaryContainer),
-    )
-}
-
-/**
- * Build the resolved M3 tokens for a theme (dark/light) and accent. A valid [customAccent] hex
- * overrides the preset (its tonal roles are generated from the seed color).
+ * Build the resolved M3 tokens for a theme (dark/light).
  *
- * [focusHighlight] recolors the focus ring and its glow only (#121): the accent still owns buttons,
- * chips and containers, so a loud focus color does not repaint the whole app. Blank = the accent.
+ * Sportio ships one fixed brand colour: the signature green from [SportioPalette]. [accent],
+ * [customAccent] and [focusHighlight] are accepted for call-site compatibility (stored values
+ * from before the rebrand, clock helpers) but no longer change the theme — the settings UI
+ * offers no colour choice anymore. The focus ring is the floodlight green in dark ([Beam]) and
+ * the signature green itself in light.
  */
 fun ownTvColors(
     isDark: Boolean,
@@ -114,21 +90,10 @@ fun ownTvColors(
     customAccent: String = "",
     focusHighlight: String = "",
 ): OwnTVColors {
-    val roles = parseAccentHex(customAccent)?.let { rolesFrom(it, isDark) } ?: AccentRoles(
-        primary = accent.primary(isDark),
-        onPrimary = accent.onPrimary(isDark),
-        primaryContainer = accent.primaryContainer(isDark),
-        onPrimaryContainer = accent.onPrimaryContainer(isDark),
-    )
-    val primary = roles.primary
-    // Always the dark-surface tone of the same accent: the player HUD is dark chrome in every theme.
-    val onVideoRoles = parseAccentHex(customAccent)?.let { rolesFrom(it, true) } ?: AccentRoles(
-        primary = accent.primary(true),
-        onPrimary = accent.onPrimary(true),
-        primaryContainer = accent.primaryContainer(true),
-        onPrimaryContainer = accent.onPrimaryContainer(true),
-    )
-    val focus = parseAccentHex(focusHighlight) ?: primary
+    val roles = if (isDark) SportioPalette.DarkPrimary else SportioPalette.LightPrimary
+    val primary = Color(roles.primary)
+    val onVideoRoles = SportioPalette.DarkPrimary
+    val focus = if (isDark) Color(SportioPalette.Beam) else primary
     return if (isDark) {
         OwnTVColors(
             isDark = true,
@@ -144,9 +109,9 @@ fun ownTvColors(
             outline = DarkOutline,
             outlineVariant = DarkOutlineVariant,
             primary = primary,
-            onPrimary = roles.onPrimary,
-            primaryContainer = roles.primaryContainer,
-            onPrimaryContainer = roles.onPrimaryContainer,
+            onPrimary = Color(roles.onPrimary),
+            primaryContainer = Color(roles.primaryContainer),
+            onPrimaryContainer = Color(roles.onPrimaryContainer),
             secondary = DarkSecondary,
             onSecondary = DarkOnSecondary,
             secondaryContainer = DarkSecondaryContainer,
@@ -158,8 +123,8 @@ fun ownTvColors(
             focusBorder = focus,
             focusGlow = focus.copy(alpha = 0.40f),
             favorite = DarkError,
-            accentOnVideo = onVideoRoles.primary,
-            onAccentOnVideo = onVideoRoles.onPrimary,
+            accentOnVideo = Color(onVideoRoles.primary),
+            onAccentOnVideo = Color(onVideoRoles.onPrimary),
         )
     } else {
         OwnTVColors(
@@ -176,9 +141,9 @@ fun ownTvColors(
             outline = LightOutline,
             outlineVariant = LightOutlineVariant,
             primary = primary,
-            onPrimary = roles.onPrimary,
-            primaryContainer = roles.primaryContainer,
-            onPrimaryContainer = roles.onPrimaryContainer,
+            onPrimary = Color(roles.onPrimary),
+            primaryContainer = Color(roles.primaryContainer),
+            onPrimaryContainer = Color(roles.onPrimaryContainer),
             secondary = LightSecondary,
             onSecondary = LightOnSecondary,
             secondaryContainer = LightSecondaryContainer,
@@ -190,10 +155,10 @@ fun ownTvColors(
             focusBorder = focus,
             focusGlow = focus.copy(alpha = 0.28f),
             favorite = LightError,
-            accentOnVideo = onVideoRoles.primary,
-            onAccentOnVideo = onVideoRoles.onPrimary,
+            accentOnVideo = Color(onVideoRoles.primary),
+            onAccentOnVideo = Color(onVideoRoles.onPrimary),
         )
     }
 }
 
-val LocalOwnTVColors = staticCompositionLocalOf { ownTvColors(isDark = true, accent = AccentColor.TEAL) }
+val LocalOwnTVColors = staticCompositionLocalOf { ownTvColors(isDark = true, accent = AccentColor.SPORTIO) }

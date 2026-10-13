@@ -32,7 +32,11 @@ plugins {
 android {
     namespace = "tv.own.owntv"
     compileSdk {
-        version = release(37)
+        // API 37 exists only as the 37.2 platform (canary channel); the 2026-era deps
+        // (Compose 1.12, Coil 3.6, …) require compileSdk >= 37 in their AAR metadata.
+        version = release(37) {
+            minorApiLevel = 2
+        }
     }
 
     // Signing credentials AND local-only build switches, kept in a standalone properties file OUTSIDE
@@ -44,7 +48,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "tv.own.owntv"
+        // Fork identity: Sportio installs next to upstream OwnTV (tv.own.owntv) as its own app —
+        // own data, own providers, own launcher entry. Code packages/namespaces stay tv.own.owntv
+        // (internal only); only the applicationId makes two installs distinct to Android.
+        applicationId = "tv.sportio.app"
         minSdk = 26
         targetSdk = 36
         // CI injects these from the git tag (see .github/workflows/android.yml) so releases never

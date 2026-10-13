@@ -1,0 +1,640 @@
+package tv.own.owntv.features.sport
+
+import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import tv.own.owntv.core.database.dao.ChannelDao
+import tv.own.owntv.core.database.dao.EpgDao
+import tv.own.owntv.core.database.entity.ChannelEntity
+import tv.own.owntv.core.database.entity.EpgProgrammeEntity
+
+/**
+ * Resolves an ESPN fixture to channels from the user's own playlists — Lume's EPG-based channel
+ * matching (AGPL-3.0, https://github.com/bilipp/Lume), adapted to OwnTV's DAOs.
+ *
+ * ## Why this file looks the way it does
+ *
+ * The original matcher discovered candidates **only from channel names** (`channelDao.searchList`
+ * → SQL `name LIKE '%token%'`); the EPG was then used merely to *score* a channel that the name
+ * search had already found. That is why a channel such as `DE: SKY SPORT AUSTRIA 1 HD`, whose name
+ * carries no team or broadcast word but whose guide says "Coventry City v Newcastle United", never
+ * appeared — while Lume listed it. See `docs/sport-channel-matching.md` for the full analysis.
+ *
+ * The fix is a **second discovery source** (Lume's pass 2/3): probe the guide in the kickoff window
+ * for each team token and pull in every channel those programmes point at, whether or not its own
+ * name matched.
+ *
+ * ## Both teams are required (Lume-aligned, 2026-10-12)
+ *
+ * A candidate only qualifies on evidence that **both** teams are present — in the channel's own name,
+ * or together in one EPG programme (title, or the description for a conference/foreign feed whose
+ * generic title names nothing). A programme naming a single team is a news ticker, a soap set in the
+ * club's city or a movie blurb, not the fixture: scoring it was what pulled `DE: SKY SPORT NEWS`,
+ * `DE: SYFY`, `DE: DISNEY CHANNEL` into a football list. This mirrors Lume's
+ * `ResolvedChannelSource` tiers (`epgTitleSubtitle` > `epgSingleField` > `epgDescription` >
+ * `channelName`); Sportio keeps the weights additive instead of tier-typed.
+ *
+ * ## Duels and the tournament fallback (tennis/MMA, 2026-10-13)
+ *
+ * A duel (`VERSUS` with two entries and no home/away) runs the same two tiers with the two
+ * athletes' names in place of the teams — plus two weaker, recall-oriented tiers below them:
+ * a programme naming one athlete **together with tennis context** (the words tennis/ATP/WTA, a
+ * tournament token or a sport category in the same programme) and a programme naming only the
+ * tournament. A lone surname without any such context still scores nothing (`Paul` is a film
+ * character far more often than Tommy Paul). The league's channel hint (tennis → "Tennis")
+ * additionally resolves tennis-named channels (`US TENNIS PPV`, `SKY SPORT TENNIS`) by name, so
+ * upcoming fixtures without any guide data still list their channels.
+ *
+ * A consequence to keep in mind: a feed that names only one team in its guide text (many German
+ * broadcasters) is found only when a *nickname* supplies the other — hence the aliases in
+ * `res/raw/sports_matching.json` (`Newcastle United → Magpies`).
+ *
+ * ## Phases
+ *
+ *  - **Phase 1:** alias/exonym expansion + whole-word, accent-folded scoring + EPG discovery.
+ *  - **Phase 2 (done):** description discovery (`EpgDao.searchGuide`), preferred-language filter.
+ *  - **Phase 3 (planned):** remembered channel picks (Lume's `SportsChannelPicks`) and the
+ *    tour/competition fallback for event sports (tennis, F1, golf) — see the doc.
+ */
+class SportsMatcher(
+    private val channelDao: ChannelDao,
+    private val epgDao: EpgDao,
+    private val vocab: SportsVocab,
+    /**
+     * The profile's live playlists. Behind [LiveSourceIdsProvider] rather than the concrete
+     * `SettingsRepository`/`SourceRepository` so the matcher is constructible without Android and can
+     * be unit-tested with fake DAOs — see the interface's KDoc.
+     */
+    private val sources: LiveSourceIdsProvider,
+) {
+
+    /**
+     * Channels that (probably) carry [fixture], strongest first, capped at [limit].
+     *
+     * [languages] is the viewer's preferred-language set (empty = all). The filter is applied
+     * **before** the [limit] cut, and that order matters: a German feed such as
+     * `DE: SKY SPORT PREMIER LEAGUE` names the clubs only in its EPG *description* and scores far
+     * below the many English/Italian feeds that carry both teams in their titles, so a post-cut
+     * filter would never see it. Filtering first lets the preferred languages win the fixed slots.
+     *
+     * Never throws for a malformed playlist or a cold EPG: every DAO call is `runCatching`-guarded
+     * and an empty result simply means "nothing matched".
+     */
+    suspend fun match(
+        fixture: Fixture,
+        languages: Set<SportLanguage> = emptySet(),
+        limit: Int = DefaultLimit,
+    ): List<ChannelMatch> =
+        withContext(Dispatchers.IO) {
+            val sourceIds = sources.liveSourceIds()
+            if (sourceIds.isEmpty()) return@withContext emptyList()
+
+            val home = fixture.home
+            val away = fixture.away
+            val teamSport = home != null && away != null
+            // A duel is a VERSUS fixture with two entries and no home/away (tennis singles, MMA).
+            // Doubles carry one "A / B" roster name per side; leaderboards and EVENTs never qualify.
+            val duelSides = fixture.duelSides()
+            val duelSport = !teamSport && duelSides != null
+
+            val from = fixture.dateMs - EpgBeforeMs
+            val to = fixture.dateMs + EpgAfterMs
+
+            // Pass 1 — candidates, from channel names (legacy) and from the guide (new).
+            val candidates = discoverCandidates(fixture, teamSport, duelSport, sourceIds, from, to)
+            if (candidates.isEmpty()) return@withContext emptyList()
+            // Pass 2 — score each candidate against the fixture.
+            val homeTokens = home?.scoringTokens().orEmpty()
+            val awayTokens = away?.scoringTokens().orEmpty()
+            val sideATokens = duelSides?.first?.sideTokens().orEmpty()
+            val sideBTokens = duelSides?.second?.sideTokens().orEmpty()
+            val tournamentTokens = fixture.tournamentTokens()
+
+            val scored = candidates.values.mapNotNull { channel ->
+                scoreChannel(
+                    channel = channel,
+                    fixture = fixture,
+                    home = home,
+                    away = away,
+                    homeTokens = homeTokens,
+                    awayTokens = awayTokens,
+                    sideATokens = sideATokens,
+                    sideBTokens = sideBTokens,
+                    tournamentTokens = tournamentTokens,
+                    from = from,
+                    to = to,
+                )
+            }.sortedByDescending { it.score }
+            // Preferred languages first (never-empty fallback lives in SportLanguages.filter).
+            SportLanguages.filter(scored, languages).take(limit)
+        }
+
+    /** Entities for matched ids, in the matches' order — the zap context for playback. */
+    suspend fun channels(ids: List<Long>): List<ChannelEntity> =
+        withContext(Dispatchers.IO) {
+            ids.mapNotNull { runCatching { channelDao.getById(it) }.getOrNull() }
+        }
+
+    // ---- Pass 1: discovery ----------------------------------------------------------------------
+
+    /**
+     * The union of two candidate sources, keyed by channel id (insertion order preserved so the
+     * later scoring sees a stable, deduplicated set):
+     *
+     *  - **A. Channel-name discovery** — the original path, now also fed alias/exonym phrases and
+     *    the full broadcast name (not just its longest word).
+     *  - **B. Guide discovery** — for each team token, the programmes whose **title or description**
+     *    names it inside the kickoff window; their `epgChannelId`s resolve to channels via
+     *    [ChannelDao.byEpgKeys]. This is the only way a generically named channel
+     *    (`IT: SKY SPORT ARENA`, `DE: SKY SPORT TOP EVENT`, `CANAL+ FOOT`, …) is ever found — the
+     *    German Sky feeds keep the teams out of the title ("Fußball: England, Premier League") and
+     *    name them only in the body, so a title-only probe misses them.
+     *
+     * **Critical gotcha (cost a verification round on 2026-10-12):** B must NOT be gated on A's
+     * candidate cap. Generic team words ("City", "United") make A fill [NameCandidateCap] within a
+     * few queries, and an earlier `out.size < CandidateCap` guard then skipped B entirely — so
+     * exactly the premium, generically named channels this feature exists to surface stayed hidden,
+     * while the fixture only showed the handful of channels whose *own name* spelled the fixture
+     * (e.g. `AU (STAN 01) | Coventry City v Newcastle United …`). Verified against a real
+     * 57,360-channel Xtream source: the guide named Coventry v Newcastle on ~57 channels that carry
+     * no team word in their name. Do not re-add a cap check around B.
+     *
+     * B covers team sports (both teams) and duels (both athletes plus the tournament fallback).
+     * Duels probe the guide with the athletes' names and the tournament; a fixture carrying only
+     * a tournament (a TBD quarterfinal) still pulls the tournament's channels in.
+     */
+    private suspend fun discoverCandidates(
+        fixture: Fixture,
+        teamSport: Boolean,
+        duelSport: Boolean,
+        sourceIds: List<Long>,
+        from: Long,
+        to: Long,
+    ): LinkedHashMap<Long, ChannelEntity> {
+        val out = LinkedHashMap<Long, ChannelEntity>()
+
+        // A — channel names, bounded by [NameCandidateCap].
+        for (query in nameDiscoveryQueries(fixture)) {
+            if (out.size >= NameCandidateCap) break
+            runCatching { channelDao.searchList(query, sourceIds, MatchSearchLimit) }
+                .getOrNull()?.forEach { out.putIfAbsent(it.id, it) }
+        }
+
+        // B — the guide. A programme title naming a team is enough to pull its channel in; the
+        // scoring below still decides whether it finally qualifies. Runs regardless of how full A
+        // got — see the gotcha above.
+        if (teamSport || duelSport || !fixture.tournament.isNullOrBlank()) {
+            val epgKeys = LinkedHashSet<String>()
+            // Broad probes (phrases, single words, abbreviations) stay title-only: a single word
+            // like "Newcastle" is far too common in guide *bodies*.
+            for (token in epgDiscoveryTokens(fixture)) {
+                runCatching { epgDao.searchTitles(token, from, to, EpgMatchLimit) }
+                    .getOrNull()?.forEach { epgKeys += it.epgChannelId.trim().lowercase(Locale.ROOT) }
+            }
+            // Full club names additionally search the description — where a generic-titled foreign
+            // feed ("Fußball: England, Premier League") actually names the teams.
+            for (phrase in epgDescriptionPhrases(fixture)) {
+                runCatching { epgDao.searchGuide(phrase, from, to, EpgMatchLimit) }
+                    .getOrNull()?.forEach { epgKeys += it.epgChannelId.trim().lowercase(Locale.ROOT) }
+            }
+            if (epgKeys.isNotEmpty()) {
+                runCatching { channelDao.byEpgKeys(sourceIds, epgKeys.toList()) }
+                    .getOrNull()?.forEach { out.putIfAbsent(it.id, it) }
+            }
+        }
+        return out
+    }
+
+    /**
+     * Raw `LIKE` probes for the channel-name search: for both teams, the display name, the
+     * abbreviation and every alias (each as full phrase + stop-word-filtered words), plus each
+     * broadcast name and channel hint. Duels contribute both athletes' names (a doubles side
+     * "A / B" contributes both players) and the tournament name. See
+     * [SportNameMatch.discoveryPhrases] for why these are raw.
+     *
+     * Home and away are **interleaved** so that if [NameCandidateCap] truncates the sweep, both
+     * teams are still represented rather than the home side consuming the whole budget. League
+     * hints run before the tournament terms: a hint ("Tennis") names the league's own channels,
+     * while a tournament word ("Masters") also matches other sports' channels and would otherwise
+     * spend the cap first.
+     */
+    private fun nameDiscoveryQueries(fixture: Fixture): List<String> {
+        val home = teamNameQueries(fixture.home)
+        val away = teamNameQueries(fixture.away)
+        val queries = ArrayList<String>(home.size + away.size + fixture.broadcasts.size + fixture.channelHints.size)
+        for (i in 0 until maxOf(home.size, away.size)) {
+            home.getOrNull(i)?.let(queries::add)
+            away.getOrNull(i)?.let(queries::add)
+        }
+        fixture.duelSides()?.let { sides ->
+            val sideA = duelNameQueries(sides.first)
+            val sideB = duelNameQueries(sides.second)
+            for (i in 0 until maxOf(sideA.size, sideB.size)) {
+                sideA.getOrNull(i)?.let(queries::add)
+                sideB.getOrNull(i)?.let(queries::add)
+            }
+        }
+        // Hints (a league's on-air phrase) before the tournament: they name the league's channels
+        // ("Tennis"), while tournament words ("Masters") also match other sports' channels and would
+        // otherwise consume [NameCandidateCap] first.
+        for (hint in fixture.channelHints) {
+            val trimmed = hint.trim()
+            if (trimmed.length >= MinHintLength) {
+                queries += SportNameMatch.discoveryPhrases(trimmed, vocab.broadcastStopwords)
+            }
+        }
+        fixture.tournament?.let { queries += SportNameMatch.discoveryPhrases(it, vocab.broadcastStopwords) }
+        for (broadcast in fixture.broadcasts) {
+            queries += SportNameMatch.discoveryPhrases(broadcast, vocab.broadcastStopwords)
+        }
+        return queries.distinct()
+    }
+
+    /** Raw probes for one team: display name, abbreviation and every known alias/exonym. */
+    private fun teamNameQueries(team: SportTeam?): List<String> {
+        if (team == null) return emptyList()
+        val queries = ArrayList<String>()
+        queries += SportNameMatch.discoveryPhrases(team.name, vocab.teamStopwords)
+        queries += SportNameMatch.discoveryPhrases(team.abbreviation, vocab.teamStopwords)
+        for (alias in vocab.aliasesFor(listOf(team.name, team.abbreviation))) {
+            queries += SportNameMatch.discoveryPhrases(alias, vocab.teamStopwords)
+        }
+        return queries
+    }
+
+    /**
+     * Raw probes for one duel side: each player name (a doubles side "A / B" yields both) as a
+     * full phrase plus its stop-word-filtered words. Placeholders ("TBD") yield nothing.
+     */
+    private fun duelNameQueries(side: List<String>): List<String> {
+        val queries = ArrayList<String>()
+        for (name in side) {
+            queries += SportNameMatch.discoveryPhrases(name, vocab.teamStopwords)
+        }
+        return queries
+    }
+
+    /**
+     * Raw `LIKE` probes against guide **titles**: the team tokens (name, abbreviation, aliases),
+     * the duel athletes' names, the tournament words and any channel hint. Broadcasts are
+     * deliberately excluded — a guide entry naming a broadcaster is rare and would only add noise.
+     * Capped by [EpgTokenCap]. See [epgDescriptionPhrases] for the narrower, multi-word probe that
+     * also reads descriptions.
+     */
+    private fun epgDiscoveryTokens(fixture: Fixture): List<String> {
+        val tokens = LinkedHashSet<String>()
+        tokens += teamNameQueries(fixture.home)
+        tokens += teamNameQueries(fixture.away)
+        fixture.duelSides()?.let { sides ->
+            tokens += duelNameQueries(sides.first)
+            tokens += duelNameQueries(sides.second)
+        }
+        fixture.tournament?.let { tokens += SportNameMatch.discoveryPhrases(it, vocab.broadcastStopwords) }
+        for (hint in fixture.channelHints) {
+            val trimmed = hint.trim()
+            if (trimmed.length >= MinHintLength) tokens += trimmed
+        }
+        return tokens.filter { it.length >= MinTokenLength }.take(EpgTokenCap)
+    }
+
+    /**
+     * The full, multi-word club names (and any multi-word alias) to probe against guide
+     * **descriptions**. Deliberately narrower than [epgDiscoveryTokens]: a guide body is prose, so a
+     * single word ("Newcastle", "City") matches a soap's description or an unrelated club, while the
+     * full name ("Newcastle United", "Coventry City") is what a foreign-language entry actually
+     * spells out. Single-word teams still reach titles through [epgDiscoveryTokens].
+     * Duel athletes contribute their full multi-word names ("Alex de Minaur") the same way.
+     */
+    private fun epgDescriptionPhrases(fixture: Fixture): List<String> {
+        val phrases = LinkedHashSet<String>()
+        for (team in listOfNotNull(fixture.home, fixture.away)) {
+            team.name.trim().takeIf { it.length >= MinTokenLength && it.contains(' ') }?.let(phrases::add)
+            for (alias in vocab.aliasesFor(listOf(team.name, team.abbreviation))) {
+                alias.trim().takeIf { it.length >= MinTokenLength && it.contains(' ') }?.let(phrases::add)
+            }
+        }
+        fixture.duelSides()?.let { sides ->
+            for (side in listOf(sides.first, sides.second)) {
+                for (name in side) {
+                    name.trim().takeIf { it.length >= MinTokenLength && it.contains(' ') }?.let(phrases::add)
+                }
+            }
+        }
+        fixture.tournament?.trim()?.takeIf { it.length >= MinTokenLength && it.contains(' ') }?.let(phrases::add)
+        return phrases.take(EpgTokenCap)
+    }
+
+    /** Scoring tokens for one team: its names, abbreviation and aliases, normalized and folded. */
+    private fun SportTeam.scoringTokens(): Set<String> {
+        val tokens = LinkedHashSet<String>()
+        tokens += SportNameMatch.tokensForName(name, vocab.teamStopwords)
+        if (abbreviation.length >= MinTokenLength) {
+            tokens += SportNameMatch.tokensForName(abbreviation, vocab.teamStopwords)
+        }
+        for (alias in vocab.aliasesFor(listOf(name, abbreviation))) {
+            tokens += SportNameMatch.tokensForName(alias, vocab.teamStopwords)
+        }
+        return tokens
+    }
+
+    /** Scoring tokens for one duel side: each player's normalized words (placeholders excluded). */
+    private fun List<String>.sideTokens(): Set<String> {
+        val tokens = LinkedHashSet<String>()
+        for (name in this) {
+            tokens += SportNameMatch.tokensForName(name, vocab.teamStopwords)
+        }
+        return tokens
+    }
+
+    /** Scoring tokens for the tournament name, or empty when the fixture carries none. */
+    private fun Fixture.tournamentTokens(): Set<String> {
+        val tournament = tournament?.trim().orEmpty()
+        if (tournament.isEmpty()) return emptySet()
+        return SportNameMatch.tokensForName(tournament, vocab.broadcastStopwords)
+    }
+
+    // ---- Pass 2: scoring ------------------------------------------------------------------------
+
+    /**
+     * Scores one candidate, Lume-style. A team candidate only qualifies on evidence that **both**
+     * teams are present — in the channel name, or together in one EPG programme. A programme that
+     * names a single team (a news ticker, a soap set in the club's city, a movie blurb) is not the
+     * fixture and scores nothing. A duel candidate qualifies on both athletes the same way, and —
+     * for recall — on one athlete together with tennis context or on the tournament alone (see the
+     * class KDoc). Returns a [ChannelMatch] only when the score is positive.
+     */
+    private suspend fun scoreChannel(
+        channel: ChannelEntity,
+        fixture: Fixture,
+        home: SportTeam?,
+        away: SportTeam?,
+        homeTokens: Set<String>,
+        awayTokens: Set<String>,
+        sideATokens: Set<String>,
+        sideBTokens: Set<String>,
+        tournamentTokens: Set<String>,
+        from: Long,
+        to: Long,
+    ): ChannelMatch? {
+        var score = 0
+        var epgTitle: String? = null
+        var exact = false
+        val name = channel.name.lowercase(Locale.ROOT)
+        val nameNorm = SportNameMatch.normalize(channel.name)
+
+        // --- Channel-name tier (Lume `.channelName`): the name itself names BOTH teams ---
+        // ("DAZN 5 | Bayern vs Dortmund"). A one-team name is not enough.
+        if (home != null && away != null &&
+            homeTokens.any { SportNameMatch.containsWord(it, nameNorm) } &&
+            awayTokens.any { SportNameMatch.containsWord(it, nameNorm) }
+        ) {
+            score += NameBothTeamsScore
+            exact = true
+        }
+        // A duel channel names both athletes ("Khachanov vs De Minaur"); one athlete is not enough.
+        if (sideATokens.isNotEmpty() && sideBTokens.isNotEmpty() &&
+            sideATokens.any { SportNameMatch.containsWord(it, nameNorm) } &&
+            sideBTokens.any { SportNameMatch.containsWord(it, nameNorm) }
+        ) {
+            score += NameBothTeamsScore
+            exact = true
+        }
+        // Broadcast names (ESPN) and a league's extra on-air phrase ("Sky Sports Main Event" for F1).
+        if (fixture.broadcasts.any { SportNameMatch.containsPhrase(it, nameNorm) }) {
+            score += BroadcastPhraseScore
+        } else if (fixture.broadcasts.any { broadcast ->
+                broadcast.words().any { word -> word.length >= MinHintLength && name.contains(word.lowercase(Locale.ROOT)) }
+            }
+        ) {
+            score += BroadcastWordScore
+        }
+        if (fixture.channelHints.any { it.isNotBlank() && name.contains(it.lowercase(Locale.ROOT)) }) {
+            score += HintScore
+        }
+
+        // --- EPG tier (Lume): a programme counts only when it names BOTH teams ---
+        val epgKey = channel.epgChannelId?.trim()?.lowercase(Locale.ROOT)
+        if (!epgKey.isNullOrBlank() && homeTokens.isNotEmpty() && awayTokens.isNotEmpty()) {
+            val programmes = runCatching { epgDao.programmesForChannel(epgKey, from, to) }.getOrNull().orEmpty()
+            // Short abbreviations ("NEW", "COV") are far too noisy against guide prose ("New Girl",
+            // "Covenant"), so the EPG match uses only tokens of [EpgMinTokenLength] or more.
+            val epgHomeTokens = homeTokens.filter { it.length >= EpgMinTokenLength }
+            val epgAwayTokens = awayTokens.filter { it.length >= EpgMinTokenLength }
+            var best = 0
+            var bestTitle: String? = null
+            for (programme in programmes) {
+                val titleNorm = SportNameMatch.normalize(programme.title)
+                val descriptionNorm = SportNameMatch.normalize(
+                    programme.description?.take(EpgDescriptionScanChars).orEmpty(),
+                )
+                val homeInTitle = epgHomeTokens.any { SportNameMatch.containsWord(it, titleNorm) }
+                val awayInTitle = epgAwayTokens.any { SportNameMatch.containsWord(it, titleNorm) }
+                val homeAnywhere = homeInTitle ||
+                    epgHomeTokens.any { SportNameMatch.containsWord(it, descriptionNorm) }
+                val awayAnywhere = awayInTitle ||
+                    epgAwayTokens.any { SportNameMatch.containsWord(it, descriptionNorm) }
+                // Lume: only a programme naming BOTH teams is this fixture. "Coventry" or "City" or
+                // "United" alone is a news ticker, a soap or a movie blurb, not the match.
+                if (!(homeAnywhere && awayAnywhere)) continue
+
+                // Both in the title is the fixture line — the strongest EPG signal; both named only
+                // across title/description is the weaker "the body lists the games" case.
+                var programmeScore = if (homeInTitle && awayInTitle) {
+                    EpgBothTeamsScore
+                } else {
+                    EpgDescriptionBothScore
+                }
+                val categories = programme.categories
+                if (categories != null && SportNameMatch.mentionsSport(categories, vocab.sportWords)) {
+                    programmeScore += SportCategoryScore
+                }
+                if (programmeScore > best) {
+                    best = programmeScore
+                    bestTitle = programme.title
+                }
+            }
+            if (best > 0) {
+                score += best
+                epgTitle = bestTitle
+            }
+        }
+
+        // --- EPG duel/tournament tier: the same both-sides rule for the two athletes, then the two
+        // recall tiers (one athlete with tennis context, tournament alone) below it ---
+        if (!epgKey.isNullOrBlank() &&
+            (sideATokens.isNotEmpty() || sideBTokens.isNotEmpty() || tournamentTokens.isNotEmpty())
+        ) {
+            val programmes = runCatching { epgDao.programmesForChannel(epgKey, from, to) }.getOrNull().orEmpty()
+            val epgSideATokens = sideATokens.filter { it.length >= EpgMinTokenLength }
+            val epgSideBTokens = sideBTokens.filter { it.length >= EpgMinTokenLength }
+            val epgTournamentTokens = tournamentTokens.filter { it.length >= EpgMinTokenLength }
+            var best = 0
+            var bestTitle: String? = null
+            for (programme in programmes) {
+                val titleNorm = SportNameMatch.normalize(programme.title)
+                val descriptionNorm = SportNameMatch.normalize(
+                    programme.description?.take(EpgDescriptionScanChars).orEmpty(),
+                )
+                fun anyIn(tokens: List<String>): Boolean =
+                    tokens.any { SportNameMatch.containsWord(it, titleNorm) } ||
+                        tokens.any { SportNameMatch.containsWord(it, descriptionNorm) }
+                val sideAInTitle = epgSideATokens.any { SportNameMatch.containsWord(it, titleNorm) }
+                val sideBInTitle = epgSideBTokens.any { SportNameMatch.containsWord(it, titleNorm) }
+                val sideAAnywhere = sideAInTitle ||
+                    epgSideATokens.any { SportNameMatch.containsWord(it, descriptionNorm) }
+                val sideBAnywhere = sideBInTitle ||
+                    epgSideBTokens.any { SportNameMatch.containsWord(it, descriptionNorm) }
+                val tournamentAnywhere = epgTournamentTokens.isNotEmpty() && anyIn(epgTournamentTokens)
+                val programmeScore = when {
+                    // Both athletes in one programme — the duel line, strongest duel signal.
+                    epgSideATokens.isNotEmpty() && epgSideBTokens.isNotEmpty() &&
+                        sideAAnywhere && sideBAnywhere -> {
+                        var s = if (sideAInTitle && sideBInTitle) {
+                            EpgBothTeamsScore
+                        } else {
+                            EpgDescriptionBothScore
+                        }
+                        val categories = programme.categories
+                        if (categories != null && SportNameMatch.mentionsSport(categories, vocab.sportWords)) {
+                            s += SportCategoryScore
+                        }
+                        s
+                    }
+                    // One athlete plus tennis context in the same programme — a session or preview
+                    // naming one of the two ("Zverev" inside "Tennis: ATP Shanghai").
+                    (sideAAnywhere xor sideBAnywhere) && programme.hasTennisContext(
+                        titleNorm,
+                        descriptionNorm,
+                        epgTournamentTokens,
+                    ) -> EpgSingleWithContextScore
+                    // Only the tournament ("Tennis: Shanghai Masters") — the weakest signal, but
+                    // better than an empty pane.
+                    tournamentAnywhere -> EpgTournamentScore
+                    else -> 0
+                }
+                if (programmeScore > best) {
+                    best = programmeScore
+                    bestTitle = programme.title
+                }
+            }
+            if (best > 0) {
+                score += best
+                // A duel/tournament title only becomes the shown line when no stronger team line won.
+                if (epgTitle == null) epgTitle = bestTitle
+            }
+        }
+
+        return if (score > 0) {
+            ChannelMatch(channel.id, channel.name, channel.logoUrl, epgTitle, score, exact)
+        } else {
+            null
+        }
+    }
+
+    /**
+     * Whether a programme carries tennis context for the single-athlete recall tier: the tennis
+     * words in title/description, one of the fixture's tournament tokens, or a sport category.
+     */
+    private fun EpgProgrammeEntity.hasTennisContext(
+        titleNorm: String,
+        descriptionNorm: String,
+        tournamentTokens: List<String>,
+    ): Boolean {
+        if (tournamentTokens.any {
+                SportNameMatch.containsWord(it, titleNorm) ||
+                    SportNameMatch.containsWord(it, descriptionNorm)
+            }
+        ) {
+            return true
+        }
+        if (TennisWords.any {
+                SportNameMatch.containsWord(it, titleNorm) ||
+                    SportNameMatch.containsWord(it, descriptionNorm)
+            }
+        ) {
+            return true
+        }
+        val categories = categories
+        return categories != null && SportNameMatch.mentionsSport(categories, vocab.sportWords)
+    }
+
+    // ---- Helpers --------------------------------------------------------------------------------
+
+    private fun String.words(): List<String> = trim().split(WordSplit).filter { it.isNotBlank() }
+
+    /**
+     * The two duel sides of a fixture (tennis singles, MMA): each side's player names. A doubles
+     * side "A / B" yields both players. Null unless the fixture is a two-entry `VERSUS` duel
+     * without home/away — leaderboards and EVENTs never qualify. Placeholder sides ("TBD") are
+     * dropped, so a side may come back empty (a TBD quarterfinal keeps its tournament fallback).
+     */
+    private fun Fixture.duelSides(): Pair<List<String>, List<String>>? {
+        if (home != null || away != null) return null
+        if (format != FixtureFormat.VERSUS || entries.size != 2) return null
+        return Pair(entries[0].name.playerNames(), entries[1].name.playerNames())
+    }
+
+    /** Split a duel entry into player names ("Cash / Glasspool" → both); drops placeholders. */
+    private fun String.playerNames(): List<String> =
+        split(RosterSplit).map { it.trim() }
+            .filter { it.isNotEmpty() && !it.isPlaceholderName() }
+
+    /** ESPN marks unknown future opponents "TBD" (often with a negative competitor id). */
+    private fun String.isPlaceholderName(): Boolean = trim().equals(PlaceholderName, ignoreCase = true)
+
+    companion object {
+        /** How many channels one fixture shows. 8 → 12 (Lume) → 20 (room for the language filter). */
+        private const val DefaultLimit = 20
+        /** Per-query cap for the channel-name search (was 20). */
+        private const val MatchSearchLimit = 30
+        /**
+         * Cap on channels discovered **by name**, across all name queries (was 60, then 120). The
+         * guide discovery is deliberately NOT bounded by this — see `discoverCandidates`.
+         */
+        private const val NameCandidateCap = 120
+        /** Per-token cap for a guide-title probe. */
+        private const val EpgMatchLimit = 40
+        /** How many tokens are probed against the guide. */
+        private const val EpgTokenCap = 24
+        /** How much of a programme description is searched (a conference fronts its games). */
+        private const val EpgDescriptionScanChars = 400
+        /** Only team/broadcast/hint phrases at least this long are probed. */
+        private const val MinHintLength = 4
+        /** Shortest token kept by the tokenizer. */
+        private const val MinTokenLength = 3
+        /** Shortest token allowed against guide prose; below this an abbreviation is too ambiguous. */
+        private const val EpgMinTokenLength = 4
+
+        /** How far before kickoff a programme may be the pre-match build-up. */
+        private const val EpgBeforeMs = 2L * 60L * 60L * 1000L
+        /** How far after kickoff a programme may still start and count as this fixture. */
+        private const val EpgAfterMs = 4L * 60L * 60L * 1000L
+
+        // Score weights (Lume-aligned 2026-10-12). A candidate qualifies only on evidence that both
+        // teams are present: `NameBothTeamsScore` (the channel name names both) or an EPG programme
+        // that names both (`EpgBothTeamsScore` in the title, `EpgDescriptionBothScore` otherwise).
+        // One-team hits score nothing — that is what keeps news/entertainment channels out.
+        // Duels add two weaker recall tiers below the both-athletes rule: one athlete together with
+        // tennis context (`EpgSingleWithContextScore`) and the tournament alone (`EpgTournamentScore`).
+        private const val NameBothTeamsScore = 4
+        private const val BroadcastWordScore = 3
+        private const val BroadcastPhraseScore = 3
+        private const val HintScore = 6
+        private const val EpgBothTeamsScore = 10
+        private const val EpgDescriptionBothScore = 3
+        private const val EpgSingleWithContextScore = 2
+        private const val EpgTournamentScore = 1
+        private const val SportCategoryScore = 1
+
+        /** Words that give a programme tennis context for the single-athlete recall tier. */
+        private val TennisWords = setOf("tennis", "atp", "wta")
+
+        /** A doubles roster side separator ("Cash / Glasspool"). */
+        private val RosterSplit = Regex("\\s*/\\s*")
+
+        /** ESPN's placeholder for an unknown future opponent. */
+        private const val PlaceholderName = "TBD"
+
+        private val WordSplit = Regex("\\s+")
+    }
+}

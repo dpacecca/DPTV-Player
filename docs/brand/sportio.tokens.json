@@ -1,0 +1,175 @@
+{
+  "$schema": "https://schemas.tokens.studio/2023.11/schema.json",
+  "name": "Sportio Design Tokens",
+  "version": "1.0.0",
+  "description": "Sportio - green-toned brand system for the Android TV app (fork of OwnTV). All contrast pairs verified WCAG 2.1.",
+
+  "color": {
+    "brand": {
+      "pitch":        { "value": "#4FEE94", "dark": "#4FEE94", "light": "#0E6B41", "note": "Signature green. Primary accent in dark theme, and the light-theme accent that passes white-label AA." },
+      "pitchLight":   { "value": "#4FEE94", "note": "P40 - the app-icon / logo-on-dark green." },
+      "pitchDeep":    { "value": "#0E6B41", "note": "P80-light - light theme primary, logo-on-light." },
+      "field":        { "value": "#134D2C", "note": "Dark accent container / pitch mown stripe." },
+      "sprout":       { "value": "#9BF5BE", "note": "Text on the dark accent container." },
+      "beam":         { "value": "#81EEB0", "note": "Focus ring in dark theme." }
+    },
+
+    "ramp": {
+      "$comment": "Tone keys match SportioPalette.Ramp exactly: P0..P100. HSL 146 throughout.",
+      "P0":   "#F3FCF7", "P10":  "#DEF8E9", "P20":  "#B5F2D0", "P30":  "#81EEB0",
+      "P40":  "#4FEE94", "P50":  "#30E880", "P60":  "#19CC67", "P70":  "#16A252",
+      "P80":  "#147B41", "P90":  "#10502C", "P95":  "#0C311C", "P100": "#081C11"
+    },
+
+    "dark": {
+      "$comment": "M3 roles -> SportioPalette.kt. Mirrors OwnTVPalette's shape.",
+      "page":         "#060B07",
+      "surface":      "#0B120D",
+      "surface1":     "#101A13",
+      "surface2":     "#16241B",
+      "surface3":     "#1E3025",
+      "surface4":     "#28402F",
+      "outline":      "#3C5A48",
+      "outlineVar":   "#1E3126",
+      "text":         "#EAF7EF",
+      "muted":        "#A6C3AF",
+      "primary":      "#4FEE94",
+      "onPrimary":    "#081C11",
+      "primaryCont":  "#134D2C",
+      "onPrimaryCont":"#9BF5BE",
+      "focus":        "#81EEB0",
+      "glassTint":    "#0E1A12",
+      "glassOff":     "#101614",
+      "scrim":        "rgba(2,6,4,0.62)"
+    },
+
+    "light": {
+      "$comment": "M3 roles -> SportioPalette.kt. Mirrors OwnTVPalette's shape.",
+      "page":         "#F4F8F4",
+      "surface":      "#FFFFFF",
+      "surface1":     "#FFFFFF",
+      "surface2":     "#EDF3EE",
+      "surface3":     "#E4ECE6",
+      "surface4":     "#DCE6DF",
+      "outline":      "#A8BBAE",
+      "outlineVar":   "#D2DED5",
+      "text":         "#081C11",
+      "muted":        "#3C5546",
+      "primary":      "#0E6B41",
+      "onPrimary":    "#FFFFFF",
+      "primaryCont":  "#C8EFD8",
+      "onPrimaryCont":"#08301C",
+      "focus":        "#0E6B41",
+      "glassTint":    "#FFFFFF",
+      "glassOff":     "#FFFFFF",
+      "scrim":        "rgba(20,40,30,0.32)"
+    },
+
+    "stage": {
+      "$comment": "Stage neutrals -> StageTokens.kt (app module), NOT the M3 palette. M3 has no dim/body/navText role; Stage adds them. `dim` in the guide's dark/light tables points here.",
+      "dark": {
+        "page":         "#060B07",
+        "text":         "#F1F6F3", "muted":  "#A9B8AF", "dim":   "#7E9C88",
+        "itemText":     "#D8E2DC", "menuItemText": "#DEE7E1", "tagText": "#C6D3CC",
+        "body":         "#CBD6D0", "navText": "#BCCBC2",
+        "fxText":       "#FFFFFF", "fxLine": "#DCE9E2",
+        "ink":          "#FFFFFF", "pageBase": "#060B07",
+        "glassTint":    "#0E1A12", "glassOff": "#101614",
+        "ok":           "#7BE3A4", "warn": "#FFB86B", "danger": "#FF8A7A",
+        "knobOff":      "#CFD8D4", "segmentOn": "rgba(255,255,255,0.13)",
+        "keycap":       "rgba(255,255,255,0.08)",
+        "scrim":        "rgba(2,6,4,0.55)", "wash": "#060B07",
+        "ratingStar":   "#FFCC4D",
+        "chipWarnText": "#FFD27A", "chipWarnFill": "rgba(255,200,80,0.14)"
+      },
+      "light": {
+        "page":         "#F4F7F5",
+        "text":         "#0F1A16", "muted":  "#4C5A54", "dim":   "#5E7566",
+        "itemText":     "#1C2824", "menuItemText": "#1C2824", "tagText": "#3D4B45",
+        "body":         "#2D3A35", "navText": "#55635D",
+        "fxText":       "#0F1A16", "fxLine": "#2D3A35",
+        "ink":          "#0C1814", "pageBase": "#F4F7F5",
+        "glassTint":    "#FFFFFF", "glassOff": "#FFFFFF",
+        "ok":           "#1B743C", "warn": "#8B5904", "danger": "#BD2C1F",
+        "knobOff":      "#FFFFFF", "segmentOn": "#FFFFFF", "keycap": "#FFFFFF",
+        "scrim":        "rgba(20,32,28,0.30)", "wash": "#F4F7F5",
+        "ratingStar":   "#906A09",
+        "chipWarnText": "#8B5904", "chipWarnFill": "rgba(139,89,4,0.12)",
+        "$changed": "ok/warn/danger/chipWarnText/ratingStar are NOT the upstream values: those clear only 3.4-4.5:1 on Sportio's light surfaces. Re-solved at AA 4.5."
+      }
+    },
+
+    "status": {
+      "live":       { "dark": "#FF5A5F", "light": "#C42127", "onDark": "#FFFFFF", "onLight": "#FFFFFF" },
+      "amber":      { "dark": "#FFB020", "light": "#7A4D00", "onDark": "#221600", "onLight": "#FFFFFF" },
+      "info":       { "dark": "#3FD0E8", "light": "#0E6B7D", "onDark": "#001F24", "onLight": "#FFFFFF" },
+      "ok":         { "dark": "#3FD07A", "light": "#1B7A45", "onDark": "#081C11", "onLight": "#FFFFFF" },
+      "record":     { "dark": "#FF3B5C", "light": "#C81038", "note": "Recording dot - always paired with the REC icon, never colour alone." }
+    },
+
+    "team": {
+      "note": "Dual-variant: same hue, a light tone for the dark page and a dark tone for the light page. Each clears 3:1 on its own page.",
+      "orange":  { "dark": "#ED926E", "light": "#AC4015" },
+      "amber":   { "dark": "#EAB771", "light": "#A96D19" },
+      "sky":     { "dark": "#74C2E7", "light": "#1D7AA5" },
+      "blue":    { "dark": "#7697E5", "light": "#1F47A3" },
+      "indigo":  { "dark": "#8F7BE0", "light": "#3D259D" },
+      "violet":  { "dark": "#BA7CDE", "light": "#70279B" },
+      "crimson": { "dark": "#E57692", "light": "#A31F40" },
+      "slate":   { "dark": "#A2ABB9", "light": "#535F6E" },
+      "green":   { "dark": "#7BE0A0", "light": "#259D51" }
+    }
+  },
+
+  "font": {
+    "family": {
+      "display":  { "value": "Plus Jakarta Sans", "weights": [400, 500, 600, 700, 800] },
+      "mono":     { "value": "JetBrains Mono", "weights": [400, 600] },
+      "fallback": { "value": "Roboto, Noto Sans, system-ui" }
+    },
+    "scale": {
+      "$comment": "Size in sp at the 1080p/90%-zoom baseline the app ships at. The code also expresses these as Stage mockup pixels (value mpx); multiply sp by 1.8 to get them.",
+      "display":   { "size": 25.6, "line": 30.7, "weight": 800, "mpx": 46, "use": "Hero score, match-day headline" },
+      "h1":        { "size": 16.7, "line": 21.1, "weight": 800, "mpx": 30, "use": "Screen title" },
+      "h2":        { "size": 13.9, "line": 17.8, "weight": 700, "mpx": 25, "use": "Section title, sheet title" },
+      "h3":        { "size": 12.2, "line": 16.1, "weight": 700, "mpx": 22, "use": "Row-group header, panel title" },
+      "title":     { "size": 11.1, "line": 15.0, "weight": 600, "mpx": 20, "use": "Card title, list-row title" },
+      "body":      { "size": 10.0, "line": 13.9, "weight": 500, "mpx": 18, "use": "Body, score row" },
+      "bodySm":    { "size": 9.4,  "line": 13.3, "weight": 600, "mpx": 17, "use": "Button label" },
+      "label":     { "size": 8.3,  "line": 11.7, "weight": 600, "mpx": 15, "use": "Chip, tag, meta" },
+      "micro":     { "size": 7.8,  "line": 11.1, "weight": 500, "mpx": 14, "use": "Timestamp, helper line" }
+    }
+  },
+
+  "space": {
+    "unit": 8,
+    "scale": { "xs": 4, "sm": 8, "md": 16, "lg": 24, "xl": 32, "2xl": 48 },
+    "mpx":  { "xs": 7, "sm": 14, "md": 29, "lg": 43, "xl": 58, "2xl": 86, "note": "Mockup-pixel equivalents (1 mpx = 0.556 dp)." }
+  },
+
+  "radius": {
+    "sharp": 6, "plate": 12, "poster": 16, "row": 20, "card": 20,
+    "button": 22, "sheet": 32, "pill": 999,
+    "mpx": { "tag": 6, "plate": 12, "poster": 16, "sheetItem": 16, "tool": 15, "menu": 28, "row": 20, "button": 22, "sheet": 32, "pill": 17 }
+  },
+
+  "motion": {
+    "instant":  0,
+    "fast":     120,
+    "base":     200,
+    "slow":     320,
+    "easing":   "cubic-bezier(0.2, 0, 0, 1)",
+    "easingOut":"cubic-bezier(0, 0, 0, 1)",
+    "scale":    { "focus": 1.04, "press": 0.97, "livePulse": 1.0 },
+    "note": "Everything is skippable. The user setting Animations = Off snaps all of these to 0 ms, except the infinite LIVE pulse which must switch off entirely rather than divide by zero."
+  },
+
+  "elevation": {
+    "0": { "shadow": "none" },
+    "1": { "shadow": "0 2 8 rgba(0,0,0,0.30)" },
+    "2": { "shadow": "0 8 24 rgba(0,0,0,0.38)" },
+    "3": { "shadow": "0 24 60 rgba(0,0,0,0.45)" },
+    "light1": { "shadow": "0 2 8 rgba(20,40,30,0.10)" },
+    "light3": { "shadow": "0 24 60 rgba(20,40,32,0.16)" }
+  }
+}

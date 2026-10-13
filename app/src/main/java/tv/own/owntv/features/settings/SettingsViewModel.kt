@@ -805,10 +805,10 @@ class SettingsViewModel(
     val themeMode: StateFlow<ThemeMode> = settings.themeMode.stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.DARK)
     fun setThemeMode(mode: ThemeMode) { viewModelScope.launch { settings.setThemeMode(mode) } }
 
-    val accent: StateFlow<AccentColor> = settings.accent.stateIn(viewModelScope, SharingStarted.Eagerly, AccentColor.TEAL)
+    val accent: StateFlow<AccentColor> = settings.accent.stateIn(viewModelScope, SharingStarted.Eagerly, AccentColor.SPORTIO)
     fun setAccent(accent: AccentColor) { viewModelScope.launch { settings.setAccent(accent) } }
 
-    /** Custom accent hex ("#52DBC8"); blank = the preset is in effect. */
+    /** Custom accent hex ("#4FEE94"); blank = the preset is in effect. */
     val customAccent: StateFlow<String> = settings.customAccent.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setCustomAccent(hex: String) { viewModelScope.launch { settings.setCustomAccent(hex) } }
 

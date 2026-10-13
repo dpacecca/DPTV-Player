@@ -91,7 +91,6 @@ import tv.own.owntv.ui.components.roundedPanel
 private const val SECTION_PLAYER = 0
 private const val SECTION_PICTURE = 1
 private const val SECTION_FRAME_RATE = 2
-private const val SECTION_STREAMING = 3
 private const val SECTION_LIVE = 4
 private const val SECTION_LIVE_TUNING = 5
 private const val SECTION_CONTROLS = 6
@@ -106,7 +105,7 @@ private const val SECTION_DIAGNOSTICS = 11
  * listed under it. App adds Diagnostics under its own rows; Watching & recording adds Recording after.
  */
 internal enum class VideoGroup(val titleRes: Int, val parts: List<Pair<Int, List<Int>>>) {
-    PLAYER(R.string.settings_vp_cat_player, listOf(R.string.settings_vp_cat_player to listOf(SECTION_PLAYER), R.string.settings_vp_cat_streaming to listOf(SECTION_STREAMING))),
+    PLAYER(R.string.settings_vp_cat_player, listOf(R.string.settings_vp_cat_player to listOf(SECTION_PLAYER))),
     PICTURE(R.string.settings_vp_cat_picture, listOf(R.string.settings_vp_cat_picture to listOf(SECTION_PICTURE), R.string.settings_vp_cat_frame_rate to listOf(SECTION_FRAME_RATE))),
     SOUND(R.string.settings_group_sound_subtitles, listOf(R.string.settings_vp_section_sound to listOf(SECTION_SOUND), R.string.settings_vp_cat_languages to listOf(SECTION_LANGUAGES))),
     LIVE(R.string.settings_live_tv, listOf(R.string.settings_live_tv to listOf(SECTION_LIVE), R.string.settings_vp_cat_live_tuning to listOf(SECTION_LIVE_TUNING))),
@@ -137,10 +136,10 @@ internal fun videoSectionCounts(vm: SettingsViewModel): List<Int> {
     val multiview by vm.multiviewEnabled.collectAsStateWithLifecycle()
     val perPlaylist = sources.isNotEmpty()
     return listOf(
-        6 + (if (perPlaylist) 2 else 0),
+        4 + (if (perPlaylist) 1 else 0),
         5 + (if (vm.tunnelingSupported) 1 else 0),
         3,
-        3,
+        0,
         4 + (if (livePreview) 1 else 0) + (if (timeshift) 1 else 0),
         3 + (if (perPlaylist) 3 else 0),
         2,
@@ -188,9 +187,6 @@ internal val VIDEO_QUICK_ROWS: List<VideoQuickRef> = listOf(
     VideoQuickRef("vp_live_engine", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_live_tv_player, R.string.settings_live_player_description),
     VideoQuickRef("vp_live_engine_sources", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_live_engine_per_playlist, R.string.settings_live_engine_per_playlist_description),
     VideoQuickRef("vp_reset_live_pins", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_reset_live_player_choices, R.string.settings_reset_live_player_choices_description),
-    VideoQuickRef("vp_vod_engine", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_movies_series_player, R.string.settings_movies_player_description),
-    VideoQuickRef("vp_vod_engine_sources", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_vod_engine_per_playlist, R.string.settings_vod_engine_per_playlist_description),
-    VideoQuickRef("vp_reset_pins", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_reset_player_choices, R.string.settings_reset_player_choices_description),
     VideoQuickRef("vp_forget_fixes", SECTION_PLAYER, OwnTVIcon.REFRESH, R.string.settings_forget_stream_fixes, R.string.settings_forget_stream_fixes_description),
     VideoQuickRef("vp_external", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_external_player, R.string.settings_external_player_row_description),
     VideoQuickRef("vp_hw", SECTION_PICTURE, OwnTVIcon.VIDEO, R.string.settings_hardware_decoding, R.string.settings_hardware_decoding_description),
@@ -202,9 +198,6 @@ internal val VIDEO_QUICK_ROWS: List<VideoQuickRef> = listOf(
     VideoQuickRef("vp_afr", SECTION_FRAME_RATE, OwnTVIcon.VIDEO, R.string.settings_auto_frame_rate, R.string.settings_auto_frame_rate_description),
     VideoQuickRef("vp_afr_pause", SECTION_FRAME_RATE, OwnTVIcon.PAUSE, R.string.settings_afr_pause, R.string.settings_afr_pause_description),
     VideoQuickRef("vp_afr_resolution", SECTION_FRAME_RATE, OwnTVIcon.ASPECT, R.string.settings_afr_resolution, R.string.settings_afr_resolution_description),
-    VideoQuickRef("vp_vod_buffer", SECTION_STREAMING, OwnTVIcon.DOWNLOADS, R.string.settings_vod_buffer, R.string.settings_vod_buffer_description),
-    VideoQuickRef("vp_vod_timeout", SECTION_STREAMING, OwnTVIcon.NETWORK, R.string.settings_vod_network_timeout, R.string.settings_vod_network_timeout_description),
-    VideoQuickRef("vp_vod_reconnects", SECTION_STREAMING, OwnTVIcon.REFRESH, R.string.settings_vod_reconnects, R.string.settings_vod_reconnects_description),
     VideoQuickRef("vp_channel_numbers", SECTION_LIVE, OwnTVIcon.LIVE_TV, R.string.settings_channel_numbers, R.string.settings_channel_numbers_description),
     VideoQuickRef("vp_live_preview", SECTION_LIVE, OwnTVIcon.LIVE_TV, R.string.settings_quick_live_preview, R.string.settings_live_preview_description),
     VideoQuickRef("vp_preview_audio", SECTION_LIVE, OwnTVIcon.AUDIO, R.string.settings_preview_audio, R.string.settings_preview_audio_description),
@@ -319,19 +312,6 @@ internal fun videoQuickBinding(key: String, vm: SettingsViewModel): VideoQuickBi
             val count = sources.count { it.liveEnginePreference != null }
             link(overrides(count), count > 0)
         }
-        "vp_vod_engine" -> {
-            val engine by vm.vodEnginePreference.collectAsStateWithLifecycle()
-            link(engineLabel(engine), engine != EnginePreference.MPV_FIRST)
-        }
-        "vp_vod_engine_sources" -> {
-            val sources by vm.sources.collectAsStateWithLifecycle()
-            val count = sources.count { it.vodEnginePreference != null }
-            link(overrides(count), count > 0)
-        }
-        "vp_reset_pins" -> {
-            val pins by vm.vodEnginePinCount.collectAsStateWithLifecycle()
-            link(saved(pins), pins > 0)
-        }
         "vp_reset_live_pins" -> {
             val pins by vm.livePinCount.collectAsStateWithLifecycle()
             link(saved(pins), pins > 0)
@@ -339,9 +319,7 @@ internal fun videoQuickBinding(key: String, vm: SettingsViewModel): VideoQuickBi
         "vp_forget_fixes" -> link(null)
         "vp_external" -> {
             val live by vm.externalPlayerLive.collectAsStateWithLifecycle()
-            val movies by vm.externalPlayerMovies.collectAsStateWithLifecycle()
-            val series by vm.externalPlayerSeries.collectAsStateWithLifecycle()
-            link(externalPlayerChip(live, movies, series), live || movies || series)
+            link(externalPlayerChip(live), live)
         }
         "vp_zoom" -> {
             val zoom by vm.defaultZoom.collectAsStateWithLifecycle()
@@ -354,18 +332,6 @@ internal fun videoQuickBinding(key: String, vm: SettingsViewModel): VideoQuickBi
         "vp_seek_step" -> {
             val secs by vm.seekStepSec.collectAsStateWithLifecycle()
             link(stringResource(R.string.settings_live_buffer_seconds, secs))
-        }
-        "vp_vod_buffer" -> {
-            val secs by vm.vodBufferSecs.collectAsStateWithLifecycle()
-            link(vodAutoOrSeconds(secs), secs > 0)
-        }
-        "vp_vod_timeout" -> {
-            val secs by vm.vodNetworkTimeoutSecs.collectAsStateWithLifecycle()
-            link(vodAutoOrSeconds(secs), secs > 0)
-        }
-        "vp_vod_reconnects" -> {
-            val count by vm.vodReconnects.collectAsStateWithLifecycle()
-            link(stringResource(R.string.settings_vod_reconnects_value, count), count > 1)
         }
         "vp_afr_pause" -> {
             val secs by vm.afrPauseSecs.collectAsStateWithLifecycle()
@@ -593,9 +559,7 @@ internal fun VideoPlayerGroupRows(
     val colors = OwnTVTheme.colors
     val vm: SettingsViewModel = koinViewModel()
     val hw by vm.hwDecoding.collectAsStateWithLifecycle()
-    val vodEngine by vm.vodEnginePreference.collectAsStateWithLifecycle()
     val liveEngine by vm.liveEnginePreference.collectAsStateWithLifecycle()
-    val enginePins by vm.vodEnginePinCount.collectAsStateWithLifecycle()
     val livePins by vm.livePinCount.collectAsStateWithLifecycle()
     val defaultVolume by vm.defaultVolume.collectAsStateWithLifecycle()
     val savedZoom by vm.savedZoomCount.collectAsStateWithLifecycle()
@@ -611,13 +575,8 @@ internal fun VideoPlayerGroupRows(
     val timeshiftWindowMinutes by vm.timeshiftWindowMinutes.collectAsStateWithLifecycle()
     val timeshiftResumeMode by vm.timeshiftResumeMode.collectAsStateWithLifecycle()
     val afrPauseSecs by vm.afrPauseSecs.collectAsStateWithLifecycle()
-    val vodBufferSecs by vm.vodBufferSecs.collectAsStateWithLifecycle()
-    val vodNetworkTimeoutSecs by vm.vodNetworkTimeoutSecs.collectAsStateWithLifecycle()
-    val vodReconnects by vm.vodReconnects.collectAsStateWithLifecycle()
     val afrMatchResolution by vm.afrMatchResolution.collectAsStateWithLifecycle()
     val externalLive by vm.externalPlayerLive.collectAsStateWithLifecycle()
-    val externalMovies by vm.externalPlayerMovies.collectAsStateWithLifecycle()
-    val externalSeries by vm.externalPlayerSeries.collectAsStateWithLifecycle()
     val zoom by vm.defaultZoom.collectAsStateWithLifecycle()
     val subStyleOn by vm.subtitleStyleEnabled.collectAsStateWithLifecycle()
     val openSubtitleStyle = LocalOpenSubtitleStyle.current
@@ -658,7 +617,6 @@ internal fun VideoPlayerGroupRows(
     var prerollSource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
     // Same, for the per-playlist Live TV engine and Live latency overrides.
     var engineSource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
-    var vodEngineSource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
     var tuneTimeoutSource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
     var latencySource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
     // Low-latency acknowledgement popup (shown for "Low latency" and below-Balanced custom values).
@@ -725,7 +683,6 @@ internal fun VideoPlayerGroupRows(
                 // The per-playlist value picker belongs to the playlist row that opened it.
                 Dialog.LIVE_PREROLL_SOURCE -> Dialog.LIVE_PREROLL_SOURCES
                 Dialog.LIVE_ENGINE_SOURCE -> Dialog.LIVE_ENGINE_SOURCES
-                Dialog.VOD_ENGINE_SOURCE -> Dialog.VOD_ENGINE_SOURCES
                 Dialog.LIVE_TUNE_TIMEOUT_SOURCE -> Dialog.LIVE_TUNE_TIMEOUT_SOURCES
                 Dialog.LIVE_LATENCY_SOURCE, Dialog.LIVE_LATENCY_CUSTOM_SOURCE -> Dialog.LIVE_LATENCY_SOURCES
                 else -> dialog
@@ -826,47 +783,6 @@ internal fun VideoPlayerGroupRows(
             onClick = { savedScroll = scrollState.value; dialog = Dialog.RESET_LIVE_PINS },
         )
         Row2(
-            quickKey = "vp_vod_engine",
-            choices = EnginePreference.entries.map { engineLabel(it) }, chosen = vodEngine.ordinal, recommended = EnginePreference.MPV_FIRST.ordinal,
-            icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_movies_series_player),
-            desc = stringResource(R.string.settings_movies_player_description),
-            chip = engineLabel(vodEngine), chevron = true,
-            primaryChip = vodEngine != EnginePreference.MPV_FIRST,
-            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.VOD_ENGINE)),
-            onClick = { savedScroll = scrollState.value; dialog = Dialog.VOD_ENGINE },
-        )
-        if (sources.isNotEmpty()) {
-            Row2(
-                quickKey = "vp_vod_engine_sources",
-                opens = true,
-                icon = OwnTVIcon.PLAY,
-                title = stringResource(R.string.settings_vod_engine_per_playlist),
-                desc = stringResource(R.string.settings_vod_engine_per_playlist_description),
-                chip = sources.count { it.vodEnginePreference != null }.let { count ->
-                    if (count == 0) stringResource(R.string.common_off)
-                    else pluralStringResource(R.plurals.settings_live_preroll_overrides, count, count)
-                },
-                primaryChip = sources.any { it.vodEnginePreference != null },
-                chevron = true,
-                modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.VOD_ENGINE_SOURCES)),
-                onClick = { savedScroll = scrollState.value; dialog = Dialog.VOD_ENGINE_SOURCES },
-            )
-        }
-        Row2(
-            quickKey = "vp_reset_pins",
-            saved = true,
-            icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_reset_player_choices),
-            desc = stringResource(R.string.settings_reset_player_choices_description),
-            chip = if (enginePins == 0) stringResource(R.string.settings_reset_player_choices_none)
-            else pluralStringResource(R.plurals.settings_reset_player_choices_count, enginePins, enginePins),
-            primaryChip = enginePins > 0,
-            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.RESET_PINS)),
-            // Opens the confirmation even with nothing pinned: a settings row that swallows the OK
-            // press is a dead end on a remote, and the chip already says whether there is anything
-            // to reset.
-            onClick = { savedScroll = scrollState.value; dialog = Dialog.RESET_PINS },
-        )
-        Row2(
             quickKey = "vp_forget_fixes",
             value = SettingValue.Action(stringResource(R.string.settings_forget)),
             icon = OwnTVIcon.REFRESH, title = stringResource(R.string.settings_forget_stream_fixes),
@@ -879,8 +795,8 @@ internal fun VideoPlayerGroupRows(
             opens = true,
             icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_external_player),
             desc = stringResource(R.string.settings_external_player_row_description),
-            chip = externalPlayerChip(externalLive, externalMovies, externalSeries), chevron = true,
-            primaryChip = externalLive || externalMovies || externalSeries,
+            chip = externalPlayerChip(externalLive), chevron = true,
+            primaryChip = externalLive,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.EXTERNAL_PLAYER)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.EXTERNAL_PLAYER },
         )
@@ -967,36 +883,6 @@ internal fun VideoPlayerGroupRows(
             desc = stringResource(R.string.settings_afr_resolution_description),
             chip = stringResource(if (afrMatchResolution) R.string.common_on else R.string.common_off), primaryChip = afrMatchResolution,
             onClick = { vm.setAfrMatchResolution(!afrMatchResolution) },
-        )
-                    }
-                    SECTION_STREAMING -> {
-        // N18 — films, episodes and catch-up only; live keeps its own latency and give-up settings.
-        Row2(
-            quickKey = "vp_vod_buffer",
-            choices = vm.vodBufferChoicesSecs.map { vodAutoOrSeconds(it) }, chosen = vm.vodBufferChoicesSecs.indexOf(vodBufferSecs), recommended = vm.vodBufferChoicesSecs.indexOf(0),
-            icon = OwnTVIcon.DOWNLOADS, title = stringResource(R.string.settings_vod_buffer),
-            desc = stringResource(R.string.settings_vod_buffer_description),
-            chip = vodAutoOrSeconds(vodBufferSecs), primaryChip = vodBufferSecs > 0, chevron = true,
-            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.VOD_BUFFER)),
-            onClick = { savedScroll = scrollState.value; dialog = Dialog.VOD_BUFFER },
-        )
-        Row2(
-            quickKey = "vp_vod_timeout",
-            choices = vm.vodNetworkTimeoutChoicesSecs.map { vodAutoOrSeconds(it) }, chosen = vm.vodNetworkTimeoutChoicesSecs.indexOf(vodNetworkTimeoutSecs), recommended = vm.vodNetworkTimeoutChoicesSecs.indexOf(0),
-            icon = OwnTVIcon.NETWORK, title = stringResource(R.string.settings_vod_network_timeout),
-            desc = stringResource(R.string.settings_vod_network_timeout_description),
-            chip = vodAutoOrSeconds(vodNetworkTimeoutSecs), primaryChip = vodNetworkTimeoutSecs > 0, chevron = true,
-            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.VOD_TIMEOUT)),
-            onClick = { savedScroll = scrollState.value; dialog = Dialog.VOD_TIMEOUT },
-        )
-        Row2(
-            quickKey = "vp_vod_reconnects",
-            choices = vm.vodReconnectChoices.map { stringResource(R.string.settings_vod_reconnects_value, it) }, chosen = vm.vodReconnectChoices.indexOf(vodReconnects),
-            icon = OwnTVIcon.REFRESH, title = stringResource(R.string.settings_vod_reconnects),
-            desc = stringResource(R.string.settings_vod_reconnects_description),
-            chip = stringResource(R.string.settings_vod_reconnects_value, vodReconnects), primaryChip = vodReconnects > 1, chevron = true,
-            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.VOD_RECONNECTS)),
-            onClick = { savedScroll = scrollState.value; dialog = Dialog.VOD_RECONNECTS },
         )
                     }
                     SECTION_LIVE -> {
@@ -1384,13 +1270,6 @@ internal fun VideoPlayerGroupRows(
             onSelect = { vm.setLiveEnginePreference(EnginePreference.valueOf(it)); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
-        Dialog.VOD_ENGINE -> PickerDialog(
-            title = stringResource(R.string.settings_movies_series_player),
-            options = engineOptions(default = EnginePreference.MPV_FIRST),
-            selected = vodEngine.name,
-            onSelect = { vm.setVodEnginePreference(EnginePreference.valueOf(it)); dialog = Dialog.NONE },
-            onDismiss = { dialog = Dialog.NONE },
-        )
         Dialog.ZOOM -> PickerDialog(
             title = stringResource(R.string.settings_default_zoom),
             options = ZoomMode.entries.map { it.name to stringResource(it.labelRes) },
@@ -1554,34 +1433,6 @@ internal fun VideoPlayerGroupRows(
             // and made configuring a second playlist a fresh trip from the top.
             onDismiss = { dialog = Dialog.LIVE_ENGINE_SOURCES },
         )
-        // --- per-playlist Movies & Series engine: pick the playlist, then its value ---
-        Dialog.VOD_ENGINE_SOURCES -> PickerDialog(
-            title = stringResource(R.string.settings_live_preroll_playlist_picker),
-            options = sources.map { src ->
-                val value = src.vodEnginePreference
-                    ?.let { name -> EnginePreference.entries.firstOrNull { it.name == name } }
-                    ?.let { engineLabel(it) }
-                    ?: stringResource(R.string.settings_live_preroll_follow)
-                src.id.toString() to "${src.name}  ·  $value"
-            },
-            selected = vodEngineSource?.id?.toString() ?: "",
-            onSelect = { id ->
-                vodEngineSource = sources.firstOrNull { it.id.toString() == id }
-                dialog = if (vodEngineSource != null) Dialog.VOD_ENGINE_SOURCE else Dialog.NONE
-            },
-            onDismiss = { vodEngineSource = null; dialog = Dialog.NONE },
-        )
-        Dialog.VOD_ENGINE_SOURCE -> PickerDialog(
-            title = vodEngineSource?.name ?: stringResource(R.string.settings_movies_series_player),
-            options = listOf(FOLLOW_GLOBAL to stringResource(R.string.settings_live_preroll_follow)) +
-                EnginePreference.entries.map { it.name to engineLabel(it) },
-            selected = vodEngineSource?.vodEnginePreference ?: FOLLOW_GLOBAL,
-            onSelect = { value ->
-                vodEngineSource?.let { vm.setSourceVodEngine(it.id, value.takeIf { v -> v != FOLLOW_GLOBAL }) }
-                dialog = Dialog.VOD_ENGINE_SOURCES
-            },
-            onDismiss = { dialog = Dialog.VOD_ENGINE_SOURCES },
-        )
         // --- per-playlist "Give up after": pick the playlist, then its value ---
         Dialog.LIVE_TUNE_TIMEOUT_SOURCES -> PickerDialog(
             title = stringResource(R.string.settings_live_preroll_playlist_picker),
@@ -1707,15 +1558,9 @@ internal fun VideoPlayerGroupRows(
         )
         Dialog.MINI_PLAYER -> MiniPlayerSettingsDialog(onDismiss = { dialog = Dialog.NONE })
         Dialog.EXTERNAL_PLAYER -> ExternalPlayerDialog(
-            live = externalLive, movies = externalMovies, series = externalSeries,
-            onToggle = { section, enabled -> vm.setExternalPlayer(section, enabled) },
+            live = externalLive,
+            onToggle = { enabled -> vm.setExternalPlayer(tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.LIVE_TV, enabled) },
             onDismiss = { dialog = Dialog.NONE },
-        )
-        Dialog.RESET_PINS -> ConfirmResetDialog(
-            title = stringResource(R.string.settings_reset_player_choices_confirm),
-            description = stringResource(R.string.settings_reset_player_choices_confirm_description),
-            onConfirm = { vm.clearVodEnginePins(); dialog = Dialog.NONE },
-            onCancel = { dialog = Dialog.NONE },
         )
         Dialog.RESET_LIVE_PINS -> ConfirmResetDialog(
             title = stringResource(R.string.settings_reset_live_player_choices_confirm),
@@ -1755,20 +1600,6 @@ internal fun VideoPlayerGroupRows(
             onSelect = { vm.setMaxVideoHeight(it.toIntOrNull() ?: 0); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
-        Dialog.VOD_BUFFER -> PickerDialog(
-            title = stringResource(R.string.settings_vod_buffer),
-            options = vm.vodBufferChoicesSecs.map { it.toString() to vodAutoOrSeconds(it) },
-            selected = vodBufferSecs.toString(),
-            onSelect = { vm.setVodBufferSecs(it.toIntOrNull() ?: 0); dialog = Dialog.NONE },
-            onDismiss = { dialog = Dialog.NONE },
-        )
-        Dialog.VOD_TIMEOUT -> PickerDialog(
-            title = stringResource(R.string.settings_vod_network_timeout),
-            options = vm.vodNetworkTimeoutChoicesSecs.map { it.toString() to vodAutoOrSeconds(it) },
-            selected = vodNetworkTimeoutSecs.toString(),
-            onSelect = { vm.setVodNetworkTimeoutSecs(it.toIntOrNull() ?: 0); dialog = Dialog.NONE },
-            onDismiss = { dialog = Dialog.NONE },
-        )
         Dialog.TIMESHIFT_WINDOW -> PickerDialog(
             title = stringResource(R.string.settings_timeshift_window),
             options = tv.own.owntv.core.timeshift.TimeshiftRules.WINDOW_CHOICES_MINUTES.map {
@@ -1783,13 +1614,6 @@ internal fun VideoPlayerGroupRows(
             options = tv.own.owntv.core.settings.SettingsRepository.ResumeMode.entries.map { it.name to stringResource(resumeModeLabelRes(it)) },
             selected = timeshiftResumeMode.name,
             onSelect = { vm.setTimeshiftResumeMode(it); dialog = Dialog.NONE },
-            onDismiss = { dialog = Dialog.NONE },
-        )
-        Dialog.VOD_RECONNECTS -> PickerDialog(
-            title = stringResource(R.string.settings_vod_reconnects),
-            options = vm.vodReconnectChoices.map { it.toString() to stringResource(R.string.settings_vod_reconnects_value, it) },
-            selected = vodReconnects.toString(),
-            onSelect = { vm.setVodReconnects(it.toIntOrNull() ?: 1); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.AFR_PAUSE -> PickerDialog(
@@ -1901,9 +1725,6 @@ private fun dialogForQuickKey(key: String): Dialog? = when (key) {
     "vp_multiview_tiles" -> Dialog.MULTIVIEW_TILES
     "vp_live_engine" -> Dialog.LIVE_ENGINE
     "vp_live_engine_sources" -> Dialog.LIVE_ENGINE_SOURCES
-    "vp_vod_engine" -> Dialog.VOD_ENGINE
-    "vp_vod_engine_sources" -> Dialog.VOD_ENGINE_SOURCES
-    "vp_reset_pins" -> Dialog.RESET_PINS
     "vp_reset_live_pins" -> Dialog.RESET_LIVE_PINS
     "vp_forget_fixes" -> Dialog.FORGET_FIXES
     "vp_external" -> Dialog.EXTERNAL_PLAYER
@@ -1911,10 +1732,7 @@ private fun dialogForQuickKey(key: String): Dialog? = when (key) {
     "vp_reset_zoom" -> Dialog.RESET_SAVED_ZOOM
     "vp_seek_step" -> Dialog.SEEK_STEP
     "vp_afr_pause" -> Dialog.AFR_PAUSE
-    "vp_vod_buffer" -> Dialog.VOD_BUFFER
     "vp_max_quality" -> Dialog.MAX_QUALITY
-    "vp_vod_timeout" -> Dialog.VOD_TIMEOUT
-    "vp_vod_reconnects" -> Dialog.VOD_RECONNECTS
     "vp_rewind_step" -> Dialog.LIVE_REWIND_STEP
     "vp_live_preview" -> Dialog.LIVE_PREVIEW_PANEL
     "vp_live_latency" -> Dialog.LIVE_LATENCY
@@ -1935,12 +1753,7 @@ private fun dialogForQuickKey(key: String): Dialog? = when (key) {
     else -> null
 }
 
-private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, VOD_ENGINE_SOURCES, VOD_ENGINE_SOURCE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, SURROUND, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_TUNE_TIMEOUT_SOURCES, LIVE_TUNE_TIMEOUT_SOURCE, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, RESET_LIVE_PINS, FORGET_FIXES, AFR_WARNING, AFR_PAUSE, VOD_BUFFER, VOD_TIMEOUT, VOD_RECONNECTS, TIMESHIFT_WINDOW, TIMESHIFT_RESUME, MAX_QUALITY, LIVE_PREVIEW_PANEL, MINI_PLAYER, MULTIVIEW_TILES, MULTIVIEW_WARNING }
-
-/** "Auto" for 0, else seconds ("60s") — the film buffer and network timeout choices (N18). */
-@Composable
-private fun vodAutoOrSeconds(secs: Int): String =
-    if (secs <= 0) stringResource(R.string.settings_vod_network_auto) else stringResource(R.string.settings_live_buffer_seconds, secs)
+private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, SURROUND, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_TUNE_TIMEOUT_SOURCES, LIVE_TUNE_TIMEOUT_SOURCE, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_LIVE_PINS, FORGET_FIXES, AFR_WARNING, AFR_PAUSE, TIMESHIFT_WINDOW, TIMESHIFT_RESUME, MAX_QUALITY, LIVE_PREVIEW_PANEL, MINI_PLAYER, MULTIVIEW_TILES, MULTIVIEW_WARNING }
 
 /** "Auto" for 0, else the picture height ("1080p") — Maximum video quality (N11). */
 @Composable
@@ -1993,20 +1806,10 @@ private fun engineOptions(default: EnginePreference): List<Pair<String, String>>
         }
     }
 
-/** Row chip for the External player row: "Off", "On" (all three), or the sections that are on. */
+/** Row chip for the External player row: live TV in an external app, or off. */
 @Composable
-private fun externalPlayerChip(live: Boolean, movies: Boolean, series: Boolean): String {
-    val on = buildList {
-        if (live) add(stringResource(R.string.common_nav_live_tv))
-        if (movies) add(stringResource(R.string.common_nav_movies))
-        if (series) add(stringResource(R.string.common_nav_series))
-    }
-    return when (on.size) {
-        0 -> stringResource(R.string.common_off)
-        3 -> stringResource(R.string.common_on)
-        else -> on.joinToString(", ")
-    }
-}
+private fun externalPlayerChip(live: Boolean): String =
+    if (live) stringResource(R.string.common_on) else stringResource(R.string.common_off)
 
 // --- Shared building blocks (kept local to the settings sub-screens) ---
 
@@ -2323,20 +2126,16 @@ internal fun PickerDialog(
 @Composable
 private fun ExternalPlayerDialog(
     live: Boolean,
-    movies: Boolean,
-    series: Boolean,
-    onToggle: (tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection, Boolean) -> Unit,
+    onToggle: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sections = listOf(
-        tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.LIVE_TV to (stringResource(R.string.common_nav_live_tv) to live),
-        tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.MOVIES to (stringResource(R.string.common_nav_movies) to movies),
-        tv.own.owntv.core.settings.SettingsRepository.ExternalPlayerSection.SERIES to (stringResource(R.string.common_nav_series) to series),
+        stringResource(R.string.common_nav_live_tv) to live,
     )
     val switches: @Composable () -> Unit = {
-        PanelSwitches(sections.map { (section, v) -> Triple(v.first, v.second) { onToggle(section, !v.second) } }, onDone = onDismiss)
+        PanelSwitches(sections.map { v -> Triple(v.first, v.second) { onToggle(!v.second) } }, onDone = onDismiss)
     }
-    // Three switches: in the page's panel (owner, P12), a Stage popup elsewhere.
+    // One switch: in the page's panel (owner, P12), a Stage popup elsewhere.
     if (panelEditor(onDismiss) { switches() }) return
     tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = stringResource(R.string.settings_external_player), body = stringResource(R.string.settings_external_player_description)) { switches() }
 }

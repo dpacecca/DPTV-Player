@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -49,84 +48,28 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.em
 import androidx.tv.material3.Text
 import tv.own.owntv.R
-import tv.own.owntv.core.theme.AccentColor
-import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVPopup
 import tv.own.owntv.ui.components.OwnTVTextField
 import tv.own.owntv.ui.components.hsvToHex
 import tv.own.owntv.ui.components.modalScrim
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.stage.StageButton
-import tv.own.owntv.ui.stage.StageProgress
 import tv.own.owntv.ui.stage.StageSurface
 import tv.own.owntv.ui.stage.StageFocus
-import tv.own.owntv.ui.stage.StageTag
 import tv.own.owntv.ui.stage.drawOuterRing
 import tv.own.owntv.ui.stage.stageGlass
 import tv.own.owntv.ui.theme.StageColors
-import tv.own.owntv.ui.theme.labelRes
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.parseAccentHex
-import tv.own.owntv.ui.theme.primary
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
-
-/**
- * Settings › Appearance › Accent color (P9-05): presets, a hex code and an HSV picker, with a preview of
- * what the accent tints. The whole app behind re-tints while the picker moves; Cancel puts the colour
- * that was there back, "Use this color" keeps the new one.
- */
-@Composable
-fun AccentPopup(
-    accent: AccentColor,
-    customAccent: String,
-    onPickPreset: (AccentColor) -> Unit,
-    onPickCustom: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    // What to put back on Cancel.
-    val startPreset = remember { accent }
-    val startCustom = remember { customAccent }
-    StageColorPopup(
-        eyebrow = stringResource(R.string.settings_group_appearance),
-        title = stringResource(R.string.settings_accent),
-        presets = AccentColor.entries.map { ac ->
-            ColorChoice(ac.primary(true), stringResource(ac.labelRes)) { onPickCustom(""); onPickPreset(ac) }
-        },
-        start = parseAccentHex(customAccent) ?: accent.primary(true),
-        current = stageAccent.accent,
-        onLive = onPickCustom,
-        onCancel = { if (startCustom.isBlank()) { onPickCustom(""); onPickPreset(startPreset) } else onPickCustom(startCustom) },
-        onDone = { hex -> if (hex != null) onPickCustom(hex) },
-        onDismiss = onDismiss,
-    ) {
-        // What the accent tints, drawn rather than focusable: the primary button, a progress bar, a tag.
-        Row(horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
-            val a = stageAccent
-            Row(
-                Modifier
-                    .height(54.mpx)
-                    .drawBehind { drawOuterRing(a.focus, 3.mpx.toPx(), 22.mpx.toPx()) }
-                    .background(a.accent, RoundedCornerShape(22.mpx))
-                    .padding(horizontal = 26.mpx),
-                horizontalArrangement = Arrangement.spacedBy(10.mpx),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OwnTVIcon(OwnTVIcon.PLAY, a.onAccent, Modifier.size(19.mpx), filled = true)
-                Text(stringResource(R.string.home_trending_play), style = stageText(19, 700), color = a.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            StageProgress(0.6f, Modifier.width(190.mpx))
-            StageTag(stringResource(R.string.player_live), tint = a.accent)
-        }
-    }
-}
 
 /** One preset swatch of [StageColorPopup]: its colour, its name and what picking it stores. */
 class ColorChoice(val color: Color, val label: String, val pick: () -> Unit)
 
 /**
- * The Stage colour picker (P9-05), shared by Accent color and the clock colours (P10B): presets, the
- * colour in use ("Yours"), a hex code and the HSV field, with [preview] under them. [onLive] receives the
+ * The Stage colour picker (P9-05), shared by the clock colours (P10B) and the subtitle colour:
+ * presets, the colour in use ("Yours"), a hex code and the HSV field, with [preview] under them. [onLive] receives the
  * picked hex a beat after the picker moves; Cancel / Back call [onCancel]; "Use this color" calls
  * [onDone] with the picked hex, or null when a preset was the last choice (already stored).
  */

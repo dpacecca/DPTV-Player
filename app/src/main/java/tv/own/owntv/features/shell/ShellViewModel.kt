@@ -100,9 +100,9 @@ class ShellViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, tv.own.owntv.core.theme.AnimationLevel.FULL)
 
     val accent: StateFlow<AccentColor> = settings.accent
-        .stateIn(viewModelScope, SharingStarted.Eagerly, AccentColor.TEAL)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, AccentColor.SPORTIO)
 
-    /** Custom accent hex ("#52DBC8"); blank = the preset above is in effect. */
+    /** Custom accent hex ("#4FEE94"); blank = the preset above is in effect. */
     val customAccent: StateFlow<String> = settings.customAccent
         .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
@@ -257,10 +257,6 @@ class ShellViewModel(
         }
     }
 
-    fun setAccent(accent: AccentColor) {
-        viewModelScope.launch { settings.setAccent(accent) }
-    }
-
     fun setAvatar(id: Int) {
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
@@ -287,13 +283,6 @@ class ShellViewModel(
             val pid = currentProfileId() ?: return@launch
             profileDao.getById(pid)?.let { profiles.clearCustomAvatar(it) }
         }
-    }
-
-    /** Cycles through the accent presets. */
-    fun cycleAccent() {
-        val values = AccentColor.entries
-        val next = values[(accent.value.ordinal + 1) % values.size]
-        setAccent(next)
     }
 
     private suspend fun currentProfileId(): Long? {

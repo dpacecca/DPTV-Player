@@ -2,7 +2,6 @@ package tv.own.owntv.features.more
 
 import tv.own.owntv.ui.theme.stageTone
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
@@ -46,7 +45,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -69,8 +67,6 @@ import tv.own.owntv.features.home.ChannelPlate
 import tv.own.owntv.features.home.OnNowCard
 import tv.own.owntv.features.home.timeLeftText
 import tv.own.owntv.features.shell.components.ClearHistoryDialog
-import tv.own.owntv.features.shell.components.GITHUB_REPO
-import tv.own.owntv.features.shell.components.TELEGRAM_LINK
 import tv.own.owntv.features.shell.components.playbackDisplayName
 import tv.own.owntv.features.update.UpdateDialog
 import tv.own.owntv.player.PlaybackErrorLog
@@ -216,15 +212,15 @@ private val SettingsCards = listOf(
     SettingsGroupCard(OwnTVIcon.SPARKLE, R.string.settings_group_quick, R.string.settings_group_summary_quick, null),
     SettingsGroupCard(OwnTVIcon.PERSON, R.string.settings_group_profile, R.string.settings_card_profile, 3),
     SettingsGroupCard(OwnTVIcon.LIST, R.string.settings_group_sources, R.string.settings_card_sources, 8),
-    SettingsGroupCard(OwnTVIcon.PALETTE, R.string.settings_group_appearance, R.string.settings_card_appearance, 9),
-    SettingsGroupCard(OwnTVIcon.GRID, R.string.settings_group_layout, R.string.settings_card_layout, 10),
-    SettingsGroupCard(OwnTVIcon.MOVIES, R.string.settings_group_content_metadata, R.string.settings_card_content, 3),
+    SettingsGroupCard(OwnTVIcon.PALETTE, R.string.settings_group_appearance, R.string.settings_card_appearance, 8),
+    SettingsGroupCard(OwnTVIcon.GRID, R.string.settings_group_layout, R.string.settings_card_layout, 9),
+    SettingsGroupCard(OwnTVIcon.MOVIES, R.string.settings_group_content_metadata, R.string.settings_card_content, 2),
     SettingsGroupCard(OwnTVIcon.PLAY_CIRCLE, R.string.settings_vp_cat_player, R.string.settings_card_player, 11),
     SettingsGroupCard(OwnTVIcon.EXPAND, R.string.settings_vp_cat_picture, R.string.settings_card_picture, 9),
     SettingsGroupCard(OwnTVIcon.HEADPHONES, R.string.settings_group_sound_subtitles, R.string.settings_card_sound, 11),
     SettingsGroupCard(OwnTVIcon.LIVE_TV, R.string.settings_live_tv, R.string.settings_card_live, 12),
     SettingsGroupCard(OwnTVIcon.REC, R.string.settings_group_watching_recording, R.string.settings_card_watching, 11),
-    SettingsGroupCard(OwnTVIcon.INFO, R.string.settings_group_app, R.string.settings_card_app, 10),
+    SettingsGroupCard(OwnTVIcon.INFO, R.string.settings_group_app, R.string.settings_card_app, 8),
 )
 
 /** The card last opened, so Back from its group lands on it again rather than on the search field. */
@@ -633,7 +629,6 @@ internal fun ErrorLogPage(setEntry: (() -> Boolean) -> Unit, onCountChanged: () 
 
 @Composable
 internal fun AboutPage(vm: MoreCountsViewModel, entry: FocusRequester, onOpenLanguage: () -> Unit) {
-    val context = LocalContext.current
     val manager: UpdateManager = koinInject()
     val updateState by manager.state.collectAsStateWithLifecycle()
     val checkedAt by vm.lastUpdateCheckAt.collectAsStateWithLifecycle()
@@ -646,7 +641,7 @@ internal fun AboutPage(vm: MoreCountsViewModel, entry: FocusRequester, onOpenLan
 
     Column(Modifier.fillMaxSize().focusGroup()) {
         Row(horizontalArrangement = Arrangement.spacedBy(40.mpx), verticalAlignment = Alignment.CenterVertically) {
-            // The app's own icon (150) and the #227 wordmark (300).
+            // The Sportio mark (150) and wordmark (300).
             BrandMark(rememberAppliedIcon(), 150.mpx)
             Column {
                 Wordmark(300.mpx)
@@ -677,29 +672,7 @@ internal fun AboutPage(vm: MoreCountsViewModel, entry: FocusRequester, onOpenLan
             modifier = Modifier.padding(top = 26.mpx).widthIn(max = 860.mpx))
         Text(stringResource(R.string.settings_contributions), style = stageText(16, 500), color = StageColors.Dim,
             modifier = Modifier.padding(top = 10.mpx, bottom = 24.mpx).widthIn(max = 860.mpx))
-        StageTile(Modifier.width(640.mpx)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(20.mpx), verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(R.drawable.telegram_qr),
-                    contentDescription = stringResource(R.string.settings_telegram_qr),
-                    modifier = Modifier.size(150.mpx).clip(RoundedCornerShape(14.mpx)).background(Color.White),
-                )
-                Column {
-                    Text(stringResource(R.string.settings_join_telegram), style = stageText(22, 800), color = StageColors.Text)
-                    Text(TELEGRAM_LINK, style = stageText(17, 500), color = accent, modifier = Modifier.padding(top = 4.mpx))
-                    Text(stringResource(R.string.more_about_scan), style = stageText(15.5f, 500), color = StageColors.Muted, modifier = Modifier.padding(top = 8.mpx))
-                }
-            }
-        }
         Row(Modifier.padding(top = 22.mpx), horizontalArrangement = Arrangement.spacedBy(10.mpx)) {
-            // The link is for reading: a TV has no browser to open it in.
-            Row(
-                Modifier.height(44.mpx).background(StageColors.ControlFill, RoundedCornerShape(15.mpx)).padding(horizontal = 16.mpx),
-                horizontalArrangement = Arrangement.spacedBy(9.mpx), verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OwnTVIcon(OwnTVIcon.NETWORK, StageColors.Text, Modifier.size(18.mpx))
-                Text(GITHUB_REPO, style = stageText(16, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
             val languages = SupportedLocales.all.count { it.packaged }
             StageTool(pluralStringResource(R.plurals.more_about_languages, languages, languages), onClick = onOpenLanguage, icon = OwnTVIcon.LIST, boxed = true, modifier = Modifier.focusRequester(entry))
             StageTool(stringResource(R.string.settings_check_updates), onClick = { showUpdate = true }, icon = OwnTVIcon.REFRESH, boxed = true, modifier = Modifier.focusRequester(updateFocus))

@@ -1,0 +1,72 @@
+# docs/SPORT-HUB.md — Einstieg (Stand: 2026-10-13)
+
+> Zweck: Einstiegsseite für den Sports-Hub; Detailspecs bleiben in den
+> referenzierten Dateien, damit nichts doppelt gepflegt wird.
+
+## Status: alle Phasen 1–7 fertig (2026-10-12)
+
+- Katalog: 81 ESPN-Ligen, 16 default aktiv; nur aktive Ligen werden geladen
+  (`SportsViewModel.activeLeagues`, reaktiv, purgt deaktivierte).
+- „Add leagues"-Zeile + gruppiertes Picker-Dialog (Region-Gruppen) + Zahnrad-Button.
+- 3 Tabs in Spalte 2 (Live/Demnächst/Vergangen, lokalisiert; Default Live-wenn-vorhanden).
+- Rail-Eintrag **Favourites** (Star) über dem Ligen-Header: Aggregat aktiver Ligen +
+  gefolgte Teams (live-first); Lade-Set = aktive ∪ Ligen gefolgter Teams.
+- Einzelsport-Renderer: Tennis als einzelne Matches (ATP 135 / WTA 243 statt 1),
+  F1 nur Rennen + Strecke (`FixtureFormat.EVENT`, keine Fahrer), Golf-Leaderboard,
+  UFC/ATP/WTA-Duelle. Follow nur bei Duellen (`followed_players`), Leaderboards bewusst ohne.
+- Handy-Verwaltung per QR (`CompanionMode.SELECT_ITEMS`, Core): Ligen + Teams je
+  aktiver Liga + Spieler/Kämpfer aus geladenen Duellen, ein Submit
+  (`team:`/`player:`-Präfixe).
+- Sprachfilter: bis zu 20 Sender pro Spiel (`DefaultLimit = 20`), Filter nach
+  bevorzugter Sprache aus Länderkürzel am Kanalnamen (`DE:`/`UK|`/`FR/`),
+  einmaliger Dialog beim ersten Fixture mit Treffern, danach Sport-Einstellungen.
+  Ort: im Matcher VOR dem Cap (`match(fixture, languages, limit)`). Exakte
+  Event-Kanäle (Name nennt beide Teams/Spieler, `ChannelMatch.isExact`) passieren
+  immer — sie sind das Event selbst, kein Fremd-Feed davon.
+
+## Matching-Modell (Lume-Modell, Beide-Teams-Pflicht)
+
+- Ein Kandidat zählt nur mit **beiden** Teams — im Kanalnamen (Score 4) oder
+  gemeinsam in **einem** EPG-Programm (Titel 10, Beschreibung 3).
+- Ein-Team-Gewichte und Legacy-Roh-Substring-Test sind entfernt
+  (sonst `NEW`→„New Girl"-False-Positives).
+- Zwei Discovery-Pfade: A) Kanalnamen (Alias-Phrasen + volle Broadcast-Phrase),
+  B) Guide via `EpgDao.searchTitles` + `byEpgKeys` + `EpgDao.searchGuide`
+  (Titel ODER Beschreibung). **B läuft immer** — nie per Namens-Cap guard-en
+  (hat „Coventry v Newcastle" auf 6 statt 12 Sender reduziert).
+- Discovery = rohe akzentbehaftete Tokens für SQL `LIKE`; Scoring = normalisierte
+  Tokens in-memory. Nicht vermischen (verliert „München").
+- Nur Team-Sportarten und Duelle nutzen den Guide-Pfad; reine Events ohne Gegner
+  (F1/Golf) überspringen ihn weiter. F1 matcht zusätzlich ganze Phrase aus
+  `SportLeague.extraChannelRes` („Sky Sports Main Event").
+- Duelle (`VERSUS` mit 2 Entries, Tennis/MMA) laufen seit 2026-10-13 denselben
+  Pfad mit Spielernamen: beide Athleten im Titel +10 / verteilt +3, ein Athlet
+  mit Tennis-Kontext +2, Turnier allein +1. Doppel-Roster („A / B") liefert beide
+  Spieler je Seite, „TBD" fällt auf den Turnier-Fallback zurück. Tennis-Ligen
+  haben den Kanal-Hint „Tennis" (`sport_channel_tennis`), damit auch Fixtures
+  ohne Guide-Daten ihre Tenniskanäle finden.
+- Trade-off: Recall sinkt, wenn ein Feed im Guide nur ein Team nennt —
+  Alias-Pflege in `res/raw/sports_matching.json` ist wichtiger als vorher.
+
+## Nicht-wieder-einbauen (verifizierte Fallen)
+
+1. `DisposableEffect(...){ liveVm.stopPreview() }` in `SportsScreen` — killt beim
+   Fullscreen-Gehen den gerade gestarteten Sender (Shell disposed Browse-UI).
+   Nur bei Spiel-Wechsel stoppen (`LaunchedEffect(selectedFixture?.id)`).
+2. Guard, der EPG-Discovery bei vollem Namens-Cap überspringt.
+3. Post-Cap-Sprachfilter in der UI (deutsche Feeds scoren niedrig und wären
+   nach `take(20)` unsichtbar) — Filter gehört in den Matcher vor den Cap.
+
+## Detailreferenzen (nicht duplizieren)
+
+- `sport-hub-plan.md` — Phasen-Spec, ESPN-API (Scoreboard/Standings),
+  `normalizeEspnDate`-Gotcha, Verifikationsprotokolle.
+- `sport-channel-matching.md` — Flow, Gewichte, Lume-Mappings, Tests
+  (`SportNameMatchTest`, `SportLanguagesTest`, `SportsMatcherTest` mit
+  `LiveSourceIdsProvider`-Naht + Proxy-gefakten DAOs).
+
+## Daten
+
+- ESPN Site-API (keyless): `https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard`.
+- Standings nur unter `https://site.web.api.espn.com/apis/v2/sports/…/standings`.
+- 403 über Bot-Netze möglich; Fire TV mit normalem Netz: 200.

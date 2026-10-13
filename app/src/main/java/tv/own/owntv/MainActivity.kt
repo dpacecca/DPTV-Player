@@ -216,9 +216,6 @@ open class MainActivity : ComponentActivity() {
 
             val viewModel: ShellViewModel = koinViewModel()
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
-            val accent by viewModel.accent.collectAsStateWithLifecycle()
-            val customAccent by viewModel.customAccent.collectAsStateWithLifecycle()
-            val focusHighlight by viewModel.focusHighlight.collectAsStateWithLifecycle()
             val focusHighlightWidth by viewModel.focusHighlightWidth.collectAsStateWithLifecycle()
             val uiZoomPercent by viewModel.uiZoomPercent.collectAsStateWithLifecycle()
             val fontCustomization by viewModel.fontCustomization.collectAsStateWithLifecycle()
@@ -229,7 +226,7 @@ open class MainActivity : ComponentActivity() {
                 if (android.os.Build.VERSION.SDK_INT >= 33) {
                     val still = animationLevel == tv.own.owntv.core.theme.AnimationLevel.OFF
                     splashScreen.setSplashScreenTheme(
-                        if (still) stillLaunchTheme(tv.own.owntv.core.brand.AppIconSwitcher.applied(this@MainActivity)) else 0,
+                        if (still) stillLaunchTheme() else 0,
                     )
                 }
             }
@@ -313,10 +310,8 @@ open class MainActivity : ComponentActivity() {
 
             OwnTVTheme(
                 themeMode = themeMode,
-                accent = accent,
+                accent = tv.own.owntv.core.theme.AccentColor.SPORTIO,
                 systemInDarkTheme = isSystemInDarkTheme(),
-                customAccent = customAccent,
-                focusHighlight = focusHighlight,
                 focusBorderWidthDp = focusHighlightWidth,
                 animationLevel = animationLevel,
                 mainFontFamily = fontCustomization.mainFamily,

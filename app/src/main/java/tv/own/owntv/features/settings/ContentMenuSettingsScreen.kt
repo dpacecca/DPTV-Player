@@ -62,31 +62,34 @@ private fun menuIcon(menu: ContentMenu) = when (menu) {
 }
 
 /**
- * Long-press menus — the order of the actions in each of the four content menus.
+ * Long-press menus — the order of the actions in the Live TV content menu.
  *
- * Four rows, one per menu. Opening one shows that menu's actions in the Move overlay, where holding
+ * One row. Opening it shows that menu's actions in the Move overlay, where holding
  * OK picks an action up and Up/Down carries it. Nothing is written until Save, so Cancel and Back
  * always leave the menu exactly as it was. "Close" is not listed because it is pinned to the bottom
  * of every menu, outside the arrangeable part.
+ *
+ * Sportio is Live TV only: the Movies/Series/Episode menus have no screen behind them.
  */
 @Composable
 fun ContentMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: SettingsViewModel = koinViewModel()
     val scrollState = rememberScrollState()
-    val rowFocus = remember { ContentMenu.entries.associateWith { FocusRequester() } }
+    val liveOnly = listOf(ContentMenu.LIVE)
+    val rowFocus = remember { liveOnly.associateWith { FocusRequester() } }
     var openMenu by remember { mutableStateOf<ContentMenu?>(null) }
     LaunchedEffect(Unit) { runCatching { rowFocus.getValue(ContentMenu.LIVE).requestFocus() } }
-    // P10B-19: four menu rows and Reset; the panel lists the focused menu's actions in their order.
+    // P10B-19: one menu row and Reset; the panel lists the focused menu's actions in their order.
     val about = stringResource(R.string.settings_content_menus_description)
     StageFullPage(
         parents = listOf(stringResource(R.string.settings_group_layout)),
         title = stringResource(R.string.settings_content_menus_title),
-        count = pluralStringResource(R.plurals.settings_setting_count, ContentMenu.entries.size, ContentMenu.entries.size),
+        count = pluralStringResource(R.plurals.settings_setting_count, liveOnly.size, liveOnly.size),
         onBack = onBack,
         modifier = modifier,
         scroll = scrollState,
     ) {
-        ContentMenu.entries.forEach { menu ->
+        liveOnly.forEach { menu ->
             val saved by remember(menu) { vm.menuOrder(menu) }.collectAsStateWithLifecycle(emptyList())
             val refs = catalogue(menu)
             val order = applyMenuOrder(refs.map { it.key }, saved) { it }
@@ -122,7 +125,7 @@ fun ContentMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             title = reset,
             desc = null,
             value = null,
-            onClick = { ContentMenu.entries.forEach { vm.setMenuOrder(it, emptyList()) } },
+            onClick = { liveOnly.forEach { vm.setMenuOrder(it, emptyList()) } },
             help = SettingHelp(reset, about, hints = settingHints(null, pinnable = false)),
         )
         // Arranged in the page's panel (owner, P12).

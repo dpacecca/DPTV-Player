@@ -88,7 +88,9 @@ import tv.own.owntv.core.customize.SpanSelector
 @Composable
 fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: CustomizeViewModel = koinViewModel()
-    val section by vm.section.collectAsStateWithLifecycle()
+    // Sportio is Live TV only: the section is fixed, the Movies/Series tabs are gone.
+    val section = MediaType.LIVE
+    LaunchedEffect(Unit) { vm.selectSection(MediaType.LIVE) }
     val rows by vm.rows.collectAsStateWithLifecycle()
     val hiddenChannels by vm.hiddenChannels.collectAsStateWithLifecycle()
     val hideNewCategories by vm.hideNewCategories.collectAsStateWithLifecycle()
@@ -126,7 +128,6 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var confirmPinStage by remember { mutableStateOf(false) }
     var pinMismatch by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
-    val sortFocus = remember { FocusRequester() }
     val filterFocus = remember { FocusRequester() }
     val newCategoriesFocus = remember { FocusRequester() }
     val newCatPillFocus = remember { FocusRequester() } // "＋ New category" pill — restore target after its name prompt
@@ -134,7 +135,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val removePinFocus = remember { FocusRequester() }
     var itemsReturnKey by remember { mutableStateOf<String?>(null) }
     // Opener row for whichever dialog (new-category picker, rename) is open — restored on close so
-    // focus doesn't always jump back to the Live TV section chip.
+    // focus doesn't always jump back to the sort tool.
     var dialogReturn by tv.own.owntv.ui.components.rememberDialogFocusRestore(
         anyDialogOpen = showNewCatPicker || showSortPicker || showFilterPicker || showMoreMenu || restoringDefaults || renaming != null || creatingCategory ||
             deletingCategory != null || rangeEnd != null || editingPin != null,
@@ -200,8 +201,8 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         runCatching { firstFocus.requestFocus() }
     }
     // Restore focus to the row that opened a dialog (new-category picker / rename / new-category
-    // prompt / delete confirm) when it closes — previously closing either always landed on the Live
-    // TV section chip (firstFocus).
+    // prompt / delete confirm) when it closes — previously closing either always landed on the
+    // sort tool (firstFocus).
     // The category list is disposed while its item screen is open. Back recreates the row, so
     // explicitly return to the same category name instead of letting focus escape to Settings.
     LaunchedEffect(selectedCategory, rows) {
@@ -240,17 +241,10 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         modifier = modifier,
         handleBack = false,
         toolbar = {
-            tv.own.owntv.ui.stage.StageSegmented(
-                options = listOf(stringResource(R.string.settings_live_tv), stringResource(R.string.settings_movies), stringResource(R.string.settings_series)),
-                selected = when (section) { MediaType.LIVE -> 0; MediaType.MOVIE -> 1; else -> 2 },
-                onSelect = { vm.selectSection(listOf(MediaType.LIVE, MediaType.MOVIE, MediaType.SERIES)[it]) },
-                modifier = Modifier.focusRequester(firstFocus),
-            )
-            Spacer(Modifier.weight(1f))
             tv.own.owntv.ui.stage.StageTool(
                 stringResource(R.string.settings_customize_sort_button, stringResource(if (currentSort == SettingsRepository.SortMode.PLAYLIST) R.string.content_provider else R.string.settings_sort_alpha)),
-                onClick = { dialogReturn = sortFocus; showSortPicker = true },
-                icon = OwnTVIcon.SORT, boxed = true, modifier = Modifier.focusRequester(sortFocus),
+                onClick = { dialogReturn = firstFocus; showSortPicker = true },
+                icon = OwnTVIcon.SORT, boxed = true, modifier = Modifier.focusRequester(firstFocus),
             )
             tv.own.owntv.ui.stage.StageTool(
                 stringResource(
@@ -325,13 +319,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     if (hiddenChannels.isNotEmpty()) {
                         item {
                             StageSettingsHeading(
-                                stringResource(
-                                    when (section) {
-                                        MediaType.LIVE -> R.string.settings_customize_hidden_channels
-                                        MediaType.MOVIE -> R.string.settings_customize_hidden_movies
-                                        else -> R.string.settings_customize_hidden_series
-                                    },
-                                ),
+                                stringResource(R.string.settings_customize_hidden_channels),
                                 hiddenChannels.size, first = true,
                             )
                         }
@@ -493,13 +481,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         PinConfirmDialog(
             title = stringResource(
                 R.string.settings_customize_restore_defaults_title,
-                stringResource(
-                    when (section) {
-                        MediaType.LIVE -> R.string.settings_live_tv
-                        MediaType.MOVIE -> R.string.settings_movies
-                        else -> R.string.settings_series
-                    },
-                ),
+                stringResource(R.string.settings_live_tv),
                 restorePlaylist ?: stringResource(R.string.content_all_playlists),
             ),
             message = stringResource(R.string.settings_customize_restore_defaults_description),

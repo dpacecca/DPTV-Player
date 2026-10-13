@@ -17,8 +17,9 @@ on:
 permissions:
   contents: write   # required so tag builds can create a Release
 
-# Core (tv.own.owntv:core, :player-core) and the mpv engine (tv.own.owntv:libmpv) resolve from OwnTV's
-# public Maven repository, https://ahxn00.github.io/OwnTV_Core/maven — no token, so fork pull requests
+# Core (tv.own.owntv:core, :player-core) resolves from Sportio's public Maven repository,
+# https://old-repo.github.io/SportioTV_Core/maven, and the mpv engine (tv.own.owntv:libmpv)
+# from upstream OwnTV's (https://ahxn00.github.io/OwnTV_Core/maven) — no token, so fork pull requests
 # build exactly like the maintainer's. There is no owntv.corePath here: CI deliberately builds against
 # the PINNED artifact, which is what a release actually ships. Local builds use the composite.
 
@@ -64,7 +65,7 @@ jobs:
 
           # Core publishes the release only AFTER its tests pass and both artifacts are pushed, so a
           # release existing is proof the version is real and installable.
-          LATEST=$(gh api repos/ahXN00/OwnTV_Core/releases/latest --jq .tag_name)
+          LATEST=$(gh api repos/SportioTV_Core/releases/latest --jq .tag_name)
           LATEST="${LATEST#core-}"
           if [ "$PIN" != "$LATEST" ]; then
             echo "::error::Pinned $PIN but core's newest release is $LATEST."
@@ -75,7 +76,7 @@ jobs:
           # reads it at configure time to build localeFilters, and core's own copy never reaches
           # here. A stale copy silently strips a language out of the APK with a green build.
           curl -fsSL -o /tmp/locales.core.json \
-            "https://raw.githubusercontent.com/ahXN00/OwnTV_Core/core-$PIN/tools/i18n/locales.json"
+            "https://raw.githubusercontent.com/SportioTV_Core/core-$PIN/tools/i18n/locales.json"
           if ! diff -u /tmp/locales.core.json tools/i18n/locales.json; then
             echo "::error::tools/i18n/locales.json differs from core's copy at core-$PIN."
             exit 1
@@ -255,27 +256,27 @@ jobs:
             echo "ARM_SRC=$SRC" >> "$GITHUB_ENV"
           fi
 
-      - name: Name the APK (OwnTV-v<version>)
+      - name: Name the APK (Sportio-v<version>)
         run: |
           mkdir -p dist
           if [ "$IS_TAG" = "true" ]; then
-            OUT="OwnTV-v${{ steps.ver.outputs.name }}.apk"
+            OUT="Sportio-v${{ steps.ver.outputs.name }}.apk"
           else
-            OUT="OwnTV-dev-${GITHUB_SHA::7}.apk"
+            OUT="Sportio-dev-${GITHUB_SHA::7}.apk"
           fi
           cp "$ARM_SRC" "dist/$OUT"
           echo "APK_OUT=$OUT" >> "$GITHUB_ENV"
           echo "Packaged dist/$OUT (arm: arm64-v8a + armeabi-v7a)"
           # Tag builds also ship a stable-named copy so a fixed URL always serves the latest signed
-          # release: https://github.com/<repo>/releases/latest/download/OwnTV.apk
-          # (used by the Fire TV Downloader code and any "always-latest" sideload link).
+          # release: https://github.com/<repo>/releases/latest/download/Sportio.apk
+          # (used for any "always-latest" sideload link).
           if [ "$IS_TAG" = "true" ]; then
-            cp "$ARM_SRC" "dist/OwnTV.apk"
+            cp "$ARM_SRC" "dist/Sportio.apk"
             # Separate x86_64 build for emulators / rare Intel boxes. Pinned to the version only —
-            # no always-latest copy, since real devices (the Downloader audience) don't need it.
+            # no always-latest copy, since real devices don't need it.
             if [ -n "$X86_SRC" ]; then
-              cp "$X86_SRC" "dist/OwnTV-x86_64-v${{ steps.ver.outputs.name }}.apk"
-              echo "Packaged dist/OwnTV-x86_64-v${{ steps.ver.outputs.name }}.apk"
+              cp "$X86_SRC" "dist/Sportio-x86_64-v${{ steps.ver.outputs.name }}.apk"
+              echo "Packaged dist/Sportio-x86_64-v${{ steps.ver.outputs.name }}.apk"
             fi
           fi
 
@@ -325,11 +326,11 @@ jobs:
         if: env.IS_TAG == 'true'
         uses: softprops/action-gh-release@v3
         with:
-          name: OwnTV ${{ github.ref_name }}
+          name: Sportio ${{ github.ref_name }}
           files: |
             dist/${{ env.APK_OUT }}
-            dist/OwnTV.apk
-            dist/OwnTV-x86_64-v${{ steps.ver.outputs.name }}.apk
+            dist/Sportio.apk
+            dist/Sportio-x86_64-v${{ steps.ver.outputs.name }}.apk
           body_path: dist/RELEASE_NOTES.md
           # Must stay false: it appends GitHub's auto commit/PR list under the body, which buries the
           # short in-app notes the updater dialog shows.
