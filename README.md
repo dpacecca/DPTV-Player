@@ -113,7 +113,10 @@ This link always points at the newest build:
 https://github.com/trenntl/SportioTV/releases/latest/download/Sportio.apk
 ```
 
-- Sideload with *Send files to TV*, a USB drive, Downloader, or `adb install Sportio.apk`.
+- **On Fire TV, the easiest path is the Downloader app:** install it from the Amazon app store,
+  enter the code **5135027**, and it downloads the newest `Sportio.apk` for you. The URL above can
+  also be typed into Downloader directly.
+- Otherwise sideload with *Send files to TV*, a USB drive, or `adb install Sportio.apk`.
 
 > Install only from this repository's Releases. Each release ships **two APKs**:
 > `Sportio.apk` (arm — every real TV box) and `Sportio-x86_64-vX.X.X.apk` (emulators and rare
