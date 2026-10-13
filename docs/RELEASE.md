@@ -10,6 +10,7 @@
   oder per Env (`KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`).
 - Build: `.\gradlew.bat :app:assembleRelease` (arm ~53,9 MB / x86_64 ~37,7 MB,
   signiert CN=Sportio).
+- Repo-Secrets (App): KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD. Core: CONSUMER_BUMP_TOKEN (Contents + Pull requests auf beiden Repos).
 
 ## Versionierung
 
@@ -19,10 +20,10 @@
   damit immer „neuer" als Releases (kein Downgrade-Fehler, kein Update-Angebot).
   Kehrseite (§Installation in `BUILD.md`): ein Release installiert NICHT über
   einen Debug-Build — erst deinstallieren (Daten vorher als `.own` sichern).
-- Core-Pin: `gradle/libs.versions.toml` → `owntvCore` (Stand: 1.0.69; App v1.0.3.
+- Core-Pin: `gradle/libs.versions.toml` → `owntvCore` (Stand: 1.0.69; App v1.0.5.
   Lokal ignoriert bei gesetztem `owntv.corePath`). Core-Änderung (z. B. `EpgDao`)
   braucht Core-Bump + App-Pin-Mitziehen.
-- App-Releases: `trenntl/SportioTV` (aktuell Tag `v1.0.3`), Core-Releases:
+- App-Releases: `trenntl/SportioTV` (aktuell Tag `v1.0.5`), Core-Releases:
   `trenntl/SportioTV_Core` (aktuell Tag `core-1.0.69`).
 
 ## Release-Ablauf (gesichert 2026-10-13, Kette v1.0.2 → v1.0.3)
@@ -77,3 +78,10 @@ und Fork-Seiten behalten:
   `C:\Users\<user>\OwnTV-upstream\`, nicht aus diesem Ordner. PR-Template-Boxen
   exakt einhalten (Needles `checked the app's **Settings**`,
   `searched existing issues/PRs`, `[x]` mit Apostroph).
+
+## Konto-Umzug (2026-10-13, altes Konto → 	renntl)
+
+- Neues Konto, Historie per Squash (1 Noreply-Commit) ohne private Mail übernommen.
+- Bridge 1.0.4 im alten Repo (nur eleaseRepo-Flip) leitet alte Installationen um; neues Repo startet bei 1.0.5 (Code monoton!). Gleiches Keystore → nahtlose Updates.
+- Neues Repo braucht: Secrets (siehe Signing), gh-pages-Branch (sonst scheitert der Maven-Push!), Fork-Actions-Banner im Actions-Tab (sonst 0 Runs).
+- Alte Repos: archivieren, später löschen (erst das entfernt die alte Historie).
