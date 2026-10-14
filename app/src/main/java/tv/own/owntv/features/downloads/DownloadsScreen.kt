@@ -531,6 +531,10 @@ internal fun StageDownloadRow(
 ) {
     var hasFocus by remember { mutableStateOf(false) }
     val firstAction = remember { FocusRequester() }
+    // On a touch screen nothing holds focus, so the row's buttons are always drawn: otherwise Delete,
+    // Stop and Retry could never be reached by a finger.
+    val touch = androidx.compose.ui.platform.LocalInputModeManager.current.inputMode ==
+        androidx.compose.ui.input.InputMode.Touch
     Box(
         Modifier
             .padding(bottom = 14.mpx)
@@ -564,7 +568,7 @@ internal fun StageDownloadRow(
             }
             Column(Modifier.width(380.mpx), horizontalAlignment = Alignment.End) {
                 status()
-                if (hasFocus && actions.isNotEmpty()) {
+                if ((hasFocus || touch) && actions.isNotEmpty()) {
                     Row(Modifier.padding(top = 12.mpx), horizontalArrangement = Arrangement.spacedBy(8.mpx)) {
                         actions.forEachIndexed { i, a ->
                             StageSurface(

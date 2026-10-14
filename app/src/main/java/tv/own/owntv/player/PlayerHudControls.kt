@@ -42,7 +42,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -407,7 +413,15 @@ private fun BoxScope.Playhead(frac: Float) {
 internal fun SeekBar(positionMs: Long, durationMs: Long, bufferedMs: Long, stepMs: Long, onSeek: (Long) -> Unit, focusRequester: FocusRequester? = null) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val frac = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+    // Touch: where a finger is dragging the playhead, until it lets go and the seek lands.
+    var dragFrac by remember { mutableStateOf<Float?>(null) }
+    val seekToFrac by rememberUpdatedState { f: Float ->
+        if (durationMs > 0) onSeek((f * durationMs).toLong() - positionMs)
+    }
+    val frac = dragFrac
+        ?: if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+    val showThumb = focused || dragFrac != null
+    val shownPositionMs = dragFrac?.let { (it * durationMs).toLong() } ?: positionMs
     // The buffer ghost: how far ahead the engine has data. Never behind the playhead, so a stale or
     // unreported value simply draws nothing rather than a stripe that contradicts the fill.
     val bufferedFrac = if (durationMs > 0) (bufferedMs.toFloat() / durationMs).coerceIn(frac, 1f) else frac
@@ -423,14 +437,17 @@ internal fun SeekBar(positionMs: Long, durationMs: Long, bufferedMs: Long, stepM
                     else -> false
                 } else false
             }
-            .focusable(interactionSource = interaction),
+            .focusable(interactionSource = interaction)
+            .touchScrub { f, commit ->
+                if (commit) { dragFrac = null; seekToFrac(f) } else dragFrac = f
+            },
         contentAlignment = Alignment.CenterStart,
     ) {
-        Box(Modifier.fillMaxWidth().height(if (focused) 6.dp else 4.dp).clip(RoundedCornerShape(50)).background(hudInk.copy(alpha = if (focused) 0.4f else 0.22f))) {
+        Box(Modifier.fillMaxWidth().height(if (showThumb) 6.dp else 4.dp).clip(RoundedCornerShape(50)).background(hudInk.copy(alpha = if (showThumb) 0.4f else 0.22f))) {
             Box(Modifier.fillMaxWidth(bufferedFrac).fillMaxHeight().clip(RoundedCornerShape(50)).background(hudInk.copy(alpha = 0.28f)))
             Box(Modifier.fillMaxWidth(frac).fillMaxHeight().clip(RoundedCornerShape(50)).background(hudAccent))
         }
-        if (focused) {
+        if (showThumb) {
             Playhead(frac)
             // Time-remaining bubble above the thumb (elapsed is shown at the bar's left, total at the right,
             // so the bubble shows what's LEFT: "-12:34"). Uses a negative offset (not bottom padding) so it
@@ -441,7 +458,7 @@ internal fun SeekBar(positionMs: Long, durationMs: Long, bufferedMs: Long, stepM
                     Modifier.atFraction(frac).offset(y = (-32).dp).clip(RoundedCornerShape(8.dp)).background(hudShade(0.9f)).padding(horizontal = 8.dp, vertical = 3.dp),
                 ) {
                     Text(
-                        stringResource(R.string.player_time_remaining, formatTime((durationMs - positionMs).coerceAtLeast(0))),
+                        stringResource(R.string.player_time_remaining, formatTime((durationMs - shownPositionMs).coerceAtLeast(0))),
                         style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content),
                         color = hudInk,
                     )
@@ -451,6 +468,32 @@ internal fun SeekBar(positionMs: Long, durationMs: Long, bufferedMs: Long, stepM
     }
     }
 }
+
+/**
+ * Touch on a timeline: a tap jumps to that point, a drag follows the finger ([commit] false) and
+ * lands where it lets go ([commit] true). [fraction] runs 0 at the left edge to 1 at the right —
+ * physical, like the keys, which is why the bars force Ltr. The gesture is consumed, so a tap on a
+ * bar never also counts as a tap on the video behind it.
+ */
+private fun Modifier.touchScrub(onPoint: (fraction: Float, commit: Boolean) -> Unit): Modifier =
+    pointerInput(Unit) {
+        awaitEachGesture {
+            val down = awaitFirstDown()
+            val width = size.width.toFloat().coerceAtLeast(1f)
+            fun fractionAt(x: Float) = (x / width).coerceIn(0f, 1f)
+            down.consume()
+            var lastX = down.position.x
+            onPoint(fractionAt(lastX), false)
+            while (true) {
+                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                lastX = change.position.x
+                change.consume()
+                if (!change.pressed) break
+                onPoint(fractionAt(lastX), false)
+            }
+            onPoint(fractionAt(lastX), true)
+        }
+    }
 
 /** Places the element centred at [fraction] of the parent's width, clamped so it stays fully inside. */
 private fun Modifier.atFraction(fraction: Float): Modifier = layout { measurable, constraints ->
@@ -479,11 +522,16 @@ internal fun LiveTimelineBar(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val frac = offsetFrac(offsetSec) // 1 = live edge, 0 = far edge
+    // Touch: the offset a finger is dragging to; the scrub is sent once, when it lets go.
+    var dragOffsetSec by remember { mutableStateOf<Int?>(null) }
+    val scrubTo by rememberUpdatedState { target: Int -> onScrub(target - offsetSec) }
+    val shownOffsetSec = dragOffsetSec ?: offsetSec
+    val showThumb = focused || dragOffsetSec != null
+    val frac = offsetFrac(shownOffsetSec) // 1 = live edge, 0 = far edge
     // Keyed on the minute, not the raw instant: the live edge advances every second, and no tick on a
     // two-hour bar can move visibly in less than that.
     val ticks = remember(programmes, liveEdgeMs / 60_000L) { liveTicks(programmes, liveEdgeMs) }
-    val here = remember(programmes, liveEdgeMs / 60_000L, offsetSec) { programmeAt(programmes, liveEdgeMs, offsetSec) }
+    val here = remember(programmes, liveEdgeMs / 60_000L, shownOffsetSec) { programmeAt(programmes, liveEdgeMs, shownOffsetSec) }
     val clock = rememberSystemTimeFormatter()
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
     Box(
@@ -497,10 +545,14 @@ internal fun LiveTimelineBar(
                     else -> false
                 } else false
             }
-            .focusable(interactionSource = interaction),
+            .focusable(interactionSource = interaction)
+            .touchScrub { f, commit ->
+                val target = ((1f - f) * LIVE_WINDOW_SEC).roundToInt()
+                if (commit) { dragOffsetSec = null; scrubTo(target) } else dragOffsetSec = target
+            },
         contentAlignment = Alignment.CenterStart,
     ) {
-        Box(Modifier.fillMaxWidth().height(if (focused) 6.dp else 4.dp).clip(RoundedCornerShape(50)).background(hudInk.copy(alpha = if (focused) 0.4f else 0.22f))) {
+        Box(Modifier.fillMaxWidth().height(if (showThumb) 6.dp else 4.dp).clip(RoundedCornerShape(50)).background(hudInk.copy(alpha = if (showThumb) 0.4f else 0.22f))) {
             Box(Modifier.fillMaxWidth(frac).fillMaxHeight().clip(RoundedCornerShape(50)).background(hudAccent))
         }
         // N4 — where the saved copy has no picture (the connection dropped): dark, so a jump over it is
@@ -509,7 +561,7 @@ internal fun LiveTimelineBar(
             Box(Modifier.fillMaxWidth(span.endFrac), contentAlignment = Alignment.CenterEnd) {
                 Box(
                     Modifier.fillMaxWidth((span.endFrac - span.startFrac) / span.endFrac)
-                        .height(if (focused) 6.dp else 4.dp)
+                        .height(if (showThumb) 6.dp else 4.dp)
                         .background(hudShade(0.75f)),
                 )
             }
@@ -526,7 +578,7 @@ internal fun LiveTimelineBar(
             val current = tick.startFrac == hereStartFrac
             Box(Modifier.fillMaxWidth(tick.startFrac), contentAlignment = Alignment.CenterEnd) {
                 Box(
-                    Modifier.width(if (current) 2.dp else 1.dp).height(if (focused) 12.dp else 10.dp)
+                    Modifier.width(if (current) 2.dp else 1.dp).height(if (showThumb) 12.dp else 10.dp)
                         .background(hudInk.copy(alpha = if (current) 0.85f else 0.35f)),
                 )
             }
@@ -535,19 +587,19 @@ internal fun LiveTimelineBar(
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
             OwnTVIcon(OwnTVIcon.LIVE_DOT, tint = Color(0xFFFF4D4D), filled = true, modifier = Modifier.size(14.dp))
         }
-        if (focused) {
+        if (showThumb) {
             Playhead(frac)
             Box(Modifier.fillMaxWidth(frac), contentAlignment = Alignment.CenterEnd) {
                 Box(Modifier.padding(bottom = 30.dp).clip(RoundedCornerShape(8.dp)).background(hudShade(0.9f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
                     // What you are scrubbing INTO, by name — "20:54 · Premier League" says far more than
                     // "−12:04 behind" about whether to stop here. Falls back to the bare offset wherever
                     // the guide has nothing for this channel.
-                    val atClock = clock(liveEdgeMs - offsetSec.coerceAtLeast(0) * 1000L)
+                    val atClock = clock(liveEdgeMs - shownOffsetSec.coerceAtLeast(0) * 1000L)
                     Text(
                         when {
                             here != null -> stringResource(R.string.player_live_scrub_at, atClock, here.title)
-                            offsetSec <= 1 -> stringResource(R.string.player_live)
-                            else -> stringResource(R.string.player_live_offset, mmss(offsetSec))
+                            shownOffsetSec <= 1 -> stringResource(R.string.player_live)
+                            else -> stringResource(R.string.player_live_offset, mmss(shownOffsetSec))
                         },
                         style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content),
                         color = hudInk,

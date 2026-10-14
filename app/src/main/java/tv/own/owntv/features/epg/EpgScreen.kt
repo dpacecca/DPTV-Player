@@ -21,6 +21,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -587,6 +591,7 @@ fun EpgScreen(
                                     },
                                     onOk = { p -> onOk(channel, p) },
                                     onMenu = { p -> returnTo = null; if (p != null) menuFor = channel to p else channelMenuFor = channel },
+                                    onScrollBy = { dx -> scrollPx = (scrollPx - dx).toInt().coerceIn(0, maxScroll()) },
                                 )
                             }
                         }
@@ -773,6 +778,8 @@ private fun GuideRow(
     onStep: (Int) -> Boolean,
     onOk: (EpgProgrammeEntity?) -> Unit,
     onMenu: (EpgProgrammeEntity?) -> Unit,
+    /** Touch: a sideways drag on the programmes moves the shared timeline by this many pixels. */
+    onScrollBy: (Float) -> Unit,
 ) {
     // Cache peek first, so a row scrolled back into view draws at once; a miss reads this one channel.
     val cacheRevision by vm.cacheRevision.collectAsStateWithLifecycle()
@@ -789,12 +796,49 @@ private fun GuideRow(
     var okDown by remember { mutableStateOf(false) }
     LaunchedEffect(focused, cursorTime, programmes) { if (focused) onShow(programmeAt(programmes, cursorTime)) }
     val rowSelected = focused && !cellMode
+    // Touch. On the programmes: the first tap selects the programme under the finger (the block on
+    // top shows it, as the cursor would), a tap on the one already selected watches it, a long press
+    // opens its menu, and a sideways drag scrolls the timeline. On the channel name: a tap watches
+    // the channel now, a long press opens the channel menu. Up and down stay the list's own scroll.
+    val pxPerMin = with(LocalDensity.current) { GuideGridDefaults.PxPerMin.toPx() }
+    val timeAtX: (Float) -> Long = { x -> windowStart + ((x + scrollPx) / pxPerMin * 60_000f).toLong() }
+    val onStripTap by rememberUpdatedState { x: Float ->
+        val progs = programmes.orEmpty()
+        val time = timeAtX(x)
+        val tapped = programmeAt(progs, time)
+        if (focused && cellMode && programmeAt(progs, cursorTime)?.id == tapped?.id) {
+            onOk(tapped)
+        } else {
+            runCatching { focusRequester.requestFocus() }
+            if (!cellMode) onEnterCell()
+            onCursor(time)
+            onShow(tapped)
+        }
+    }
+    val onStripLongPress by rememberUpdatedState { x: Float -> onMenu(programmeAt(programmes.orEmpty(), timeAtX(x))) }
+    val onStripDrag by rememberUpdatedState(onScrollBy)
+    val onLabelTap by rememberUpdatedState { onOk(programmeAt(programmes.orEmpty(), now)) }
+    val onLabelLongPress by rememberUpdatedState { onMenu(null) }
     Row(Modifier.fillMaxWidth().height(GuideGridDefaults.RowHeight), verticalAlignment = Alignment.CenterVertically) {
-        GuideChannelLabel(channel, name, dot, selected = selectedRow, numberWidth = numberWidth, modifier = Modifier.width(labelWidth))
+        GuideChannelLabel(
+            channel, name, dot, selected = selectedRow, numberWidth = numberWidth,
+            modifier = Modifier.width(labelWidth).pointerInput(Unit) {
+                detectTapGestures(onTap = { onLabelTap() }, onLongPress = { onLabelLongPress() })
+            },
+        )
         Box(
             Modifier
                 .weight(1f)
                 .fillMaxHeight()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { offset -> onStripTap(offset.x) },
+                        onLongPress = { offset -> onStripLongPress(offset.x) },
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures { change, dx -> change.consume(); onStripDrag(dx) }
+                }
                 .focusRequester(focusRequester)
                 .onFocusChanged { focused = it.isFocused; if (it.isFocused) onFocused() }
                 .onPreviewKeyEvent { e ->

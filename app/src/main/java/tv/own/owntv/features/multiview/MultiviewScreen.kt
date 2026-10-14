@@ -21,6 +21,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -156,9 +159,24 @@ private fun Tile(
     // Long OK is a key-down held past the system's long-press threshold; Compose reports the repeat
     // as another KeyDown, which is what separates "give it the sound" from "open the tile menu".
     var okDownAt by remember { mutableStateOf(0L) }
+    // Touch does what OK does: a tap takes the tile (an empty one picks a channel, a filled one gets
+    // the sound), a long press opens the tile menu.
+    val onTileTap by rememberUpdatedState {
+        runCatching { focusRequester.requestFocus() }
+        state.focus(index)
+        if (tile.channel == null) onPickChannel() else state.giveSoundTo(index)
+    }
+    val onTileLongPress by rememberUpdatedState {
+        runCatching { focusRequester.requestFocus() }
+        state.focus(index)
+        onMenu()
+    }
 
     Box(
         modifier
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { onTileTap() }, onLongPress = { onTileLongPress() })
+            }
             .clip(TileShape)
             .background(colors.surfaceContainerLowest)
             .border(

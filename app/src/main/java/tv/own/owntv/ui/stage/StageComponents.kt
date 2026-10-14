@@ -33,6 +33,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.State
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -1097,11 +1100,22 @@ fun StageRatingChip(rating: String, modifier: Modifier = Modifier, small: Boolea
 }
 
 /**
- * `.stp`: "− 90% +" inside a settings row. Display only: the row owns focus and ◀ ▶ change the value
- * (P10, "controls inside the rows").
+ * Touch only: a tap here runs [onTap] and is consumed, so the control under it (a row's own click)
+ * does not also fire. Remote focus never lands here — the row keeps it — which is why this is a
+ * pointer handler and not a clickable. Takes a [State] so the detector is installed once and still
+ * calls the newest lambda: pass `rememberUpdatedState { … }`.
+ */
+fun Modifier.touchTap(onTap: State<() -> Unit>): Modifier =
+    pointerInput(Unit) { detectTapGestures(onTap = { onTap.value() }) }
+
+/**
+ * `.stp`: "− 90% +" inside a settings row. The row owns focus and ◀ ▶ change the value (P10,
+ * "controls inside the rows"); with [onStep], a tap on − or + steps it too, for touch screens.
  */
 @Composable
-fun StageStepper(value: String) {
+fun StageStepper(value: String, onStep: ((Int) -> Unit)? = null) {
+    val stepDown = androidx.compose.runtime.rememberUpdatedState { onStep?.invoke(-1); Unit }
+    val stepUp = androidx.compose.runtime.rememberUpdatedState { onStep?.invoke(1); Unit }
     Row(
         Modifier
             .background(StageColors.ControlFill, RoundedCornerShape(13.mpx))
@@ -1109,7 +1123,7 @@ fun StageStepper(value: String) {
         horizontalArrangement = Arrangement.spacedBy(4.mpx),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(34.mpx), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(34.mpx).then(if (onStep != null) Modifier.touchTap(stepDown) else Modifier), contentAlignment = Alignment.Center) {
             Text("−", style = stageText(20, 700), color = StageColors.Muted)
         }
         Text(
@@ -1120,7 +1134,7 @@ fun StageStepper(value: String) {
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             modifier = Modifier.widthIn(min = 64.mpx),
         )
-        Box(Modifier.size(34.mpx), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(34.mpx).then(if (onStep != null) Modifier.touchTap(stepUp) else Modifier), contentAlignment = Alignment.Center) {
             Text("+", style = stageText(20, 700), color = StageColors.Muted)
         }
     }
