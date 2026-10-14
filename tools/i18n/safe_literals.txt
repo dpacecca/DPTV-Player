@@ -195,6 +195,7 @@
 4	empty	app/src/main/java/tv/own/owntv/features/profiles/ProfileComponents.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	r_${it.id}
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rhdr_$labelRes
+2	empty	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	\0
 2	empty	app/src/main/java/tv/own/owntv/features/search/SearchScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/search/SearchScreen.kt	,
 1	technical	app/src/main/java/tv/own/owntv/features/search/SearchScreen.kt	all-channels

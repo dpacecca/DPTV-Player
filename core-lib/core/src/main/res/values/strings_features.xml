@@ -394,6 +394,21 @@
     <string name="settings_recording_post_roll">Keep going after the end</string>
     <!-- Translators: Description under the "keep going after the end" setting. -->
     <string name="settings_recording_post_roll_description">Carry on this long past the listed end time, so a programme that overruns is not cut off.</string>
+    <string name="settings_recorder_server">Recording server</string>
+    <string name="settings_recorder_server_description">Your DPTV Recorder, e.g. http://192.168.1.10:3000. Recordings from Xtream playlists are then made on the server, even while this TV is off.</string>
+    <string name="settings_recorder_api_key">Recording server API key</string>
+    <string name="settings_recorder_api_key_description">Generate one in DPTV Recorder under Settings › Account › API keys.</string>
+    <string name="settings_recorder_key_set">Set</string>
+    <string name="settings_recorder_key_not_set">Not set</string>
+    <string name="settings_recorder_test">Test recording server</string>
+    <string name="settings_recorder_test_description">Check that the address and API key work.</string>
+    <string name="settings_recorder_testing">Testing…</string>
+    <string name="settings_recorder_test_ok">Connected · %1$d recordings</string>
+    <string name="settings_recorder_err_unreachable">Can\'t reach the server</string>
+    <string name="settings_recorder_err_unauthorized">API key not accepted</string>
+    <string name="settings_recorder_err_refused">Server error: %1$s</string>
+    <string name="settings_recorder_err_bad_response">Not a DPTV Recorder</string>
+    <string name="recording_on_server">On DPTV Recorder</string>
     <!-- Translators: Warning on the recording settings screen when Android will not let the app set exact alarms, so recordings may begin late. -->
     <string name="settings_recording_timers_inexact">This device does not allow DPTV-Player to set exact alarms, so a recording may begin a few minutes late. Recordings start earlier to make up for it.</string>
     <!-- Translators: A number of minutes, used as the value of the "start early" and "keep going after the end" settings. -->

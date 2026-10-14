@@ -56,6 +56,9 @@ class RecordingScheduler(
     suspend fun rearmAll() {
         val now = clock()
         recordingDao.scheduled().forEach { recording ->
+            // The recording server keeps its own time; its rows here have no alarm and are never
+            // "missed" by this device (RecordingManager.syncWithServer updates them).
+            if (RemoteRecordings.isRemote(recording)) return@forEach
             if (RecordingSchedule.hasBeenMissed(recording, now)) {
                 // Nothing to retry — the programme has been and gone. Say so instead of leaving a row
                 // that claims for ever that it is about to start.

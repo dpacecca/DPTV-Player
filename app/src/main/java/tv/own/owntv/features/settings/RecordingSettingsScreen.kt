@@ -22,18 +22,21 @@ import androidx.tv.material3.Text
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
 import tv.own.owntv.features.recordings.RecordingsViewModel
+import tv.own.owntv.core.recording.RemoteRecorderException
 import tv.own.owntv.ui.components.NumberInputDialog
+import tv.own.owntv.ui.components.TextInputDialog
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.restoreAfterDialogClose
 import tv.own.owntv.ui.components.roundedPanel
 import tv.own.owntv.ui.theme.mpx
 
-private enum class RecordingDialog { NONE, PRE_ROLL, POST_ROLL }
+private enum class RecordingDialog { NONE, PRE_ROLL, POST_ROLL, SERVER_URL, API_KEY }
 
 /** This screen's rows as Settings search finds them, by their own titles. `SettingsSearchRowsTest` holds it to the rows below. */
 internal val RECORDING_SEARCH_ROWS: List<Int> = listOf(
     R.string.settings_recording_reserve, R.string.settings_record_watching,
     R.string.settings_recording_pre_roll, R.string.settings_recording_post_roll,
+    R.string.settings_recorder_server, R.string.settings_recorder_api_key, R.string.settings_recorder_test,
 )
 
 /**
@@ -54,9 +57,14 @@ internal fun RecordingSettingsRows(
     val preRoll by vm.recordingPreRollMinutes.collectAsStateWithLifecycle()
     val postRoll by vm.recordingPostRollMinutes.collectAsStateWithLifecycle()
     val recordWatching by vm.recordWhatImWatching.collectAsStateWithLifecycle()
+    val serverUrl by recordingsVm.recorderServerUrl.collectAsStateWithLifecycle()
+    val apiKey by recordingsVm.recorderApiKey.collectAsStateWithLifecycle()
+    val serverTest by recordingsVm.serverTest.collectAsStateWithLifecycle()
 
     val preRollFocus = remember { FocusRequester() }
     val postRollFocus = remember { FocusRequester() }
+    val serverUrlFocus = remember { FocusRequester() }
+    val apiKeyFocus = remember { FocusRequester() }
     var dialog by remember { mutableStateOf(RecordingDialog.NONE) }
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
     var showWatchingWarning by remember { mutableStateOf(false) }
@@ -127,6 +135,38 @@ internal fun RecordingSettingsRows(
         modifier = Modifier.focusRequester(postRollFocus),
     )
 
+    // A DPTV-Recorder server records instead of this device, so a recording happens with the TV off.
+    Row2(
+        icon = OwnTVIcon.NETWORK,
+        title = stringResource(R.string.settings_recorder_server),
+        desc = stringResource(R.string.settings_recorder_server_description),
+        chip = serverUrl.ifBlank { stringResource(R.string.common_off) },
+        primaryChip = serverUrl.isNotBlank(),
+        chevron = true,
+        onClick = { dialogReturn = serverUrlFocus; dialog = RecordingDialog.SERVER_URL },
+        modifier = Modifier.focusRequester(serverUrlFocus),
+    )
+    Row2(
+        icon = OwnTVIcon.NETWORK,
+        title = stringResource(R.string.settings_recorder_api_key),
+        desc = stringResource(R.string.settings_recorder_api_key_description),
+        chip = stringResource(if (apiKey.isNotBlank()) R.string.settings_recorder_key_set else R.string.settings_recorder_key_not_set),
+        primaryChip = apiKey.isNotBlank(),
+        chevron = true,
+        onClick = { dialogReturn = apiKeyFocus; dialog = RecordingDialog.API_KEY },
+        modifier = Modifier.focusRequester(apiKeyFocus),
+    )
+    if (serverUrl.isNotBlank() && apiKey.isNotBlank()) {
+        Row2(
+            icon = OwnTVIcon.CHECK,
+            title = stringResource(R.string.settings_recorder_test),
+            desc = stringResource(R.string.settings_recorder_test_description),
+            chip = serverTestText(serverTest),
+            primaryChip = serverTest is RecordingsViewModel.ServerTest.Ok,
+            onClick = { recordingsVm.testServer() },
+        )
+    }
+
     // The auto-frame-rate precedent, and Multiview's after it: name the trade-off, then offer both
     // answers with the safer one first.
     if (showWatchingWarning) {
@@ -166,7 +206,38 @@ internal fun RecordingSettingsRows(
             },
             onDismiss = { dialog = RecordingDialog.NONE },
         )
+        RecordingDialog.SERVER_URL -> TextInputDialog(
+            title = stringResource(R.string.settings_recorder_server),
+            initial = serverUrl,
+            label = stringResource(R.string.settings_recorder_server),
+            hint = stringResource(R.string.settings_recorder_server_description),
+            // Blank turns the server off: recordings go back to this device.
+            onConfirm = { recordingsVm.setRecorderServerUrl(it); dialog = RecordingDialog.NONE },
+            onDismiss = { dialog = RecordingDialog.NONE },
+        )
+        // Starts empty rather than showing the key on the television; Save with it blank clears it.
+        RecordingDialog.API_KEY -> TextInputDialog(
+            title = stringResource(R.string.settings_recorder_api_key),
+            label = stringResource(R.string.settings_recorder_api_key),
+            hint = stringResource(R.string.settings_recorder_api_key_description),
+            onConfirm = { recordingsVm.setRecorderApiKey(it); dialog = RecordingDialog.NONE },
+            onDismiss = { dialog = RecordingDialog.NONE },
+        )
         RecordingDialog.NONE -> Unit
+    }
+}
+
+/** The test row's chip: the last result of "Test recording server", or nothing before the first test. */
+@Composable
+private fun serverTestText(result: RecordingsViewModel.ServerTest?): String? = when (result) {
+    null -> null
+    RecordingsViewModel.ServerTest.Testing -> stringResource(R.string.settings_recorder_testing)
+    is RecordingsViewModel.ServerTest.Ok -> stringResource(R.string.settings_recorder_test_ok, result.recordings)
+    is RecordingsViewModel.ServerTest.Failed -> when (result.kind) {
+        RemoteRecorderException.Kind.UNREACHABLE -> stringResource(R.string.settings_recorder_err_unreachable)
+        RemoteRecorderException.Kind.UNAUTHORIZED -> stringResource(R.string.settings_recorder_err_unauthorized)
+        RemoteRecorderException.Kind.REFUSED -> stringResource(R.string.settings_recorder_err_refused, result.detail.orEmpty())
+        RemoteRecorderException.Kind.BAD_RESPONSE -> stringResource(R.string.settings_recorder_err_bad_response)
     }
 }
 

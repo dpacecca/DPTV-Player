@@ -24,6 +24,7 @@ import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.live.OpenStreamRegistry
 import tv.own.owntv.core.model.RecordingFailure
 import tv.own.owntv.core.model.RecordingStatus
+import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.storage.MediaFolders
 import tv.own.owntv.core.storage.MediaRoot
@@ -50,6 +51,8 @@ class RecordingManager(
     private val scheduler: RecordingScheduler,
     private val channelDao: ChannelDao,
     private val epgDao: EpgDao,
+    /** A DPTV-Recorder server; when configured, Xtream recordings go there instead of this device. */
+    private val remote: RemoteRecorder,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -138,6 +141,10 @@ class RecordingManager(
         ) {
             return@withContext existing
         }
+        // A recording server, when there is one, records instead of this device — it does not need
+        // the television to be on. Null means "record here": no server, not an Xtream channel, or the
+        // server could not be reached (a recording is never lost to a network problem).
+        scheduleOnServer(recording, existing?.id ?: 0)?.let { return@withContext it }
         val target = recordingsRoot()
             .child(MediaFolders.TV, RecordingRules.fileName(recording.channelName, recording.title, recording.startMs))
         val row = recording.copy(
@@ -373,6 +380,8 @@ class RecordingManager(
      * whatever point it reached, so this is a finished short recording and not a failure.
      */
     fun stop(recording: RecordingEntity) {
+        // The server has no "stop and keep": ending a running server recording cancels it there.
+        if (RemoteRecordings.isRemote(recording)) return cancel(recording)
         scope.launch {
             engine.stop(recording.id)
             try {
@@ -398,6 +407,9 @@ class RecordingManager(
     /** Drop a scheduled recording without touching anything on disk. */
     fun cancel(recording: RecordingEntity) {
         scope.launch {
+            // On the server first: if it cannot be told, the row stays as it is rather than claiming a
+            // cancellation that did not happen — the server would still record it.
+            if (!removeOnServer(recording)) return@launch
             scheduler.cancel(recording.id)
             recordingDao.updateProgress(
                 id = recording.id,
@@ -415,6 +427,7 @@ class RecordingManager(
     /** Remove the row **and** the file. The only thing in the app that deletes a recording (D2). */
     fun delete(recording: RecordingEntity) {
         scope.launch {
+            if (!removeOnServer(recording)) return@launch
             scheduler.cancel(recording.id)
             engine.stop(recording.id)
             try {
@@ -454,6 +467,148 @@ class RecordingManager(
             true
         }
 
+    // --- Recording server (DPTV-Recorder) ---------------------------------------------------------
+
+    /** Whether a recording server is set up. */
+    suspend fun usesServer(): Boolean = remote.config() != null
+
+    /** Check the server's address and key; the number of recordings it lists. Throws [RemoteRecorderException]. */
+    suspend fun testServer(): Int {
+        val config = remote.config() ?: throw RemoteRecorderException(RemoteRecorderException.Kind.UNREACHABLE)
+        return remote.test(config)
+    }
+
+    /**
+     * Record [recording] on the server and keep a row for it here, marked as the server's
+     * ([RemoteRecordings.markerFor]) so the engine and the alarms leave it alone. Null — record on
+     * this device — when no server is set up, the channel is not from an Xtream playlist (the server
+     * knows channels by Xtream `stream_id`), or the server cannot be reached.
+     */
+    private suspend fun scheduleOnServer(recording: RecordingEntity, existingId: Long): RecordingEntity? {
+        val config = remote.config() ?: return null
+        val source = sourceDao.getById(recording.sourceId) ?: return null
+        if (source.type != SourceType.XTREAM) return null
+        val streamId = channelDao.getById(recording.channelId)?.remoteId ?: return null
+        val created = try {
+            remote.schedule(
+                config, streamId, recording.channelName, recording.title,
+                recording.programmeStartMs, recording.programmeStopMs,
+            )
+        } catch (e: RemoteRecorderException) {
+            android.util.Log.w(TAG, "recording server refused or unreachable (${e.kind}), recording on this device instead")
+            return null
+        }
+        val row = recording.copy(
+            id = existingId,
+            filePath = RemoteRecordings.markerFor(created.id),
+            status = RemoteRecordings.statusOf(created.status),
+            failure = RecordingFailure.NONE,
+            bytes = 0,
+            startedAt = null,
+            endedAt = null,
+            updatedAt = System.currentTimeMillis(),
+        )
+        val id = recordingDao.upsert(row)
+        return row.copy(id = if (id > 0) id else row.id)
+    }
+
+    /**
+     * Tell the server to drop a recording it is doing. True when the row is not the server's, or the
+     * server agreed (or no longer has it); false when the server could not be told.
+     */
+    private suspend fun removeOnServer(recording: RecordingEntity): Boolean {
+        val remoteId = RemoteRecordings.remoteIdOf(recording.filePath) ?: return true
+        val config = remote.config() ?: return false
+        return try {
+            remote.remove(config, remoteId, recording.status)
+            true
+        } catch (e: RemoteRecorderException) {
+            // Already gone on the server ("Recording not found") is what the user wanted anyway.
+            e.kind == RemoteRecorderException.Kind.REFUSED
+        }
+    }
+
+    /**
+     * A link the player can open for a recording the server made — short-lived, so fetched each time
+     * it is played. Null when it is not the server's, or the server cannot be reached.
+     */
+    suspend fun serverPlaybackUrl(recording: RecordingEntity): String? {
+        val remoteId = RemoteRecordings.remoteIdOf(recording.filePath) ?: return null
+        val config = remote.config() ?: return null
+        return runCatching { remote.playbackUrl(config, remoteId) }.getOrNull()
+    }
+
+    /**
+     * Bring this profile's rows in line with the server: status of the recordings it is doing, and the
+     * ones scheduled from the server's own web page, so they are listed and playable here too.
+     * Quietly does nothing when no server is set up or it cannot be reached — the screen keeps the
+     * last known state.
+     */
+    suspend fun syncWithServer(profileId: Long) = withContext(Dispatchers.IO) {
+        val config = remote.config() ?: return@withContext
+        val serverRows = runCatching { remote.list(config) }.getOrNull() ?: return@withContext
+        val local = recordingDao.observeForProfile(profileId).first()
+        val localByRemoteId = local.mapNotNull { row -> RemoteRecordings.remoteIdOf(row.filePath)?.let { it to row } }.toMap()
+        val now = System.currentTimeMillis()
+        for (server in serverRows) {
+            val status = RemoteRecordings.statusOf(server.status)
+            val row = localByRemoteId[server.id]
+            if (row != null) {
+                if (row.status != status) {
+                    recordingDao.updateProgress(
+                        id = row.id,
+                        status = status,
+                        failure = if (status == RecordingStatus.FAILED) RecordingFailure.UNKNOWN else RecordingFailure.NONE,
+                        bytes = row.bytes,
+                        filePath = row.filePath,
+                        startedAt = row.startedAt,
+                        endedAt = if (status == RecordingStatus.COMPLETED || status == RecordingStatus.FAILED) now else row.endedAt,
+                        timestamp = now,
+                    )
+                }
+                continue
+            }
+            if (status == RecordingStatus.CANCELLED) continue
+            importFromServer(profileId, server, status)
+        }
+        // Gone from the server (deleted in its web page). Only when the list is complete: the server
+        // returns at most SERVER_LIST_LIMIT rows, and an older one missing from a full page still exists.
+        if (serverRows.size < SERVER_LIST_LIMIT) {
+            val onServer = serverRows.map { it.id }.toSet()
+            localByRemoteId.filterKeys { it !in onServer }.values.forEach { recordingDao.delete(it) }
+        }
+    }
+
+    /** A recording the server has but this device never scheduled: add a row, if the channel is here. */
+    private suspend fun importFromServer(profileId: Long, server: RemoteRecording, status: RecordingStatus) {
+        val channel = sourceDao.getAllOnce()
+            .filter { it.type == SourceType.XTREAM }
+            .firstNotNullOfOrNull { channelDao.findByRemote(it.id, server.channelId) }
+            ?: return
+        // A programme already recorded here (or by another route) keeps its own row.
+        if (recordingDao.forProgramme(profileId, channel.id, server.programmeStartMs) != null) return
+        recordingDao.upsert(
+            RecordingEntity(
+                profileId = profileId,
+                sourceId = channel.sourceId,
+                channelId = channel.id,
+                channelName = server.channelName.ifEmpty { channel.name },
+                channelIconUrl = channel.logoUrl,
+                epgChannelId = channel.epgChannelId,
+                streamUrl = channel.streamUrl,
+                httpHeaders = channel.httpHeaders,
+                title = server.title,
+                programmeStartMs = server.programmeStartMs,
+                programmeStopMs = server.programmeStopMs,
+                startMs = server.startMs,
+                stopMs = server.stopMs,
+                status = status,
+                failure = if (status == RecordingStatus.FAILED) RecordingFailure.UNKNOWN else RecordingFailure.NONE,
+                filePath = RemoteRecordings.markerFor(server.id),
+            ),
+        )
+    }
+
     private suspend fun recordingsRoot(): MediaRoot =
         MediaRoot.of(context, settings.downloadRoot.first()).also { it.ensureFolders() }
 
@@ -469,6 +624,11 @@ class RecordingManager(
  * times are still going to change.
  */
 private const val RULE_HORIZON_MS = 14L * 24 * 60 * 60 * 1000
+
+/** The most recordings the server's list returns (`LIMIT 200` in dptv-recorder). */
+private const val SERVER_LIST_LIMIT = 200
+
+private const val TAG = "RecordingManager"
 
 /** Free/total space on the volume recordings are written to, and the floor they stop at (D8). */
 data class RecordingStorageInfo(val freeBytes: Long, val totalBytes: Long, val reserveBytes: Long) {

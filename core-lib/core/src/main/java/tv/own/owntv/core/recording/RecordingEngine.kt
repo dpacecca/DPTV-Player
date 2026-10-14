@@ -118,6 +118,8 @@ class RecordingEngine(
                 // stream (D3, mode b). Touching it would open a second connection, which is the one
                 // thing that mode exists to avoid.
                 if (row.streamUrl.isBlank()) continue
+                // A recording server is doing this one (RemoteRecorder); its row is only a record here.
+                if (RemoteRecordings.isRemote(row)) continue
                 // Said as a MISSED row with a reason rather than by deferring the work. A download
                 // waits for Wi-Fi because the film is there tomorrow; a live programme is not.
                 if (meteredRefused) {

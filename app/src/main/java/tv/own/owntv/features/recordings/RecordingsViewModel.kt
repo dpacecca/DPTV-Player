@@ -11,12 +11,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tv.own.owntv.core.database.entity.RecordingEntity
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.model.RecordingStatus
 import tv.own.owntv.core.player.ExternalPlayerLauncher
 import tv.own.owntv.core.recording.RecordingManager
+import tv.own.owntv.core.recording.RemoteRecorderException
+import tv.own.owntv.core.recording.RemoteRecordings
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
 
@@ -47,6 +51,56 @@ class RecordingsViewModel(
      */
     val timersAreExact: Boolean = recordings.timersAreExact()
 
+    init {
+        // A recording server (Settings › Recording) changes recordings' status on its own clock and
+        // can be given recordings from its own web page; keep this screen in step while it is open.
+        viewModelScope.launch {
+            while (isActive) {
+                val pid = settings.activeProfileId.first()
+                if (pid >= 0) recordings.syncWithServer(pid)
+                delay(SERVER_SYNC_INTERVAL_MS)
+            }
+        }
+    }
+
+    // --- Recording server (DPTV-Recorder) settings ---------------------------------------------
+
+    val recorderServerUrl: StateFlow<String> = settings.recorderServerUrl
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    val recorderApiKey: StateFlow<String> = settings.recorderApiKey
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
+    fun setRecorderServerUrl(url: String) {
+        _serverTest.value = null
+        viewModelScope.launch { settings.setRecorderServerUrl(url) }
+    }
+
+    fun setRecorderApiKey(key: String) {
+        _serverTest.value = null
+        viewModelScope.launch { settings.setRecorderApiKey(key) }
+    }
+
+    /** The last "Test connection" outcome, for the settings row; null = not tested since the last change. */
+    sealed interface ServerTest {
+        data object Testing : ServerTest
+        data class Ok(val recordings: Int) : ServerTest
+        data class Failed(val kind: RemoteRecorderException.Kind, val detail: String?) : ServerTest
+    }
+
+    private val _serverTest = MutableStateFlow<ServerTest?>(null)
+    val serverTest: StateFlow<ServerTest?> = _serverTest.asStateFlow()
+
+    fun testServer() {
+        _serverTest.value = ServerTest.Testing
+        viewModelScope.launch {
+            _serverTest.value = try {
+                ServerTest.Ok(recordings.testServer())
+            } catch (e: RemoteRecorderException) {
+                ServerTest.Failed(e.kind, e.detail)
+            }
+        }
+    }
+
     private val _lastPlayedId = MutableStateFlow<Long?>(null)
 
     /** The recording last asked to play, so returning from the player lands back on its row. */
@@ -65,9 +119,15 @@ class RecordingsViewModel(
      */
     fun play(recording: RecordingEntity) {
         if (recording.status != RecordingStatus.COMPLETED) return
-        val path = recording.filePath ?: return
+        if (recording.filePath == null) return
         _lastPlayedId.value = recording.id
         viewModelScope.launch {
+            // A recording the server made streams from the server: a fresh short-lived link each time.
+            val path = if (RemoteRecordings.isRemote(recording)) {
+                recordings.serverPlaybackUrl(recording) ?: return@launch
+            } else {
+                recording.filePath ?: return@launch
+            }
             if (settings.externalPlayerFor(MediaType.LIVE).first()) {
                 externalPlayerLauncher.launch(path, recording.title)
                 return@launch
@@ -96,5 +156,9 @@ class RecordingsViewModel(
      */
     fun retry(recording: RecordingEntity) {
         viewModelScope.launch { recordings.schedule(recording) }
+    }
+
+    private companion object {
+        const val SERVER_SYNC_INTERVAL_MS = 30_000L
     }
 }

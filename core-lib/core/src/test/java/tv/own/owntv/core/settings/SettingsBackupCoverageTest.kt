@@ -35,6 +35,8 @@ class SettingsBackupCoverageTest {
         "last_live_category", "last_movies_category", "last_series_category",
         // Secrets: sealed into the encrypted section, or never written in plain text.
         "proxy_pass", "tmdb_api_key", "open_subtitles_api_key",
+        // The DPTV-Recorder server: its key is a secret, and its address belongs with the key on this device.
+        "recorder_server_url", "recorder_api_key",
     )
 
     private fun allKeys(): List<Preferences.Key<*>> =
