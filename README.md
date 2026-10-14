@@ -182,7 +182,7 @@ sources they add and for complying with the laws and rights that apply to them.
 ## 📄 License
 
 Released under the **GNU General Public License v3.0 (GPLv3)** — see [LICENSE](LICENSE). Derived from
-GPLv3 code by the OwnTV and SportioTV authors.
+GPLv3 code by the OwnTV authors.
 
 ---
 
