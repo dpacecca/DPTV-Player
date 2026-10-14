@@ -1,6 +1,6 @@
 # AGENTS.md — verbindlich für alle Agents
 
-DPTV-Player (persönlicher OwnTV-Fork, TV + Sports). Sprache mit dem User: Deutsch.
+DPTV-Player (persönlicher OwnTV-Fork, TV + Sports). Sprache mit dem User: Englisch.
 Antworten kurz, keine Emojis, keine Superlative. Fakten statt Vermutungen.
 
 ## 1. Lesereihenfolge (Pflicht vor jedem Task)
@@ -68,3 +68,14 @@ Neues Wissen gehört nach `docs/`, nie nach `HANDOFF.md` oder in den Root.
   (vgl. `docs/SPORT-HUB.md`: `stopPreview`-Falle beim Fullscreen-Wechsel).
 - Guide-Discovery-Guard (`out.size < CandidateCap` vor EPG-Pfad)
   nie wieder einbauen — Details in `docs/SPORT-HUB.md`.
+
+## 7. Releases after every merge (user rule, 2026-10-14)
+
+- After merging any PR into `master`, ask the user: "Release this? patch / minor / major / no".
+- On patch/minor/major: start Actions → *Android CI* → *Run workflow* on `master` with input
+  `release=<choice>` (API: workflow_dispatch of `android.yml`). The workflow bumps the newest
+  `vX.Y.Z` tag, builds the signed APKs and publishes the GitHub Release (it creates the tag;
+  agents cannot push tags).
+- Follow the run to the end and send the user the release link and the APK name
+  (`DPTV-Player-vX.Y.Z.apk`). On failure: fix via PR, then ask again.
+- Never release without the user's answer — a release is permanent.

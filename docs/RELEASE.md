@@ -26,11 +26,16 @@
 
 ## Release-Ablauf
 
-1. `## vX.Y.Z`-Abschnitt in `CHANGELOG.md` anlegen (CI extrahiert ihn als Release-Notes).
-2. Tag `vX.Y.Z` setzen und pushen → CI prüft (Tests, Lint), baut signiert und publisht
-   `DPTV-Player-vX.Y.Z.apk` und `DPTV-Player-x86_64-vX.Y.Z.apk` als GitHub-Release
-   (jede Datei trägt die Version, keine unversionierte Kopie).
-3. Die Tag-CI ist der erzwingende Gate — lokale Gates vorher grün halten (`AGENTS.md` §5).
+**Release-Button (Standard):** GitHub → Actions → *Android CI* → *Run workflow* → `release` =
+`patch` / `minor` / `major`. Die Version wird automatisch aus dem neuesten `v*`-Tag hochgezählt
+(`v1.0.0` → `v1.0.1` / `v1.1.0` / `v2.0.0`); der Release-Schritt legt den Tag selbst an, niemand
+muss einen Tag pushen. Dauer: Tests ~2 Min, signierter Build ~20 Min.
+
+- Release-Notes: der `## vX.Y.Z`-Abschnitt in `CHANGELOG.md`, falls vorhanden; sonst die
+  Commit-Titel seit dem letzten Release.
+- Ergebnis: `DPTV-Player-vX.Y.Z.apk` und `DPTV-Player-x86_64-vX.Y.Z.apk` als GitHub-Release.
+- Ein von Hand gepushter Tag `vX.Y.Z` funktioniert weiterhin genauso.
+- versionCode = Major×10000 + Minor×100 + Patch, daher Minor/Patch < 100 (der Button bricht sonst ab).
 
 ## In-App-Updates
 
