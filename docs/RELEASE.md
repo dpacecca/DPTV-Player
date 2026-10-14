@@ -33,7 +33,7 @@ muss einen Tag pushen. Dauer: Tests ~2 Min, signierter Build ~20 Min.
 
 - Release-Notes: der `## vX.Y.Z`-Abschnitt in `CHANGELOG.md`, falls vorhanden; sonst die
   Commit-Titel seit dem letzten Release.
-- Ergebnis: `DPTV-Player-vX.Y.Z.apk` und `DPTV-Player-x86_64-vX.Y.Z.apk` als GitHub-Release.
+- Ergebnis: `DPTV-Player-vX.Y.Z.apk` (arm) als GitHub-Release. Kein x86_64-APK mehr.
 - Ein von Hand gepushter Tag `vX.Y.Z` funktioniert weiterhin genauso.
 - versionCode = Major×10000 + Minor×100 + Patch, daher Minor/Patch < 100 (der Button bricht sonst ab).
 
