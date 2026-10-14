@@ -962,13 +962,42 @@ val SportsLeagues: List<SportLeague> = listOf(
     ),
     // Cricket reads ESPN's scoreboard header, not the scoreboard (see CricketHeader): an entry keeps
     // the series whose name contains its label, so it carries over from one season to the next.
-    // "all" keeps every active series, bilateral tours included. The World Cup keeps its old id
+    // "all" keeps every active series, bilateral tours included; the format entries pick the
+    // international Tests / ODIs / T20Is of every tour. The World Cup keeps its old id
     // (and its numeric slug, unused now) so a follow made before the switch still holds.
     SportLeague(
         id = "cricket.all",
         espnSport = "cricket",
-        espnLeague = "all",
+        espnLeague = CricketHeader.AllSeries,
         labelRes = R.string.sport_league_cricket_all,
+        region = LeagueRegion.INTERNATIONAL,
+        kind = LeagueKind.TEAMS,
+        defaultActive = false,
+    ),
+    // International matches by format, from every tour at once (men's and women's).
+    SportLeague(
+        id = "cricket.tests",
+        espnSport = "cricket",
+        espnLeague = CricketHeader.Tests,
+        labelRes = R.string.sport_league_cricket_tests,
+        region = LeagueRegion.INTERNATIONAL,
+        kind = LeagueKind.TEAMS,
+        defaultActive = false,
+    ),
+    SportLeague(
+        id = "cricket.odis",
+        espnSport = "cricket",
+        espnLeague = CricketHeader.Odis,
+        labelRes = R.string.sport_league_cricket_odis,
+        region = LeagueRegion.INTERNATIONAL,
+        kind = LeagueKind.TEAMS,
+        defaultActive = false,
+    ),
+    SportLeague(
+        id = "cricket.t20is",
+        espnSport = "cricket",
+        espnLeague = CricketHeader.T20is,
+        labelRes = R.string.sport_league_cricket_t20is,
         region = LeagueRegion.INTERNATIONAL,
         kind = LeagueKind.TEAMS,
         defaultActive = false,

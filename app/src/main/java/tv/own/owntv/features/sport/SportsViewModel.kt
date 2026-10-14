@@ -121,10 +121,13 @@ class SportsViewModel(
     private val _standingsLoading = MutableStateFlow(false)
     val standingsLoading: StateFlow<Boolean> = _standingsLoading.asStateFlow()
 
-    /** The active leagues in catalogue order, with their live counts — the rail. */
+    /**
+     * The active leagues with their live counts — the rail. Grouped by sport, in the picker's order
+     * (sortedBy is stable, so the catalogue order holds within a sport).
+     */
     val leagues: StateFlow<List<LeagueUi>> =
         combine(boards, activeLeagues) { current, active ->
-            SportsLeagues.filter { it.id in active }.map { league ->
+            SportsLeagues.filter { it.id in active }.sortedBy { it.sportGroup.ordinal }.map { league ->
                 val board = (current[league.id] as? BoardState.Content)?.board
                 LeagueUi(
                     league = league,
@@ -135,7 +138,7 @@ class SportsViewModel(
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
-            SportsLeagues.filter { it.defaultActive }.map { LeagueUi(it, 0, false) },
+            SportsLeagues.filter { it.defaultActive }.sortedBy { it.sportGroup.ordinal }.map { LeagueUi(it, 0, false) },
         )
 
     /** Fixtures involving followed teams or athletes — the "My teams" chips. */

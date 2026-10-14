@@ -41,6 +41,9 @@
     <string name="sport_group_australian_football">Australian Football</string>
     <string name="sport_group_cricket">Cricket</string>
     <string name="sport_league_cricket_all">Cricket – all series</string>
+    <string name="sport_league_cricket_tests">Test matches</string>
+    <string name="sport_league_cricket_odis">One-Day Internationals</string>
+    <string name="sport_league_cricket_t20is">T20 Internationals</string>
     <string name="sport_group_american_football">American Football</string>
     <string name="sport_group_basketball">Basketball</string>
     <string name="sport_group_baseball">Baseball</string>
