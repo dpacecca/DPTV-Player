@@ -38,7 +38,7 @@ jobs:
           # may carry a date tail or none at all, so match the version as a whole word.
           awk -v ver="$TAG" '
             $0 ~ ("^## " ver "([ \t]|$)") { flag=1; next }
-            /^## v/ && flag { flag=0 }
+            /^## v/ && flag { exit }  # first match only: older history may reuse a version
             flag { print }
           ' CHANGELOG.md > section.md || true
 

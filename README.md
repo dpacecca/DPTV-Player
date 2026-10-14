@@ -108,18 +108,12 @@ app/src/main/java/tv/own/owntv/
 
 ## 📥 Installing (Fire TV / Android TV)
 
-Grab the signed APK from the [**latest release**](https://github.com/dpacecca/DPTV-Player/releases/latest).
-This link always points at the newest build:
+Grab the signed APK from the [**latest release**](https://github.com/dpacecca/DPTV-Player/releases/latest)
+and sideload it with *Send files to TV*, a USB drive, or `adb install DPTV-Player-vX.Y.Z.apk`.
 
-```
-https://github.com/dpacecca/DPTV-Player/releases/latest/download/DPTV-Player.apk
-```
-
-- Otherwise sideload with *Send files to TV*, a USB drive, or `adb install DPTV-Player.apk`.
-
-> Install only from this repository's Releases. Each release ships **two APKs**:
-> `DPTV-Player.apk` (arm — every real TV box) and `DPTV-Player-x86_64-vX.X.X.apk` (emulators and rare
-> Intel boxes).
+> Install only from this repository's Releases. Each release ships **two APKs**, both named with
+> their version: `DPTV-Player-vX.Y.Z.apk` (arm — every real TV box) and
+> `DPTV-Player-x86_64-vX.Y.Z.apk` (emulators and rare Intel boxes).
 
 ## 🛠️ Building & running
 
