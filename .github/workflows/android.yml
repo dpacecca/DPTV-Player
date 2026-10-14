@@ -2,8 +2,13 @@ name: Android CI
 
 # Two jobs:
 #   check      — unit tests + lint (app and core-lib). Gates the build.
-#   build      — assembles the APK, and publishes a GitHub Release on v* tags. Never runs for a PR,
-#                so PR branches only get the test/lint verdict.
+#   build      — assembles the APK, and publishes a GitHub Release on v* tags or when started with
+#                a release type from the Actions tab. Never runs for a PR, so PR branches only get
+#                the test/lint verdict.
+#
+# Release button: Actions → Android CI → Run workflow → release = patch / minor / major. The next
+# version is the newest v* tag bumped accordingly (v1.0.0 → v1.0.1 / v1.1.0 / v2.0.0); the release
+# step creates that tag itself, so no one has to push a tag.
 on:
   push:
     branches: [ master ]
@@ -11,6 +16,12 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
+    inputs:
+      release:
+        description: "Publish a release? Pick the version bump (none = just build the APK)"
+        type: choice
+        options: [ none, patch, minor, major ]
+        default: none
 
 permissions:
   contents: write   # required so tag builds can create a Release
@@ -20,7 +31,8 @@ permissions:
 # repository (https://ahxn00.github.io/OwnTV_Core/maven) — no token needed.
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # A release run gets its own group, so a later push to master cannot cancel it.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.release || 'build' }}
   cancel-in-progress: true
 
 jobs:
@@ -101,13 +113,18 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
+      # True for a v* tag push; the "Release version" step also sets it for the release button.
       IS_TAG: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      # The release's tag (v1.2.3). Set by the "Release version" step.
+      RELEASE_TAG: ""
       # Set at runtime via $GITHUB_ENV in the "Name the APK" step. Declared here (empty) so static
       # linters don't flag the later ${{ env.APK_OUT }} references as "context access might be invalid".
       APK_OUT: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # tags + history: the release button bumps the newest tag, notes list commits
 
       - name: Set up JDK 21
         uses: actions/setup-java@v6
@@ -142,11 +159,46 @@ jobs:
             || echo "::warning::Could not add swap; continuing without it."
           free -h
 
+      - name: Release version
+        env:
+          BUMP: ${{ inputs.release || 'none' }}
+        run: |
+          if [ "$IS_TAG" = "true" ]; then
+            # A pushed v* tag: release exactly that.
+            echo "RELEASE_TAG=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          if [ "$GITHUB_EVENT_NAME" != "workflow_dispatch" ] || [ "$BUMP" = "none" ]; then
+            exit 0   # plain build
+          fi
+          # Release button: newest vX.Y.Z tag, bumped. No tag yet starts from v0.0.0.
+          LAST=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+          IFS='.' read -r MA MI PA <<< "${LAST:-v0.0.0}"
+          MA=${MA#v}
+          case "$BUMP" in
+            major) MA=$((MA + 1)); MI=0; PA=0 ;;
+            minor) MI=$((MI + 1)); PA=0 ;;
+            patch) PA=$((PA + 1)) ;;
+            *) echo "::error::Unknown release type '$BUMP'."; exit 1 ;;
+          esac
+          if [ "$MI" -gt 99 ] || [ "$PA" -gt 99 ]; then
+            # versionCode is major*10000 + minor*100 + patch, so minor/patch must stay below 100.
+            echo "::error::v$MA.$MI.$PA does not fit the version code; bump minor or major instead."
+            exit 1
+          fi
+          NEXT="v$MA.$MI.$PA"
+          if git rev-parse -q --verify "refs/tags/$NEXT" >/dev/null; then
+            echo "::error::Tag $NEXT already exists."; exit 1
+          fi
+          echo "Releasing $NEXT (previous: ${LAST:-none})"
+          echo "IS_TAG=true" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=$NEXT" >> "$GITHUB_ENV"
+
       - name: Compute version (from the git tag on releases)
         id: ver
         run: |
           if [ "$IS_TAG" = "true" ]; then
-            NAME="${GITHUB_REF_NAME#v}"                 # tag v1.2.0 -> 1.2.0
+            NAME="${RELEASE_TAG#v}"                     # tag v1.2.0 -> 1.2.0
             IFS='.' read -r MA MI PA <<< "$NAME"
             CODE=$(( ${MA:-0} * 10000 + ${MI:-0} * 100 + ${PA:-0} ))   # 1.2.0 -> 10200
             [ "$CODE" -gt 0 ] || CODE=1
@@ -269,7 +321,7 @@ jobs:
       - name: Extract release notes from CHANGELOG.md
         if: env.IS_TAG == 'true'
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ env.RELEASE_TAG }}
         run: |
           # The release body is what the in-app updater shows as "What's new", so it must be the
           # SHORT, bullet-only notes from CHANGELOG.md (the only changelog; detail lives in commits).
@@ -293,9 +345,13 @@ jobs:
             mv dist/RELEASE_NOTES.trimmed.md dist/RELEASE_NOTES.md
           fi
           if [ ! -s dist/RELEASE_NOTES.md ]; then
-            echo "::warning::No CHANGELOG.md section for $TAG — publishing a placeholder body."
-            echo "See the commits for $TAG for details." \
-              > dist/RELEASE_NOTES.md
+            # No CHANGELOG.md section: list the commit titles since the previous release.
+            PREV=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -vx "$TAG" | head -n1)
+            echo "No CHANGELOG.md section for $TAG — listing commits since ${PREV:-the start}."
+            git log --no-merges --pretty='- %s' ${PREV:+"$PREV"..}HEAD > dist/RELEASE_NOTES.md
+          fi
+          if [ ! -s dist/RELEASE_NOTES.md ]; then
+            echo "See the commits for $TAG for details." > dist/RELEASE_NOTES.md
           fi
           echo "--- Release notes ---"
           cat dist/RELEASE_NOTES.md
@@ -304,7 +360,10 @@ jobs:
         if: env.IS_TAG == 'true'
         uses: softprops/action-gh-release@v3
         with:
-          name: DPTV-Player ${{ github.ref_name }}
+          # For the release button the tag does not exist yet: the release creates it on this commit.
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: DPTV-Player ${{ env.RELEASE_TAG }}
           files: |
             dist/${{ env.APK_OUT }}
             dist/DPTV-Player-x86_64-v${{ steps.ver.outputs.name }}.apk
