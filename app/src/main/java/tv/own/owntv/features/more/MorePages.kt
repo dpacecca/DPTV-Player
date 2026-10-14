@@ -2,6 +2,8 @@ package tv.own.owntv.features.more
 
 import tv.own.owntv.ui.theme.stageTone
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
@@ -230,7 +232,8 @@ private var lastOpenedCard: Int? = null
 internal fun SettingsPage(entry: FocusRequester, pinned: Int, onOpenGroup: (Int) -> Unit, onSearch: () -> Unit) {
     val back = lastOpenedCard
     val profiles = tv.own.owntv.features.settings.profileCount()
-    Column(Modifier.fillMaxSize().focusGroup()) {
+    // Scrolls: on a phone's shorter screen the lower cards would otherwise be out of reach.
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).focusGroup()) {
         PageHead(stringResource(R.string.common_nav_settings)) {
             Spacer(Modifier.weight(1f))
             Text(stringResource(R.string.more_settings_pin_hint), style = stageText(17, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)

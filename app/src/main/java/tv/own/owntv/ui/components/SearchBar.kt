@@ -79,6 +79,8 @@ fun SearchBar(
     val interaction = remember { MutableInteractionSource() }
     val pillFocused by interaction.collectIsFocusedAsState()
     var editing by remember { mutableStateOf(false) }
+    val touchEditable = androidx.compose.ui.platform.LocalInputModeManager.current.inputMode ==
+        androidx.compose.ui.input.InputMode.Touch
     val pillFocus = remember { FocusRequester() }
     val fieldFocus = remember { FocusRequester() }
     val bringIntoView = remember { BringIntoViewRequester() }
@@ -158,8 +160,10 @@ fun SearchBar(
                         .fillMaxWidth()
                         .bringIntoViewRequester(bringIntoView)
                         .focusRequester(fieldFocus)
-                        .focusProperties { canFocus = editing }
-                        .onFocusChanged { if (editing && !it.isFocused) editing = false }
+                        .focusProperties { canFocus = editing || touchEditable }
+                        // Touch: a tap lands on the text field itself, never on the pill's click, so taking focus
+                        // there starts editing (and the keyboard). The remote still needs OK first.
+                        .onFocusChanged { if (it.isFocused) { if (!editing) editing = true } else if (editing) editing = false }
                         .onPreviewKeyEvent {
                             // After the IME closed itself, Back hands focus back to the pill
                             // instead of bubbling to the screen's BackHandler.

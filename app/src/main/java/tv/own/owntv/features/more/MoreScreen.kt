@@ -1,5 +1,7 @@
 package tv.own.owntv.features.more
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -8,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -151,6 +152,9 @@ fun MoreScreen(
                 }
                 .focusGroup(),
         ) {
+            // The items scroll above the key hints: on a phone's shorter screen the lower ones would
+            // otherwise be cut off and out of reach.
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
             ProfileRow(profileName, playlistLabel, playlists, avatarId, avatarPath, onSwitchProfile, onPickAvatar)
             val item = @Composable { it: MoreItem, icon: OwnTVIcon, label: String, value: String?, warn: Boolean ->
                 StageGroupItem(
@@ -175,7 +179,7 @@ fun MoreScreen(
             item(MoreItem.ABOUT, OwnTVIcon.INFO, stringResource(R.string.settings_about), BuildConfig.VERSION_NAME, false)
             // Maintainer-only; DEV_TOOLS is a compile-time constant, so R8 removes it from published APKs.
             if (BuildConfig.DEV_TOOLS) item(MoreItem.DEVELOPER, OwnTVIcon.GEAR, "Developer", "DEV", false)
-            Spacer(Modifier.weight(1f))
+            }
             StageKeyHints(
                 listOf(
                     stringResource(R.string.common_ok) to stringResource(R.string.content_key_select),
