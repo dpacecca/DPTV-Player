@@ -7,7 +7,7 @@ name: i18n
 #   validate  — the Kotlin-side checks: locale-stable number formatting and bounded text overflow.
 #               The strings themselves live in core-lib/, which has its own literal ratchet; it
 #               runs here too (bootstrap mode).
-#   pseudo    — inspects the BUILT debug and release APKs and proves pseudolocales survived
+#   pseudo    — (manual: Run workflow) inspects the BUILT debug and release APKs and proves pseudolocales survived
 #               localeFilters in debug and are absent in release. The flag being set is not proof.
 #
 # Why merge base and not HEAD^: a baseline can grow in commit 2 and stay untouched in the final
@@ -81,9 +81,10 @@ jobs:
 
   pseudo:
     # Builds the debug + release standard APKs and inspects their resource tables. Heavier than the
-    # other two jobs, so it is its own job rather than piggy-backed on android.yml — and skipped on
-    # push, where android.yml already assembles master.
-    if: ${{ github.event_name != 'push' }}
+    # other two jobs (~25 min on the private-repo runner), so it runs only when started by hand
+    # (Actions → i18n → Run workflow): pull requests get the fast checks only, and no APKs are built
+    # until a build is wanted.
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

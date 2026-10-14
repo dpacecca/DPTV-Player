@@ -67,7 +67,12 @@ internal fun LazyListScope.recordingItems(
             StageDownloadRow(
                 title = r.title,
                 line = recordingLine(r),
-                path = r.filePath,
+                // A recording the server made has no file here: say where it is instead of a path.
+                path = if (tv.own.owntv.core.recording.RemoteRecordings.isRemote(r)) {
+                    stringResource(R.string.recording_on_server)
+                } else {
+                    r.filePath
+                },
                 onFocused = { onFocused(r.id) },
                 focus = focusOf(r.id),
                 actions = when (r.status) {

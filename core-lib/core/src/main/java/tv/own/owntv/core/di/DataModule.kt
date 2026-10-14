@@ -280,9 +280,11 @@ val dataModule = module {
     //
     // Safe for a cold start: the constructor sets a flag and launches one background coroutine; the
     // only database read is `recordings` — a handful of rows — and it happens off the main thread.
+    // A DPTV-Recorder server, used instead of this device when one is set up (Settings › Recording).
+    single { tv.own.owntv.core.recording.RemoteRecorder(get(), get()) }
     single(createdAtStart = true) {
         tv.own.owntv.core.recording.RecordingManager(
-            androidContext(), get(), get(), get(), get(), get(), get(), get(), get(),
+            androidContext(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
         )
     }
     // Programme reminders (Stage G2): context, reminderDao — then reminderDao, scheduler. Eager for the

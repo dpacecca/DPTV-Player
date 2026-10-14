@@ -436,6 +436,10 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val RECORDING_POST_ROLL_MINUTES = intPreferencesKey("recording_post_roll_minutes")
         val RECORDING_OVER_MOBILE_DATA = booleanPreferencesKey("recording_over_mobile_data")
         val RECORD_WHAT_IM_WATCHING = booleanPreferencesKey("record_what_im_watching")
+        // A DPTV-Recorder server that records instead of this device (RemoteRecorder). The key is a
+        // secret and, like every key not listed in the backup's lists, is never exported.
+        val RECORDER_SERVER_URL = stringPreferencesKey("recorder_server_url")
+        val RECORDER_API_KEY = stringPreferencesKey("recorder_api_key")
         // Video Player Settings
         val HW_DECODING = booleanPreferencesKey("hw_decoding")
         val VOD_PREFER_EXO = booleanPreferencesKey("vod_prefer_exo") // legacy; read for migration only
@@ -2440,6 +2444,16 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             it[Keys.RECORDING_POST_ROLL_MINUTES] = minutes.coerceIn(0, RecordingSchedule.MAX_ROLL_MINUTES)
         }
     }
+
+    /** The DPTV-Recorder server's address, e.g. `http://192.168.1.10:3000`; blank = record on this device. */
+    val recorderServerUrl: Flow<String> = prefsFlow { it[Keys.RECORDER_SERVER_URL] ?: "" }
+    suspend fun setRecorderServerUrl(url: String) { context.dataStore.edit { it[Keys.RECORDER_SERVER_URL] = url.trim() } }
+    suspend fun currentRecorderServerUrl(): String = context.dataStore.data.first()[Keys.RECORDER_SERVER_URL] ?: ""
+
+    /** The API key generated in the server's Settings → Account → API keys. A secret: never backed up. */
+    val recorderApiKey: Flow<String> = prefsFlow { it[Keys.RECORDER_API_KEY] ?: "" }
+    suspend fun setRecorderApiKey(key: String) { context.dataStore.edit { it[Keys.RECORDER_API_KEY] = key.trim() } }
+    suspend fun currentRecorderApiKey(): String = context.dataStore.data.first()[Keys.RECORDER_API_KEY] ?: ""
 
     /** Read once, when a recording's window is being worked out. */
     suspend fun recordingRollMinutes(): Pair<Int, Int> =
