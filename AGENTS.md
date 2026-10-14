@@ -1,6 +1,6 @@
 # AGENTS.md — verbindlich für alle Agents
 
-DPTV-Player (persönlicher OwnTV-Fork, TV + Sports). Sprache mit dem User: Deutsch.
+DPTV-Player (persönlicher OwnTV-Fork, TV + Sports). Sprache mit dem User: Englisch.
 Antworten kurz, keine Emojis, keine Superlative. Fakten statt Vermutungen.
 
 ## 1. Lesereihenfolge (Pflicht vor jedem Task)
