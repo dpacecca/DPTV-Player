@@ -28,7 +28,8 @@
 
 1. `## vX.Y.Z`-Abschnitt in `CHANGELOG.md` anlegen (CI extrahiert ihn als Release-Notes).
 2. Tag `vX.Y.Z` setzen und pushen → CI prüft (Tests, Lint), baut signiert und publisht
-   `DPTV-Player.apk`, `DPTV-Player-vX.Y.Z.apk` und die x86_64-Variante als GitHub-Release.
+   `DPTV-Player-vX.Y.Z.apk` und `DPTV-Player-x86_64-vX.Y.Z.apk` als GitHub-Release
+   (jede Datei trägt die Version, keine unversionierte Kopie).
 3. Die Tag-CI ist der erzwingende Gate — lokale Gates vorher grün halten (`AGENTS.md` §5).
 
 ## In-App-Updates
@@ -37,7 +38,7 @@
   `updateCheckOnStart = true` (Core `SettingsRepository.kt`).
 - Der Updater fragt die GitHub-API ohne Login. Solange das Repo **privat** ist, findet er keine
   Releases (kein Update-Angebot, keine Fehlermeldung an den User).
-- Release-Artefakt: `DPTV-Player.apk` (arm).
+- Release-Artefakt: `DPTV-Player-vX.Y.Z.apk` (arm); der Updater nimmt jedes `.apk`-Asset.
 
 ## Externe Dienste
 

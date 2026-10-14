@@ -161,12 +161,11 @@ Without the keystore secrets CI still runs tests and lint and can build a debug 
 2. Create and push the tag `v1.0.1`. CI computes the version, builds the **signed** `standard` and
    `x86_64` release APKs, and publishes the GitHub Release with:
    - `DPTV-Player-v1.0.1.apk` (arm)
-   - `DPTV-Player.apk` (stable "latest" copy)
    - `DPTV-Player-x86_64-v1.0.1.apk`
 3. The in-app updater reads `dpacecca/DPTV-Player` releases and picks the APK that matches the
    device ABI (assets are matched on `.apk` and the `x86_64` marker).
 
-**Always-latest download:** `https://github.com/dpacecca/DPTV-Player/releases/latest/download/DPTV-Player.apk`
+**Latest release page:** `https://github.com/dpacecca/DPTV-Player/releases/latest` (every APK is named with its version).
 
 ### Releasing core
 
@@ -186,7 +185,7 @@ Grab the signed APK from the [latest release](https://github.com/dpacecca/DPTV-P
 
 - **Fire TV** — install *Downloader* (AFTVnews), enter the release URL, allow unknown sources.
 - **Android TV / Google TV** — Downloader from Play, or sideload via *Send files to TV*, USB, or
-  `adb install DPTV-Player.apk`.
+  `adb install DPTV-Player-vX.Y.Z.apk`.
 
 Minimum Android 8.0 / API 26. DPTV-Player installs **beside** upstream OwnTV: own package, own data, own
 launcher entry.
