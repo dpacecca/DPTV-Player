@@ -60,6 +60,7 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.stage.StageKeyHints
 import tv.own.owntv.ui.stage.StageSearchField
 import tv.own.owntv.ui.stage.StageStepper
+import tv.own.owntv.ui.stage.touchTap
 import tv.own.owntv.ui.stage.StageSurface
 import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StageSwitch
@@ -501,10 +502,17 @@ fun PanelStepper(
             },
             contentAlignment = Alignment.Center,
         ) {
+            // Touch: the chevrons step the value (a tap on the number itself is Done, as OK is).
+            val stepDown = androidx.compose.runtime.rememberUpdatedState { onStep(-1) }
+            val stepUp = androidx.compose.runtime.rememberUpdatedState { onStep(1) }
             Row(Modifier.fillMaxWidth().padding(horizontal = 22.mpx), verticalAlignment = Alignment.CenterVertically) {
-                OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(26.mpx).graphicsLayer { rotationZ = 180f })
+                Box(Modifier.size(56.mpx).touchTap(stepDown), contentAlignment = Alignment.Center) {
+                    OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(26.mpx).graphicsLayer { rotationZ = 180f })
+                }
                 Text(value, style = stageText(36, 800), color = a.accent, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f))
-                OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(26.mpx))
+                Box(Modifier.size(56.mpx).touchTap(stepUp), contentAlignment = Alignment.Center) {
+                    OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(26.mpx))
+                }
             }
         }
         Row(Modifier.fillMaxWidth().padding(top = 16.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx, Alignment.End)) {
@@ -698,7 +706,7 @@ fun StageSettingRow(
                     )
                 }
             }
-            if (value != null) SettingValueView(value)
+            if (value != null) SettingValueView(value, onStep)
         }
     }
 }
@@ -706,7 +714,7 @@ fun StageSettingRow(
 private val FocusedDesc: Color @Composable get() = StageColors.FxLine
 
 @Composable
-private fun SettingValueView(value: SettingValue) {
+private fun SettingValueView(value: SettingValue, onStep: ((Int) -> Unit)? = null) {
     val a = stageAccent
     val valueStyle = stageText(18, 700)
     Row(horizontalArrangement = Arrangement.spacedBy(10.mpx), verticalAlignment = Alignment.CenterVertically) {
@@ -722,8 +730,8 @@ private fun SettingValueView(value: SettingValue) {
                 }
                 OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(20.mpx))
             }
-            is SettingValue.Stepper -> StageStepper(value.text)
-            is SettingValue.Segmented -> SegmentedDisplay(value.options, value.selected)
+            is SettingValue.Stepper -> StageStepper(value.text, onStep)
+            is SettingValue.Segmented -> SegmentedDisplay(value.options, value.selected, onStep)
             is SettingValue.Saved -> {
                 Text(value.text, style = valueStyle, color = a.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (value.any) {
@@ -737,17 +745,25 @@ private fun SettingValueView(value: SettingValue) {
     }
 }
 
-/** `.seg2` as a row value: drawn only — the row owns focus, ◀ ▶ move the choice. */
+/**
+ * `.seg2` as a row value: the row owns focus, ◀ ▶ move the choice. With [onStep], a tap on an
+ * option picks it (stepping there one at a time, as the keys would), for touch screens.
+ */
 @Composable
-private fun SegmentedDisplay(options: List<String>, selected: Int) {
+private fun SegmentedDisplay(options: List<String>, selected: Int, onStep: ((Int) -> Unit)? = null) {
     Row(
         Modifier.background(StageColors.ControlFill, RoundedCornerShape(15.mpx)).padding(4.mpx),
         horizontalArrangement = Arrangement.spacedBy(2.mpx),
     ) {
         options.forEachIndexed { i, label ->
             val on = i == selected
+            val pick = androidx.compose.runtime.rememberUpdatedState {
+                val delta = i - selected
+                repeat(kotlin.math.abs(delta)) { onStep?.invoke(if (delta > 0) 1 else -1) }
+            }
             Box(
                 Modifier
+                    .then(if (onStep != null) Modifier.touchTap(pick) else Modifier)
                     .height(40.mpx)
                     .then(if (on) Modifier.background(LocalStagePalette.current.segmentOn, RoundedCornerShape(11.mpx)) else Modifier)
                     .padding(horizontal = 14.mpx),

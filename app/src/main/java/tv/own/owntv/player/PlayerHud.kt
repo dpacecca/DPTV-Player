@@ -41,6 +41,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -456,9 +462,69 @@ fun PlayerHud(
             else -> remoteShortcuts.dispatch(action)
         }
     }
+    // Touch, on the video itself (taps on the HUD's own buttons are theirs and never reach these):
+    // a tap shows or hides the controls; a double tap on the left or right half seeks back or
+    // forward, as ◀/▶ do; with the controls hidden, a swipe up or down zaps like CH+/CH− and a long
+    // press opens the channel list. Ignored under a dialog, an error or a shell overlay, which own
+    // the screen then. Read through rememberUpdatedState: the gesture detectors are installed once.
+    val touchSeekable = error == null && (onScrubLive != null || (!isLive && duration > 0L))
+    val onVideoTap by rememberUpdatedState {
+        if (!forceShow && !inert) controlsVisible = !controlsVisible
+    }
+    val onVideoDoubleTap by rememberUpdatedState { fraction: Float ->
+        if (!forceShow && !inert) {
+            if (touchSeekable) {
+                // Physical, like the keys: the left half is back in time in every locale.
+                val back = fraction < 0.5f
+                if (onScrubLive != null) {
+                    onScrubLive(if (back) LIVE_SCRUB_STEP_SEC else -LIVE_SCRUB_STEP_SEC)
+                } else {
+                    val step = player.seekStepMs.value
+                    player.seekBy(if (back) -step else step)
+                }
+                focusSeekOnShow = true
+                controlsVisible = true
+            } else {
+                controlsVisible = !controlsVisible
+            }
+        }
+    }
+    val onVideoLongPress by rememberUpdatedState {
+        if (!forceShow && !inert && !controlsVisible) onOpenChannelList?.invoke()
+    }
+    val onVideoSwipe by rememberUpdatedState { up: Boolean ->
+        if (!forceShow && !inert && !controlsVisible && canZap && isLive) zap(if (up) 1 else -1)
+    }
+    val swipeThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
     CompositionLocalProvider(LocalActionSurface provides null) {
     Box(
         modifier = modifier.fillMaxSize()
+            // Any touch counts as activity, like a key press: the controls stay up while in use.
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        if (event.type == PointerEventType.Press) wakeTick++
+                    }
+                }
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onVideoTap() },
+                    onDoubleTap = { offset -> onVideoDoubleTap(offset.x / size.width.coerceAtLeast(1)) },
+                    onLongPress = { onVideoLongPress() },
+                )
+            }
+            .pointerInput(Unit) {
+                var dragged = 0f
+                detectVerticalDragGestures(
+                    onDragStart = { dragged = 0f },
+                    onVerticalDrag = { _, dy -> dragged += dy },
+                    onDragEnd = {
+                        if (kotlin.math.abs(dragged) >= swipeThresholdPx) onVideoSwipe(dragged < 0f)
+                    },
+                )
+            }
             .onPreviewKeyEvent { e ->
             // ---- Direct-tune digit capture (before the existing KeyDown guard) ----
             // Number keys are consumed globally here, HUD visible or not: on a TV remote a digit press

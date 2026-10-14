@@ -398,7 +398,12 @@ private fun StepperRow(title: String, value: String, step: Int, canStep: (Int) -
             if (e.type == KeyEventType.KeyDown && canStep(current + delta)) onStep(delta)
             true
         },
-        trailing = { tv.own.owntv.ui.stage.StageStepper(value) },
+        trailing = {
+            tv.own.owntv.ui.stage.StageStepper(value) { sign ->
+                val delta = sign * step
+                if (canStep(current + delta)) onStep(delta)
+            }
+        },
     )
 }
 
