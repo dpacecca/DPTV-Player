@@ -6,6 +6,8 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,6 +28,8 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
 
     suspend fun scoreboard(league: SportLeague, date: LocalDate? = null): Scoreboard =
         withContext(Dispatchers.IO) {
+            // Cricket has no scoreboard on the site API (404 for every league): see CricketHeader.
+            if (league.espnSport == CricketSport) return@withContext cricketBoard(league)
             val url = buildString {
                 append(EspnBase)
                 append(league.espnSport)
@@ -53,6 +57,28 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
             }
             Scoreboard(leagueName, fixtures)
         }
+
+    /** One cricket entry's board, from the shared header (one request serves every cricket entry). */
+    private suspend fun cricketBoard(league: SportLeague): Scoreboard {
+        val label = appContext.getString(league.labelRes)
+        val filter = if (league.espnLeague == CricketHeader.AllSeries) null else label
+        return Scoreboard(label, CricketHeader.fixtures(cricketHeader(), league, filter))
+    }
+
+    private val cricketLock = Mutex()
+    private var cricketCache: JSONObject? = null
+    private var cricketCachedAt = 0L
+
+    /** The header, kept for a minute so turning on several cricket entries costs one request. */
+    private suspend fun cricketHeader(): JSONObject = cricketLock.withLock {
+        val now = System.currentTimeMillis()
+        cricketCache?.takeIf { now - cricketCachedAt < CricketCacheMs }?.let { return@withLock it }
+        val zone = java.net.URLEncoder.encode(java.time.ZoneId.systemDefault().id, Utf8)
+        get(CricketHeader.Url + zone).also {
+            cricketCache = it
+            cricketCachedAt = now
+        }
+    }
 
     suspend fun standings(league: SportLeague): List<LeagueTable> =
         withContext(Dispatchers.IO) {
@@ -367,7 +393,7 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
          */
         private val ShortTimePattern = Regex("(T\\d{2}:\\d{2})(Z|[+-]\\d{2}:?\\d{2})$")
 
-        private fun normalizeEspnDate(raw: String): String =
+        internal fun normalizeEspnDate(raw: String): String =
             ShortTimePattern.replace(raw.trim()) { match ->
                 match.groupValues[1] + SecondsInsert + match.groupValues[2]
             }
@@ -431,6 +457,9 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
         private const val CircuitKey = "circuit"
         private const val EventShortNameKey = "shortName"
         private const val GolfSport = "golf"
+        private const val CricketSport = "cricket"
+        private const val CricketCacheMs = 60_000L
+        private const val Utf8 = "UTF-8"
         private const val RacingSport = "racing"
         private const val InState = "in"
         private const val PostState = "post"

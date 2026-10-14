@@ -109,6 +109,19 @@
     <string name="sport_league_mma_pfl" translatable="false">PFL</string>
     <string name="sport_league_racing_nhra" translatable="false">NHRA</string>
     <string name="sport_league_cricket_8039" translatable="false">Cricket World Cup</string>
+    <string name="sport_league_cricket_t20wc" translatable="false">T20 World Cup</string>
+    <string name="sport_league_cricket_champions_trophy" translatable="false">Champions Trophy</string>
+    <string name="sport_league_cricket_ashes" translatable="false">The Ashes</string>
+    <string name="sport_league_cricket_ipl" translatable="false">Indian Premier League</string>
+    <string name="sport_league_cricket_bbl" translatable="false">Big Bash League</string>
+    <string name="sport_league_cricket_sheffield_shield" translatable="false">Sheffield Shield</string>
+    <string name="sport_league_cricket_super_smash" translatable="false">Super Smash</string>
+    <string name="sport_league_cricket_psl" translatable="false">Pakistan Super League</string>
+    <string name="sport_league_cricket_sa20" translatable="false">SA20</string>
+    <string name="sport_league_cricket_hundred" translatable="false">The Hundred</string>
+    <string name="sport_league_cricket_t20_blast" translatable="false">Vitality Blast</string>
+    <string name="sport_league_cricket_county_championship" translatable="false">County Championship</string>
+    <string name="sport_league_cricket_cpl" translatable="false">Caribbean Premier League</string>
     <string name="sport_channel_sky_main_event" translatable="false">Sky Sports Main Event</string>
     <string name="sport_channel_tennis" translatable="false">Tennis</string>
 </resources>
