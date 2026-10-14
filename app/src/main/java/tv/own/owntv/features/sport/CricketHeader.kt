@@ -12,9 +12,15 @@ import org.json.JSONObject
  * request returns every active series (a tour, a league season, a world cup) with its live and
  * upcoming matches, under `sports[0].leagues[].events[]`.
  *
- * Series ids change with every edition, so a catalogue entry picks its series by name: a series is
- * kept when its name contains the entry's label ("Indian Premier League" keeps "Indian Premier
- * League 2027"). The entry whose ESPN league is [AllSeries] keeps every series.
+ * An entry picks its matches one of three ways ([Selection]):
+ *  - by series name — series ids change with every edition, so a series is kept when its name
+ *    contains the entry's label ("Indian Premier League" keeps "Indian Premier League 2027");
+ *  - by format — the international Tests, ODIs or T20Is of every tour, from each match's
+ *    `class.internationalClassId`;
+ *  - everything ([AllSeries]).
+ *
+ * Women's cricket is left out everywhere (owner's choice): women's series and matches never show,
+ * so "Big Bash League" does not also bring in the Women's Big Bash League.
  *
  * Pure (no Android), so the parse is unit-tested; defensive like the rest of [EspnApi] — an event
  * whose shape is off is skipped, never fatal.
@@ -23,18 +29,49 @@ object CricketHeader {
     /** `SportLeague.espnLeague` of the catalogue entry that shows every active series. */
     const val AllSeries = "all"
 
-    /** Followed by the device's time zone id, URL-encoded. Region "in" lists the most series. */
-    const val Url = "https://site.api.espn.com/apis/personalized/v2/scoreboard/header?sport=cricket&lang=en&region=in&tz="
+    /** `SportLeague.espnLeague` of the format entries: every international Test / ODI / T20I. */
+    const val Tests = "tests"
+    const val Odis = "odis"
+    const val T20is = "t20is"
 
-    /** Whether a series named [seriesName] belongs to an entry filtering on [filter] (null = all). */
-    fun keeps(seriesName: String, filter: String?): Boolean =
-        filter == null || seriesName.contains(filter.trim(), ignoreCase = true)
+    /**
+     * Region "in" lists the most series. The time zone is fixed on purpose: ESPN answers 502 to the
+     * first request for a zone it has not cached, and the app formats every time itself anyway.
+     */
+    const val Url = "https://site.api.espn.com/apis/personalized/v2/scoreboard/header?sport=cricket&lang=en&region=in&tz=Asia%2FCalcutta"
 
-    /** The fixtures [league] shows from a header response, kept by [filter] (see [keeps]). */
+    /** Which matches a cricket entry shows. */
+    sealed interface Selection {
+        /** Every active series. */
+        data object All : Selection
+        /** The series whose name contains [name] (the entry's label). */
+        data class Series(val name: String) : Selection
+        /** Matches whose `class.internationalClassId` is one of [classIds], in any series. */
+        data class Format(val classIds: Set<Int>) : Selection
+    }
+
+    /** The selection of the entry whose ESPN league is [espnLeague] and whose label is [label]. */
+    fun selectionFor(espnLeague: String, label: String): Selection = when (espnLeague) {
+        AllSeries -> Selection.All
+        // ESPN cricinfo's international classes: 1/2/3 Test/ODI/T20I (8/9/10, the women's, are
+        // left out with the rest of women's cricket).
+        Tests -> Selection.Format(setOf(1))
+        Odis -> Selection.Format(setOf(2))
+        T20is -> Selection.Format(setOf(3))
+        else -> Selection.Series(label)
+    }
+
+    /** Whether a series named [seriesName] can hold matches for [selection]. */
+    fun keeps(seriesName: String, selection: Selection): Boolean = when (selection) {
+        is Selection.Series -> seriesName.contains(selection.name.trim(), ignoreCase = true)
+        else -> true
+    }
+
+    /** The fixtures [league] shows from a header response, as chosen by [selection]. */
     fun fixtures(
         root: JSONObject,
         league: SportLeague,
-        filter: String?,
+        selection: Selection,
         zone: ZoneId = ZoneId.systemDefault(),
     ): List<Fixture> {
         val out = ArrayList<Fixture>()
@@ -47,10 +84,16 @@ object CricketHeader {
                 val seriesName = series.optStringOrNull(NameKey)
                     ?: series.optStringOrNull(ShortNameKey)
                     ?: continue
-                if (!keeps(seriesName, filter)) continue
+                if (!keeps(seriesName, selection) || isWomens(seriesName)) continue
                 val events = series.optJSONArray(EventsKey) ?: continue
                 for (e in 0 until events.length()) {
                     val event = events.optJSONObject(e) ?: continue
+                    val matchClass = event.optJSONObject(ClassKey)
+                    if (matchClass != null && isWomens(matchClass)) continue
+                    if (selection is Selection.Format) {
+                        val classId = matchClass?.optString(IntlClassKey)?.toIntOrNull()
+                        if (classId == null || classId !in selection.classIds) continue
+                    }
                     val fixture = runCatching { fixtureFrom(league, seriesName, event, zone) }.getOrNull() ?: continue
                     if (seen.add(fixture.id)) out.add(fixture)
                 }
@@ -66,21 +109,31 @@ object CricketHeader {
             ?: return null
         val teams = teamsOf(event.optJSONArray(CompetitorsKey))
         if (teams.size < 2) return null
+        // Some women's matches say so only in the team names ("Melbourne Stars Women").
+        if (teams.any { WomenWord.containsMatchIn(it.name) }) return null
         val home = teams.firstOrNull { it.homeAway == HomeValue } ?: teams[0]
         val away = teams.firstOrNull { it !== home && it.homeAway == AwayValue } ?: teams.first { it !== home }
 
-        // The state lives in fullStatus.type.state; older answers carry it as a bare "status" word.
-        val type = event.optJSONObject(FullStatusKey)?.optJSONObject(TypeKey)
+        // The state lives in fullStatus.type.state; the bare "status" word is the fallback.
+        val fullStatus = event.optJSONObject(FullStatusKey)
+        val type = fullStatus?.optJSONObject(TypeKey)
         val stateWord = type?.optStringOrNull(StateKey)
             ?: (event.opt(StatusKey) as? String)
             ?: event.optJSONObject(StatusKey)?.optJSONObject(TypeKey)?.optStringOrNull(StateKey)
-        val state = when (stateWord) {
-            InState -> FixtureState.LIVE
-            PostState -> FixtureState.FINISHED
+        // ESPN marks a match "in" from the start of its scheduled day, before a ball is bowled
+        // ("Starts at 14:30 local time", no score on either side): that is still to come.
+        val nothingScored = home.score == null && away.score == null
+        val state = when {
+            stateWord == InState && nothingScored -> FixtureState.UPCOMING
+            stateWord == InState -> FixtureState.LIVE
+            stateWord == PostState -> FixtureState.FINISHED
             else -> FixtureState.UPCOMING
         }
-        // A match in play or over says where it stands ("India need 45 runs from 30 balls").
-        val detail = event.optStringOrNull(SummaryKey) ?: type?.optStringOrNull(ShortDetailKey)
+        // Where the match stands ("J & K require 248 runs", "Bengal won by 9 wkts") is
+        // fullStatus.summary, HTML-escaped; the event's own summary is only "Live" / "Result".
+        val detail = fullStatus?.optStringOrNull(SummaryKey)?.let(::unescape)
+            ?: type?.optStringOrNull(ShortDetailKey)
+            ?: event.optStringOrNull(SummaryKey)
         val statusLine = if (state == FixtureState.UPCOMING || detail == null) {
             DateTimeFormatter.ofPattern(TimePattern).withZone(zone).format(Instant.ofEpochMilli(dateMs))
         } else {
@@ -146,6 +199,25 @@ object CricketHeader {
         return out.distinct()
     }
 
+    /** A women's series, by its name ("Bangladesh Women tour of Australia", "Women's Big Bash League"). */
+    private fun isWomens(seriesName: String): Boolean = WomenWord.containsMatchIn(seriesName)
+
+    /** A women's match, by its class: the women's international ids, or "Women's …" in the class name. */
+    private fun isWomens(matchClass: JSONObject): Boolean =
+        matchClass.optString(IntlClassKey).toIntOrNull()?.let { it in WomensIntlClasses } == true ||
+            WomenWord.containsMatchIn(matchClass.optString(ClassCardKey)) ||
+            WomenWord.containsMatchIn(matchClass.optString(NameKey))
+
+    /** "Women", "Women's", "Womens" as a word; never "Bowmen" or the like. */
+    private val WomenWord = Regex("\\bwomen", RegexOption.IGNORE_CASE)
+    private val WomensIntlClasses = setOf(8, 9, 10)
+
+    /** The few entities ESPN leaves in its summaries ("won by an inns &amp; 135 runs"). */
+    internal fun unescape(text: String): String =
+        if ('&' !in text) text else text
+            .replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"")
+            .replace("&#39;", "'").replace("&apos;", "'").replace("&amp;", "&")
+
     /** `optString`, but null for a missing value or JSON null (org.json returns "null" for the latter). */
     private fun JSONObject.optStringOrNull(key: String): String? =
         optString(key).takeIf { it.isNotBlank() && it != "null" }
@@ -181,6 +253,9 @@ object CricketHeader {
     private const val ShortDetailKey = "shortDetail"
     private const val SummaryKey = "summary"
     private const val LocationKey = "location"
+    private const val ClassKey = "class"
+    private const val IntlClassKey = "internationalClassId"
+    private const val ClassCardKey = "generalClassCard"
     private const val InState = "in"
     private const val PostState = "post"
 }

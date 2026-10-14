@@ -4,91 +4,104 @@ import java.time.ZoneOffset
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import tv.own.owntv.features.sport.CricketHeader.Selection
 
-/** The cricket header parse: which series an entry keeps, and how a header event becomes a fixture. */
+/**
+ * The cricket header parse, against a trimmed copy of a real ESPN answer (2026-10-14, region "in"):
+ * which matches each kind of entry keeps, and how a header event becomes a fixture.
+ */
 class CricketHeaderTest {
+
+    private val header: JSONObject = JSONObject(
+        requireNotNull(javaClass.getResource("/espn_cricket_header.json")).readText(),
+    )
 
     private fun league(id: String, slug: String) = SportLeague(
         id = id, espnSport = "cricket", espnLeague = slug, labelRes = 0,
         region = LeagueRegion.INTERNATIONAL, kind = LeagueKind.TEAMS,
     )
 
-    // Shaped like the personalized header (sports[0].leagues[].events[]): flat competitors, the
-    // state in fullStatus.type, the series name on the league.
-    private val header = JSONObject(
-        """
-        {"sports":[{"slug":"cricket","leagues":[
-          {"id":"23694","name":"Indian Premier League 2027","events":[
-            {"id":"1490237","date":"2027-04-10T14:00Z","summary":"CSK need 45 runs from 30 balls","location":"Chennai",
-             "fullStatus":{"type":{"state":"in","shortDetail":"Live"}},
-             "competitors":[
-               {"id":"1","homeAway":"home","displayName":"Chennai Super Kings","abbreviation":"CSK","score":"160/4","logo":"https://a/csk.png"},
-               {"id":"2","homeAway":"away","displayName":"Mumbai Indians","abbreviation":"MI","score":"204/6","winner":false}
-             ],
-             "broadcasts":[{"name":"Star Sports 1"},"JioCinema"]},
-            {"id":"1490238","date":"2027-04-11T10:00:00Z","status":"pre",
-             "competitors":[
-               {"displayName":"Delhi Capitals","abbreviation":"DC"},
-               {"displayName":"Punjab Kings","abbreviation":"PBKS"}
-             ]},
-            {"id":"1490239","date":"2027-04-12T10:00Z","competitors":[{"displayName":"Only one side"}]}
-          ]},
-          {"id":"24001","name":"India tour of England 2027","events":[
-            {"id":"1500001","date":"2027-04-09T10:00Z","summary":"England won by 5 wickets",
-             "fullStatus":{"type":{"state":"post"}},
-             "competitors":[
-               {"team":{"id":"1","displayName":"England","abbreviation":"ENG"},"score":"301/5","winner":true},
-               {"team":{"id":"6","displayName":"India","abbreviation":"IND"},"score":"299/8"}
-             ]}
-          ]}
-        ]}]}
-        """.trimIndent(),
-    )
+    private fun shown(slug: String, label: String = ""): List<String> =
+        CricketHeader.fixtures(header, league("cricket.$slug", slug), CricketHeader.selectionFor(slug, label), ZoneOffset.UTC)
+            .map { it.home?.abbreviation + " v " + it.away?.abbreviation }
 
     @Test
-    fun `an entry keeps the series its label names, all keeps every series`() {
-        assertTrue(CricketHeader.keeps("Indian Premier League 2027", "Indian Premier League"))
-        assertTrue(CricketHeader.keeps("ICC Men's Cricket World Cup 2027", "cricket world cup"))
-        assertFalse(CricketHeader.keeps("ICC Men's T20 World Cup 2026", "Cricket World Cup"))
-        assertTrue(CricketHeader.keeps("Anything at all", null))
-
-        val ipl = CricketHeader.fixtures(header, league("cricket.ipl", "ipl"), "Indian Premier League", ZoneOffset.UTC)
-        assertEquals(listOf("cricket.ipl/1490237", "cricket.ipl/1490238"), ipl.map { it.id })
-        val all = CricketHeader.fixtures(header, league("cricket.all", CricketHeader.AllSeries), null, ZoneOffset.UTC)
-        // Every series, oldest first; the one-sided event is skipped rather than failing the board.
-        assertEquals(listOf("cricket.all/1500001", "cricket.all/1490237", "cricket.all/1490238"), all.map { it.id })
+    fun `entries pick their matches by series name, by format, or all`() {
+        assertEquals(listOf("BENG v DELHI", "J & K v MP", "GOA v BRODA"), shown("ranji", "Ranji Trophy"))
+        // The T20Is of every tour: a qualifier and a bilateral series alike.
+        assertEquals(listOf("MNG v MYAN", "IND v WI"), shown(CricketHeader.T20is))
+        assertEquals(emptyList<String>(), shown(CricketHeader.Tests))
+        // Every men's match, oldest first (ESPN's order for the same start).
+        assertEquals(
+            listOf("BENG v DELHI", "J & K v MP", "GOA v BRODA", "KRL v PakTV", "MNG v MYAN", "IND v WI"),
+            shown(CricketHeader.AllSeries),
+        )
     }
 
     @Test
-    fun `a header event becomes a two-sided fixture`() {
-        val all = CricketHeader.fixtures(header, league("cricket.all", CricketHeader.AllSeries), null, ZoneOffset.UTC)
-            .associateBy { it.id.substringAfter('/') }
+    fun `women's cricket is left out everywhere`() {
+        // By series name ("Bangladesh Women tour of Australia"), by the women's ODI class, and by
+        // team names when nothing else says so ("Melbourne Renegades Women" in a mixed series).
+        assertEquals(emptyList<String>(), shown(CricketHeader.Odis))
+        assertEquals(emptyList<String>(), shown("spring", "T20 Spring Challenge"))
+        assertFalse(shown(CricketHeader.AllSeries).any { "-W" in it })
+        assertTrue(CricketHeader.keeps("Indian Premier League 2027", Selection.Series("indian premier league")))
+        assertFalse(CricketHeader.keeps("ICC Men's T20 World Cup 2026", Selection.Series("Cricket World Cup")))
+    }
 
-        val live = all.getValue("1490237")
+    @Test
+    fun `a header event becomes a fixture that says where the match stands`() {
+        val all = CricketHeader.fixtures(header, league("cricket.all", CricketHeader.AllSeries), Selection.All, ZoneOffset.UTC)
+            .associateBy { it.home?.abbreviation }
+
+        val live = all.getValue("J & K")
         assertEquals(FixtureState.LIVE, live.state)
-        assertEquals("CSK need 45 runs from 30 balls", live.statusLine)
-        assertEquals("Chennai Super Kings", live.home?.name)
-        assertEquals("160/4", live.home?.score)
-        assertEquals("https://a/csk.png", live.home?.logoUrl)
-        assertEquals("Mumbai Indians", live.away?.name)
-        assertEquals(listOf("Star Sports 1", "JioCinema"), live.broadcasts)
-        assertEquals("Indian Premier League 2027", live.tournament)
-        assertEquals("Chennai", live.venue)
+        assertEquals("J & K require 248 runs", live.statusLine)
+        assertEquals("Jammu & Kashmir", live.home?.name)
+        assertEquals("120 & 78/7 (33.4 ov, target 326)", live.home?.score)
+        assertEquals("Ranji Trophy", live.tournament)
+        assertTrue(live.home?.logoUrl?.startsWith("https://") == true)
+        assertNull(live.home?.colorHex) // ESPN sends "" for a team without a colour
 
-        // A bare "status" word, seconds in the date, no homeAway: first side home, upcoming shows the time.
-        val upcoming = all.getValue("1490238")
+        // ESPN's own summary there is "won by an inns &amp; 135 runs".
+        assertEquals(FixtureState.FINISHED, all.getValue("GOA").state)
+        assertEquals("Baroda won by an inns & 135 runs", all.getValue("GOA").statusLine)
+
+        val upcoming = all.getValue("IND")
         assertEquals(FixtureState.UPCOMING, upcoming.state)
-        assertEquals("10:00", upcoming.statusLine)
-        assertEquals("Delhi Capitals", upcoming.home?.name)
-        assertEquals("Punjab Kings", upcoming.away?.name)
+        assertEquals("13:30", upcoming.statusLine)
+    }
 
-        // Competitors nested under "team" parse too; a finished match carries the result.
-        val result = all.getValue("1500001")
-        assertEquals(FixtureState.FINISHED, result.state)
-        assertEquals("England won by 5 wickets", result.statusLine)
-        assertTrue(result.home?.winner == true)
-        assertEquals("IND", result.away?.abbreviation)
+    @Test
+    fun `a match marked in play before a ball is bowled is still to come`() {
+        val event = JSONObject(
+            """
+            {"id":"9","date":"2026-10-14T05:00:00Z","status":"in","summary":"Live",
+             "fullStatus":{"type":{"state":"in","shortDetail":"Live"},"summary":"Starts at 10:00 local time"},
+             "competitors":[{"homeAway":"home","displayName":"Ghazi","score":""},
+                            {"homeAway":"away","displayName":"SNGPL","score":""}]}
+            """.trimIndent(),
+        )
+        val root = JSONObject().put(
+            "sports",
+            org.json.JSONArray().put(
+                JSONObject().put(
+                    "leagues",
+                    org.json.JSONArray().put(JSONObject().put("name", "President's Trophy").put("events", org.json.JSONArray().put(event))),
+                ),
+            ),
+        )
+        val fixture = CricketHeader.fixtures(root, league("cricket.all", CricketHeader.AllSeries), Selection.All, ZoneOffset.UTC).single()
+        assertEquals(FixtureState.UPCOMING, fixture.state)
+        assertEquals("05:00", fixture.statusLine)
+    }
+
+    @Test
+    fun `entities are unescaped`() {
+        assertEquals("A & B <c> \"d\" 'e'", CricketHeader.unescape("A &amp; B &lt;c&gt; &quot;d&quot; &#39;e&#39;"))
+        assertEquals("plain", CricketHeader.unescape("plain"))
     }
 }

@@ -61,8 +61,8 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
     /** One cricket entry's board, from the shared header (one request serves every cricket entry). */
     private suspend fun cricketBoard(league: SportLeague): Scoreboard {
         val label = appContext.getString(league.labelRes)
-        val filter = if (league.espnLeague == CricketHeader.AllSeries) null else label
-        return Scoreboard(label, CricketHeader.fixtures(cricketHeader(), league, filter))
+        val selection = CricketHeader.selectionFor(league.espnLeague, label)
+        return Scoreboard(label, CricketHeader.fixtures(cricketHeader(), league, selection))
     }
 
     private val cricketLock = Mutex()
@@ -73,8 +73,12 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
     private suspend fun cricketHeader(): JSONObject = cricketLock.withLock {
         val now = System.currentTimeMillis()
         cricketCache?.takeIf { now - cricketCachedAt < CricketCacheMs }?.let { return@withLock it }
-        val zone = java.net.URLEncoder.encode(java.time.ZoneId.systemDefault().id, Utf8)
-        get(CricketHeader.Url + zone).also {
+        // ESPN's gateway sometimes answers 502 to a request it has not cached; the retry gets it.
+        val root = runCatching { get(CricketHeader.Url) }.getOrElse {
+            kotlinx.coroutines.delay(CricketRetryMs)
+            get(CricketHeader.Url)
+        }
+        root.also {
             cricketCache = it
             cricketCachedAt = now
         }
@@ -459,7 +463,7 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
         private const val GolfSport = "golf"
         private const val CricketSport = "cricket"
         private const val CricketCacheMs = 60_000L
-        private const val Utf8 = "UTF-8"
+        private const val CricketRetryMs = 1_500L
         private const val RacingSport = "racing"
         private const val InState = "in"
         private const val PostState = "post"
