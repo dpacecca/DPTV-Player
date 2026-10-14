@@ -938,6 +938,8 @@ fun StageFieldRow(
     val a = stageAccent
     val panel = LocalSettingsPanel.current
     var editing by remember { mutableStateOf(false) }
+    val touchEditable = androidx.compose.ui.platform.LocalInputModeManager.current.inputMode ==
+        androidx.compose.ui.input.InputMode.Touch
     var shown by remember { mutableStateOf(false) }
     val rowFocus = remember { FocusRequester() }
     val fieldFocus = remember { FocusRequester() }
@@ -1007,8 +1009,10 @@ fun StageFieldRow(
                             .fillMaxWidth()
                             .bringIntoViewRequester(bring)
                             .focusRequester(fieldFocus)
-                            .focusProperties { canFocus = editing }
-                            .onFocusChanged { if (editing && !it.isFocused) stop() }
+                            .focusProperties { canFocus = editing || touchEditable }
+                            // Touch: a tap lands on the text field itself, never on the pill's click, so taking focus
+                            // there starts editing (and the keyboard). The remote still needs OK first.
+                            .onFocusChanged { if (it.isFocused) { if (!editing) editing = true } else if (editing) stop() }
                             .onPreviewKeyEvent {
                                 if (it.key == Key.Back) {
                                     if (it.type == KeyEventType.KeyUp) stop()

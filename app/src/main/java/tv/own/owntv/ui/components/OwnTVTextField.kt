@@ -89,6 +89,8 @@ fun OwnTVTextField(
     val interaction = remember { MutableInteractionSource() }
     val fieldFocused by interaction.collectIsFocusedAsState()
     var editing by remember { mutableStateOf(false) }
+    val touchEditable = androidx.compose.ui.platform.LocalInputModeManager.current.inputMode ==
+        androidx.compose.ui.input.InputMode.Touch
     val pillFocus = remember { FocusRequester() }
     val innerFocus = remember { FocusRequester() }
     val bringIntoView = remember { BringIntoViewRequester() }
@@ -171,8 +173,10 @@ fun OwnTVTextField(
                     .padding(horizontal = 16.dp, vertical = 14.dp)
                     .bringIntoViewRequester(bringIntoView)
                     .focusRequester(innerFocus)
-                        .focusProperties { canFocus = editing }
-                        .onFocusChanged { if (editing && !it.isFocused) editing = false }
+                        .focusProperties { canFocus = editing || touchEditable }
+                        // Touch: a tap lands on the text field itself, never on the pill's click, so taking focus
+                        // there starts editing (and the keyboard). The remote still needs OK first.
+                        .onFocusChanged { if (it.isFocused) { if (!editing) editing = true } else if (editing) editing = false }
                         .onPreviewKeyEvent {
                             if (it.key == Key.Back) {
                                 if (it.type == KeyEventType.KeyUp) {
