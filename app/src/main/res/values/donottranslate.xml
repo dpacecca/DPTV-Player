@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">Sportio</string>
+    <string name="app_name" translatable="false">DPTV-Player</string>
+    <string name="brand_wordmark_lead" translatable="false">DPTV</string>
+    <string name="brand_wordmark_tail" translatable="false">-Player</string>
     <string name="brand_own" translatable="false">Sport</string>
     <string name="brand_tv" translatable="false">io</string>
     <string name="sport_league_soccer_ger_1" translatable="false">Bundesliga</string>
@@ -77,6 +79,31 @@
     <string name="sport_league_baseball_college_baseball" translatable="false">NCAA Baseball</string>
     <string name="sport_league_australian_football_afl" translatable="false">AFL</string>
     <string name="sport_league_rugby_270557" translatable="false">United Rugby Championship</string>
+    <string name="sport_league_rugby_268565" translatable="false">British and Irish Lions Tour</string>
+    <string name="sport_league_rugby_164205" translatable="false">Rugby World Cup</string>
+    <string name="sport_league_rugby_180659" translatable="false">Six Nations</string>
+    <string name="sport_league_rugby_244293" translatable="false">The Rugby Championship</string>
+    <string name="sport_league_rugby_271937" translatable="false">European Rugby Champions Cup</string>
+    <string name="sport_league_rugby_272073" translatable="false">European Rugby Challenge Cup</string>
+    <string name="sport_league_rugby_267979" translatable="false">Gallagher Prem</string>
+    <string name="sport_league_rugby_270559" translatable="false">French Top 14</string>
+    <string name="sport_league_rugby_2009" translatable="false">URBA Primera A</string>
+    <string name="sport_league_rugby_17567" translatable="false">Nations Championship</string>
+    <string name="sport_league_rugby_242041" translatable="false">Super Rugby Pacific</string>
+    <string name="sport_league_rugby_289271" translatable="false">Super Rugby Aotearoa</string>
+    <string name="sport_league_rugby_289272" translatable="false">Super Rugby AU</string>
+    <string name="sport_league_rugby_289277" translatable="false">Super Rugby Trans-Tasman</string>
+    <string name="sport_league_rugby_289279" translatable="false">URBA Top 14</string>
+    <string name="sport_league_rugby_270555" translatable="false">Currie Cup</string>
+    <string name="sport_league_rugby_270563" translatable="false">Mitre 10 Cup</string>
+    <string name="sport_league_rugby_236461" translatable="false">Anglo-Welsh Cup</string>
+    <string name="sport_league_rugby_289274" translatable="false">2020 Tri Nations</string>
+    <string name="sport_league_rugby_282" translatable="false">Olympic Men\'s 7s</string>
+    <string name="sport_league_rugby_283" translatable="false">Olympic Women\'s Rugby Sevens</string>
+    <string name="sport_league_rugby_289237" translatable="false">Women\'s Rugby World Cup</string>
+    <string name="sport_league_rugby_289262" translatable="false">Major League Rugby</string>
+    <string name="sport_league_rugby_289234" translatable="false">International Test Match</string>
+    <string name="sport_league_rugby_league_3" translatable="false">NRL</string>
     <string name="sport_league_volleyball_womens_college_volleyball" translatable="false">NCAA Women\'s Volleyball</string>
     <string name="sport_league_golf_lpga" translatable="false">LPGA</string>
     <string name="sport_league_golf_liv" translatable="false">LIV Golf</string>

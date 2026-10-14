@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="docs/brand/assets/png/sportio-logo-light.png">
-    <img src="docs/brand/assets/png/sportio-logo.png" alt="Sportio" width="360">
+    <img src="docs/brand/assets/png/sportio-logo.png" alt="DPTV-Player" width="360">
   </picture>
 </p>
 
@@ -22,21 +22,21 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/trenntl/SportioTV/actions/workflows/android.yml">
-    <img alt="Android CI" src="https://github.com/trenntl/SportioTV/actions/workflows/android.yml/badge.svg">
+  <a href="https://github.com/dpacecca/DPTV-Player/actions/workflows/android.yml">
+    <img alt="Android CI" src="https://github.com/dpacecca/DPTV-Player/actions/workflows/android.yml/badge.svg">
   </a>
 </p>
 
 ---
-Sportio is a native **Android TV** app for **live TV and sports**, built with Kotlin and Jetpack
-Compose for TV. Its **Sports Hub** shows ESPN fixtures, scores, standings and tables for 81 leagues
+DPTV-Player is a native **Android TV** app for **live TV and sports**, built with Kotlin and Jetpack
+Compose for TV. Its **Sports Hub** shows ESPN fixtures, scores, standings and tables for 106 leagues (including Rugby Union and Rugby League)
 and matches every fixture against **your own live channels** — names and guide text, both teams
 required — so one tap starts playback. It runs **two playback engines** — libmpv (FFmpeg) for the
 widest compatibility, ExoPlayer (Media3) for near-instant Live TV — and it is a *player only*: you
 bring your own **Xtream** login, **M3U** playlist (URL or a local file) or **Stalker/Ministra**
 portal.
 
-> ⚠️ Sportio ships **no** channels, playlists, subscriptions or streams. You are responsible for the
+> ⚠️ DPTV-Player ships **no** channels, playlists, subscriptions or streams. You are responsible for the
 > sources you add.
 
 Open source, GPLv3. Forked from [OwnTV](https://github.com/ahXN00/OwnTV) — thanks for the shoulders.
@@ -63,7 +63,7 @@ Open source, GPLv3. Forked from [OwnTV](https://github.com/ahXN00/OwnTV) — tha
 - An **error log you can export** for any stream that misbehaves
 
 ### 🎨 Look & robustness
-- Sportio green theme, app icon and wordmark; **Dark and Light themes** across app and player
+- DPTV-Player green theme, app icon and wordmark; **Dark and Light themes** across app and player
 - Interface and popup font sizing, glass effect, your own accent colour
 - **25 interface languages**, RTL-aware, chosen on the fresh-install welcome screen
 - **Backup & Restore** to a single `.own` file, optionally encrypted, locally or over Wi-Fi
@@ -96,7 +96,7 @@ library, [**SportioTV_Core**](https://github.com/trenntl/SportioTV_Core), publis
 `tv.own.owntv:core` / `:player-core`.
 
 ```
-SportioTV/  (this repo)
+DPTV-Player/  (this repo)
 tv.own.owntv/
 ├── player/      the TV player HUD, surfaces and mini-player
 ├── ui/          theme + reusable components
@@ -106,20 +106,17 @@ tv.own.owntv/
 
 ## 📥 Installing (Fire TV / Android TV)
 
-Grab the signed APK from the [**latest release**](https://github.com/trenntl/SportioTV/releases/latest).
+Grab the signed APK from the [**latest release**](https://github.com/dpacecca/DPTV-Player/releases/latest).
 This link always points at the newest build:
 
 ```
-https://github.com/trenntl/SportioTV/releases/latest/download/Sportio.apk
+https://github.com/dpacecca/DPTV-Player/releases/latest/download/DPTV-Player.apk
 ```
 
-- **On Fire TV, the easiest path is the Downloader app:** install it from the Amazon app store,
-  enter the code **5135027**, and it downloads the newest `Sportio.apk` for you. The URL above can
-  also be typed into Downloader directly.
-- Otherwise sideload with *Send files to TV*, a USB drive, or `adb install Sportio.apk`.
+- Otherwise sideload with *Send files to TV*, a USB drive, or `adb install DPTV-Player.apk`.
 
 > Install only from this repository's Releases. Each release ships **two APKs**:
-> `Sportio.apk` (arm — every real TV box) and `Sportio-x86_64-vX.X.X.apk` (emulators and rare
+> `DPTV-Player.apk` (arm — every real TV box) and `DPTV-Player-x86_64-vX.X.X.apk` (emulators and rare
 > Intel boxes).
 
 > Coming from the previous project home? Installs update in place (same signature) — see the
@@ -129,10 +126,10 @@ https://github.com/trenntl/SportioTV/releases/latest/download/Sportio.apk
 
 > Only if you want to build from source — otherwise just install the APK.
 
-Gradle downloads the core library from Sportio's public Maven repository by itself — **no account
+Gradle downloads the core library from SportioTV_Core's public Maven repository by itself — **no account
 or token needed**.
 
-1. **Get the code** — `git clone https://github.com/trenntl/SportioTV.git` (or download the ZIP).
+1. **Get the code** — `git clone https://github.com/dpacecca/DPTV-Player.git` (or download the ZIP).
 2. **Open it** in [Android Studio](https://developer.android.com/studio) and let Gradle sync.
 3. **Pick the build variant** — `standard` for real devices and arm emulators, `x86_64` for x86_64
    emulators. This matters: the native player only loads on a matching ABI.
@@ -157,7 +154,7 @@ If your language is already available, contribute interface translations across 
 
 <img src="extras/partner-logos/Weblate_logo.svg" alt="Weblate" width="200">
 
-Sportio speaks 25 languages through translations made on
+DPTV-Player speaks 25 languages through translations made on
 [**Weblate**](https://weblate.org/), which hosts the project free of charge for libre software.
 Thank you to Weblate and to every translator. (Strings live upstream — translation happens on the
 OwnTV project and merges down.)
@@ -186,7 +183,7 @@ and the design system come from there. Core lives on as
 
 ## ⚖️ Legal
 
-Sportio is a media **player** only. It ships with no channels, playlists, subscriptions, or content, and
+DPTV-Player is a media **player** only. It ships with no channels, playlists, subscriptions, or content, and
 does not endorse or facilitate access to unauthorized streams. Users are solely responsible for the
 sources they add and for complying with the laws and rights that apply to them.
 
@@ -196,4 +193,4 @@ Released under the **GNU General Public License v3.0 (GPLv3)** — see [LICENSE]
 
 ---
 
-<sub>Sportio — live TV and sports for Android TV. Forked from OwnTV, built with the help of AI.</sub>
+<sub>DPTV-Player — live TV and sports for Android TV. Based on [SportioTV](https://github.com/trenntl/SportioTV), forked from OwnTV, built with the help of AI.</sub>

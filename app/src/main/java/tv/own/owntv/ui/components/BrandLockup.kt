@@ -9,13 +9,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import tv.own.owntv.R
@@ -50,18 +58,29 @@ fun BrandMark(icon: AppIcon, size: Dp, modifier: Modifier = Modifier, followAcce
 }
 
 /**
- * The Sportio wordmark: "Sport" in pitch green, "io" neutral — drawn from the two-tone vectors,
- * dark variant on dark surfaces, light variant on light ones. The [tv]/[own] tint parameters are
- * accepted for call-site compatibility only; the vectors ship their brand colours.
+ * The DPTV-Player wordmark: "DPTV" in the brand green, "-Player" neutral, set as text so the name
+ * stays a string resource. Same box as the old vector wordmark (585 × 160) so layouts are unchanged.
+ * [tv]/[own] override the two tones; unspecified means the theme's primary / onSurface.
  */
 @Composable
 fun Wordmark(width: Dp, modifier: Modifier = Modifier, tv: Color = Color.Unspecified, own: Color = Color.Unspecified) {
     val colors = OwnTVTheme.colors
-    Box(modifier.width(width).height(width * 160f / 585f)) {
-        Image(
-            painterResource(if (colors.isDark) R.drawable.sportio_wordmark_dark else R.drawable.sportio_wordmark),
-            null,
-            Modifier.fillMaxSize(),
+    val lead = stringResource(R.string.brand_wordmark_lead)
+    val tail = stringResource(R.string.brand_wordmark_tail)
+    val leadColor = if (tv == Color.Unspecified) colors.primary else tv
+    val tailColor = if (own == Color.Unspecified) colors.onSurface else own
+    val fontSize = with(LocalDensity.current) { (width * 0.145f).toSp() }
+    Box(modifier.width(width).height(width * 160f / 585f), contentAlignment = Alignment.CenterStart) {
+        Text(
+            buildAnnotatedString {
+                withStyle(SpanStyle(color = leadColor)) { append(lead) }
+                withStyle(SpanStyle(color = tailColor)) { append(tail) }
+            },
+            fontSize = fontSize,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

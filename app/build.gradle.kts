@@ -56,10 +56,10 @@ android {
     }
 
     defaultConfig {
-        // Fork identity: Sportio installs next to upstream OwnTV (tv.own.owntv) as its own app —
+        // Fork identity: DPTV-Player installs next to upstream OwnTV (tv.own.owntv) as its own app —
         // own data, own providers, own launcher entry. Code packages/namespaces stay tv.own.owntv
         // (internal only); only the applicationId makes two installs distinct to Android.
-        applicationId = "tv.sportio.app"
+        applicationId = "tv.dptv.player"
         minSdk = 26
         targetSdk = 36
         // CI injects these from the git tag (see .github/workflows/android.yml) so releases never

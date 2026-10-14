@@ -14,7 +14,7 @@ Neues Wissen gehört nach `docs/`, nie nach `HANDOFF.md` oder in den Root.
 
 ## 2. Naming-Freeze (beschlossen, nicht verhandelbar)
 
-- User-sichtbar ist **Sportio**: `applicationId tv.sportio.app`
+- User-sichtbar ist **DPTV-Player** (vorher Sportio): `applicationId tv.dptv.player`
   (`app/build.gradle.kts`), `app_name`, `sportio://`-Scheme, Branding.
 - Technisch bleibt **tv.own.owntv** eingefroren: Kotlin-Pakete,
   `android.namespace`, Core-Group `tv.own.owntv`, `OwnTVDatabase`,
