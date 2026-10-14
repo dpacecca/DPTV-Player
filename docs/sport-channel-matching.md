@@ -1,6 +1,6 @@
 # Sport-Hub: Sender-Matching (fixture → Kanal)
 
-Stand: 2026-10-13. Gilt für `app/src/main/java/tv/own/owntv/features/sport/` (Sportio-App-Fork).
+Stand: 2026-10-13. Gilt für `app/src/main/java/tv/own/owntv/features/sport/` (DPTV-Player-App-Fork).
 
 Diese Datei erklärt **wie ein ESPN-Fixture auf die Sender des Nutzers gematcht wird**, warum es so
 gebaut ist, und was als Nächstes geplant ist. Referenz-Implementierung ist Lume
@@ -10,7 +10,7 @@ gebaut ist, und was als Nächstes geplant ist. Referenz-Implementierung ist Lume
 ## 1. Das Problem (Ausgangslage)
 
 Gleiche Xtream-Quelle, gleiches EPG: Lume schlug für ein Premier-League-Spiel ~14 Sender vor,
-Sportio nur ~4. Ursache war **nicht** das Scoring, sondern die **Kandidaten-Findung (Discovery)**:
+DPTV-Player nur ~4. Ursache war **nicht** das Scoring, sondern die **Kandidaten-Findung (Discovery)**:
 
 - Der alte Matcher suchte Kandidaten **nur im Kanalnamen** (`ChannelDao.searchList` →
   `name LIKE '%token%'`). Das EPG wurde danach nur benutzt, um einen **bereits per Name gefundenen**
@@ -164,7 +164,7 @@ als Schlüssel (ESPN-Name) → Liste hinzufügen.
 
 ## 6. Verhältnis zu Lume (Mappings)
 
-| Lume | Sportio | Status |
+| Lume | DPTV-Player | Status |
 | --- | --- | --- |
 | `SportsMatcher.normalize` | `SportNameMatch.normalize` | portiert |
 | `SportsTeamAliases.json` | `res/raw/sports_matching.json` → `aliases` | portiert (kleiner) |
@@ -175,7 +175,7 @@ als Schlüssel (ESPN-Name) → Liste hinzufügen.
 | `epgCompetition`-Fallback (Tennis/F1/Golf) | `channelHints`/`extraChannelRes` (grob) | Phase 3 |
 
 Ein Unterschied bleibt: Lume sortiert nach **Tiers** (`ResolvedChannelSource.rank`) und markiert nur
-den alleinigen Top-Treffer als „confident" (Ein-Tap). Sportio bleibt bei **additiven Gewichten** und
+den alleinigen Top-Treffer als „confident" (Ein-Tap). DPTV-Player bleibt bei **additiven Gewichten** und
 einem Ein-Tap pro Kanalzeile. Die Beide-Teams-Pflicht ist seit 12.10. identisch.
 
 ## 7. Grenzen / bekannte Ecken
@@ -238,13 +238,13 @@ einem Ein-Tap pro Kanalzeile. Die Beide-Teams-Pflicht ist seit 12.10. identisch.
   (`di/AppModule.kt`), und der Test reicht eine Lambda hinein. `ChannelDao`/`EpgDao` bleiben
   Interfaces; der Test faked sie über einen `java.lang.reflect.Proxy` (nur die tatsächlich
   aufgerufenen Queries belegt, der Rest liefert „keine Zeilen").
-- **Emulator (SportioTV):** gegen die echte Quelle öffnen; für das gewählte Spiel müssen die
+- **Emulator (DPTV-Player):** gegen die echte Quelle öffnen; für das gewählte Spiel müssen die
   Fremdsprachen-Sender und die News-/Film-Fehltreffer fehlen, die Feeds der gewählten Sprache mit
   EPG-Titelzeile („20:55 · …") erscheinen.
 - **i18n-Gate:** neue Kotlin-Literale (Regex, Log-Tag, Padding) via `classify-safe` eintragen; das
   JSON ist eine `raw`-Ressource und braucht nichts. Stand: `verify --bootstrap` grün.
 
-**Verifikation 2026-10-12 (Emulator `SportioTV`, echte Xtream-Quelle, 57.360 Kanäle, 132.210 EPG-Programme):**
+**Verifikation 2026-10-12 (Emulator `DPTV-Player`, echte Xtream-Quelle, 57.360 Kanäle, 132.210 EPG-Programme):**
 Für das Referenzspiel **Coventry City v Newcastle United** (Premier League, live) liefert die App nach
 dem Fix **bis zu 20 Sender** im Detail-Pane (DefaultLimit), u.a. `SG: HUB PREMIER 1`, `IT: SKY SPORT ARENA`,
 `FR: CANAL+ LIVE 1`, `FR: CANAL+ FOOT`, `FR: CANAL+ PREMIER LEAGUE`, `AL: SUPER SPORT 3`,

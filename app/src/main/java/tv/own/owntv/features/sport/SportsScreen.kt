@@ -68,7 +68,7 @@ import tv.own.owntv.ui.stage.StageMenu
 import tv.own.owntv.ui.stage.StageMenuHeader
 import tv.own.owntv.ui.stage.StageMenuItem
 import tv.own.owntv.ui.stage.StageSurface
-import tv.own.owntv.core.theme.SportioPalette
+import tv.own.owntv.core.theme.DptvPalette
 import tv.own.owntv.core.theme.teamColor
 import tv.own.owntv.ui.theme.LocalStagePalette
 import tv.own.owntv.ui.theme.StageColors
@@ -547,7 +547,7 @@ private fun TeamLogo(url: String?, size: Dp) {
 
 /**
  * A club's 6-px bar in a theme-safe tone: ESPN's raw `colorHex` can be near-black and would vanish
- * on the dark page, so the hue is bucketed into [SportioPalette.Team] and the theme-correct tone
+ * on the dark page, so the hue is bucketed into [DptvPalette.Team] and the theme-correct tone
  * of the pair is used (brand guide §5.6). Team colours never leak into buttons, focus or text.
  */
 @Composable
@@ -558,17 +558,17 @@ private fun teamColor(hex: String?): Color? {
     android.graphics.Color.colorToHSV(argb, hsv)
     val (hue, sat, value) = Triple(hsv[0], hsv[1], hsv[2])
     val pair = if (sat < 0.18f || value < 0.12f || (sat < 0.3f && value > 0.85f)) {
-        SportioPalette.Team.Slate
+        DptvPalette.Team.Slate
     } else when (hue) {
-        in 12f..38f -> SportioPalette.Team.Orange
-        in 38f..66f -> SportioPalette.Team.Amber
-        in 66f..150f -> SportioPalette.Team.Green
-        in 150f..185f -> SportioPalette.Team.Sky
-        in 185f..235f -> SportioPalette.Team.Blue
-        in 235f..265f -> SportioPalette.Team.Indigo
-        in 265f..300f -> SportioPalette.Team.Violet
-        in 300f..345f -> SportioPalette.Team.Crimson
-        else -> SportioPalette.Team.Crimson
+        in 12f..38f -> DptvPalette.Team.Orange
+        in 38f..66f -> DptvPalette.Team.Amber
+        in 66f..150f -> DptvPalette.Team.Green
+        in 150f..185f -> DptvPalette.Team.Sky
+        in 185f..235f -> DptvPalette.Team.Blue
+        in 235f..265f -> DptvPalette.Team.Indigo
+        in 265f..300f -> DptvPalette.Team.Violet
+        in 300f..345f -> DptvPalette.Team.Crimson
+        else -> DptvPalette.Team.Crimson
     }
     return Color(teamColor(pair, !LocalStagePalette.current.isLight))
 }

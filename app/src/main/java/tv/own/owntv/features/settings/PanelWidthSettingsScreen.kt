@@ -116,7 +116,7 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
             modifier = Modifier,
             scroll = scrollState,
         ) {
-            // Sportio is Live TV only: Movies/Series panel widths have no screen to apply to.
+            // DPTV-Player is Live TV only: Movies/Series panel widths have no screen to apply to.
             listOf(PanelSection.LIVE).forEach { section ->
                 val enabled by vm.panelWidthEnabled.getValue(section).collectAsStateWithLifecycle()
                 val shares by vm.panelShares.getValue(section).collectAsStateWithLifecycle()

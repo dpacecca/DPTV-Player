@@ -5,8 +5,8 @@ import tv.own.owntv.core.theme.AccentColor
 import tv.own.owntv.core.theme.OwnTVPalette
 
 /**
- * Material 3 tonal palette for Sportio (green-seeded). NEUTRAL + secondary/tertiary roles are
- * theme-only; the `primary` roles are Sportio's fixed signature green.
+ * Material 3 tonal palette for DPTV-Player (green-seeded). NEUTRAL + secondary/tertiary roles are
+ * theme-only; the `primary` roles are DPTV-Player's fixed signature green.
  *
  * Dark uses a near-black pitch green (#060b07) so the panel colours (Phase 6) pop against
  * the deep dark surface while keeping a subtle green undertone.
@@ -16,7 +16,7 @@ import tv.own.owntv.core.theme.OwnTVPalette
  * Compose's [Color], which core cannot do — it carries the Compose runtime, not `compose-ui`.
  */
 
-// Brand mark color (the Sportio play logo) — constant.
+// Brand mark color (the DPTV-Player play logo) — constant.
 val AccentCyan = Color(OwnTVPalette.AccentCyan)
 
 // ---------------- DARK (M3 dark over near-black #040e0b) ----------------

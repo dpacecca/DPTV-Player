@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: light)" srcset="docs/brand/assets/png/sportio-logo-light.png">
-    <img src="docs/brand/assets/png/sportio-logo.png" alt="DPTV-Player" width="360">
+    <source media="(prefers-color-scheme: light)" srcset="docs/brand/dptv-logo-light.png">
+    <img src="docs/brand/dptv-logo.png" alt="DPTV-Player" width="360">
   </picture>
 </p>
 
@@ -86,18 +86,20 @@ Open source, GPLv3. Forked from [OwnTV](https://github.com/ahXN00/OwnTV) — tha
 | Database | Room 2.8.5 + Paging 3.5.1 + FTS4 |
 | DI · Network · Images | Koin 4.2.2 · OkHttp 5 · Coil 3.6.0 |
 
-`minSdk 26`, `targetSdk 36`, `compileSdk 37`, `applicationId tv.sportio.app`.
+`minSdk 26`, `targetSdk 36`, `compileSdk 37`, `applicationId tv.dptv.player`.
 
 ### Project layout
 
 This repository is the **Android TV app**. Everything underneath it — database, sync, parsers, EPG,
-backup, settings storage, the playback engines and every translated string — is a separate core
-library, [**SportioTV_Core**](https://github.com/trenntl/SportioTV_Core), published as
-`tv.own.owntv:core` / `:player-core`.
+backup, settings storage, the playback engines and every translated string — is the core
+library in [`core-lib/`](core-lib/) (`tv.own.owntv:core` / `:player-core`), built together with the
+app as a Gradle composite build.
 
 ```
 DPTV-Player/  (this repo)
-tv.own.owntv/
+├── app/         the Android TV app
+├── core-lib/    core + player-core libraries
+app/src/main/java/tv/own/owntv/
 ├── player/      the TV player HUD, surfaces and mini-player
 ├── ui/          theme + reusable components
 ├── features/    setup, shell, live, sport, epg, profiles, settings
@@ -119,15 +121,12 @@ https://github.com/dpacecca/DPTV-Player/releases/latest/download/DPTV-Player.apk
 > `DPTV-Player.apk` (arm — every real TV box) and `DPTV-Player-x86_64-vX.X.X.apk` (emulators and rare
 > Intel boxes).
 
-> Coming from the previous project home? Installs update in place (same signature) — see the
-> [release notes](CHANGELOG.md).
-
 ## 🛠️ Building & running
 
 > Only if you want to build from source — otherwise just install the APK.
 
-Gradle downloads the core library from SportioTV_Core's public Maven repository by itself — **no account
-or token needed**.
+The core library builds from `core-lib/` alongside the app; only the mpv engine is downloaded, from
+upstream OwnTV's public Maven repository — **no account or token needed**.
 
 1. **Get the code** — `git clone https://github.com/dpacecca/DPTV-Player.git` (or download the ZIP).
 2. **Open it** in [Android Studio](https://developer.android.com/studio) and let Gradle sync.
@@ -171,8 +170,7 @@ Subtitle search & download is powered by [OpenSubtitles.com](https://www.opensub
 in with your own OpenSubtitles account and are subject to their terms and download quotas.
 
 Forked from **[OwnTV](https://github.com/ahXN00/OwnTV)** — database, sync, parsers, player engines
-and the design system come from there. Core lives on as
-**[SportioTV_Core](https://github.com/trenntl/SportioTV_Core)**.
+and the design system come from there.
 
 ### ▶️ Playback engines
 
@@ -189,8 +187,9 @@ sources they add and for complying with the laws and rights that apply to them.
 
 ## 📄 License
 
-Released under the **GNU General Public License v3.0 (GPLv3)** — see [LICENSE](LICENSE).
+Released under the **GNU General Public License v3.0 (GPLv3)** — see [LICENSE](LICENSE). Derived from
+GPLv3 code by the OwnTV and SportioTV authors.
 
 ---
 
-<sub>DPTV-Player — live TV and sports for Android TV. Based on [SportioTV](https://github.com/trenntl/SportioTV), forked from OwnTV, built with the help of AI.</sub>
+<sub>DPTV-Player — live TV and sports for Android TV. Built with the help of AI.</sub>

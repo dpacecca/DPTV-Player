@@ -12,7 +12,7 @@
     </style>
 
     <!--
-      Launch theme (audit ST3). The activity starts in this theme so the cold start shows the Sportio
+      Launch theme (audit ST3). The activity starts in this theme so the cold start shows the DPTV-Player
       mark on the same window background as Theme.OwnTV — no colour flash at handoff — and
       MainActivity switches to Theme.OwnTV via postSplashScreenTheme once a real destination is ready.
       Here (API < 31, drawn by the compat library) the icon is the still mark; values-v31 swaps in
@@ -20,7 +20,7 @@
     -->
     <style name="Theme.OwnTV.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/owntv_window_bg</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/sportio_mark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/dptv_mark</item>
         <item name="postSplashScreenTheme">@style/Theme.OwnTV</item>
     </style>
 </resources>

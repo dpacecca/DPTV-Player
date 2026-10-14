@@ -1,11 +1,11 @@
 # Playback engines (mpv & ExoPlayer)
 
-> Sportio runs **two playback engines** behind one interface, picks one per tune, and hands over when
+> DPTV-Player runs **two playback engines** behind one interface, picks one per tune, and hands over when
 > the first cannot play the stream. This document is the engine layer — for the user-facing journey see
 > [LIVE_TV.md](LIVE_TV.md).
 
 All of this lives in the **core** repo, module `:player-core`
-(`SportioTV_Core/player-core/src/main/java/tv/own/owntv/player/`), plus a few stores in
+(`core-lib/player-core/src/main/java/tv/own/owntv/player/`), plus a few stores in
 `core/.../core/player/`.
 
 ---

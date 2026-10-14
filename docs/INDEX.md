@@ -9,7 +9,7 @@
 | `../AGENTS.md` | Verbindliche Agent-Regeln (Lesereihenfolge, Freeze, Gates, Verbote) | aktiv, Vorrang vor allem |
 | `BUILD.md` | Bauen/Installieren/Emulator (JDK 17, SDK, Gradle-Befehle) | aktiv |
 | `ARCHITECTURE.md` | Module, Core-Bezug, TV-only, Sport-Hub-Überblick | aktiv |
-| `BRANDING.md` | Was heisst Sportio, was bleibt technisch OwnTV (Naming-Freeze) | aktiv |
+| `BRANDING.md` | Was heisst DPTV-Player, was bleibt technisch OwnTV (Naming-Freeze) | aktiv |
 | `SPORT-HUB.md` | Sport-Hub + Channel-Matching (konsolidiert) | aktiv, ersetzt `sport-hub-plan.md` + `sport-channel-matching.md` als Einstieg |
 | `sport-hub-plan.md` | Ausführliche Sport-Hub-Spezifikation (Phasen 1–7) | aktiv, Detailreferenz |
 | `sport-channel-matching.md` | ESPN-Fixture → Sender-Matching (Discovery, Scoring, Tests) | aktiv, Detailreferenz |
@@ -17,9 +17,7 @@
 | `internationalization.md` | i18n-Gesamtplan v2 (Phasen 0–3 done) | aktiv, Detailreferenz |
 | `i18n.md` | i18n-Authoring-Guide (Keys vs. Labels) | aktiv |
 | `RELEASE.md` | Signing, Versionierung, In-App-Updates | aktiv |
-| `brand/BRAND_GUIDE_SPORTIO.md` | Verbindliche Sportio-Brand-Referenz v1.0 | aktiv |
-| `brand/sportio.tokens.json` | Maschinenlesbare Design-Tokens | aktiv |
-| `../README.md` | Öffentliche Projektseite (Sportio) | aktiv |
+| `../README.md` | Öffentliche Projektseite (DPTV-Player) | aktiv |
 | `../CHANGELOG.md` | Release-Notes | aktiv |
 
 ## Archiv (nicht löschen, nicht als Anleitung nutzen)

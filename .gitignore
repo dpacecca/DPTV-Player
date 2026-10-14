@@ -58,7 +58,7 @@ replay_pid*.log
 # Local-only archive (old detailed changelogs etc.), never committed
 /archive/
 
-# Sportio fork: local reference + build outputs, never committed
+# DPTV-Player fork: local reference + build outputs, never committed
 /*.apk
 /*.zip
 /OwnTV_Core-main/

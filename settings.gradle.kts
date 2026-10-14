@@ -29,14 +29,6 @@ dependencyResolutionManagement {
         }
         google()
         mavenCentral()
-        // Sportio's own Maven repository — public, no login: tv.own.owntv:core and :player-core
-        // (built from https://github.com/trenntl/SportioTV_Core).
-        // Served from SportioTV_Core's gh-pages branch.
-        maven {
-            name = "Sportio"
-            url = uri("https://trenntl.github.io/SportioTV_Core/maven")
-            content { includeGroup("tv.own.owntv") }
-        }
         // Upstream OwnTV's Maven repository — public, no login. Here only for
         // tv.own.owntv:libmpv, the mpv engine (https://github.com/ahXN00/OwnTV_libmpv),
         // which this fork does not rebuild.
@@ -48,12 +40,10 @@ dependencyResolutionManagement {
     }
 }
 
-// Local development: build against core's own source instead of the published artifact, so a core
-// edit reaches this app with no publish step. Gradle substitutes the dependency automatically
-// because SportioTV_Core publishes under the same group and artifact ids this app asks for. CI leaves
-// owntv.corePath unset and resolves the pinned version instead.
-// Set it in ~/.gradle/gradle.properties, never here:  owntv.corePath=E:/Path/To/SportioTV_Core
-providers.gradleProperty("owntv.corePath").orNull?.takeIf { it.isNotBlank() }?.let { includeBuild(it) }
+// The core library (tv.own.owntv:core, :player-core) is built from its source in core-lib/, which
+// lives in this repository. Gradle substitutes it for the artifacts the app asks for, because
+// core-lib publishes under the same group and artifact ids — no external Maven repository needed.
+includeBuild("core-lib")
 
 rootProject.name = "DPTV-Player"
 include(":app")

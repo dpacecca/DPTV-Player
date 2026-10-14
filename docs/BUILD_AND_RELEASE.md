@@ -1,6 +1,6 @@
 # Build & release
 
-> How to build, test, sign and ship Sportio. For the i18n checks specifically see [I18N.md](I18N.md).
+> How to build, test, sign and ship DPTV-Player. For the i18n checks specifically see [I18N.md](I18N.md).
 
 ---
 
@@ -22,13 +22,13 @@ sdk.dir=C:/Path/To/Android/Sdk
 
 ## 2. The two repos and the composite build
 
-- This repo (`SportioTV`) is `:app` + `:baselineprofile`.
-- Core (`SportioTV_Core`) is `:core` + `:player-core` and is normally consumed as the **pinned Maven
+- This repo (`DPTV-Player`) is `:app` + `:baselineprofile`.
+- Core (`core-lib/`) is `:core` + `:player-core` and is normally consumed as the **pinned Maven
   artifact** (`owntvCore` in `gradle/libs.versions.toml`).
 - To build against a local core checkout, set in `~/.gradle/gradle.properties` (**never in the repo**):
 
   ```properties
-  owntv.corePath=C:/path/to/SportioTV_Core
+  owntv.corePath=C:/path/to/core-lib
   ```
 
   The app's `settings.gradle.kts` picks it up and composite-builds core. CI leaves it unset.
@@ -66,7 +66,7 @@ APKs land in `app/build/outputs/apk/<flavor>/<buildType>/`.
 
 ## 4. Versions
 
-`applicationId = tv.sportio.app` (installs beside upstream OwnTV), `namespace = tv.own.owntv`,
+`applicationId = tv.dptv.app` (installs beside upstream OwnTV), `namespace = tv.own.owntv`,
 `minSdk 26`, `targetSdk 36`, `compileSdk release(37) { minorApiLevel = 2 }`.
 
 **Version comes from the environment:**
@@ -98,7 +98,7 @@ property, then an optional out-of-repo properties file.
 
 ```bash
 VERSION_NAME=1.0.1 VERSION_CODE=10001 \
-KEYSTORE_FILE=/path/sportio-release.jks KEYSTORE_PASSWORD=… KEY_ALIAS=sportio KEY_PASSWORD=… \
+KEYSTORE_FILE=/path/dptv-release.jks KEYSTORE_PASSWORD=… KEY_ALIAS=dptv KEY_PASSWORD=… \
 ./gradlew :app:assembleRelease
 ```
 
@@ -146,9 +146,9 @@ gate → publish to the Maven repo → GitHub release), `release-core.yml` (manu
 
 | Repo | Secret | Needed for |
 |---|---|---|
-| `SportioTV` | `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` | signing CI release APKs |
-| `SportioTV` | `OWNTV_EDGE_MASTER` / `OWNTV_EDGE_KEY` | optional; metadata proxy |
-| `SportioTV_Core` | `CONSUMER_BUMP_TOKEN` | publishing + the pin PR (used as `PAGES_TOKEN`) |
+| `DPTV-Player` | `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` | signing CI release APKs |
+| `DPTV-Player` | `OWNTV_EDGE_MASTER` / `OWNTV_EDGE_KEY` | optional; metadata proxy |
+| `core-lib/` | `CONSUMER_BUMP_TOKEN` | publishing + the pin PR (used as `PAGES_TOKEN`) |
 
 Without the keystore secrets CI still runs tests and lint and can build a debug APK.
 
@@ -160,19 +160,19 @@ Without the keystore secrets CI still runs tests and lint and can build a debug 
    body and the in-app "What's new").
 2. Create and push the tag `v1.0.1`. CI computes the version, builds the **signed** `standard` and
    `x86_64` release APKs, and publishes the GitHub Release with:
-   - `Sportio-v1.0.1.apk` (arm)
-   - `Sportio.apk` (stable "latest" copy)
-   - `Sportio-x86_64-v1.0.1.apk`
-3. The in-app updater reads `trenntl/SportioTV` releases and picks the APK that matches the
+   - `DPTV-Player-v1.0.1.apk` (arm)
+   - `DPTV-Player.apk` (stable "latest" copy)
+   - `DPTV-Player-x86_64-v1.0.1.apk`
+3. The in-app updater reads `dpacecca/DPTV-Player` releases and picks the APK that matches the
    device ABI (assets are matched on `.apk` and the `x86_64` marker).
 
-**Always-latest download:** `https://github.com/trenntl/SportioTV/releases/latest/download/Sportio.apk`
+**Always-latest download:** `https://github.com/dpacecca/DPTV-Player/releases/latest/download/DPTV-Player.apk`
 
 ### Releasing core
 
 1. Bump `extra["coreVersion"]` in core's `build.gradle.kts` and add a `## core-x.y.z` CHANGELOG section.
 2. Run the **Release core** workflow (or push the tag `core-x.y.z`). It gates, publishes
-   `tv.own.owntv:core` / `:player-core` to the Sportio Maven repo, and creates the release.
+   `tv.own.owntv:core` / `:player-core` to the DPTV-Player Maven repo, and creates the release.
 3. That opens a pin-bump PR on this repo; `automerge-core-bump.yml` merges it once CI is green.
 
 > The pin must equal core's newest release, and `tools/i18n/locales.json` must match core's copy — the
@@ -182,11 +182,11 @@ Without the keystore secrets CI still runs tests and lint and can build a debug 
 
 ## 9. Installing on a device
 
-Grab the signed APK from the [latest release](https://github.com/trenntl/SportioTV/releases/latest).
+Grab the signed APK from the [latest release](https://github.com/dpacecca/DPTV-Player/releases/latest).
 
 - **Fire TV** — install *Downloader* (AFTVnews), enter the release URL, allow unknown sources.
 - **Android TV / Google TV** — Downloader from Play, or sideload via *Send files to TV*, USB, or
-  `adb install Sportio.apk`.
+  `adb install DPTV-Player.apk`.
 
-Minimum Android 8.0 / API 26. Sportio installs **beside** upstream OwnTV: own package, own data, own
+Minimum Android 8.0 / API 26. DPTV-Player installs **beside** upstream OwnTV: own package, own data, own
 launcher entry.

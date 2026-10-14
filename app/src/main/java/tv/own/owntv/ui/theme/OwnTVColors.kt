@@ -4,10 +4,10 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import tv.own.owntv.core.theme.AccentColor
-import tv.own.owntv.core.theme.SportioPalette
+import tv.own.owntv.core.theme.DptvPalette
 
 /**
- * Sportio's resolved Material 3 color roles for the current theme. Read as `OwnTVTheme.colors`.
+ * DPTV-Player's resolved Material 3 color roles for the current theme. Read as `OwnTVTheme.colors`.
  *
  * Exposes the full M3 surface-container tiers and primary/secondary/tertiary roles the MD3 UI needs.
  * A few legacy aliases (`panel`/`card`/`rail`/`textPrimary`/`textSecondary`/`accent`) map onto M3
@@ -50,7 +50,7 @@ data class OwnTVColors(
     /**
      * The accent as it must look on the player's chrome, which is always dark scrim over video no
      * matter which theme the app is in. [primary] can't be used there: on the light theme it is the
-     * deep tone M3 picks for a light surface (Sportio deep green #0E6B41), which all but disappears
+     * deep tone M3 picks for a light surface (DPTV-Player deep green #0E6B41), which all but disappears
      * against a dark HUD. This is the same accent resolved for dark surfaces, so the seek bar and the
      * active buttons stay readable — and on the dark theme it is simply [primary].
      */
@@ -78,7 +78,7 @@ fun parseAccentHex(hex: String): Color? =
 /**
  * Build the resolved M3 tokens for a theme (dark/light).
  *
- * Sportio ships one fixed brand colour: the signature green from [SportioPalette]. [accent],
+ * DPTV-Player ships one fixed brand colour: the signature green from [DptvPalette]. [accent],
  * [customAccent] and [focusHighlight] are accepted for call-site compatibility (stored values
  * from before the rebrand, clock helpers) but no longer change the theme — the settings UI
  * offers no colour choice anymore. The focus ring is the floodlight green in dark ([Beam]) and
@@ -90,10 +90,10 @@ fun ownTvColors(
     customAccent: String = "",
     focusHighlight: String = "",
 ): OwnTVColors {
-    val roles = if (isDark) SportioPalette.DarkPrimary else SportioPalette.LightPrimary
+    val roles = if (isDark) DptvPalette.DarkPrimary else DptvPalette.LightPrimary
     val primary = Color(roles.primary)
-    val onVideoRoles = SportioPalette.DarkPrimary
-    val focus = if (isDark) Color(SportioPalette.Beam) else primary
+    val onVideoRoles = DptvPalette.DarkPrimary
+    val focus = if (isDark) Color(DptvPalette.Beam) else primary
     return if (isDark) {
         OwnTVColors(
             isDark = true,
@@ -161,4 +161,4 @@ fun ownTvColors(
     }
 }
 
-val LocalOwnTVColors = staticCompositionLocalOf { ownTvColors(isDark = true, accent = AccentColor.SPORTIO) }
+val LocalOwnTVColors = staticCompositionLocalOf { ownTvColors(isDark = true, accent = AccentColor.DPTV) }

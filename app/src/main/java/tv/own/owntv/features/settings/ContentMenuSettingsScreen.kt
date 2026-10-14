@@ -69,7 +69,7 @@ private fun menuIcon(menu: ContentMenu) = when (menu) {
  * always leave the menu exactly as it was. "Close" is not listed because it is pinned to the bottom
  * of every menu, outside the arrangeable part.
  *
- * Sportio is Live TV only: the Movies/Series/Episode menus have no screen behind them.
+ * DPTV-Player is Live TV only: the Movies/Series/Episode menus have no screen behind them.
  */
 @Composable
 fun ContentMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {

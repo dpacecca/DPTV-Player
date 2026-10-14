@@ -1,6 +1,6 @@
 # Sports Hub
 
-> **Sportio's second headline feature.** It answers one question: *"I know which game is on — which of
+> **DPTV-Player's second headline feature.** It answers one question: *"I know which game is on — which of
 > my channels is showing it?"* It lists sports fixtures for 16 leagues, then matches each fixture
 > against the user's **own** live channels (by name and by the guide), so one tap starts playback.
 
@@ -11,7 +11,7 @@ Site API** — there is no account, no key, no backend of ours.
 
 ## 1. Where the code lives
 
-**App (`SportioTV`)** — `app/src/main/java/tv/own/owntv/features/sport/`
+**App (`DPTV-Player`)** — `app/src/main/java/tv/own/owntv/features/sport/`
 
 | File | Responsibility |
 |---|---|
@@ -23,7 +23,7 @@ Site API** — there is no account, no key, no backend of ours.
 | `SportsViewModel.kt` | State, caching, follow/unfollow, board/standings/matches loading. |
 | `SportsScreen.kt` | The Stage UI: league rail, fixture list, detail pane, standings, settings dialog. |
 
-**Core (`SportioTV_Core`)**
+**Core (`core-lib/`)**
 
 | File | Responsibility |
 |---|---|

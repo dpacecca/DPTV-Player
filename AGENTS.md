@@ -1,6 +1,6 @@
 # AGENTS.md — verbindlich für alle Agents
 
-Sportio (persönlicher OwnTV-Fork, TV + Sports). Sprache mit dem User: Deutsch.
+DPTV-Player (persönlicher OwnTV-Fork, TV + Sports). Sprache mit dem User: Deutsch.
 Antworten kurz, keine Emojis, keine Superlative. Fakten statt Vermutungen.
 
 ## 1. Lesereihenfolge (Pflicht vor jedem Task)
@@ -14,8 +14,8 @@ Neues Wissen gehört nach `docs/`, nie nach `HANDOFF.md` oder in den Root.
 
 ## 2. Naming-Freeze (beschlossen, nicht verhandelbar)
 
-- User-sichtbar ist **DPTV-Player** (vorher Sportio): `applicationId tv.dptv.player`
-  (`app/build.gradle.kts`), `app_name`, `sportio://`-Scheme, Branding.
+- User-sichtbar ist **DPTV-Player**: `applicationId tv.dptv.player`
+  (`app/build.gradle.kts`), `app_name`, `dptv://`-Scheme, Branding.
 - Technisch bleibt **tv.own.owntv** eingefroren: Kotlin-Pakete,
   `android.namespace`, Core-Group `tv.own.owntv`, `OwnTVDatabase`,
   `OwnTV*`-Klassen/Dateien (z. B. `OwnTVApp.kt`, `OwnTVShell.kt`,

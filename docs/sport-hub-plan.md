@@ -1,4 +1,4 @@
-# Sport-Hub – Ausbauplan (Sportio)
+# Sport-Hub – Ausbauplan (DPTV-Player)
 
 Stand: 2026-10-12 · Sprache mit dem User: Deutsch · Autor: Agent
 Status: **Phase 1 umgesetzt (2026-10-12); Phasen 2–7 geplant.**
@@ -77,8 +77,8 @@ Status: **Phase 1 umgesetzt (2026-10-12); Phasen 2–7 geplant.**
   sondern als nicht-übersetzbare String-Ressourcen (`donottranslate.xml`) abgelegt —
   sauberer für das i18n-Gate und die Projektregel „UI-Text in Resources".
 - **Alle Phasen 1–7 erledigt (2026-10-12).** Keystore/Signing vorhanden
-  (`keystore/sportio-release.jks`, Alias `sportio`); signierter Release gebaut. In-App-Updates
-  aktiv: `releaseRepo = trenntl/SportioTV`, `updateCheckOnStart` an, Release `v1.0.0`
+  (`keystore/dptv-release.jks`, Alias `dptv`); signierter Release gebaut. In-App-Updates
+  aktiv: `releaseRepo = dpacecca/DPTV-Player`, `updateCheckOnStart` an, Release `v1.0.0`
   veröffentlicht. Siehe §11.
 - **Nachtrag (2026-10-13): Kanal-Matching für Tennis/MMA-Duelle.** `Fixture.tournament`
   (Event-Name) + Doppel-Roster-Split (`roster.displayName`) + Tennis-Hint (`extraChannelRes`
@@ -636,7 +636,7 @@ einen echten Bug (`(' '+el.className+' ').indexOf(' lv ') > 0` matcht bei
 Einzel-Klassen nie, Treffer liegt auf Index 0 → jetzt `>= 0`).
 
 **Offen:** Emulator-Ende-zu-Ende (TV-UI → QR/PIN → Handy-Seite). Auf dem
-Test-AVD liegt ein release-signiertes `tv.sportio.app` (v1.0.2) mit Daten; das
+Test-AVD liegt ein release-signiertes `tv.dptv.app` (v1.0.2) mit Daten; das
 Debug-APK lässt sich nur nach Deinstallation (Datenverlust) darüber installieren,
 und lokal fehlen die Release-Keystore-Zugangsdaten für ein signiertes
 Release-APK. Der Klickpfad wurde deshalb im Desktop-Browser gegen die echte
@@ -853,16 +853,16 @@ Neue `sport_*`-Keys (in `values` **und** `values-de`):
 - [x] Emulator-Smoke-Test (Hub öffnet, Rail, Tabs, Detail, Kanäle) + Screenshots;
       Box-Test bewusst zurückgestellt (User: nur Emulator testen).
 - [x] `HANDOFF.md` + dieses Dokument aktualisiert.
-- **Signing/Updates vorhanden:** `keystore/sportio-release.jks` (Alias `sportio`); `:app:assembleRelease`
-  baut signiert (verifiziert CN=Sportio). `releaseRepo = trenntl/SportioTV`,
-  `updateCheckOnStart` an; Repo-Release `v1.0.0` (`Sportio.apk`, `Sportio-x86_64-v1.0.0.apk`).
+- **Signing/Updates vorhanden:** `keystore/dptv-release.jks` (Alias `dptv`); `:app:assembleRelease`
+  baut signiert (verifiziert CN=DPTV-Player). `releaseRepo = dpacecca/DPTV-Player`,
+  `updateCheckOnStart` an; Repo-Release `v1.0.0` (`DPTV-Player.apk`, `DPTV-Player-x86_64-v1.0.0.apk`).
 
 ---
 
 ## 12. Testplan
 
 - Build: beide APKs, `-x lint`, Unit-Tests, i18n (`verify --bootstrap`).
-- Emulator (`SportioTV`, x86_64): Start, Hub öffnen → nur 16 Ligen +
+- Emulator (`DPTV-Player`, x86_64): Start, Hub öffnen → nur 16 Ligen +
   ihre Requests; Liga aktivieren (ger.2) → erscheint + lädt; Tabs prüfen;
   Favourites mit gefolgtem Team prüfen; Golf-Liga aktivieren → Leaderboard.
 - Box (Android TV, ARM-APK): gleicher Flow mit echter Quelle; Kanal-Start aus
@@ -891,7 +891,7 @@ Neue `sport_*`-Keys (in `values` **und** `values-de`):
 6. **Kanal-Matching Einzelsport** liefert selten Treffer → UX-Hinweis nötig.
 7. **i18n**: Katalog-Labels als Code-Literale müssen klassifiziert werden.
 8. **Upstream-PR** (`feature/sports-hub`): Diese Erweiterungen bewusst **nicht**
-   in die offenen PRs mischen; sie bleiben im Sportio-Fork.
+   in die offenen PRs mischen; sie bleiben im DPTV-Player-Fork.
 9. **Companion-Modus**: Der neue `SELECT_ITEMS`-Modus ist eine Core-Änderung →
    getrennt halten (Fork-Changelog + ggf. separater Core-PR). Der Server ist ein
    app-weites `single`: startet der Sport-Picker, stoppt ein evtl. laufender

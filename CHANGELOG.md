@@ -8,7 +8,7 @@
 > what, why, files and verification — belongs in the commit message, never here.
 
 <!-- Upstream OwnTV (ahXN00/OwnTV) unreleased notes, carried over verbatim by the fork squash.
-     These are NOT Sportio releases — Sportio versions are the "## v1.0.x" sections below. The
+     These are NOT DPTV-Player releases — DPTV-Player versions are the "## v1.0.x" sections below. The
      block itself is kept identical to upstream on purpose (fewer conflicts when the fork is
      resynced / when upstream PRs are opened). The release workflows extract notes per tag
      (`^## <tag>`), so these lines never reach a release body or the in-app update dialog. -->
@@ -61,56 +61,16 @@
 - **⏯️ The remote's Play/Pause key pauses and resumes again**
 - **🔎 Search finds "Spider-Man" from "Spider-M" and lists every match, not the first 40**
 
-<!-- Sportio release history, newest first. v1.0.5 re-publishes v1.0.3's notes under the new repo
-     home (trenntl/SportioTV); the previous repository carried a bridge v1.0.4
-     that only redirected the in-app updater, so it has no section here. Everything from
-     "## v5.1.0" downwards is the inherited OwnTV upstream history, not Sportio releases. -->
+<!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
+     upstream history, not DPTV-Player releases. -->
 
-## v1.0.6 — 2026-10-13
+## v1.0.0
 
-### New features
-
-- **Sports hub on the phone: a league opens its own teams and players**
-- **"Manage all" page with search for the complete league list**
-
-### Fixes
-
-- **The Sports hub phone page no longer runs hundreds of entries into one endless column**
-
-## v1.0.5 — 2026-10-13
-
-### New features
-
-- **Fixture-to-channel matching across channel names and guide text**
-- **Language filter for matched channels, exact event channels always pass**
-
-### Fixes
-
-- **Single-team mentions no longer surface news and film channels**
-
-## v1.0.3 — 2026-10-13
-
-### New features
-
-- **Fixture-to-channel matching across channel names and guide text**
-- **Language filter for matched channels, exact event channels always pass**
-
-### Fixes
-
-- **Single-team mentions no longer surface news and film channels**
-
-## v1.0.2 — 2026-10-12
-
-### New features
-
-- **Sports Hub: full 81-league ESPN catalogue, 16 active by default, with an Add leagues picker**
-- **Live / Upcoming / Past tabs and a Favourites rail (active leagues + followed teams and athletes)**
-- **Single-sport view: tennis matches listed individually, Formula 1 races with circuit only**
-- **Manage leagues, teams and athletes from a phone (QR companion page)**
-
-### Fixes
-
-- **Formula 1 races match Sky Sports channels; tennis players show their country flag**
+### ✨ New features
+- **🏉 Rugby Union in the Sports Hub — 25 competitions**
+- **🏉 Rugby League in the Sports Hub — NRL**
+- **📺 DPTV-Player name, icon, TV banner and wordmark**
+- **📦 Core library built in-tree from core-lib/**
 
 ## v5.1.0 — 2026-10-04
 

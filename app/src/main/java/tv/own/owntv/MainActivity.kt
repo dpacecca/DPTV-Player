@@ -310,7 +310,7 @@ open class MainActivity : ComponentActivity() {
 
             OwnTVTheme(
                 themeMode = themeMode,
-                accent = tv.own.owntv.core.theme.AccentColor.SPORTIO,
+                accent = tv.own.owntv.core.theme.AccentColor.DPTV,
                 systemInDarkTheme = isSystemInDarkTheme(),
                 focusBorderWidthDp = focusHighlightWidth,
                 animationLevel = animationLevel,

@@ -1,13 +1,12 @@
 name: i18n
 
-# Lightweight, deliberately SEPARATE from android.yml (which the repo restricts to main / v* tags).
+# Lightweight, deliberately SEPARATE from android.yml (which the repo restricts to master / v* tags).
 # Three jobs, all gating:
 #   baseline  — the hardcoded-literal ratchet against the pull-request merge base (not HEAD^, which
 #               is bypassable in a multi-commit PR).
 #   validate  — the Kotlin-side checks: locale-stable number formatting and bounded text overflow.
-#               The strings themselves live in the core repository now, so locales.json schema,
-#               placeholder/plural parity, translation coverage and the toolkit's own regression
-#               tests run there — see trenntl/SportioTV_Core's i18n workflow.
+#               The strings themselves live in core-lib/, which has its own literal ratchet; it
+#               runs here too (bootstrap mode).
 #   pseudo    — inspects the BUILT debug and release APKs and proves pseudolocales survived
 #               localeFilters in debug and are absent in release. The flag being set is not proof.
 #
@@ -15,21 +14,17 @@ name: i18n
 # commit, so the final commit's diff against its parent passes while the PR as a whole regressed.
 # The required invariant is: PR-head baseline ⊆ pull-request merge-base baseline.
 #
-# Why main is also a trigger: work lands on main by direct push, not only by PR. A pull_request-only
-# workflow never inspects those commits, so unclassified literals accumulate on main unseen and the
+# Why master is also a trigger: work lands on master by direct push, not only by PR. A pull_request-only
+# workflow never inspects those commits, so unclassified literals accumulate on master unseen and the
 # next contributor's PR fails for debt that is not theirs. On push the ratchet has no merge base to
-# compare against, so it runs in bootstrap mode: main must be self-consistent (nothing unclassified,
+# compare against, so it runs in bootstrap mode: master must be self-consistent (nothing unclassified,
 # nothing stale), which is the invariant a PR then inherits. pseudo stays off the push path — it
-# assembles both APKs, which android.yml already does for main.
+# assembles both APKs, which android.yml already does for master.
 #
-# All three step aside for a "Pin core x.y.z" branch: that pull request changes the pin and
-# locales.json and no Kotlin at all, so every check here would re-examine code identical to main.
-# android.yml's verify-pin job covers those pull requests instead.
-
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -41,7 +36,6 @@ concurrency:
 
 jobs:
   baseline:
-    if: ${{ !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'bump/core-')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR head
@@ -71,9 +65,9 @@ jobs:
           else
             python3 tools/i18n/check_hardcoded_strings.py verify --bootstrap
           fi
+          python3 core-lib/tools/i18n/check_hardcoded_strings.py verify --bootstrap
 
   validate:
-    if: ${{ !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'bump/core-')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -88,8 +82,8 @@ jobs:
   pseudo:
     # Builds the debug + release standard APKs and inspects their resource tables. Heavier than the
     # other two jobs, so it is its own job rather than piggy-backed on android.yml — and skipped on
-    # push, where android.yml already assembles main.
-    if: ${{ github.event_name != 'push' && !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'bump/core-')) }}
+    # push, where android.yml already assembles master.
+    if: ${{ github.event_name != 'push' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

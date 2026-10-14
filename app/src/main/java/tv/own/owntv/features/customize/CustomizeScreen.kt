@@ -88,7 +88,7 @@ import tv.own.owntv.core.customize.SpanSelector
 @Composable
 fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: CustomizeViewModel = koinViewModel()
-    // Sportio is Live TV only: the section is fixed, the Movies/Series tabs are gone.
+    // DPTV-Player is Live TV only: the section is fixed, the Movies/Series tabs are gone.
     val section = MediaType.LIVE
     LaunchedEffect(Unit) { vm.selectSection(MediaType.LIVE) }
     val rows by vm.rows.collectAsStateWithLifecycle()

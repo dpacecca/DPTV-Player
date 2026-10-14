@@ -5,11 +5,11 @@
 
 ## Repos und Ordner
 
-- Repo-Root = diese App (Sportio-Fork), eigenes Repo
-  `https://github.com/trenntl/SportioTV`. Lokale Sicherungen
+- Repo-Root = diese App (DPTV-Player-Fork), eigenes Repo
+  `https://github.com/dpacecca/DPTV-Player`. Lokale Sicherungen
   `backup/pre-migration`, `backup/handoff-fa451b2b`.
 - `OwnTV_Core-main/` — Core-Fork, eigenes Repo
-  `https://github.com/trenntl/SportioTV_Core`, Stand Tag `core-1.0.70` —
+  `https://github.com/dpacecca/DPTV-Player`, Stand Tag `core-1.0.70` —
   identisch zum App-Pin `owntvCore` in `gradle/libs.versions.toml:82`.
   Composite-Build via `owntv.corePath`, daher kein Publish nötig.
 - Upstream-Referenz: `ahXN00/OwnTV` (App), `ahXN00/OwnTV_Core` (Core),
@@ -34,7 +34,7 @@
 2. `core/src/main/res/values(+de)/strings.xml` — `common_nav_sport`.
 3. `core/…/core/sync/M3uSyncer.kt` — `contentTypes`-Gate (VOD/Serien-Skip + Cleanup).
 4. `core/…/core/sync/SyncManager.kt` — übergibt `effective` an M3uSyncer.
-5. `core/…/core/launcher/LauncherDeepLink.kt` — Schema `owntv://` → `sportio://`
+5. `core/…/core/launcher/LauncherDeepLink.kt` — Schema `owntv://` → `dptv://`
    (Recording-/Reminder-URIs unverändert).
 6. `SettingsRepository.kt` — `updateCheckOnStart` wieder `true` (eigenes Release-Repo).
 7. compileSdk 37.2 wie App. 8. `CompanionMode.SELECT_ITEMS` — generischer

@@ -641,7 +641,7 @@ internal fun AboutPage(vm: MoreCountsViewModel, entry: FocusRequester, onOpenLan
 
     Column(Modifier.fillMaxSize().focusGroup()) {
         Row(horizontalArrangement = Arrangement.spacedBy(40.mpx), verticalAlignment = Alignment.CenterVertically) {
-            // The Sportio mark (150) and wordmark (300).
+            // The DPTV-Player mark (150) and wordmark (300).
             BrandMark(rememberAppliedIcon(), 150.mpx)
             Column {
                 Wordmark(300.mpx)

@@ -38,13 +38,13 @@
     <application
         android:name=".OwnTVApp"
         android:allowBackup="false"
-        android:banner="@drawable/sportio_banner"
+        android:banner="@drawable/dptv_banner"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/sportio_icon"
+        android:icon="@mipmap/dptv_icon"
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
-        android:roundIcon="@mipmap/sportio_icon"
+        android:roundIcon="@mipmap/dptv_icon"
         android:supportsRtl="true"
         android:theme="@style/Theme.OwnTV"
         android:usesCleartextTraffic="true"
@@ -73,7 +73,7 @@
                 tools:node="remove" />
         </provider>
 
-        <!-- Single launcher activity: Sportio ships one mark, one banner and one launch theme.
+        <!-- Single launcher activity: DPTV-Player ships one mark, one banner and one launch theme.
              LEANBACK_LAUNCHER shows it on TV launchers; LAUNCHER on phone/tablet/box home screens.
              configChanges: a remote waking up (keyboard/navigation), an HDR or frame-rate mode switch
              (uiMode/colorMode/screen*) or a density change must not rebuild the Activity mid-film — that
@@ -81,13 +81,13 @@
              purpose: a script-family language switch still needs its one recreate (LocalizedContent). -->
         <activity
             android:name=".MainActivity"
-            android:banner="@drawable/sportio_banner"
+            android:banner="@drawable/dptv_banner"
             android:enabled="true"
             android:exported="true"
-            android:icon="@mipmap/sportio_icon"
+            android:icon="@mipmap/dptv_icon"
             android:configChanges="keyboard|keyboardHidden|navigation|screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density|colorMode"
             android:launchMode="singleTop"
-            android:roundIcon="@mipmap/sportio_icon"
+            android:roundIcon="@mipmap/dptv_icon"
             android:theme="@style/Theme.OwnTV.Starting"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
@@ -101,10 +101,10 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:host="play"
-                    android:scheme="sportio" />
+                    android:scheme="dptv" />
                 <data
                     android:host="open"
-                    android:scheme="sportio" />
+                    android:scheme="dptv" />
             </intent-filter>
         </activity>
 

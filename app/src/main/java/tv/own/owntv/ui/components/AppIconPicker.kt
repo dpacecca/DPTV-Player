@@ -30,11 +30,11 @@ import tv.own.owntv.core.brand.AppIconSwitcher
 import tv.own.owntv.ui.theme.mpx
 
 /**
- * "Restart Sportio?" on its own, for a restore that brought in a different icon than the launcher's.
+ * "Restart DPTV-Player?" on its own, for a restore that brought in a different icon than the launcher's.
  * Restart now switches the icon and reopens the app through it; Later leaves it to [AppIconSwitcher],
  * which applies it the next time the app is in the background.
  *
- * Sportio ships a single mark, so a restored choice always matches the launcher and this dialog
+ * DPTV-Player ships a single mark, so a restored choice always matches the launcher and this dialog
  * stays hidden — it remains only for restores written by older multi-colour builds.
  */
 @Composable

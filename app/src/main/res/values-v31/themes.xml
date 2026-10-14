@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Android 12+: the launch screen shows the Sportio mark and the wordmark at the bottom. -->
+    <!-- Android 12+: the launch screen shows the DPTV-Player mark and the wordmark at the bottom. -->
     <style name="Theme.OwnTV.Starting">
         <item name="windowSplashScreenBackground">@color/owntv_window_bg</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/sportio_mark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/dptv_mark</item>
         <item name="windowSplashScreenAnimationDuration">800</item>
-        <item name="android:windowSplashScreenBrandingImage">@drawable/sportio_wordmark_dark</item>
+        <item name="android:windowSplashScreenBrandingImage">@drawable/dptv_wordmark_dark</item>
         <item name="postSplashScreenTheme">@style/Theme.OwnTV</item>
     </style>
     <!-- Animations Off: the same launch screen with the still mark. MainActivity hands one of these to
          SplashScreen.setSplashScreenTheme (Android 13+), which applies from the next launch on. -->
     <style name="Theme.OwnTV.Starting.Still">
-        <item name="windowSplashScreenAnimatedIcon">@drawable/sportio_mark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/dptv_mark</item>
     </style>
 </resources>

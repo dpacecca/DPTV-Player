@@ -1794,7 +1794,7 @@ private fun focusWidthLabel(dp: Int): String = stringResource(
 )
 
 /**
- * Focus ring width picker: the four widths plus a live sample. Sportio's ring colour is fixed
+ * Focus ring width picker: the four widths plus a live sample. DPTV-Player's ring colour is fixed
  * (floodlight green in dark, signature green in light), so only the thickness is configurable.
  */
 @Composable

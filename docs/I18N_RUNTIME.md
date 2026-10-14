@@ -1,6 +1,6 @@
 # i18n runtime (locale switching at runtime)
 
-> How Sportio switches its UI language **live**, without a process restart, and why the pieces are
+> How DPTV-Player switches its UI language **live**, without a process restart, and why the pieces are
 > shaped the way they are. This is the runtime side; for strings and the checks see
 > [I18N.md](I18N.md).
 

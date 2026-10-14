@@ -1,6 +1,6 @@
 # Live TV
 
-> **Sportio's product.** Live TV is what the app is: a channel list, a guide, catch-up and time-shift,
+> **DPTV-Player's product.** Live TV is what the app is: a channel list, a guide, catch-up and time-shift,
 > recording, multiview, and a player that keeps a hostile IPTV stream on screen. The Sports Hub
 > ([SPORTS_HUB.md](SPORTS_HUB.md)) is the second feature; everything else is support.
 
@@ -12,7 +12,7 @@ pieces that drive it.
 
 ## 1. Where the code lives
 
-**App (`SportioTV`)** — `app/src/main/java/tv/own/owntv/features/live/`
+**App (`DPTV-Player`)** — `app/src/main/java/tv/own/owntv/features/live/`
 
 | File | Responsibility |
 |---|---|
@@ -24,7 +24,7 @@ pieces that drive it.
 | `CatchupJumpDialog.kt`, `CatchupManualTimeDialog.kt` | "Go back to…" pickers for channels without a guide. |
 | `ScheduleRecordingDialog.kt` | Recording scheduling from live. |
 
-**Core (`SportioTV_Core`)** — `core/.../core/live/`
+**Core (`core-lib/`)** — `core/.../core/live/`
 
 | File | Responsibility |
 |---|---|

@@ -40,7 +40,7 @@ import tv.own.owntv.ui.theme.stageText
  * in Home's order; the focused row's Hide / Move / Mode in the panel, Hold OK = Move), then Keep watching
  * and Android TV home.
  *
- * Sportio is Live TV only: the Now-trending row and the Movies/Series rows have no catalogue
+ * DPTV-Player is Live TV only: the Now-trending row and the Movies/Series rows have no catalogue
  * behind them, so they are neither shown nor configurable here.
  */
 @Composable

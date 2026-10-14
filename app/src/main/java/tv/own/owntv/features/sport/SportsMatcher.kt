@@ -32,7 +32,7 @@ import tv.own.owntv.core.database.entity.EpgProgrammeEntity
  * club's city or a movie blurb, not the fixture: scoring it was what pulled `DE: SKY SPORT NEWS`,
  * `DE: SYFY`, `DE: DISNEY CHANNEL` into a football list. This mirrors Lume's
  * `ResolvedChannelSource` tiers (`epgTitleSubtitle` > `epgSingleField` > `epgDescription` >
- * `channelName`); Sportio keeps the weights additive instead of tier-typed.
+ * `channelName`); DPTV-Player keeps the weights additive instead of tier-typed.
  *
  * ## Duels and the tournament fallback (tennis/MMA, 2026-10-13)
  *
