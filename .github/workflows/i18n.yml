@@ -98,6 +98,22 @@ jobs:
           # 'tools' is obsolete and Google removed it from the SDK repository; the
           # action still asks for it by default, which fails the whole setup step.
           packages: 'platform-tools'
+      # Private-repo runners have 7 GB of RAM; gradle.properties asks for a 4 GB Gradle heap plus an
+      # 8 GB Kotlin daemon, and R8 on a release build then gets the runner killed. Properties in the
+      # Gradle user home override the project's, so this only changes CI: Kotlin compiles inside the
+      # Gradle JVM, two workers, plus swap as headroom. Local builds keep gradle.properties.
+      - name: Fit Gradle to the runner's memory
+        run: |
+          mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
+          cat >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties" <<'PROPS'
+          org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8
+          kotlin.compiler.execution.strategy=in-process
+          org.gradle.workers.max=2
+          PROPS
+          sudo fallocate -l 4G /mnt/ci-swapfile && sudo chmod 600 /mnt/ci-swapfile \
+            && sudo mkswap /mnt/ci-swapfile && sudo swapon /mnt/ci-swapfile \
+            || echo "::warning::Could not add swap; continuing without it."
+          free -h
       - name: Assemble standard debug + release APKs
         run: ./gradlew :app:assembleStandardDebug :app:assembleStandardRelease --console=plain
       - name: Verify pseudolocale packaging

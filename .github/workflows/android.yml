@@ -108,6 +108,23 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      # Private-repo runners have 7 GB of RAM; gradle.properties asks for a 4 GB Gradle heap plus an
+      # 8 GB Kotlin daemon, and R8 on a release build then gets the runner killed. Properties in the
+      # Gradle user home override the project's, so this only changes CI: Kotlin compiles inside the
+      # Gradle JVM, two workers, plus swap as headroom. Local builds keep gradle.properties.
+      - name: Fit Gradle to the runner's memory
+        run: |
+          mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
+          cat >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties" <<'PROPS'
+          org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8
+          kotlin.compiler.execution.strategy=in-process
+          org.gradle.workers.max=2
+          PROPS
+          sudo fallocate -l 4G /mnt/ci-swapfile && sudo chmod 600 /mnt/ci-swapfile \
+            && sudo mkswap /mnt/ci-swapfile && sudo swapon /mnt/ci-swapfile \
+            || echo "::warning::Could not add swap; continuing without it."
+          free -h
+
       - name: Compute version (from the git tag on releases)
         id: ver
         run: |
@@ -181,7 +198,9 @@ jobs:
           chmod +x ./gradlew
           if [ -n "$KEYSTORE_FILE" ]; then
             echo "Building signed release APKs (both ABI flavors)"
-            ./gradlew assembleRelease --stacktrace
+            # One flavor at a time, so only one R8 run holds memory (see "Fit Gradle to the runner").
+            ./gradlew assembleStandardRelease --stacktrace
+            ./gradlew assembleX86_64Release --stacktrace
             # Product flavors split the output by flavor subfolder:
             #   standard/release  -> arm (arm64-v8a + armeabi-v7a) — the main download
             #   x86_64/release    -> x86_64 — emulator / rare x86 box
