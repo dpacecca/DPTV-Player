@@ -124,15 +124,16 @@ fun SportsScreen(
     val tab by vm.tab.collectAsStateWithLifecycle()
     val visibleFixtures = remember(fixtures, tab) { fixturesFor(fixtures, tab) }
 
-    // Phone picker payload: labels/regions resolved here, where stringResource is available.
+    // Phone picker payload: labels/sport groups resolved here, where stringResource is available.
+    // The phone page orders its groups by first appearance, so the items go in sport order.
     val phoneTitle = stringResource(R.string.sport_phone_title)
     val phoneTeamGroup = stringResource(R.string.sport_phone_teams)
     val phonePlayerGroup = stringResource(R.string.sport_phone_players)
-    val phoneLeagueItems = SportsLeagues.map { league ->
+    val phoneLeagueItems = SportsLeagues.sortedBy { it.sportGroup.ordinal }.map { league ->
         CompanionSelectItem(
             id = league.id,
             label = stringResource(league.labelRes),
-            group = stringResource(league.region.labelRes),
+            group = stringResource(league.sportGroup.labelRes),
             selected = league.id in activeLeagues,
         )
     }
@@ -966,17 +967,17 @@ private fun SportsSettingsDialog(
                         onClick = onOpenLanguage,
                     )
                     var first = true
-                    RegionOrder.forEach { region ->
-                        val regionLeagues = leagues.filter { it.region == region }
-                        if (regionLeagues.isEmpty()) return@forEach
+                    SportGroup.entries.forEach { group ->
+                        val groupLeagues = leagues.filter { it.sportGroup == group }
+                        if (groupLeagues.isEmpty()) return@forEach
                         Text(
-                            stringResource(region.labelRes),
+                            stringResource(group.labelRes),
                             style = stageText(16, 700),
                             color = StageColors.Muted,
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(start = 18.mpx, top = 16.mpx, bottom = 4.mpx),
                         )
-                        regionLeagues.forEach { league ->
+                        groupLeagues.forEach { league ->
                             StageMenuItem(
                                 text = stringResource(league.labelRes),
                                 icon = OwnTVIcon.SPORT,
@@ -1137,20 +1138,21 @@ private const val DayPattern = "EEE d.M."
 private const val ColorPrefix = "FF"
 private const val HashPrefix = "#"
 
-/** Top-to-bottom order of the picker's region groups. */
-private val RegionOrder = listOf(
-    LeagueRegion.GERMANY,
-    LeagueRegion.EUROPE,
-    LeagueRegion.INTERNATIONAL,
-    LeagueRegion.AMERICAS,
-    LeagueRegion.REST,
-)
-
-private val LeagueRegion.labelRes: Int
+private val SportGroup.labelRes: Int
     get() = when (this) {
-        LeagueRegion.GERMANY -> R.string.sport_region_germany
-        LeagueRegion.EUROPE -> R.string.sport_region_europe
-        LeagueRegion.INTERNATIONAL -> R.string.sport_region_international
-        LeagueRegion.AMERICAS -> R.string.sport_region_americas
-        LeagueRegion.REST -> R.string.sport_region_rest
+        SportGroup.SOCCER -> R.string.sport_group_soccer
+        SportGroup.RUGBY_UNION -> R.string.sport_group_rugby_union
+        SportGroup.RUGBY_LEAGUE -> R.string.sport_group_rugby_league
+        SportGroup.AUSTRALIAN_FOOTBALL -> R.string.sport_group_australian_football
+        SportGroup.CRICKET -> R.string.sport_group_cricket
+        SportGroup.AMERICAN_FOOTBALL -> R.string.sport_group_american_football
+        SportGroup.BASKETBALL -> R.string.sport_group_basketball
+        SportGroup.BASEBALL -> R.string.sport_group_baseball
+        SportGroup.ICE_HOCKEY -> R.string.sport_group_ice_hockey
+        SportGroup.VOLLEYBALL -> R.string.sport_group_volleyball
+        SportGroup.TENNIS -> R.string.sport_group_tennis
+        SportGroup.GOLF -> R.string.sport_group_golf
+        SportGroup.MOTORSPORT -> R.string.sport_group_motorsport
+        SportGroup.MMA -> R.string.sport_group_mma
+        SportGroup.OTHER -> R.string.sport_group_other
     }

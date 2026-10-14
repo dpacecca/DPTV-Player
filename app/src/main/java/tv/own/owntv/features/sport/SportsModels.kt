@@ -11,8 +11,14 @@ import androidx.annotation.StringRes
  * string resource.
  */
 
-/** Where a league sits in the picker's grouping. */
+/** Where a league is played. Catalogue metadata only; the picker groups by [SportGroup]. */
 enum class LeagueRegion { GERMANY, EUROPE, INTERNATIONAL, AMERICAS, REST }
+
+/** The sport a league belongs to: the picker's grouping, top to bottom in declaration order. */
+enum class SportGroup {
+    SOCCER, RUGBY_UNION, RUGBY_LEAGUE, AUSTRALIAN_FOOTBALL, CRICKET, AMERICAN_FOOTBALL, BASKETBALL,
+    BASEBALL, ICE_HOCKEY, VOLLEYBALL, TENNIS, GOLF, MOTORSPORT, MMA, OTHER,
+}
 
 /**
  * How a league's events are shaped:
@@ -40,7 +46,27 @@ data class SportLeague(
      * lives in `donottranslate.xml`.
      */
     @StringRes val extraChannelRes: Int? = null,
-)
+) {
+    /** Derived from the ESPN sport slug, so a new league lands in its sport's group by itself. */
+    val sportGroup: SportGroup
+        get() = when (espnSport) {
+            "soccer" -> SportGroup.SOCCER
+            "rugby" -> SportGroup.RUGBY_UNION
+            "rugby-league" -> SportGroup.RUGBY_LEAGUE
+            "australian-football" -> SportGroup.AUSTRALIAN_FOOTBALL
+            "cricket" -> SportGroup.CRICKET
+            "football" -> SportGroup.AMERICAN_FOOTBALL
+            "basketball" -> SportGroup.BASKETBALL
+            "baseball" -> SportGroup.BASEBALL
+            "hockey" -> SportGroup.ICE_HOCKEY
+            "volleyball" -> SportGroup.VOLLEYBALL
+            "tennis" -> SportGroup.TENNIS
+            "golf" -> SportGroup.GOLF
+            "racing" -> SportGroup.MOTORSPORT
+            "mma" -> SportGroup.MMA
+            else -> SportGroup.OTHER
+        }
+}
 
 data class SportTeam(
     val id: String,

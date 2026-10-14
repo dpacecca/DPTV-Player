@@ -69,6 +69,7 @@
 ### ✨ New features
 - **🏉 Rugby Union in the Sports Hub — 25 competitions**
 - **🏉 Rugby League in the Sports Hub — NRL**
+- **🗂️ League picker grouped by sport (TV and phone)**
 - **📺 DPTV-Player name, icon, TV banner and wordmark**
 - **📦 Core library built in-tree from core-lib/**
 
