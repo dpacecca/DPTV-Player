@@ -173,10 +173,11 @@ object RemoteRecordings {
      * home network is usually plain HTTP. Null for blank or unparseable input.
      */
     fun normalizeBaseUrl(raw: String): String? {
-        val trimmed = raw.trim().trimEnd('/')
+        val trimmed = raw.trim()
         if (trimmed.isEmpty()) return null
+        // Add the scheme before trimming slashes, or "http://" would become the host "http".
         val withScheme = if ("://" in trimmed) trimmed else "http://$trimmed"
-        val url = withScheme.toHttpUrlOrNull() ?: return null
+        val url = withScheme.trimEnd('/').toHttpUrlOrNull() ?: return null
         return url.toString().trimEnd('/')
     }
 
