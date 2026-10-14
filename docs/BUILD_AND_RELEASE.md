@@ -158,12 +158,9 @@ Without the keystore secrets CI still runs tests and lint and can build a debug 
 
 1. Add a `## v1.0.1 — <date>` section to `CHANGELOG.md` (bullet points only — it becomes the release
    body and the in-app "What's new").
-2. Create and push the tag `v1.0.1`. CI computes the version, builds the **signed** `standard` and
-   `x86_64` release APKs, and publishes the GitHub Release with:
-   - `DPTV-Player-v1.0.1.apk` (arm)
-   - `DPTV-Player-x86_64-v1.0.1.apk`
-3. The in-app updater reads `dpacecca/DPTV-Player` releases and picks the APK that matches the
-   device ABI (assets are matched on `.apk` and the `x86_64` marker).
+2. Create and push the tag `v1.0.1`. CI computes the version, builds the **signed** `standard`
+   (arm) release APK, and publishes the GitHub Release with `DPTV-Player-v1.0.1.apk`.
+3. The in-app updater reads `dpacecca/DPTV-Player` releases and picks the `.apk` asset.
 
 **Latest release page:** `https://github.com/dpacecca/DPTV-Player/releases/latest` (every APK is named with its version).
 

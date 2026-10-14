@@ -111,9 +111,8 @@ app/src/main/java/tv/own/owntv/
 Grab the signed APK from the [**latest release**](https://github.com/dpacecca/DPTV-Player/releases/latest)
 and sideload it with *Send files to TV*, a USB drive, or `adb install DPTV-Player-vX.Y.Z.apk`.
 
-> Install only from this repository's Releases. Each release ships **two APKs**, both named with
-> their version: `DPTV-Player-vX.Y.Z.apk` (arm — every real TV box) and
-> `DPTV-Player-x86_64-vX.Y.Z.apk` (emulators and rare Intel boxes).
+> Install only from this repository's Releases. Each release ships one APK, named with its version:
+> `DPTV-Player-vX.Y.Z.apk` (arm — every real TV box).
 
 ## 🛠️ Building & running
 

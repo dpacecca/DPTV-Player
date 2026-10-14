@@ -266,24 +266,16 @@ jobs:
         run: |
           chmod +x ./gradlew
           if [ -n "$KEYSTORE_FILE" ]; then
-            echo "Building signed release APKs (both ABI flavors)"
-            # One flavor at a time, so only one R8 run holds memory (see "Fit Gradle to the runner").
+            echo "Building the signed release APK (arm)"
+            # Only the standard (arm: arm64-v8a + armeabi-v7a) flavor is shipped. The x86_64 flavor
+            # (emulators) still exists in app/build.gradle.kts but is not built here.
             ./gradlew assembleStandardRelease --stacktrace
-            ./gradlew assembleX86_64Release --stacktrace
-            # Product flavors split the output by flavor subfolder:
-            #   standard/release  -> arm (arm64-v8a + armeabi-v7a) — the main download
-            #   x86_64/release    -> x86_64 — emulator / rare x86 box
             ARM_SRC=$(ls app/build/outputs/apk/standard/release/*.apk | head -n1)
-            X86_SRC=$(ls app/build/outputs/apk/x86_64/release/*.apk | head -n1)
-            echo "Built arm:    $ARM_SRC"
-            echo "Built x86_64: $X86_SRC"
+            echo "Built arm: $ARM_SRC"
             echo "ARM_SRC=$ARM_SRC" >> "$GITHUB_ENV"
-            echo "X86_SRC=$X86_SRC" >> "$GITHUB_ENV"
           else
             echo "Building debug APK"
-            ./gradlew assembleDebug
-            # Debug also builds both flavors; standard (arm) is the one most likely to be tested on a
-            # real device. Surface it as the primary artifact; x86_64 debug is still in its folder.
+            ./gradlew assembleStandardDebug
             SRC=$(ls app/build/outputs/apk/standard/debug/*.apk | head -n1)
             echo "Built: $SRC"
             echo "ARM_SRC=$SRC" >> "$GITHUB_ENV"
@@ -301,19 +293,11 @@ jobs:
           echo "APK_OUT=$OUT" >> "$GITHUB_ENV"
           echo "Packaged dist/$OUT (arm: arm64-v8a + armeabi-v7a)"
           # Every release file carries its version; there is no unversioned copy. The in-app
-          # updater picks any .apk asset (x86_64 by name), so it needs no fixed file name.
-          if [ "$IS_TAG" = "true" ]; then
-            # Separate x86_64 build for emulators / rare Intel boxes.
-            if [ -n "$X86_SRC" ]; then
-              cp "$X86_SRC" "dist/DPTV-Player-x86_64-v${{ steps.ver.outputs.name }}.apk"
-              echo "Packaged dist/DPTV-Player-x86_64-v${{ steps.ver.outputs.name }}.apk"
-            fi
-          fi
+          # updater picks any .apk asset, so it needs no fixed file name.
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          # Upload the whole dist/ so both the arm APK and the x86_64 APK are captured.
           name: ${{ env.APK_OUT }}
           path: dist/*
           if-no-files-found: error
@@ -366,7 +350,6 @@ jobs:
           name: DPTV-Player ${{ env.RELEASE_TAG }}
           files: |
             dist/${{ env.APK_OUT }}
-            dist/DPTV-Player-x86_64-v${{ steps.ver.outputs.name }}.apk
           body_path: dist/RELEASE_NOTES.md
           # Must stay false: it appends GitHub's auto commit/PR list under the body, which buries the
           # short in-app notes the updater dialog shows.
