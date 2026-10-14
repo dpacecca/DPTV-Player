@@ -181,7 +181,13 @@ jobs:
           chmod +x ./gradlew
           if [ -n "$KEYSTORE_FILE" ]; then
             echo "Building signed release APKs (both ABI flavors)"
-            ./gradlew assembleRelease --stacktrace
+            # One flavor at a time, with the Kotlin daemon capped: the release build compiles core-lib
+            # in-tree and runs R8 + lintVital, and both flavors in parallel with the 4 GB Gradle and
+            # 8 GB Kotlin heaps from gradle.properties ran the 16 GB runner out of memory (the runner
+            # was killed mid-R8). Local builds keep gradle.properties' settings.
+            RELEASE_FLAGS="--stacktrace --max-workers=2 -Pkotlin.daemon.jvmargs=-Xmx4g"
+            ./gradlew assembleStandardRelease $RELEASE_FLAGS
+            ./gradlew assembleX86_64Release $RELEASE_FLAGS
             # Product flavors split the output by flavor subfolder:
             #   standard/release  -> arm (arm64-v8a + armeabi-v7a) — the main download
             #   x86_64/release    -> x86_64 — emulator / rare x86 box
