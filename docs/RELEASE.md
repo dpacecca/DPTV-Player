@@ -1,4 +1,4 @@
-# docs/RELEASE.md — Signing, Versionierung, Updates (Stand: 2026-10-14)
+# docs/RELEASE.md — Signing, Versionierung, Updates (Stand: 2026-10-15)
 
 > Zweck: alles für signierte Releases und In-App-Updates an einem Ort.
 
@@ -39,10 +39,18 @@ muss einen Tag pushen. Dauer: Tests ~2 Min, signierter Build ~20 Min.
 
 ## In-App-Updates
 
-- `CoreBuildInfo.releaseRepo = "dpacecca/DPTV-Player"` (`OwnTVApp.kt`),
-  `updateCheckOnStart = true` (Core `SettingsRepository.kt`).
-- Der Updater fragt die GitHub-API ohne Login. Solange das Repo **privat** ist, findet er keine
-  Releases (kein Update-Angebot, keine Fehlermeldung an den User).
+- `CoreBuildInfo.releaseRepo = "dpacecca/DPTV-Player-releases"` (`OwnTVApp.kt`),
+  `updateCheckOnStart = true` (Core `SettingsRepository.kt`). Manuell: More → Check for updates.
+- Der Updater fragt die GitHub-API ohne Login. Das Quell-Repo ist **privat** (404 ohne Login),
+  daher veröffentlicht CI jedes Release zusätzlich im **öffentlichen** Repo
+  `dpacecca/DPTV-Player-releases` (nur Releases, kein Code; braucht mindestens einen Commit,
+  z. B. README, damit der Tag einen Branch hat).
+- Repo-Secret `RELEASES_REPO_TOKEN`: Fine-grained Token, nur Repo `dpacecca/DPTV-Player-releases`,
+  Permission *Contents: Read and write*. Fehlt es, überspringt CI die Kopie mit Warnung.
+- Installation per `PackageInstaller`-Session: Download, Paketname prüfen, installieren. Ab Android 12
+  mit `USER_ACTION_NOT_REQUIRED` — ohne Rückfrage, sobald die App sich einmal selbst aktualisiert hat
+  (vorher ist der Dateimanager "Installer of record" und das System fragt einmal). Beim allerersten
+  In-App-Update fragt Android ausserdem einmal nach "Unbekannte Apps installieren" für DPTV-Player.
 - Release-Artefakt: `DPTV-Player-vX.Y.Z.apk` (arm); der Updater nimmt jedes `.apk`-Asset.
 
 ## Externe Dienste

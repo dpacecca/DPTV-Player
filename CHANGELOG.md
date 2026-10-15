@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.0.1
+
+### 🐞 Fixes
+- **🔄 Check for updates finds and installs new versions**
+
 ## v2.0.0
 
 ### ✨ New features
