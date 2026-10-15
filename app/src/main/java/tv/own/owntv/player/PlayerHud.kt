@@ -301,6 +301,12 @@ fun PlayerHud(
     // Hold ◀ / ▶ (v2): which arrow is down with the controls hidden, and whether it has been held.
     var arrowDown by remember { mutableStateOf<Key?>(null) }
     var arrowHeld by remember { mutableStateOf(false) }
+    // Shown for a few seconds when a hold asks to rewind a channel that cannot be rewound.
+    var noRewindTick by remember { mutableIntStateOf(0) }
+    var noRewindVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(noRewindTick) {
+        if (noRewindTick > 0) { noRewindVisible = true; delay(4_000); noRewindVisible = false }
+    }
     var showInfo by remember { mutableStateOf(false) } // stream technical-info overlay
     // Used only by "Report this stream", which writes the current readout into the playback log (F18).
     val reportContext = androidx.compose.ui.platform.LocalContext.current
@@ -631,7 +637,10 @@ fun PlayerHud(
             // (the controls come up on the timeline and the held key goes on scrubbing it there); a press
             // keeps its old meaning — the lists, or a step when "Left and right rewind live TV" is on.
             // Acting on release is what lets a hold mean something else.
-            if (!controlsVisible && error == null && !inert && dialog == HudDialog.NONE && onScrubLive != null &&
+            // A hold never opens the lists: on a channel with nothing to rewind (no provider archive, and
+            // "Pause and rewind live TV" off) it says so instead.
+            if (!controlsVisible && error == null && !inert && dialog == HudDialog.NONE && isLive &&
+                (onScrubLive != null || onOpenChannelList != null || onOpenHistoryList != null) &&
                 (e.key == Key.DirectionLeft || e.key == Key.DirectionRight)
             ) {
                 val back = e.key == Key.DirectionLeft
@@ -641,16 +650,20 @@ fun PlayerHud(
                         arrowHeld = false
                     } else if (arrowDown == e.key && !arrowHeld) {
                         arrowHeld = true
-                        onScrubLive(if (back) LIVE_SCRUB_STEP_SEC else -LIVE_SCRUB_STEP_SEC)
-                        focusSeekOnShow = true
-                        controlsVisible = true
+                        if (onScrubLive != null) {
+                            onScrubLive(if (back) LIVE_SCRUB_STEP_SEC else -LIVE_SCRUB_STEP_SEC)
+                            focusSeekOnShow = true
+                            controlsVisible = true
+                        } else {
+                            noRewindTick++
+                        }
                     }
                     KeyEventType.KeyUp -> if (arrowDown == e.key) {
                         arrowDown = null
                         if (!arrowHeld) {
                             val start = e.key.horizontalDirection(layoutDirection) == HorizontalDirection.START
                             when {
-                                liveLeftRightRewinds -> {
+                                liveLeftRightRewinds && onScrubLive != null -> {
                                     onScrubLive(if (back) LIVE_SCRUB_STEP_SEC else -LIVE_SCRUB_STEP_SEC)
                                     focusSeekOnShow = true
                                     controlsVisible = true
@@ -873,8 +886,8 @@ fun PlayerHud(
         }
 
         // Engine-switch confirmation toast (bottom-center, semi-transparent) — shown briefly after the
-        // user flips the engine via the HUD's MPV/EXO toggle.
-        engineMsg?.let { msg ->
+        // user flips the engine via the HUD's MPV/EXO toggle. Also "nothing to rewind" after a hold.
+        (engineMsg ?: if (noRewindVisible) stringResource(R.string.sport_player_no_rewind) else null)?.let { msg ->
             Box(
                 Modifier.align(Alignment.BottomCenter).padding(bottom = 104.dp),
                 contentAlignment = Alignment.Center,

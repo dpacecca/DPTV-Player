@@ -43,6 +43,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -193,6 +195,10 @@ fun EpgScreen(
     onEntryHook: (((() -> Boolean)?) -> Unit)? = null,
     /** ◀ from the categories: the app's menu (Settings and the other sections). */
     onOpenRail: () -> Unit = {},
+    /** Where the video box is (in the window) while it shows the preview, null when it does not, and its
+     *  corner radius. Given, the shell draws the video there with its one player surface — the same one
+     *  full screen uses — and this screen leaves that box to it. */
+    onVideoBounds: ((androidx.compose.ui.geometry.Rect?, Dp) -> Unit)? = null,
 ) {
     val vm: EpgViewModel = koinViewModel()
     // Live TV's view model: its preview player (no second decoder), its category list and playlist marks.
@@ -330,15 +336,27 @@ fun EpgScreen(
         }
     }
 
-    // Back from the player: the row of the channel that was playing (a zap in full screen included).
+    // Back from the player (the shell notes the channel that was playing, a zap included) or from Settings:
+    // the row the guide was on.
     LaunchedEffect(restoreFocus, state.loading, state.channels.size) {
         if (!restoreFocus || state.loading || state.channels.isEmpty()) return@LaunchedEffect
-        val idx = listOfNotNull(previewChannel?.id, vm.lastTunedChannelId)
+        val idx = listOfNotNull(vm.lastFocusedChannelId, previewChannel?.id, vm.lastTunedChannelId)
             .firstNotNullOfOrNull { id -> state.channels.indexOfFirst { it.id == id }.takeIf { it >= 0 } } ?: 0
         focusedRow = idx
         delay(80)
         focusGrid(idx)
         onRestored()
+    }
+    // Opening Live TV again (from Settings, Sport, the rail): the row focus was on last time, already in
+    // view, so ▶ from the rail and the info on top land there — not on the first channel.
+    var positioned by remember { mutableStateOf(false) }
+    LaunchedEffect(state.loading, state.channels) {
+        if (positioned || restoreFocus || reveal != null || state.loading || state.channels.isEmpty()) return@LaunchedEffect
+        positioned = true
+        val id = vm.lastFocusedChannelId ?: previewChannel?.id ?: return@LaunchedEffect
+        val idx = state.channels.indexOfFirst { it.id == id }.takeIf { it > 0 } ?: return@LaunchedEffect
+        focusedRow = idx
+        runCatching { rowListState.scrollToItem((idx - 2).coerceAtLeast(0)) }
     }
     // Search's "Go to channel": its row, once its category is on screen.
     LaunchedEffect(reveal, state.loading, state.channels) {
@@ -515,15 +533,34 @@ fun EpgScreen(
         val showVideo = effectivePreview && previewArmed
 
         // The video, and the programme under the cursor beside it (below it on a phone).
+        val sharedSurface = onVideoBounds != null
+        // "No video here" only when the preview is switched off — never while full screen has the player:
+        // the shell keeps its surface at this box across that, which is the whole point.
+        val previewWanted = livePreviewSetting && guidePreview
+        // The shell's surface draws over everything, so it steps back while the categories are open over
+        // the video. Nothing is reported until the box has been measured: an early "none" right after Back
+        // would drop the very surface this is meant to keep.
+        var videoRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+        val videoRadius = if (compact) 0.dp else 20.mpx
+        LaunchedEffect(videoRect, previewWanted, sheetOpen, sharedSurface) {
+            if (!sharedSurface) return@LaunchedEffect
+            when {
+                !previewWanted || sheetOpen -> onVideoBounds?.invoke(null, 0.dp)
+                videoRect != null -> onVideoBounds?.invoke(videoRect, videoRadius)
+            }
+        }
         @Composable
         fun TopVideo(mod: Modifier) = GuideVideo(
             channel = videoChannel,
             channelLine = videoChannel?.let { listOfNotNull(it.number?.toString(), ProviderTags.parse(it.name).name).joinToString(" · ") },
             nowTitle = videoChannel?.let { ch -> programmeAt(vm.cachedProgrammes(ch), liveNow)?.takeIf { liveNow < it.stopMs }?.title },
             previewEngine = liveVm.previewEngine,
-            showVideo = showVideo,
+            // The shell draws the picture here; this box keeps the logo for while it cannot (categories open).
+            showVideo = showVideo && !sharedSurface,
             compact = compact,
-            modifier = mod,
+            modifier = if (sharedSurface && previewWanted) {
+                mod.onGloballyPositioned { videoRect = it.boundsInRoot() }
+            } else mod,
         )
 
         @Composable
@@ -658,6 +695,7 @@ fun EpgScreen(
                                         reminderStarts = remindersByChannel[channel.id].orEmpty(),
                                         onFocused = {
                                             focusedRow = index
+                                            vm.lastFocusedChannelId = channel.id
                                             val now = System.currentTimeMillis()
                                             if (cursorTime !in state.windowStart until state.windowEnd || (!pastMode && cursorTime < now)) cursorTime = now
                                         },

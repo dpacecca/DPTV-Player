@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -197,6 +198,19 @@ fun OwnTVShell(
     }
     // One-shot: set when leaving the player so the returning browse screen re-focuses the item you played.
     var restoreFocus by remember { mutableStateOf(false) }
+    // Settings opened from Live TV (◀ from the guide, then the rail): Back goes back to the guide, on the
+    // channel it was on, instead of to More.
+    var settingsFromLive by remember { mutableStateOf(false) }
+    var lastSection by remember { mutableStateOf(selectedSection) }
+    LaunchedEffect(selectedSection) {
+        if (selectedSection == MainSection.SETTINGS) settingsFromLive = lastSection == MainSection.LIVE_TV
+        else if (selectedSection != MainSection.EPG) settingsFromLive = false
+        lastSection = selectedSection
+    }
+    val backFromSettings: () -> Unit = {
+        restoreFocus = true
+        onSelectSection(if (settingsFromLive) MainSection.LIVE_TV else MainSection.MORE)
+    }
     var searchReturn by remember { mutableStateOf<MainSection?>(null) }
     var restoreTrendingSearchFocus by remember { mutableStateOf(false) }
     var trendingSearchActive by remember { mutableStateOf(false) }
@@ -241,6 +255,10 @@ fun OwnTVShell(
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var downloadsEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    var dvrEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    // Where the guide's video box is on screen (null: no video there), for the shared player surface.
+    var guideVideoBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    var guideVideoRadius by remember { mutableStateOf(0.dp) }
     var moreEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // More › Settings opens today's Settings at a group, or with its search open (until P10 redraws it).
     var settingsStart by remember { mutableStateOf<tv.own.owntv.features.shell.components.SettingsStart?>(null) }
@@ -573,6 +591,8 @@ fun OwnTVShell(
         // v2: Live TV and the guide are one screen, so Back from a live channel lands on its row in the
         // guide, not on the rail.
         val backToGuide = zapSource == MainSection.LIVE_TV
+        // The guide lands on the channel that was playing (a zap in full screen included).
+        if (backToGuide) liveVm.previewChannel.value?.let { epgVm.lastFocusedChannelId = it.id }
         if (backToGuide && selectedSection != MainSection.LIVE_TV) onSelectSection(MainSection.LIVE_TV)
         if (!backToGuide && selectedSection != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
         restoreFocus = true
@@ -892,7 +912,7 @@ fun OwnTVShell(
             // the first press: the fallback below simply moved focus to the rail and nothing else
             // happened. Handled here as well so the answer is the same whichever handler fires; a
             // sub-screen of Settings still wins, because its handler is composed deeper than this.
-            selectedSection == MainSection.SETTINGS -> { restoreFocus = true; onSelectSection(MainSection.MORE) }
+            selectedSection == MainSection.SETTINGS -> backFromSettings()
             // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
             focusedLayer == ShellLayer.SIDEBAR -> showExit = true
@@ -1187,7 +1207,7 @@ fun OwnTVShell(
                             onOpenPlaylist = { /* Phase 6: open setup/playlist */ },
                             // Settings is reached through More now, so Back out of its root goes
                             // back there rather than to the rail — one level out, not two.
-                            onBack = { restoreFocus = true; onSelectSection(MainSection.MORE) },
+                            onBack = backFromSettings,
                             openEpgAdd = openEpgAdd,
                             onEpgAddConsumed = { openEpgAdd = false },
                             start = settingsStart,
@@ -1298,9 +1318,23 @@ fun OwnTVShell(
                             liveMode = true,
                             onEntryHook = { guideEntry = it },
                             onOpenRail = focusRail,
+                            onVideoBounds = { bounds, radius -> guideVideoBounds = bounds; guideVideoRadius = radius },
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
                             onContentScrolled = { contentScrolled = it },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
+                                .focusGroup(),
+                        )
+
+                        // v2.1: recorded programmes, between Live TV and Sport in the menu.
+                        selectedSection == MainSection.DVR -> tv.own.owntv.features.recordings.DvrScreen(
+                            onFullscreen = { openFullscreen() },
+                            restoreFocus = restoreFocus,
+                            onRestored = { restoreFocus = false },
+                            onEntryHook = { dvrEntry = it },
+                            contentStart = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 64.mpx else 150.mpx,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
@@ -1437,6 +1471,7 @@ fun OwnTVShell(
                     MainSection.EPG, MainSection.LIVE_TV -> guideEntry
                     MainSection.MOVIES, MainSection.SERIES -> vodEntry
                     MainSection.DOWNLOADS -> downloadsEntry
+                    MainSection.DVR -> dvrEntry
                     MainSection.MORE -> moreEntry
                     else -> null
                 },
@@ -1539,11 +1574,30 @@ fun OwnTVShell(
           }
       }
 
-      if (multiview == null && (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI)) {
+      // v2.1 — the guide's video is drawn here too, by this same surface at the guide's video box. Going full
+      // screen and Back then resizes one picture instead of tearing a surface down and building another,
+      // which on many boxes restarts the decoder and looked like the channel opening again.
+      val guideArmed by liveVm.previewArmed.collectAsStateWithLifecycle()
+      val guideLivePreview by liveVm.livePreviewEnabled.collectAsStateWithLifecycle()
+      val guidePreviewOn by epgVm.guidePreview.collectAsStateWithLifecycle()
+      val guideBounds = guideVideoBounds
+      // Not while the floating rail is open over the content: this surface would draw over the rail.
+      val railOverContent = focusedLayer == ShellLayer.SIDEBAR && navStyle != tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED
+      val guideDock = multiview == null && playerMode == PlayerMode.NONE && selectedSection == MainSection.LIVE_TV &&
+          guideBounds != null && guideArmed && guideLivePreview && guidePreviewOn && !railOverContent
+      if (multiview == null && (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI || guideDock)) {
         val isFull = playerMode == PlayerMode.FULLSCREEN
+        val density = androidx.compose.ui.platform.LocalDensity.current
         Box(
             modifier = if (isFull) {
                 Modifier.fillMaxSize().background(Color.Black)
+            } else if (guideDock && guideBounds != null) {
+                with(density) {
+                    Modifier.align(Alignment.TopStart)
+                        .offset { androidx.compose.ui.unit.IntOffset(guideBounds.left.toInt(), guideBounds.top.toInt()) }
+                        .size(guideBounds.width.toDp(), guideBounds.height.toDp())
+                        .clip(RoundedCornerShape(guideVideoRadius)).background(Color.Black)
+                }
             } else {
                 // Dynamic docked size/position: a screen-width fraction at the chosen corner/edge, so it
                 // scales with the panel + UI zoom (unlike the old fixed 340×191 dp box).
@@ -1555,10 +1609,10 @@ fun OwnTVShell(
             // "Promote Preview": a Live channel playing on ExoPlayer renders the ExoPlayer surface — in BOTH
             // full-screen AND the docked mini-player (same call site = the surface persists across dock/
             // expand, so playback never blips). Everything else (mpv) renders mpv's surface.
-            if (liveOnExo) {
+            if (liveOnExo || guideDock) {
                 tv.own.owntv.player.ExoPreviewSurface(
                     engine = liveVm.previewEngine, modifier = Modifier.fillMaxSize(),
-                    keepAwake = true, autoFrameRate = isFull && autoFrameRate,
+                    keepAwake = !guideDock, autoFrameRate = isFull && autoFrameRate,
                 )
             } else {
                 MpvVideoSurface(
@@ -1569,7 +1623,7 @@ fun OwnTVShell(
             // The item has no video track of its own (a radio channel, a music-only "movie"). Playing it is
             // correct — but a black screen with sound reads as a broken player, so name what is happening.
             // Read from whichever engine is on screen; only ever composed when there is no video to lose.
-            val audioOnlyMedia by if (liveOnExo) {
+            val audioOnlyMedia by if (liveOnExo || guideDock) {
                 liveVm.previewEngine.audioOnlyMedia.collectAsStateWithLifecycle()
             } else {
                 player.audioOnlyMedia.collectAsStateWithLifecycle()
@@ -1580,7 +1634,7 @@ fun OwnTVShell(
             // Direct render mode: mpv can't draw subtitles on the decoder-owned surface — the app does.
             // Also drawn docked (F19b): the mini-player is a real watching mode for a subtitled film, and
             // dropping the only line of dialogue there made subtitles look broken. Scaled to the box.
-            if (!liveOnExo) {
+            if (!liveOnExo && !guideDock) {
                 tv.own.owntv.player.SubtitleOverlay(
                     player = player, modifier = Modifier.fillMaxSize(),
                     // Tied to the chosen mini size, but nudged up and floored: a strictly proportional
@@ -1884,7 +1938,7 @@ fun OwnTVShell(
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
-            } else {
+            } else if (!guideDock) {
                 MiniPlayer(
                     player = if (liveOnExo) liveVm.previewEngine else mpvEngine,
                     onExpand = expandPlayer,
@@ -2039,7 +2093,7 @@ private fun OfflineBanner() {
     }
 
 /** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
-private val StageSections = setOf(MainSection.SEARCH, MainSection.HOME, MainSection.LIVE_TV, MainSection.EPG, MainSection.SPORT, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS, MainSection.MORE, MainSection.SETTINGS)
+private val StageSections = setOf(MainSection.SEARCH, MainSection.HOME, MainSection.LIVE_TV, MainSection.DVR, MainSection.EPG, MainSection.SPORT, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS, MainSection.MORE, MainSection.SETTINGS)
 
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {
@@ -2050,6 +2104,7 @@ private val MainSection.emptyIcon: OwnTVIcon
         MainSection.SERIES -> OwnTVIcon.SERIES
         MainSection.DOWNLOADS -> OwnTVIcon.DOWNLOADS
         MainSection.EPG -> OwnTVIcon.EPG
+        MainSection.DVR -> OwnTVIcon.REC
         MainSection.SPORT -> OwnTVIcon.SPORT
         MainSection.SETTINGS -> OwnTVIcon.SETTINGS
         MainSection.MORE -> OwnTVIcon.MORE
@@ -2091,12 +2146,12 @@ private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (
         RailCategory("Movies", labelRes = tv.own.owntv.R.string.content_category_movies),
         RailCategory("Series", labelRes = tv.own.owntv.R.string.content_category_series),
     )
-    MainSection.SETTINGS, MainSection.MORE, MainSection.SPORT -> emptyList()
+    MainSection.SETTINGS, MainSection.MORE, MainSection.SPORT, MainSection.DVR -> emptyList()
 }
 
 @Composable
 private fun placeholderCount(section: MainSection): String = when (section) {
-    MainSection.SEARCH, MainSection.HOME, MainSection.EPG, MainSection.SPORT, MainSection.SETTINGS, MainSection.MORE -> ""
+    MainSection.SEARCH, MainSection.HOME, MainSection.EPG, MainSection.DVR, MainSection.SPORT, MainSection.SETTINGS, MainSection.MORE -> ""
     MainSection.LIVE_TV -> stringResource(R.string.content_zero_channels)
     MainSection.MOVIES -> stringResource(R.string.content_zero_movies)
     MainSection.SERIES -> stringResource(R.string.content_zero_series)

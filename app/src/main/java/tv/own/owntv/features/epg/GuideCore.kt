@@ -77,8 +77,8 @@ import tv.own.owntv.ui.components.drawStageGlyph
 import tv.own.owntv.ui.theme.glass
 
 internal object GuideGridDefaults {
-    /** The channel column when the guide widths are not customised (v2: number, logo and name, 400 of 1920). */
-    const val ChannelColShare = 400f / 1920f
+    /** The channel column when the guide widths are not customised (v2.1: number, logo and a two-line name, 520 of 1920). */
+    const val ChannelColShare = 520f / 1920f
     /** v2 rows: 80 high, so a long title takes two lines; 86 apart. */
     val RowHeight = 80.mpx
     val RowGap = 6.mpx

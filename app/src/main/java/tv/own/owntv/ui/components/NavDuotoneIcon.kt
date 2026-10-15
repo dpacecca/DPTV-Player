@@ -139,6 +139,14 @@ fun NavDuotoneIcon(
                 drawPath(poly(50f,15f, 59f,21f, 69f,22f, 74f,30f), soft, style = thin)
             }
 
+            // ---- DVR — a screen with the record dot ------------------------------
+            MainSection.DVR -> {
+                rect(17f, 27f, 67f, 46f, 10f, fill, stroke)
+                dot(50f, 50f, 11f, soft)
+                dot(50f, 50f, 6f, fill)
+                drawPath(poly(33f,83f, 67f,83f), soft, style = stroke)
+            }
+
             // ---- Sport — trophy cup + handles + ball dot -------------------------
             MainSection.SPORT -> {
                 drawPath(polyC(30f,20f, 70f,20f, 66f,50f, 50f,58f, 34f,50f), fill, style = stroke)

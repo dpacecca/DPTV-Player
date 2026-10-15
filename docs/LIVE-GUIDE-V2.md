@@ -1,4 +1,4 @@
-# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-15)
+# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-15, v2.1.0)
 
 > Zweck: Verhalten und Tastenbelegung des zusammengelegten Live-TV/Guide-Screens und des Player-Banners ab v2.0.0.
 
@@ -36,3 +36,19 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 - Back schliesst den Player und landet auf der Guide-Zeile des laufenden Kanals.
 - ◀ ▶ halten (Kanal mit Archiv): Scrubben über die Zeitleiste. Kurzer Druck wie bisher
   (Kanalliste / Verlauf, bzw. Schritt bei "Links/Rechts spult Live-TV").
+
+## v2.1.0
+
+- Guide-Video: Die Shell zeichnet das Vorschaubild mit ihrer einen gehoisteten Player-Surface an der
+  Position der Video-Box (`EpgScreen(onVideoBounds)` → `guideVideoBounds`), dieselbe Surface wie im
+  Vollbild. Back aus dem Vollbild verkleinert nur, statt Surface neu zu bauen (auf vielen Boxen
+  Decoder-Reset = sah wie Neuladen aus). Nicht bei offener Kategorien-Leiste oder schwebender Rail
+  (Surface läge darüber); dann zeigt die Box das Logo.
+- Halten ◀ ▶ im Player öffnet nie die Listen; ohne Archiv und ohne „Live-TV anhalten und
+  zurückspulen" erscheint ein Hinweis (`sport_player_no_rewind`).
+- Kanalspalte 520/1920, Name zweizeilig (fokussiert: Marquee). Synopsis 23 mpx, Rest der Höhe.
+- Back aus Settings → Live TV, wenn Settings von Live TV aus geöffnet wurde; Guide merkt sich
+  `EpgViewModel.lastFocusedChannelId`.
+- `MainSection.DVR` (Rail zwischen Live TV und Sport): `features/recordings/DvrScreen.kt`, fertige
+  Aufnahmen, Standbild via `DvrThumbnails` (MediaMetadataRetriever, Cache `dvr_thumbs/`), Sortierung
+  Datum/A–Z, OK spielt, OK halten/☰ = Abspielen/Löschen.
