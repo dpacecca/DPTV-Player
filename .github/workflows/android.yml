@@ -120,6 +120,8 @@ jobs:
       # Set at runtime via $GITHUB_ENV in the "Name the APK" step. Declared here (empty) so static
       # linters don't flag the later ${{ env.APK_OUT }} references as "context access might be invalid".
       APK_OUT: ""
+      # Set by the "Check the releases-repository token" step when RELEASES_REPO_TOKEN exists.
+      HAS_RELEASES_TOKEN: ""
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -353,4 +355,34 @@ jobs:
           body_path: dist/RELEASE_NOTES.md
           # Must stay false: it appends GitHub's auto commit/PR list under the body, which buries the
           # short in-app notes the updater dialog shows.
+          generate_release_notes: false
+
+      # This repository is private, and GitHub answers its release API and APK downloads with 404 to
+      # an app with no login, so the in-app updater reads a public repository that holds nothing but the
+      # releases (CoreBuildInfo.releaseRepo in OwnTVApp.kt). RELEASES_REPO_TOKEN: a fine-grained token
+      # with Contents read and write on dpacecca/DPTV-Player-releases only. Without it the copy is
+      # skipped with a warning; the release above still stands.
+      - name: Check the releases-repository token
+        if: env.IS_TAG == 'true'
+        env:
+          RELEASES_REPO_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+        run: |
+          if [ -n "$RELEASES_REPO_TOKEN" ]; then
+            echo "HAS_RELEASES_TOKEN=true" >> "$GITHUB_ENV"
+          else
+            echo "::warning::RELEASES_REPO_TOKEN is not set: this release is not copied to dpacecca/DPTV-Player-releases, so the in-app updater will not see it."
+          fi
+
+      - name: Publish to the public releases repository
+        if: env.IS_TAG == 'true' && env.HAS_RELEASES_TOKEN == 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          repository: dpacecca/DPTV-Player-releases
+          token: ${{ secrets.RELEASES_REPO_TOKEN }}
+          # No target_commitish: the tag is created on that repository's default branch.
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: DPTV-Player ${{ env.RELEASE_TAG }}
+          files: |
+            dist/${{ env.APK_OUT }}
+          body_path: dist/RELEASE_NOTES.md
           generate_release_notes: false

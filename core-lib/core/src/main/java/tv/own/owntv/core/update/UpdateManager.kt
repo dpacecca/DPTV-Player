@@ -216,6 +216,13 @@ class UpdateManager(
         registerInstallReceiver()
         val installer = context.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+        // Android 12+: an update to an app this app installed itself goes through without the system's
+        // "Install?" prompt. The very first self-update still asks — the app that sideloaded the APK
+        // (a file manager, a browser) is the installer of record until then — and the system decides
+        // per install, falling back to STATUS_PENDING_USER_ACTION, which the receiver below handles.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+        }
         val sessionId = try {
             installer.createSession(params)
         } catch (e: IOException) {
