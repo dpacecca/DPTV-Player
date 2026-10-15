@@ -17,6 +17,14 @@
 1	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	hid:${entry.key}
 1	app/src/main/java/tv/own/owntv/features/customize/CustomizeViewModel.kt	Custom
 1	app/src/main/java/tv/own/owntv/features/customize/MoveToCategoryDialog.kt	new
+1	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	4K
+1	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	5.1
+1	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	7.1
+1	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	FPS
+1	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	MONO
+1	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	STEREO
+1	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	p
+1	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	·
 8	app/src/main/java/tv/own/owntv/features/settings/DnsSettingsScreen.kt	\0
 1	app/src/main/java/tv/own/owntv/features/settings/DnsSettingsScreen.kt	${cfg.host}$p
 1	app/src/main/java/tv/own/owntv/features/settings/DnsSettingsScreen.kt	:${cfg.port}

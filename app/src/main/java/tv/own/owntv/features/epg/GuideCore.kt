@@ -71,15 +71,16 @@ import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.ui.theme.PopupFontTheme
 import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.theme.mpxSp
 import tv.own.owntv.ui.stage.drawBoxShadow
 import tv.own.owntv.ui.components.drawStageGlyph
 import tv.own.owntv.ui.theme.glass
 
 internal object GuideGridDefaults {
-    /** The channel column when the guide widths are not customised (P4-01: 48 → 344 of 1920). */
-    const val ChannelColShare = 296f / 1920f
-    /** `.gcell` rows: 56 high, 62 apart. */
-    val RowHeight = 56.mpx
+    /** The channel column when the guide widths are not customised (v2: number, logo and name, 400 of 1920). */
+    const val ChannelColShare = 400f / 1920f
+    /** v2 rows: 80 high, so a long title takes two lines; 86 apart. */
+    val RowHeight = 80.mpx
     val RowGap = 6.mpx
     /** 3.5 hours across the mockup's 1512 px timeline. */
     val PxPerMin = 7.2.mpx
@@ -110,7 +111,7 @@ internal fun ProgrammeStripCanvas(
     val a = tv.own.owntv.ui.theme.stageAccent
     val px = with(density) { 1.mpx.toPx() }
     val pxPerMin = with(density) { GuideGridDefaults.PxPerMin.toPx() }
-    val titleStyle = tv.own.owntv.ui.theme.stageText(18, 700).copy(textDirection = TextDirection.Content)
+    val titleStyle = tv.own.owntv.ui.theme.stageText(19, 700).copy(lineHeight = 23.mpxSp).copy(textDirection = TextDirection.Content)
     val timeStyle = tv.own.owntv.ui.theme.stageText(14, 400).copy(fontFeatureSettings = "tnum", textDirection = TextDirection.Content)
     val formatTime = rememberSystemTimeFormatter()
     val rangeTemplate = stringResource(R.string.content_live_time_range_plain)
@@ -187,12 +188,30 @@ internal fun ProgrammeStripCanvas(
             val titleColor = if (focused) a.onAccent else textColor.copy(alpha = fade)
             val smallColor = if (focused) Color.Black.copy(alpha = 0.6f) else dimColor.copy(alpha = fade)
             val iconColor = if (focused) a.onAccent else a.accent.copy(alpha = fade)
-            val title = measurer.measure(p.title, titleStyle.copy(color = titleColor), overflow = TextOverflow.Ellipsis, maxLines = 1, softWrap = false, constraints = Constraints(maxWidth = textW))
-            drawText(title, topLeft = Offset(tx + 14 * px, 8 * px))
+            // The title takes two lines when it needs them (v2); the small line (icons, time) only fits under
+            // a one-line title, so with two the icons sit at the cell's end and the time is left to the info on top.
+            val title = measurer.measure(p.title, titleStyle.copy(color = titleColor), overflow = TextOverflow.Ellipsis, maxLines = 2, softWrap = true, constraints = Constraints(maxWidth = textW))
+            val twoLines = title.lineCount > 1
+            val icon = 14 * px
+            if (twoLines) {
+                drawText(title, topLeft = Offset(tx + 14 * px, (h - title.size.height) / 2f))
+                var ix = x + w - 12 * px - icon
+                fun endGlyph(g: OwnTVIcon, c: Color, filled: Boolean = false) {
+                    if (ix < tx + 14 * px + title.size.width) return
+                    drawStageGlyph(g, c, Offset(ix, h - icon - 8 * px), icon, filled)
+                    ix -= icon + 6 * px
+                }
+                if (p.startMs in recordingStarts) endGlyph(OwnTVIcon.REC, if (focused) a.onAccent else recRed.copy(alpha = fade), filled = true)
+                if (p.startMs in reminderStarts) endGlyph(OwnTVIcon.BELL, iconColor)
+                if (p.id in catchupIds) endGlyph(OwnTVIcon.REWIND, iconColor)
+                return@forEachIndexed
+            }
+            val blockH = title.size.height + 3 * px + 18 * px
+            val top = (h - blockH) / 2f
+            drawText(title, topLeft = Offset(tx + 14 * px, top))
             // The small line: icons first, 8 apart, then the time.
             var cx = tx + 14 * px
-            val lineTop = 8 * px + title.size.height + 3 * px
-            val icon = 14 * px
+            val lineTop = top + title.size.height + 3 * px
             fun glyph(g: OwnTVIcon, c: Color, filled: Boolean = false) {
                 if (cx + icon > x + w - 14 * px) return
                 drawStageGlyph(g, c, Offset(cx, lineTop + 2 * px), icon, filled)

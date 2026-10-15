@@ -169,6 +169,8 @@ fun OwnTVShell(
         runCatching { sidebarFocus.requestFocus() }
         Unit
     }
+    // v2: the TV Guide merged into Live TV. A saved or deep-linked Guide section opens Live TV.
+    LaunchedEffect(selectedSection) { if (selectedSection == MainSection.EPG) onSelectSection(MainSection.LIVE_TV) }
     val contentFocusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val contentLtr = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Ltr
     val homeFirstRowFocus = remember { FocusRequester() }
@@ -568,9 +570,13 @@ fun OwnTVShell(
         liveVm.onFullscreenExited() // no longer full-screen on ExoPlayer → let the preview re-take the engine
         player.stop()
         subtitleController.clear() // leaving the player drops the OpenSubtitles item context
-        if (selectedSection != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
+        // v2: Live TV and the guide are one screen, so Back from a live channel lands on its row in the
+        // guide, not on the rail.
+        val backToGuide = zapSource == MainSection.LIVE_TV
+        if (backToGuide && selectedSection != MainSection.LIVE_TV) onSelectSection(MainSection.LIVE_TV)
+        if (!backToGuide && selectedSection != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
         restoreFocus = true
-        focusRail()
+        if (!backToGuide) focusRail()
         Unit
     }
     /**
@@ -757,7 +763,7 @@ fun OwnTVShell(
             RemoteShortcutAction.OPEN_MOVIES -> openShortcutSection(MainSection.MOVIES)
             RemoteShortcutAction.OPEN_SERIES -> openShortcutSection(MainSection.SERIES)
             RemoteShortcutAction.OPEN_DOWNLOADS -> openShortcutSection(MainSection.DOWNLOADS)
-            RemoteShortcutAction.OPEN_GUIDE -> openShortcutSection(MainSection.EPG)
+            RemoteShortcutAction.OPEN_GUIDE -> openShortcutSection(MainSection.LIVE_TV)
             RemoteShortcutAction.OPEN_SEARCH -> openShortcutSection(MainSection.SEARCH)
             RemoteShortcutAction.OPEN_SETTINGS -> openShortcutSection(MainSection.SETTINGS)
             RemoteShortcutAction.OPEN_PROFILE_SWITCHER -> {
@@ -1095,7 +1101,6 @@ fun OwnTVShell(
             ) {
                 // Live TV's view (List / Guide, G14), and how a guide — the TV Guide or Live TV's Guide view —
                 // starts a channel or an archive programme: through LiveViewModel, the one live path.
-                val liveView by liveVm.liveView.collectAsStateWithLifecycle()
                 val guidePlayChannel: (ChannelEntity, List<ChannelEntity>) -> Unit = { ch, _ ->
                     restoreFocus = false
                     liveVm.watchFromGuide(ch)
@@ -1263,9 +1268,6 @@ fun OwnTVShell(
                             },
                             onGoToChannel = { ch ->
                                 restoreFocus = false
-                                if (liveView == tv.own.owntv.core.settings.SettingsRepository.LiveView.GUIDE) {
-                                    liveVm.setLiveView(tv.own.owntv.core.settings.SettingsRepository.LiveView.LIST)
-                                }
                                 liveVm.revealChannel(ch)
                                 searchReturn = MainSection.LIVE_TV
                                 onSelectSection(MainSection.LIVE_TV)
@@ -1287,14 +1289,15 @@ fun OwnTVShell(
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                        selectedSection == MainSection.LIVE_TV && liveView == tv.own.owntv.core.settings.SettingsRepository.LiveView.GUIDE -> EpgScreen(
+                        // v2: Live TV and the TV Guide are one screen — the guide with the preview on top.
+                        selectedSection == MainSection.LIVE_TV || selectedSection == MainSection.EPG -> EpgScreen(
                             onPlayChannel = guidePlayChannel,
                             onPlayCatchup = guidePlayCatchup,
                             onAddEpg = { openEpgAdd = true; onSelectSection(MainSection.SETTINGS) },
                             previewEnabled = playerMode == PlayerMode.NONE,
                             liveMode = true,
                             onEntryHook = { guideEntry = it },
-                            onListView = { liveVm.setLiveView(tv.own.owntv.core.settings.SettingsRepository.LiveView.LIST) },
+                            onOpenRail = focusRail,
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
                             onContentScrolled = { contentScrolled = it },
@@ -1302,17 +1305,6 @@ fun OwnTVShell(
                                 .fillMaxSize()
                                 .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
                                 .focusGroup(),
-                        )
-
-                        selectedSection == MainSection.LIVE_TV -> LiveScreen(
-                            onFullscreen = { openFullscreen() },
-                            onOpenGuide = { liveVm.setLiveView(tv.own.owntv.core.settings.SettingsRepository.LiveView.GUIDE) },
-                            onChildFocused = { focusedLayer = ShellLayer.CONTENT },
-                            previewEnabled = playerMode == PlayerMode.NONE,
-                            restoreFocus = restoreFocus,
-                            onRestored = { restoreFocus = false },
-                            onContentScrolled = { contentScrolled = it },
-                            modifier = Modifier.fillMaxSize(),
                         )
 
                         selectedSection == MainSection.SPORT -> SportsScreen(
@@ -1348,28 +1340,12 @@ fun OwnTVShell(
                         selectedSection == MainSection.DOWNLOADS -> DownloadsScreen(
                             onFullscreen = { openFullscreen() },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
-                            onOpenGuide = { onSelectSection(MainSection.EPG) },
+                            onOpenGuide = { onSelectSection(MainSection.LIVE_TV) },
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
                             onEntryHook = { downloadsEntry = it },
                             contentStart = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 64.mpx else 150.mpx,
                             modifier = Modifier.fillMaxSize(),
-                        )
-
-                        selectedSection == MainSection.EPG -> EpgScreen(
-                            onFullscreen = { openFullscreen() },
-                            onPlayChannel = guidePlayChannel,
-                            onPlayCatchup = guidePlayCatchup,
-                            previewEnabled = playerMode == PlayerMode.NONE,
-                            onEntryHook = { guideEntry = it },
-                            onAddEpg = { openEpgAdd = true; onSelectSection(MainSection.SETTINGS) },
-                            restoreFocus = restoreFocus,
-                            onRestored = { restoreFocus = false },
-                            onContentScrolled = { contentScrolled = it },
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
-                                .focusGroup(),
                         )
 
                         else -> Row(modifier = Modifier.fillMaxSize()) {
@@ -1443,7 +1419,8 @@ fun OwnTVShell(
                 size = railSize,
                 length = navLength,
                 selected = selectedSection,
-                visibleSections = visibleSections,
+                // v2: the TV Guide is Live TV now, so it has no rail item of its own.
+                visibleSections = visibleSections - MainSection.EPG,
                 onSelect = selectFromNav,
                 count = { section -> railCounts[section]?.takeIf { it > 0 } },
                 detail = { section -> railDetail(section, railDetails) },
@@ -1734,6 +1711,23 @@ fun OwnTVShell(
                         {
                             val guide by liveVm.zapGuide.collectAsStateWithLifecycle()
                             tv.own.owntv.features.shell.components.ZapGuideLines(guide)
+                        }
+                    } else null,
+                    // v2 — the information banner for the playing channel, while live (not an archive programme).
+                    infoBanner = if (isTunedLive) {
+                        { chips, showKey ->
+                            val epg by liveVm.nowNext.collectAsStateWithLifecycle()
+                            val ch = previewChannel
+                            tv.own.owntv.player.LiveInfoBanner(
+                                logoUrl = ch?.displayLogoUrl,
+                                number = ch?.number?.toString(),
+                                channelName = ch?.let { tv.own.owntv.features.live.ProviderTags.parse(it.name).name }.orEmpty(),
+                                chips = tv.own.owntv.features.epg.guideStreamChips(chips),
+                                catchup = ch?.catchup == true,
+                                now = epg?.now,
+                                next = epg?.next,
+                                showKey = showKey,
+                            )
                         }
                     } else null,
                     // Guide card for the playing channel (nowNext follows previewChannel = what's playing).
