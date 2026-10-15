@@ -1,0 +1,74 @@
+name: Mirror release
+
+# Copies a published release of this repository (its APK and notes) to the public
+# dpacecca/DPTV-Player-releases, which the in-app updater reads (this repository is private).
+# android.yml does the same after every release; this is for a release it could not copy, or to
+# check that RELEASES_REPO_TOKEN works. Actions → Mirror release → Run workflow → tag (empty = latest).
+# Running it again for the same tag replaces the APK and notes there.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to copy, e.g. v2.0.1 (empty = the latest release)"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read   # reading this repository's release; the public repository is written with the token
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    env:
+      SOURCE: ${{ github.repository }}
+      TARGET: dpacecca/DPTV-Player-releases
+    steps:
+      - name: Check the releases-repository token
+        env:
+          RELEASES_REPO_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+        run: |
+          if [ -z "$RELEASES_REPO_TOKEN" ]; then
+            echo "::error::RELEASES_REPO_TOKEN is not set. Add it under Settings → Secrets and variables → Actions → Repository secrets of this repository."
+            exit 1
+          fi
+          # The token must be able to see the target repository; a 404 here means it was not given access to it.
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $RELEASES_REPO_TOKEN" "https://api.github.com/repos/$TARGET")
+          if [ "$code" != "200" ]; then
+            echo "::error::RELEASES_REPO_TOKEN cannot read $TARGET (HTTP $code). Give the token access to that repository with Contents: Read and write."
+            exit 1
+          fi
+          echo "Token can read $TARGET."
+
+      - name: Download the release from this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_INPUT: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          TAG="$TAG_INPUT"
+          if [ -z "$TAG" ]; then
+            TAG=$(gh release view --repo "$SOURCE" --json tagName -q .tagName)
+          fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          mkdir -p dist
+          gh release download "$TAG" --repo "$SOURCE" --pattern '*.apk' --dir dist
+          gh release view "$TAG" --repo "$SOURCE" --json body -q .body > dist/RELEASE_NOTES.md
+          ls -la dist
+
+      - name: Publish it in the public repository
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$TARGET" >/dev/null 2>&1; then
+            echo "$TAG already exists in $TARGET: replacing its APK and notes."
+            gh release upload "$TAG" dist/*.apk --repo "$TARGET" --clobber
+            gh release edit "$TAG" --repo "$TARGET" --notes-file dist/RELEASE_NOTES.md
+          else
+            # No --target: the tag is created on that repository's default branch.
+            gh release create "$TAG" dist/*.apk --repo "$TARGET" \
+              --title "DPTV-Player $TAG" --notes-file dist/RELEASE_NOTES.md --latest
+          fi
+          echo "Published: https://github.com/$TARGET/releases/tag/$TAG"
