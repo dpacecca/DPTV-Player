@@ -496,6 +496,10 @@ class EpgViewModel(
         lastTunedChannelId = channel.id
     }
 
+    /** The channel whose row last had focus. The screen is rebuilt each time Live TV is opened (from
+     *  Settings, Sport, the rail), and this view model outlives it, so the guide opens on that row. */
+    var lastFocusedChannelId: Long? = null
+
     // Two more live-start paths used to live here — a `play(channel)` that tuned a Guide channel
     // straight on mpv, and a `playCatchup(...)` that opened the archive itself. Both bypassed the
     // ExoPlayer-first ladder, the per-channel engine pin and the learned decode quirks, and `play()`

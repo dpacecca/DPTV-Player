@@ -154,6 +154,7 @@ fun NavigationSettingsPopup(
 private val MenuSections = listOf(
     MainSection.HOME to OwnTVIcon.HOME,
     MainSection.LIVE_TV to OwnTVIcon.LIVE_TV,
+    MainSection.DVR to OwnTVIcon.REC,
     MainSection.EPG to OwnTVIcon.EPG,
     MainSection.SPORT to OwnTVIcon.SPORT,
 )

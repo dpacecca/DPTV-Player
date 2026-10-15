@@ -244,15 +244,19 @@ internal fun GuideInfoBlock(
                 )
             }
         }
-        if (!compact && programme != null) programmeDetailsLine(programme)?.let {
-            Text(it, style = stageText(17, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
         val synopsis = programme?.description
+        // The feed's details (genre, year, rating) only where there is no synopsis: the synopsis is the
+        // larger text and gets the room.
+        if (!compact && programme != null && synopsis.isNullOrBlank()) programmeDetailsLine(programme)?.let {
+            Text(it, style = stageText(19, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
         if (!synopsis.isNullOrBlank()) {
+            // Whatever height is left, cut at a whole line: large fonts and two-line titles leave less.
             Text(
                 synopsis,
-                style = stageText(t(18), 400).copy(lineHeight = (t(18) * 1.4f).mpxSp), color = stageTone(Color(0xFFCCD6D2), StageColors.Body),
-                maxLines = if (compact) 2 else 3, overflow = TextOverflow.Ellipsis,
+                style = stageText(t(23), 400).copy(lineHeight = (t(23) * 1.35f).mpxSp), color = stageTone(Color(0xFFCCD6D2), StageColors.Body),
+                maxLines = if (compact) 3 else 4, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
             )
         }
     }
@@ -328,9 +332,10 @@ internal fun GuideChannelLabel(channel: ChannelEntity, name: String, dot: Color?
             maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(numberWidth),
         )
         LivePlate(channel.displayLogoUrl, 64.mpx, 44.mpx, radius = 10.mpx)
+        // A long name takes two lines; on the focused row it scrolls on one line instead.
         Text(
-            name, style = stageText(20, 700), color = if (selected) a.accent else StageColors.Text,
-            maxLines = 1, overflow = TextOverflow.Ellipsis,
+            name, style = stageText(20, 700).copy(lineHeight = 23.mpxSp), color = if (selected) a.accent else StageColors.Text,
+            maxLines = if (selected) 1 else 2, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).then(
                 if (selected) Modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 900) else Modifier,
             ),
@@ -489,8 +494,8 @@ internal fun GuideProgrammeMenu(
         StageMenuHeader(title = title, subtitle = subtitle)
         if (!description.isNullOrBlank()) {
             Text(
-                description, style = stageText(16, 400).copy(lineHeight = (16 * 1.45f).mpxSp), color = StageColors.Muted,
-                maxLines = 5, overflow = TextOverflow.Ellipsis,
+                description, style = stageText(20, 400).copy(lineHeight = (20 * 1.4f).mpxSp), color = StageColors.Muted,
+                maxLines = 6, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(start = 12.mpx, end = 12.mpx, bottom = 12.mpx),
             )
         }

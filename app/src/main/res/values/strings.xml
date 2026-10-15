@@ -80,4 +80,23 @@
     <string name="sport_guide_catchup">Catch-up</string>
     <string name="sport_guide_next">Next</string>
     <string name="sport_guide_categories">Categories</string>
+    <string name="sport_player_no_rewind">This channel has no catch-up. To rewind any channel, turn on Settings › Pause and rewind live TV.</string>
+    <plurals name="sport_dvr_count">
+        <item quantity="one">%1$d recording</item>
+        <item quantity="other">%1$d recordings</item>
+    </plurals>
+    <plurals name="sport_dvr_recording_now">
+        <item quantity="one">%1$d recording now</item>
+        <item quantity="other">%1$d recording now</item>
+    </plurals>
+    <plurals name="sport_dvr_scheduled">
+        <item quantity="one">%1$d scheduled</item>
+        <item quantity="other">%1$d scheduled</item>
+    </plurals>
+    <string name="sport_dvr_sort">Sort</string>
+    <string name="sport_dvr_sort_date">Date</string>
+    <string name="sport_dvr_sort_az">A–Z</string>
+    <string name="sport_dvr_empty">No recordings yet. In the guide, hold OK on a programme and choose Record.</string>
+    <string name="sport_dvr_resume">Resume from %1$s</string>
+    <string name="sport_dvr_start_over">Start over</string>
 </resources>

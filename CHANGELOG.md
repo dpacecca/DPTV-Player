@@ -64,6 +64,18 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.0.2
+
+### ✨ New features
+- **📼 DVR in the menu: recorded shows with a still, date and synopsis, sorted by date or A–Z**
+- **📺 Wider channel names in the guide, two lines when long**
+- **🔤 Larger programme synopsis in the guide, details and info banner**
+
+### 🐞 Fixes
+- **↩️ Back from the player keeps the channel playing in the guide instead of reopening it**
+- **⏪ Holding Left or Right in the player no longer opens the channel list**
+- **⚙️ Back from Settings returns to the guide on the same channel**
+
 ## v2.0.1
 
 ### 🐞 Fixes

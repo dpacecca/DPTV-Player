@@ -38,7 +38,69 @@ class RecordingsViewModel(
     private val recordings: RecordingManager,
     val player: OwnTVPlayer,
     private val externalPlayerLauncher: ExternalPlayerLauncher,
+    context: android.content.Context,
 ) : ViewModel() {
+
+    // --- Resume (v2.1): where each recording was left, so opening it again can pick up there. ---------
+    // Kept on this device only, by recording id. Saved every few seconds while it plays — switching the
+    // television off ends the process without any "exit" — and once more when the player is left.
+    private val progress = context.applicationContext.getSharedPreferences(PROGRESS_PREFS, android.content.Context.MODE_PRIVATE)
+    private val _progressRevision = MutableStateFlow(0)
+    /** Bumped whenever a saved position changes, so the list can redraw its progress bars. */
+    val progressRevision: StateFlow<Int> = _progressRevision.asStateFlow()
+    private var playingId: Long? = null
+    private var playingUrl: String? = null
+    private var trackJob: kotlinx.coroutines.Job? = null
+
+    /** Where [recording] was left, when that is worth resuming: past the first half minute and not in its last minute. */
+    fun resumePositionMs(recording: RecordingEntity): Long? {
+        val pos = progress.getLong("pos_${recording.id}", 0L)
+        val dur = progress.getLong("dur_${recording.id}", 0L)
+        return pos.takeIf { it >= MIN_RESUME_MS && (dur <= 0L || dur - it > END_MARGIN_MS) }
+    }
+
+    /** How far through [recording] the saved position is (0–1), or null with nothing saved. */
+    fun progressFraction(recording: RecordingEntity): Float? {
+        val pos = resumePositionMs(recording) ?: return null
+        val dur = progress.getLong("dur_${recording.id}", 0L).takeIf { it > 0 }
+            ?: (recording.programmeStopMs - recording.programmeStartMs).takeIf { it > 0 } ?: return null
+        return (pos.toFloat() / dur).coerceIn(0f, 1f)
+    }
+
+    /** Save where the recording now playing is, if the player is still on it. */
+    fun saveProgressNow() {
+        val id = playingId ?: return
+        val url = playingUrl ?: return
+        if (player.currentMediaUrl != url) return
+        val pos = player.position.value
+        val dur = player.duration.value
+        if (pos <= 0L) return
+        // Watched to the end: nothing to come back to.
+        val finished = dur > 0 && dur - pos <= END_MARGIN_MS
+        progress.edit().apply {
+            if (finished) { remove("pos_$id"); remove("dur_$id") } else { putLong("pos_$id", pos); putLong("dur_$id", dur) }
+        }.apply()
+        _progressRevision.value++
+    }
+
+    private fun forgetProgress(id: Long) {
+        progress.edit().remove("pos_$id").remove("dur_$id").apply()
+        _progressRevision.value++
+    }
+
+    private fun track(id: Long, url: String) {
+        playingId = id
+        playingUrl = url
+        trackJob?.cancel()
+        trackJob = viewModelScope.launch {
+            delay(TRACK_FIRST_MS)
+            while (isActive && player.currentMediaUrl == url) {
+                saveProgressNow()
+                delay(TRACK_EVERY_MS)
+            }
+        }
+    }
+
 
     val rows: StateFlow<List<RecordingEntity>> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf(emptyList()) else recordings.observe(pid) }
@@ -117,7 +179,7 @@ class RecordingsViewModel(
      * while it is being written, and offering that from this screen would mean two readers on one
      * growing file and a picture that stops at whatever byte it started from.
      */
-    fun play(recording: RecordingEntity) {
+    fun play(recording: RecordingEntity, resume: Boolean = false) {
         if (recording.status != RecordingStatus.COMPLETED) return
         if (recording.filePath == null) return
         _lastPlayedId.value = recording.id
@@ -132,7 +194,10 @@ class RecordingsViewModel(
                 externalPlayerLauncher.launch(path, recording.title)
                 return@launch
             }
-            player.play(path, title = recording.title, isLive = false)
+            val startMs = if (resume) resumePositionMs(recording) ?: 0L else 0L
+            if (!resume) forgetProgress(recording.id)
+            player.play(path, title = recording.title, isLive = false, startPositionMs = startMs)
+            track(recording.id, path)
         }
     }
 
@@ -147,7 +212,10 @@ class RecordingsViewModel(
     fun cancel(recording: RecordingEntity) = recordings.cancel(recording)
 
     /** Removes the row **and** the file. The only thing here that deletes anything (D2). */
-    fun delete(recording: RecordingEntity) = recordings.delete(recording)
+    fun delete(recording: RecordingEntity) {
+        forgetProgress(recording.id)
+        recordings.delete(recording)
+    }
 
     /**
      * Try a missed or failed recording again — only possible while its window is still open, which
@@ -160,5 +228,10 @@ class RecordingsViewModel(
 
     private companion object {
         const val SERVER_SYNC_INTERVAL_MS = 30_000L
+        private const val PROGRESS_PREFS = "dvr_progress"
+        private const val MIN_RESUME_MS = 30_000L
+        private const val END_MARGIN_MS = 60_000L
+        private const val TRACK_FIRST_MS = 3_000L
+        private const val TRACK_EVERY_MS = 5_000L
     }
 }

@@ -141,7 +141,7 @@ internal fun LiveInfoBanner(
                     }
                     now.description?.takeIf { it.isNotBlank() }?.let {
                         Text(
-                            it, color = hudInk.copy(alpha = 0.78f), fontSize = if (compact) 12.sp else 15.sp, lineHeight = if (compact) 16.sp else 21.sp,
+                            it, color = hudInk.copy(alpha = 0.82f), fontSize = if (compact) 14.sp else 19.sp, lineHeight = if (compact) 19.sp else 26.sp,
                             maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 900.dp),
                         )
                     }
