@@ -64,7 +64,7 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
-## v2.1.0
+## v2.0.2
 
 ### ✨ New features
 - **📼 DVR in the menu: recorded shows with a still, date and synopsis, sorted by date or A–Z**

@@ -81,11 +81,22 @@
     <string name="sport_guide_next">Danach</string>
     <string name="sport_guide_categories">Kategorien</string>
     <string name="sport_player_no_rewind">Dieser Sender hat kein Catch-up. Zum Zurückspulen jedes Senders: Einstellungen › Live-TV anhalten und zurückspulen einschalten.</string>
-    <string name="sport_dvr_count">%1$d Aufnahmen</string>
-    <string name="sport_dvr_recording_now">%1$d laufen gerade</string>
-    <string name="sport_dvr_scheduled">%1$d geplant</string>
+    <plurals name="sport_dvr_count">
+        <item quantity="one">%1$d Aufnahme</item>
+        <item quantity="other">%1$d Aufnahmen</item>
+    </plurals>
+    <plurals name="sport_dvr_recording_now">
+        <item quantity="one">%1$d läuft gerade</item>
+        <item quantity="other">%1$d laufen gerade</item>
+    </plurals>
+    <plurals name="sport_dvr_scheduled">
+        <item quantity="one">%1$d geplant</item>
+        <item quantity="other">%1$d geplant</item>
+    </plurals>
     <string name="sport_dvr_sort">Sortieren</string>
     <string name="sport_dvr_sort_date">Datum</string>
     <string name="sport_dvr_sort_az">A–Z</string>
     <string name="sport_dvr_empty">Noch keine Aufnahmen. Im Guide OK auf einer Sendung gedrückt halten und Aufnehmen wählen.</string>
+    <string name="sport_dvr_resume">Fortsetzen ab %1$s</string>
+    <string name="sport_dvr_start_over">Von vorn</string>
 </resources>

@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -44,6 +46,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -115,10 +118,16 @@ fun DvrScreen(
     val sortFocus = remember { FocusRequester() }
     val listState = rememberLazyListState()
     var menuFor by remember { mutableStateOf<RecordingEntity?>(null) }
+    // A recording that was left part-way: Resume (the default) or Start over.
+    var resumeFor by remember { mutableStateOf<RecordingEntity?>(null) }
+    val progressRevision by vm.progressRevision.collectAsStateWithLifecycle()
 
-    val play: (RecordingEntity) -> Unit = { r ->
-        vm.play(r)
+    val start: (RecordingEntity, Boolean) -> Unit = { r, resume ->
+        vm.play(r, resume = resume)
         if (!externalOn) onFullscreen()
+    }
+    val play: (RecordingEntity) -> Unit = { r ->
+        if (vm.resumePositionMs(r) != null) resumeFor = r else start(r, false)
     }
 
     suspend fun focusRow(id: Long) {
@@ -152,9 +161,9 @@ fun DvrScreen(
             Text(stringResource(R.string.common_nav_dvr), style = stageText(46, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 listOfNotNull(
-                    stringResource(R.string.sport_dvr_count, rows.size),
-                    recordingNow.takeIf { it > 0 }?.let { stringResource(R.string.sport_dvr_recording_now, it) },
-                    scheduled.takeIf { it > 0 }?.let { stringResource(R.string.sport_dvr_scheduled, it) },
+                    pluralStringResource(R.plurals.sport_dvr_count, rows.size, rows.size),
+                    recordingNow.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.sport_dvr_recording_now, it, it) },
+                    scheduled.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.sport_dvr_scheduled, it, it) },
                 ).joinToString(stringResource(R.string.content_epg_bits_separator)),
                 style = stageText(19, 600), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
@@ -186,12 +195,39 @@ fun DvrScreen(
                     DvrRow(
                         recording = r,
                         focus = focusOf(r.id),
-                        thumbnail = { DvrStill(r) },
+                        thumbnail = {
+                            DvrStill(r)
+                            // How far it was watched, along the bottom of the still.
+                            val watched = remember(r.id, progressRevision) { vm.progressFraction(r) }
+                            if (watched != null) {
+                                Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(6.mpx).background(StageColors.Dim.copy(alpha = 0.6f))) {
+                                    Box(Modifier.fillMaxWidth(watched).fillMaxHeight().background(stageAccent.accent))
+                                }
+                            }
+                        },
                         onPlay = { play(r) },
                         onMenu = { menuFor = r },
                     )
                 }
             }
+        }
+    }
+
+    resumeFor?.let { r ->
+        val at = vm.resumePositionMs(r) ?: 0L
+        val focus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+        GuideMenuHost(x = 1150f, top = 120.mpx, width = 560.mpx, onDismiss = { resumeFor = null }) {
+            StageMenuHeader(title = r.title, subtitle = r.channelName)
+            StageMenuItem(
+                text = stringResource(R.string.sport_dvr_resume, dvrClock(at)), icon = OwnTVIcon.PLAY,
+                onClick = { resumeFor = null; start(r, true) },
+                modifier = Modifier.focusRequester(focus),
+            )
+            StageMenuItem(
+                text = stringResource(R.string.sport_dvr_start_over), icon = OwnTVIcon.REWIND,
+                onClick = { resumeFor = null; start(r, false) },
+            )
         }
     }
 
@@ -224,7 +260,7 @@ fun DvrScreen(
 private fun DvrRow(
     recording: RecordingEntity,
     focus: FocusRequester,
-    thumbnail: @Composable () -> Unit,
+    thumbnail: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit,
     onPlay: () -> Unit,
     onMenu: () -> Unit,
 ) {
@@ -279,6 +315,16 @@ private fun DvrRow(
             }
         }
     }
+}
+
+/** "1:05:09" or "42:17": where a recording was left. */
+internal fun dvrClock(ms: Long): String {
+    val s = ms / 1000
+    val h = s / 3600
+    val m = (s % 3600) / 60
+    val sec = s % 60
+    return if (h > 0) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", h, m, sec)
+    else String.format(java.util.Locale.ROOT, "%d:%02d", m, sec)
 }
 
 /** The recording's still, or — while it is being made, or when none can be — the channel's logo. */

@@ -1,4 +1,4 @@
-# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-15, v2.1.0)
+# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-15, v2.0.2)
 
 > Zweck: Verhalten und Tastenbelegung des zusammengelegten Live-TV/Guide-Screens und des Player-Banners ab v2.0.0.
 
@@ -37,7 +37,7 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 - ◀ ▶ halten (Kanal mit Archiv): Scrubben über die Zeitleiste. Kurzer Druck wie bisher
   (Kanalliste / Verlauf, bzw. Schritt bei "Links/Rechts spult Live-TV").
 
-## v2.1.0
+## v2.0.2
 
 - Guide-Video: Die Shell zeichnet das Vorschaubild mit ihrer einen gehoisteten Player-Surface an der
   Position der Video-Box (`EpgScreen(onVideoBounds)` → `guideVideoBounds`), dieselbe Surface wie im

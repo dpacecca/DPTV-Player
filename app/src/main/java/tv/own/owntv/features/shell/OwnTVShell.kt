@@ -304,6 +304,7 @@ fun OwnTVShell(
         onDispose { playbackSession.livePrevious = null }
     }
     val epgVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.epg.EpgViewModel>()
+    val recordingsVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.recordings.RecordingsViewModel>()
     val liveCanZap by liveVm.canZap.collectAsStateWithLifecycle()
     // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
     val liveOnExo by liveVm.liveOnExo.collectAsStateWithLifecycle()
@@ -580,6 +581,7 @@ fun OwnTVShell(
         // no-ops unless the player is on that section's item.
         movieVm.saveProgressNow()
         seriesVm.saveEpisodeProgressNow()
+        recordingsVm.saveProgressNow() // DVR: resume where it was left
         resumeVideo() // restore mpv `vid=auto` before stop so the next played item isn't left video-less
         playerMode = PlayerMode.NONE
         showChannelList = false
