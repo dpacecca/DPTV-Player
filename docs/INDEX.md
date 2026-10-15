@@ -13,6 +13,7 @@
 | `SPORT-HUB.md` | Sport-Hub + Channel-Matching (konsolidiert) | aktiv, ersetzt `sport-hub-plan.md` + `sport-channel-matching.md` als Einstieg |
 | `sport-hub-plan.md` | Ausführliche Sport-Hub-Spezifikation (Phasen 1–7) | aktiv, Detailreferenz |
 | `sport-channel-matching.md` | ESPN-Fixture → Sender-Matching (Discovery, Scoring, Tests) | aktiv, Detailreferenz |
+| `LIVE-GUIDE-V2.md` | Live TV + Guide zusammengelegt, Tasten, Player-Banner (v2.0.0) | aktiv |
 | `i18n-gate.md` | Gate-Befehle + Literal-Workflow | aktiv |
 | `internationalization.md` | i18n-Gesamtplan v2 (Phasen 0–3 done) | aktiv, Detailreferenz |
 | `i18n.md` | i18n-Authoring-Guide (Keys vs. Labels) | aktiv |

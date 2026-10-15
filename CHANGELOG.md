@@ -64,6 +64,22 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.0.0
+
+### ✨ New features
+- **📺 Live TV and the TV Guide merged into one screen**
+- **🖼️ Smaller video preview with the programme, time left and resolution beside it**
+- **🔢 Channel number, logo and scrolling name on every guide row**
+- **📝 Long programme titles use two lines in the guide**
+- **◀ Left on what is on now opens the categories, then the menu with Settings**
+- **⏪ Hold Left in the guide: back to now, or into what has been on**
+- **⏺️ Hold OK on a programme: its details with Record**
+- **▶️ OK puts a channel in the preview, OK again goes full screen**
+- **ℹ️ Information banner for 3 seconds when a channel opens and on OK**
+- **↩️ Back from the player returns to the guide**
+- **⏩ Hold Left or Right in the player to scrub catch-up**
+- **📱 Guide layout for phone screens**
+
 ## v1.0.0
 
 ### ✨ New features

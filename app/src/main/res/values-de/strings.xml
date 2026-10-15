@@ -75,4 +75,9 @@
     <string name="sport_language_portuguese">Portugiesisch</string>
     <string name="sport_language_french">Französisch</string>
     <string name="sport_language_filter">Sprache: %1$s</string>
+    <!-- v2 guide + player banner -->
+    <string name="sport_guide_min_left">noch %1$d Min.</string>
+    <string name="sport_guide_catchup">Catch-up</string>
+    <string name="sport_guide_next">Danach</string>
+    <string name="sport_guide_categories">Kategorien</string>
 </resources>

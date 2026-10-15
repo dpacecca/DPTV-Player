@@ -5,6 +5,8 @@ import tv.own.owntv.ui.theme.stageShadow
 import tv.own.owntv.ui.theme.LocalStagePalette
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -112,11 +114,13 @@ internal fun GuideVideo(
     previewEngine: tv.own.owntv.player.LivePreviewEngine,
     showVideo: Boolean,
     modifier: Modifier = Modifier,
+    /** A phone: the video spans the screen, square-cornered, with larger type. */
+    compact: Boolean = false,
 ) {
     val previewState by previewEngine.state.collectAsStateWithLifecycle()
     val playing = showVideo && previewState != tv.own.owntv.player.LivePreviewEngine.State.ERROR &&
         previewState != tv.own.owntv.player.LivePreviewEngine.State.IDLE
-    val r = 28.mpx
+    val r = if (compact) 0.mpx else 20.mpx
     val videoShadow = tv.own.owntv.ui.theme.stageShadow(0.55f)
     Box(
         modifier
@@ -142,8 +146,8 @@ internal fun GuideVideo(
                     append(channelLine.orEmpty())
                     if (!nowTitle.isNullOrBlank()) withStyle(SpanStyle(color = StageColors.Muted, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)) { append(" · $nowTitle") }
                 },
-                style = stageText(19, 700), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.align(Alignment.BottomStart).padding(start = 22.mpx, end = 22.mpx, bottom = 18.mpx),
+                style = stageText(if (compact) 26 else 17, 700), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = 18.mpx, end = 18.mpx, bottom = 14.mpx),
             )
         }
     }
@@ -172,36 +176,85 @@ internal fun programmeDetailsLine(p: EpgProgrammeEntity): String? {
         .takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
 
-/** The programme block beside the video: eyebrow (accent, clock), title 60/800, details, 2-line synopsis. */
+/**
+ * The programme beside the video (v2): title (two lines), the time with a progress bar and what is left,
+ * Catch-up when the channel has an archive, the channel with the playing stream's facts ("1080p",
+ * "25 FPS", "STEREO"), the details the feed carries and a three-line synopsis.
+ */
 @Composable
-internal fun GuideProgrammeBlock(
-    eyebrow: String?,
-    title: String?,
-    details: String?,
-    synopsis: String?,
+internal fun GuideInfoBlock(
+    programme: EpgProgrammeEntity?,
+    fallbackTitle: String,
+    channelLine: String,
+    chips: List<String>,
+    catchup: Boolean,
+    now: Long,
+    compact: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val a = stageAccent
-    Column(modifier) {
-        if (eyebrow != null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.mpx), verticalAlignment = Alignment.CenterVertically) {
-                OwnTVIcon(OwnTVIcon.CLOCK, a.accent, Modifier.size(18.mpx))
-                Text(eyebrow, style = stageText(18, 700, 0.02.em), color = a.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    val formatTime = rememberSystemTimeFormatter()
+    // A phone shows the mockup pixels at a third of a TV's size; the type is scaled back up to read.
+    fun t(size: Int): Int = if (compact) (size * 1.5f).toInt() else size
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(if (compact) 6.mpx else 10.mpx)) {
+        Text(
+            programme?.title ?: fallbackTitle, style = stageText(t(40), 800, (-0.5).mpxSp), color = StageColors.Text,
+            maxLines = 2, overflow = TextOverflow.Ellipsis,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
+            if (programme != null) {
+                Text(
+                    stringResource(R.string.content_live_time_range_plain, formatTime(programme.startMs), formatTime(programme.stopMs)),
+                    style = stageText(t(19), 600).copy(fontFeatureSettings = Tabular), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                val airing = now in programme.startMs until programme.stopMs
+                if (airing) {
+                    val frac = ((now - programme.startMs).toFloat() / (programme.stopMs - programme.startMs).coerceAtLeast(1)).coerceIn(0f, 1f)
+                    Box(Modifier.width(120.mpx).height(6.mpx).background(StageColors.Dim.copy(alpha = 0.5f), RoundedCornerShape(3.mpx))) {
+                        Box(Modifier.fillMaxWidth(frac).height(6.mpx).background(StageColors.Text, RoundedCornerShape(3.mpx)))
+                    }
+                }
+                val note = when {
+                    airing -> stringResource(R.string.sport_guide_min_left, (((programme.stopMs - now) + 59_999) / 60_000).toInt())
+                    programme.startMs > now -> stringResource(R.string.content_epg_starts_in, durationText(((programme.startMs - now) + 59_999) / 60_000))
+                    else -> null
+                }
+                if (note != null) {
+                    Text(note, style = stageText(t(19), 600).copy(fontFeatureSettings = Tabular), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            if (catchup) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.mpx), verticalAlignment = Alignment.CenterVertically) {
+                    OwnTVIcon(OwnTVIcon.CATCHUP, a.accent, Modifier.size(t(18).mpx))
+                    Text(stringResource(R.string.sport_guide_catchup), style = stageText(t(17), 700), color = a.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
-        if (title != null) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                title, style = stageText(60, 800, (-1.5).mpxSp), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 10.mpx, bottom = 6.mpx),
+                channelLine, style = stageText(t(18), 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            chips.forEach { chip ->
+                Text(
+                    chip, style = stageText(t(13), 800).copy(fontFeatureSettings = Tabular), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .border(1.5.mpx, StageColors.Dim, RoundedCornerShape(6.mpx))
+                        .padding(horizontal = 8.mpx, vertical = 2.mpx),
+                )
+            }
+        }
+        if (!compact && programme != null) programmeDetailsLine(programme)?.let {
+            Text(it, style = stageText(17, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        val synopsis = programme?.description
+        if (!synopsis.isNullOrBlank()) {
+            Text(
+                synopsis,
+                style = stageText(t(18), 400).copy(lineHeight = (t(18) * 1.4f).mpxSp), color = stageTone(Color(0xFFCCD6D2), StageColors.Body),
+                maxLines = if (compact) 2 else 3, overflow = TextOverflow.Ellipsis,
             )
         }
-        if (details != null) Text(details, style = stageText(19, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(
-            synopsis.orEmpty(),
-            style = stageText(19, 400).copy(lineHeight = (19 * 1.5f).mpxSp), color = stageTone(Color(0xFFCCD6D2), StageColors.Body),
-            maxLines = 2, minLines = 2, overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 1000.mpx).padding(top = 12.mpx, bottom = 20.mpx),
-        )
     }
 }
 
@@ -255,26 +308,33 @@ internal fun GuideRuler(
 }
 
 /**
- * A channel's label column (P4-01): the playlist's 7 px dot, the number (38 wide, 17/700 dim), the
- * logo on a 58×40 plate, the name 17/700. The row the focus is in has its number and name in accent.
+ * A channel's label column (v2): the playlist's dot, the number, the logo on a plate and the name. The row
+ * focus is in has its number and name in accent, and a name too long for the column scrolls there.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun GuideChannelLabel(channel: ChannelEntity, name: String, dot: Color?, selected: Boolean, numberWidth: Dp, modifier: Modifier = Modifier) {
     val a = stageAccent
     Row(
-        modifier.padding(start = 8.mpx),
-        horizontalArrangement = Arrangement.spacedBy(10.mpx),
+        modifier.padding(start = 8.mpx, end = 10.mpx),
+        horizontalArrangement = Arrangement.spacedBy(12.mpx),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(7.mpx).background(dot ?: Color.Transparent, RoundedCornerShape(50)))
         Text(
             channel.number?.toString().orEmpty(),
-            style = stageText(17, 700).copy(fontFeatureSettings = Tabular), color = if (selected) a.accent else StageColors.Dim,
+            style = stageText(20, 700).copy(fontFeatureSettings = Tabular), color = if (selected) a.accent else StageColors.Dim,
             // Always whole (owner): the column fits the longest number in the list; only the name is cut.
             maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(numberWidth),
         )
-        LivePlate(channel.displayLogoUrl, 58.mpx, 40.mpx, radius = 10.mpx)
-        Text(name, style = stageText(17, 700), color = if (selected) a.accent else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        LivePlate(channel.displayLogoUrl, 64.mpx, 44.mpx, radius = 10.mpx)
+        Text(
+            name, style = stageText(20, 700), color = if (selected) a.accent else StageColors.Text,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).then(
+                if (selected) Modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 900) else Modifier,
+            ),
+        )
     }
 }
 
@@ -401,7 +461,17 @@ internal fun guideProgrammeActions(
  * favourite, Pick EPG manually, EPG time offset (Global). Also Live TV's ▶ Schedule → OK menu.
  */
 @Composable
-internal fun GuideProgrammeMenu(title: String, subtitle: String, actions: GuideProgrammeActions, leadMinutes: Int, onDismiss: () -> Unit) {
+internal fun GuideProgrammeMenu(
+    title: String,
+    subtitle: String,
+    actions: GuideProgrammeActions,
+    leadMinutes: Int,
+    onDismiss: () -> Unit,
+    /** The programme's synopsis, under the header (v2: Hold OK opens the programme's details). */
+    description: String? = null,
+    /** A programme that has started: Record comes first and has the focus. */
+    recordFirst: Boolean = false,
+) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     val formatTime = rememberSystemTimeFormatter()
@@ -414,8 +484,25 @@ internal fun GuideProgrammeMenu(title: String, subtitle: String, actions: GuideP
             SettingsRepository.CatchupPlayer.EXTERNAL -> R.string.settings_catchup_player_external
         },
     )
+    val recordFocus = recordFirst && actions.onRecord != null
     GuideMenuHost(x = 1150f, top = 64.mpx, width = 560.mpx, onDismiss = onDismiss) {
         StageMenuHeader(title = title, subtitle = subtitle)
+        if (!description.isNullOrBlank()) {
+            Text(
+                description, style = stageText(16, 400).copy(lineHeight = (16 * 1.45f).mpxSp), color = StageColors.Muted,
+                maxLines = 5, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 12.mpx, end = 12.mpx, bottom = 12.mpx),
+            )
+        }
+        if (recordFirst) {
+            StageGroupLabel(stringResource(R.string.content_menu_group_record).uppercase(locale))
+            StageMenuItem(
+                text = actions.recordLabel, icon = OwnTVIcon.REC, iconFilled = true,
+                enabled = actions.onRecord != null,
+                onClick = { actions.onRecord?.invoke(); onDismiss() },
+                modifier = if (recordFocus) Modifier.focusRequester(focus) else Modifier,
+            )
+        }
         StageGroupLabel(stringResource(R.string.content_menu_group_new).uppercase(locale))
         StageMenuItem(
             text = stringResource(if (actions.reminderSet) R.string.content_reminder_set else R.string.content_remind_me),
@@ -424,13 +511,13 @@ internal fun GuideProgrammeMenu(title: String, subtitle: String, actions: GuideP
             checked = actions.reminderSet,
             enabled = actions.onReminder != null,
             onClick = { actions.onReminder?.invoke(); onDismiss() },
-            modifier = if (actions.onReminder != null) Modifier.focusRequester(focus) else Modifier,
+            modifier = if (!recordFocus && actions.onReminder != null) Modifier.focusRequester(focus) else Modifier,
         )
         StageGroupLabel(stringResource(R.string.content_menu_group_watch).uppercase(locale))
         StageMenuItem(
             text = stringResource(R.string.content_epg_watch_channel), icon = OwnTVIcon.LIVE_TV,
             onClick = { onDismiss(); actions.onWatchChannel() },
-            modifier = if (actions.onReminder == null) Modifier.focusRequester(focus) else Modifier,
+            modifier = if (!recordFocus && actions.onReminder == null) Modifier.focusRequester(focus) else Modifier,
         )
         StageMenuItem(
             text = stringResource(R.string.content_epg_watch_start), icon = OwnTVIcon.REWIND,
@@ -449,12 +536,14 @@ internal fun GuideProgrammeMenu(title: String, subtitle: String, actions: GuideP
                 actions.onCatchupPlayer(all[(all.indexOf(player) + 1) % all.size])
             },
         )
-        StageGroupLabel(stringResource(R.string.content_menu_group_record).uppercase(locale))
-        StageMenuItem(
-            text = actions.recordLabel, icon = OwnTVIcon.REC, iconFilled = true,
-            enabled = actions.onRecord != null,
-            onClick = { actions.onRecord?.invoke(); onDismiss() },
-        )
+        if (!recordFirst) {
+            StageGroupLabel(stringResource(R.string.content_menu_group_record).uppercase(locale))
+            StageMenuItem(
+                text = actions.recordLabel, icon = OwnTVIcon.REC, iconFilled = true,
+                enabled = actions.onRecord != null,
+                onClick = { actions.onRecord?.invoke(); onDismiss() },
+            )
+        }
         StageMenuItem(
             text = stringResource(if (actions.seriesActive) R.string.recording_stop_series else R.string.recording_record_series),
             icon = OwnTVIcon.REC, iconFilled = true,

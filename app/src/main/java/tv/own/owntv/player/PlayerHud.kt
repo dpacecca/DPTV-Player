@@ -219,6 +219,10 @@ fun PlayerHud(
     // (the EPG data lives in LiveViewModel, not the player). Rendered on the right edge whenever the
     // controls are visible, like the top-bar channel card; informational only, never focusable.
     liveEpgCard: (@Composable () -> Unit)? = null,
+    // v2 — the live information banner (channel, stream facts, now/next), shown for INFO_BANNER_MS when the
+    // player opens, on OK and on a channel change, instead of the full controls. Handed the stream's chips
+    // and a key that changes each time it is shown again. Null (films, episodes) keeps the controls.
+    infoBanner: (@Composable (chips: List<String>, showKey: Int) -> Unit)? = null,
     // N3 — now/next lines for the channel-change banner (the playing channel's guide). Null = name only.
     zapGuide: (@Composable () -> Unit)? = null,
     // The archive's own wall-clock instant while catch-up/rewind is playing; null means the picture is
@@ -287,7 +291,16 @@ fun PlayerHud(
     val showNextCard = !isLive && error == null && nav.hasNext && nextUpTitle != null && !stopsAtItemEnd &&
         nextCardDue && !autoNextDismissed
 
-    var controlsVisible by remember { mutableStateOf(true) }
+    // A live channel opens on its information banner rather than the controls (v2).
+    var controlsVisible by remember { mutableStateOf(infoBanner == null) }
+    var bannerTick by remember { mutableIntStateOf(if (infoBanner != null) 1 else 0) }
+    var bannerVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(bannerTick) {
+        if (bannerTick > 0) { bannerVisible = true; delay(INFO_BANNER_MS); bannerVisible = false }
+    }
+    // Hold ◀ / ▶ (v2): which arrow is down with the controls hidden, and whether it has been held.
+    var arrowDown by remember { mutableStateOf<Key?>(null) }
+    var arrowHeld by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) } // stream technical-info overlay
     // Used only by "Report this stream", which writes the current readout into the playback log (F18).
     val reportContext = androidx.compose.ui.platform.LocalContext.current
@@ -340,7 +353,9 @@ fun PlayerHud(
 
     val zap: (Int) -> Unit = { d ->
         cancelDirectTune()
-        (if (d < 0) onChannelUp else onChannelDown)?.invoke(); channelFlash++
+        (if (d < 0) onChannelUp else onChannelDown)?.invoke()
+        // v2: a channel change shows the new channel's banner, where there is one.
+        if (infoBanner != null && !controlsVisible) bannerTick++ else channelFlash++
     }
 
     // Restartable timeout: each new digit restarts the ~2 s window. On expiry, submit.
@@ -421,6 +436,9 @@ fun PlayerHud(
 
     LaunchedEffect(forceShow) { if (forceShow) controlsVisible = true }
     LaunchedEffect(controlsVisible, player) { if (controlsVisible) player.refreshStreamChips() }
+    LaunchedEffect(bannerVisible, player) { if (bannerVisible) player.refreshStreamChips() }
+    // The controls coming up take the banner's place.
+    LaunchedEffect(controlsVisible) { if (controlsVisible) bannerVisible = false }
     DisposableEffect(showInfo, player) {
         if (showInfo) player.refreshStreamChips()
         player.setBitrateTrackingEnabled(showInfo)
@@ -609,6 +627,42 @@ fun PlayerHud(
                     }
                 }
             }
+            // v2 — ◀ / ▶ with the controls hidden on a channel that can rewind: holding scrubs the archive
+            // (the controls come up on the timeline and the held key goes on scrubbing it there); a press
+            // keeps its old meaning — the lists, or a step when "Left and right rewind live TV" is on.
+            // Acting on release is what lets a hold mean something else.
+            if (!controlsVisible && error == null && !inert && dialog == HudDialog.NONE && onScrubLive != null &&
+                (e.key == Key.DirectionLeft || e.key == Key.DirectionRight)
+            ) {
+                val back = e.key == Key.DirectionLeft
+                when (e.type) {
+                    KeyEventType.KeyDown -> if (e.nativeKeyEvent.repeatCount == 0) {
+                        arrowDown = e.key
+                        arrowHeld = false
+                    } else if (arrowDown == e.key && !arrowHeld) {
+                        arrowHeld = true
+                        onScrubLive(if (back) LIVE_SCRUB_STEP_SEC else -LIVE_SCRUB_STEP_SEC)
+                        focusSeekOnShow = true
+                        controlsVisible = true
+                    }
+                    KeyEventType.KeyUp -> if (arrowDown == e.key) {
+                        arrowDown = null
+                        if (!arrowHeld) {
+                            val start = e.key.horizontalDirection(layoutDirection) == HorizontalDirection.START
+                            when {
+                                liveLeftRightRewinds -> {
+                                    onScrubLive(if (back) LIVE_SCRUB_STEP_SEC else -LIVE_SCRUB_STEP_SEC)
+                                    focusSeekOnShow = true
+                                    controlsVisible = true
+                                }
+                                start && onOpenChannelList != null -> onOpenChannelList()
+                                !start && onOpenHistoryList != null -> onOpenHistoryList()
+                            }
+                        }
+                    }
+                }
+                return@onPreviewKeyEvent true
+            }
             // ---- Existing key handling (unchanged, but skip for digit KeyUp already consumed above) ----
             if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
             when {
@@ -659,7 +713,15 @@ fun PlayerHud(
         if (!controlsVisible && !showNextCard) {
             Box(
                 Modifier.fillMaxSize().focusRequester(catchFocus).focusable()
-                    .onKeyEvent { e -> if (e.type == KeyEventType.KeyDown && e.key != Key.Back) { controlsVisible = true; true } else false },
+                    .onKeyEvent { e ->
+                        val ok = e.key == Key.DirectionCenter || e.key == Key.Enter || e.key == Key.NumPadEnter
+                        when {
+                            e.type != KeyEventType.KeyDown || e.key == Key.Back -> false
+                            // v2: OK shows the banner for a while; OK while it is up opens the controls.
+                            ok && infoBanner != null && !bannerVisible -> { bannerTick++; true }
+                            else -> { controlsVisible = true; true }
+                        }
+                    },
             )
         }
 
@@ -695,6 +757,10 @@ fun PlayerHud(
                 is TuneOsd.Message -> ChannelNumberCard(osd.digits, error = osd.text)
                 is TuneOsd.Tuned, null -> Unit
             }
+        }
+
+        if (infoBanner != null && bannerVisible && !controlsVisible && error == null) {
+            infoBanner(streamChips, bannerTick)
         }
 
         // The REC badge, and it is deliberately OUTSIDE `if (controlsVisible)`.
