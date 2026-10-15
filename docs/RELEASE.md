@@ -47,6 +47,8 @@ muss einen Tag pushen. Dauer: Tests ~2 Min, signierter Build ~20 Min.
   z. B. README, damit der Tag einen Branch hat).
 - Repo-Secret `RELEASES_REPO_TOKEN`: Fine-grained Token, nur Repo `dpacecca/DPTV-Player-releases`,
   Permission *Contents: Read and write*. Fehlt es, überspringt CI die Kopie mit Warnung.
+- Kopie nachholen / Token prüfen: Actions → *Mirror release* → Run workflow (Tag leer = neuestes
+  Release). Schlägt mit klarer Meldung fehl, wenn das Secret fehlt oder keinen Zugriff hat.
 - Installation per `PackageInstaller`-Session: Download, Paketname prüfen, installieren. Ab Android 12
   mit `USER_ACTION_NOT_REQUIRED` — ohne Rückfrage, sobald die App sich einmal selbst aktualisiert hat
   (vorher ist der Dateimanager "Installer of record" und das System fragt einmal). Beim allerersten
