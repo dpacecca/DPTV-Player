@@ -50,7 +50,7 @@ fun BrandMark(icon: AppIcon, size: Dp, modifier: Modifier = Modifier, followAcce
 }
 
 /**
- * The DPTV-Player logo (v2.0.3, DPTV Recorder's in green): a glowing play glyph, then "DPTV" and "PLAYER"
+ * The DPTV-Player logo (v2.1.0, DPTV Recorder's in green): a glowing play glyph, then "DPTV" and "PLAYER"
  * in the accent, drawn from the vectors — dark variant on dark surfaces, light variant on light ones. Its
  * height follows the drawing's own proportions. The [tv]/[own] tint parameters are accepted for call-site
  * compatibility only; the vectors ship their brand colours.

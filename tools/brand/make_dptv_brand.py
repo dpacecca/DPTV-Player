@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates every DPTV-Player brand asset from one geometry (stand: 2026-10-16, v2.0.3).
+"""Generates every DPTV-Player brand asset from one geometry (stand: 2026-10-16, v2.1.0).
 
 Outputs (overwritten in place):
   core-lib/core/src/main/res/drawable/dptv_mark.xml, dptv_mark_small.xml, dptv_mark_mono.xml,

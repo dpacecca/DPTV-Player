@@ -662,7 +662,7 @@ fun EpgScreen(
                 }
             }
 
-            // The header (v2.0.3, DPTV Recorder's): the search and the guide's tools over the channel column and
+            // The header (v2.1.0, DPTV Recorder's): the search and the guide's tools over the channel column and
             // the days as chips over the programmes; under it "CHANNEL" over the column and the ruler.
             val viewTime = timeAt(scrollPx + timelinePx / 4f)
             val viewDay = localMidnight(viewTime)

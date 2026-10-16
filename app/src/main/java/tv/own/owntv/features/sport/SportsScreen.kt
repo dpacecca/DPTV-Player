@@ -717,7 +717,7 @@ private fun FixtureDetail(
     // The matcher already filtered by the preferred languages (before its cap) — show them as-is.
     val matches = (matchesState as? SportsViewModel.MatchesState.Content)?.matches.orEmpty()
     var entities by remember(fixture.id) { mutableStateOf(emptyList<ChannelEntity>()) }
-    // v2.0.3: nothing plays until a channel is picked with OK (the guide's rule); OK on it again is full
+    // v2.1.0: nothing plays until a channel is picked with OK (the guide's rule); OK on it again is full
     // screen. Held here, not in the shared previewArmed, which stays set once Live TV has played anything.
     var previewId by remember(fixture.id) { mutableStateOf<Long?>(null) }
     LaunchedEffect(fixture.id, matches) {

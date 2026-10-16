@@ -64,7 +64,7 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
-## v2.0.3
+## v2.1.0
 
 ### ✨ New features
 - **🎨 Guide in the DPTV Recorder style: day chips, bordered programme cells, LIVE tags, channel numbers**

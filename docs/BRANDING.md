@@ -13,7 +13,7 @@
   `AppIcon.DPTV`.
 - Brand-Assets (`dptv_mark*`, `dptv_notification`, `dptv_wordmark*`, `dptv_banner`, README-Logos)
   werden von `tools/brand/make_dptv_brand.py` erzeugt — Script ändern, nicht die Dateien.
-  Seit v2.0.3 im Stil von DPTV Recorder in Grün: Icon = Recorder-Kachel mit grünem Play-Dreieck,
+  Seit v2.1.0 im Stil von DPTV Recorder in Grün: Icon = Recorder-Kachel mit grünem Play-Dreieck,
   Logo = Play-Glyph + "DPTV" + "PLAYER" (Barlow Condensed SemiBold).
 
 ispiel | Warum Freeze |

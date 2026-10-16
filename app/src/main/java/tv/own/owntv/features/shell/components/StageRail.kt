@@ -315,7 +315,7 @@ private fun ColumnScope.RailBrand(open: Boolean) {
         BrandMark(icon, 50.mpx, Modifier.padding(bottom = 12.mpx))
         return
     }
-    // Open: the logo alone — it carries its own play glyph (v2.0.3, DPTV Recorder's header in green).
+    // Open: the logo alone — it carries its own play glyph (v2.1.0, DPTV Recorder's header in green).
     Wordmark(200.mpx, Modifier.padding(start = 6.mpx, end = 10.mpx, top = 6.mpx, bottom = 18.mpx))
 }
 

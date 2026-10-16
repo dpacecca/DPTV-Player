@@ -1,4 +1,4 @@
-# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-16, v2.0.3)
+# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-16, v2.1.0)
 
 > Zweck: Verhalten und Tastenbelegung des zusammengelegten Live-TV/Guide-Screens und des Player-Banners ab v2.0.0.
 
@@ -53,7 +53,7 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
   Aufnahmen, Standbild via `DvrThumbnails` (MediaMetadataRetriever, Cache `dvr_thumbs/`), Sortierung
   Datum/A–Z, OK spielt, OK halten/☰ = Abspielen/Löschen.
 
-## v2.0.3
+## v2.1.0
 
 - Vollbild <-> Guide: Live TV bleibt unter dem Vollbild-Player komponiert (`OwnTVShell`: Browse-Box mit
   `alpha 0` + `onEnter = cancelFocusChange()` solange FULLSCREEN). Back baut den Guide nicht neu, lädt nicht

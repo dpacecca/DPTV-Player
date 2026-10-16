@@ -132,7 +132,7 @@ data class PlaylistRefresh(
         val OFF = PlaylistRefresh(PlaylistAutoRefresh.OFF)
         val STARTUP = PlaylistRefresh(PlaylistAutoRefresh.STARTUP)
 
-        /** A playlist with no choice of its own refreshes each time the app starts (DPTV-Player v2.0.3). */
+        /** A playlist with no choice of its own refreshes each time the app starts (DPTV-Player v2.1.0). */
         val DEFAULT = STARTUP
 
         /**
@@ -231,7 +231,7 @@ data class EpgRefresh(
         val OFF = EpgRefresh(EpgAutoRefresh.OFF)
         val STARTUP = EpgRefresh(EpgAutoRefresh.STARTUP)
 
-        /** A guide with no choice of its own refreshes each time the app starts (DPTV-Player v2.0.3). */
+        /** A guide with no choice of its own refreshes each time the app starts (DPTV-Player v2.1.0). */
         val DEFAULT = STARTUP
 
         /**
@@ -2286,7 +2286,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         context.dataStore.edit { prefs -> prefs[Keys.EPG_REFILL_CHECKED] = true }
     }
 
-    /** Whether the one-time "Off → On startup" switch of every playlist and guide (v2.0.3) has run. */
+    /** Whether the one-time "Off → On startup" switch of every playlist and guide (v2.1.0) has run. */
     val startupSyncDefaulted: Flow<Boolean> = prefsFlow { it[Keys.STARTUP_SYNC_DEFAULTED] == true }
 
     suspend fun markStartupSyncDefaulted() {

@@ -99,7 +99,7 @@ class AutoRefresh(
     }
 
     /**
-     * DPTV-Player v2.0.3: the playlists and guides are refreshed on start. Once per install, every playlist
+     * DPTV-Player v2.1.0: the playlists and guides are refreshed on start. Once per install, every playlist
      * and guide still set to Off (the old default every add path wrote) is switched to On startup; a schedule
      * the user picked is kept, and Off chosen again afterwards stays Off.
      */

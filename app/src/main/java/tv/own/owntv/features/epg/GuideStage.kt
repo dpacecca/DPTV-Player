@@ -330,7 +330,7 @@ internal fun GuideRuler(
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun GuideChannelLabel(channel: ChannelEntity, name: String, dot: Color?, selected: Boolean, numberWidth: Dp, modifier: Modifier = Modifier) {
-    // DPTV Recorder's channel cell (v2.0.3): the logo on a bordered tile, the name over "CH 2846" in mono,
+    // DPTV Recorder's channel cell (v2.1.0): the logo on a bordered tile, the name over "CH 2846" in mono,
     // on the column's own panel; the selected row lighter, with the accent bar at its edge.
     val a = stageAccent
     val line = GuideColors.Border

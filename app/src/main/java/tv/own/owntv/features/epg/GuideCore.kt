@@ -79,7 +79,7 @@ import tv.own.owntv.ui.theme.glass
 internal object GuideGridDefaults {
     /** The channel column when the guide widths are not customised (v2.1: number, logo and a two-line name, 520 of 1920). */
     const val ChannelColShare = 520f / 1920f
-    /** v2 rows: 84 high, so a long title takes two lines; v2.0.3 (DPTV Recorder): no gap, a 1 px line between. */
+    /** v2 rows: 84 high, so a long title takes two lines; v2.1.0 (DPTV Recorder): no gap, a 1 px line between. */
     val RowHeight = 84.mpx
     val RowGap = 0.mpx
     /** 3.5 hours across the mockup's 1512 px timeline. */

@@ -722,7 +722,7 @@ fun OwnTVShell(
     // keeps the compact room, so nothing behind it moves).
     val widenDocked = navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT && navWiden != null && railFocused
     val railSize = if (widenDocked) navWiden ?: navSize else navSize
-    // v2.0.3: while the guide's categories are out, the rail sits beside them as the capsule (◀ opens it
+    // v2.1.0: while the guide's categories are out, the rail sits beside them as the capsule (◀ opens it
     // at its size, ▶ closes it again) instead of hiding, and opens without the scrim: the guide moves over.
     val guideSide = guidePanelOpen && selectedSection == MainSection.LIVE_TV
     val railState = when {
@@ -1057,7 +1057,7 @@ fun OwnTVShell(
             },
     ) {
       // Browse UI — hidden while the player is fullscreen (stays visible behind the docked mini-player).
-      // v2.0.3: Live TV stays composed under the full-screen player, invisible and closed to focus, so
+      // v2.1.0: Live TV stays composed under the full-screen player, invisible and closed to focus, so
       // Back is only the video shrinking into the guide's box — no guide rebuilt, reloaded and re-scrolled.
       val browseHidden = playerMode == PlayerMode.FULLSCREEN
       if (!browseHidden || selectedSection == MainSection.LIVE_TV) Box(
