@@ -78,9 +78,12 @@ internal enum class DvrSort { DATE, TITLE }
 
 /** The finished recordings in [sort] order. */
 internal fun dvrRows(recordings: List<RecordingEntity>, sort: DvrSort): List<RecordingEntity> {
-    val done = recordings.filter { it.status == RecordingStatus.COMPLETED }
+    // v2.1.2: what is recording now is listed too (first), and plays as it records.
+    val done = recordings.filter { it.status == RecordingStatus.COMPLETED || (it.status == RecordingStatus.RECORDING && it.filePath != null) }
     return when (sort) {
-        DvrSort.DATE -> done.sortedByDescending { it.programmeStartMs }
+        DvrSort.DATE -> done.sortedWith(
+            compareByDescending<RecordingEntity> { it.status == RecordingStatus.RECORDING }.thenByDescending { it.programmeStartMs },
+        )
         DvrSort.TITLE -> done.sortedWith(compareBy<RecordingEntity, String>(String.CASE_INSENSITIVE_ORDER) { it.title }.thenByDescending { it.programmeStartMs })
     }
 }
@@ -102,6 +105,8 @@ fun DvrScreen(
     modifier: Modifier = Modifier,
 ) {
     val vm: RecordingsViewModel = koinViewModel()
+    // Opening DVR asks the recording server at once, not at the next 30-second pass.
+    LaunchedEffect(Unit) { vm.syncNow() }
     val recordings by vm.rows.collectAsStateWithLifecycle()
     val externalOn by vm.externalPlayerOn.collectAsStateWithLifecycle()
     val lastPlayedId by vm.lastPlayedId.collectAsStateWithLifecycle()
@@ -157,7 +162,8 @@ fun DvrScreen(
     }
 
     Column(modifier.fillMaxSize().padding(start = contentStart, end = 64.mpx, top = 44.mpx)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.mpx)) {
+        // The sort control sits after the counts, clear of the clock and pills in the top-right corner.
+        Row(Modifier.padding(end = 640.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.mpx)) {
             Text(stringResource(R.string.common_nav_dvr), style = stageText(46, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 listOfNotNull(
@@ -166,7 +172,7 @@ fun DvrScreen(
                     scheduled.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.sport_dvr_scheduled, it, it) },
                 ).joinToString(stringResource(R.string.content_epg_bits_separator)),
                 style = stageText(19, 600), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f, fill = false),
             )
             StageTool(
                 text = stringResource(R.string.sport_dvr_sort), icon = OwnTVIcon.SORT,
@@ -305,6 +311,11 @@ private fun DvrRow(
     ) {
         Box(Modifier.size(300.mpx, 169.mpx).clip(RoundedCornerShape(14.mpx)).background(stageStillBack)) { thumbnail() }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.mpx)) {
+            if (recording.status == RecordingStatus.RECORDING) {
+                tv.own.owntv.features.epg.GuideTag(
+                    stringResource(R.string.sport_guide_recording), tv.own.owntv.features.epg.GuideLiveRed, filled = false, size = 15, dot = true,
+                )
+            }
             Text(
                 recording.title, style = stageText(30, 800).copy(lineHeight = 36.mpxSp),
                 color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis,

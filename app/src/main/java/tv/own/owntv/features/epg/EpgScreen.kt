@@ -517,7 +517,13 @@ fun EpgScreen(
     DisposableEffect(onEntryHook) {
         onEntryHook?.invoke {
             when {
-                sheetOpen -> runCatching { sheetFocus.requestFocus() }.getOrDefault(false)
+                // ▶ from the menu: always back to the categories, never past them into the guide.
+                sheetOpen -> {
+                    if (!runCatching { sheetFocus.requestFocus() }.getOrDefault(false)) {
+                        scope.launch { withFrameNanos { }; runCatching { sheetFocus.requestFocus() } }
+                    }
+                    true
+                }
                 !state.loading && state.channels.isEmpty() -> false
                 else -> {
                     val ok = state.channels.isNotEmpty() &&
@@ -759,7 +765,12 @@ fun EpgScreen(
                                 modifier = Modifier
                                     .padding(start = rowStart, end = rowEnd)
                                     .fillMaxSize()
-                                    .onFocusChanged { gridHasFocus = it.hasFocus }
+                                    .onFocusChanged {
+                                        // Focus reaching the guide by any way while the categories are out closes
+                                        // them, so ◀ opens them (and then the menu) again instead of doing nothing.
+                                        if (it.hasFocus && !gridHasFocus && sheetOpen && sheetHadFocus) sheetOpen = false
+                                        gridHasFocus = it.hasFocus
+                                    }
                                     .focusProperties { onEnter = { runCatching { rowFocus(focusedRow.coerceIn(0, state.channels.size - 1)).requestFocus() } } }
                                     .focusGroup(),
                                 verticalArrangement = Arrangement.spacedBy(GuideGridDefaults.RowGap),
@@ -860,6 +871,11 @@ fun EpgScreen(
                         if (e.key == Key.DirectionLeft && e.type == KeyEventType.KeyDown && !sheetEditing) {
                             if (pushPanel) sheetToRail = true else sheetOpen = false
                             onOpenRail()
+                            true
+                        } else if (e.key == Key.DirectionRight && e.type == KeyEventType.KeyDown && !sheetEditing) {
+                            // ▶ in the categories always closes them and goes back to the guide's row.
+                            sheetOpen = false
+                            focusGrid()
                             true
                         } else false
                     }

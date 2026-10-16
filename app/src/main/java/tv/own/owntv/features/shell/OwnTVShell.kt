@@ -739,8 +739,8 @@ fun OwnTVShell(
     // v2.1.0: while the guide's categories are out, the rail sits beside them as the capsule (◀ opens it,
     // ▶ closes it again) instead of hiding, and opens without the scrim: the guide moves over.
     val guideSide = guidePanelOpen && selectedSection == MainSection.LIVE_TV
-    // v2.1.1: opened from the guide's categories it always shows the section names, whatever its own size.
-    val guideWide = guideSide && railFocused && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT
+    // v2.1.2: the menu, when it has focus, always shows the section names, whatever its own size.
+    val guideWide = railFocused && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT
     val widenDocked = navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT &&
         (navWiden != null || guideWide) && railFocused
     val railSize = when {
@@ -948,6 +948,9 @@ fun OwnTVShell(
             // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
             focusedLayer == ShellLayer.SIDEBAR -> showExit = true
+            // v2.1.2: the guide reaches the menu with ◀ only (◀ categories, ◀ menu); Back there does not
+            // jump to it, it asks to leave the app as Back on the menu does.
+            selectedSection == MainSection.LIVE_TV -> showExit = true
             else -> focusRail()
         }
     }

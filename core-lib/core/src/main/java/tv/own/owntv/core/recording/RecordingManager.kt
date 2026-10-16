@@ -569,7 +569,14 @@ class RecordingManager(
                 continue
             }
             if (status == RecordingStatus.CANCELLED) continue
-            importFromServer(profileId, server, status)
+            // One recording that cannot be added must not keep the others out of the list.
+            try {
+                importFromServer(profileId, server, status)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("RecordingManager", "could not import server recording ${server.id}", e)
+            }
         }
         // Gone from the server (deleted in its web page). Only when the list is complete: the server
         // returns at most SERVER_LIST_LIMIT rows, and an older one missing from a full page still exists.
