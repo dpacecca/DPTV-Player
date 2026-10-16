@@ -947,10 +947,16 @@ fun OwnTVShell(
             selectedSection == MainSection.SETTINGS -> backFromSettings()
             // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
+            // v2.1.3: Back in the guide is full screen on the channel in its video (◀ on the menu leaves the app).
+            selectedSection == MainSection.LIVE_TV -> previewChannel?.let { ch ->
+                restoreFocus = false
+                liveVm.watchFromGuide(ch)
+                exoHandoff = liveVm.liveOnExo.value
+                zapSource = MainSection.LIVE_TV
+                homeVm.stopPreview()
+                if (!liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
+            } ?: Unit
             focusedLayer == ShellLayer.SIDEBAR -> showExit = true
-            // v2.1.2: the guide reaches the menu with ◀ only (◀ categories, ◀ menu); Back there does not
-            // jump to it, it asks to leave the app as Back on the menu does.
-            selectedSection == MainSection.LIVE_TV -> showExit = true
             else -> focusRail()
         }
     }
@@ -1509,6 +1515,7 @@ fun OwnTVShell(
                 clockColors = clockColors,
                 playlistDownFocusRequester = homeFirstRowFocus.takeIf { selectedSection == MainSection.HOME },
                 onPlaylistPillBounds = { playlistPillBounds = it },
+                showPills = selectedSection != MainSection.LIVE_TV,
                 modifier = Modifier.align(Alignment.TopEnd).onFocusChanged { clusterFocused = it.hasFocus }.focusGroup(),
             )
             tv.own.owntv.features.shell.components.StageRail(
@@ -1540,6 +1547,8 @@ fun OwnTVShell(
                 },
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
                 scrim = !guideSide,
+                // v2.1.3: ◀ on the menu — the third ◀ from the guide — asks to leave the app.
+                onLeftEdge = { showExit = true },
                 nowPlaying = nowPlayingRail,
                 onNowPlaying = enterNowPlaying,
             )
@@ -1865,7 +1874,7 @@ fun OwnTVShell(
                     } else null,
                     // v2 — the information banner for the playing channel, while live (not an archive programme).
                     infoBanner = if (isTunedLive) {
-                        { chips, showKey ->
+                        { chips, showKey, durationMs ->
                             val epg by liveVm.nowNext.collectAsStateWithLifecycle()
                             val ch = previewChannel
                             tv.own.owntv.player.LiveInfoBanner(
@@ -1877,6 +1886,7 @@ fun OwnTVShell(
                                 now = epg?.now,
                                 next = epg?.next,
                                 showKey = showKey,
+                                durationMs = durationMs,
                             )
                         }
                     } else null,

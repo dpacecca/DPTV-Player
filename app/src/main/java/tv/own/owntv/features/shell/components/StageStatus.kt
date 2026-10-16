@@ -74,6 +74,8 @@ fun StageStatusCluster(
     modifier: Modifier = Modifier,
     playlistDownFocusRequester: FocusRequester? = null,
     onPlaylistPillBounds: (Rect) -> Unit = {},
+    /** The Continue and playlist pills; off on Live TV's guide (v2.1.3), where they covered the programme info. */
+    showPills: Boolean = true,
 ) {
     Row(
         modifier.padding(end = 64.mpx, top = 34.mpx),
@@ -85,7 +87,7 @@ fun StageStatusCluster(
         Row(Modifier.padding(top = 6.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx), verticalAlignment = Alignment.Top) {
             when {
                 audioBar != null -> audioBar()
-                continuePill != null -> StagePill(
+                continuePill != null && showPills -> StagePill(
                     text = continuePill.title,
                     small = continuePill.action,
                     icon = continuePill.icon,
@@ -94,7 +96,7 @@ fun StageStatusCluster(
                     modifier = Modifier.focusProperties { canFocus = pillsFocusable },
                 )
             }
-            StagePill(
+            if (showPills) StagePill(
                 text = playlistLabel,
                 icon = OwnTVIcon.LAYERS,
                 trailingIcon = if (playlistInteractive) OwnTVIcon.CHEVRON_DOWN else null,

@@ -126,22 +126,10 @@ internal fun ProgrammeStripCanvas(
     val textColor = tv.own.owntv.ui.theme.StageColors.Text
     val dimColor = tv.own.owntv.ui.theme.StageColors.Dim
     val ink = tv.own.owntv.ui.theme.StageColors.Ink
-    val palette = tv.own.owntv.ui.theme.LocalStagePalette.current
     // A row with nothing in the window says so, rather than looking broken.
     val emptyText = stringResource(R.string.content_epg_no_programme)
     // Clipped at the timeline's left edge only, so a focused cell's glow still spills up and down.
     Canvas(Modifier.fillMaxSize()) { clipRect(left = 0f, top = -size.height, right = size.width + 40 * px, bottom = size.height * 2) {
-        // The focused cell's ring. In light the focus colour is the accent, the cell's own fill, so the
-        // ring stands off it with a page-coloured gap first (`.mine.light .gcell.f`: 2.5 page + 2.5 accent).
-        fun focusRing(x0: Float, w: Float, h: Float, r: CornerRadius) {
-            if (palette.isLight) {
-                for ((colour, out) in listOf(palette.page to 1.25f * px, a.accent to 3.75f * px)) {
-                    drawRoundRect(colour, Offset(x0 - out, -out), Size(w + 2 * out, h + 2 * out), CornerRadius(r.x + out), style = Stroke(2.5f * px))
-                }
-            } else {
-                drawRoundRect(a.focus, Offset(x0 - px, -px), Size(w + 2 * px, h + 2 * px), CornerRadius(r.x + px), style = Stroke(2 * px))
-            }
-        }
         val viewW = size.width
         val h = size.height
         val r = CornerRadius(10 * px)
@@ -156,11 +144,10 @@ internal fun ProgrammeStripCanvas(
             val gx0 = (((gapStart - windowStart) / 60_000f) * pxPerMin - scrollPx + 3 * px).coerceAtLeast(0f)
             val gx1 = (((gapEnd - windowStart) / 60_000f) * pxPerMin - scrollPx - 3 * px).coerceAtMost(viewW)
             if (gx1 > gx0) {
-                val box = androidx.compose.ui.geometry.Rect(gx0, 0f, gx1, h)
-                drawBoxShadow(a.accent.copy(alpha = 0.4f), 34 * px, r.x, dy = 12 * px, bounds = box)
-                drawRoundRect(a.accent, Offset(gx0, 0f), Size(gx1 - gx0, h), r)
-                focusRing(gx0, gx1 - gx0, h, r)
-                val label = measurer.measure(emptyText, timeStyle.copy(color = a.onAccent), maxLines = 1, softWrap = false)
+                drawRoundRect(ink.copy(alpha = 0.10f), Offset(gx0, 0f), Size(gx1 - gx0, h), r)
+                val ring = 3.5f * px
+                drawRoundRect(a.accent, Offset(gx0 + ring / 2, ring / 2), Size(gx1 - gx0 - ring, h - ring), CornerRadius(r.x - ring / 2), style = Stroke(ring))
+                val label = measurer.measure(emptyText, timeStyle.copy(color = dimColor), maxLines = 1, softWrap = false)
                 drawText(label, topLeft = Offset(gx0 + 14 * px, (h - label.size.height) / 2f))
                 drawnAny = true
             }
@@ -181,9 +168,11 @@ internal fun ProgrammeStripCanvas(
             // DPTV Recorder's cells: a lifted fill with a 1 px line; the focused one filled in the accent with
             // its glow. What is on now is not marked here (v2.1.1): LIVE is on the info beside the video.
             if (focused) {
-                drawBoxShadow(a.accent.copy(alpha = 0.35f), 30 * px, r.x, dy = 10 * px, bounds = box)
-                drawRoundRect(a.accent, Offset(x, 0f), Size(w, h), r)
-                focusRing(x, w, h, r)
+                // v2.1.3: the focused cell keeps its ordinary fill and gets a thick accent border, so its
+                // title stays as easy to read as the rest (a full accent fill made white-on-green hard).
+                drawRoundRect(ink.copy(alpha = 0.10f), Offset(x, 0f), Size(w, h), r)
+                val ring = 3.5f * px
+                drawRoundRect(a.accent, Offset(x + ring / 2, ring / 2), Size(w - ring, h - ring), CornerRadius(r.x - ring / 2), style = Stroke(ring))
             } else {
                 drawRoundRect(ink.copy(alpha = (if (isNow) 0.075f else 0.05f) * fade), Offset(x, 0f), Size(w, h), r)
                 val line = 1.2f * px
@@ -196,9 +185,9 @@ internal fun ProgrammeStripCanvas(
             val tx = maxOf(x, 0f)
             val textW = (x + w - tx - 28 * px).toInt()
             if (textW <= 4) return@forEachIndexed
-            val titleColor = if (focused) a.onAccent else textColor.copy(alpha = fade)
-            val smallColor = if (focused) Color.Black.copy(alpha = 0.6f) else dimColor.copy(alpha = fade)
-            val iconColor = if (focused) a.onAccent else a.accent.copy(alpha = fade)
+            val titleColor = textColor.copy(alpha = fade)
+            val smallColor = dimColor.copy(alpha = fade)
+            val iconColor = a.accent.copy(alpha = fade)
             // The title takes two lines when it needs them (v2); the small line (icons, time) only fits under
             // a one-line title, so with two the icons sit at the cell's end and the time is left to the info on top.
             val title = measurer.measure(p.title, titleStyle.copy(color = titleColor), overflow = TextOverflow.Ellipsis, maxLines = 2, softWrap = true, constraints = Constraints(maxWidth = textW))
@@ -212,7 +201,7 @@ internal fun ProgrammeStripCanvas(
                     drawStageGlyph(g, c, Offset(ix, h - icon - 8 * px), icon, filled)
                     ix -= icon + 6 * px
                 }
-                if (p.startMs in recordingStarts) endGlyph(OwnTVIcon.REC, if (focused) a.onAccent else recRed.copy(alpha = fade), filled = true)
+                if (p.startMs in recordingStarts) endGlyph(OwnTVIcon.REC, recRed.copy(alpha = fade), filled = true)
                 if (p.startMs in reminderStarts) endGlyph(OwnTVIcon.BELL, iconColor)
                 if (p.id in catchupIds) endGlyph(OwnTVIcon.REWIND, iconColor)
                 return@forEachIndexed
@@ -228,7 +217,7 @@ internal fun ProgrammeStripCanvas(
                 drawStageGlyph(g, c, Offset(cx, lineTop + 2 * px), icon, filled)
                 cx += icon + 8 * px
             }
-            if (p.startMs in recordingStarts) glyph(OwnTVIcon.REC, if (focused) a.onAccent else recRed.copy(alpha = fade), filled = true)
+            if (p.startMs in recordingStarts) glyph(OwnTVIcon.REC, recRed.copy(alpha = fade), filled = true)
             if (p.startMs in reminderStarts) glyph(OwnTVIcon.BELL, iconColor)
             if (p.id in catchupIds) glyph(OwnTVIcon.REWIND, iconColor)
             val timeW = (x + w - 14 * px - cx).toInt()
