@@ -79,9 +79,9 @@ import tv.own.owntv.ui.theme.glass
 internal object GuideGridDefaults {
     /** The channel column when the guide widths are not customised (v2.1: number, logo and a two-line name, 520 of 1920). */
     const val ChannelColShare = 520f / 1920f
-    /** v2 rows: 80 high, so a long title takes two lines; 86 apart. */
-    val RowHeight = 80.mpx
-    val RowGap = 6.mpx
+    /** v2 rows: 84 high, so a long title takes two lines; v2.0.3 (DPTV Recorder): no gap, a 1 px line between. */
+    val RowHeight = 84.mpx
+    val RowGap = 0.mpx
     /** 3.5 hours across the mockup's 1512 px timeline. */
     val PxPerMin = 7.2.mpx
     const val SlotMin = 30
@@ -111,14 +111,20 @@ internal fun ProgrammeStripCanvas(
     val a = tv.own.owntv.ui.theme.stageAccent
     val px = with(density) { 1.mpx.toPx() }
     val pxPerMin = with(density) { GuideGridDefaults.PxPerMin.toPx() }
-    val titleStyle = tv.own.owntv.ui.theme.stageText(19, 700).copy(lineHeight = 23.mpxSp).copy(textDirection = TextDirection.Content)
-    val timeStyle = tv.own.owntv.ui.theme.stageText(14, 400).copy(fontFeatureSettings = "tnum", textDirection = TextDirection.Content)
+    val titleStyle = tv.own.owntv.ui.theme.stageText(19, 600).copy(lineHeight = 23.mpxSp).copy(textDirection = TextDirection.Content)
+    // DPTV Recorder's small line: the start and the length in mono ("1:00 pm · 90m").
+    val timeStyle = guideMono(14).copy(textDirection = TextDirection.Content)
+    val liveStyle = guideMono(11, 0.6f.mpxSp).copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = Color.White)
+    val liveText = stringResource(R.string.sport_guide_live)
     val formatTime = rememberSystemTimeFormatter()
-    val rangeTemplate = stringResource(R.string.content_live_time_range_plain)
-    val labels = remember(programmes, formatTime, rangeTemplate) {
-        programmes.map { String.format(java.util.Locale.ROOT, rangeTemplate, formatTime(it.startMs), formatTime(it.stopMs)) }
+    val minutesTemplate = stringResource(R.string.sport_guide_minutes_short)
+    val labels = remember(programmes, formatTime, minutesTemplate) {
+        programmes.map {
+            formatTime(it.startMs) + " · " + String.format(java.util.Locale.getDefault(), minutesTemplate, ((it.stopMs - it.startMs) / 60_000L).toInt())
+        }
     }
-    val recRed = Color(0xFFFF5B5B)
+    val recRed = GuideLiveRed
+    val border = GuideColors.Border
     val textColor = tv.own.owntv.ui.theme.StageColors.Text
     val dimColor = tv.own.owntv.ui.theme.StageColors.Dim
     val ink = tv.own.owntv.ui.theme.StageColors.Ink
@@ -140,7 +146,7 @@ internal fun ProgrammeStripCanvas(
         }
         val viewW = size.width
         val h = size.height
-        val r = CornerRadius(14 * px)
+        val r = CornerRadius(10 * px)
         // Feeds sometimes carry two programmes for the same time. Each one is drawn from where the one
         // before it ends, so they never sit on top of each other; one hidden completely is left out.
         var shownUntil = windowStart
@@ -174,12 +180,29 @@ internal fun ProgrammeStripCanvas(
             val isNow = now in p.startMs until p.stopMs
             val fade = if (!focused && p.stopMs <= now) 0.5f else 1f
             val box = androidx.compose.ui.geometry.Rect(x, 0f, x + w, h)
+            // DPTV Recorder's cells: a lifted fill with a 1 px line, the one on now outlined (in the accent
+            // here) with its LIVE tag; the focused one filled and outlined in the accent, with the glow.
             if (focused) {
-                drawBoxShadow(a.accent.copy(alpha = 0.4f), 34 * px, r.x, dy = 12 * px, bounds = box)
+                drawBoxShadow(a.accent.copy(alpha = 0.35f), 30 * px, r.x, dy = 10 * px, bounds = box)
                 drawRoundRect(a.accent, Offset(x, 0f), Size(w, h), r)
                 focusRing(x, w, h, r)
             } else {
-                drawRoundRect(ink.copy(alpha = (if (isNow) 0.085f else 0.045f) * fade), Offset(x, 0f), Size(w, h), r)
+                drawRoundRect(ink.copy(alpha = (if (isNow) 0.075f else 0.05f) * fade), Offset(x, 0f), Size(w, h), r)
+                val line = if (isNow) 2f * px else 1.2f * px
+                drawRoundRect(
+                    if (isNow) a.accent else border.copy(alpha = border.alpha * fade),
+                    Offset(x + line / 2, line / 2), Size(w - line, h - line), CornerRadius(r.x - line / 2), style = Stroke(line),
+                )
+            }
+            if (isNow && w > 150 * px) {
+                val tag = measurer.measure(liveText, liveStyle, maxLines = 1, softWrap = false)
+                val tw = tag.size.width + 10 * px
+                val th = tag.size.height + 2 * px
+                val tx0 = x + w - tw - 8 * px
+                if (tx0 > maxOf(x, 0f) + 60 * px) {
+                    drawRoundRect(if (focused) a.onAccent else recRed, Offset(tx0, 7 * px), Size(tw, th), CornerRadius(4 * px))
+                    drawText(tag, color = if (focused) a.accent else Color.White, topLeft = Offset(tx0 + 5 * px, 8 * px))
+                }
             }
             // Text starts at the visible part of a cell that began before the timeline's left edge.
             val tx = maxOf(x, 0f)

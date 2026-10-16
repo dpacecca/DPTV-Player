@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,6 +53,12 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Constraints
@@ -199,16 +206,20 @@ internal fun GuideInfoBlock(
     // A phone shows the mockup pixels at a third of a TV's size; the type is scaled back up to read.
     fun t(size: Int): Int = if (compact) (size * 1.5f).toInt() else size
     Column(modifier, verticalArrangement = Arrangement.spacedBy(if (compact) 6.mpx else 10.mpx)) {
+        Text(
+            programme?.title ?: fallbackTitle, style = stageText(t(40), 800, (-0.5).mpxSp), color = StageColors.Text,
+            maxLines = 2, overflow = TextOverflow.Ellipsis,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                programme?.title ?: fallbackTitle, style = stageText(t(40), 800, (-0.5).mpxSp), color = StageColors.Text,
-                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
-            )
-            if (recording) {
-                Text(stringResource(R.string.sport_guide_recording), style = stageText(t(17), 800), color = Color(0xFFFF5B5B), maxLines = 1)
+            // DPTV Recorder's tags in front of the time: LIVE, REC, CATCH-UP.
+            val airingNow = programme != null && now in programme.startMs until programme.stopMs
+            if (airingNow || recording || catchup) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically) {
+                    if (airingNow) GuideTag(stringResource(R.string.sport_guide_live), GuideLiveRed, filled = true, size = t(14))
+                    if (recording) GuideTag(stringResource(R.string.sport_guide_recording), GuideLiveRed, filled = false, size = t(14), dot = true)
+                    if (catchup) GuideTag(stringResource(R.string.sport_guide_catchup), a.accent, filled = false, size = t(14))
+                }
             }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
             if (programme != null) {
                 Text(
                     stringResource(R.string.content_live_time_range_plain, formatTime(programme.startMs), formatTime(programme.stopMs)),
@@ -228,12 +239,6 @@ internal fun GuideInfoBlock(
                 }
                 if (note != null) {
                     Text(note, style = stageText(t(19), 600).copy(fontFeatureSettings = Tabular), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            if (catchup) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.mpx), verticalAlignment = Alignment.CenterVertically) {
-                    OwnTVIcon(OwnTVIcon.CATCHUP, a.accent, Modifier.size(t(18).mpx))
-                    Text(stringResource(R.string.sport_guide_catchup), style = stageText(t(17), 700), color = a.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -292,7 +297,7 @@ internal fun GuideRuler(
         modifier = modifier,
         content = {
             times.forEach { t ->
-                Text(formatTime(t), style = stageText(17, 700).copy(fontFeatureSettings = Tabular), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(formatTime(t), style = guideMono(15), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (nowIn) {
                 Text(
@@ -325,28 +330,130 @@ internal fun GuideRuler(
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun GuideChannelLabel(channel: ChannelEntity, name: String, dot: Color?, selected: Boolean, numberWidth: Dp, modifier: Modifier = Modifier) {
+    // DPTV Recorder's channel cell (v2.0.3): the logo on a bordered tile, the name over "CH 2846" in mono,
+    // on the column's own panel; the selected row lighter, with the accent bar at its edge.
     val a = stageAccent
+    val line = GuideColors.Border
     Row(
-        modifier.padding(start = 8.mpx, end = 10.mpx),
-        horizontalArrangement = Arrangement.spacedBy(12.mpx),
+        modifier
+            .fillMaxHeight()
+            .background(if (selected) GuideColors.Panel2 else GuideColors.Panel)
+            .drawBehind {
+                drawRect(line, topLeft = Offset(size.width - 1.5.mpx.toPx(), 0f), size = Size(1.5.mpx.toPx(), size.height))
+                if (selected) drawRect(a.accent, size = Size(4.mpx.toPx(), size.height))
+            }
+            .padding(start = 18.mpx, end = 14.mpx),
+        horizontalArrangement = Arrangement.spacedBy(14.mpx),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(7.mpx).background(dot ?: Color.Transparent, RoundedCornerShape(50)))
+        Box(
+            Modifier.size(58.mpx).background(GuideColors.Panel2, RoundedCornerShape(12.mpx))
+                .border(1.5.mpx, GuideColors.Border, RoundedCornerShape(12.mpx)).padding(4.mpx),
+            contentAlignment = Alignment.Center,
+        ) { LivePlate(channel.displayLogoUrl, 50.mpx, 50.mpx, radius = 9.mpx) }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.mpx)) {
+            // A long name takes two lines; on the focused row it scrolls on one line instead.
+            Text(
+                name, style = stageText(20, 700).copy(lineHeight = 23.mpxSp), color = if (selected) a.accent else StageColors.Text,
+                maxLines = if (selected) 1 else 2, overflow = TextOverflow.Ellipsis,
+                modifier = if (selected) Modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 900) else Modifier,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically) {
+                if (dot != null) Box(Modifier.size(7.mpx).background(dot, RoundedCornerShape(50)))
+                channel.number?.let {
+                    Text(
+                        stringResource(R.string.sport_guide_channel_number, it), style = guideMono(14), color = StageColors.Dim,
+                        maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** DPTV Recorder's surfaces in the app's green: the channel column, a lifted fill, the 1 px lines. */
+internal object GuideColors {
+    val Panel: Color @Composable get() = StageColors.Ink.copy(alpha = 0.035f)
+    val Panel2: Color @Composable get() = StageColors.Ink.copy(alpha = 0.075f)
+    val Border: Color @Composable get() = StageColors.Ink.copy(alpha = 0.11f)
+}
+
+/** Recorder's live red, for LIVE and REC. */
+internal val GuideLiveRed = Color(0xFFE2495A)
+
+/** DPTV Recorder's type: Barlow Condensed for display, IBM Plex Mono for times and numbers. */
+internal val GuideDisplayFamily = FontFamily(
+    Font(R.font.barlow_condensed_semibold, FontWeight.SemiBold),
+    Font(R.font.barlow_condensed_bold, FontWeight.Bold),
+)
+internal val GuideMonoFamily = FontFamily(Font(R.font.ibm_plex_mono_medium, FontWeight.Medium))
+
+internal fun guideMono(size: Int, letterSpacing: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified) = TextStyle(
+    fontFamily = GuideMonoFamily, fontWeight = FontWeight.Medium, fontSize = size.mpxSp, letterSpacing = letterSpacing,
+)
+
+internal fun guideDisplay(size: Int, weight: Int = 600) = TextStyle(
+    fontFamily = GuideDisplayFamily, fontWeight = FontWeight(weight), fontSize = size.mpxSp, letterSpacing = (size * 0.02f).mpxSp,
+)
+
+/** A Recorder tag: "LIVE" filled red, "● RECORDING" and "CATCH-UP" outlined. */
+@Composable
+internal fun GuideTag(text: String, color: Color, filled: Boolean, size: Int = 14, dot: Boolean = false) {
+    Row(
+        Modifier
+            .then(if (filled) Modifier.background(color, RoundedCornerShape(5.mpx)) else Modifier.border(1.5.mpx, color, RoundedCornerShape(5.mpx)))
+            .padding(horizontal = 8.mpx, vertical = 2.mpx),
+        horizontalArrangement = Arrangement.spacedBy(6.mpx),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (dot) Box(Modifier.size((size * 0.55f).mpx).background(color, RoundedCornerShape(50)))
         Text(
-            channel.number?.toString().orEmpty(),
-            style = stageText(20, 700).copy(fontFeatureSettings = Tabular), color = if (selected) a.accent else StageColors.Dim,
-            // Always whole (owner): the column fits the longest number in the list; only the name is cut.
-            maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(numberWidth),
+            text.uppercase(), style = guideMono(size, (size * 0.06f).mpxSp).copy(fontWeight = FontWeight.Bold),
+            color = if (filled) Color.White else color, maxLines = 1, overflow = TextOverflow.Ellipsis,
         )
-        LivePlate(channel.displayLogoUrl, 64.mpx, 44.mpx, radius = 10.mpx)
-        // A long name takes two lines; on the focused row it scrolls on one line instead.
-        Text(
-            name, style = stageText(20, 700).copy(lineHeight = 23.mpxSp), color = if (selected) a.accent else StageColors.Text,
-            maxLines = if (selected) 1 else 2, overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).then(
-                if (selected) Modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 900) else Modifier,
-            ),
-        )
+    }
+}
+
+/**
+ * The guide's days as Recorder's chips ("TODAY / Oct 16"): the day on screen in the accent, OK jumps to
+ * the same time of day on that one. [focusRequester] goes on the day on screen.
+ */
+@Composable
+internal fun GuideDayChips(days: List<Long>, current: Long, onPick: (Long) -> Unit, focusRequester: FocusRequester, modifier: Modifier = Modifier) {
+    val a = stageAccent
+    val today = localMidnight(System.currentTimeMillis())
+    val formatDate = tv.own.owntv.ui.format.rememberBestDateFormatter("MMMd")
+    val formatDow = tv.own.owntv.ui.format.rememberBestDateFormatter("EEE")
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    LaunchedEffect(current, days) {
+        val i = days.indexOf(current)
+        if (i >= 0) runCatching { listState.animateScrollToItem((i - 1).coerceAtLeast(0)) }
+    }
+    androidx.compose.foundation.lazy.LazyRow(
+        state = listState, modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.mpx),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        items(days.size) { i ->
+            val day = days[i]
+            val active = day == current
+            StageSurface(
+                onClick = { onPick(day) }, radius = 10.mpx,
+                modifier = Modifier.then(if (active) Modifier.focusRequester(focusRequester) else Modifier),
+                idle = if (active) Modifier.background(a.accent, RoundedCornerShape(10.mpx))
+                else Modifier.background(GuideColors.Panel2, RoundedCornerShape(10.mpx)).border(1.5.mpx, GuideColors.Border, RoundedCornerShape(10.mpx)),
+                contentAlignment = Alignment.Center,
+            ) { focused ->
+                val ink = if (focused || active) a.onAccent else StageColors.Muted
+                Column(Modifier.padding(horizontal = 16.mpx, vertical = 6.mpx), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        if (day == today) stringResource(R.string.content_epg_today).uppercase() else formatDow(day).uppercase(),
+                        style = guideMono(12, 1.2f.mpxSp), color = ink.copy(alpha = 0.75f), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(formatDate(day), style = guideMono(16).copy(fontWeight = if (active) FontWeight.Bold else FontWeight.Medium), color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
     }
 }
 

@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.background
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -84,6 +88,7 @@ import tv.own.owntv.ui.stage.StageSearchField
 import tv.own.owntv.ui.stage.StageTool
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.theme.mpxSp
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
@@ -657,15 +662,19 @@ fun EpgScreen(
                 }
             }
 
-            // The header line: the day and the guide's tools over the channel column, the ruler over the programmes.
+            // The header (v2.0.3, DPTV Recorder's): the search and the guide's tools over the channel column and
+            // the days as chips over the programmes; under it "CHANNEL" over the column and the ruler.
             val viewTime = timeAt(scrollPx + timelinePx / 4f)
             val viewDay = localMidnight(viewTime)
+            val guideDays = remember(state.windowStart, state.windowEnd) {
+                generateSequence(localMidnight(state.windowStart)) { localMidnight(it + 36L * 60 * 60 * 1000) }.takeWhile { it < state.windowEnd }.toList()
+            }
             Row(
-                Modifier.padding(top = if (compact) 6.dp else 18.mpx).fillMaxWidth().height(48.mpx),
+                Modifier.padding(top = if (compact) 6.dp else 16.mpx).fillMaxWidth().height(if (compact) 48.mpx else 64.mpx),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
-                    Modifier.padding(start = rowStart).width(labelW),
+                    Modifier.padding(start = rowStart, end = 12.mpx).width(labelW),
                     horizontalArrangement = Arrangement.spacedBy(4.mpx),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -681,22 +690,45 @@ fun EpgScreen(
                         )
                     } else {
                         StageTool(
-                            text = null, value = guideDayLabel(viewDay), valueAccent = true, trailingIcon = OwnTVIcon.CHEVRON_DOWN,
-                            onClick = { returnTo = { runCatching { dayTool.requestFocus() } }; dayOpen = true },
-                            modifier = Modifier.focusRequester(dayTool).weight(1f, fill = false),
+                            text = stringResource(R.string.content_epg_search_hint), icon = OwnTVIcon.SEARCH, boxed = true,
+                            onClick = { searchOpen = true }, modifier = Modifier.weight(1f),
                         )
                         StageTool(
                             text = null, icon = OwnTVIcon.SORT,
                             onClick = { returnTo = { runCatching { orderTool.requestFocus() } }; orderOpen = true },
                             modifier = Modifier.focusRequester(orderTool),
                         )
-                        StageTool(text = null, icon = OwnTVIcon.SEARCH, onClick = { searchOpen = true })
                         if (matching) {
                             Box(Modifier.padding(horizontal = 12.mpx)) { OwnTVSpinner(sizeDp = 18) }
                         } else {
                             StageTool(text = null, icon = OwnTVIcon.SPARKLE, onClick = vm::autoMatchEpg)
                         }
                     }
+                }
+                if (state.channels.isNotEmpty() && guideDays.isNotEmpty()) {
+                    GuideDayChips(
+                        days = guideDays, current = viewDay,
+                        onPick = { day ->
+                            val now = System.currentTimeMillis()
+                            showTime(day + (now - localMidnight(now)))
+                        },
+                        focusRequester = dayTool,
+                        modifier = Modifier.width(timelineW),
+                    )
+                }
+            }
+            Row(
+                Modifier.padding(top = 10.mpx).fillMaxWidth().height(40.mpx),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier.padding(start = rowStart).width(labelW).fillMaxHeight().background(GuideColors.Panel),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Text(
+                        stringResource(R.string.sport_guide_channel_header).uppercase(), style = guideMono(13, 1.5.mpxSp), color = StageColors.Dim,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 18.mpx),
+                    )
                 }
                 if (state.channels.isNotEmpty()) {
                     GuideRuler(
@@ -1016,7 +1048,14 @@ private fun GuideRow(
     val onStripDrag by rememberUpdatedState(onScrollBy)
     val onLabelTap by rememberUpdatedState { onOk(programmeAt(programmes.orEmpty(), now)) }
     val onLabelLongPress by rememberUpdatedState { onMenu(null) }
-    Row(Modifier.fillMaxWidth().height(GuideGridDefaults.RowHeight), verticalAlignment = Alignment.CenterVertically) {
+    val divider = GuideColors.Border
+    val slotPx = pxPerMin * GuideGridDefaults.SlotMin
+    Row(
+        Modifier.fillMaxWidth().height(GuideGridDefaults.RowHeight)
+            // DPTV Recorder: a 1 px line under each row.
+            .drawBehind { drawRect(divider, topLeft = Offset(0f, size.height - 1.dp.toPx()), size = Size(size.width, 1.dp.toPx())) },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         GuideChannelLabel(
             channel, name, dot, selected = selectedRow, numberWidth = numberWidth,
             modifier = Modifier.width(labelWidth).pointerInput(Unit) {
@@ -1027,6 +1066,16 @@ private fun GuideRow(
             Modifier
                 .weight(1f)
                 .fillMaxHeight()
+                // Recorder's faint line at each half hour, behind the cells.
+                .drawBehind {
+                    val first = ((windowStart + GuideGridDefaults.SlotMin * 60_000L - 1) / (GuideGridDefaults.SlotMin * 60_000L)) * GuideGridDefaults.SlotMin * 60_000L
+                    var lx = (first - windowStart) / 60_000f * pxPerMin - scrollPx
+                    while (lx < size.width) {
+                        if (lx >= 0f) drawRect(divider.copy(alpha = divider.alpha * 0.6f), topLeft = Offset(lx, 0f), size = Size(1.dp.toPx(), size.height))
+                        lx += slotPx
+                    }
+                }
+                .padding(vertical = 7.mpx)
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onTap = { offset -> onStripTap(offset.x) },

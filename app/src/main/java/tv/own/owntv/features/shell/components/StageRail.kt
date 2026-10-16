@@ -315,15 +315,8 @@ private fun ColumnScope.RailBrand(open: Boolean) {
         BrandMark(icon, 50.mpx, Modifier.padding(bottom = 12.mpx))
         return
     }
-    Row(
-        Modifier.padding(start = 10.mpx, end = 10.mpx, bottom = 18.mpx),
-        horizontalArrangement = Arrangement.spacedBy(14.mpx),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        BrandMark(icon, 50.mpx)
-        // The #227 wordmark, 130 wide (`.brandrow`, `wordmarkC()`).
-        Wordmark(130.mpx)
-    }
+    // Open: the logo alone — it carries its own play glyph (v2.0.3, DPTV Recorder's header in green).
+    Wordmark(200.mpx, Modifier.padding(start = 6.mpx, end = 10.mpx, top = 6.mpx, bottom = 18.mpx))
 }
 
 @Composable
