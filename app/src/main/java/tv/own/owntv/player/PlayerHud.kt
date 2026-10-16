@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -222,7 +223,7 @@ fun PlayerHud(
     // v2 — the live information banner (channel, stream facts, now/next), shown for INFO_BANNER_MS when the
     // player opens, on OK and on a channel change, instead of the full controls. Handed the stream's chips
     // and a key that changes each time it is shown again. Null (films, episodes) keeps the controls.
-    infoBanner: (@Composable (chips: List<String>, showKey: Int) -> Unit)? = null,
+    infoBanner: (@Composable (chips: List<String>, showKey: Int, durationMs: Long) -> Unit)? = null,
     // N3 — now/next lines for the channel-change banner (the playing channel's guide). Null = name only.
     zapGuide: (@Composable () -> Unit)? = null,
     // The archive's own wall-clock instant while catch-up/rewind is playing; null means the picture is
@@ -295,8 +296,10 @@ fun PlayerHud(
     var controlsVisible by remember { mutableStateOf(infoBanner == null) }
     var bannerTick by remember { mutableIntStateOf(if (infoBanner != null) 1 else 0) }
     var bannerVisible by remember { mutableStateOf(false) }
+    // How long this showing lasts (10 s on opening, on OK and after a channel change).
+    var bannerMs by remember { mutableLongStateOf(INFO_BANNER_MS) }
     LaunchedEffect(bannerTick) {
-        if (bannerTick > 0) { bannerVisible = true; delay(INFO_BANNER_MS); bannerVisible = false }
+        if (bannerTick > 0) { bannerVisible = true; delay(bannerMs); bannerVisible = false }
     }
     // Hold ◀ / ▶ (v2): which arrow is down with the controls hidden, and whether it has been held.
     var arrowDown by remember { mutableStateOf<Key?>(null) }
@@ -361,7 +364,7 @@ fun PlayerHud(
         cancelDirectTune()
         (if (d < 0) onChannelUp else onChannelDown)?.invoke()
         // v2: a channel change shows the new channel's banner, where there is one.
-        if (infoBanner != null && !controlsVisible) bannerTick++ else channelFlash++
+        if (infoBanner != null && !controlsVisible) { bannerMs = INFO_BANNER_ZAP_MS; bannerTick++ } else channelFlash++
     }
 
     // Restartable timeout: each new digit restarts the ~2 s window. On expiry, submit.
@@ -436,6 +439,8 @@ fun PlayerHud(
     }
     // Back cancels digit entry before it hides/exits controls.
     BackHandler(enabled = digitsActive) { digitBuffer = ""; tuneOsd = null }
+    // v2.1.3: Back while the banner is up only takes the banner away.
+    BackHandler(enabled = bannerVisible && !controlsVisible && !digitsActive) { bannerVisible = false }
 
     // Only for the "report this stream" button, whose readout is now gathered off the main thread.
     val hudScope = androidx.compose.runtime.rememberCoroutineScope()
@@ -731,7 +736,7 @@ fun PlayerHud(
                         when {
                             e.type != KeyEventType.KeyDown || e.key == Key.Back -> false
                             // v2: OK shows the banner for a while; OK while it is up opens the controls.
-                            ok && infoBanner != null && !bannerVisible -> { bannerTick++; true }
+                            ok && infoBanner != null && !bannerVisible -> { bannerMs = INFO_BANNER_MS; bannerTick++; true }
                             else -> { controlsVisible = true; true }
                         }
                     },
@@ -773,7 +778,7 @@ fun PlayerHud(
         }
 
         if (infoBanner != null && bannerVisible && !controlsVisible && error == null) {
-            infoBanner(streamChips, bannerTick)
+            infoBanner(streamChips, bannerTick, bannerMs)
         }
 
         // The REC badge, and it is deliberately OUTSIDE `if (controlsVisible)`.

@@ -1,4 +1,4 @@
-# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-16, v2.1.2)
+# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-16, v2.1.3)
 
 > Zweck: Verhalten und Tastenbelegung des zusammengelegten Live-TV/Guide-Screens und des Player-Banners ab v2.0.0.
 
@@ -31,7 +31,7 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 
 ## Player (live)
 
-- Öffnen, Kanalwechsel und OK zeigen `LiveInfoBanner` für `INFO_BANNER_MS` (3 s); OK bei
+- Öffnen, Kanalwechsel und OK zeigen `LiveInfoBanner` für `INFO_BANNER_MS` (10 s seit v2.1.3; Back blendet ihn aus); OK bei
   sichtbarem Banner öffnet die Bedienleiste.
 - Back schliesst den Player und landet auf der Guide-Zeile des laufenden Kanals.
 - ◀ ▶ halten (Kanal mit Archiv): Scrubben über die Zeitleiste. Kurzer Druck wie bisher
@@ -98,3 +98,13 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 - Zweite Ursache (auch mit Vorschau-Ton): OK setzte FULLSCREEN sofort, `liveOnExo` kam erst einen Frame
   später an — für diesen Frame zeigte die Shell mpvs Surface, ExoPlayers wurde zerstört und neu gebaut.
   `exoOnScreen` liest zusätzlich `liveVm.liveOnExo.value` direkt.
+
+## v2.1.3
+
+- Kanalliste: ▼ auf dem letzten Kanal springt zum ersten.
+- Guide: Last-channel- und Playlist-Pille oben ausgeblendet (`StageStatusCluster(showPills = false)` auf LIVE_TV).
+- Fokussierte Zelle: normale Füllung + 3,5 px Akzent-Rand statt voller Akzent-Füllung.
+- Back im Guide = Vollbild auf dem Kanal im Video; ◀ auf der Rail (`onLeftEdge`) = Beenden-Dialog.
+- Kategorie gewählt: Fokus geht vor dem Schließen auf den Tages-Chip, `focusGrid` versucht es bis zu
+  2 s, bis die neue Liste da ist (vorher fiel der Fokus auf die Rail).
+- Info-Banner 10 s (Öffnen, OK, Kanalwechsel); Back blendet ihn aus, ohne den Player zu verlassen.

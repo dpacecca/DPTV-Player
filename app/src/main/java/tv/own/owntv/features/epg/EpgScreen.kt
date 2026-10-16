@@ -324,14 +324,18 @@ fun EpgScreen(
     }
     // Back to the grid at the row focus was on (after a menu, the sheet, a jump).
     fun focusGrid(row: Int = focusedRow) {
-        val i = row.coerceIn(0, (state.channels.size - 1).coerceAtLeast(0))
         scope.launch {
-            val visible = rowListState.layoutInfo.visibleItemsInfo.any { it.index == i }
-            if (!visible) runCatching { rowListState.scrollToItem(i) }
-            withFrameNanos { }
-            if (!runCatching { rowFocus(i).requestFocus() }.getOrDefault(false)) {
-                withFrameNanos { }
-                runCatching { rowFocus(i).requestFocus() }
+            // v2.1.3: the row may not be there yet — a new category reloads the list — so keep trying for a
+            // moment. Giving up after two frames left focus to fall to the menu, where ▼ then moved.
+            repeat(40) {
+                val i = row.coerceIn(0, (state.channels.size - 1).coerceAtLeast(0))
+                if (state.channels.isNotEmpty() && !state.loading) {
+                    val visible = rowListState.layoutInfo.visibleItemsInfo.any { it.index == i }
+                    if (!visible) runCatching { rowListState.scrollToItem(i) }
+                    withFrameNanos { }
+                    if (runCatching { rowFocus(i).requestFocus() }.getOrDefault(false)) return@launch
+                }
+                delay(50)
             }
         }
     }
@@ -806,7 +810,8 @@ fun EpgScreen(
                                             val to = from + delta
                                             when {
                                                 to < 0 -> false // ▲ from the first row: up to the header
-                                                to >= state.channels.size -> true
+                                                // ▼ from the last channel: round to the first (v2.1.3).
+                                                to >= state.channels.size -> { stepTo(0); true }
                                                 else -> { stepTo(to); true }
                                             }
                                         },
@@ -851,8 +856,12 @@ fun EpgScreen(
                 listState = catListState,
                 onSelect = { idx ->
                     railItems.getOrNull(idx)?.key?.let { key -> if (liveMode) liveVm.select(key) else vm.setCategoryFilter(key) }
-                    sheetOpen = false
                     focusedRow = 0
+                    vm.lastFocusedChannelId = null
+                    // Focus moves to the guide before the categories go, so it never drops to the menu; the
+                    // first row takes it as soon as the new category's list is in.
+                    runCatching { dayTool.requestFocus() }
+                    sheetOpen = false
                     scope.launch { runCatching { rowListState.scrollToItem(0) } }
                     focusGrid(0)
                 },

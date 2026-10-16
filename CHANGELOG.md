@@ -64,6 +64,18 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.1.3
+
+### ✨ New features
+- **🔁 The channel list wraps from the last channel to the first**
+- **↩️ Back in the guide goes full screen; Left on the menu asks to leave the app**
+- **⏱️ The info banner stays 10 seconds; Back hides it**
+
+### 🐞 Fixes
+- **🟩 The selected programme has a green border instead of a green fill, so its title stays readable**
+- **🧹 No Last channel and playlist pills over the guide's programme information**
+- **⬇️ After choosing a category, Down moves through the guide, not the menu**
+
 ## v2.1.2
 
 ### 🐞 Fixes

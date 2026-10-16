@@ -41,8 +41,11 @@ import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.theme.hudAccent
 import tv.own.owntv.ui.theme.hudInk
 
-/** How long the information banner stays up when the player opens, on OK and on a channel change (v2). */
-internal const val INFO_BANNER_MS = 3_000L
+/** How long the information banner stays up: on opening, on OK and after a channel change (v2.1.3: 10 s, was 3). */
+internal const val INFO_BANNER_MS = 10_000L
+
+/** After a channel change (the same, kept apart in case they part again). */
+internal const val INFO_BANNER_ZAP_MS = INFO_BANNER_MS
 
 /**
  * The live information banner (v2): along the bottom of the picture, over a scrim — the channel's logo,
@@ -61,6 +64,8 @@ internal fun LiveInfoBanner(
     next: XtEpgEntry?,
     /** Changes each time the banner is shown again, so the drain bar starts over. */
     showKey: Int,
+    /** How long it stays up this time, which the drain bar runs over. */
+    durationMs: Long = INFO_BANNER_MS,
     modifier: Modifier = Modifier,
 ) {
     val accent = hudAccent
@@ -68,7 +73,7 @@ internal fun LiveInfoBanner(
     val drain = remember { Animatable(1f) }
     LaunchedEffect(showKey) {
         drain.snapTo(1f)
-        drain.animateTo(0f, tween(INFO_BANNER_MS.toInt(), easing = LinearEasing))
+        drain.animateTo(0f, tween(durationMs.toInt(), easing = LinearEasing))
     }
     BoxWithConstraints(modifier.fillMaxSize()) {
         val compact = maxWidth < 700.dp
