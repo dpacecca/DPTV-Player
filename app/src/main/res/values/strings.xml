@@ -78,6 +78,11 @@
     <!-- v2 guide + player banner -->
     <string name="sport_guide_min_left">%1$d min left</string>
     <string name="sport_guide_catchup">Catch-up</string>
+    <string name="sport_guide_recording">Recording</string>
+    <string name="sport_guide_live">LIVE</string>
+    <string name="sport_guide_channel_number">CH %1$d</string>
+    <string name="sport_guide_minutes_short">%1$dm</string>
+    <string name="sport_guide_channel_header">Channel</string>
     <string name="sport_guide_next">Next</string>
     <string name="sport_guide_categories">Categories</string>
     <string name="sport_player_no_rewind">This channel has no catch-up. To rewind any channel, turn on Settings › Pause and rewind live TV.</string>

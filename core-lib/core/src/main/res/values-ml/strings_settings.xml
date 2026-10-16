@@ -644,7 +644,7 @@
     </plurals>
     <string name="settings_catchup_timezone_device">ഉപകരണം</string>
     <string name="settings_catchup_player_ask">എപ്പോഴും ചോദിക്കുക</string>
-    <string name="settings_catchup_player_internal">DPTV-Player പ്ലെയർ</string>
+    <string name="settings_catchup_player_internal">DPTV-Player</string>
     <string name="settings_catchup_player_external">ബാഹ്യ പ്ലെയർ</string>
     <string name="settings_download_folder_title">ഡൗൺലോഡ് ഫോൾഡർ തിരഞ്ഞെടുക്കുക</string>
     <string name="settings_pick_background_title">ഒരു പശ്ചാത്തല ചിത്രം തിരഞ്ഞെടുക്കുക</string>

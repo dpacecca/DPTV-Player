@@ -640,7 +640,7 @@
     </plurals>
     <string name="settings_catchup_timezone_device">裝置</string>
     <string name="settings_catchup_player_ask">一律詢問</string>
-    <string name="settings_catchup_player_internal">DPTV-Player 播放器</string>
+    <string name="settings_catchup_player_internal">DPTV-Player</string>
     <string name="settings_catchup_player_external">外部播放器</string>
     <string name="settings_download_folder_title">選擇下載資料夾</string>
     <string name="settings_pick_background_title">選擇背景圖片</string>

@@ -107,7 +107,7 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
     if (adding || editing != null) {
         EpgSourceForm(
             initial = editing,
-            initialAutoRefresh = editing?.let { autoRefreshMap[it.id] } ?: EpgRefresh.OFF,
+            initialAutoRefresh = editing?.let { autoRefreshMap[it.id] } ?: EpgRefresh.DEFAULT,
             initialUseLogos = editing?.let { it.id in useLogosIds } ?: false,
             loadPlaylistOptions = { vm.playlistEpgOptions() },
             onSave = { name, url, ua, autoRefresh, useLogos ->
@@ -143,7 +143,7 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
                 .collectAsStateWithLifecycle(EpgSyncState.Idle)
             EpgRow(
                 source = source,
-                autoRefresh = autoRefreshMap[source.id] ?: EpgRefresh.OFF,
+                autoRefresh = autoRefreshMap[source.id] ?: EpgRefresh.DEFAULT,
                 counts = { vm.counts(source.id) },
                 syncState = syncState,
                 deleting = source.id in deletingIds,

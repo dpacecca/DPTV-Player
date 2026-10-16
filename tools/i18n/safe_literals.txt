@@ -86,9 +86,11 @@
 1	log	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	stored=$stored sources=${ids.size}
 1	log	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	totalMs=${android.os.SystemClock.elapsedRealtime() - loadStartedAt}
 1	log	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	window-moved
-1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideCore.kt	tnum
+1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideCore.kt	·
 1	empty	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	\0
+1	locale	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	EEE
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	EEEdMMM
+1	locale	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	MMMd
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	tnum
 4	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	·
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	· $nowTitle

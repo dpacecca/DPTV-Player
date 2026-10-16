@@ -99,7 +99,7 @@ class SetupViewModel(
         password: String,
         userAgent: String = "",
         epgUrl: String = "",
-        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT,
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Now,
         series: SyncScopeChoice = SyncScopeChoice.Now,
@@ -118,7 +118,7 @@ class SetupViewModel(
         deviceId2: String = "",
         signature: String = "",
         userAgent: String = "",
-        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT,
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Later,
         series: SyncScopeChoice = SyncScopeChoice.Later,
@@ -130,7 +130,7 @@ class SetupViewModel(
         )
     }
 
-    fun startM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF, httpReferer: String = "") =
+    fun startM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", autoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT, httpReferer: String = "") =
         runImport { importer.m3u(name, url, userAgent, epgUrl, autoRefresh, httpReferer = httpReferer) }
 
     /**

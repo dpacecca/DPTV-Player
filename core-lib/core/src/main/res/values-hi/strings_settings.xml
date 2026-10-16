@@ -644,7 +644,7 @@
     </plurals>
     <string name="settings_catchup_timezone_device">डिवाइस</string>
     <string name="settings_catchup_player_ask">हमेशा पूछें</string>
-    <string name="settings_catchup_player_internal">DPTV-Player प्लेयर</string>
+    <string name="settings_catchup_player_internal">DPTV-Player</string>
     <string name="settings_catchup_player_external">बाहरी प्लेयर</string>
     <string name="settings_download_folder_title">डाउनलोड फ़ोल्डर चुनें</string>
     <string name="settings_pick_background_title">पृष्ठभूमि चित्र चुनें</string>

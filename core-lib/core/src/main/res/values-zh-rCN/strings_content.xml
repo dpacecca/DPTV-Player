@@ -298,7 +298,7 @@
     <string name="content_epg_favourite">收藏</string>
     <string name="content_epg_unfavourite">取消收藏</string>
     <string name="content_epg_player_choice_description">前往设置 › 回看以设置永久选项。</string>
-    <string name="content_epg_own_player">DPTV-Player 播放器</string>
+    <string name="content_epg_own_player">DPTV-Player</string>
     <string name="content_epg_external_player">外部播放器</string>
     <string name="content_epg_time_offset">电子节目指南时间偏移</string>
     <string name="content_epg_shift_minutes"><xliff:g id="sign">%1$s</xliff:g><xliff:g id="minutes">%2$s</xliff:g>分钟</string>

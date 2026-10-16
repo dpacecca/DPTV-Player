@@ -50,19 +50,18 @@ fun BrandMark(icon: AppIcon, size: Dp, modifier: Modifier = Modifier, followAcce
 }
 
 /**
- * The DPTV-Player wordmark: "DPTV" in brand green, "-Player" neutral — drawn from the two-tone vectors,
- * dark variant on dark surfaces, light variant on light ones. The [tv]/[own] tint parameters are
- * accepted for call-site compatibility only; the vectors ship their brand colours.
+ * The DPTV-Player logo (v2.1.0, DPTV Recorder's in green): a glowing play glyph, then "DPTV" and "PLAYER"
+ * in the accent, drawn from the vectors — dark variant on dark surfaces, light variant on light ones. Its
+ * height follows the drawing's own proportions. The [tv]/[own] tint parameters are accepted for call-site
+ * compatibility only; the vectors ship their brand colours.
  */
 @Composable
 fun Wordmark(width: Dp, modifier: Modifier = Modifier, tv: Color = Color.Unspecified, own: Color = Color.Unspecified) {
     val colors = OwnTVTheme.colors
-    Box(modifier.width(width).height(width * 160f / 585f)) {
-        Image(
-            painterResource(if (colors.isDark) R.drawable.dptv_wordmark_dark else R.drawable.dptv_wordmark),
-            null,
-            Modifier.fillMaxSize(),
-        )
+    val painter = painterResource(if (colors.isDark) R.drawable.dptv_wordmark_dark else R.drawable.dptv_wordmark)
+    val ratio = painter.intrinsicSize.let { if (it.width > 0f) it.height / it.width else 160f / 681f }
+    Box(modifier.width(width).height(width * ratio)) {
+        Image(painter, null, Modifier.fillMaxSize())
     }
 }
 

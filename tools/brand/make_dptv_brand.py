@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates every DPTV-Player brand asset from one geometry (stand: 2026-10-14).
+"""Generates every DPTV-Player brand asset from one geometry (stand: 2026-10-16, v2.1.0).
 
 Outputs (overwritten in place):
   core-lib/core/src/main/res/drawable/dptv_mark.xml, dptv_mark_small.xml, dptv_mark_mono.xml,
@@ -7,11 +7,12 @@ Outputs (overwritten in place):
   core-lib/core/src/main/res/drawable-xxxhdpi/dptv_banner.png   (Android TV banner, 1280 x 720)
   docs/brand/dptv-logo.png, docs/brand/dptv-logo-light.png        (README lockups)
 
-The mark is a TV screen with a play triangle on the green tile. The wordmark is "DPTV" in brand
-green + "-Player" neutral, set in Inter Display Bold (SIL OFL) and converted to outlines.
+DPTV-Player's brand is DPTV Recorder's, in green: the icon is Recorder's dark tile with its glow and
+play triangle (no record badge); the logo is a glowing play glyph (Recorder: a glowing dot) and
+"DPTV" + "PLAYER" in Barlow Condensed SemiBold, uppercase, "PLAYER" in the accent.
 
 Needs: pip install fonttools pillow
-Usage: python3 tools/brand/make_dptv_brand.py [--font /path/to/InterDisplay-Bold.otf]
+Usage: python3 tools/brand/make_dptv_brand.py [--font app/src/main/res/font/barlow_condensed_semibold.ttf]
 """
 from __future__ import annotations
 
@@ -21,156 +22,190 @@ import os
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RES = os.path.join(ROOT, "core-lib", "core", "src", "main", "res")
 DOCS = os.path.join(ROOT, "docs", "brand")
-DEFAULT_FONT = "/usr/share/fonts/opentype/inter/InterDisplay-Bold.otf"
+DEFAULT_FONT = os.path.join(ROOT, "app", "src", "main", "res", "font", "barlow_condensed_semibold.ttf")
 
-# Brand colours (the app theme's existing green ramp).
-TILE = "#134D2C"       # launcher tile / dark accent container
-GLYPH = "#F3FCF7"      # mark foreground on the tile
-GREEN_DARK_UI = "#4FEE94"   # "DPTV" on dark surfaces
-INK_DARK_UI = "#EAF7EF"     # "-Player" on dark surfaces
-GREEN_LIGHT_UI = "#0E6B41"  # "DPTV" on light surfaces
-INK_LIGHT_UI = "#081C11"    # "-Player" on light surfaces
-PAGE_DARK = "#060B07"
+# Recorder's palette with its amber swapped for the app's green.
+TILE_TOP, TILE_BOTTOM = "#16201B", "#0A0F0C"   # Recorder #171C24 -> #0B0D12, tinted green
+TILE_EDGE = "#26352D"                          # Recorder border #2A313D
+GREEN = "#4FEE94"                              # the accent (Recorder amber #F2A93B)
+PLAY_LIGHT, PLAY_DEEP, PLAY_EDGE = "#9CF7C2", "#22C46C", "#1C6B40"
+INK_DARK_UI = "#E8EAED"     # "DPTV" on dark surfaces (Recorder --text)
+GREEN_LIGHT_UI = "#0E6B41"  # "PLAYER" on light surfaces
+INK_LIGHT_UI = "#081C11"    # "DPTV" on light surfaces
+PAGE_DARK = "#0A0F0C"
 PAGE_LIGHT = "#F6FBF7"
 
-# Mark geometry on a 256 x 256 canvas. Everything sits inside the adaptive-icon safe zone
-# (the centre 66/108 of the canvas, i.e. ~x/y 50..206).
-TILE_PATH = ("M 0 57.6 L 0 198.4 C 0 230.21 25.79 256 57.6 256 L 198.4 256 C 230.21 256 256 230.21 "
-             "256 198.4 L 256 57.6 C 256 25.79 230.21 0 198.4 0 L 57.6 0 C 25.79 0 0 25.79 0 57.6 Z")
-SCREEN = (58, 66, 198, 166, 20)   # x0, y0, x1, y1, corner radius (outer edge)
-STROKE = 13
-STAND = (98, 178, 158, 191, 6.5)  # foot bar
-PLAY = [(113, 92), (152, 116), (113, 140)]
+TILE_PATH = ("M 52 0 L 204 0 Q 256 0 256 52 L 256 204 Q 256 256 204 256 L 52 256 Q 0 256 0 204 "
+             "L 0 52 Q 0 0 52 0 Z")
+EDGE_PATH = ("M 52 4 L 204 4 Q 252 4 252 52 L 252 204 Q 252 252 204 252 L 52 252 Q 4 252 4 204 "
+             "L 4 52 Q 4 4 52 4 Z")
+# Recorder's triangle (96,74 178,128 96,182), moved left by 9 so it sits centred without the badge.
+PLAY = [(87, 74), (169, 128), (87, 182)]
 
 
-def _rr(x0, y0, x1, y1, r) -> str:
-    """Rounded rectangle as path data (clockwise)."""
-    return (f"M {x0 + r} {y0} L {x1 - r} {y0} Q {x1} {y0} {x1} {y0 + r} L {x1} {y1 - r} "
-            f"Q {x1} {y1} {x1 - r} {y1} L {x0 + r} {y1} Q {x0} {y1} {x0} {y1 - r} L {x0} {y0 + r} "
-            f"Q {x0} {y0} {x0 + r} {y0} Z")
+def _play_path(points=PLAY) -> str:
+    (ax, ay), (bx, by), (cx, cy) = points
+    return f"M {ax} {ay} L {bx} {by} L {cx} {cy} Z"
 
 
-def _glyph_paths() -> list[tuple[str, str]]:
-    """(fillType, pathData) for the mark's foreground, without the tile."""
-    x0, y0, x1, y1, r = SCREEN
-    s = STROKE
-    screen = _rr(x0, y0, x1, y1, r) + " " + _rr(x0 + s, y0 + s, x1 - s, y1 - s, max(r - s, 2))
-    stand = _rr(*STAND)
-    (ax, ay), (bx, by), (cx, cy) = PLAY
-    play = f"M {ax} {ay} L {bx} {by} L {cx} {cy} Z"
-    return [("evenOdd", screen), ("nonZero", stand), ("nonZero", play)]
+def _header(w, h, vw, vh, comment, aapt=False) -> list[str]:
+    ns = ' xmlns:aapt="http://schemas.android.com/aapt"' if aapt else ""
+    return ['<?xml version="1.0" encoding="utf-8"?>',
+            f"<!-- {comment} Generated by tools/brand/make_dptv_brand.py; edit the script, not this file. -->",
+            f'<vector xmlns:android="http://schemas.android.com/apk/res/android"{ns}',
+            f'    android:width="{w}dp"', f'    android:height="{h}dp"',
+            f'    android:viewportWidth="{vw}"', f'    android:viewportHeight="{vh}">']
 
 
-def _vector(size_dp: int, vw: int, vh: int, paths: list[tuple[str, str, str]], comment: str) -> str:
-    out = ['<?xml version="1.0" encoding="utf-8"?>',
-           f"<!-- {comment} Generated by tools/brand/make_dptv_brand.py; edit the script, not this file. -->",
-           '<vector xmlns:android="http://schemas.android.com/apk/res/android"',
-           f'    android:width="{size_dp if vw == vh else vw}dp"',
-           f'    android:height="{size_dp if vw == vh else vh}dp"',
-           f'    android:viewportWidth="{vw}"',
-           f'    android:viewportHeight="{vh}">']
-    for color, fill_type, data in paths:
-        out.append("    <path")
-        out.append(f'        android:fillColor="{color}"')
-        if fill_type != "nonZero":
-            out.append(f'        android:fillType="{fill_type}"')
-        out.append(f'        android:pathData="{data}" />')
-    out.append("</vector>")
+def _gradient_path(data: str, gradient: str, extra: str = "") -> list[str]:
+    return ["    <path", f'        android:pathData="{data}"{extra}>',
+            '        <aapt:attr name="android:fillColor">', gradient, "        </aapt:attr>", "    </path>"]
+
+
+def _linear(x0, y0, x1, y1, a, b) -> str:
+    return (f'            <gradient android:type="linear" android:startX="{x0}" android:startY="{y0}" '
+            f'android:endX="{x1}" android:endY="{y1}" android:startColor="{a}" android:endColor="{b}" />')
+
+
+def _radial(cx, cy, r, a, b) -> str:
+    return (f'            <gradient android:type="radial" android:centerX="{cx}" android:centerY="{cy}" '
+            f'android:gradientRadius="{r}" android:startColor="{a}" android:endColor="{b}" />')
+
+
+def _icon(size_dp: int, comment: str) -> str:
+    out = _header(size_dp, size_dp, 256, 256, comment, aapt=True)
+    out += _gradient_path(TILE_PATH, _linear(0, 0, 0, 256, TILE_TOP, TILE_BOTTOM))
+    out += ["    <path", f'        android:strokeColor="{TILE_EDGE}"', '        android:strokeWidth="2"',
+            f'        android:pathData="{EDGE_PATH}" />']
+    # The ambient glow: Recorder's amber at 35 % fading out, in green.
+    glow = "M 8 112 A 120 120 0 1 0 248 112 A 120 120 0 1 0 8 112 Z"
+    out += _gradient_path(glow, _radial(128, 112, 120, "#594FEE94", "#004FEE94"))
+    out += ["    <path", f'        android:pathData="{_play_path()}"', f'        android:strokeColor="{PLAY_EDGE}"',
+            '        android:strokeWidth="3"', '        android:strokeLineJoin="round">',
+            '        <aapt:attr name="android:fillColor">', _linear(87, 74, 169, 182, PLAY_LIGHT, PLAY_DEEP),
+            "        </aapt:attr>", "    </path>", "</vector>"]
+    return "\n".join(out) + "\n"
+
+
+def _silhouette(size_dp: int, comment: str) -> str:
+    out = _header(size_dp, size_dp, 256, 256, comment)
+    out += ["    <path", '        android:fillColor="#FFFFFFFF"', f'        android:pathData="{_play_path()}" />', "</vector>"]
     return "\n".join(out) + "\n"
 
 
 def write_marks() -> None:
-    glyphs = _glyph_paths()
-    tiled = [(TILE, "nonZero", TILE_PATH)] + [(GLYPH, t, d) for t, d in glyphs]
-    white = [("#FFFFFFFF", t, d) for t, d in glyphs]
     files = {
-        "dptv_mark.xml": _vector(108, 256, 256, tiled, "DPTV-Player mark: TV screen + play on the green tile."),
-        "dptv_mark_small.xml": _vector(32, 256, 256, tiled, "DPTV-Player mark, small sizes."),
-        "dptv_mark_mono.xml": _vector(108, 256, 256, white, "DPTV-Player themed-icon (monochrome) layer."),
-        "dptv_notification.xml": _vector(24, 256, 256, white, "DPTV-Player notification icon: white silhouette."),
+        "dptv_mark.xml": _icon(108, "DPTV-Player icon: DPTV Recorder's tile and glow with the green play triangle."),
+        "dptv_mark_small.xml": _icon(32, "DPTV-Player icon, small sizes."),
+        "dptv_mark_mono.xml": _silhouette(108, "DPTV-Player themed-icon (monochrome) layer."),
+        "dptv_notification.xml": _silhouette(24, "DPTV-Player notification icon: white silhouette."),
     }
     for name, text in files.items():
         with open(os.path.join(RES, "drawable", name), "w", encoding="utf-8") as f:
             f.write(text)
 
 
-def _text_paths(font_path: str, parts: list[str], box_w: float, box_h: float):
-    """Outlines for the concatenated [parts], scaled to fit box_w x box_h, left-aligned and
-    vertically centred on cap height. Returns one path string per part."""
+# The wordmark: the play glyph, then "DPTV" + "PLAYER", on a 160-high canvas (the width follows the text).
+WM_H = 160
+CAP = 84            # cap height in canvas units
+GLYPH = 46          # play glyph height
+GAP = 26            # glyph -> text
+TRACK = 0.02        # Recorder: letter-spacing 0.5px at 22px
+
+
+def _wordmark_paths(font_path: str):
     font = TTFont(font_path)
-    gs = font.getGlyphSet()
-    cmap = font.getBestCmap()
+    gs, cmap = font.getGlyphSet(), font.getBestCmap()
     upm = font["head"].unitsPerEm
     cap = getattr(font["OS/2"], "sCapHeight", 0) or upm * 0.7
-    total = sum(gs[cmap[ord(ch)]].width for part in parts for ch in part)
-    scale = min(box_w * 0.98 / total, box_h * 0.62 / cap)
-    baseline = box_h / 2 + cap * scale / 2
-    x = (box_w - total * scale) / 2
-    out = []
-    for part in parts:
+    scale = CAP / cap
+    track = TRACK * upm
+    pad = 10
+    gx = pad + round(GLYPH * 0.65)  # room for the glow around the glyph
+    glyph = [(gx, WM_H / 2 - GLYPH / 2), (gx + GLYPH * 0.87, WM_H / 2), (gx, WM_H / 2 + GLYPH / 2)]
+    x = gx + GLYPH * 0.87 + GAP
+    baseline = WM_H / 2 + CAP / 2
+    parts = []
+    for part in ("DPTV", "PLAYER"):
         pen = SVGPathPen(gs, ntos=lambda v: f"{v:.2f}".rstrip("0").rstrip("."))
         for ch in part:
             name = cmap[ord(ch)]
-            tp = TransformPen(pen, (scale, 0, 0, -scale, x, baseline))
-            gs[name].draw(tp)
-            x += gs[name].width * scale
-        out.append(pen.getCommands())
-    return out
+            gs[name].draw(TransformPen(pen, (scale, 0, 0, -scale, x, baseline)))
+            x += (gs[name].width + track) * scale
+        parts.append(pen.getCommands())
+    width = int(round(x - track * scale + pad))
+    return glyph, parts, width
 
 
-def write_wordmarks(font_path: str) -> None:
-    lead, tail = _text_paths(font_path, ["DPTV", "-Player"], 585, 160)
+def write_wordmarks(font_path: str) -> int:
+    glyph, (lead, tail), width = _wordmark_paths(font_path)
+    (gx, gy), _, _ = glyph
+    cx, cy = gx + GLYPH * 0.3, WM_H / 2
     for name, green, ink in (("dptv_wordmark.xml", GREEN_LIGHT_UI, INK_LIGHT_UI),
-                             ("dptv_wordmark_dark.xml", GREEN_DARK_UI, INK_DARK_UI)):
-        text = _vector(0, 585, 160, [(green, "nonZero", lead), (ink, "nonZero", tail)],
-                       "DPTV-Player wordmark.")
+                             ("dptv_wordmark_dark.xml", GREEN, INK_DARK_UI)):
+        out = _header(width, WM_H, width, WM_H, "DPTV-Player logo: play glyph, DPTV PLAYER.", aapt=True)
+        r = round(GLYPH * 0.95, 1)
+        halo = f"M {cx - r:.1f} {cy} A {r} {r} 0 1 0 {cx + r:.1f} {cy} A {r} {r} 0 1 0 {cx - r:.1f} {cy} Z"
+        out += _gradient_path(halo, _radial(round(cx, 1), cy, r, "#66" + green[1:], "#00" + green[1:]))
+        out += ["    <path", f'        android:fillColor="{green}"', '        android:strokeLineJoin="round"',
+                f'        android:strokeColor="{green}"', '        android:strokeWidth="6"',
+                f'        android:pathData="{_play_path([(round(a, 1), round(b, 1)) for a, b in glyph])}" />']
+        out += ["    <path", f'        android:fillColor="{ink}"', f'        android:pathData="{lead}" />']
+        out += ["    <path", f'        android:fillColor="{green}"', f'        android:pathData="{tail}" />', "</vector>"]
         with open(os.path.join(RES, "drawable", name), "w", encoding="utf-8") as f:
-            f.write(text)
+            f.write("\n".join(out) + "\n")
+    return width
 
 
-def _draw_mark(img: Image.Image, x: float, y: float, size: float) -> None:
-    """Raster version of dptv_mark at (x, y), size px square."""
+def _draw_icon(img: Image.Image, x: float, y: float, size: float) -> None:
     k = size / 256
-    d = ImageDraw.Draw(img)
-    d.rounded_rectangle([x, y, x + size, y + size], radius=57.6 * k, fill=TILE)
-    x0, y0, x1, y1, r = SCREEN
-    d.rounded_rectangle([x + x0 * k, y + y0 * k, x + x1 * k, y + y1 * k], radius=r * k,
-                        outline=GLYPH, width=round(STROKE * k))
-    sx0, sy0, sx1, sy1, sr = STAND
-    d.rounded_rectangle([x + sx0 * k, y + sy0 * k, x + sx1 * k, y + sy1 * k], radius=sr * k, fill=GLYPH)
-    d.polygon([(x + px * k, y + py * k) for px, py in PLAY], fill=GLYPH)
+    tile = Image.new("RGBA", (int(size), int(size)), (0, 0, 0, 0))
+    grad = Image.linear_gradient("L").resize((int(size), int(size)))
+    top, bottom = Image.new("RGBA", tile.size, TILE_TOP), Image.new("RGBA", tile.size, TILE_BOTTOM)
+    fill = Image.composite(bottom, top, grad)
+    mask = Image.new("L", tile.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, size - 1, size - 1], radius=52 * k, fill=255)
+    tile.paste(fill, (0, 0), mask)
+    glow = Image.new("RGBA", tile.size, (0, 0, 0, 0))
+    ImageDraw.Draw(glow).ellipse([128 * k - 60 * k, 112 * k - 60 * k, 128 * k + 60 * k, 112 * k + 60 * k],
+                                 fill=(79, 238, 148, 110))
+    glow = glow.filter(ImageFilter.GaussianBlur(45 * k))
+    tile = Image.alpha_composite(tile, Image.composite(glow, Image.new("RGBA", tile.size, (0, 0, 0, 0)), mask))
+    d = ImageDraw.Draw(tile)
+    d.rounded_rectangle([4 * k, 4 * k, size - 4 * k, size - 4 * k], radius=48 * k, outline=TILE_EDGE, width=max(1, round(2 * k)))
+    d.polygon([(px * k, py * k) for px, py in PLAY], fill=PLAY_DEEP, outline=PLAY_EDGE)
+    img.alpha_composite(tile, (int(x), int(y)))
 
 
-def _lockup(w: int, h: int, bg: str, green: str, ink: str, font_path: str, mark_frac: float) -> Image.Image:
-    ss = 4  # supersample for smooth edges
+def _lockup(w: int, h: int, bg, green: str, ink: str, font_path: str, mark_frac: float) -> Image.Image:
+    ss = 4
     img = Image.new("RGBA", (w * ss, h * ss), bg)
     mark = h * ss * mark_frac
-    font = ImageFont.truetype(font_path, int(mark * 0.62))
+    font = ImageFont.truetype(font_path, int(mark * 0.72))
     d = ImageDraw.Draw(img)
-    lead, tail = "DPTV", "-Player"
-    lw = d.textlength(lead, font=font)
-    tw = d.textlength(tail, font=font)
+    lead, tail = "DPTV", "PLAYER"
+    lw, tw = d.textlength(lead, font=font), d.textlength(tail, font=font)
     gap = mark * 0.28
     total = mark + gap + lw + tw
     x = (w * ss - total) / 2
     y = (h * ss - mark) / 2
-    _draw_mark(img, x, y, mark)
+    _draw_icon(img, x, y, mark)
     ty = h * ss / 2
-    d.text((x + mark + gap, ty), lead, font=font, fill=green, anchor="lm")
-    d.text((x + mark + gap + lw, ty), tail, font=font, fill=ink, anchor="lm")
+    d.text((x + mark + gap, ty), lead, font=font, fill=ink, anchor="lm")
+    d.text((x + mark + gap + lw, ty), tail, font=font, fill=green, anchor="lm")
     return img.resize((w, h), Image.LANCZOS)
 
 
 def write_rasters(font_path: str) -> None:
-    banner = _lockup(1280, 720, PAGE_DARK, GREEN_DARK_UI, INK_DARK_UI, font_path, 0.30)
-    banner.save(os.path.join(RES, "drawable-xxxhdpi", "dptv_banner.png"), optimize=True)
+    _lockup(1280, 720, PAGE_DARK, GREEN, INK_DARK_UI, font_path, 0.30).save(
+        os.path.join(RES, "drawable-xxxhdpi", "dptv_banner.png"), optimize=True)
     os.makedirs(DOCS, exist_ok=True)
-    _lockup(1400, 360, (0, 0, 0, 0), GREEN_DARK_UI, INK_DARK_UI, font_path, 0.7).save(
+    _lockup(1400, 360, (0, 0, 0, 0), GREEN, INK_DARK_UI, font_path, 0.7).save(
         os.path.join(DOCS, "dptv-logo.png"), optimize=True)
     _lockup(1400, 360, (0, 0, 0, 0), GREEN_LIGHT_UI, INK_LIGHT_UI, font_path, 0.7).save(
         os.path.join(DOCS, "dptv-logo-light.png"), optimize=True)
@@ -181,9 +216,9 @@ def main() -> None:
     ap.add_argument("--font", default=DEFAULT_FONT)
     args = ap.parse_args()
     write_marks()
-    write_wordmarks(args.font)
+    width = write_wordmarks(args.font)
     write_rasters(args.font)
-    print("DPTV-Player brand assets written.")
+    print(f"DPTV-Player brand assets written (wordmark {width} x {WM_H}).")
 
 
 if __name__ == "__main__":

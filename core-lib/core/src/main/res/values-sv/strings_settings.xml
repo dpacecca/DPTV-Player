@@ -644,7 +644,7 @@
     </plurals>
     <string name="settings_catchup_timezone_device">Enhet</string>
     <string name="settings_catchup_player_ask">Fråga alltid</string>
-    <string name="settings_catchup_player_internal">DPTV-Player-spelare</string>
+    <string name="settings_catchup_player_internal">DPTV-Player</string>
     <string name="settings_catchup_player_external">Extern spelare</string>
     <string name="settings_download_folder_title">Välj nedladdningsmapp</string>
     <string name="settings_pick_background_title">Välj en bakgrundsbild</string>

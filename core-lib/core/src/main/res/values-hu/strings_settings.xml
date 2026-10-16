@@ -659,7 +659,7 @@
     </plurals>
     <string name="settings_catchup_timezone_device">Eszköz</string>
     <string name="settings_catchup_player_ask">Mindig kérdezzen</string>
-    <string name="settings_catchup_player_internal">DPTV-Player lejátszó</string>
+    <string name="settings_catchup_player_internal">DPTV-Player</string>
     <string name="settings_catchup_player_external">Külső lejátszó</string>
     <string name="settings_download_folder_title">Válaszd ki a letöltési mappát</string>
     <string name="settings_pick_background_title">Válassz háttérképet</string>

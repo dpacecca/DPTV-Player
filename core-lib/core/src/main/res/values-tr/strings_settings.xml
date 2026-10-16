@@ -644,7 +644,7 @@
     </plurals>
     <string name="settings_catchup_timezone_device">Cihaz</string>
     <string name="settings_catchup_player_ask">Her zaman sor</string>
-    <string name="settings_catchup_player_internal">DPTV-Player oynatıcı</string>
+    <string name="settings_catchup_player_internal">DPTV-Player</string>
     <string name="settings_catchup_player_external">Harici oynatıcı</string>
     <string name="settings_download_folder_title">İndirme klasörünü seçin</string>
     <string name="settings_pick_background_title">Bir arka plan görseli seçin</string>

@@ -59,11 +59,12 @@ class AutoRefresh(
         }
         val nowMs = System.currentTimeMillis()
         val pid = profileDao.resolveExistingProfileId(settings.activeProfileId.first()) ?: return
+        if (includeStartup) defaultToStartupOnce(pid)
         // --- Playlist sources ---
         val playlistModes = settings.playlistAutoRefresh.first()
-        if (playlistModes.isNotEmpty()) {
+        run {
             sourceRepository.observeSources(pid).first().forEach { source ->
-                val mode = playlistModes[source.id] ?: PlaylistRefresh.OFF
+                val mode = playlistModes[source.id] ?: PlaylistRefresh.DEFAULT
                 if (shouldRefresh(mode, source.lastSyncAt, nowMs, includeStartup)) {
                     val counts = importFinalizer.contentCounts(source.id)
                     Log.d(TAG, "checkAutoRefresh playlist sourceId=${source.id} mode=$mode — enqueuing")
@@ -79,9 +80,9 @@ class AutoRefresh(
         }
         // --- EPG sources ---
         val epgModes = settings.epgAutoRefresh.first()
-        if (epgModes.isNotEmpty()) {
+        run {
             epgSourceStore.getAll().forEach { src ->
-                val mode = epgModes[src.id] ?: EpgRefresh.OFF
+                val mode = epgModes[src.id] ?: EpgRefresh.DEFAULT
                 if (shouldRefreshEpg(mode, src.lastSyncAt, nowMs, includeStartup)) {
                     val base = epgDao.countForSources(listOf(src.id))
                     Log.d(TAG, "checkAutoRefresh epg sourceId=${src.id} mode=$mode — enqueuing")
@@ -95,6 +96,30 @@ class AutoRefresh(
             }
         }
         if (includeStartup) refillGuideEmptiedByMigration()
+    }
+
+    /**
+     * DPTV-Player v2.1.0: the playlists and guides are refreshed on start. Once per install, every playlist
+     * and guide still set to Off (the old default every add path wrote) is switched to On startup; a schedule
+     * the user picked is kept, and Off chosen again afterwards stays Off.
+     */
+    private suspend fun defaultToStartupOnce(pid: Long) {
+        if (settings.startupSyncDefaulted.first()) return
+        runCatching {
+            val playlistModes = settings.playlistAutoRefresh.first()
+            sourceRepository.observeSources(pid).first().forEach { source ->
+                if ((playlistModes[source.id] ?: PlaylistRefresh.OFF).mode == PlaylistAutoRefresh.OFF) {
+                    settings.setPlaylistAutoRefresh(source.id, PlaylistRefresh.STARTUP)
+                }
+            }
+            val epgModes = settings.epgAutoRefresh.first()
+            epgSourceStore.getAll().forEach { src ->
+                if ((epgModes[src.id] ?: EpgRefresh.OFF).mode == EpgAutoRefresh.OFF) {
+                    settings.setEpgAutoRefresh(src.id, EpgRefresh.STARTUP)
+                }
+            }
+        }.onFailure { Log.w(TAG, "startup sync default failed", it) }
+        settings.markStartupSyncDefaulted()
     }
 
     /**

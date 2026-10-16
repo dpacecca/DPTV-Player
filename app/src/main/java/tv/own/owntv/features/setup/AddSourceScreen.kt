@@ -108,7 +108,7 @@ fun AddSourceScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     initial: SourceEntity? = null,
-    initialAutoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
+    initialAutoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT,
     initialIsDefault: Boolean = false,
     showDefaultToggle: Boolean = true,
     // Stalker portal (plan Phase B). Null = the Stalker option is hidden (e.g. the setup wizard).

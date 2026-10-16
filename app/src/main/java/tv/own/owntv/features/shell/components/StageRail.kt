@@ -144,6 +144,8 @@ fun StageRail(
     /** A screen's own way in, when it has one (Home returns to the exact control left from). */
     enterContent: (() -> Boolean)? = null,
     onFocused: () -> Unit,
+    /** The dimming behind the open rail; off where the content moves aside for it (the guide's categories). */
+    scrim: Boolean = true,
     nowPlaying: NowPlayingRail?,
     onNowPlaying: () -> Unit,
     modifier: Modifier = Modifier,
@@ -174,7 +176,7 @@ fun StageRail(
     }
 
     Box(modifier.fillMaxSize()) {
-        if (state == RailState.OPEN && open) {
+        if (state == RailState.OPEN && open && scrim) {
             Box(Modifier.fillMaxSize().background(StageColors.Scrim))
         }
         if (state == RailState.HIDDEN) RailEdgeGlow(Modifier.align(Alignment.CenterStart))
@@ -313,15 +315,8 @@ private fun ColumnScope.RailBrand(open: Boolean) {
         BrandMark(icon, 50.mpx, Modifier.padding(bottom = 12.mpx))
         return
     }
-    Row(
-        Modifier.padding(start = 10.mpx, end = 10.mpx, bottom = 18.mpx),
-        horizontalArrangement = Arrangement.spacedBy(14.mpx),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        BrandMark(icon, 50.mpx)
-        // The #227 wordmark, 130 wide (`.brandrow`, `wordmarkC()`).
-        Wordmark(130.mpx)
-    }
+    // Open: the logo alone — it carries its own play glyph (v2.1.0, DPTV Recorder's header in green).
+    Wordmark(200.mpx, Modifier.padding(start = 6.mpx, end = 10.mpx, top = 6.mpx, bottom = 18.mpx))
 }
 
 @Composable

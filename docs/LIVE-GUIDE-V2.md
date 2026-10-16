@@ -1,4 +1,4 @@
-# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-15, v2.0.2)
+# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-16, v2.1.0)
 
 > Zweck: Verhalten und Tastenbelegung des zusammengelegten Live-TV/Guide-Screens und des Player-Banners ab v2.0.0.
 
@@ -52,3 +52,26 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 - `MainSection.DVR` (Rail zwischen Live TV und Sport): `features/recordings/DvrScreen.kt`, fertige
   Aufnahmen, Standbild via `DvrThumbnails` (MediaMetadataRetriever, Cache `dvr_thumbs/`), Sortierung
   Datum/A–Z, OK spielt, OK halten/☰ = Abspielen/Löschen.
+
+## v2.1.0
+
+- Vollbild <-> Guide: Live TV bleibt unter dem Vollbild-Player komponiert (`OwnTVShell`: Browse-Box mit
+  `alpha 0` + `onEnter = cancelFocusChange()` solange FULLSCREEN). Back baut den Guide nicht neu, lädt nicht
+  neu, scrollt nicht neu; die gehoistete Surface wechselt nur ihre Größe.
+- Navigation: ◀ auf "jetzt" schiebt die Kategorien links heraus (Guide rückt per `offset` nach rechts,
+  `panelInset` = Platz der Rail-Kapsel), die Shell zeigt die Rail als Kapsel daneben (`guidePanelOpen`).
+  ◀ in den Kategorien öffnet die Rail ohne Scrim, Kategorien bleiben (`sheetToRail`); ▶ aus der Rail
+  fokussiert die Kategorien (Entry-Hook), ▶ aus den Kategorien den Guide. Auf dem Phone bleibt das Sheet.
+- Entry-Hook: noch nicht gelegte Zeilen → `pendingEntry`, Fokus kommt nach, nie auf den Tagesfilter.
+- Reload: `EpgViewModel.load(background = true)` aus dem Guide-Daten-Watcher leert nie einen sichtbaren
+  Guide; `EpgScreen` mappt `focusedRow` nach jedem Reload über `lastFocusedChannelId` und holt den Fokus
+  zurück, wenn der Reload ihn genommen hat (< 1,5 s).
+- Start-Sync: `PlaylistRefresh.DEFAULT`/`EpgRefresh.DEFAULT` = STARTUP für neue Quellen; einmalig
+  (`startup_sync_defaulted`) werden Quellen auf Off auf "Beim Start" gestellt (`AutoRefresh`).
+- Sport: Vorschau erst nach OK (`previewId` lokal in `FixtureDetail`), zweites OK = Vollbild.
+- Look nach DPTV Recorder (grün): Kopf mit Suche + Tages-Chips (`GuideDayChips`), Zeile "CHANNEL" über
+  der Kanalspalte, Zellen mit 1-px-Linie, laufende Sendung mit Akzent-Rand + rotem LIVE-Tag, Zeit in
+  IBM Plex Mono ("1:00 pm · 90m"), Kanal-Zelle mit Logo-Kachel und "CH n". Fonts: Barlow Condensed,
+  IBM Plex Mono (OFL, `extras/font-licenses/`). Tags LIVE / Recording / Catch-up im Info-Block (`GuideTag`).
+- Logo: `tools/brand/make_dptv_brand.py` erzeugt Icon (Recorder-Kachel + grünes Play) und Wordmark
+  (Play-Glyph + DPTV PLAYER, Barlow Condensed).

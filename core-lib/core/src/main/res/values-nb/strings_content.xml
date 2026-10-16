@@ -312,7 +312,7 @@
     <string name="content_epg_favourite">Legg til som favoritt</string>
     <string name="content_epg_unfavourite">Fjern som favoritt</string>
     <string name="content_epg_player_choice_description">Angi et permanent valg under Innstillinger › Arkiv.</string>
-    <string name="content_epg_own_player">DPTV-Player-avspiller</string>
+    <string name="content_epg_own_player">DPTV-Player</string>
     <string name="content_epg_external_player">Ekstern avspiller</string>
     <string name="content_epg_time_offset">EPG-tidsforskyvning</string>
     <string name="content_epg_shift_minutes"><xliff:g id="sign">%1$s</xliff:g><xliff:g id="minutes">%2$s</xliff:g>min</string>

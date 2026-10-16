@@ -64,6 +64,22 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.1.0
+
+### ✨ New features
+- **🎨 Guide in the DPTV Recorder style: day chips, bordered programme cells, LIVE tags, channel numbers**
+- **🏷️ LIVE, Recording and Catch-up tags in the programme description**
+- **▶️ New DPTV-Player logo and app icon, matching DPTV Recorder in green**
+- **◀️ Left opens the categories beside the guide, Left again the menu; Right goes back**
+- **🔄 Playlists and guides refresh when the app starts**
+- **⚽ Sport: the preview starts on OK, OK again is full screen**
+
+### 🐞 Fixes
+- **⚡ Faster switching between full screen and the guide**
+- **📍 The guide keeps its channel and preview when the playlist or guide refreshes**
+- **🎯 Opening Live TV from the menu lands on a channel, not the day filter**
+- **✏️ "Play catch-up in" names the player DPTV-Player**
+
 ## v2.0.2
 
 ### ✨ New features
