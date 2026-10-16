@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -199,6 +200,10 @@ fun EpgScreen(
      *  corner radius. Given, the shell draws the video there with its one player surface — the same one
      *  full screen uses — and this screen leaves that box to it. */
     onVideoBounds: ((androidx.compose.ui.geometry.Rect?, Dp) -> Unit)? = null,
+    /** Whether the categories are out beside the guide, so the shell keeps the rail's capsule beside them. */
+    onPanelOpen: (Boolean) -> Unit = {},
+    /** Where the categories start from the screen edge: past the rail's capsule, or the open rail. */
+    panelInset: Dp = 0.dp,
 ) {
     val vm: EpgViewModel = koinViewModel()
     // Live TV's view model: its preview player (no second decoder), its category list and playlist marks.
@@ -358,6 +363,19 @@ fun EpgScreen(
         focusedRow = idx
         runCatching { rowListState.scrollToItem((idx - 2).coerceAtLeast(0)) }
     }
+    // A reload (a playlist or guide refresh) can add, drop or reorder rows: the cursor follows its channel,
+    // not its old row number, and focus goes back to it when the refresh took it away from the grid.
+    var gridLostAt by remember { mutableStateOf(0L) }
+    LaunchedEffect(gridHasFocus) { if (!gridHasFocus) gridLostAt = android.os.SystemClock.uptimeMillis() }
+    LaunchedEffect(state.channels) {
+        if (state.loading || state.channels.isEmpty()) return@LaunchedEffect
+        val id = vm.lastFocusedChannelId ?: return@LaunchedEffect
+        val idx = state.channels.indexOfFirst { it.id == id }.takeIf { it >= 0 } ?: return@LaunchedEffect
+        val refocus = gridHasFocus || android.os.SystemClock.uptimeMillis() - gridLostAt < 1_500L
+        if (idx == focusedRow && gridHasFocus) return@LaunchedEffect
+        focusedRow = idx
+        if (refocus) focusGrid(idx)
+    }
     // Search's "Go to channel": its row, once its category is on screen.
     LaunchedEffect(reveal, state.loading, state.channels) {
         val r = reveal ?: return@LaunchedEffect
@@ -488,13 +506,32 @@ fun EpgScreen(
     val sheetFocus = remember { FocusRequester() }
     val catListState = rememberLazyListState()
 
+    // ▶ from the rail (or opening Live TV from it): the categories when they are out, else the channel row.
+    // Rows that are not there yet (still loading, not laid out) are focused once they are — never "Today".
+    var pendingEntry by remember { mutableStateOf(false) }
     DisposableEffect(onEntryHook) {
         onEntryHook?.invoke {
-            state.channels.isNotEmpty() &&
-                runCatching { rowFocus(focusedRow.coerceIn(0, state.channels.size - 1)).requestFocus() }.getOrDefault(false)
+            when {
+                sheetOpen -> runCatching { sheetFocus.requestFocus() }.getOrDefault(false)
+                !state.loading && state.channels.isEmpty() -> false
+                else -> {
+                    val ok = state.channels.isNotEmpty() &&
+                        runCatching { rowFocus(focusedRow.coerceIn(0, state.channels.size - 1)).requestFocus() }.getOrDefault(false)
+                    if (!ok) pendingEntry = true
+                    true
+                }
+            }
         }
         onDispose { onEntryHook?.invoke(null) }
     }
+    LaunchedEffect(pendingEntry, state.loading, state.channels) {
+        if (!pendingEntry || state.loading || state.channels.isEmpty()) return@LaunchedEffect
+        pendingEntry = false
+        focusGrid()
+    }
+    DisposableEffect(Unit) { onDispose { onPanelOpen(false) } }
+    // ◀ from the categories went to the rail: they stay out beside it until ▶ comes back or focus goes elsewhere.
+    var sheetToRail by remember { mutableStateOf(false) }
 
     BackHandler(enabled = sheetOpen) { sheetOpen = false; focusGrid() }
     LaunchedEffect(sheetOpen) {
@@ -506,13 +543,30 @@ fun EpgScreen(
         modifier
             .fillMaxSize()
             // Entering from the rail lands in the grid, on the row focus was on.
-            .focusProperties { onEnter = { if (state.channels.isNotEmpty()) runCatching { rowFocus(focusedRow.coerceIn(0, state.channels.size - 1)).requestFocus() } } }
+            .focusProperties {
+                onEnter = {
+                    val ok = state.channels.isNotEmpty() &&
+                        runCatching { rowFocus(focusedRow.coerceIn(0, state.channels.size - 1)).requestFocus() }.getOrDefault(false)
+                    if (!ok) pendingEntry = true
+                }
+            }
             .focusGroup(),
     ) {
         val screenW = maxWidth
         // Phones (and anything this narrow): the video full width on top, the guide below it.
         val compact = maxWidth < 600.dp
         fun fx(px: Int) = screenW * (px / 1920f)
+        // TV: the categories come out at the left and the guide moves over for them (and for the open rail
+        // after them); a phone keeps them as a sheet over the guide.
+        val pushPanel = !compact
+        LaunchedEffect(sheetOpen, pushPanel) { onPanelOpen(sheetOpen && pushPanel) }
+        val panelW = fx(450)
+        val panelStart by androidx.compose.animation.core.animateDpAsState(
+            if (pushPanel) panelInset else fx(24), androidx.compose.animation.core.tween(160),
+        )
+        val guideShift by androidx.compose.animation.core.animateDpAsState(
+            if (pushPanel && sheetOpen) panelInset + panelW else 0.dp, androidx.compose.animation.core.tween(160),
+        )
         val rowStart: Dp = if (compact) 4.dp else fx(48)
         val rowEnd: Dp = if (compact) 4.dp else fx(64)
         val labelW: Dp = when {
@@ -542,10 +596,10 @@ fun EpgScreen(
         // would drop the very surface this is meant to keep.
         var videoRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
         val videoRadius = if (compact) 0.dp else 20.mpx
-        LaunchedEffect(videoRect, previewWanted, sheetOpen, sharedSurface) {
+        LaunchedEffect(videoRect, previewWanted, sheetOpen, sharedSurface, pushPanel) {
             if (!sharedSurface) return@LaunchedEffect
             when {
-                !previewWanted || sheetOpen -> onVideoBounds?.invoke(null, 0.dp)
+                !previewWanted || (sheetOpen && !pushPanel) -> onVideoBounds?.invoke(null, 0.dp)
                 videoRect != null -> onVideoBounds?.invoke(videoRect, videoRadius)
             }
         }
@@ -577,10 +631,13 @@ fun EpgScreen(
                 now = liveNow,
                 compact = compact,
                 modifier = mod,
+                recording = shown != null && recordingRows.any {
+                    it.channelId == topChannel.id && it.programmeStartMs == shown.startMs && it.status == RecordingStatus.RECORDING
+                },
             )
         }
 
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().offset { androidx.compose.ui.unit.IntOffset(guideShift.roundToPx(), 0) }) {
             if (compact) {
                 TopVideo(Modifier.fillMaxWidth())
                 TopInfo(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 8.dp))
@@ -762,20 +819,23 @@ fun EpgScreen(
                 sheetTitle = stringResource(R.string.sport_guide_categories),
                 sheetHint = stringResource(R.string.common_nav_live_tv),
                 modifier = Modifier
-                    .padding(start = if (compact) 8.dp else fx(24), top = 24.mpx, bottom = 24.mpx)
-                    .width(if (compact) screenW * 0.86f else fx(450))
+                    .padding(start = if (compact) 8.dp else panelStart, top = 24.mpx, bottom = 24.mpx)
+                    .width(if (compact) screenW * 0.86f else panelW)
                     .fillMaxHeight()
                     .onPreviewKeyEvent { e ->
                         // ◀ out of the categories: the app's menu (Settings), unless the search is being typed in.
+                        // On a TV they stay out beside it; ▶ from the menu comes back to them.
                         if (e.key == Key.DirectionLeft && e.type == KeyEventType.KeyDown && !sheetEditing) {
-                            sheetOpen = false
+                            if (pushPanel) sheetToRail = true else sheetOpen = false
                             onOpenRail()
                             true
                         } else false
                     }
                     .onFocusChanged {
-                        // Closes when focus leaves it — not on the "unfocused" report every node gets when it attaches.
-                        if (it.hasFocus) sheetHadFocus = true else if (sheetHadFocus && sheetOpen) sheetOpen = false
+                        // Closes when focus leaves it — not on the "unfocused" report every node gets when it
+                        // attaches, and not for the rail beside it.
+                        if (it.hasFocus) { sheetHadFocus = true; sheetToRail = false }
+                        else if (sheetHadFocus && sheetOpen && !sheetToRail) sheetOpen = false
                     },
             )
         }

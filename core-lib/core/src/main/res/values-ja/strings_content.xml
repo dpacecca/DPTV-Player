@@ -298,7 +298,7 @@
     <string name="content_epg_favourite">お気に入りに追加</string>
     <string name="content_epg_unfavourite">お気に入りから削除</string>
     <string name="content_epg_player_choice_description">設定 › 見逃し配信で常に使用するプレーヤーを設定できます。</string>
-    <string name="content_epg_own_player">DPTV-Playerプレーヤー</string>
+    <string name="content_epg_own_player">DPTV-Player</string>
     <string name="content_epg_external_player">外部プレーヤー</string>
     <string name="content_epg_time_offset">EPG時間オフセット</string>
     <string name="content_epg_shift_minutes"><xliff:g id="sign">%1$s</xliff:g><xliff:g id="minutes">%2$s</xliff:g>分</string>

@@ -304,7 +304,7 @@
     <string name="content_epg_favourite">Kedvenc</string>
     <string name="content_epg_unfavourite">Eltávolítás a kedvencekből</string>
     <string name="content_epg_player_choice_description">Állíts be állandó választást a Beállítások › Visszanézés menüben.</string>
-    <string name="content_epg_own_player">DPTV-Player-lejátszó</string>
+    <string name="content_epg_own_player">DPTV-Player</string>
     <string name="content_epg_external_player">Külső lejátszó</string>
     <string name="content_epg_time_offset">EPG-időeltolás</string>
     <string name="content_epg_shift_minutes"><xliff:g id="sign">%1$s</xliff:g><xliff:g id="minutes">%2$s</xliff:g>p</string>

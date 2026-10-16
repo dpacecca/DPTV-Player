@@ -597,8 +597,8 @@
     <string name="content_epg_unfavourite">Unfavorite</string>
     <!-- Translators: Description in the catch-up player-choice dialog. Directs to Settings path. -->
     <string name="content_epg_player_choice_description">Set a permanent choice in Settings \u203a Catch-up.</string>
-    <!-- Translators: Player choice option for catch-up playback using the built-in DPTV-Player player. "DPTV-Player" is a brand name. -->
-    <string name="content_epg_own_player">DPTV-Player player</string>
+    <!-- Translators: Player choice option for catch-up playback using the built-in DPTV-Player (brand name only, no word "player"). -->
+    <string name="content_epg_own_player">DPTV-Player</string>
     <!-- Translators: Player choice option for catch-up playback using an external player app. -->
     <string name="content_epg_external_player">External player</string>
     <!-- Translators: Opens the per-channel adjustment that shifts guide programme times. -->

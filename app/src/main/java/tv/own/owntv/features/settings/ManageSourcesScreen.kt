@@ -159,7 +159,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             val src = editingSource!!
             AddSourceScreen(
                 initial = src,
-                initialAutoRefresh = playlistAutoRefresh[src.id] ?: PlaylistRefresh.OFF,
+                initialAutoRefresh = playlistAutoRefresh[src.id] ?: PlaylistRefresh.DEFAULT,
                 initialIsDefault = src.id == defaultId,
                 onStartXtream = { n, server, u, p, ua, ref, epg, autoRefresh, live, movies, series, isDefault, preferHls ->
                     vm.updateSource(
@@ -306,7 +306,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     }
                     SourceRow(
                         source = source,
-                        autoRefresh = playlistAutoRefresh[source.id] ?: PlaylistRefresh.OFF,
+                        autoRefresh = playlistAutoRefresh[source.id] ?: PlaylistRefresh.DEFAULT,
                         isDefault = isDefault,
                         expiry = sourceExpiry[source.id],
                         counts = counts,

@@ -312,7 +312,7 @@
     <string name="content_epg_favourite">Favoriet maken</string>
     <string name="content_epg_unfavourite">Uit favorieten verwijderen</string>
     <string name="content_epg_player_choice_description">Stel een permanente keuze in via Instellingen › Terugkijken.</string>
-    <string name="content_epg_own_player">DPTV-Player-speler</string>
+    <string name="content_epg_own_player">DPTV-Player</string>
     <string name="content_epg_external_player">Externe speler</string>
     <string name="content_epg_time_offset">EPG-tijdverschuiving</string>
     <string name="content_epg_shift_minutes"><xliff:g id="sign">%1$s</xliff:g><xliff:g id="minutes">%2$s</xliff:g>m</string>

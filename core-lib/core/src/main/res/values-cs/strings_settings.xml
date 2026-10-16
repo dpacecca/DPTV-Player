@@ -652,7 +652,7 @@
     </plurals>
     <string name="settings_catchup_timezone_device">Zařízení</string>
     <string name="settings_catchup_player_ask">Vždy se zeptat</string>
-    <string name="settings_catchup_player_internal">Přehrávač DPTV-Player</string>
+    <string name="settings_catchup_player_internal">DPTV-Player</string>
     <string name="settings_catchup_player_external">Externí přehrávač</string>
     <string name="settings_download_folder_title">Vyberte složku pro stahování</string>
     <string name="settings_pick_background_title">Vyberte obrázek na pozadí</string>

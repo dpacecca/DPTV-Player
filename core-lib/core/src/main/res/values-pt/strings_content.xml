@@ -326,7 +326,7 @@
     <string name="content_epg_favourite">Favoritar</string>
     <string name="content_epg_unfavourite">Remover dos favoritos</string>
     <string name="content_epg_player_choice_description">Defina uma escolha permanente em Configurações › Programação retroativa.</string>
-    <string name="content_epg_own_player">Reprodutor do DPTV-Player</string>
+    <string name="content_epg_own_player">DPTV-Player</string>
     <string name="content_epg_external_player">Reprodutor externo</string>
     <string name="content_epg_time_offset">Deslocamento de horário do EPG</string>
     <string name="content_epg_shift_minutes"><xliff:g id="sign">%1$s</xliff:g><xliff:g id="minutes">%2$s</xliff:g>min</string>

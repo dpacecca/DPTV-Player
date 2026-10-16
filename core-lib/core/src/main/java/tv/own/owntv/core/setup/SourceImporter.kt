@@ -133,7 +133,7 @@ class SourceImporter(
         password: String,
         userAgent: String = "",
         epgUrl: String = "",
-        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT,
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Now,
         series: SyncScopeChoice = SyncScopeChoice.Now,
@@ -174,7 +174,7 @@ class SourceImporter(
         deviceId2: String = "",
         signature: String = "",
         userAgent: String = "",
-        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT,
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Later,
         series: SyncScopeChoice = SyncScopeChoice.Later,
@@ -224,7 +224,7 @@ class SourceImporter(
         url: String,
         userAgent: String = "",
         epgUrl: String = "",
-        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT,
         makeDefault: Boolean = false,
         httpReferer: String = "",
     ) = runImport(autoRefresh, requiresNetwork = !url.isLocalPlaylistPath(), makeDefault = makeDefault) { profileId ->
@@ -239,7 +239,7 @@ class SourceImporter(
     }
 
     private suspend fun runImport(
-        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT,
         contentTypes: SyncContentTypes = SyncContentTypes(),
         enabledScope: SyncContentTypes = SyncContentTypes(),
         enqueueRemainder: Boolean = false,

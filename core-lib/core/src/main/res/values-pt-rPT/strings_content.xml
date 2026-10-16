@@ -326,7 +326,7 @@
     <string name="content_epg_favourite">Adicionar aos favoritos</string>
     <string name="content_epg_unfavourite">Remover dos favoritos</string>
     <string name="content_epg_player_choice_description">Defina uma escolha permanente em Definições › Programas em diferido.</string>
-    <string name="content_epg_own_player">Leitor DPTV-Player</string>
+    <string name="content_epg_own_player">DPTV-Player</string>
     <string name="content_epg_external_player">Leitor externo</string>
     <string name="content_epg_time_offset">Desvio de tempo do EPG</string>
     <string name="content_epg_shift_minutes"><xliff:g id="sign">%1$s</xliff:g><xliff:g id="minutes">%2$s</xliff:g>m</string>

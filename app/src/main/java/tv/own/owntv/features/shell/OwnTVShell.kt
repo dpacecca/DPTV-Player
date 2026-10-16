@@ -3,6 +3,8 @@ package tv.own.owntv.features.shell
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -253,6 +255,8 @@ fun OwnTVShell(
     var homeEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The guide's entry hook: the TV Guide, or Live TV in Guide view (null while Live TV shows its list).
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    // The guide's categories are out beside it (◀ from what is on now).
+    var guidePanelOpen by remember { mutableStateOf(false) }
     var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var downloadsEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var dvrEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
@@ -718,11 +722,14 @@ fun OwnTVShell(
     // keeps the compact room, so nothing behind it moves).
     val widenDocked = navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT && navWiden != null && railFocused
     val railSize = if (widenDocked) navWiden ?: navSize else navSize
+    // v2.0.3: while the guide's categories are out, the rail sits beside them as the capsule (◀ opens it
+    // at its size, ▶ closes it again) instead of hiding, and opens without the scrim: the guide moves over.
+    val guideSide = guidePanelOpen && selectedSection == MainSection.LIVE_TV
     val railState = when {
         widenDocked -> tv.own.owntv.features.shell.components.RailState.OPEN
         navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED -> tv.own.owntv.features.shell.components.RailState.PINNED
         railFocused -> tv.own.owntv.features.shell.components.RailState.OPEN
-        railIdleHidden -> tv.own.owntv.features.shell.components.RailState.HIDDEN
+        railIdleHidden && !guideSide -> tv.own.owntv.features.shell.components.RailState.HIDDEN
         else -> tv.own.owntv.features.shell.components.RailState.CAPSULE
     }
     // The playlist chip reflects the active filter: "All playlists" when none is chosen (id <= 0), the
@@ -1050,7 +1057,16 @@ fun OwnTVShell(
             },
     ) {
       // Browse UI — hidden while the player is fullscreen (stays visible behind the docked mini-player).
-      if (playerMode != PlayerMode.FULLSCREEN) {
+      // v2.0.3: Live TV stays composed under the full-screen player, invisible and closed to focus, so
+      // Back is only the video shrinking into the guide's box — no guide rebuilt, reloaded and re-scrolled.
+      val browseHidden = playerMode == PlayerMode.FULLSCREEN
+      if (!browseHidden || selectedSection == MainSection.LIVE_TV) Box(
+          Modifier
+              .fillMaxSize()
+              .graphicsLayer { alpha = if (playerMode == PlayerMode.FULLSCREEN) 0f else 1f }
+              .focusProperties { onEnter = { if (playerMode == PlayerMode.FULLSCREEN) cancelFocusChange() } }
+              .focusGroup(),
+      ) {
         Column(
             modifier = Modifier.fillMaxSize()
                 // One group with a restorer: leaving for the mini player and coming back lands on the
@@ -1321,6 +1337,13 @@ fun OwnTVShell(
                             onEntryHook = { guideEntry = it },
                             onOpenRail = focusRail,
                             onVideoBounds = { bounds, radius -> guideVideoBounds = bounds; guideVideoRadius = radius },
+                            onPanelOpen = { guidePanelOpen = it },
+                            // How far the categories start from the edge: past the capsule, or the open rail.
+                            panelInset = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 0.dp
+                                else tv.own.owntv.features.shell.components.railDockedReserve(
+                                    if (railState == tv.own.owntv.features.shell.components.RailState.OPEN) railSize
+                                    else tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT,
+                                ),
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
                             onContentScrolled = { contentScrolled = it },
@@ -1478,6 +1501,7 @@ fun OwnTVShell(
                     else -> null
                 },
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
+                scrim = !guideSide,
                 nowPlaying = nowPlayingRail,
                 onNowPlaying = enterNowPlaying,
             )
@@ -1586,7 +1610,7 @@ fun OwnTVShell(
       // Not while the floating rail is open over the content: this surface would draw over the rail.
       val railOverContent = focusedLayer == ShellLayer.SIDEBAR && navStyle != tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED
       val guideDock = multiview == null && playerMode == PlayerMode.NONE && selectedSection == MainSection.LIVE_TV &&
-          guideBounds != null && guideArmed && guideLivePreview && guidePreviewOn && !railOverContent
+          guideBounds != null && guideArmed && guideLivePreview && guidePreviewOn && (!railOverContent || guideSide)
       if (multiview == null && (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI || guideDock)) {
         val isFull = playerMode == PlayerMode.FULLSCREEN
         val density = androidx.compose.ui.platform.LocalDensity.current

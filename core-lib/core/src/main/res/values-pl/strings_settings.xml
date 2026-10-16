@@ -652,7 +652,7 @@
     </plurals>
     <string name="settings_catchup_timezone_device">Urządzenie</string>
     <string name="settings_catchup_player_ask">Zawsze pytaj</string>
-    <string name="settings_catchup_player_internal">Odtwarzacz DPTV-Player</string>
+    <string name="settings_catchup_player_internal">DPTV-Player</string>
     <string name="settings_catchup_player_external">Odtwarzacz zewnętrzny</string>
     <string name="settings_download_folder_title">Wybierz folder pobierania</string>
     <string name="settings_pick_background_title">Wybierz obraz tła</string>

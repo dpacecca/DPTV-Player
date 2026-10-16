@@ -1317,8 +1317,8 @@
     <string name="settings_catchup_timezone_device">Device</string>
     <!-- Translators: Catch-up player option: always ask which player to use. -->
     <string name="settings_catchup_player_ask">Always ask</string>
-    <!-- Translators: Catch-up player option: use the built-in DPTV-Player player. -->
-    <string name="settings_catchup_player_internal">DPTV-Player player</string>
+    <!-- Translators: Catch-up player option: use the built-in DPTV-Player (brand name only). -->
+    <string name="settings_catchup_player_internal">DPTV-Player</string>
     <!-- Translators: Catch-up player option: use an external player app. -->
     <string name="settings_catchup_player_external">External player</string>
     <!-- Translators: Badge indicating a feature is coming soon. All caps is intentional. -->

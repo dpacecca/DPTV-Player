@@ -453,7 +453,7 @@ class EpgViewModel(
             // The first value is the guide as it already stands — unless a sync was running when the
             // screen opened, in which case the first value is that sync's result and must be loaded.
             .drop(if (epgActivity.active.value.isEmpty()) 1 else 0)
-            .onEach { load() }
+            .onEach { load(background = true) }
             .launchIn(viewModelScope)
     }
 
@@ -846,15 +846,16 @@ class EpgViewModel(
      * an OutOfMemoryError. Cancelling the one in progress makes the answer the latest one rather than
      * a race between six stale ones, and the mutex closes the gap while a cancelled load unwinds.
      */
-    fun load() {
+    /** [background]: a reload after a sync, not something the user did — it never empties a guide on screen. */
+    fun load(background: Boolean = false) {
         val previous = loadJob
         loadJob = viewModelScope.launch {
             previous?.cancelAndJoin()
-            loadMutex.withLock { runLoad() }
+            loadMutex.withLock { runLoad(background) }
         }
     }
 
-    private suspend fun runLoad() {
+    private suspend fun runLoad(background: Boolean = false) {
         val loadStartedAt = android.os.SystemClock.elapsedRealtime()
         // Show the spinner only on the FIRST load. The EpgViewModel is shared, so on re-entry the guide
         // is already populated — keep the existing list on screen and refresh it silently, so opening the
@@ -994,6 +995,9 @@ class EpgViewModel(
             channels.isEmpty() -> EpgMessage.MismatchedIds
             else -> null
         }
+        // A playlist or guide refresh caught half way (its rows not matched yet) must not swap the grid the
+        // user is in for "no guide": that dropped their place and the video with it. The next reload fills it.
+        if (background && channels.isEmpty() && _state.value.channels.isNotEmpty()) return
         _state.value = EpgUiState(
             channels = channels, windowStart = windowStart, windowEnd = windowEnd, now = now,
             loading = false, message = message, hasEpgSources = hasEpg,

@@ -1223,7 +1223,7 @@ class SettingsViewModel(
         pass: String,
         userAgent: String = "",
         epgUrl: String = "",
-        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT,
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Now,
         series: SyncScopeChoice = SyncScopeChoice.Now,
@@ -1331,7 +1331,7 @@ class SettingsViewModel(
         deviceId2: String = "",
         signature: String = "",
         userAgent: String = "",
-        autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF,
+        autoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT,
         isDefault: Boolean = false,
         live: SyncScopeChoice = SyncScopeChoice.Now,
         movies: SyncScopeChoice = SyncScopeChoice.Later,
@@ -1347,7 +1347,7 @@ class SettingsViewModel(
         )
     }
 
-    fun addM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", autoRefresh: PlaylistRefresh = PlaylistRefresh.OFF, isDefault: Boolean = false, httpReferer: String = "") = runImport {
+    fun addM3u(name: String, url: String, userAgent: String = "", epgUrl: String = "", autoRefresh: PlaylistRefresh = PlaylistRefresh.DEFAULT, isDefault: Boolean = false, httpReferer: String = "") = runImport {
         importer.m3u(name, url, userAgent, epgUrl, autoRefresh, makeDefault = isDefault, httpReferer = httpReferer)
     }
 

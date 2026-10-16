@@ -660,7 +660,7 @@
     </plurals>
     <string name="settings_catchup_timezone_device">الجهاز</string>
     <string name="settings_catchup_player_ask">السؤال دائمًا</string>
-    <string name="settings_catchup_player_internal">مشغّل DPTV-Player</string>
+    <string name="settings_catchup_player_internal">DPTV-Player</string>
     <string name="settings_catchup_player_external">مشغّل خارجي</string>
     <string name="settings_download_folder_title">اختيار مجلد التنزيل</string>
     <string name="settings_pick_background_title">اختيار صورة خلفية</string>

@@ -717,17 +717,19 @@ private fun FixtureDetail(
     // The matcher already filtered by the preferred languages (before its cap) — show them as-is.
     val matches = (matchesState as? SportsViewModel.MatchesState.Content)?.matches.orEmpty()
     var entities by remember(fixture.id) { mutableStateOf(emptyList<ChannelEntity>()) }
-    var focusedChannelId by remember(fixture.id) { mutableStateOf<Long?>(null) }
+    // v2.0.3: nothing plays until a channel is picked with OK (the guide's rule); OK on it again is full
+    // screen. Held here, not in the shared previewArmed, which stays set once Live TV has played anything.
+    var previewId by remember(fixture.id) { mutableStateOf<Long?>(null) }
     LaunchedEffect(fixture.id, matches) {
         entities = if (matches.isEmpty()) emptyList() else sportsVm.entitiesFor(matches)
-        if (focusedChannelId == null) focusedChannelId = matches.firstOrNull()?.channelId
     }
-    val previewEntity = entities.firstOrNull { it.id == focusedChannelId } ?: entities.firstOrNull()
+    val previewEntity = entities.firstOrNull { it.id == previewId } ?: entities.firstOrNull()
     val previewEpg = matches.firstOrNull { it.channelId == previewEntity?.id }?.epgTitle
-    LaunchedEffect(previewEntity?.id, effectivePreview, previewArmed) {
-        val entity = previewEntity ?: return@LaunchedEffect
-        if (!effectivePreview || !previewArmed) return@LaunchedEffect
-        delay(700)
+    val showVideo = effectivePreview && previewArmed && previewId != null
+    LaunchedEffect(previewId, effectivePreview) {
+        val entity = entities.firstOrNull { it.id == previewId } ?: return@LaunchedEffect
+        if (!effectivePreview) return@LaunchedEffect
+        delay(150)
         liveVm.playPreview(entity)
     }
     Column(modifier = Modifier.fillMaxHeight()) {
@@ -737,7 +739,7 @@ private fun FixtureDetail(
                 channelLine = previewEntity.name,
                 nowTitle = previewEpg,
                 previewEngine = liveVm.previewEngine,
-                showVideo = effectivePreview && previewArmed,
+                showVideo = showVideo,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.mpx),
             )
         }
@@ -860,17 +862,15 @@ private fun FixtureDetail(
                         } else {
                             list.forEach { match ->
                                 StageSurface(
-                                    onClick = { onPlayMatch(match, list) },
+                                    onClick = {
+                                        val entity = entities.firstOrNull { it.id == match.channelId }
+                                        if (effectivePreview && entity != null && previewId != match.channelId) {
+                                            previewId = match.channelId
+                                            liveVm.onChannelFocused(entity)
+                                        } else onPlayMatch(match, list)
+                                    },
                                     radius = 14.mpx,
-                                    modifier = Modifier.fillMaxWidth().focusRequester(matchRequester(match.channelId))
-                                        .onFocusChanged {
-                                            if (it.hasFocus) {
-                                                focusedChannelId = match.channelId
-                                                entities.firstOrNull { entity -> entity.id == match.channelId }?.let { entity ->
-                                                    liveVm.onChannelFocused(entity)
-                                                }
-                                            }
-                                        },
+                                    modifier = Modifier.fillMaxWidth().focusRequester(matchRequester(match.channelId)),
                                 ) { focused ->
                                     Row(
                                         Modifier.fillMaxWidth().padding(horizontal = 14.mpx, vertical = 10.mpx),

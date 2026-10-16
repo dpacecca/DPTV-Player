@@ -144,6 +144,8 @@ fun StageRail(
     /** A screen's own way in, when it has one (Home returns to the exact control left from). */
     enterContent: (() -> Boolean)? = null,
     onFocused: () -> Unit,
+    /** The dimming behind the open rail; off where the content moves aside for it (the guide's categories). */
+    scrim: Boolean = true,
     nowPlaying: NowPlayingRail?,
     onNowPlaying: () -> Unit,
     modifier: Modifier = Modifier,
@@ -174,7 +176,7 @@ fun StageRail(
     }
 
     Box(modifier.fillMaxSize()) {
-        if (state == RailState.OPEN && open) {
+        if (state == RailState.OPEN && open && scrim) {
             Box(Modifier.fillMaxSize().background(StageColors.Scrim))
         }
         if (state == RailState.HIDDEN) RailEdgeGlow(Modifier.align(Alignment.CenterStart))

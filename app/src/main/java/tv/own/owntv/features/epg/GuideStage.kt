@@ -191,16 +191,23 @@ internal fun GuideInfoBlock(
     now: Long,
     compact: Boolean,
     modifier: Modifier = Modifier,
+    /** A recording of this programme is running: "Recording" in red after the title. */
+    recording: Boolean = false,
 ) {
     val a = stageAccent
     val formatTime = rememberSystemTimeFormatter()
     // A phone shows the mockup pixels at a third of a TV's size; the type is scaled back up to read.
     fun t(size: Int): Int = if (compact) (size * 1.5f).toInt() else size
     Column(modifier, verticalArrangement = Arrangement.spacedBy(if (compact) 6.mpx else 10.mpx)) {
-        Text(
-            programme?.title ?: fallbackTitle, style = stageText(t(40), 800, (-0.5).mpxSp), color = StageColors.Text,
-            maxLines = 2, overflow = TextOverflow.Ellipsis,
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                programme?.title ?: fallbackTitle, style = stageText(t(40), 800, (-0.5).mpxSp), color = StageColors.Text,
+                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
+            )
+            if (recording) {
+                Text(stringResource(R.string.sport_guide_recording), style = stageText(t(17), 800), color = Color(0xFFFF5B5B), maxLines = 1)
+            }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
             if (programme != null) {
                 Text(

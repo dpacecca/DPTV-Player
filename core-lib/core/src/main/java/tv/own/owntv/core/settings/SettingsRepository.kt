@@ -130,6 +130,10 @@ data class PlaylistRefresh(
         private const val SEPARATOR = ':'
 
         val OFF = PlaylistRefresh(PlaylistAutoRefresh.OFF)
+        val STARTUP = PlaylistRefresh(PlaylistAutoRefresh.STARTUP)
+
+        /** A playlist with no choice of its own refreshes each time the app starts (DPTV-Player v2.0.3). */
+        val DEFAULT = STARTUP
 
         /**
          * Reads a stored value, translating the retired fixed entries into the day counts that mean the
@@ -225,6 +229,10 @@ data class EpgRefresh(
         private const val SEPARATOR = ':'
 
         val OFF = EpgRefresh(EpgAutoRefresh.OFF)
+        val STARTUP = EpgRefresh(EpgAutoRefresh.STARTUP)
+
+        /** A guide with no choice of its own refreshes each time the app starts (DPTV-Player v2.0.3). */
+        val DEFAULT = STARTUP
 
         /**
          * Reads a stored value.
@@ -375,6 +383,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val EPG_USE_LOGOS = stringPreferencesKey("epg_use_logos")
         val REFRESH_MIGRATED = booleanPreferencesKey("refresh_migration_done")
         val EPG_REFILL_CHECKED = booleanPreferencesKey("epg_refill_checked")
+        val STARTUP_SYNC_DEFAULTED = booleanPreferencesKey("startup_sync_defaulted")
         // Set while a backup restore is applying, cleared only when it completes (B2). A value that
         // survives to the next launch means the restore was interrupted and may be half-applied.
         val RESTORE_IN_PROGRESS = stringPreferencesKey("restore_in_progress")
@@ -2197,7 +2206,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
     // existing lastSyncAt columns (SourceEntity.lastSyncAt for playlists, EpgSource.lastSyncAt for EPG) as the
     // "last successful sync" timestamp; nothing new is stored for that.
 
-    /** Per-source playlist auto-refresh selection. Missing ids default to [PlaylistRefresh.OFF]. */
+    /** Per-source playlist auto-refresh selection. Missing ids default to [PlaylistRefresh.DEFAULT]. */
     val playlistAutoRefresh: Flow<Map<Long, PlaylistRefresh>> =
         prefsFlow { prefs ->
             readRefreshMap(prefs[Keys.PLAYLIST_AUTO_REFRESH]).entries.mapNotNull { (key, value) ->
@@ -2205,7 +2214,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             }.toMap()
         }
 
-    /** Per-source EPG auto-refresh selection. Missing ids default to [EpgAutoRefresh.OFF]. */
+    /** Per-source EPG auto-refresh selection. Missing ids default to [EpgRefresh.DEFAULT]. */
     val epgAutoRefresh: Flow<Map<Long, EpgRefresh>> =
         prefsFlow { prefs ->
             readRefreshMap(prefs[Keys.EPG_AUTO_REFRESH]).entries.mapNotNull { (key, value) ->
@@ -2275,6 +2284,13 @@ class SettingsRepository(private val context: Context, private val localeStore: 
 
     suspend fun markEpgRefillChecked() {
         context.dataStore.edit { prefs -> prefs[Keys.EPG_REFILL_CHECKED] = true }
+    }
+
+    /** Whether the one-time "Off → On startup" switch of every playlist and guide (v2.0.3) has run. */
+    val startupSyncDefaulted: Flow<Boolean> = prefsFlow { it[Keys.STARTUP_SYNC_DEFAULTED] == true }
+
+    suspend fun markStartupSyncDefaulted() {
+        context.dataStore.edit { prefs -> prefs[Keys.STARTUP_SYNC_DEFAULTED] = true }
     }
 
     /**
