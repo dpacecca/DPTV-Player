@@ -64,6 +64,18 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.1.2
+
+### 🐞 Fixes
+- **▶️ No pause going between the guide and full screen**
+- **📼 Recordings made in DPTV Recorder show in DVR for playlists added as M3U too**
+- **🔴 DVR lists what is recording now, tagged Recording, and plays it while it records**
+- **◀️ Guide, categories and menu: Right always closes the menu, then the categories; Left reopens them**
+- **📖 The menu always opens with the section names**
+- **↩️ Back in the guide no longer jumps to the menu**
+- **🧭 DVR's Sort button no longer overlaps the clock**
+- **🔄 DVR keeps in step with DPTV Recorder: every 30 s and on opening, even after an error**
+
 ## v2.1.1
 
 ### ✨ New features

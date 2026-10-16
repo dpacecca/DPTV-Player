@@ -118,11 +118,31 @@ class RecordingsViewModel(
         // can be given recordings from its own web page; keep this screen in step while it is open.
         viewModelScope.launch {
             while (isActive) {
-                val pid = settings.activeProfileId.first()
-                if (pid >= 0) recordings.syncWithServer(pid)
+                syncOnce()
                 delay(SERVER_SYNC_INTERVAL_MS)
             }
         }
+    }
+
+    /**
+     * One pass against the recording server. v2.1.2: an error in a pass (the server answering
+     * oddly, a row that cannot be written) is logged and the next pass runs as usual — it used to
+     * end the loop, and the DVR then stayed as it was until the app was restarted.
+     */
+    private suspend fun syncOnce() {
+        try {
+            val pid = settings.activeProfileId.first()
+            if (pid >= 0) recordings.syncWithServer(pid)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.w("DvrSync", "recording server sync failed", e)
+        }
+    }
+
+    /** DVR opened: bring it up to date now rather than at the next 30-second pass. */
+    fun syncNow() {
+        viewModelScope.launch { syncOnce() }
     }
 
     // --- Recording server (DPTV-Recorder) settings ---------------------------------------------
@@ -180,7 +200,8 @@ class RecordingsViewModel(
      * growing file and a picture that stops at whatever byte it started from.
      */
     fun play(recording: RecordingEntity, resume: Boolean = false) {
-        if (recording.status != RecordingStatus.COMPLETED) return
+        // v2.1.2: one still recording plays too, from what it has captured so far.
+        if (recording.status != RecordingStatus.COMPLETED && recording.status != RecordingStatus.RECORDING) return
         if (recording.filePath == null) return
         _lastPlayedId.value = recording.id
         viewModelScope.launch {

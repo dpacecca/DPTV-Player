@@ -258,6 +258,8 @@ fun OwnTVShell(
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The guide's categories are out beside it (◀ from what is on now).
     var guidePanelOpen by remember { mutableStateOf(false) }
+    // v2.1.2: the preview was promoted to full screen on ExoPlayer, until the collected liveOnExo says so too.
+    var exoHandoff by remember { mutableStateOf(false) }
     // v2.1.1: the last key press or touch anywhere in the app; the guide goes full screen after 30 s without one.
     var lastInputAt by remember { mutableLongStateOf(android.os.SystemClock.uptimeMillis()) }
     var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
@@ -737,8 +739,8 @@ fun OwnTVShell(
     // v2.1.0: while the guide's categories are out, the rail sits beside them as the capsule (◀ opens it,
     // ▶ closes it again) instead of hiding, and opens without the scrim: the guide moves over.
     val guideSide = guidePanelOpen && selectedSection == MainSection.LIVE_TV
-    // v2.1.1: opened from the guide's categories it always shows the section names, whatever its own size.
-    val guideWide = guideSide && railFocused && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT
+    // v2.1.2: the menu, when it has focus, always shows the section names, whatever its own size.
+    val guideWide = railFocused && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT
     val widenDocked = navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT &&
         (navWiden != null || guideWide) && railFocused
     val railSize = when {
@@ -946,6 +948,9 @@ fun OwnTVShell(
             // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
             focusedLayer == ShellLayer.SIDEBAR -> showExit = true
+            // v2.1.2: the guide reaches the menu with ◀ only (◀ categories, ◀ menu); Back there does not
+            // jump to it, it asks to leave the app as Back on the menu does.
+            selectedSection == MainSection.LIVE_TV -> showExit = true
             else -> focusRail()
         }
     }
@@ -1172,6 +1177,7 @@ fun OwnTVShell(
                 val guidePlayChannel: (ChannelEntity, List<ChannelEntity>) -> Unit = { ch, _ ->
                     restoreFocus = false
                     liveVm.watchFromGuide(ch)
+                    exoHandoff = liveVm.liveOnExo.value
                     zapSource = MainSection.LIVE_TV
                     homeVm.stopPreview()
                     // Live TV set to play externally → the channel went to another app;
@@ -1643,6 +1649,13 @@ fun OwnTVShell(
       val railOverContent = focusedLayer == ShellLayer.SIDEBAR && navStyle != tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED
       // v2.1.1: the guide left alone for 30 s goes full screen on the channel in its video. Any key or touch
       // starts the wait again; a menu or dialog (its own window) holds it, and closing one starts it afresh.
+      LaunchedEffect(exoHandoff, liveOnExo) {
+          if (!exoHandoff) return@LaunchedEffect
+          // Once the collected value has caught up (a frame, normally) it decides on its own: true keeps the
+          // picture on ExoPlayer, still false after the wait means the tune went to mpv.
+          if (!liveOnExo) kotlinx.coroutines.delay(500)
+          exoHandoff = false
+      }
       val shellWindowFocused = androidx.compose.ui.platform.LocalWindowInfo.current.isWindowFocused
       val idleChannel = previewChannel
       LaunchedEffect(lastInputAt, selectedSection, playerMode, multiview == null, guideArmed, guideLivePreview, guidePreviewOn, idleChannel?.id, shellWindowFocused) {
@@ -1652,6 +1665,7 @@ fun OwnTVShell(
           kotlinx.coroutines.delay(GUIDE_IDLE_FULLSCREEN_MS)
           restoreFocus = false
           liveVm.watchFromGuide(ch)
+          exoHandoff = liveVm.liveOnExo.value
           zapSource = MainSection.LIVE_TV
           homeVm.stopPreview()
           if (!liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
@@ -1660,6 +1674,12 @@ fun OwnTVShell(
           guideBounds != null && guideArmed && guideLivePreview && guidePreviewOn && (!railOverContent || guideSide)
       if (multiview == null && (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI || guideDock)) {
         val isFull = playerMode == PlayerMode.FULLSCREEN
+        // v2.1.2: whether ExoPlayer's picture is the one on screen. OK in the guide sets FULLSCREEN and
+        // promotes the preview in the same moment, but the collected liveOnExo arrives a frame later: for
+        // that frame the guide's box was gone and liveOnExo still false, so mpv's surface was put up,
+        // ExoPlayer's destroyed and built again a frame later — the pause on every OK. [exoHandoff] carries
+        // the engine's answer, taken when OK was pressed, across that frame.
+        val exoOnScreen = liveOnExo || (isFull && exoHandoff) || guideDock
         val density = androidx.compose.ui.platform.LocalDensity.current
         Box(
             modifier = if (isFull) {
@@ -1682,7 +1702,7 @@ fun OwnTVShell(
             // "Promote Preview": a Live channel playing on ExoPlayer renders the ExoPlayer surface — in BOTH
             // full-screen AND the docked mini-player (same call site = the surface persists across dock/
             // expand, so playback never blips). Everything else (mpv) renders mpv's surface.
-            if (liveOnExo || guideDock) {
+            if (exoOnScreen) {
                 tv.own.owntv.player.ExoPreviewSurface(
                     engine = liveVm.previewEngine, modifier = Modifier.fillMaxSize(),
                     // v2.1.1: the guide's box keeps the rate full screen matched. Dropping it on Back and
@@ -1699,7 +1719,7 @@ fun OwnTVShell(
             // The item has no video track of its own (a radio channel, a music-only "movie"). Playing it is
             // correct — but a black screen with sound reads as a broken player, so name what is happening.
             // Read from whichever engine is on screen; only ever composed when there is no video to lose.
-            val audioOnlyMedia by if (liveOnExo || guideDock) {
+            val audioOnlyMedia by if (exoOnScreen) {
                 liveVm.previewEngine.audioOnlyMedia.collectAsStateWithLifecycle()
             } else {
                 player.audioOnlyMedia.collectAsStateWithLifecycle()
@@ -1710,7 +1730,7 @@ fun OwnTVShell(
             // Direct render mode: mpv can't draw subtitles on the decoder-owned surface — the app does.
             // Also drawn docked (F19b): the mini-player is a real watching mode for a subtitled film, and
             // dropping the only line of dialogue there made subtitles look broken. Scaled to the box.
-            if (!liveOnExo && !guideDock) {
+            if (!exoOnScreen) {
                 tv.own.owntv.player.SubtitleOverlay(
                     player = player, modifier = Modifier.fillMaxSize(),
                     // Tied to the chosen mini size, but nudged up and floored: a strictly proportional
@@ -1723,7 +1743,7 @@ fun OwnTVShell(
             if (isFull && !autoFrameRate && !afrPrompted) {
                 // Frame rate of whichever engine is on screen. On the mpv side this is what the direct
                 // path judders on; on Exo it now survives "Measured stream stats" being off (F14).
-                val activeFps by if (liveOnExo) {
+                val activeFps by if (exoOnScreen) {
                     liveVm.previewEngine.videoFps.collectAsStateWithLifecycle()
                 } else {
                     player.videoFps.collectAsStateWithLifecycle()
@@ -1761,7 +1781,7 @@ fun OwnTVShell(
                 // re-tune the live stream and jump the user to the current programme.
                 val isTunedLive = isLiveChannel && !catchupActive
                 PlayerHud(
-                    player = if (liveOnExo) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
+                    player = if (exoOnScreen) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
                     onBack = exitPlayer,
                     onPip = dockPlayer, // PiP/dock works for live on either engine now
                     onAudioMode = toAudioMode,

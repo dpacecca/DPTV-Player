@@ -14,7 +14,8 @@ val playerModule = module {
     // Both engines are built by core's shared builders (named arguments, one copy for both apps).
     single { ownTVPlayer() }
     // ExoPlayer engine for the fast Live preview pane (mpv stays the full/fullscreen player).
-    single { livePreviewEngine() }
+    // The guide's preview and live engine: mute by volume, so going full screen and Back never changes tracks.
+    single { livePreviewEngine().apply { keepAudioTrackWhileMuted = true } }
     // Multiview's engines. The `single` above stays exactly what it was — the one long-lived engine
     // behind the Live preview pane and promoted fullscreen playback. The pool builds its own, one per
     // tile, and is the only thing that owns more than one at a time.
