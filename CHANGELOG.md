@@ -67,7 +67,7 @@
 ## v2.1.2
 
 ### 🐞 Fixes
-- **▶️ No pause going between the guide and full screen (muted preview keeps its sound track)**
+- **▶️ No pause going between the guide and full screen**
 
 ## v2.1.1
 

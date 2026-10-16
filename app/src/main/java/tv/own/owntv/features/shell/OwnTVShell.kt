@@ -1660,6 +1660,12 @@ fun OwnTVShell(
           guideBounds != null && guideArmed && guideLivePreview && guidePreviewOn && (!railOverContent || guideSide)
       if (multiview == null && (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI || guideDock)) {
         val isFull = playerMode == PlayerMode.FULLSCREEN
+        // v2.1.2: whether ExoPlayer's picture is the one on screen, read from the engine itself as well as
+        // from the collected state. OK in the guide sets FULLSCREEN and promotes the preview in the same
+        // moment, but the collected value arrives a frame later: for that frame the guide's box was gone
+        // and liveOnExo still false, so mpv's surface was put up, ExoPlayer's destroyed and built again a
+        // frame later — the pause on every OK.
+        val exoOnScreen = liveOnExo || liveVm.liveOnExo.value || guideDock
         val density = androidx.compose.ui.platform.LocalDensity.current
         Box(
             modifier = if (isFull) {
@@ -1682,7 +1688,7 @@ fun OwnTVShell(
             // "Promote Preview": a Live channel playing on ExoPlayer renders the ExoPlayer surface — in BOTH
             // full-screen AND the docked mini-player (same call site = the surface persists across dock/
             // expand, so playback never blips). Everything else (mpv) renders mpv's surface.
-            if (liveOnExo || guideDock) {
+            if (exoOnScreen) {
                 tv.own.owntv.player.ExoPreviewSurface(
                     engine = liveVm.previewEngine, modifier = Modifier.fillMaxSize(),
                     // v2.1.1: the guide's box keeps the rate full screen matched. Dropping it on Back and
@@ -1699,7 +1705,7 @@ fun OwnTVShell(
             // The item has no video track of its own (a radio channel, a music-only "movie"). Playing it is
             // correct — but a black screen with sound reads as a broken player, so name what is happening.
             // Read from whichever engine is on screen; only ever composed when there is no video to lose.
-            val audioOnlyMedia by if (liveOnExo || guideDock) {
+            val audioOnlyMedia by if (exoOnScreen) {
                 liveVm.previewEngine.audioOnlyMedia.collectAsStateWithLifecycle()
             } else {
                 player.audioOnlyMedia.collectAsStateWithLifecycle()
@@ -1710,7 +1716,7 @@ fun OwnTVShell(
             // Direct render mode: mpv can't draw subtitles on the decoder-owned surface — the app does.
             // Also drawn docked (F19b): the mini-player is a real watching mode for a subtitled film, and
             // dropping the only line of dialogue there made subtitles look broken. Scaled to the box.
-            if (!liveOnExo && !guideDock) {
+            if (!exoOnScreen) {
                 tv.own.owntv.player.SubtitleOverlay(
                     player = player, modifier = Modifier.fillMaxSize(),
                     // Tied to the chosen mini size, but nudged up and floored: a strictly proportional
@@ -1723,7 +1729,7 @@ fun OwnTVShell(
             if (isFull && !autoFrameRate && !afrPrompted) {
                 // Frame rate of whichever engine is on screen. On the mpv side this is what the direct
                 // path judders on; on Exo it now survives "Measured stream stats" being off (F14).
-                val activeFps by if (liveOnExo) {
+                val activeFps by if (exoOnScreen) {
                     liveVm.previewEngine.videoFps.collectAsStateWithLifecycle()
                 } else {
                     player.videoFps.collectAsStateWithLifecycle()
@@ -1761,7 +1767,7 @@ fun OwnTVShell(
                 // re-tune the live stream and jump the user to the current programme.
                 val isTunedLive = isLiveChannel && !catchupActive
                 PlayerHud(
-                    player = if (liveOnExo) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
+                    player = if (exoOnScreen) liveVm.previewEngine else mpvEngine, // HUD drives the active engine
                     onBack = exitPlayer,
                     onPip = dockPlayer, // PiP/dock works for live on either engine now
                     onAudioMode = toAudioMode,

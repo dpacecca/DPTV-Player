@@ -95,3 +95,6 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
   ExoPlayer setzt dabei die Renderer zurück. `LivePreviewEngine.keepAudioTrackWhileMuted` (für die eine
   Vorschau-/Live-Engine in `PlayerModule`) stummt nur per Lautstärke; Passthrough-Formate (AC3, E-AC3, DTS,
   TrueHD, AC-4), bei denen die Lautstärke nicht greift, werden weiter abgewählt. Multiview-Kacheln unverändert.
+- Zweite Ursache (auch mit Vorschau-Ton): OK setzte FULLSCREEN sofort, `liveOnExo` kam erst einen Frame
+  später an — für diesen Frame zeigte die Shell mpvs Surface, ExoPlayers wurde zerstört und neu gebaut.
+  `exoOnScreen` liest zusätzlich `liveVm.liveOnExo.value` direkt.
