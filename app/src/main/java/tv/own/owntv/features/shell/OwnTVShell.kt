@@ -258,6 +258,8 @@ fun OwnTVShell(
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The guide's categories are out beside it (◀ from what is on now).
     var guidePanelOpen by remember { mutableStateOf(false) }
+    // v2.1.2: the preview was promoted to full screen on ExoPlayer, until the collected liveOnExo says so too.
+    var exoHandoff by remember { mutableStateOf(false) }
     // v2.1.1: the last key press or touch anywhere in the app; the guide goes full screen after 30 s without one.
     var lastInputAt by remember { mutableLongStateOf(android.os.SystemClock.uptimeMillis()) }
     var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
@@ -1172,6 +1174,7 @@ fun OwnTVShell(
                 val guidePlayChannel: (ChannelEntity, List<ChannelEntity>) -> Unit = { ch, _ ->
                     restoreFocus = false
                     liveVm.watchFromGuide(ch)
+                    exoHandoff = liveVm.liveOnExo.value
                     zapSource = MainSection.LIVE_TV
                     homeVm.stopPreview()
                     // Live TV set to play externally → the channel went to another app;
@@ -1643,6 +1646,13 @@ fun OwnTVShell(
       val railOverContent = focusedLayer == ShellLayer.SIDEBAR && navStyle != tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED
       // v2.1.1: the guide left alone for 30 s goes full screen on the channel in its video. Any key or touch
       // starts the wait again; a menu or dialog (its own window) holds it, and closing one starts it afresh.
+      LaunchedEffect(exoHandoff, liveOnExo) {
+          if (!exoHandoff) return@LaunchedEffect
+          // Once the collected value has caught up (a frame, normally) it decides on its own: true keeps the
+          // picture on ExoPlayer, still false after the wait means the tune went to mpv.
+          if (!liveOnExo) kotlinx.coroutines.delay(500)
+          exoHandoff = false
+      }
       val shellWindowFocused = androidx.compose.ui.platform.LocalWindowInfo.current.isWindowFocused
       val idleChannel = previewChannel
       LaunchedEffect(lastInputAt, selectedSection, playerMode, multiview == null, guideArmed, guideLivePreview, guidePreviewOn, idleChannel?.id, shellWindowFocused) {
@@ -1652,6 +1662,7 @@ fun OwnTVShell(
           kotlinx.coroutines.delay(GUIDE_IDLE_FULLSCREEN_MS)
           restoreFocus = false
           liveVm.watchFromGuide(ch)
+          exoHandoff = liveVm.liveOnExo.value
           zapSource = MainSection.LIVE_TV
           homeVm.stopPreview()
           if (!liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
@@ -1660,12 +1671,12 @@ fun OwnTVShell(
           guideBounds != null && guideArmed && guideLivePreview && guidePreviewOn && (!railOverContent || guideSide)
       if (multiview == null && (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI || guideDock)) {
         val isFull = playerMode == PlayerMode.FULLSCREEN
-        // v2.1.2: whether ExoPlayer's picture is the one on screen, read from the engine itself as well as
-        // from the collected state. OK in the guide sets FULLSCREEN and promotes the preview in the same
-        // moment, but the collected value arrives a frame later: for that frame the guide's box was gone
-        // and liveOnExo still false, so mpv's surface was put up, ExoPlayer's destroyed and built again a
-        // frame later — the pause on every OK.
-        val exoOnScreen = liveOnExo || liveVm.liveOnExo.value || guideDock
+        // v2.1.2: whether ExoPlayer's picture is the one on screen. OK in the guide sets FULLSCREEN and
+        // promotes the preview in the same moment, but the collected liveOnExo arrives a frame later: for
+        // that frame the guide's box was gone and liveOnExo still false, so mpv's surface was put up,
+        // ExoPlayer's destroyed and built again a frame later — the pause on every OK. [exoHandoff] carries
+        // the engine's answer, taken when OK was pressed, across that frame.
+        val exoOnScreen = liveOnExo || (isFull && exoHandoff) || guideDock
         val density = androidx.compose.ui.platform.LocalDensity.current
         Box(
             modifier = if (isFull) {
