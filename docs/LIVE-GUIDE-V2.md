@@ -1,4 +1,4 @@
-# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-16, v2.1.0)
+# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-16, v2.1.1)
 
 > Zweck: Verhalten und Tastenbelegung des zusammengelegten Live-TV/Guide-Screens und des Player-Banners ab v2.0.0.
 
@@ -75,3 +75,15 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
   IBM Plex Mono (OFL, `extras/font-licenses/`). Tags LIVE / Recording / Catch-up im Info-Block (`GuideTag`).
 - Logo: `tools/brand/make_dptv_brand.py` erzeugt Icon (Recorder-Kachel + grünes Play) und Wordmark
   (Play-Glyph + DPTV PLAYER, Barlow Condensed).
+
+## v2.1.1
+
+- Raster: laufende Sendung ohne LIVE-Tag und Akzent-Rand; LIVE nur im Info-Block neben dem Video.
+- ◀ aus den Kategorien öffnet die Rail immer mit Namen (`guideWide`: Größe Compact → Navigation-Breite bzw.
+  Normal, auch bei Docked); ▶ schließt sie wieder auf die Kapsel, ▶ nochmal die Kategorien.
+- Auto frame rate: die Guide-Box behält die im Vollbild gewählte Bildrate (`autoFrameRate = (isFull ||
+  guideDock) && …`), statt den Anzeigemodus bei jedem Wechsel zweimal umzuschalten (das war die Pause).
+- Start: neuer `StartupMode.GUIDE` (Standard; einmalig `startup_guide_defaulted`: Home → Guide) öffnet Live TV
+  auf `lastWatchedLiveChannel()` mit laufender Vorschau.
+- Leerlauf: 30 s ohne Taste/Touch im Guide (Vorschau aktiv, kein Dialog-Fenster) → Vollbild auf dem Kanal im
+  Video (`GUIDE_IDLE_FULLSCREEN_MS`, `lastInputAt` in `OwnTVShell`).

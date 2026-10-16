@@ -1419,6 +1419,7 @@ private fun themeLabel(mode: ThemeMode): String = stringResource(
 @Composable
 private fun startupLabel(mode: tv.own.owntv.core.settings.StartupMode): String = stringResource(
     when (mode) {
+        tv.own.owntv.core.settings.StartupMode.GUIDE -> R.string.sport_startup_guide
         tv.own.owntv.core.settings.StartupMode.HOME -> R.string.settings_startup_home
         tv.own.owntv.core.settings.StartupMode.LAST_CHANNEL -> R.string.settings_startup_last_channel
         tv.own.owntv.core.settings.StartupMode.FAVORITES -> R.string.settings_startup_favorites

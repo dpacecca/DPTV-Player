@@ -114,8 +114,6 @@ internal fun ProgrammeStripCanvas(
     val titleStyle = tv.own.owntv.ui.theme.stageText(19, 600).copy(lineHeight = 23.mpxSp).copy(textDirection = TextDirection.Content)
     // DPTV Recorder's small line: the start and the length in mono ("1:00 pm · 90m").
     val timeStyle = guideMono(14).copy(textDirection = TextDirection.Content)
-    val liveStyle = guideMono(11, 0.6f.mpxSp).copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = Color.White)
-    val liveText = stringResource(R.string.sport_guide_live)
     val formatTime = rememberSystemTimeFormatter()
     val minutesTemplate = stringResource(R.string.sport_guide_minutes_short)
     val labels = remember(programmes, formatTime, minutesTemplate) {
@@ -180,29 +178,19 @@ internal fun ProgrammeStripCanvas(
             val isNow = now in p.startMs until p.stopMs
             val fade = if (!focused && p.stopMs <= now) 0.5f else 1f
             val box = androidx.compose.ui.geometry.Rect(x, 0f, x + w, h)
-            // DPTV Recorder's cells: a lifted fill with a 1 px line, the one on now outlined (in the accent
-            // here) with its LIVE tag; the focused one filled and outlined in the accent, with the glow.
+            // DPTV Recorder's cells: a lifted fill with a 1 px line; the focused one filled in the accent with
+            // its glow. What is on now is not marked here (v2.1.1): LIVE is on the info beside the video.
             if (focused) {
                 drawBoxShadow(a.accent.copy(alpha = 0.35f), 30 * px, r.x, dy = 10 * px, bounds = box)
                 drawRoundRect(a.accent, Offset(x, 0f), Size(w, h), r)
                 focusRing(x, w, h, r)
             } else {
                 drawRoundRect(ink.copy(alpha = (if (isNow) 0.075f else 0.05f) * fade), Offset(x, 0f), Size(w, h), r)
-                val line = if (isNow) 2f * px else 1.2f * px
+                val line = 1.2f * px
                 drawRoundRect(
-                    if (isNow) a.accent else border.copy(alpha = border.alpha * fade),
+                    border.copy(alpha = border.alpha * fade),
                     Offset(x + line / 2, line / 2), Size(w - line, h - line), CornerRadius(r.x - line / 2), style = Stroke(line),
                 )
-            }
-            if (isNow && w > 150 * px) {
-                val tag = measurer.measure(liveText, liveStyle, maxLines = 1, softWrap = false)
-                val tw = tag.size.width + 10 * px
-                val th = tag.size.height + 2 * px
-                val tx0 = x + w - tw - 8 * px
-                if (tx0 > maxOf(x, 0f) + 60 * px) {
-                    drawRoundRect(if (focused) a.onAccent else recRed, Offset(tx0, 7 * px), Size(tw, th), CornerRadius(4 * px))
-                    drawText(tag, color = if (focused) a.accent else Color.White, topLeft = Offset(tx0 + 5 * px, 8 * px))
-                }
             }
             // Text starts at the visible part of a cell that began before the timeline's left edge.
             val tx = maxOf(x, 0f)

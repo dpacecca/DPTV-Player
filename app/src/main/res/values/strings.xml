@@ -83,6 +83,7 @@
     <string name="sport_guide_channel_number">CH %1$d</string>
     <string name="sport_guide_minutes_short">%1$dm</string>
     <string name="sport_guide_channel_header">Channel</string>
+    <string name="sport_startup_guide">Guide on the last channel</string>
     <string name="sport_guide_next">Next</string>
     <string name="sport_guide_categories">Categories</string>
     <string name="sport_player_no_rewind">This channel has no catch-up. To rewind any channel, turn on Settings › Pause and rewind live TV.</string>
