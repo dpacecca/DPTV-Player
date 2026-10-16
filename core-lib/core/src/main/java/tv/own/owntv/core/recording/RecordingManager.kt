@@ -581,9 +581,16 @@ class RecordingManager(
 
     /** A recording the server has but this device never scheduled: add a row, if the channel is here. */
     private suspend fun importFromServer(profileId: Long, server: RemoteRecording, status: RecordingStatus) {
-        val channel = sourceDao.getAllOnce()
+        val sources = sourceDao.getAllOnce()
+        // The server's channel id is its Xtream stream id. A playlist added as M3U (the same provider's
+        // channels, often through a playlist manager) has no such id here: there the channel is found by
+        // its name, which the server sends as the provider has it (DPTV-Player v2.1.2).
+        val channel = sources
             .filter { it.type == SourceType.XTREAM }
             .firstNotNullOfOrNull { channelDao.findByRemote(it.id, server.channelId) }
+            ?: server.channelName.takeIf { it.isNotBlank() }?.let { name ->
+                sources.firstNotNullOfOrNull { channelDao.findByName(it.id, name) }
+            }
             ?: return
         // A programme already recorded here (or by another route) keeps its own row.
         if (recordingDao.forProgramme(profileId, channel.id, server.programmeStartMs) != null) return

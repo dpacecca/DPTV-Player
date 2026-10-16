@@ -68,6 +68,7 @@
 
 ### 🐞 Fixes
 - **▶️ No pause going between the guide and full screen**
+- **📼 Recordings made in DPTV Recorder show in DVR for playlists added as M3U too**
 
 ## v2.1.1
 
