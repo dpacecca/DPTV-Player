@@ -172,6 +172,19 @@ class LivePreviewEngine(
     // would stall the freeze watchdog — those keep the volume-0 path, which works for their PCM/stereo audio.
     private var audioTrackDisabled = false
 
+    /**
+     * Mute by volume only, keeping the audio track selected (DPTV-Player v2.1.2, the guide's preview).
+     *
+     * Muting used to deselect the audio track as well, and unmuting selected it again. Each is a track
+     * change, and ExoPlayer resets its renderers on one: going full screen from the guide (unmute) and
+     * Back (mute) paused the picture each time. A bitstream sent to an amplifier untouched (AC3, E-AC3,
+     * DTS, TrueHD, AC-4) ignores the volume, so for those the track is still deselected.
+     */
+    var keepAudioTrackWhileMuted: Boolean = false
+
+    /** The stream's audio is a format that may be passed through to an amplifier, where volume 0 is not silence. */
+    private var audioMayBypassVolume = false
+
     private val _state = MutableStateFlow(State.IDLE)
     val state: StateFlow<State> = _state.asStateFlow()
     private val _videoHeight = MutableStateFlow<Int?>(null)
@@ -1733,7 +1746,7 @@ class LivePreviewEngine(
     private fun applyMute(force: Boolean = false) {
         val p = player ?: return
         p.volume = if (muted) 0f else 1f
-        val disable = muted && tune.hasVideoTrack
+        val disable = muted && tune.hasVideoTrack && (!keepAudioTrackWhileMuted || audioMayBypassVolume)
         if (!force && disable == audioTrackDisabled) return
         audioTrackDisabled = disable
         p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
@@ -2848,6 +2861,10 @@ class LivePreviewEngine(
         // leave nothing to render and the progress watchdog would read that as a dead feed.
         tune.hasVideoTrack = tracks.groups.any { it.type == androidx.media3.common.C.TRACK_TYPE_VIDEO }
         tune.hasAudioTrack = audio.isNotEmpty()
+        audioMayBypassVolume = tracks.groups.any { g ->
+            g.type == androidx.media3.common.C.TRACK_TYPE_AUDIO &&
+                (0 until g.length).any { i -> g.getTrackFormat(i).sampleMimeType in PASSTHROUGH_MIMES }
+        }
         // A radio channel in a TV playlist is the commonest audio-only case of all. Say so on screen —
         // Audio Mode excepted, where the app is the one that turned the picture off.
         updateAudioOnlyClassification()
@@ -3393,6 +3410,13 @@ class LivePreviewEngine(
     }
 
     companion object {
+        /** Audio formats an amplifier may receive untouched, where the player's volume has no effect. */
+        private val PASSTHROUGH_MIMES = setOf(
+            androidx.media3.common.MimeTypes.AUDIO_AC3, androidx.media3.common.MimeTypes.AUDIO_E_AC3,
+            androidx.media3.common.MimeTypes.AUDIO_E_AC3_JOC, androidx.media3.common.MimeTypes.AUDIO_DTS,
+            androidx.media3.common.MimeTypes.AUDIO_DTS_HD, androidx.media3.common.MimeTypes.AUDIO_TRUEHD,
+            androidx.media3.common.MimeTypes.AUDIO_AC4,
+        )
         private const val MAX_VOLUME = VolumeBoost.MAX_VOLUME // same ceiling as mpv; 100–150 comes from LoudnessEnhancer
         /** Shared by every live engine in the process, so a last good answer outlives any one client; rebuilt
          *  only if the client's resolver changes. Wraps that resolver, so the custom DNS / DoH setting applies. */

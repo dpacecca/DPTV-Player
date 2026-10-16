@@ -1,4 +1,4 @@
-# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-16, v2.1.1)
+# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-16, v2.1.2)
 
 > Zweck: Verhalten und Tastenbelegung des zusammengelegten Live-TV/Guide-Screens und des Player-Banners ab v2.0.0.
 
@@ -87,3 +87,11 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
   auf `lastWatchedLiveChannel()` mit laufender Vorschau.
 - Leerlauf: 30 s ohne Taste/Touch im Guide (Vorschau aktiv, kein Dialog-Fenster) → Vollbild auf dem Kanal im
   Video (`GUIDE_IDLE_FULLSCREEN_MS`, `lastInputAt` in `OwnTVShell`).
+
+## v2.1.2
+
+- Die eigentliche Pause Guide <-> Vollbild: die stumme Vorschau hat die Audiospur abgewählt
+  (`setTrackTypeDisabled(AUDIO)`), Vollbild wählte sie wieder an — jede Änderung ist ein Track-Wechsel,
+  ExoPlayer setzt dabei die Renderer zurück. `LivePreviewEngine.keepAudioTrackWhileMuted` (für die eine
+  Vorschau-/Live-Engine in `PlayerModule`) stummt nur per Lautstärke; Passthrough-Formate (AC3, E-AC3, DTS,
+  TrueHD, AC-4), bei denen die Lautstärke nicht greift, werden weiter abgewählt. Multiview-Kacheln unverändert.

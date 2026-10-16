@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.1.2
+
+### 🐞 Fixes
+- **▶️ No pause going between the guide and full screen (muted preview keeps its sound track)**
+
 ## v2.1.1
 
 ### ✨ New features
