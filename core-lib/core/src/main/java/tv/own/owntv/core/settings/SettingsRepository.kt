@@ -48,6 +48,8 @@ import tv.own.owntv.core.timeshift.TimeshiftRules
 /** Per-profile startup landing (Phase 3 / v4.0.0). LAST_CHANNEL also covers "auto-play my channel" since
  *  it's always the one you last watched. */
 enum class StartupMode {
+    /** DPTV-Player v2.1.1: Live TV's guide on the last watched channel, its video playing. The default. */
+    GUIDE,
     HOME, LAST_CHANNEL, FAVORITES, SPECIFIC_CHANNEL
 }
 
@@ -384,6 +386,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val REFRESH_MIGRATED = booleanPreferencesKey("refresh_migration_done")
         val EPG_REFILL_CHECKED = booleanPreferencesKey("epg_refill_checked")
         val STARTUP_SYNC_DEFAULTED = booleanPreferencesKey("startup_sync_defaulted")
+        val STARTUP_GUIDE_DEFAULTED = booleanPreferencesKey("startup_guide_defaulted")
         // Set while a backup restore is applying, cleared only when it completes (B2). A value that
         // survives to the next launch means the restore was interrupted and may be half-applied.
         val RESTORE_IN_PROGRESS = stringPreferencesKey("restore_in_progress")
@@ -735,7 +738,20 @@ class SettingsRepository(private val context: Context, private val localeStore: 
     //     users (so "Resume last channel = On" keeps working until they pick a per-profile mode). ---
     fun startupMode(profileId: Long): Flow<StartupMode> = prefsFlow { prefs ->
         prefs[stringPreferencesKey("startup_mode_$profileId")]?.let { runCatching { StartupMode.valueOf(it) }.getOrNull() }
-            ?: if (prefs[Keys.RESUME_LAST_CHANNEL] == true) StartupMode.LAST_CHANNEL else StartupMode.HOME
+            ?: if (prefs[Keys.RESUME_LAST_CHANNEL] == true) StartupMode.LAST_CHANNEL else StartupMode.GUIDE
+    }
+
+    /**
+     * DPTV-Player v2.1.1, once per install: a profile still on Home (the old default) starts on the guide
+     * instead. Any other choice is kept, and Home picked again afterwards stays Home.
+     */
+    suspend fun defaultStartupToGuideOnce(profileId: Long) {
+        context.dataStore.edit { prefs ->
+            if (prefs[Keys.STARTUP_GUIDE_DEFAULTED] == true) return@edit
+            val key = stringPreferencesKey("startup_mode_$profileId")
+            if (prefs[key] == null || prefs[key] == StartupMode.HOME.name) prefs[key] = StartupMode.GUIDE.name
+            prefs[Keys.STARTUP_GUIDE_DEFAULTED] = true
+        }
     }
     suspend fun setStartupMode(profileId: Long, mode: StartupMode) {
         context.dataStore.edit { it[stringPreferencesKey("startup_mode_$profileId")] = mode.name }

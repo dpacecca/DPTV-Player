@@ -597,7 +597,7 @@ class SettingsViewModel(
     val startupMode: StateFlow<tv.own.owntv.core.settings.StartupMode> =
         settings.activeProfileId
             .flatMapLatest { settings.startupMode(it) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.StartupMode.HOME)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.settings.StartupMode.GUIDE)
     fun setStartupMode(mode: tv.own.owntv.core.settings.StartupMode) {
         viewModelScope.launch { settings.setStartupMode(settings.activeProfileId.first(), mode) }
     }

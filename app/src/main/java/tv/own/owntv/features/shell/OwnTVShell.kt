@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -257,6 +258,8 @@ fun OwnTVShell(
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The guide's categories are out beside it (◀ from what is on now).
     var guidePanelOpen by remember { mutableStateOf(false) }
+    // v2.1.1: the last key press or touch anywhere in the app; the guide goes full screen after 30 s without one.
+    var lastInputAt by remember { mutableLongStateOf(android.os.SystemClock.uptimeMillis()) }
     var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var downloadsEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var dvrEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
@@ -485,6 +488,7 @@ fun OwnTVShell(
     LaunchedEffect(Unit) {
         if (playerMode != PlayerMode.NONE) return@LaunchedEffect
         val pid = resumeSettings.activeProfileId.first()
+        resumeSettings.defaultStartupToGuideOnce(pid)
         when (resumeSettings.startupMode(pid).first()) {
             tv.own.owntv.core.settings.StartupMode.LAST_CHANNEL -> {
                 val ch = liveVm.lastWatchedLiveChannel()
@@ -535,6 +539,16 @@ fun OwnTVShell(
                     onSelectSection(MainSection.HOME)
                     localSubToast.show(startupChannelUnavailable)
                 }
+            }
+            // v2.1.1: the guide on the last watched channel, its video playing.
+            tv.own.owntv.core.settings.StartupMode.GUIDE -> {
+                val ch = liveVm.lastWatchedLiveChannel()
+                onSelectSection(MainSection.LIVE_TV)
+                if (ch != null && playerMode == PlayerMode.NONE) {
+                    epgVm.lastFocusedChannelId = ch.id
+                    liveVm.onChannelFocused(ch)
+                }
+                restoreFocus = true
             }
             tv.own.owntv.core.settings.StartupMode.HOME -> Unit
         }
@@ -720,11 +734,18 @@ fun OwnTVShell(
     // focus and hides once focus has been in the content for the delay. Compact stays the capsule —
     // except Docked + Compact with Widen on focus, which opens at that size over the content (the content
     // keeps the compact room, so nothing behind it moves).
-    val widenDocked = navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT && navWiden != null && railFocused
-    val railSize = if (widenDocked) navWiden ?: navSize else navSize
-    // v2.1.0: while the guide's categories are out, the rail sits beside them as the capsule (◀ opens it
-    // at its size, ▶ closes it again) instead of hiding, and opens without the scrim: the guide moves over.
+    // v2.1.0: while the guide's categories are out, the rail sits beside them as the capsule (◀ opens it,
+    // ▶ closes it again) instead of hiding, and opens without the scrim: the guide moves over.
     val guideSide = guidePanelOpen && selectedSection == MainSection.LIVE_TV
+    // v2.1.1: opened from the guide's categories it always shows the section names, whatever its own size.
+    val guideWide = guideSide && railFocused && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT
+    val widenDocked = navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT &&
+        (navWiden != null || guideWide) && railFocused
+    val railSize = when {
+        guideWide -> navWiden?.takeIf { it != tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT } ?: tv.own.owntv.core.settings.SettingsRepository.NavSize.NORMAL
+        widenDocked -> navWiden ?: navSize
+        else -> navSize
+    }
     val railState = when {
         widenDocked -> tv.own.owntv.features.shell.components.RailState.OPEN
         navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED -> tv.own.owntv.features.shell.components.RailState.PINNED
@@ -962,7 +983,16 @@ fun OwnTVShell(
     ) {
     Box(
         modifier = modifier.fillMaxSize().background(shellBase)
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                        lastInputAt = android.os.SystemClock.uptimeMillis()
+                    }
+                }
+            }
             .onPreviewKeyEvent { e ->
+                lastInputAt = android.os.SystemClock.uptimeMillis()
                 if (e.type == KeyEventType.KeyDown) {
                     if (e.key == Key.DirectionLeft || e.key == Key.DirectionRight) railKeyAt = android.os.SystemClock.uptimeMillis()
                     // A key pressed on the rail is the user using it, however focus got there.
@@ -1339,8 +1369,10 @@ fun OwnTVShell(
                             onVideoBounds = { bounds, radius -> guideVideoBounds = bounds; guideVideoRadius = radius },
                             onPanelOpen = { guidePanelOpen = it },
                             // How far the categories start from the edge: past the capsule, or the open rail.
-                            panelInset = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 0.dp
-                                else tv.own.owntv.features.shell.components.railDockedReserve(
+                            panelInset = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) {
+                                (tv.own.owntv.features.shell.components.railDockedReserve(railSize) -
+                                    tv.own.owntv.features.shell.components.railDockedReserve(navSize)).coerceAtLeast(0.dp)
+                            } else tv.own.owntv.features.shell.components.railDockedReserve(
                                     if (railState == tv.own.owntv.features.shell.components.RailState.OPEN) railSize
                                     else tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT,
                                 ),
@@ -1609,6 +1641,21 @@ fun OwnTVShell(
       val guideBounds = guideVideoBounds
       // Not while the floating rail is open over the content: this surface would draw over the rail.
       val railOverContent = focusedLayer == ShellLayer.SIDEBAR && navStyle != tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED
+      // v2.1.1: the guide left alone for 30 s goes full screen on the channel in its video. Any key or touch
+      // starts the wait again; a menu or dialog (its own window) holds it, and closing one starts it afresh.
+      val shellWindowFocused = androidx.compose.ui.platform.LocalWindowInfo.current.isWindowFocused
+      val idleChannel = previewChannel
+      LaunchedEffect(lastInputAt, selectedSection, playerMode, multiview == null, guideArmed, guideLivePreview, guidePreviewOn, idleChannel?.id, shellWindowFocused) {
+          val ch = idleChannel ?: return@LaunchedEffect
+          if (selectedSection != MainSection.LIVE_TV || playerMode != PlayerMode.NONE || multiview != null) return@LaunchedEffect
+          if (!guideArmed || !guideLivePreview || !guidePreviewOn || !shellWindowFocused) return@LaunchedEffect
+          kotlinx.coroutines.delay(GUIDE_IDLE_FULLSCREEN_MS)
+          restoreFocus = false
+          liveVm.watchFromGuide(ch)
+          zapSource = MainSection.LIVE_TV
+          homeVm.stopPreview()
+          if (!liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
+      }
       val guideDock = multiview == null && playerMode == PlayerMode.NONE && selectedSection == MainSection.LIVE_TV &&
           guideBounds != null && guideArmed && guideLivePreview && guidePreviewOn && (!railOverContent || guideSide)
       if (multiview == null && (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI || guideDock)) {
@@ -1638,7 +1685,10 @@ fun OwnTVShell(
             if (liveOnExo || guideDock) {
                 tv.own.owntv.player.ExoPreviewSurface(
                     engine = liveVm.previewEngine, modifier = Modifier.fillMaxSize(),
-                    keepAwake = !guideDock, autoFrameRate = isFull && autoFrameRate,
+                    // v2.1.1: the guide's box keeps the rate full screen matched. Dropping it on Back and
+                    // asking for it again on OK switched the TV's display mode twice — the pause the
+                    // picture made each way. (The guide only tunes on OK, never while scrolling.)
+                    keepAwake = !guideDock, autoFrameRate = (isFull || guideDock) && autoFrameRate,
                 )
             } else {
                 MpvVideoSurface(
@@ -2203,6 +2253,9 @@ private fun railDetail(section: MainSection, d: RailDetails): String? = when (se
     MainSection.MORE -> stringResource(R.string.shell_rail_detail_more)
     else -> null
 }
+
+/** v2.1.1: how long the guide waits without a key press before it goes full screen on its channel. */
+private const val GUIDE_IDLE_FULLSCREEN_MS = 30_000L
 
 /** How recently ◀ / ▶ or [focusRail] must have happened for a rail visit to open the rail. */
 private const val RAIL_KEY_WINDOW_MS = 400L

@@ -19,7 +19,7 @@ class SettingsBackupCoverageTest {
     /** Keys the settings whitelist deliberately leaves out, each with its reason. */
     private val notInSettingsBackup = setOf(
         // Internal state and one-shot migration flags.
-        "avatar_id", "active_profile_id", "default_source_id", "refresh_migration_done", "epg_refill_checked", "startup_sync_defaulted",
+        "avatar_id", "active_profile_id", "default_source_id", "refresh_migration_done", "epg_refill_checked", "startup_sync_defaulted", "startup_guide_defaulted",
         "restore_in_progress", "font_jakarta_migrated", "live_latency_reset_416", "auto_frame_rate_reset_416",
         "auto_frame_rate_reset_pre12", "metadata_match_heal_version", "stage_defaults_applied",
         // A fact about this device's decoders (tunneled playback failed here, N19), not a choice.

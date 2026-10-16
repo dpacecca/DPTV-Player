@@ -64,6 +64,17 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.1.1
+
+### ✨ New features
+- **📺 The app opens on the guide, on the last watched channel, with its video playing**
+- **⏱️ The guide goes full screen after 30 seconds without a button press**
+- **📖 Left from the categories opens the menu with the section names**
+
+### 🐞 Fixes
+- **▶️ No pause when switching between the guide and full screen**
+- **🧹 No LIVE tag or border on the programmes on now; LIVE stays next to the video**
+
 ## v2.1.0
 
 ### ✨ New features
