@@ -86,7 +86,7 @@
     <string name="sport_startup_guide">Guide on the last channel</string>
     <string name="sport_guide_next">Next</string>
     <string name="sport_guide_categories">Categories</string>
-    <string name="sport_player_no_rewind">This channel has no catch-up. To rewind any channel, turn on Settings › Pause and rewind live TV.</string>
+    <string name="sport_player_no_rewind">This channel can’t be rewound yet. Turn on Settings › Pause and rewind live TV — on a device with little storage, set up a recording server to keep the copy there.</string>
     <plurals name="sport_dvr_count">
         <item quantity="one">%1$d recording</item>
         <item quantity="other">%1$d recordings</item>

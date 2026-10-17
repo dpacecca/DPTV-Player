@@ -66,6 +66,9 @@
 
 ## v2.1.5
 
+### ✨ New features
+- **⏪ Pause and rewind live TV kept by the recording server (DPTV Recorder 2.6.0)**
+
 ### 🐞 Fixes
 - **📺 Guide → full screen no longer reloads the channel with timeshift on**
 - **⚡ Changing category is instant**

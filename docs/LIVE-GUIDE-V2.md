@@ -128,3 +128,8 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
   alles neu zu laden (alle Kanäle, Matches, Sortierung, Zählung der Programmtabelle).
 - Nach der Kategorie-Wahl wartet der Fokus auf die NEUE Liste (`categoryFocusFrom`); vorher bekam die
   erste Zeile der alten Liste den Fokus, verlor ihn beim Austausch, und ▼ lief im Menü.
+- Pause/Rückspulen über den Aufnahme-Server (DPTV Recorder ≥ 2.6.0): ist ein Server eingerichtet und der
+  Kanal aus einer Xtream-Playlist, hält der Server die Kopie (`ServerTimeshift`, `POST /api/timeshift`)
+  statt des Geräts — für Geräte ohne Speicher (Chromecast). Der Player liest sie wie die lokale Kopie über
+  `TimeshiftServer` (gemeinsame Schnittstelle `TimeshiftBuffer`); Zeiten werden einmal auf die Geräteuhr
+  umgerechnet. Ohne Server oder bei Ablehnung: Kopie auf dem Gerät wie bisher.
