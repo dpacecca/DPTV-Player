@@ -126,6 +126,9 @@ private fun programmeAt(progs: List<EpgProgrammeEntity>?, time: Long): EpgProgra
 /** Across a gap the cursor moves by half an hour, rather than leaping hours to the next programme. */
 private const val GAP_STEP_MS = 30L * 60 * 1000
 
+/** The width of the clock with its date and weather line, which the guide's title wraps short of. */
+private val CLOCK_CLEARANCE = 380.mpx
+
 /** Where ◀ ([dir] -1) or ▶ (+1) takes the cursor: programme by programme, half an hour at a time across gaps. */
 private fun cursorStep(progs: List<EpgProgrammeEntity>, cursor: Long, dir: Int, windowStart: Long, windowEnd: Long): Long {
     val cur = programmeAt(progs, cursor)
@@ -633,7 +636,7 @@ fun EpgScreen(
         )
 
         @Composable
-        fun TopInfo(mod: Modifier) {
+        fun TopInfo(mod: Modifier, titleEndInset: androidx.compose.ui.unit.Dp = 0.dp) {
             if (topChannel == null) return
             val chName = ProviderTags.parse(topChannel.name).name
             val inPreview = showVideo && previewChannel?.id == topChannel.id
@@ -646,6 +649,7 @@ fun EpgScreen(
                 now = liveNow,
                 compact = compact,
                 modifier = mod,
+                titleEndInset = titleEndInset,
                 recording = shown != null && recordingRows.any {
                     it.channelId == topChannel.id && it.programmeStartMs == shown.startMs && it.status == RecordingStatus.RECORDING
                 },
@@ -660,8 +664,12 @@ fun EpgScreen(
                 // Top (32 → 329): the video (528 wide), and the programme beside it.
                 Row(Modifier.padding(start = fx(64), end = fx(64), top = 32.mpx).fillMaxWidth().height(297.mpx)) {
                     TopVideo(Modifier.width(528.mpx))
-                    Box(Modifier.weight(1f).fillMaxHeight()) {
-                        TopInfo(Modifier.padding(start = 40.mpx).widthIn(max = 1100.mpx))
+                    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
+                        // The clock (and its date and weather line) sits over this box's top-right corner: a long
+                        // title wraps short of it instead of running under it.
+                        val infoW = minOf(maxWidth - 40.mpx, 1100.mpx)
+                        val clockClear = (CLOCK_CLEARANCE - (maxWidth - 40.mpx - infoW)).coerceAtLeast(0.dp)
+                        TopInfo(Modifier.padding(start = 40.mpx).widthIn(max = 1100.mpx), titleEndInset = clockClear)
                         matchSummary?.takeIf { review.isEmpty() }?.let {
                             Text(
                                 epgMatchSummaryText(it), style = stageText(16, 600), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,

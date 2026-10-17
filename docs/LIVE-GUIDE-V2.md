@@ -108,3 +108,12 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 - Kategorie gewählt: Fokus geht vor dem Schließen auf den Tages-Chip, `focusGrid` versucht es bis zu
   2 s, bis die neue Liste da ist (vorher fiel der Fokus auf die Rail).
 - Info-Banner 10 s (Öffnen, OK, Kanalwechsel); Back blendet ihn aus, ohne den Player zu verlassen.
+
+## v2.1.4
+
+- Vorschau → Vollbild: `LiveTuneController` merkt sich den Kanal der Exo-Vorschau (`exoChannelId`) und
+  übernimmt per Kanal statt per exakter URL. Wechselt die Vorschau selbst auf die andere Adresse
+  (.ts ⇄ .m3u8, erneuerter Link, direct_source), wird der Kanal bei OK/Back nicht mehr neu geöffnet.
+- Guide-Info: der Titel hält rechts Abstand zur Uhr (`CLOCK_CLEARANCE`, `GuideInfoBlock(titleEndInset)`)
+  und bricht auf zwei Zeilen um, statt unter die Uhr zu laufen.
+- Sport: rechter Rand 64 statt 28 mpx (wie Uhr/Guide); Tabellenwerte rechtsbündig, 52 mpx breit.
