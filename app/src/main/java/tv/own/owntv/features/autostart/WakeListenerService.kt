@@ -26,6 +26,10 @@ import tv.own.owntv.R
  * does no work between wake-ups, so its cost is a few megabytes of memory and a silent, minimum-importance
  * notification. Without the notification permission the service still runs; only the notification
  * is hidden.
+ *
+ * If Android ends the process, it restarts the service by itself (sticky), and Android 12+ may keep
+ * that restart out of the foreground. The service then ends and auto start on wake-up rests until the next
+ * boot, app start or change in Settings starts it again; the switch stays on, as it is the user's choice.
  */
 class WakeListenerService : Service() {
 
@@ -35,25 +39,33 @@ class WakeListenerService : Service() {
         }
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        // A protected system broadcast: only the system can send it, which a not-exported receiver still hears.
-        ContextCompat.registerReceiver(this, screenOn, IntentFilter(Intent.ACTION_SCREEN_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
-    }
+    private var listening = false
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val started = runCatching {
+        // startForeground comes first, with nothing before it that can fail: a service started with
+        // startForegroundService that stops before calling it crashes the process.
+        val foreground = runCatching {
             ServiceCompat.startForeground(this, NOTIFICATION_ID, notification(), serviceType())
+        }.isSuccess
+        if (foreground) {
+            listen()
+            return START_STICKY
         }
-        if (started.isFailure) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-        return START_STICKY
+        // Refused: only a restart Android made by itself (no intent) can be, and that one carries no
+        // obligation to go foreground, so it may simply end.
+        if (intent == null) stopSelf(startId)
+        return START_NOT_STICKY
+    }
+
+    private fun listen() {
+        if (listening) return
+        // A protected system broadcast: only the system can send it, which a not-exported receiver still hears.
+        ContextCompat.registerReceiver(this, screenOn, IntentFilter(Intent.ACTION_SCREEN_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
+        listening = true
     }
 
     override fun onDestroy() {
-        runCatching { unregisterReceiver(screenOn) }
+        if (listening) runCatching { unregisterReceiver(screenOn) }
         super.onDestroy()
     }
 
@@ -66,9 +78,12 @@ class WakeListenerService : Service() {
         // The Application is wrapped in the chosen app language; this service's own context is not.
         val localized = applicationContext
         val title = localized.getString(R.string.auto_start_notification_channel)
-        getSystemService(NotificationManager::class.java)?.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, title, NotificationManager.IMPORTANCE_MIN).apply { setShowBadge(false) },
-        )
+        // A refused channel must not keep the service from going foreground; the channel's defaults apply.
+        runCatching {
+            getSystemService(NotificationManager::class.java)?.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, title, NotificationManager.IMPORTANCE_MIN).apply { setShowBadge(false) },
+            )
+        }
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.owntv_notification)
             .setContentTitle(title)

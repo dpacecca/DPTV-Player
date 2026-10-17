@@ -501,7 +501,8 @@ on the App startup choice above; an OwnTV that was still running comes back wher
   asks for that when you turn an option on, and until it is allowed the row says so. If your TV has
   no such screen, the option cannot work there.
 - *On wake-up* keeps a small background listener, with a silent notification, while it is on. It is
-  offered on TVs only.
+  offered on TVs only. If Android ends the listener, it comes back with the next boot, app start or
+  visit to Settings.
 
 ---
 
