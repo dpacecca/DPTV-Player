@@ -2778,6 +2778,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	%02x
 1	url	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	/api/timeshift
 1	url	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	?from=${it + offsetMs}
+1	url	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	?live=1
 3	protocol	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	Authorization
 3	protocol	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	Bearer
 1	log	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	ServerTimeshift

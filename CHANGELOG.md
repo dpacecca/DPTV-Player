@@ -70,6 +70,9 @@
 - **🔁 ▲ on the first channel goes round to the last; holding ▲ goes up to the days**
 - **📌 The selected channel stays at the top of the guide**
 
+### 🐞 Fixes
+- **⏩ Go live on the recording server's copy is at the live edge, not 15 s behind (DPTV Recorder 2.6.1)**
+
 ## v2.1.5
 
 ### ✨ New features

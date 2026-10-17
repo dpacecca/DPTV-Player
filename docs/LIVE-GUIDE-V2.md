@@ -139,3 +139,6 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 - ▲ auf dem ersten Kanal wirkt beim Loslassen: kurz = zum letzten Kanal, gehalten = zu den Tages-Chips
   (`GuideRow(firstRow, onHoldUp)`). Ein gehaltenes ▲, das von weiter unten hier ankommt, bleibt stehen.
 - `stepTo` scrollt die gewählte Zeile an den oberen Rand, damit die folgenden Kanäle sichtbar sind.
+- Server-Kopie, „Live“: `ServerTimeshift.Buffer.open(null)` fragt `?live=1` — der Server liest das Stück,
+  das ffmpeg gerade schreibt, mit (Recorder 2.6.1, `streamLive`). Vorher begann Live am neuesten
+  *fertigen* Stück; Stücke enden an Keyframes (oft 5–8 s), also lag das Bild ~15 s hinter live.
