@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
@@ -33,6 +34,10 @@ internal object AutoStart {
 
     fun canStartFromBackground(context: Context): Boolean =
         AutoStartPolicy.canStartFromBackground(Build.VERSION.SDK_INT, Settings.canDrawOverlays(context))
+
+    /** Auto start on wake-up is offered on a television only (see [AutoStartPolicy.wakeListenerNeeded]). */
+    fun isTelevision(context: Context): Boolean =
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
 
     /** A boot or an update: open OwnTV if that option is on, and start or stop the wake listener. */
     fun onBroadcast(context: Context, trigger: AutoStartTrigger) {
@@ -65,7 +70,7 @@ internal object AutoStart {
 
     fun syncWakeListener(context: Context, options: AutoStartOptions, canStartFromBackground: Boolean) {
         val service = Intent(context, WakeListenerService::class.java)
-        if (AutoStartPolicy.wakeListenerNeeded(options, canStartFromBackground)) {
+        if (AutoStartPolicy.wakeListenerNeeded(options, canStartFromBackground, isTelevision(context))) {
             // Android 12+ refuses a foreground service started from the background in some states; the
             // next boot, update or app start tries again.
             runCatching { ContextCompat.startForegroundService(context, service) }

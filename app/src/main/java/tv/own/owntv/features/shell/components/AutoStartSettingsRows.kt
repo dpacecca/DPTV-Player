@@ -29,6 +29,8 @@ internal class AutoStartSettingsState(private val context: Context) {
     var canStartFromBackground by mutableStateOf(AutoStart.canStartFromBackground(context))
         private set
 
+    val wakeOffered: Boolean = AutoStart.isTelevision(context)
+
     fun toggleBoot() = change(options.copy(onBoot = !options.onBoot))
 
     fun toggleWake() = change(options.copy(onWake = !options.onWake))
@@ -55,7 +57,7 @@ internal fun rememberAutoStartSettingsState(): AutoStartSettingsState {
     return state
 }
 
-/** The two rows that follow App startup on the Settings root. */
+/** The rows that follow App startup on the Settings root: on boot, and on wake-up on a television. */
 @Composable
 internal fun autoStartRootRows(state: AutoStartSettingsState): List<RootRow> = autoStartSwitches(state).map { s ->
     RootRow(
@@ -67,7 +69,7 @@ internal fun autoStartRootRows(state: AutoStartSettingsState): List<RootRow> = a
     )
 }
 
-/** The same two switches in Settings search, flipped in place like the row. */
+/** The same switches in Settings search, flipped in place like the row. */
 @Composable
 internal fun autoStartSearchEntries(state: AutoStartSettingsState): List<SettingsSearchEntry> {
     val group = stringResource(R.string.settings_group_app)
@@ -98,8 +100,9 @@ private fun autoStartSwitches(state: AutoStartSettingsState): List<AutoStartSwit
         if (AutoStartPolicy.needsOverlayNotice(on, canStart)) R.string.settings_auto_start_needs_overlay else normal
     val boot = state.options.onBoot
     val wake = state.options.onWake
-    return listOf(
+    return listOfNotNull(
         AutoStartSwitch("auto_start_boot", R.string.settings_auto_start_boot, desc(boot, R.string.settings_auto_start_boot_description), boot, state::toggleBoot),
-        AutoStartSwitch("auto_start_wake", R.string.settings_auto_start_wake, desc(wake, R.string.settings_auto_start_wake_description), wake, state::toggleWake),
+        AutoStartSwitch("auto_start_wake", R.string.settings_auto_start_wake, desc(wake, R.string.settings_auto_start_wake_description), wake, state::toggleWake)
+            .takeIf { state.wakeOffered },
     )
 }

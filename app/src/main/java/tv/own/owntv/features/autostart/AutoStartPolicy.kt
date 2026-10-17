@@ -36,9 +36,13 @@ internal object AutoStartPolicy {
             AutoStartTrigger.APP_UPDATED -> false
         }
 
-    /** The wake listener runs only while it can do its job: the option is on and a launch is allowed. */
-    fun wakeListenerNeeded(options: AutoStartOptions, canStartFromBackground: Boolean): Boolean =
-        options.onWake && canStartFromBackground
+    /**
+     * The wake listener runs only while it can do its job: on a television (a phone or tablet turns its
+     * screen on all day, and opening OwnTV each time would be hostile), with the option on and a launch
+     * allowed.
+     */
+    fun wakeListenerNeeded(options: AutoStartOptions, canStartFromBackground: Boolean, television: Boolean): Boolean =
+        television && options.onWake && canStartFromBackground
 
     /** Ask for "Display over other apps" only at the moment an option is turned on and it is missing. */
     fun shouldAskForOverlay(before: AutoStartOptions, after: AutoStartOptions, canStartFromBackground: Boolean): Boolean =

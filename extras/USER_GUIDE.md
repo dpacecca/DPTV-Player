@@ -500,7 +500,8 @@ on the App startup choice above; an OwnTV that was still running comes back wher
 - Android 10 and newer let an app open by itself only when it may **display over other apps**. OwnTV
   asks for that when you turn an option on, and until it is allowed the row says so. If your TV has
   no such screen, the option cannot work there.
-- *On wake-up* keeps a small background listener, with a silent notification, while it is on.
+- *On wake-up* keeps a small background listener, with a silent notification, while it is on. It is
+  offered on TVs only.
 
 ---
 

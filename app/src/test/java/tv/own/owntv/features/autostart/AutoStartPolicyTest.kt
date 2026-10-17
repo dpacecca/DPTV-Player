@@ -70,11 +70,17 @@ class AutoStartPolicyTest {
 
     @Test
     fun wakeListener_runsOnlyForWakeWithPermission() {
-        assertTrue(AutoStartPolicy.wakeListenerNeeded(wake, canStartFromBackground = true))
-        assertTrue(AutoStartPolicy.wakeListenerNeeded(both, canStartFromBackground = true))
-        assertFalse(AutoStartPolicy.wakeListenerNeeded(boot, canStartFromBackground = true))
-        assertFalse(AutoStartPolicy.wakeListenerNeeded(off, canStartFromBackground = true))
-        assertFalse(AutoStartPolicy.wakeListenerNeeded(wake, canStartFromBackground = false))
+        assertTrue(AutoStartPolicy.wakeListenerNeeded(wake, canStartFromBackground = true, television = true))
+        assertTrue(AutoStartPolicy.wakeListenerNeeded(both, canStartFromBackground = true, television = true))
+        assertFalse(AutoStartPolicy.wakeListenerNeeded(boot, canStartFromBackground = true, television = true))
+        assertFalse(AutoStartPolicy.wakeListenerNeeded(off, canStartFromBackground = true, television = true))
+        assertFalse(AutoStartPolicy.wakeListenerNeeded(wake, canStartFromBackground = false, television = true))
+    }
+
+    @Test
+    fun wakeListener_neverRunsOffATelevision() {
+        assertFalse(AutoStartPolicy.wakeListenerNeeded(wake, canStartFromBackground = true, television = false))
+        assertFalse(AutoStartPolicy.wakeListenerNeeded(both, canStartFromBackground = true, television = false))
     }
 
     // --- shouldAskForOverlay ---
