@@ -64,6 +64,13 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.1.4
+
+### 🐞 Fixes
+- **📺 Guide ⇄ full screen no longer reloads a channel whose stream moved to its other address**
+- **🕒 Long programme titles wrap short of the clock**
+- **⚽ Sport standings and follow buttons no longer cut off at the right edge**
+
 ## v2.1.3
 
 ### ✨ New features

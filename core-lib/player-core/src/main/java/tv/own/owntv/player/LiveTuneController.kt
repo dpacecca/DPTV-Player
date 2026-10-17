@@ -219,6 +219,20 @@ class LiveTuneController(
     private var previewedChannelId: Long? = null
 
     /**
+     * The channel ExoPlayer's stream belongs to, whatever address it ended up on (DPTV-Player v2.1.4).
+     *
+     * The engine can move to the channel's other form on its own (`…/ch.ts` ⇄ `…/ch.m3u8`, a refreshed
+     * link, `direct_source`), after which its URL no longer equals [exoUrlFor]. Comparing URLs then read
+     * "a different stream" and re-opened the channel on every OK in the guide and every Back from full
+     * screen. The same channel still playing is promoted (or re-muted) instead.
+     */
+    private var exoChannelId: Long? = null
+
+    /** ExoPlayer already plays [channel], healthy, by whatever address. */
+    private fun exoHolds(channel: ChannelEntity): Boolean =
+        exoChannelId == channel.id && engines.exoUrl != null && !engines.exoFailed
+
+    /**
      * The user is opening [channel] full screen. When ExoPlayer is already previewing it, say so at once,
      * before the full-screen player is first drawn: it then shows ExoPlayer's surface from the start
      * instead of building mpv's and swapping it out when [start] gets there. Measured on a 4K channel:
@@ -295,17 +309,19 @@ class LiveTuneController(
                 exoStalkerCmd = channel.streamUrl
                 setReconnect(channel, source)
                 engines.exoPlay(url, muted, request(channel, source))
+                exoChannelId = channel.id
                 return@launch
             }
             val url = exoUrlFor(channel, source)
             if (blockedBySingleSession(url)) return@launch
-            if (engines.exoUrl == url && !engines.exoFailed) {
-                engines.exoSetMuted(muted) // already previewing it (a re-focus) — just re-apply the mute
+            if ((engines.exoUrl == url && !engines.exoFailed) || exoHolds(channel)) {
+                engines.exoSetMuted(muted) // already previewing it (a re-focus, or Back from full screen) — just re-apply the mute
                 return@launch
             }
             exoStalkerCmd = null
             setReconnect(null, null)
             engines.exoPlay(url, muted, request(channel, source))
+            exoChannelId = channel.id
         }
     }
 
@@ -549,6 +565,7 @@ class LiveTuneController(
                 exoStalkerCmd = null
                 setReconnect(null, null)
                 engines.exoPlay(local, muted = false, tsRequest ?: request(channel, source))
+                exoChannelId = channel.id
             }
             host.onEngineStarted()
             watchExo(channel, source)
@@ -559,7 +576,7 @@ class LiveTuneController(
             return
         }
         val url = exoUrlFor(channel, source)
-        if (engines.exoUrl == url) {
+        if (engines.exoUrl == url || exoHolds(channel)) {
             engines.exoSetMuted(false) // promote — instant if already playing, otherwise keeps loading
         } else {
             // Leaving a UHD channel: release its 4K decoder before the rebuild (no-op for SD/HD).
@@ -567,6 +584,7 @@ class LiveTuneController(
             exoStalkerCmd = null
             setReconnect(null, null)
             engines.exoPlay(url, muted = false, request(channel, source))
+            exoChannelId = channel.id
         }
         host.onEngineStarted()
         watchExo(channel, source)
@@ -600,6 +618,7 @@ class LiveTuneController(
         exoStalkerCmd = channel.streamUrl
         setReconnect(channel, source)
         engines.exoPlay(url, muted = false, request(channel, source))
+        exoChannelId = channel.id
         host.onEngineStarted()
         watchExo(channel, source)
     }
@@ -695,6 +714,7 @@ class LiveTuneController(
 
     private fun stopExoEngine() {
         if (engines.exoUrl != null) exoStoppedAtMs = host.nowMs()
+        exoChannelId = null
         engines.exoStop()
     }
 

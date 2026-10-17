@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import tv.own.owntv.R
@@ -200,6 +201,8 @@ internal fun GuideInfoBlock(
     modifier: Modifier = Modifier,
     /** A recording of this programme is running: "Recording" in red after the title. */
     recording: Boolean = false,
+    /** Room kept free at the title's end, where the shell's clock sits over the guide (v2.1.4). */
+    titleEndInset: Dp = 0.dp,
 ) {
     val a = stageAccent
     val formatTime = rememberSystemTimeFormatter()
@@ -208,7 +211,7 @@ internal fun GuideInfoBlock(
     Column(modifier, verticalArrangement = Arrangement.spacedBy(if (compact) 6.mpx else 10.mpx)) {
         Text(
             programme?.title ?: fallbackTitle, style = stageText(t(40), 800, (-0.5).mpxSp), color = StageColors.Text,
-            maxLines = 2, overflow = TextOverflow.Ellipsis,
+            maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(end = titleEndInset),
         )
         Row(horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
             // DPTV Recorder's tags in front of the time: LIVE, REC, CATCH-UP.

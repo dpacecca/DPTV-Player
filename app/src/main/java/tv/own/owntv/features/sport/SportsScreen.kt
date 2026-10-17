@@ -41,6 +41,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.tv.material3.Text
@@ -214,7 +215,7 @@ fun SportsScreen(
         fun fx(px: Int) = screenW * (px / 1920f)
         Row(
             Modifier
-                .padding(start = contentStart + 20.mpx, top = 52.mpx, end = 28.mpx)
+                .padding(start = contentStart + 20.mpx, top = 52.mpx, end = 64.mpx)
                 .fillMaxSize(),
         ) {
             // League rail.
@@ -911,7 +912,7 @@ private fun FixtureDetail(
                             TeamLogo(row.logoUrl, 26.mpx)
                             Text(row.teamAbbrev.ifBlank { row.teamName }, style = stageText(17, 600), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                             row.stats.take(3).forEach { stat ->
-                                Text(stat, style = stageText(16, 500), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(44.mpx))
+                                Text(stat, style = stageText(16, 500), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, modifier = Modifier.width(52.mpx))
                             }
                         }
                     }

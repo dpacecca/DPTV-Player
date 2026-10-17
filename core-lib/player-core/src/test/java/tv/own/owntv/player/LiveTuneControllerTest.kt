@@ -335,4 +335,31 @@ class LiveTuneControllerTest {
         runCurrent()
         assertEquals(listOf("exo:${channel(11).streamUrl}", "exo-unmute"), engines.log)
     }
+
+    @Test
+    fun `OK promotes a preview that moved to the channel's other address instead of re-opening it`() = runTest {
+        val engines = FakeEngines()
+        val host = FakeHost(this)
+        val c = controller(engines, host)
+        c.preview(channel(11), muted = true)
+        runCurrent()
+        // The engine retried the channel's other form on its own (…/ch.ts -> …/ch.m3u8).
+        engines.exoUrl = channel(11).streamUrl + ".alt"
+        c.tune(channel(11))
+        runCurrent()
+        assertEquals(listOf("exo:${channel(11).streamUrl}", "exo-unmute"), engines.log)
+    }
+
+    @Test
+    fun `a preview of another channel is still rebuilt`() = runTest {
+        val engines = FakeEngines()
+        val host = FakeHost(this)
+        val c = controller(engines, host)
+        c.preview(channel(11), muted = true)
+        runCurrent()
+        engines.exoUrl = channel(11).streamUrl + ".alt"
+        c.tune(channel(12))
+        runCurrent()
+        assertTrue("channel 12 opens on ExoPlayer", engines.log.contains("exo:${channel(12).streamUrl}"))
+    }
 }
