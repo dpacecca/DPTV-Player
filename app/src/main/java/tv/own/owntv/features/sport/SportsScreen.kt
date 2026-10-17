@@ -912,7 +912,7 @@ private fun FixtureDetail(
                             TeamLogo(row.logoUrl, 26.mpx)
                             Text(row.teamAbbrev.ifBlank { row.teamName }, style = stageText(17, 600), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                             row.stats.take(3).forEach { stat ->
-                                Text(stat, style = stageText(16, 500), color = StageColors.Dim, maxLines = 1, softWrap = false, textAlign = TextAlign.End, modifier = Modifier.width(52.mpx))
+                                Text(stat, style = stageText(16, 500), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.End, modifier = Modifier.width(52.mpx))
                             }
                         }
                     }
