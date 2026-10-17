@@ -777,6 +777,10 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/GlassEffectPage.kt	◀ ▶
 1	empty	app/src/main/java/tv/own/owntv/features/shell/components/MediaDetailsScreen.kt	\0
 18	empty	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	\0
+19	empty	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	\0
+2	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#%06X
+1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#F5B400
+1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#FFFFFF
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	$CATCHUP_MANUAL_PREFIX$it
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	$CATCHUP_MANUAL_PREFIX${src.catchupOffsetMin ?: 0}
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	${proxy.host}:${proxy.port}
@@ -881,6 +885,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/StageStatus.kt	EEEdMMM
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/StageStatus.kt	tnum
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/StageStatus.kt	·
+1	empty	app/src/main/java/tv/own/owntv/features/shell/components/StartupSettingsDialogs.kt	\0
 3	empty	app/src/main/java/tv/own/owntv/features/shell/components/VodStage.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/VodStage.kt	%.1f
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/VodStage.kt	,
