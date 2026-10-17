@@ -309,17 +309,16 @@ fun EpgScreen(
         stepTarget = i
         stepJob?.cancel()
         stepJob = scope.launch {
+            // v2.1.6: the selected channel stays at the top, so what is below it — not what has been passed —
+            // is on screen (the list's end cannot scroll further, and the last rows are then selected in place).
             val info = rowListState.layoutInfo
             val row = info.visibleItemsInfo.firstOrNull { it.index == i }
-            val step = ((info.visibleItemsInfo.firstOrNull()?.size ?: 0) + info.mainAxisItemSpacing).toFloat()
-            val delta = when {
-                row == null -> if (i > (info.visibleItemsInfo.lastOrNull()?.index ?: 0)) step else -step
-                row.offset - step < info.viewportStartOffset -> row.offset - step - info.viewportStartOffset
-                row.offset + row.size + step > info.viewportEndOffset -> row.offset + row.size + step - info.viewportEndOffset
-                else -> 0f
+            if (row != null) {
+                val delta = (row.offset - info.viewportStartOffset).toFloat()
+                if (delta != 0f) runCatching { rowListState.scrollBy(delta) }
+            } else {
+                runCatching { rowListState.scrollToItem(i) }
             }
-            if (delta != 0f) runCatching { rowListState.scrollBy(delta) }
-            if (rowListState.layoutInfo.visibleItemsInfo.none { it.index == i }) runCatching { rowListState.scrollToItem(i) }
             withFrameNanos { }
             runCatching { rowFocus(i).requestFocus() }
             stepTarget = null
@@ -828,12 +827,15 @@ fun EpgScreen(
                                             val from = stepTarget ?: index
                                             val to = from + delta
                                             when {
-                                                to < 0 -> false // ▲ from the first row: up to the header
+                                                // ▲ from the first channel: round to the last (v2.1.6; a hold goes to the day chips).
+                                                to < 0 -> { stepTo(state.channels.size - 1); true }
                                                 // ▼ from the last channel: round to the first (v2.1.3).
                                                 to >= state.channels.size -> { stepTo(0); true }
                                                 else -> { stepTo(to); true }
                                             }
                                         },
+                                        firstRow = index == 0,
+                                        onHoldUp = { runCatching { dayTool.requestFocus() } },
                                         onLeft = onLeft,
                                         onHoldLeft = onHoldLeft,
                                         onRight = onRight,
@@ -1051,6 +1053,10 @@ private fun GuideRow(
     onTouchCursor: (Long) -> Unit,
     onShow: (EpgProgrammeEntity?) -> Unit,
     onStep: (Int) -> Boolean,
+    /** v2.1.6: this is the first channel, where a press of ▲ goes round to the last and a hold goes up. */
+    firstRow: Boolean,
+    /** ▲ held on the first channel: up to the day chips. */
+    onHoldUp: () -> Unit,
     onLeft: (List<EpgProgrammeEntity>) -> Unit,
     onHoldLeft: (List<EpgProgrammeEntity>) -> Unit,
     onRight: (List<EpgProgrammeEntity>) -> Unit,
@@ -1074,6 +1080,8 @@ private fun GuideRow(
     var okDown by remember { mutableStateOf(false) }
     var leftDown by remember { mutableStateOf(false) }
     var leftHeld by remember { mutableStateOf(false) }
+    var upDown by remember { mutableStateOf(false) }
+    var upHeld by remember { mutableStateOf(false) }
     LaunchedEffect(focused, cursorTime, programmes) { if (focused) onShow(programmeAt(programmes, cursorTime)) }
     // Touch. On the programmes: the first tap selects the programme under the finger (the block on
     // top shows it, as the cursor would), a tap on the one already selected acts on it as OK does, a long
@@ -1137,7 +1145,7 @@ private fun GuideRow(
                 .focusRequester(focusRequester)
                 .onFocusChanged {
                     focused = it.isFocused
-                    if (it.isFocused) onFocused() else { okDown = false; leftDown = false; leftHeld = false }
+                    if (it.isFocused) onFocused() else { okDown = false; leftDown = false; leftHeld = false; upDown = false; upHeld = false }
                 }
                 .onPreviewKeyEvent { e ->
                     val progs = programmes.orEmpty()
@@ -1160,7 +1168,15 @@ private fun GuideRow(
                             true
                         }
                         Key.DirectionRight -> { if (down) onRight(progs); true }
-                        Key.DirectionUp -> if (down) onStep(-1) else true
+                        // On the first channel ▲ acts on release, so a hold can go up to the day chips instead
+                        // of round to the last channel. A hold that scrolled up to here just stops.
+                        Key.DirectionUp -> when {
+                            !firstRow -> if (down) onStep(-1) else true
+                            down && repeat == 0 -> { upDown = true; upHeld = false; true }
+                            down && upDown && !upHeld -> { upHeld = true; onHoldUp(); true }
+                            !down && upDown -> { upDown = false; if (!upHeld) onStep(-1); true }
+                            else -> true
+                        }
                         Key.DirectionDown -> if (down) onStep(+1) else true
                         else -> false
                     }

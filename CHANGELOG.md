@@ -64,6 +64,12 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.1.6
+
+### ✨ New features
+- **🔁 ▲ on the first channel goes round to the last; holding ▲ goes up to the days**
+- **📌 The selected channel stays at the top of the guide**
+
 ## v2.1.5
 
 ### ✨ New features
