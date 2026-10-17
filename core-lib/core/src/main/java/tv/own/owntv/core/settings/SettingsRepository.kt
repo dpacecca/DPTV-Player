@@ -1544,7 +1544,8 @@ class SettingsRepository(private val context: Context, private val localeStore: 
     }
 
     /** The TV Guide also lists channels with no guide data (Order ▾ › Show), so they can be matched from there. */
-    val guideShowEmpty: Flow<Boolean> = prefsFlow { it[Keys.GUIDE_SHOW_EMPTY] ?: false }
+    // On by default (DPTV-Player v2.1.7): a channel without a guide is still a channel to watch.
+    val guideShowEmpty: Flow<Boolean> = prefsFlow { it[Keys.GUIDE_SHOW_EMPTY] ?: true }
     suspend fun setGuideShowEmpty(show: Boolean) {
         context.dataStore.edit { it[Keys.GUIDE_SHOW_EMPTY] = show }
     }

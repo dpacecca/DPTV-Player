@@ -598,7 +598,7 @@ internal fun LiveCategories(
                             icon = entry.icon,
                             count = entry.count?.let { tv.own.owntv.ui.components.formatCount(it) },
                             selected = selected,
-                            maxLines = 2,
+                            maxLines = 3,
                             tags = if (entry.name?.tags.isNullOrEmpty()) null else { focused ->
                                 entry.name.tags.forEach { StageTag(it, onAccent = if (focused) a.onAccent else null) }
                             },

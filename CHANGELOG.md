@@ -64,6 +64,13 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.1.7
+
+### 🐞 Fixes
+- **📺 Back from the picture opens the guide on the channel playing, in the category it was picked from**
+- **🏷️ Long category names show in full**
+- **📭 Channels without a guide are listed by default, say No information available, and still play**
+
 ## v2.1.6
 
 ### ✨ New features

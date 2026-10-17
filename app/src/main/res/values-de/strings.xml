@@ -105,4 +105,5 @@
     <string name="sport_dvr_empty">Noch keine Aufnahmen. Im Guide OK auf einer Sendung gedrückt halten und Aufnehmen wählen.</string>
     <string name="sport_dvr_resume">Fortsetzen ab %1$s</string>
     <string name="sport_dvr_start_over">Von vorn</string>
+    <string name="sport_guide_no_info">Keine Informationen verfügbar</string>
 </resources>

@@ -127,7 +127,8 @@ internal fun ProgrammeStripCanvas(
     val dimColor = tv.own.owntv.ui.theme.StageColors.Dim
     val ink = tv.own.owntv.ui.theme.StageColors.Ink
     // A row with nothing in the window says so, rather than looking broken.
-    val emptyText = stringResource(R.string.content_epg_no_programme)
+    // A channel with no guide at all (v2.1.7) says so plainly; it is still listed and can be watched.
+    val emptyText = stringResource(if (programmes.isEmpty()) R.string.sport_guide_no_info else R.string.content_epg_no_programme)
     // Clipped at the timeline's left edge only, so a focused cell's glow still spills up and down.
     Canvas(Modifier.fillMaxSize()) { clipRect(left = 0f, top = -size.height, right = size.width + 40 * px, bottom = size.height * 2) {
         val viewW = size.width

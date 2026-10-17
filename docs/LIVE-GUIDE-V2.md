@@ -142,3 +142,12 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 - Server-Kopie, „Live“: `ServerTimeshift.Buffer.open(null)` fragt `?live=1` — der Server liest das Stück,
   das ffmpeg gerade schreibt, mit (Recorder 2.6.1, `streamLive`). Vorher begann Live am neuesten
   *fertigen* Stück; Stücke enden an Keyframes (oft 5–8 s), also lag das Bild ~15 s hinter live.
+
+## v2.1.7
+
+- Zurück vom Bild: der laufende Kanal hat Vorrang. Steht er nicht in der gerade gewählten Kategorie (die
+  Kategorie wurde während des Schauens gewechselt), wechselt der Guide zurück zur Kategorie, aus der er
+  gestartet wurde (`EpgViewModel.tunedCategory`), sonst zu Alle.
+- Kategorien-Panel 540 statt 450 (bei 1920), bis zu drei Zeilen je Name.
+- „Kanäle ohne Guide anzeigen“ standardmäßig an (`guideShowEmpty` ?: true); leere Zeilen und die Info oben
+  zeigen „Keine Informationen verfügbar“ (`sport_guide_no_info`), OK spielt den Kanal.
