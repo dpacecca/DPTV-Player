@@ -298,6 +298,23 @@ class LiveTuneController(
         previewJob?.cancel()
         previewJob = scope.launch {
             val source = host.sourceOf(channel.sourceId)
+            // Local timeshift on (DPTV-Player v2.1.5): the pane plays the channel from its saved copy, as
+            // full screen does, so OK promotes this very stream. Before, full screen stopped the direct
+            // preview and re-opened the channel through the copy — a 3–4 s reload on every OK.
+            if (!engines.mpvHasStream && host.timeshiftWindowMinutes() != null && openTimeshift(channel, source, resolved = null)) {
+                if (_liveOnExo.value) return@launch // promoted while the copy connected: start() plays it
+                tsFromIndex = null
+                publishTimeshift(resumeAtWallMs = null)
+                val local = localUrl()
+                val request = tsRequest
+                if (local != null && request != null) {
+                    exoStalkerCmd = null
+                    setReconnect(null, null)
+                    engines.exoPlay(local, muted, request)
+                    exoChannelId = channel.id
+                    return@launch
+                }
+            }
             if (host.needsResolve(source)) {
                 if (exoStalkerCmd == channel.streamUrl && !engines.exoFailed) {
                     engines.exoSetMuted(muted)
@@ -454,7 +471,9 @@ class LiveTuneController(
         val leaving = ts?.takeIf { it.channelKey != key }
         val leavingWallMs = leaving?.let { timeshiftWatchingWallMs() }
         val window = if (channel.catchup || channel.drmConfig != null) null else host.timeshiftWindowMinutes()
-        if (window == null) {
+        // The preview already found this channel cannot be saved and plays it directly: keep that
+        // stream rather than stop it for a second attempt that would fail the same way.
+        if (window == null || (key == tsRefusedKey && exoHolds(channel))) {
             if (leaving != null) parkTimeshift()
             manager.watching(key)
             clearTimeshift()
@@ -486,6 +505,7 @@ class LiveTuneController(
         )
         val opened = manager.open(key, target, window, TIMESHIFT_FIRST_PIECE_MS, leavingWallMs)
         if (opened == null) {
+            tsRefusedKey = key
             engineLog("timeshift: '${channel.name}' cannot be saved — playing it directly")
             clearTimeshift()
             return false
@@ -542,6 +562,9 @@ class LiveTuneController(
         cancelLadderJobs()
         abandon(channel, detail)
     }
+
+    /** The last channel whose copy could not be made (see [openTimeshift]). */
+    private var tsRefusedKey: String? = null
 
     private fun timeshiftKey(channel: ChannelEntity): String = "${channel.sourceId}:${channel.id}"
 

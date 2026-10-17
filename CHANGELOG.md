@@ -64,6 +64,13 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.1.5
+
+### 🐞 Fixes
+- **📺 Guide → full screen no longer reloads the channel with timeshift on**
+- **⚡ Changing category is instant**
+- **⬇️ After choosing a category, Down moves through the guide, not the menu**
+
 ## v2.1.4
 
 ### 🐞 Fixes
