@@ -151,3 +151,10 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 - Kategorien-Panel 540 statt 450 (bei 1920), bis zu drei Zeilen je Name.
 - „Kanäle ohne Guide anzeigen“ standardmäßig an (`guideShowEmpty` ?: true); leere Zeilen und die Info oben
   zeigen „Keine Informationen verfügbar“ (`sport_guide_no_info`), OK spielt den Kanal.
+
+## v2.1.8
+
+- `showTime` setzt den linken Rand auf die angebrochene halbe Stunde (Ortszeit, `halfHourOf`); der Cursor
+  schiebt die Zeitachse ebenfalls nur auf halbe Stunden.
+- ▲▼: der Fokus springt sofort, die Zeilen gleiten in 150 ms nach (`animateScrollBy`); die Zeitachse
+  gleitet in 180 ms (`shownScrollPx`, `animateIntAsState`).

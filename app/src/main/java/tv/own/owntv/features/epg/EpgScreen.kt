@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.rememberUpdatedState
@@ -125,6 +126,13 @@ private fun programmeAt(progs: List<EpgProgrammeEntity>?, time: Long): EpgProgra
 
 /** Across a gap the cursor moves by half an hour, rather than leaping hours to the next programme. */
 private const val GAP_STEP_MS = 30L * 60 * 1000
+
+/** How the guide's rows and timeline move (v2.1.8): short enough to keep up with a held key. */
+private val GuideScrollSpec = androidx.compose.animation.core.tween<Float>(150, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+private val GuideScrollIntSpec = androidx.compose.animation.core.tween<Int>(180, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+
+/** The guide starts on the half hour (v2.1.8). */
+private const val HALF_HOUR_MS = 30L * 60 * 1000
 
 /** The width of the clock with its date and weather line, which the guide's title wraps short of. */
 private val CLOCK_CLEARANCE = 380.mpx
@@ -269,13 +277,17 @@ fun EpgScreen(
     val ppm = with(density) { GuideGridDefaults.PxPerMin.toPx() }
     var timelinePx by remember { mutableIntStateOf(0) }
     var scrollPx by remember { mutableIntStateOf(0) }
+    // What the ruler and the rows draw: the scroll position eased into place (v2.1.8), so a move along the
+    // timeline slides rather than jumps. Positions are worked out on [scrollPx], the target.
+    val shownScrollPx by androidx.compose.animation.core.animateIntAsState(scrollPx, GuideScrollIntSpec)
     fun pxAt(t: Long): Float = (t - state.windowStart) / 60_000f * ppm
     fun maxScroll(): Int = (pxAt(state.windowEnd) - timelinePx).toInt().coerceAtLeast(0)
     fun timeAt(px: Float): Long = state.windowStart + (px / ppm * 60_000f).toLong()
-    // A time is shown a quarter of the way across: what is on now keeps a little of what was before it in
-    // view, and most of the width goes to what is coming.
+    // A time is shown from the half hour it falls in (v2.1.8): at 9:45 the guide starts at 9:30, at 10:05 at
+    // 10:00 — on the local clock, so a zone with a :30 or :45 offset still lands on its own half hours.
+    fun halfHourOf(t: Long): Long = t - Math.floorMod(t + java.util.TimeZone.getDefault().getOffset(t), HALF_HOUR_MS)
     fun showTime(t: Long) {
-        scrollPx = (pxAt(t) - timelinePx / 4f).toInt().coerceIn(0, maxScroll())
+        scrollPx = pxAt(halfHourOf(t)).toInt().coerceIn(0, maxScroll())
     }
     LaunchedEffect(state.windowStart, timelinePx, state.channels.isNotEmpty()) {
         if (timelinePx > 0 && state.channels.isNotEmpty()) showTime(System.currentTimeMillis())
@@ -311,16 +323,19 @@ fun EpgScreen(
         stepJob = scope.launch {
             // v2.1.6: the selected channel stays at the top, so what is below it — not what has been passed —
             // is on screen (the list's end cannot scroll further, and the last rows are then selected in place).
+            // v2.1.8: the highlight moves at once and the rows glide up under it, instead of the whole list
+            // jumping a row on every press.
             val info = rowListState.layoutInfo
             val row = info.visibleItemsInfo.firstOrNull { it.index == i }
             if (row != null) {
+                runCatching { rowFocus(i).requestFocus() }
                 val delta = (row.offset - info.viewportStartOffset).toFloat()
-                if (delta != 0f) runCatching { rowListState.scrollBy(delta) }
+                if (delta != 0f) runCatching { rowListState.animateScrollBy(delta, GuideScrollSpec) }
             } else {
                 runCatching { rowListState.scrollToItem(i) }
+                withFrameNanos { }
+                runCatching { rowFocus(i).requestFocus() }
             }
-            withFrameNanos { }
-            runCatching { rowFocus(i).requestFocus() }
             stepTarget = null
         }
     }
@@ -358,8 +373,14 @@ fun EpgScreen(
         val x = pxAt(cursorTime)
         val margin = GuideGridDefaults.SlotMin * ppm
         when {
-            x < scrollPx + margin -> scrollPx = (x - margin).toInt().coerceIn(0, maxScroll())
-            x > scrollPx + timelinePx - margin -> scrollPx = (x - timelinePx + margin).toInt().coerceIn(0, maxScroll())
+            // Back past the left edge: the half hour the cursor is in starts the guide again (v2.1.8).
+            x < scrollPx -> showTime(cursorTime)
+            // Forward past the right edge's slot of room: the next half hour that makes room starts the guide.
+            x > scrollPx + timelinePx - margin -> {
+                val need = timeAt(x - timelinePx + margin)
+                val start = halfHourOf(need).let { if (it < need) it + HALF_HOUR_MS else it }
+                scrollPx = pxAt(start).toInt().coerceIn(0, maxScroll())
+            }
         }
     }
 
@@ -777,7 +798,7 @@ fun EpgScreen(
                 }
                 if (state.channels.isNotEmpty()) {
                     GuideRuler(
-                        windowStart = state.windowStart, windowEnd = state.windowEnd, now = liveNow, scrollPx = scrollPx,
+                        windowStart = state.windowStart, windowEnd = state.windowEnd, now = liveNow, scrollPx = shownScrollPx,
                         modifier = Modifier.width(timelineW).height(40.mpx),
                     )
                 }
@@ -826,7 +847,7 @@ fun EpgScreen(
                                         windowStart = state.windowStart,
                                         windowEnd = state.windowEnd,
                                         now = liveNow,
-                                        scrollPx = scrollPx,
+                                        scrollPx = shownScrollPx,
                                         focusRequester = rowFocus(index),
                                         selectedRow = gridHasFocus && index == focusedRow,
                                         cursorTime = cursorTime,
