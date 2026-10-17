@@ -86,7 +86,7 @@
     <string name="sport_startup_guide">Guide auf dem letzten Sender</string>
     <string name="sport_guide_next">Danach</string>
     <string name="sport_guide_categories">Kategorien</string>
-    <string name="sport_player_no_rewind">Dieser Sender hat kein Catch-up. Zum Zurückspulen jedes Senders: Einstellungen › Live-TV anhalten und zurückspulen einschalten.</string>
+    <string name="sport_player_no_rewind">Dieser Sender lässt sich noch nicht zurückspulen. Einstellungen › Live-TV anhalten und zurückspulen einschalten — bei wenig Speicher einen Aufnahme-Server einrichten, der die Kopie hält.</string>
     <plurals name="sport_dvr_count">
         <item quantity="one">%1$d Aufnahme</item>
         <item quantity="other">%1$d Aufnahmen</item>

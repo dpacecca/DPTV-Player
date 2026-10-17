@@ -416,11 +416,11 @@ class EpgViewModel(
             .distinctUntilChanged()
             .onEach { load() }
             .launchIn(viewModelScope)
-        // Reload when the category filter changes (#8).
+        // Reload when the category filter changes (#8) — by re-filtering the list already built (v2.1.5).
         _categoryFilter
             .drop(1)
             .distinctUntilChanged()
-            .onEach { load() }
+            .onEach { refilter() }
             .launchIn(viewModelScope)
         // Reload the guide when the active-playlist filter (Settings "Default" / Browse picker) changes,
         // so the grid narrows to the chosen playlist's channels (or back to all). drop(1): initial load
@@ -847,6 +847,79 @@ class EpgViewModel(
      * a race between six stale ones, and the mutex closes the gap while a cancelled load unwinds.
      */
     /** [background]: a reload after a sync, not something the user did — it never empties a guide on screen. */
+    /** The guide's channels sorted, before the category filter: what a category change filters again. */
+    private class SortedGuide(
+        val channels: List<ChannelEntity>,
+        val cust: tv.own.owntv.core.customize.SectionCustomizations,
+        val profileId: Long,
+        val query: String,
+    )
+
+    private var lastSorted: SortedGuide? = null
+
+    /**
+     * A new category (v2.1.5): filter the list the last load built instead of building it again. A full
+     * load reads every channel, matches, sorts and counts the whole programme table — seconds on a large
+     * playlist, which made each category change lag. Falls back to [load] when there is nothing to reuse.
+     */
+    private fun refilter() {
+        val previous = loadJob
+        loadJob = viewModelScope.launch {
+            val fullLoadRunning = previous?.isActive == true
+            previous?.cancelAndJoin()
+            loadMutex.withLock {
+                val cached = lastSorted
+                if (fullLoadRunning || cached == null || cached.query != _query.value.trim() || cached.profileId != currentProfileId()) {
+                    runLoad()
+                    return@withLock
+                }
+                val filter = _categoryFilter.value
+                val channels = filterCategory(cached, filter, categoryMembers(
+                    filter, cached.profileId,
+                    favoriteDao.observeFavoriteIds(cached.profileId, MediaType.LIVE).first().toSet(),
+                ))
+                val message = when {
+                    lastStored == 0 -> null
+                    channels.isEmpty() && cached.query.isNotBlank() -> EpgMessage.NoChannelsForQuery(cached.query)
+                    channels.isEmpty() -> EpgMessage.MismatchedIds
+                    else -> null
+                }
+                _state.value = _state.value.copy(channels = channels, loading = false, message = message)
+            }
+        }
+    }
+
+    /** The channel ids a favourites, history or custom category holds; null for the other kinds. */
+    private suspend fun categoryMembers(filter: tv.own.owntv.core.live.LiveKey?, pid: Long, favoriteIds: Set<Long>): Set<Long>? =
+        when (filter) {
+            is tv.own.owntv.core.live.LiveKey.Custom -> customCategoryDao.itemIds(pid, MediaType.LIVE, filter.id).toSet()
+            tv.own.owntv.core.live.LiveKey.Favorites -> favoriteIds
+            tv.own.owntv.core.live.LiveKey.History ->
+                historyDao.getForProfileType(pid, MediaType.LIVE).mapTo(HashSet()) { it.itemId }
+            else -> null
+        }
+
+    private suspend fun filterCategory(
+        guide: SortedGuide,
+        filter: tv.own.owntv.core.live.LiveKey?,
+        memberIds: Set<Long>?,
+    ): List<ChannelEntity> {
+        // A provider folder keeps out the channels the user moved from it into a custom category.
+        val folderKey = (filter as? tv.own.owntv.core.live.LiveKey.Folder)
+            ?.let { categoryDao.getById(it.id) }?.let(CustomizeKeys::category)
+        val sorted = guide.channels
+        return withContext(Dispatchers.Default) {
+            when (filter) {
+                null, tv.own.owntv.core.live.LiveKey.All -> sorted
+                tv.own.owntv.core.live.LiveKey.Catchup -> sorted.filter { it.catchup }
+                is tv.own.owntv.core.live.LiveKey.Folder -> sorted.filter { ch ->
+                    ch.categoryId == filter.id && (folderKey == null || guide.cust.movedFromOrigin[CustomizeKeys.channel(ch)] != folderKey)
+                }
+                else -> sorted.filter { it.id in memberIds.orEmpty() }
+            }
+        }
+    }
+
     fun load(background: Boolean = false) {
         val previous = loadJob
         loadJob = viewModelScope.launch {
@@ -915,19 +988,10 @@ class EpgViewModel(
         )
     }
         val filter = _categoryFilter.value
-        // A provider folder keeps out the channels the user moved from it into a custom category.
-        val folderKey = (filter as? tv.own.owntv.core.live.LiveKey.Folder)
-            ?.let { categoryDao.getById(it.id) }?.let(CustomizeKeys::category)
-        val memberIds: Set<Long>? = when (filter) {
-            is tv.own.owntv.core.live.LiveKey.Custom -> customCategoryDao.itemIds(pid, MediaType.LIVE, filter.id).toSet()
-            tv.own.owntv.core.live.LiveKey.Favorites -> favoriteIds
-            tv.own.owntv.core.live.LiveKey.History ->
-                historyDao.getForProfileType(pid, MediaType.LIVE).mapTo(HashSet()) { it.itemId }
-            else -> null
-        }
+        val memberIds = categoryMembers(filter, pid, favoriteIds)
         // Heavy work — filter hidden, apply renames + manual EPG matches, sort, category-filter — runs off
         // the main thread (#3/#5) so a 50k-channel playlist never freezes the UI building the guide list.
-        val channels = withContext(Dispatchers.Default) {
+        val sorted = withContext(Dispatchers.Default) {
             val auto = rawChannels
                 .filter { CustomizeKeys.channel(it) !in cust.hiddenItems }
                 .filter {
@@ -946,17 +1010,10 @@ class EpgViewModel(
                 SettingsRepository.GuideSort.FAVORITES -> matched.sortedWith(compareByDescending<ChannelEntity> { it.id in favoriteIds }.then(byProvider))
                 // LIVE_TV, the old default, is the provider's order too (Channel number was the same thing).
                 SettingsRepository.GuideSort.LIVE_TV -> matched.sortedWith(byProvider)
-            }.let { sorted ->
-                when (filter) {
-                    null, tv.own.owntv.core.live.LiveKey.All -> sorted
-                    tv.own.owntv.core.live.LiveKey.Catchup -> sorted.filter { it.catchup }
-                    is tv.own.owntv.core.live.LiveKey.Folder -> sorted.filter { ch ->
-                        ch.categoryId == filter.id && (folderKey == null || cust.movedFromOrigin[CustomizeKeys.channel(ch)] != folderKey)
-                    }
-                    else -> sorted.filter { it.id in memberIds.orEmpty() }
-                }
             }
         }
+        lastSorted = SortedGuide(sorted, cust, pid, q)
+        val channels = filterCategory(lastSorted!!, filter, memberIds)
         val stored = epgDao.countForSources(ids)
 
 

@@ -30,7 +30,9 @@ import tv.own.owntv.core.stalker.StreamUrlResolver
 import tv.own.owntv.core.timeshift.TimeshiftDownloader
 import tv.own.owntv.core.timeshift.TimeshiftManager
 import tv.own.owntv.core.timeshift.TimeshiftServer
+import tv.own.owntv.core.timeshift.TimeshiftBuffer
 import tv.own.owntv.core.timeshift.TimeshiftSession
+import tv.own.owntv.core.recording.ServerTimeshift
 
 /**
  * One live channel from "tune" to "playing" or "gave up", for both apps.
@@ -80,6 +82,11 @@ class LiveTuneController(
         suspend fun timeshiftWindowMinutes(): Int? = null
         /** N4 — Settings → what coming back to a kept copy does ("Continue where you left off?"). */
         suspend fun timeshiftResumeMode(): SettingsRepository.ResumeMode = SettingsRepository.ResumeMode.ASK
+        /**
+         * v2.1.5 — the copy kept by the recording server instead of this device (a Chromecast has no room
+         * for it); null when no server is set up or it cannot keep this channel.
+         */
+        suspend fun openServerTimeshift(channel: ChannelEntity, source: SourceEntity?, windowMinutes: Int, channelKey: String): TimeshiftBuffer? = null
         /** N11 — Settings → Maximum video quality, for the variant a buffer saves; null for none. */
         suspend fun maxVideoHeight(): Int? = null
     }
@@ -90,7 +97,7 @@ class LiveTuneController(
      * to a channel they had left: where they were, for "Resume from buffer / Go live".
      */
     class LocalTimeshift(
-        val session: TimeshiftSession,
+        val session: TimeshiftBuffer,
         val resumeAtWallMs: Long?,
     )
 
@@ -109,7 +116,7 @@ class LiveTuneController(
 
     private val recall = ChannelRecall()
 
-    private var ts: TimeshiftSession? = null
+    private var ts: TimeshiftBuffer? = null
     /** The piece the engine's stream starts at; null is the live edge. */
     private var tsFromIndex: Long? = null
     private var tsRequest: LiveRequest? = null
@@ -298,6 +305,23 @@ class LiveTuneController(
         previewJob?.cancel()
         previewJob = scope.launch {
             val source = host.sourceOf(channel.sourceId)
+            // Local timeshift on (DPTV-Player v2.1.5): the pane plays the channel from its saved copy, as
+            // full screen does, so OK promotes this very stream. Before, full screen stopped the direct
+            // preview and re-opened the channel through the copy — a 3–4 s reload on every OK.
+            if (!engines.mpvHasStream && host.timeshiftWindowMinutes() != null && openTimeshift(channel, source, resolved = null)) {
+                if (_liveOnExo.value) return@launch // promoted while the copy connected: start() plays it
+                tsFromIndex = null
+                publishTimeshift(resumeAtWallMs = null)
+                val local = localUrl()
+                val request = tsRequest
+                if (local != null && request != null) {
+                    exoStalkerCmd = null
+                    setReconnect(null, null)
+                    engines.exoPlay(local, muted, request)
+                    exoChannelId = channel.id
+                    return@launch
+                }
+            }
             if (host.needsResolve(source)) {
                 if (exoStalkerCmd == channel.streamUrl && !engines.exoFailed) {
                     engines.exoSetMuted(muted)
@@ -448,20 +472,45 @@ class LiveTuneController(
      * copy cannot be made.
      */
     private suspend fun openTimeshift(channel: ChannelEntity, source: SourceEntity?, resolved: String?): Boolean {
-        val manager = host.timeshift ?: return false
+        val manager = host.timeshift
         val key = timeshiftKey(channel)
         // The channel being left, parked by the manager with what was on screen — see [TimeshiftManager.open].
         val leaving = ts?.takeIf { it.channelKey != key }
         val leavingWallMs = leaving?.let { timeshiftWatchingWallMs() }
         val window = if (channel.catchup || channel.drmConfig != null) null else host.timeshiftWindowMinutes()
-        if (window == null) {
+        // The preview already found this channel cannot be saved and plays it directly: keep that
+        // stream rather than stop it for a second attempt that would fail the same way.
+        if (window == null || (key == tsRefusedKey && exoHolds(channel))) {
             if (leaving != null) parkTimeshift()
-            manager.watching(key)
+            manager?.watching(key)
             clearTimeshift()
             return false
         }
+        // The recording server's copy of this channel is still running (a Back, an OK): keep reading it.
+        val running = ts
+        if (running is ServerTimeshift.Buffer && running.channelKey == key && !running.isClosed) {
+            useCopy(channel, source, window)
+            return true
+        }
         if (engines.exoUrl != null && !TimeshiftServer.isLocal(engines.exoUrl)) stopExoEngine()
         if (engines.mpvHasStream) engines.mpvStopAndAwaitRelease()
+        // A server's copy is not kept for a return: the server holds one channel, and the next replaces it.
+        if (leaving is ServerTimeshift.Buffer) parkTimeshift()
+        host.openServerTimeshift(channel, source, window, key)?.let { buffer ->
+            manager?.watching(key) // a copy this device was still downloading lets go of the provider
+            (buffer as? ServerTimeshift.Buffer)?.onLost = { why ->
+                scope.launch { if (ts?.token == buffer.token) onTimeshiftLost(why) }
+            }
+            ts = buffer
+            tsFromIndex = null
+            useCopy(channel, source, window)
+            engineLog("timeshift: '${channel.name}' plays from the recording server's copy")
+            return true
+        }
+        if (manager == null) {
+            clearTimeshift()
+            return false
+        }
         val stalker = host.needsResolve(source)
         var minted = resolved
         val headers = StreamHeaders.decode(SourceOverrides.headersWithReferer(channel.httpHeaders, source))
@@ -484,8 +533,9 @@ class LiveTuneController(
             maxVideoHeight = host.maxVideoHeight(),
             sourceId = channel.sourceId,
         )
-        val opened = manager.open(key, target, window, TIMESHIFT_FIRST_PIECE_MS, leavingWallMs)
+        val opened = manager.open(key, target, window, TIMESHIFT_FIRST_PIECE_MS, leavingWallMs.takeIf { leaving is TimeshiftSession })
         if (opened == null) {
+            tsRefusedKey = key
             engineLog("timeshift: '${channel.name}' cannot be saved — playing it directly")
             clearTimeshift()
             return false
@@ -504,11 +554,20 @@ class LiveTuneController(
         return true
     }
 
-    /** The user left the channel: stop saving it, but keep it for a return. */
+    /** The user left the channel: stop saving it, but keep it for a return (a server's copy just stops). */
     private fun parkTimeshift() {
-        val session = ts ?: return
-        host.timeshift?.park(session, timeshiftWatchingWallMs())
+        when (val session = ts ?: return) {
+            is TimeshiftSession -> host.timeshift?.park(session, timeshiftWatchingWallMs())
+            is ServerTimeshift.Buffer -> session.close()
+        }
         clearTimeshift()
+    }
+
+    /** Play from the recording server's copy [ts] (just opened, or still running) from the live edge. */
+    private fun useCopy(channel: ChannelEntity, source: SourceEntity?, window: Int) {
+        tsWindowSec = window * 60
+        tsRequest = request(channel, source).copy(httpHeaders = null, drmConfig = null, manifestType = null, directSource = null)
+        publishTimeshift(resumeAtWallMs = null)
     }
 
     private fun clearTimeshift() {
@@ -542,6 +601,9 @@ class LiveTuneController(
         cancelLadderJobs()
         abandon(channel, detail)
     }
+
+    /** The last channel whose copy could not be made (see [openTimeshift]). */
+    private var tsRefusedKey: String? = null
 
     private fun timeshiftKey(channel: ChannelEntity): String = "${channel.sourceId}:${channel.id}"
 
@@ -1016,6 +1078,19 @@ class LiveTuneController(
 
         override suspend fun timeshiftResumeMode(): SettingsRepository.ResumeMode = settings.timeshiftResumeMode.first()
 
+        // The server knows channels by Xtream stream_id, as it does for recordings.
+        override suspend fun openServerTimeshift(
+            channel: ChannelEntity,
+            source: SourceEntity?,
+            windowMinutes: Int,
+            channelKey: String,
+        ): TimeshiftBuffer? {
+            if (source?.type != tv.own.owntv.core.model.SourceType.XTREAM) return null
+            val streamId = channel.remoteId ?: return null
+            val server = org.koin.core.context.GlobalContext.getOrNull()?.getOrNull<ServerTimeshift>() ?: return null
+            return server.open(streamId, channelKey, windowMinutes, SERVER_TIMESHIFT_FIRST_PIECE_MS)
+        }
+
         override suspend fun maxVideoHeight(): Int? =
             PlaybackSettings.await(settings).maxVideoHeight.takeIf { it > 0 }
 
@@ -1035,6 +1110,9 @@ class LiveTuneController(
 
         /** How long a new saved copy gets to receive its first bytes before the channel plays directly. */
         const val TIMESHIFT_FIRST_PIECE_MS = 12_000L
+
+        /** The same for the recording server's copy: it connects to the provider and cuts a piece first. */
+        const val SERVER_TIMESHIFT_FIRST_PIECE_MS = 20_000L
 
         /** Behind the copy's edge by more than this is not live any more (the rewind counter's own slack). */
         const val LIVE_SLACK_MS = 8_000L

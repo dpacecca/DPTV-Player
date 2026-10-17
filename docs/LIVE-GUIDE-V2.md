@@ -117,3 +117,19 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 - Guide-Info: der Titel hält rechts Abstand zur Uhr (`CLOCK_CLEARANCE`, `GuideInfoBlock(titleEndInset)`)
   und bricht auf zwei Zeilen um, statt unter die Uhr zu laufen.
 - Sport: rechter Rand 64 statt 28 mpx (wie Uhr/Guide); Tabellenwerte rechtsbündig, 52 mpx breit.
+
+## v2.1.5
+
+- Lokales Timeshift an: die Vorschau spielt den Kanal schon aus der gespeicherten Kopie
+  (`LiveTuneController.preview` → `openTimeshift`), OK befördert also denselben Stream. Vorher stoppte
+  das Vollbild die direkte Vorschau und öffnete den Kanal über die Kopie neu (3–4 s). Kann der Kanal
+  nicht gespeichert werden, bleibt der direkte Stream (`tsRefusedKey`).
+- Kategorie wechseln: `EpgViewModel.refilter()` filtert die zuletzt gebaute, sortierte Liste neu statt
+  alles neu zu laden (alle Kanäle, Matches, Sortierung, Zählung der Programmtabelle).
+- Nach der Kategorie-Wahl wartet der Fokus auf die NEUE Liste (`categoryFocusFrom`); vorher bekam die
+  erste Zeile der alten Liste den Fokus, verlor ihn beim Austausch, und ▼ lief im Menü.
+- Pause/Rückspulen über den Aufnahme-Server (DPTV Recorder ≥ 2.6.0): ist ein Server eingerichtet und der
+  Kanal aus einer Xtream-Playlist, hält der Server die Kopie (`ServerTimeshift`, `POST /api/timeshift`)
+  statt des Geräts — für Geräte ohne Speicher (Chromecast). Der Player liest sie wie die lokale Kopie über
+  `TimeshiftServer` (gemeinsame Schnittstelle `TimeshiftBuffer`); Zeiten werden einmal auf die Geräteuhr
+  umgerechnet. Ohne Server oder bei Ablehnung: Kopie auf dem Gerät wie bisher.

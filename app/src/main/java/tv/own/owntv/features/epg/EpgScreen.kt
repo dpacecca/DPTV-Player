@@ -325,6 +325,8 @@ fun EpgScreen(
             stepTarget = null
         }
     }
+    // A category was chosen: the list it replaces, until the new one is in (see the categories' onSelect).
+    var categoryFocusFrom by remember { mutableStateOf<List<ChannelEntity>?>(null) }
     // Back to the grid at the row focus was on (after a menu, the sheet, a jump).
     fun focusGrid(row: Int = focusedRow) {
         scope.launch {
@@ -341,6 +343,15 @@ fun EpgScreen(
                 delay(50)
             }
         }
+    }
+    LaunchedEffect(categoryFocusFrom, state.channels, state.loading) {
+        val from = categoryFocusFrom ?: return@LaunchedEffect
+        if (state.loading) return@LaunchedEffect
+        // A category with the same channels posts no new list: go after a moment anyway.
+        if (state.channels === from) delay(1_500)
+        categoryFocusFrom = null
+        runCatching { rowListState.scrollToItem(0) }
+        focusGrid(0)
     }
     // The cursor stays in view: scroll only when it reaches an edge, by one slot of room.
     LaunchedEffect(cursorTime, timelinePx) {
@@ -863,15 +874,20 @@ fun EpgScreen(
                 sheet = true,
                 listState = catListState,
                 onSelect = { idx ->
-                    railItems.getOrNull(idx)?.key?.let { key -> if (liveMode) liveVm.select(key) else vm.setCategoryFilter(key) }
+                    val key = railItems.getOrNull(idx)?.key
+                    val changed = key != null && key != (categoryKey ?: LiveKey.All)
+                    key?.let { if (liveMode) liveVm.select(it) else vm.setCategoryFilter(it) }
                     focusedRow = 0
                     vm.lastFocusedChannelId = null
-                    // Focus moves to the guide before the categories go, so it never drops to the menu; the
-                    // first row takes it as soon as the new category's list is in.
+                    // Focus moves to the guide before the categories go, so it never drops to the menu.
                     runCatching { dayTool.requestFocus() }
                     sheetOpen = false
-                    scope.launch { runCatching { rowListState.scrollToItem(0) } }
-                    focusGrid(0)
+                    // v2.1.5: the first row takes focus once the NEW category's list is in. Focusing the old
+                    // list's first row lost focus when that list was replaced, and ▼ then moved in the menu.
+                    if (changed) categoryFocusFrom = state.channels else {
+                        scope.launch { runCatching { rowListState.scrollToItem(0) } }
+                        focusGrid(0)
+                    }
                 },
                 onLongSelect = {},
                 onNavigateRight = { sheetOpen = false; focusGrid() },

@@ -23,20 +23,20 @@ import kotlin.concurrent.thread
  */
 object TimeshiftServer {
 
-    private val sessions = ConcurrentHashMap<String, TimeshiftSession>()
+    private val sessions = ConcurrentHashMap<String, TimeshiftBuffer>()
     @Volatile private var socket: ServerSocket? = null
 
-    fun register(session: TimeshiftSession) {
+    fun register(session: TimeshiftBuffer) {
         sessions[session.token] = session
         ensureStarted()
     }
 
-    fun unregister(session: TimeshiftSession) {
+    fun unregister(session: TimeshiftBuffer) {
         sessions.remove(session.token, session)
     }
 
     /** The address a player opens to watch [session] from piece [fromIndex], or from the live edge (null). */
-    fun urlFor(session: TimeshiftSession, fromIndex: Long?): String {
+    fun urlFor(session: TimeshiftBuffer, fromIndex: Long?): String {
         val port = ensureStarted()
         return "http://$HOST:$port/${session.token}/${fromIndex ?: LIVE}.${session.container.extension}"
     }

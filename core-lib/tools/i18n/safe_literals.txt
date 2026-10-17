@@ -2772,6 +2772,30 @@
 1	json	core/src/main/java/tv/own/owntv/core/recording/RemoteRecorder.kt	scheduled
 1	json	core/src/main/java/tv/own/owntv/core/recording/RemoteRecorder.kt	status
 1	json	core/src/main/java/tv/own/owntv/core/recording/RemoteRecorder.kt	url
+1	empty	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	\0
+3	url	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	${config.baseUrl}/api/timeshift/$id
+1	url	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	${config.baseUrl}/api/timeshift/$id/stream$query
+1	technical	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	%02x
+1	url	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	/api/timeshift
+1	url	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	?from=${it + offsetMs}
+3	protocol	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	Authorization
+3	protocol	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	Bearer
+1	log	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	ServerTimeshift
+1	mime	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	application/json; charset=utf-8
+1	json	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	channelId
+1	json	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	closed
+1	json	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	error
+1	json	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	id
+1	json	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	now
+1	json	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	pieces
+1	log	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	server buffer lost: $why
+1	log	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	the recording server answered ${response.code}
+2	log	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	the recording server cannot be reached
+1	log	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	the recording server did not start a buffer: ${it.message}
+2	log	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	the recording server stopped keeping the channel
+1	log	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	the recording server's answer could not be read
+1	log	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	the recording server's buffer had nothing after ${firstPieceTimeoutMs}ms
+1	json	core/src/main/java/tv/own/owntv/core/recording/ServerTimeshift.kt	windowMinutes
 1	protocol	core/src/main/java/tv/own/owntv/core/reminder/ReminderReceivers.kt	android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED
 1	protocol	core/src/main/java/tv/own/owntv/core/reminder/ReminderReceivers.kt	tv.own.owntv.core.action.REMINDER_DUE
 1	log	core/src/main/java/tv/own/owntv/core/reminder/ReminderScheduler.kt	ReminderScheduler
@@ -4681,6 +4705,7 @@
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	the connection was lost ($why)
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' cannot be saved — playing it directly
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' plays from its saved copy
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' plays from the recording server's copy
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	tune '${channel.name}' -> ${route.why} [${route.preference.name}]
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	user chose compatibility mode
 1	technical	player-core/src/main/java/tv/own/owntv/player/MpvAudioChannels.kt	,

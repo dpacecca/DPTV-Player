@@ -22,12 +22,12 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class TimeshiftSession(
     /** Unguessable, and part of every URL, so a stale URL can never reach a newer buffer. */
-    val token: String,
+    override val token: String,
     /** Which channel this is the buffer of (the controller's key). */
-    val channelKey: String,
+    override val channelKey: String,
     private val dir: File,
     private val clock: () -> Long = System::currentTimeMillis,
-) {
+) : TimeshiftBuffer {
     enum class Container(val extension: String, val mimeType: String) {
         TS("ts", "video/mp2t"),
         FMP4("mp4", "video/mp4"),
@@ -53,7 +53,7 @@ class TimeshiftSession(
     private var pendingGap = false
     @Volatile private var closed = false
 
-    @Volatile var container: Container = Container.TS
+    @Volatile override var container: Container = Container.TS
         private set
     private var initFile: File? = null
     private var initBytes: ByteArray? = null
@@ -169,7 +169,7 @@ class TimeshiftSession(
     fun livePieceIndex(): Long? = synchronized(lock) { pieces.lastOrNull()?.index }
 
     /** The wall-clock instant the oldest saved picture belongs to. */
-    fun oldestWallMs(): Long? = synchronized(lock) { pieces.firstOrNull()?.wallStartMs }
+    override fun oldestWallMs(): Long? = synchronized(lock) { pieces.firstOrNull()?.wallStartMs }
 
     /** The wall-clock instant of the newest saved picture. */
     fun liveEdgeWallMs(): Long? = synchronized(lock) { pieces.lastOrNull()?.let { it.wallStartMs + durationOfLocked(it) } }
@@ -181,18 +181,18 @@ class TimeshiftSession(
      * ordinary player plays that burst too and is still called live, so the copy measures behind-live
      * from the clock, not from its own edge.
      */
-    fun playableEdgeWallMs(): Long? = liveEdgeWallMs()?.coerceAtMost(clock())
+    override fun playableEdgeWallMs(): Long? = liveEdgeWallMs()?.coerceAtMost(clock())
 
     /** Where piece [index] starts on the wall clock, or null once it has been dropped. */
     fun wallStartOf(index: Long): Long? = synchronized(lock) { pieces.firstOrNull { it.index == index }?.wallStartMs }
 
     /** The piece holding wall-clock instant [wallMs]; the oldest when that has already been dropped. */
-    fun pieceAt(wallMs: Long): Long? = synchronized(lock) {
+    override fun pieceAt(wallMs: Long): Long? = synchronized(lock) {
         pieces.lastOrNull { it.wallStartMs <= wallMs }?.index ?: pieces.firstOrNull()?.index
     }
 
     /** Wall-clock spans that hold nothing (the connection was down), oldest first. */
-    fun gaps(): List<LongRange> = synchronized(lock) {
+    override fun gaps(): List<LongRange> = synchronized(lock) {
         val list = pieces.toList()
         list.zipWithNext().mapNotNull { (a, b) ->
             val end = a.wallStartMs + durationOfLocked(a)
@@ -219,14 +219,14 @@ class TimeshiftSession(
      * the live edge. For fragmented MP4 the initialisation segment comes first. A piece already dropped
      * starts at the oldest instead.
      */
-    fun open(fromIndex: Long?): InputStream = Reader(fromIndex)
+    override fun open(fromIndex: Long?): InputStream = Reader(fromIndex)
 
     /**
      * Where the newest reader's stream starts on the wall clock. The player's position counts from
      * there, whichever way it (re)opened the buffer — which makes "what is on screen" exact even after an
      * engine reconnects on its own.
      */
-    @Volatile var readingFromWallMs: Long? = null
+    @Volatile override var readingFromWallMs: Long? = null
         private set
 
     private inner class Reader(fromIndex: Long?) : InputStream() {
@@ -326,7 +326,7 @@ class TimeshiftSession(
 
     // --- Lifetime ----------------------------------------------------------------------------------
 
-    val isClosed: Boolean get() = closed
+    override val isClosed: Boolean get() = closed
 
     /** Stop everything and delete the folder. Readers get end-of-stream. */
     fun close() {

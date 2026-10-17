@@ -282,6 +282,7 @@ val dataModule = module {
     // only database read is `recordings` — a handful of rows — and it happens off the main thread.
     // A DPTV-Recorder server, used instead of this device when one is set up (Settings › Recording).
     single { tv.own.owntv.core.recording.RemoteRecorder(get(), get()) }
+    single { tv.own.owntv.core.recording.ServerTimeshift(get<okhttp3.OkHttpClient>(), get<tv.own.owntv.core.recording.RemoteRecorder>()) }
     single(createdAtStart = true) {
         tv.own.owntv.core.recording.RecordingManager(
             androidContext(), get(), get(), get(), get(), get(), get(), get(), get(), get(),
