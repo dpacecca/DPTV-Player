@@ -496,7 +496,8 @@ Pick a drawn avatar, or **Your own picture** — a file on this TV or a photo se
 **Open OwnTV with the TV:** Settings → App → **Auto start on boot** · **Auto start on wake-up**, both
 off by default. *On boot* opens OwnTV once the TV has started up; *on wake-up* opens it each time the
 TV comes out of sleep, which is what most TVs do when you press the power button. A cold start lands
-on the App startup choice above; an OwnTV that was still running comes back where you left it.
+on the App startup choice above; an OwnTV that was still running comes back where you left it, but a
+profile with a PIN asks for it again.
 - Android 10 and newer let an app open by itself only when it may **display over other apps**. OwnTV
   asks for that when you turn an option on, and until it is allowed the row says so. If your TV has
   no such screen, the option cannot work there.

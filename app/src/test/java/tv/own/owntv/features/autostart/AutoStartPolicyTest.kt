@@ -83,6 +83,33 @@ class AutoStartPolicyTest {
         assertFalse(AutoStartPolicy.wakeListenerNeeded(both, canStartFromBackground = true, television = false))
     }
 
+    // --- regateOnLaunch ---
+
+    @Test
+    fun autoStartLaunch_locksAProfileWithAPinAgain() {
+        assertTrue(AutoStartPolicy.regateOnLaunch(launchMarkAgeMs = 0L, authenticatedProfileHasPin = true))
+        assertTrue(
+            AutoStartPolicy.regateOnLaunch(AutoStartPolicy.LAUNCH_MARK_MAX_AGE_MS, authenticatedProfileHasPin = true),
+        )
+    }
+
+    @Test
+    fun autoStartLaunch_leavesAProfileWithoutAPinAlone() {
+        assertFalse(AutoStartPolicy.regateOnLaunch(launchMarkAgeMs = 0L, authenticatedProfileHasPin = false))
+    }
+
+    @Test
+    fun startNotMadeByAutoStart_neverLocks() {
+        assertFalse(AutoStartPolicy.regateOnLaunch(launchMarkAgeMs = null, authenticatedProfileHasPin = true))
+    }
+
+    @Test
+    fun staleOrFutureLaunchMark_neverLocks() {
+        val stale = AutoStartPolicy.LAUNCH_MARK_MAX_AGE_MS + 1
+        assertFalse(AutoStartPolicy.regateOnLaunch(launchMarkAgeMs = stale, authenticatedProfileHasPin = true))
+        assertFalse(AutoStartPolicy.regateOnLaunch(launchMarkAgeMs = -1L, authenticatedProfileHasPin = true))
+    }
+
     // --- shouldAskForOverlay ---
 
     @Test
