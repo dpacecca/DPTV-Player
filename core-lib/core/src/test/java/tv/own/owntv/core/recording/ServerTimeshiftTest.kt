@@ -85,9 +85,10 @@ class ServerTimeshiftTest {
         assertEquals(first + 2_000, buffer.readingFromWallMs)
         assertTrue(requests.any { it.startsWith("GET /api/timeshift/abc/stream?from=${pieces[1][0]} ") })
 
-        // The live edge is the newest piece.
+        // The live edge is the piece still being written, which starts where the newest finished one ends.
         buffer.open(null).close()
-        assertEquals(first + 14_000, buffer.readingFromWallMs)
+        assertEquals(first + 16_000, buffer.readingFromWallMs)
+        assertTrue(requests.any { it.startsWith("GET /api/timeshift/abc/stream?live=1 ") })
 
         // Through the loopback server, as the player reads it.
         val url = TimeshiftServer.urlFor(buffer, index)

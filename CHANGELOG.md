@@ -64,6 +64,15 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.1.6
+
+### ✨ New features
+- **🔁 ▲ on the first channel goes round to the last; holding ▲ goes up to the days**
+- **📌 The selected channel stays at the top of the guide**
+
+### 🐞 Fixes
+- **⏩ Go live on the recording server's copy is at the live edge, not 15 s behind (DPTV Recorder 2.6.1)**
+
 ## v2.1.5
 
 ### ✨ New features

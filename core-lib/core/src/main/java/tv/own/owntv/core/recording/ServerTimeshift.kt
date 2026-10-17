@@ -146,14 +146,17 @@ class ServerTimeshift(
         override fun open(fromIndex: Long?): InputStream {
             val list = pieces
             val now = System.currentTimeMillis()
-            val start = if (fromIndex == null) {
-                val edge = playableEdgeWallMs() ?: now
-                list.lastOrNull { it[0] <= edge }?.get(0) ?: list.lastOrNull()?.get(0)
+            val query = if (fromIndex == null) {
+                // The live edge (v2.1.6): the piece the server is still writing, which starts where the
+                // newest finished one ends. Starting at that finished piece instead put the picture a
+                // piece or two behind live — pieces end on keyframes, often 5–8 s apart.
+                readingFromWallMs = playableEdgeWallMs() ?: now
+                "?live=1"
             } else {
-                list.lastOrNull { it[0] <= fromIndex }?.get(0) ?: list.firstOrNull()?.get(0)
+                val start = list.lastOrNull { it[0] <= fromIndex }?.get(0) ?: list.firstOrNull()?.get(0)
+                readingFromWallMs = start ?: now
+                start?.let { "?from=${it + offsetMs}" }.orEmpty()
             }
-            readingFromWallMs = start ?: now
-            val query = start?.let { "?from=${it + offsetMs}" }.orEmpty()
             val response = http.newCall(
                 Request.Builder().url("${config.baseUrl}/api/timeshift/$id/stream$query")
                     .header("Authorization", "Bearer " + config.apiKey)
