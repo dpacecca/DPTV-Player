@@ -492,9 +492,14 @@ class EpgViewModel(
 
     /** Record that this channel was tuned from the guide, so focus returns to its row on Back.
      *  Call this before delegating playback to liveVm, so lastTunedChannelId is set correctly. */
-    fun noteChannelTuned(channel: ChannelEntity) {
+    fun noteChannelTuned(channel: ChannelEntity, category: tv.own.owntv.core.live.LiveKey? = null) {
         lastTunedChannelId = channel.id
+        tunedCategory = category
     }
+
+    /** The category the channel playing was picked in, to go back to when the guide reopens on it (v2.1.7). */
+    var tunedCategory: tv.own.owntv.core.live.LiveKey? = null
+        private set
 
     /** The channel whose row last had focus. The screen is rebuilt each time Live TV is opened (from
      *  Settings, Sport, the rail), and this view model outlives it, so the guide opens on that row. */

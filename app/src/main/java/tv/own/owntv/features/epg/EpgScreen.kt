@@ -365,10 +365,26 @@ fun EpgScreen(
 
     // Back from the player (the shell notes the channel that was playing, a zap included) or from Settings:
     // the row the guide was on.
-    LaunchedEffect(restoreFocus, state.loading, state.channels.size) {
-        if (!restoreFocus || state.loading || state.channels.isEmpty()) return@LaunchedEffect
-        val idx = listOfNotNull(vm.lastFocusedChannelId, previewChannel?.id, vm.lastTunedChannelId)
+    // v2.1.7: the channel playing comes first, and when the categories were changed while it played (Back to
+    // the guide, a new category, Back to the picture, Back again) the guide goes back to the category it was
+    // watched from — or All — so it opens on that channel, not on the category browsed last.
+    var restoreCategoryTried by remember { mutableStateOf(0) }
+    LaunchedEffect(restoreFocus, state.loading, state.channels) {
+        if (!restoreFocus) { restoreCategoryTried = 0; return@LaunchedEffect }
+        if (state.loading || state.channels.isEmpty()) return@LaunchedEffect
+        val playing = previewChannel
+        if (playing != null && state.channels.none { it.id == playing.id } && restoreCategoryTried < 2) {
+            val current = categoryKey ?: LiveKey.All
+            val back = (if (restoreCategoryTried == 0) vm.tunedCategory else null)?.takeIf { it != current } ?: LiveKey.All
+            restoreCategoryTried++
+            if (back != current) {
+                if (liveMode) liveVm.select(back) else vm.setCategoryFilter(back)
+                return@LaunchedEffect // runs again with the new category's list
+            }
+        }
+        val idx = listOfNotNull(playing?.id, vm.lastFocusedChannelId, vm.lastTunedChannelId)
             .firstNotNullOfOrNull { id -> state.channels.indexOfFirst { it.id == id }.takeIf { it >= 0 } } ?: 0
+        state.channels.getOrNull(idx)?.let { vm.lastFocusedChannelId = it.id }
         focusedRow = idx
         delay(80)
         focusGrid(idx)
@@ -442,7 +458,7 @@ fun EpgScreen(
     }
 
     val channelsNow = state.channels
-    val watch: (ChannelEntity) -> Unit = { ch -> vm.noteChannelTuned(ch); onPlayChannel(ch, channelsNow) }
+    val watch: (ChannelEntity) -> Unit = { ch -> vm.noteChannelTuned(ch, categoryKey ?: LiveKey.All); onPlayChannel(ch, channelsNow) }
     val playFromStart: (ChannelEntity, EpgProgrammeEntity) -> Unit = { ch, p ->
         when (catchupPlayer) {
             SettingsRepository.CatchupPlayer.ASK -> askPlayerFor = ch to p
@@ -588,7 +604,8 @@ fun EpgScreen(
         // after them); a phone keeps them as a sheet over the guide.
         val pushPanel = !compact
         LaunchedEffect(sheetOpen, pushPanel) { onPanelOpen(sheetOpen && pushPanel) }
-        val panelW = fx(450)
+        // Wide enough for long category names on two or three lines (v2.1.7).
+        val panelW = fx(540)
         val panelStart by androidx.compose.animation.core.animateDpAsState(
             if (pushPanel) panelInset else fx(24), androidx.compose.animation.core.tween(160),
         )

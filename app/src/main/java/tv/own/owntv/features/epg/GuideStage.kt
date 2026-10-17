@@ -259,6 +259,13 @@ internal fun GuideInfoBlock(
                 )
             }
         }
+        // No guide for this channel (v2.1.7): say so; OK still plays it.
+        if (programme == null) {
+            Text(
+                stringResource(R.string.sport_guide_no_info), style = stageText(t(19), 600), color = StageColors.Muted,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
         val synopsis = programme?.description
         // The feed's details (genre, year, rating) only where there is no synopsis: the synopsis is the
         // larger text and gets the room.

@@ -105,4 +105,5 @@
     <string name="sport_dvr_empty">No recordings yet. In the guide, hold OK on a programme and choose Record.</string>
     <string name="sport_dvr_resume">Resume from %1$s</string>
     <string name="sport_dvr_start_over">Start over</string>
+    <string name="sport_guide_no_info">No information available</string>
 </resources>
