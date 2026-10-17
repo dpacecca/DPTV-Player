@@ -358,6 +358,7 @@ fun SettingsScreen(
     }
     val weatherEnabled by settingsVm.weatherEnabled.collectAsStateWithLifecycle()
     val startupMode by settingsVm.startupMode.collectAsStateWithLifecycle()
+    val autoStart = rememberAutoStartSettingsState()
     val startupChannel by settingsVm.startupChannel.collectAsStateWithLifecycle()
     val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
     val rememberLastLive by settingsVm.rememberLastLive.collectAsStateWithLifecycle()
@@ -813,6 +814,7 @@ fun SettingsScreen(
             focus = startupRowFocus,
             onClick = { saveScroll(); dialogReturn = startupRowFocus; showStartup = true },
         ),
+        *autoStartRootRows(autoStart).toTypedArray(),
         RootRow(
             "check_updates", TileTone.PRIMARY, OwnTVIcon.REFRESH,
             title = stringResource(R.string.settings_check_updates), desc = stringResource(R.string.settings_check_updates_description),
@@ -1098,6 +1100,7 @@ fun SettingsScreen(
             *subScreenSearchEntries { t -> open(t) }.toTypedArray(),
             SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_app_startup), stringResource(R.string.settings_search_keywords_startup), OwnTVIcon.POWER, TileTone.SECONDARY,
                 chip = startupLabel(startupMode)) { saveScroll(); dialogReturn = searchFieldFocus; showStartup = true },
+            *autoStartSearchEntries(autoStart).toTypedArray(),
             SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_check_updates), stringResource(R.string.settings_search_keywords_updates), OwnTVIcon.REFRESH, TileTone.PRIMARY,
                 chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}") { saveScroll(); dialogReturn = searchFieldFocus; showUpdate = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_update_startup), stringResource(R.string.settings_search_keywords_update_auto), OwnTVIcon.REFRESH, TileTone.SECONDARY,
@@ -2812,7 +2815,7 @@ private fun StepButton(
  * dialog, and Back from a sub-screen) need the *index* of a row that may be scrolled off-screen and
  * therefore not composed at all. Neither is knowable from a plain Column of 36 inline rows.
  */
-private sealed interface RootItem {
+internal sealed interface RootItem {
     val key: String
 }
 
@@ -2824,7 +2827,7 @@ private data class RootGroup(
     val summary: String,
 ) : RootItem
 
-private data class RootRow(
+internal data class RootRow(
     override val key: String,
     val tone: TileTone,
     val icon: OwnTVIcon,
@@ -2982,7 +2985,7 @@ internal fun SettingsRowMenu(
 }
 
 /** Batch 4 · one searchable settings row: its group breadcrumb, title, extra keywords, and action. */
-private class SettingsSearchEntry(
+internal class SettingsSearchEntry(
     val group: String,
     val title: String,
     keywords: String,
