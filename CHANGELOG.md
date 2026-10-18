@@ -64,6 +64,14 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.3.2
+
+### ✨ New features
+- **👆 Swipe right in the guide to open the categories, left to close them**
+
+### 🐛 Fixes
+- **◀ and ▶ in full screen open the quick guide and recent channels again**
+
 ## v2.3.1
 
 ### 🐛 Fixes
