@@ -458,6 +458,9 @@
     <string name="settings_hardware_decoding">ハードウェアデコード</string>
     <string name="settings_hardware_decoding_description">TVのハードウェアデコーダーを使用します。一部のストリームで映像が途切れたり、表示が乱れたりする場合はオフにしてください。</string>
     <string name="settings_hardware_decoding_description_mobile">デバイスのハードウェアデコーダーを使用します。一部のストリームで映像が途切れたり、表示が乱れたりする場合はオフにしてください。</string>
+    <string name="settings_software_decode_above_1080p">1080p超のソフトウェアデコード</string>
+    <string name="settings_software_decode_above_1080p_description">TVのハードウェアデコーダーがオフまたは失敗したとき、4Kなど1080pを超える映像をソフトウェアで再生します。高速なプロセッサーが必要です。ほとんどのTVでは映像が途切れます。</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">デバイスのハードウェアデコーダーがオフまたは失敗したとき、4Kなど1080pを超える映像をソフトウェアで再生します。高速なプロセッサーが必要です。多くのデバイスでは映像が途切れます。</string>
     <string name="settings_movies_series_player">映画とシリーズのプレーヤー</string>
     <string name="settings_live_tv_player">ライブTVのプレーヤー</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>、次に <xliff:g id="second">%2$s</xliff:g></string>

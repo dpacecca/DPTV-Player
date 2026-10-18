@@ -468,6 +468,9 @@
     <string name="settings_hardware_decoding">فك الترميز بالأجهزة</string>
     <string name="settings_hardware_decoding_description">استخدام وحدة فك الترميز بالأجهزة في التلفزيون. عطّل هذا الخيار إذا تقطعت بعض عمليات البث أو ظهرت بها عيوب مرئية.</string>
     <string name="settings_hardware_decoding_description_mobile">استخدام وحدة فك الترميز بالأجهزة في الجهاز. عطّل هذا الخيار إذا تقطعت بعض عمليات البث أو ظهرت بها عيوب مرئية.</string>
+    <string name="settings_software_decode_above_1080p">فك الترميز البرمجي فوق 1080p</string>
+    <string name="settings_software_decode_above_1080p_description">تشغيل فيديو 4K وغيره من الفيديو الأعلى من 1080p برمجيًا عندما تكون وحدة فك الترميز بالأجهزة في التلفزيون معطّلة أو تفشل. يحتاج إلى معالج سريع، إذ يتقطع التشغيل على معظم أجهزة التلفزيون.</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">تشغيل فيديو 4K وغيره من الفيديو الأعلى من 1080p برمجيًا عندما تكون وحدة فك الترميز بالأجهزة في الجهاز معطّلة أو تفشل. يحتاج إلى معالج سريع، إذ يتقطع التشغيل على كثير من الأجهزة.</string>
     <string name="settings_movies_series_player">مشغّل الأفلام والمسلسلات</string>
     <string name="settings_live_tv_player">مشغّل البث المباشر</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>، ثم <xliff:g id="second">%2$s</xliff:g></string>

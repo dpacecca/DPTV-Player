@@ -235,6 +235,28 @@
     <string name="content_downloads_group_on_tv">På dette tv</string>
     <string name="content_downloads_ready">Klar til at se</string>
     <string name="content_downloads_paused">Sat på pause</string>
+    <string name="content_downloads_file_missing">Filen mangler: den er ikke længere på drevet</string>
+    <string name="content_downloads_reason_account_busy">Kontoen er optaget: en anden stream bruger forbindelsen</string>
+    <string name="content_downloads_reason_refused">Serveren afviste linket</string>
+    <string name="content_downloads_reason_not_found">Serveren har ikke længere denne fil</string>
+    <string name="content_downloads_reason_server_error">Serverfejl</string>
+    <string name="content_downloads_reason_http">Serveren sendte ikke filen</string>
+    <string name="content_downloads_reason_connection_lost">Forbindelsen blev afbrudt</string>
+    <string name="content_downloads_reason_folder">Downloadmappen er ikke tilgængelig</string>
+    <string name="content_downloads_reason_no_space">Ikke nok plads</string>
+    <string name="content_downloads_reason_too_large">For stor til dette drev: det kan ikke gemme filer over 4 GB. Vælg en anden downloadmappe, eller formatér drevet som exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Venter: starter, når du holder op med at se</string>
+    <string name="content_downloads_reason_paused_watching">Sat på pause, mens du ser</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Denne playliste tillader kun én stream</string>
+    <string name="content_download_watch_body">En download fra <xliff:g id="playlist">%1$s</xliff:g> brugte den, så den er sat på pause indtil videre. Vil du se, eller lukke afspilleren og fortsætte downloadet?</string>
+    <string name="content_download_watch_watch">Sæt download på pause, og se</string>
+    <string name="content_download_watch_keep">Fortsæt download</string>
+    <string name="content_download_watch_remember">Spørg ikke igen</string>
+    <string name="content_download_watch_setting">Se under download</string>
+    <string name="content_download_watch_setting_description">For playlister, der kun tillader én stream: hvad der sker med et download, når du starter afspilning.</string>
+    <string name="content_download_watch_ask">Spørg hver gang</string>
+    <string name="content_download_watch_pause">Sæt download på pause</string>
     <string name="content_downloads_starts_after">I kø · starter efter <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Opret en profil for at se programguiden.</string>
@@ -375,6 +397,7 @@
     <string name="content_key_menu">Menu</string>
     <string name="content_key_enter">Gå ind</string>
     <string name="content_key_select">Vælg</string>
+    <string name="content_key_unselect">Fravælg</string>
     <string name="content_key_page">Side</string>
     <string name="content_history_overlay_hint">De kanaler, du sidst så, nyeste først</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> set</string>

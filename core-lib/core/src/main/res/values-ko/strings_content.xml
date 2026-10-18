@@ -227,6 +227,28 @@
     <string name="content_downloads_group_on_tv">이 TV에 저장됨</string>
     <string name="content_downloads_ready">시청 가능</string>
     <string name="content_downloads_paused">일시중지됨</string>
+    <string name="content_downloads_file_missing">파일 없음: 더 이상 드라이브에 없습니다</string>
+    <string name="content_downloads_reason_account_busy">계정 사용 중: 다른 스트림이 연결을 사용하고 있습니다</string>
+    <string name="content_downloads_reason_refused">서버가 링크를 거부했습니다</string>
+    <string name="content_downloads_reason_not_found">서버에 더 이상 이 파일이 없습니다</string>
+    <string name="content_downloads_reason_server_error">서버 오류</string>
+    <string name="content_downloads_reason_http">서버가 파일을 보내지 않았습니다</string>
+    <string name="content_downloads_reason_connection_lost">연결이 끊어졌습니다</string>
+    <string name="content_downloads_reason_folder">다운로드 폴더를 사용할 수 없습니다</string>
+    <string name="content_downloads_reason_no_space">저장 공간이 부족합니다</string>
+    <string name="content_downloads_reason_too_large">이 드라이브에는 너무 큽니다. 4GB를 넘는 파일은 저장할 수 없습니다. 다른 다운로드 폴더를 선택하거나 드라이브를 exFAT로 포맷하세요</string>
+    <string name="content_downloads_reason_waiting_watching">대기 중: 시청을 멈추면 시작됩니다</string>
+    <string name="content_downloads_reason_paused_watching">시청 중이라 일시 중지됨</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">이 재생목록은 스트림을 하나만 허용합니다</string>
+    <string name="content_download_watch_body"><xliff:g id="playlist">%1$s</xliff:g>의 다운로드가 사용 중이어서 지금은 일시 중지되었습니다. 시청하시겠습니까, 아니면 플레이어를 닫고 다운로드를 계속하시겠습니까?</string>
+    <string name="content_download_watch_watch">다운로드 일시 중지하고 시청</string>
+    <string name="content_download_watch_keep">다운로드 계속</string>
+    <string name="content_download_watch_remember">다시 묻지 않기</string>
+    <string name="content_download_watch_setting">다운로드 중 시청</string>
+    <string name="content_download_watch_setting_description">스트림을 하나만 허용하는 재생목록에서 재생을 시작할 때 다운로드를 어떻게 할지 정합니다.</string>
+    <string name="content_download_watch_ask">매번 묻기</string>
+    <string name="content_download_watch_pause">다운로드 일시 중지</string>
     <string name="content_downloads_starts_after">대기 중 · <xliff:g id="title">%1$s</xliff:g> 다음에 시작</string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g>MB/s</string>
     <string name="content_epg_create_profile">편성표를 보려면 프로필을 만드세요.</string>
@@ -358,6 +380,7 @@
     <string name="content_key_menu">메뉴</string>
     <string name="content_key_enter">들어가기</string>
     <string name="content_key_select">선택</string>
+    <string name="content_key_unselect">선택 해제</string>
     <string name="content_key_page">페이지</string>
     <string name="content_history_overlay_hint">최근에 본 채널, 최신순</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> 시청함</string>

@@ -227,6 +227,28 @@
     <string name="content_downloads_group_on_tv">Ezen a tévén</string>
     <string name="content_downloads_ready">Megtekinthető</string>
     <string name="content_downloads_paused">Szüneteltetve</string>
+    <string name="content_downloads_file_missing">Hiányzó fájl: már nincs a meghajtón</string>
+    <string name="content_downloads_reason_account_busy">A fiók foglalt: egy másik adatfolyam használja a kapcsolatot</string>
+    <string name="content_downloads_reason_refused">A szerver elutasította a hivatkozást</string>
+    <string name="content_downloads_reason_not_found">A szerveren már nincs meg ez a fájl</string>
+    <string name="content_downloads_reason_server_error">Szerverhiba</string>
+    <string name="content_downloads_reason_http">A szerver nem küldte el a fájlt</string>
+    <string name="content_downloads_reason_connection_lost">Megszakadt a kapcsolat</string>
+    <string name="content_downloads_reason_folder">A letöltési mappa nem érhető el</string>
+    <string name="content_downloads_reason_no_space">Nincs elég hely</string>
+    <string name="content_downloads_reason_too_large">Túl nagy ehhez a meghajtóhoz: nem tud 4 GB-nál nagyobb fájlt tárolni. Válassz másik letöltési mappát, vagy formázd a meghajtót exFAT-ra</string>
+    <string name="content_downloads_reason_waiting_watching">Várakozik: akkor indul, amikor abbahagyod a nézést</string>
+    <string name="content_downloads_reason_paused_watching">Szüneteltetve, amíg nézed</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Ez a lejátszási lista csak egy adatfolyamot enged</string>
+    <string name="content_download_watch_body">Egy letöltés innen: <xliff:g id="playlist">%1$s</xliff:g> használta, ezért most szünetel. Nézed, vagy bezárod a lejátszót és folytatod a letöltést?</string>
+    <string name="content_download_watch_watch">Letöltés szüneteltetése és nézés</string>
+    <string name="content_download_watch_keep">Letöltés folytatása</string>
+    <string name="content_download_watch_remember">Ne kérdezze többé</string>
+    <string name="content_download_watch_setting">Nézés letöltés közben</string>
+    <string name="content_download_watch_setting_description">Csak egy adatfolyamot engedő lejátszási listáknál: mi történik a letöltéssel, ha elindítasz egy lejátszást.</string>
+    <string name="content_download_watch_ask">Mindig kérdezzen</string>
+    <string name="content_download_watch_pause">Letöltés szüneteltetése</string>
     <string name="content_downloads_starts_after">Sorban áll · ez után indul: <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Hozz létre egy profilt a műsorújság megjelenítéséhez.</string>
@@ -367,6 +389,7 @@
     <string name="content_key_menu">Menü</string>
     <string name="content_key_enter">Belépés</string>
     <string name="content_key_select">Kiválasztás</string>
+    <string name="content_key_unselect">Kijelölés törlése</string>
     <string name="content_key_page">Oldal</string>
     <string name="content_history_overlay_hint">A legutóbb nézett csatornák, a legújabb elöl</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> megnézve</string>

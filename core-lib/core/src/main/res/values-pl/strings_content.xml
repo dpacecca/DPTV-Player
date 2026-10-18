@@ -251,6 +251,28 @@
     <string name="content_downloads_group_on_tv">Na tym telewizorze</string>
     <string name="content_downloads_ready">Gotowe do obejrzenia</string>
     <string name="content_downloads_paused">Wstrzymane</string>
+    <string name="content_downloads_file_missing">Brak pliku: nie ma go już na dysku</string>
+    <string name="content_downloads_reason_account_busy">Konto zajęte: połączenia używa inny strumień</string>
+    <string name="content_downloads_reason_refused">Serwer odrzucił link</string>
+    <string name="content_downloads_reason_not_found">Serwer nie ma już tego pliku</string>
+    <string name="content_downloads_reason_server_error">Błąd serwera</string>
+    <string name="content_downloads_reason_http">Serwer nie wysłał pliku</string>
+    <string name="content_downloads_reason_connection_lost">Utracono połączenie</string>
+    <string name="content_downloads_reason_folder">Folder pobierania jest niedostępny</string>
+    <string name="content_downloads_reason_no_space">Za mało miejsca</string>
+    <string name="content_downloads_reason_too_large">Za duży dla tego dysku: nie może przechowywać plików powyżej 4 GB. Wybierz inny folder pobierania lub sformatuj dysk jako exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Oczekuje: rozpocznie się, gdy przestaniesz oglądać</string>
+    <string name="content_downloads_reason_paused_watching">Wstrzymano na czas oglądania</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Ta playlista pozwala tylko na jeden strumień</string>
+    <string name="content_download_watch_body">Używało go pobieranie z <xliff:g id="playlist">%1$s</xliff:g>, więc na razie zostało wstrzymane. Oglądać czy zamknąć odtwarzacz i kontynuować pobieranie?</string>
+    <string name="content_download_watch_watch">Wstrzymaj pobieranie i oglądaj</string>
+    <string name="content_download_watch_keep">Kontynuuj pobieranie</string>
+    <string name="content_download_watch_remember">Nie pytaj ponownie</string>
+    <string name="content_download_watch_setting">Oglądanie podczas pobierania</string>
+    <string name="content_download_watch_setting_description">W playlistach pozwalających na jeden strumień: co dzieje się z pobieraniem, gdy zaczynasz odtwarzanie.</string>
+    <string name="content_download_watch_ask">Pytaj za każdym razem</string>
+    <string name="content_download_watch_pause">Wstrzymaj pobieranie</string>
     <string name="content_downloads_starts_after">W kolejce · zacznie się po: <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Utwórz profil, aby zobaczyć przewodnik.</string>
@@ -409,6 +431,7 @@
     <string name="content_key_menu">Menu</string>
     <string name="content_key_enter">Wejdź</string>
     <string name="content_key_select">Wybierz</string>
+    <string name="content_key_unselect">Odznacz</string>
     <string name="content_key_page">Strona</string>
     <string name="content_history_overlay_hint">Ostatnio oglądane kanały, od najnowszych</string>
     <string name="content_watched_duration">obejrzano <xliff:g id="value">%1$s</xliff:g></string>

@@ -43,7 +43,7 @@
     <string name="search_movie">Film</string>
     <string name="search_series">Seriál</string>
     <string name="search_channels">Kanály</string>
-    <string name="search_on_tv">V televizi</string>
+    <string name="search_on_tv">Pořady</string>
     <string name="search_go_to_channel">Přejít na kanál</string>
     <string name="search_go_to_movie">Přejít na film</string>
     <string name="search_clear_recent">Vymazat nedávná hledání</string>

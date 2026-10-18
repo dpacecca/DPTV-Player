@@ -243,6 +243,28 @@
     <string name="content_downloads_group_on_tv">Nesta TV</string>
     <string name="content_downloads_ready">Pronto a ver</string>
     <string name="content_downloads_paused">Em pausa</string>
+    <string name="content_downloads_file_missing">Ficheiro em falta: já não está na unidade</string>
+    <string name="content_downloads_reason_account_busy">Conta ocupada: outra transmissão está a usar a ligação</string>
+    <string name="content_downloads_reason_refused">O servidor recusou a ligação</string>
+    <string name="content_downloads_reason_not_found">O servidor já não tem este ficheiro</string>
+    <string name="content_downloads_reason_server_error">Erro do servidor</string>
+    <string name="content_downloads_reason_http">O servidor não enviou o ficheiro</string>
+    <string name="content_downloads_reason_connection_lost">Ligação perdida</string>
+    <string name="content_downloads_reason_folder">Pasta de transferências indisponível</string>
+    <string name="content_downloads_reason_no_space">Espaço insuficiente</string>
+    <string name="content_downloads_reason_too_large">Demasiado grande para esta unidade: não consegue guardar ficheiros acima de 4 GB. Escolha outra pasta de transferências ou formate a unidade em exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Em espera: começa quando deixar de ver</string>
+    <string name="content_downloads_reason_paused_watching">Em pausa enquanto vê</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Esta lista permite apenas uma transmissão</string>
+    <string name="content_download_watch_body">Uma transferência de <xliff:g id="playlist">%1$s</xliff:g> estava a usá-la, por isso está em pausa por agora. Ver, ou fechar o leitor e continuar a transferência?</string>
+    <string name="content_download_watch_watch">Pausar transferência e ver</string>
+    <string name="content_download_watch_keep">Continuar a transferência</string>
+    <string name="content_download_watch_remember">Não voltar a perguntar</string>
+    <string name="content_download_watch_setting">Ver durante uma transferência</string>
+    <string name="content_download_watch_setting_description">Em listas que permitem apenas uma transmissão: o que acontece a uma transferência quando começa a reprodução.</string>
+    <string name="content_download_watch_ask">Perguntar sempre</string>
+    <string name="content_download_watch_pause">Pausar transferência</string>
     <string name="content_downloads_starts_after">Em fila · começa depois de <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Crie um perfil para ver o guia de programação.</string>
@@ -392,6 +414,7 @@
     <string name="content_key_menu">Menu</string>
     <string name="content_key_enter">Entrar</string>
     <string name="content_key_select">Selecionar</string>
+    <string name="content_key_unselect">Desmarcar</string>
     <string name="content_key_page">Página</string>
     <string name="content_history_overlay_hint">Os canais que viu por último, os mais recentes primeiro</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> vistos</string>

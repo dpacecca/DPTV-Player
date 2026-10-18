@@ -460,6 +460,9 @@
     <string name="settings_hardware_decoding">Maskinvaruavkodning</string>
     <string name="settings_hardware_decoding_description">Använd tv:ns maskinvaruavkodare. Stäng av om vissa strömmar hackar eller visar bildfel.</string>
     <string name="settings_hardware_decoding_description_mobile">Använd enhetens maskinvaruavkodare. Stäng av om vissa strömmar hackar eller visar bildfel.</string>
+    <string name="settings_software_decode_above_1080p">Mjukvaruavkodning över 1080p</string>
+    <string name="settings_software_decode_above_1080p_description">Spelar upp 4K och annan video över 1080p i mjukvara när tv:ns maskinvaruavkodare är avstängd eller misslyckas. Kräver en snabb processor: på de flesta tv-apparater hackar det.</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">Spelar upp 4K och annan video över 1080p i mjukvara när enhetens maskinvaruavkodare är avstängd eller misslyckas. Kräver en snabb processor: på många enheter hackar det.</string>
     <string name="settings_movies_series_player">Spelare för filmer och serier</string>
     <string name="settings_live_tv_player">Spelare för live-tv</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, sedan <xliff:g id="second">%2$s</xliff:g></string>

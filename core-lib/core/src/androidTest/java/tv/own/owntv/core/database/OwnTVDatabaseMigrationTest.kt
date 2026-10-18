@@ -705,6 +705,42 @@ class OwnTVDatabaseMigrationTest {
         }
     }
 
+    /** v47 adds nothing a download depends on: every row, failed ones included, comes through with no reason. */
+    @Test
+    fun migrateVersion47To48_addsDownloadReason_keepingDownloads() {
+        context.deleteDatabase(DB_NAME)
+        val db47 = context.openOrCreateDatabase(DB_NAME, Context.MODE_PRIVATE, null)
+        try {
+            executeSchemaQueries(db47, "tv.own.owntv.core.database.OwnTVDatabase/47.json")
+            db47.execSQL("INSERT INTO profiles (id, name, avatarColor, avatarId, isKids, pinHash, createdAt) VALUES (1, 'Primary', 1122867, 7, 0, NULL, 1)")
+            db47.execSQL(
+                "INSERT INTO downloads (profileId, mediaType, itemId, title, posterUrl, streamUrl, filePath, status, downloadedBytes, totalBytes, createdAt, updatedAt) " +
+                    "VALUES (1, '${MediaType.MOVIE.name}', 30, 'Heat', NULL, 'http://example.test/30.mkv', '/x/Heat.mkv', 'FAILED', 250, 1000, 1, 2)",
+            )
+            db47.version = 47
+        } finally {
+            db47.close()
+        }
+
+        val db = openWithAllMigrations()
+        try {
+            val sqlite = openForAssertions(db)
+            assertColumnExists(sqlite, "downloads", "reason")
+            assertColumnExists(sqlite, "downloads", "httpCode")
+            sqlite.prepare("SELECT title, status, downloadedBytes, totalBytes, reason, httpCode FROM downloads").use {
+                assertTrue(it.step())
+                assertEquals("Heat", it.getText(0))
+                assertEquals("FAILED", it.getText(1))
+                assertEquals(250L, it.getLong(2))
+                assertEquals(1000L, it.getLong(3))
+                assertTrue(it.isNull(4))
+                assertTrue(it.isNull(5))
+            }
+        } finally {
+            db.close()
+        }
+    }
+
     private fun normNameOf(db: SQLiteConnection, epgChannelId: String): String? =
         db.prepare("SELECT normName FROM epg_channels WHERE epgChannelId = ?").use {
             it.bindText(1, epgChannelId)

@@ -251,6 +251,28 @@
     <string name="content_downloads_group_on_tv">На этом телевизоре</string>
     <string name="content_downloads_ready">Можно смотреть</string>
     <string name="content_downloads_paused">Приостановлено</string>
+    <string name="content_downloads_file_missing">Файл отсутствует: его больше нет на накопителе</string>
+    <string name="content_downloads_reason_account_busy">Аккаунт занят: соединение использует другой поток</string>
+    <string name="content_downloads_reason_refused">Сервер отклонил ссылку</string>
+    <string name="content_downloads_reason_not_found">На сервере больше нет этого файла</string>
+    <string name="content_downloads_reason_server_error">Ошибка сервера</string>
+    <string name="content_downloads_reason_http">Сервер не отправил файл</string>
+    <string name="content_downloads_reason_connection_lost">Соединение потеряно</string>
+    <string name="content_downloads_reason_folder">Папка загрузок недоступна</string>
+    <string name="content_downloads_reason_no_space">Недостаточно места</string>
+    <string name="content_downloads_reason_too_large">Слишком большой для этого накопителя: он не хранит файлы больше 4 ГБ. Выберите другую папку загрузок или отформатируйте накопитель в exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Ожидание: начнётся, когда вы перестанете смотреть</string>
+    <string name="content_downloads_reason_paused_watching">Приостановлено, пока вы смотрите</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Этот плейлист разрешает только один поток</string>
+    <string name="content_download_watch_body">Его использовала загрузка из <xliff:g id="playlist">%1$s</xliff:g>, поэтому она пока приостановлена. Смотреть или закрыть плеер и продолжить загрузку?</string>
+    <string name="content_download_watch_watch">Приостановить загрузку и смотреть</string>
+    <string name="content_download_watch_keep">Продолжить загрузку</string>
+    <string name="content_download_watch_remember">Больше не спрашивать</string>
+    <string name="content_download_watch_setting">Просмотр во время загрузки</string>
+    <string name="content_download_watch_setting_description">Для плейлистов с одним потоком: что происходит с загрузкой, когда вы начинаете воспроизведение.</string>
+    <string name="content_download_watch_ask">Спрашивать каждый раз</string>
+    <string name="content_download_watch_pause">Приостановить загрузку</string>
     <string name="content_downloads_starts_after">В очереди · начнётся после «<xliff:g id="title">%1$s</xliff:g>»</string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> МБ/с</string>
     <string name="content_epg_create_profile">Создайте профиль, чтобы увидеть программу передач.</string>
@@ -409,6 +431,7 @@
     <string name="content_key_menu">Меню</string>
     <string name="content_key_enter">Открыть</string>
     <string name="content_key_select">Выбрать</string>
+    <string name="content_key_unselect">Снять выбор</string>
     <string name="content_key_page">Страница</string>
     <string name="content_history_overlay_hint">Недавно просмотренные каналы, сначала новые</string>
     <string name="content_watched_duration">просмотрено <xliff:g id="value">%1$s</xliff:g></string>

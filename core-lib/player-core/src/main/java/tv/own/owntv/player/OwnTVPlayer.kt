@@ -941,6 +941,9 @@ class OwnTVPlayer(
     // Video Player Settings — cached so ensureInit can apply them as mpv options, and the observers
     // below apply changes live to a running player.
     private var hwDecoding = true
+    // Settings → Video player: software decoding allowed above 1080p. Off keeps the ≤1080p ceiling
+    // that [enforceDecodeGuard], the software rescue rung and the CC override all apply.
+    @Volatile private var softwareAbove1080p = false
 
     // Escape-hatch toggle: when off, no live fps/bitrate measuring runs at all (declared values only).
     private var measuredStreamStats = settings.measuredStreamStatsDefault
@@ -1108,6 +1111,10 @@ class OwnTVPlayer(
         playbackSettings.field { it.hwDecoding }.onEach { on ->
             hwDecoding = on
             if (initialized) mpvAsync { applyRenderConfig() }
+        }.launchIn(scope)
+        playbackSettings.field { it.softwareDecodeAbove1080p }.onEach { on ->
+            softwareAbove1080p = on
+            exoEngine?.softwareAbove1080p = on
         }.launchIn(scope)
         playbackSettings.field { it.surroundMode }.onEach { mode ->
             val changed = surroundMode != mode
@@ -1808,9 +1815,10 @@ class OwnTVPlayer(
     private fun canTryCopyRescue(): Boolean =
         hwDecodingActive() && !glUnsupported && !item.triedCopyRescue && currentUrl != null
 
-    /** The software rung is available. Kept gated at ≤1080p — [enforceDecodeGuard] would abort above it. */
+    /** The software rung is available. Kept gated at ≤1080p — [enforceDecodeGuard] would abort above it —
+     *  unless the user allowed software decoding above 1080p. */
     private fun canTrySoftwareRescue(): Boolean =
-        hwDecodingActive() && !glUnsupported && lastVideoHeightPx <= 1080 && currentUrl != null
+        hwDecodingActive() && !glUnsupported && (lastVideoHeightPx <= 1080 || softwareAbove1080p) && currentUrl != null
 
     /** Honest terminal state for a decode failure; presentation wording belongs to the HUD. */
     private fun decodeFailureMessage(raw: String?): PlaybackFailure {
@@ -2001,6 +2009,7 @@ class OwnTVPlayer(
         // on a stereo sink — the session latch is already set by the time this fires, so `start` rebuilds.
         engine.surroundMode = surroundMode
         engine.hwDecodingEnabled = hwDecoding
+        engine.softwareAbove1080p = softwareAbove1080p
         playbackSettings.value?.let {
             engine.passthroughAllowed = AudioDynamics.passthroughAllowed(it.audioPassthrough, it.nightMode, it.volumeLevelling)
         }
@@ -4438,9 +4447,11 @@ class OwnTVPlayer(
             setPropertyString("sub-visibility", "yes") // ensure subs aren't hidden
         }
         // CEA-608/708 CC: text only flows from the SOFTWARE decoder's side data (#57), so decode in
-        // software while this track is selected — but only where that's viable (≤1080p, GL works).
+        // software while this track is selected — but only where that's viable (≤1080p unless software
+        // decoding above 1080p is allowed, GL works).
         val isCc = track?.codec?.lowercase()?.startsWith("eia") == true
-        if (isCc && !glUnsupported && load.currentHeightPx in 1..1080) {
+        val ccHeightOk = load.currentHeightPx in 1..1080 || (softwareAbove1080p && load.currentHeightPx > 0)
+        if (isCc && !glUnsupported && ccHeightOk) {
             setCcSoftwareOverride(true)
         } else {
             if (isCc) android.util.Log.w(TAG, "CC track selected but software decode not viable (height=${load.currentHeightPx}px, gl=${!glUnsupported}) — captions may stay empty")
@@ -4619,10 +4630,11 @@ class OwnTVPlayer(
      * Abort playback when a >1080p video lands on the SOFTWARE decoder (hwdec-current == "no"):
      * TV CPUs can't sustain it — it stutters for a few seconds, then the memory/thermal pressure
      * gets the whole app killed. ≤1080p software decoding stays allowed (viable, and the rescue
-     * path for streams the hardware decoder mangles).
+     * path for streams the hardware decoder mangles), and so is any height once the user has allowed
+     * software decoding above 1080p for a device with the CPU for it.
      */
     private fun enforceDecodeGuard() {
-        if (load.decodeGuardTripped) return
+        if (load.decodeGuardTripped || softwareAbove1080p) return
         val hw = load.currentHwdec ?: return
         val h = load.currentHeightPx
         if (h <= 1080 || (hw != "no" && hw.isNotEmpty())) return

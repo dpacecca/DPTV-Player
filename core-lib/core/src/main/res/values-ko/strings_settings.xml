@@ -458,6 +458,9 @@
     <string name="settings_hardware_decoding">하드웨어 디코딩</string>
     <string name="settings_hardware_decoding_description">TV의 하드웨어 디코더를 사용합니다. 일부 스트림이 끊기거나 화면에 이상이 나타나면 끄세요.</string>
     <string name="settings_hardware_decoding_description_mobile">기기의 하드웨어 디코더를 사용합니다. 일부 스트림이 끊기거나 화면에 이상이 나타나면 끄세요.</string>
+    <string name="settings_software_decode_above_1080p">1080p 초과 소프트웨어 디코딩</string>
+    <string name="settings_software_decode_above_1080p_description">TV의 하드웨어 디코더가 꺼져 있거나 실패하면 4K 등 1080p를 넘는 영상을 소프트웨어로 재생합니다. 빠른 프로세서가 필요하며, 대부분의 TV에서는 끊깁니다.</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">기기의 하드웨어 디코더가 꺼져 있거나 실패하면 4K 등 1080p를 넘는 영상을 소프트웨어로 재생합니다. 빠른 프로세서가 필요하며, 많은 기기에서는 끊깁니다.</string>
     <string name="settings_movies_series_player">영화 및 시리즈 플레이어</string>
     <string name="settings_live_tv_player">실시간 TV 플레이어</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g> 다음 <xliff:g id="second">%2$s</xliff:g></string>

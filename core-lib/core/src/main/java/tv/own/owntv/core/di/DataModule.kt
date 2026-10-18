@@ -251,10 +251,14 @@ val dataModule = module {
     // shell's status pill can show it in both apps.
     single { tv.own.owntv.core.download.DownloadActivityTracker() }
     // downloadDao, okHttpClient, sourceDao, movieDao, seriesDao, streamUrlResolver, activityTracker
-    // (the middle four are D-3: Stalker downloads resolve the stored cmd at download-start time)
-    single { DownloadEngine(androidContext(), get(), get(), get(), get(), get(), get(), get()) }
-    // context, downloadDao, settings, engine
-    single { DownloadManager(androidContext(), get(), get(), get()) }
+    // (the middle four are D-3: Stalker downloads resolve the stored cmd at download-start time),
+    // then watchSession, openStreamRegistry, settings — the streams a download must leave free
+    single { DownloadEngine(androidContext(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    // context, downloadDao, settings, engine, watchSession
+    single { DownloadManager(androidContext(), get(), get(), get(), get()) }
+    // Watching vs downloading on a one-stream playlist. createdAtStart: it has to be listening before
+    // the first playback opens, and nothing else would ask for it until an app's dialog does.
+    single(createdAtStart = true) { tv.own.owntv.core.download.DownloadWatchGuard(get(), get(), get(), get(), get(), get()) }
     // The recording half of the same idea: several can run at once (D10), so the tracker keeps a
     // line per running recording rather than a single active one.
     single { tv.own.owntv.core.recording.RecordingActivityTracker() }

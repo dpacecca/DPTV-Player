@@ -43,7 +43,7 @@
     <string name="search_movie">Фильм</string>
     <string name="search_series">Сериал</string>
     <string name="search_channels">Каналы</string>
-    <string name="search_on_tv">В эфире</string>
+    <string name="search_on_tv">Телепередачи</string>
     <string name="search_go_to_channel">К каналу</string>
     <string name="search_go_to_movie">К фильму</string>
     <string name="search_clear_recent">Очистить недавние запросы</string>

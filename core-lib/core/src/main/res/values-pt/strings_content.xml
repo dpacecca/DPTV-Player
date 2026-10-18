@@ -243,6 +243,28 @@
     <string name="content_downloads_group_on_tv">Nesta TV</string>
     <string name="content_downloads_ready">Pronto para assistir</string>
     <string name="content_downloads_paused">Pausado</string>
+    <string name="content_downloads_file_missing">Arquivo ausente: ele não está mais na unidade</string>
+    <string name="content_downloads_reason_account_busy">Conta ocupada: outra transmissão está usando a conexão</string>
+    <string name="content_downloads_reason_refused">O servidor recusou o link</string>
+    <string name="content_downloads_reason_not_found">O servidor não tem mais este arquivo</string>
+    <string name="content_downloads_reason_server_error">Erro do servidor</string>
+    <string name="content_downloads_reason_http">O servidor não enviou o arquivo</string>
+    <string name="content_downloads_reason_connection_lost">Conexão perdida</string>
+    <string name="content_downloads_reason_folder">Pasta de downloads indisponível</string>
+    <string name="content_downloads_reason_no_space">Espaço insuficiente</string>
+    <string name="content_downloads_reason_too_large">Grande demais para esta unidade: ela não consegue armazenar arquivos acima de 4 GB. Escolha outra pasta de downloads ou formate a unidade como exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Aguardando: começa quando você parar de assistir</string>
+    <string name="content_downloads_reason_paused_watching">Pausado enquanto você assiste</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Esta lista permite apenas uma transmissão</string>
+    <string name="content_download_watch_body">Um download de <xliff:g id="playlist">%1$s</xliff:g> estava usando, então ele foi pausado por enquanto. Assistir, ou fechar o player e continuar o download?</string>
+    <string name="content_download_watch_watch">Pausar download e assistir</string>
+    <string name="content_download_watch_keep">Continuar o download</string>
+    <string name="content_download_watch_remember">Não perguntar novamente</string>
+    <string name="content_download_watch_setting">Assistir durante um download</string>
+    <string name="content_download_watch_setting_description">Em listas que permitem apenas uma transmissão: o que acontece com um download quando você começa a reproduzir.</string>
+    <string name="content_download_watch_ask">Perguntar sempre</string>
+    <string name="content_download_watch_pause">Pausar download</string>
     <string name="content_downloads_starts_after">Na fila · começa depois de <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Crie um perfil para ver o guia.</string>
@@ -392,6 +414,7 @@
     <string name="content_key_menu">Menu</string>
     <string name="content_key_enter">Entrar</string>
     <string name="content_key_select">Selecionar</string>
+    <string name="content_key_unselect">Desmarcar</string>
     <string name="content_key_page">Página</string>
     <string name="content_history_overlay_hint">Os canais que você assistiu por último, os mais recentes primeiro</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> assistidos</string>

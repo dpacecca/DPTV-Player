@@ -157,14 +157,14 @@ class ExoSubtitleEngine(
      * Already on software → the rung is spent (and `start` sets `softwarePreferred` for the retry, so
      * this is also what stops it looping). Above 1080p → refused, exactly as mpv's
      * `canTrySoftwareRescue` refuses it: software-decoding 4K on TV silicon is a slideshow, not a
-     * rescue, and the time is better spent handing the item to the other engine. An unknown height is
-     * allowed — by the time a decoder fails the format is normally known, and the no-frame watchdog
-     * still catches a bad guess.
+     * rescue, and the time is better spent handing the item to the other engine — unless the user
+     * allowed software decoding above 1080p. An unknown height is allowed — by the time a decoder fails
+     * the format is normally known, and the no-frame watchdog still catches a bad guess.
      */
     private fun softwareRungAvailable(): Boolean {
         if (softwarePreferred) return false
         val height = player?.videoFormat?.height ?: 0
-        if (height > 1080) {
+        if (height > 1080 && !softwareAbove1080p) {
             android.util.Log.i(TAG, "software rescue declined: ${height}p is above the software-decode ceiling")
             return false
         }
@@ -547,6 +547,8 @@ class ExoSubtitleEngine(
     private var isArchiveItem = false
     /** Mirrors Settings → Video player → Hardware decoding, pushed in by [OwnTVPlayer]. */
     @Volatile var hwDecodingEnabled = true
+    /** Mirrors Settings → Video player → Software decoding above 1080p, pushed in by [OwnTVPlayer]. */
+    @Volatile var softwareAbove1080p = false
     private var builtForSoftware = false
 
     /** The per-source User-Agent and the per-channel headers of the item mpv handed over, pushed in by

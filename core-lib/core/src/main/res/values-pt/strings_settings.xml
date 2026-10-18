@@ -462,6 +462,9 @@
     <string name="settings_hardware_decoding">Decodificação por hardware</string>
     <string name="settings_hardware_decoding_description">Use o decodificador por hardware da TV. Desative se algumas transmissões engasgarem ou exibirem artefatos.</string>
     <string name="settings_hardware_decoding_description_mobile">Use o decodificador por hardware do dispositivo. Desative se algumas transmissões engasgarem ou exibirem artefatos.</string>
+    <string name="settings_software_decode_above_1080p">Decodificação por software acima de 1080p</string>
+    <string name="settings_software_decode_above_1080p_description">Reproduz por software vídeo 4K e outros acima de 1080p quando o decodificador por hardware da TV está desativado ou falha. Exige um processador rápido: na maioria das TVs, a reprodução engasga.</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">Reproduz por software vídeo 4K e outros acima de 1080p quando o decodificador por hardware do dispositivo está desativado ou falha. Exige um processador rápido: em muitos dispositivos, a reprodução engasga.</string>
     <string name="settings_movies_series_player">Reprodutor de filmes e séries</string>
     <string name="settings_live_tv_player">Reprodutor de TV ao vivo</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, depois <xliff:g id="second">%2$s</xliff:g></string>

@@ -43,7 +43,7 @@
     <string name="search_movie">Film</string>
     <string name="search_series">Sorozatok</string>
     <string name="search_channels">Csatornák</string>
-    <string name="search_on_tv">A tévében</string>
+    <string name="search_on_tv">Tévéműsorok</string>
     <string name="search_go_to_channel">Ugrás a csatornára</string>
     <string name="search_go_to_movie">Ugrás a filmre</string>
     <string name="search_clear_recent">Legutóbbi keresések törlése</string>

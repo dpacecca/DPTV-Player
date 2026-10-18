@@ -80,6 +80,7 @@ sealed interface MediaTarget {
     /** Open for writing, continuing after the existing bytes when [append], truncating when not. */
     fun openOutput(append: Boolean): OutputStream
 
+
     /**
      * Open for reading. Used to fingerprint a finished download for a subtitle search, which needs
      * the first and last 64 KiB — so the stream this returns has to support skipping forward

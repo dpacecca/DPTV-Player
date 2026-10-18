@@ -450,6 +450,50 @@
     <string name="content_downloads_ready">Ready to watch</string>
     <!-- Translators: Downloads screen: a download the user paused. -->
     <string name="content_downloads_paused">Paused</string>
+    <!-- Translators: Shown on a finished download or recording whose file is gone - the USB drive was formatted, swapped or unplugged, or the file was deleted outside the app. -->
+    <string name="content_downloads_file_missing">File missing: it is no longer on the drive</string>
+    <!-- Translators: Why a download failed: the TV provider says every connection the account allows is in use. -->
+    <string name="content_downloads_reason_account_busy">Account busy: another stream is using the connection</string>
+    <!-- Translators: Why a download failed: the server refused the link (expired, blocked or busy; it does not say which). -->
+    <string name="content_downloads_reason_refused">The server refused the link</string>
+    <!-- Translators: Why a download failed: the server no longer has the file. -->
+    <string name="content_downloads_reason_not_found">The server no longer has this file</string>
+    <!-- Translators: Why a download failed: the server reported an internal error. -->
+    <string name="content_downloads_reason_server_error">Server error</string>
+    <!-- Translators: Why a download failed: the server answered with something other than the file. -->
+    <string name="content_downloads_reason_http">The server did not send the file</string>
+    <!-- Translators: Why a download failed: the network dropped, timed out or never connected. -->
+    <string name="content_downloads_reason_connection_lost">Connection lost</string>
+    <!-- Translators: Why a download failed: the download folder is gone (card or USB removed) or its permission was withdrawn. -->
+    <string name="content_downloads_reason_folder">Download folder unavailable</string>
+    <!-- Translators: Why a download failed: the storage is full. -->
+    <string name="content_downloads_reason_no_space">Not enough space</string>
+    <!-- Translators: Why a download failed: the drive (often a USB stick formatted FAT32) cannot hold a single file over 4 GB. -->
+    <string name="content_downloads_reason_too_large">Too large for this drive: it cannot store files over 4 GB. Choose another download folder, or format the drive as exFAT</string>
+    <!-- Translators: A queued download on a playlist that allows only one stream, waiting because the user is watching from it. It starts by itself when playback stops. -->
+    <string name="content_downloads_reason_waiting_watching">Waiting: starts when you stop watching</string>
+    <!-- Translators: A download paused because the user chose to watch on a playlist that allows only one stream. The user resumes it. -->
+    <string name="content_downloads_reason_paused_watching">Paused while you watch</string>
+    <!-- Translators: A download failure reason followed by the server's HTTP status number, e.g. "Server error (HTTP 503)". Keep "HTTP" as is. -->
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <!-- Translators: Dialog title when the user starts playing from a playlist that allows only one stream while a download from it is running. -->
+    <string name="content_download_watch_title">This playlist allows only one stream</string>
+    <!-- Translators: Dialog body under content_download_watch_title. "playlist" is the playlist's name. The download has already been paused so the picture can start. -->
+    <string name="content_download_watch_body">A download from <xliff:g id="playlist">%1$s</xliff:g> was using it, so it is paused for now. Watch, or close the player and keep downloading?</string>
+    <!-- Translators: Dialog button: keep the download paused and keep watching. The user resumes the download later in Downloads. -->
+    <string name="content_download_watch_watch">Pause download and watch</string>
+    <!-- Translators: Dialog button and settings choice: close the player and let the download continue. -->
+    <string name="content_download_watch_keep">Keep downloading</string>
+    <!-- Translators: Checkbox in the dialog: remember this answer and do not show the question again. -->
+    <string name="content_download_watch_remember">Don\'t ask again</string>
+    <!-- Translators: Setting name: what playing something does to a running download on a playlist that allows only one stream. -->
+    <string name="content_download_watch_setting">Watching while downloading</string>
+    <!-- Translators: Description under content_download_watch_setting. -->
+    <string name="content_download_watch_setting_description">For playlists that allow only one stream: what happens to a download when you start playing.</string>
+    <!-- Translators: Settings choice for content_download_watch_setting: show the question each time. -->
+    <string name="content_download_watch_ask">Ask every time</string>
+    <!-- Translators: Settings choice for content_download_watch_setting: pause the download without asking. -->
+    <string name="content_download_watch_pause">Pause download</string>
     <!-- Translators: Downloads screen: a waiting download, and the title that downloads before it. -->
     <string name="content_downloads_starts_after">Queued \u00b7 starts after <xliff:g id="title">%1$s</xliff:g></string>
     <!-- Translators: Downloads screen: the current download speed in megabytes per second, e.g. "12.4 MB/s". -->
@@ -707,6 +751,8 @@
     <string name="content_key_enter">Enter</string>
     <!-- Translators: Remote-key hint: pressing OK selects the focused item. Short verb. -->
     <string name="content_key_select">Select</string>
+    <!-- Translators: Remote-key hint: pressing OK again switches off the focused filter button that is on. Short verb, the opposite of "Select". -->
+    <string name="content_key_unselect">Unselect</string>
     <!-- Translators: Remote-key hint: CH+/CH− jump a page up or down the list. Short noun. -->
     <string name="content_key_page">Page</string>
     <!-- Translators: Line under "Recently watched" in the history list shown over the playing video. -->

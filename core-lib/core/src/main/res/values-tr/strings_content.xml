@@ -235,6 +235,28 @@
     <string name="content_downloads_group_on_tv">Bu TV’de</string>
     <string name="content_downloads_ready">İzlemeye hazır</string>
     <string name="content_downloads_paused">Duraklatıldı</string>
+    <string name="content_downloads_file_missing">Dosya yok: artık sürücüde değil</string>
+    <string name="content_downloads_reason_account_busy">Hesap meşgul: bağlantıyı başka bir akış kullanıyor</string>
+    <string name="content_downloads_reason_refused">Sunucu bağlantıyı reddetti</string>
+    <string name="content_downloads_reason_not_found">Sunucuda artık bu dosya yok</string>
+    <string name="content_downloads_reason_server_error">Sunucu hatası</string>
+    <string name="content_downloads_reason_http">Sunucu dosyayı göndermedi</string>
+    <string name="content_downloads_reason_connection_lost">Bağlantı kesildi</string>
+    <string name="content_downloads_reason_folder">İndirme klasörü kullanılamıyor</string>
+    <string name="content_downloads_reason_no_space">Yeterli alan yok</string>
+    <string name="content_downloads_reason_too_large">Bu sürücü için çok büyük: 4 GB üzerindeki dosyaları saklayamaz. Başka bir indirme klasörü seçin veya sürücüyü exFAT olarak biçimlendirin</string>
+    <string name="content_downloads_reason_waiting_watching">Bekliyor: izlemeyi bıraktığınızda başlar</string>
+    <string name="content_downloads_reason_paused_watching">İzlerken duraklatıldı</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Bu oynatma listesi yalnızca bir akışa izin veriyor</string>
+    <string name="content_download_watch_body"><xliff:g id="playlist">%1$s</xliff:g> kaynağından bir indirme bunu kullanıyordu, bu yüzden şimdilik duraklatıldı. İzlemek mi, yoksa oynatıcıyı kapatıp indirmeye devam etmek mi istersiniz?</string>
+    <string name="content_download_watch_watch">İndirmeyi duraklat ve izle</string>
+    <string name="content_download_watch_keep">İndirmeye devam et</string>
+    <string name="content_download_watch_remember">Bir daha sorma</string>
+    <string name="content_download_watch_setting">İndirme sırasında izleme</string>
+    <string name="content_download_watch_setting_description">Yalnızca bir akışa izin veren oynatma listelerinde: oynatmaya başladığınızda indirmeye ne olacağı.</string>
+    <string name="content_download_watch_ask">Her seferinde sor</string>
+    <string name="content_download_watch_pause">İndirmeyi duraklat</string>
     <string name="content_downloads_starts_after">Sırada · <xliff:g id="title">%1$s</xliff:g> bitince başlar</string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/sn</string>
     <string name="content_epg_create_profile">Rehberi görmek için bir profil oluşturun.</string>
@@ -375,6 +397,7 @@
     <string name="content_key_menu">Menü</string>
     <string name="content_key_enter">Gir</string>
     <string name="content_key_select">Seç</string>
+    <string name="content_key_unselect">Seçimi kaldır</string>
     <string name="content_key_page">Sayfa</string>
     <string name="content_history_overlay_hint">En son izlediğiniz kanallar, en yeniler önce</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> izlendi</string>

@@ -243,6 +243,28 @@
     <string name="content_downloads_group_on_tv">En este televisor</string>
     <string name="content_downloads_ready">Listo para ver</string>
     <string name="content_downloads_paused">En pausa</string>
+    <string name="content_downloads_file_missing">Falta el archivo: ya no está en la unidad</string>
+    <string name="content_downloads_reason_account_busy">Cuenta ocupada: otra emisión está usando la conexión</string>
+    <string name="content_downloads_reason_refused">El servidor ha rechazado el enlace</string>
+    <string name="content_downloads_reason_not_found">El servidor ya no tiene este archivo</string>
+    <string name="content_downloads_reason_server_error">Error del servidor</string>
+    <string name="content_downloads_reason_http">El servidor no ha enviado el archivo</string>
+    <string name="content_downloads_reason_connection_lost">Se ha perdido la conexión</string>
+    <string name="content_downloads_reason_folder">La carpeta de descargas no está disponible</string>
+    <string name="content_downloads_reason_no_space">No hay espacio suficiente</string>
+    <string name="content_downloads_reason_too_large">Demasiado grande para esta unidad: no puede guardar archivos de más de 4 GB. Elige otra carpeta de descargas o formatea la unidad como exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">En espera: empezará cuando dejes de ver</string>
+    <string name="content_downloads_reason_paused_watching">En pausa mientras ves</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Esta lista solo permite una emisión</string>
+    <string name="content_download_watch_body">Una descarga de <xliff:g id="playlist">%1$s</xliff:g> lo estaba usando, así que de momento está en pausa. ¿Quieres verlo, o cerrar el reproductor y seguir descargando?</string>
+    <string name="content_download_watch_watch">Pausar descarga y ver</string>
+    <string name="content_download_watch_keep">Seguir descargando</string>
+    <string name="content_download_watch_remember">No volver a preguntar</string>
+    <string name="content_download_watch_setting">Ver mientras se descarga</string>
+    <string name="content_download_watch_setting_description">En listas que solo permiten una emisión: qué ocurre con una descarga cuando empiezas a reproducir.</string>
+    <string name="content_download_watch_ask">Preguntar siempre</string>
+    <string name="content_download_watch_pause">Pausar descarga</string>
     <string name="content_downloads_starts_after">En cola · empieza después de <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Crea un perfil para ver la guía.</string>
@@ -392,6 +414,7 @@
     <string name="content_key_menu">Menú</string>
     <string name="content_key_enter">Entrar</string>
     <string name="content_key_select">Seleccionar</string>
+    <string name="content_key_unselect">Quitar selección</string>
     <string name="content_key_page">Página</string>
     <string name="content_history_overlay_hint">Los canales que viste por última vez, los más recientes primero</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> vistos</string>

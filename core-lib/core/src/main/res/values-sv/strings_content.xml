@@ -235,6 +235,28 @@
     <string name="content_downloads_group_on_tv">På den här tv:n</string>
     <string name="content_downloads_ready">Klar att titta</string>
     <string name="content_downloads_paused">Pausad</string>
+    <string name="content_downloads_file_missing">Filen saknas: den finns inte längre på enheten</string>
+    <string name="content_downloads_reason_account_busy">Kontot är upptaget: en annan ström använder anslutningen</string>
+    <string name="content_downloads_reason_refused">Servern nekade länken</string>
+    <string name="content_downloads_reason_not_found">Servern har inte längre den här filen</string>
+    <string name="content_downloads_reason_server_error">Serverfel</string>
+    <string name="content_downloads_reason_http">Servern skickade inte filen</string>
+    <string name="content_downloads_reason_connection_lost">Anslutningen bröts</string>
+    <string name="content_downloads_reason_folder">Nedladdningsmappen är inte tillgänglig</string>
+    <string name="content_downloads_reason_no_space">Inte tillräckligt med utrymme</string>
+    <string name="content_downloads_reason_too_large">För stor för den här enheten: den kan inte lagra filer över 4 GB. Välj en annan nedladdningsmapp eller formatera enheten som exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Väntar: startar när du slutar titta</string>
+    <string name="content_downloads_reason_paused_watching">Pausad medan du tittar</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Den här spellistan tillåter bara en ström</string>
+    <string name="content_download_watch_body">En nedladdning från <xliff:g id="playlist">%1$s</xliff:g> använde den och är nu pausad. Vill du titta, eller stänga spelaren och fortsätta ladda ner?</string>
+    <string name="content_download_watch_watch">Pausa nedladdningen och titta</string>
+    <string name="content_download_watch_keep">Fortsätt ladda ner</string>
+    <string name="content_download_watch_remember">Fråga inte igen</string>
+    <string name="content_download_watch_setting">Titta under nedladdning</string>
+    <string name="content_download_watch_setting_description">För spellistor som bara tillåter en ström: vad som händer med en nedladdning när du börjar spela upp.</string>
+    <string name="content_download_watch_ask">Fråga varje gång</string>
+    <string name="content_download_watch_pause">Pausa nedladdningen</string>
     <string name="content_downloads_starts_after">I kö · startar efter <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Skapa en profil för att se programguiden.</string>
@@ -375,6 +397,7 @@
     <string name="content_key_menu">Meny</string>
     <string name="content_key_enter">Öppna</string>
     <string name="content_key_select">Välj</string>
+    <string name="content_key_unselect">Avmarkera</string>
     <string name="content_key_page">Sida</string>
     <string name="content_history_overlay_hint">Kanalerna du såg senast, nyaste först</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> sedda</string>

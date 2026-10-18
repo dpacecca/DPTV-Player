@@ -1010,6 +1010,12 @@
     <string name="settings_hardware_decoding_description">Use the TV\'s hardware decoder. Turn off if some streams stutter or show artifacts.</string>
     <!-- Translators: Phone/tablet wording of settings_hardware_decoding_description. -->
     <string name="settings_hardware_decoding_description_mobile">Use the device\'s hardware decoder. Turn off if some streams stutter or show artifacts.</string>
+    <!-- Translators: Settings > Video player switch, under Hardware decoding: let software decoding play video above 1080p (4K). -->
+    <string name="settings_software_decode_above_1080p">Software decoding above 1080p</string>
+    <!-- Translators: Description of settings_software_decode_above_1080p on the TV. Off by default, because most TV processors cannot decode 4K in software. -->
+    <string name="settings_software_decode_above_1080p_description">Plays 4K and other video above 1080p in software when the TV\'s hardware decoder is off or fails. Needs a fast processor: on most TVs it stutters.</string>
+    <!-- Translators: Phone/tablet wording of settings_software_decode_above_1080p_description. -->
+    <string name="settings_software_decode_above_1080p_description_mobile">Plays 4K and other video above 1080p in software when the device\'s hardware decoder is off or fails. Needs a fast processor: on many devices it stutters.</string>
     <!-- Translators: Video Player settings-row title for Movies & Series. -->
     <string name="settings_movies_series_player">Movies &amp; Series player</string>
     <!-- Translators: Video Player settings-row title for Live TV. -->

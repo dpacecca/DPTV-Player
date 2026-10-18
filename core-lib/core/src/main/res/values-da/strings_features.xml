@@ -43,7 +43,7 @@
     <string name="search_movie">Film</string>
     <string name="search_series">Serie</string>
     <string name="search_channels">Kanaler</string>
-    <string name="search_on_tv">På tv</string>
+    <string name="search_on_tv">Tv-programmer</string>
     <string name="search_go_to_channel">Gå til kanal</string>
     <string name="search_go_to_movie">Gå til film</string>
     <string name="search_clear_recent">Ryd seneste søgninger</string>

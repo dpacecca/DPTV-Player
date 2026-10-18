@@ -43,7 +43,7 @@
     <string name="search_movie">Filme</string>
     <string name="search_series">Série</string>
     <string name="search_channels">Canais</string>
-    <string name="search_on_tv">Na TV</string>
+    <string name="search_on_tv">Programas de TV</string>
     <string name="search_go_to_channel">Ir para o canal</string>
     <string name="search_go_to_movie">Ir para o filme</string>
     <string name="search_clear_recent">Limpar pesquisas recentes</string>

@@ -460,6 +460,9 @@
     <string name="settings_hardware_decoding">हार्डवेयर डिकोडिंग</string>
     <string name="settings_hardware_decoding_description">TV के हार्डवेयर डिकोडर का उपयोग करें। यदि कुछ स्ट्रीम अटकती हैं या उनमें दृश्य विकृतियाँ दिखाई देती हैं, तो इसे बंद कर दें।</string>
     <string name="settings_hardware_decoding_description_mobile">डिवाइस के हार्डवेयर डिकोडर का उपयोग करें। यदि कुछ स्ट्रीम अटकती हैं या उनमें दृश्य विकृतियाँ दिखाई देती हैं, तो इसे बंद कर दें।</string>
+    <string name="settings_software_decode_above_1080p">1080p से ऊपर सॉफ़्टवेयर डिकोडिंग</string>
+    <string name="settings_software_decode_above_1080p_description">TV का हार्डवेयर डिकोडर बंद होने या विफल होने पर 4K और 1080p से ऊपर के अन्य वीडियो सॉफ़्टवेयर से चलाता है। तेज़ प्रोसेसर चाहिए: अधिकांश TV पर यह अटकता है।</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">डिवाइस का हार्डवेयर डिकोडर बंद होने या विफल होने पर 4K और 1080p से ऊपर के अन्य वीडियो सॉफ़्टवेयर से चलाता है। तेज़ प्रोसेसर चाहिए: कई डिवाइस पर यह अटकता है।</string>
     <string name="settings_movies_series_player">फ़िल्मों और सीरीज़ का प्लेयर</string>
     <string name="settings_live_tv_player">लाइव टीवी का प्लेयर</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, फिर <xliff:g id="second">%2$s</xliff:g></string>

@@ -460,6 +460,9 @@
     <string name="settings_hardware_decoding">ഹാർഡ്‌വെയർ ഡീകോഡിംഗ്</string>
     <string name="settings_hardware_decoding_description">ടിവിയുടെ ഹാർഡ്‌വെയർ ഡീകോഡർ ഉപയോഗിക്കുക. ചില സ്ട്രീമുകൾ തടസ്സപ്പെടുകയോ ദൃശ്യവൈകല്യങ്ങൾ കാണിക്കുകയോ ചെയ്താൽ ഇത് പ്രവർത്തനരഹിതമാക്കുക.</string>
     <string name="settings_hardware_decoding_description_mobile">ഉപകരണത്തിന്റെ ഹാർഡ്‌വെയർ ഡീകോഡർ ഉപയോഗിക്കുക. ചില സ്ട്രീമുകൾ തടസ്സപ്പെടുകയോ ദൃശ്യവൈകല്യങ്ങൾ കാണിക്കുകയോ ചെയ്താൽ ഇത് പ്രവർത്തനരഹിതമാക്കുക.</string>
+    <string name="settings_software_decode_above_1080p">1080p-ന് മുകളിൽ സോഫ്റ്റ്‌വെയർ ഡീകോഡിംഗ്</string>
+    <string name="settings_software_decode_above_1080p_description">ടിവിയുടെ ഹാർഡ്‌വെയർ ഡീകോഡർ ഓഫാണെങ്കിലോ പരാജയപ്പെട്ടാലോ 4K-യും 1080p-ന് മുകളിലുള്ള മറ്റ് വീഡിയോകളും സോഫ്റ്റ്‌വെയറിൽ പ്ലേ ചെയ്യുന്നു. വേഗതയേറിയ പ്രോസസർ വേണം: മിക്ക ടിവികളിലും ഇത് തടസ്സപ്പെടും.</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">ഉപകരണത്തിന്റെ ഹാർഡ്‌വെയർ ഡീകോഡർ ഓഫാണെങ്കിലോ പരാജയപ്പെട്ടാലോ 4K-യും 1080p-ന് മുകളിലുള്ള മറ്റ് വീഡിയോകളും സോഫ്റ്റ്‌വെയറിൽ പ്ലേ ചെയ്യുന്നു. വേഗതയേറിയ പ്രോസസർ വേണം: പല ഉപകരണങ്ങളിലും ഇത് തടസ്സപ്പെടും.</string>
     <string name="settings_movies_series_player">സിനിമകളുടെയും സീരീസിന്റെയും പ്ലെയർ</string>
     <string name="settings_live_tv_player">തത്സമയ ടിവിയുടെ പ്ലെയർ</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, പിന്നെ <xliff:g id="second">%2$s</xliff:g></string>

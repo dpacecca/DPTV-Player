@@ -460,6 +460,9 @@
     <string name="settings_hardware_decoding">Donanımla kod çözme</string>
     <string name="settings_hardware_decoding_description">TV\'nin donanım kod çözücüsünü kullanın. Bazı akışlar takılıyor veya görüntü bozuklukları gösteriyorsa kapatın.</string>
     <string name="settings_hardware_decoding_description_mobile">Cihazın donanım kod çözücüsünü kullanın. Bazı akışlar takılıyor veya görüntü bozuklukları gösteriyorsa kapatın.</string>
+    <string name="settings_software_decode_above_1080p">1080p üzeri yazılımla kod çözme</string>
+    <string name="settings_software_decode_above_1080p_description">TV\'nin donanım kod çözücüsü kapalıyken veya başarısız olduğunda 4K ve 1080p üzerindeki diğer videoları yazılımla oynatır. Hızlı bir işlemci gerekir: çoğu TV\'de takılır.</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">Cihazın donanım kod çözücüsü kapalıyken veya başarısız olduğunda 4K ve 1080p üzerindeki diğer videoları yazılımla oynatır. Hızlı bir işlemci gerekir: birçok cihazda takılır.</string>
     <string name="settings_movies_series_player">Film ve Dizi oynatıcısı</string>
     <string name="settings_live_tv_player">Canlı TV oynatıcısı</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, sonra <xliff:g id="second">%2$s</xliff:g></string>

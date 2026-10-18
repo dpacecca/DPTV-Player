@@ -235,6 +235,28 @@
     <string name="content_downloads_group_on_tv">এই টিভিতে</string>
     <string name="content_downloads_ready">দেখার জন্য প্রস্তুত</string>
     <string name="content_downloads_paused">বিরতি দেওয়া হয়েছে</string>
+    <string name="content_downloads_file_missing">ফাইল নেই: এটি আর ড্রাইভে নেই</string>
+    <string name="content_downloads_reason_account_busy">অ্যাকাউন্ট ব্যস্ত: অন্য একটি স্ট্রিম সংযোগটি ব্যবহার করছে</string>
+    <string name="content_downloads_reason_refused">সার্ভার লিংকটি প্রত্যাখ্যান করেছে</string>
+    <string name="content_downloads_reason_not_found">সার্ভারে এই ফাইলটি আর নেই</string>
+    <string name="content_downloads_reason_server_error">সার্ভার ত্রুটি</string>
+    <string name="content_downloads_reason_http">সার্ভার ফাইলটি পাঠায়নি</string>
+    <string name="content_downloads_reason_connection_lost">সংযোগ বিচ্ছিন্ন হয়েছে</string>
+    <string name="content_downloads_reason_folder">ডাউনলোড ফোল্ডার উপলব্ধ নেই</string>
+    <string name="content_downloads_reason_no_space">পর্যাপ্ত জায়গা নেই</string>
+    <string name="content_downloads_reason_too_large">এই ড্রাইভের জন্য খুব বড়: এটি 4 GB-এর বেশি ফাইল রাখতে পারে না। অন্য ডাউনলোড ফোল্ডার বেছে নিন, অথবা ড্রাইভটি exFAT হিসেবে ফরম্যাট করুন</string>
+    <string name="content_downloads_reason_waiting_watching">অপেক্ষমাণ: দেখা বন্ধ করলে শুরু হবে</string>
+    <string name="content_downloads_reason_paused_watching">দেখার সময় বিরতিতে আছে</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">এই প্লেলিস্টে শুধু একটি স্ট্রিম চালানো যায়</string>
+    <string name="content_download_watch_body"><xliff:g id="playlist">%1$s</xliff:g> থেকে একটি ডাউনলোড এটি ব্যবহার করছিল, তাই আপাতত সেটি বিরতিতে রাখা হয়েছে। দেখবেন, নাকি প্লেয়ার বন্ধ করে ডাউনলোড চালিয়ে যাবেন?</string>
+    <string name="content_download_watch_watch">ডাউনলোড থামিয়ে দেখুন</string>
+    <string name="content_download_watch_keep">ডাউনলোড চালিয়ে যান</string>
+    <string name="content_download_watch_remember">আর জিজ্ঞাসা করবেন না</string>
+    <string name="content_download_watch_setting">ডাউনলোডের সময় দেখা</string>
+    <string name="content_download_watch_setting_description">যে প্লেলিস্টে শুধু একটি স্ট্রিম চালানো যায়: আপনি কিছু চালানো শুরু করলে ডাউনলোডের কী হবে।</string>
+    <string name="content_download_watch_ask">প্রতিবার জিজ্ঞাসা করুন</string>
+    <string name="content_download_watch_pause">ডাউনলোড বিরতি দিন</string>
     <string name="content_downloads_starts_after">অপেক্ষায় · <xliff:g id="title">%1$s</xliff:g>-এর পরে শুরু হবে</string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">অনুষ্ঠান নির্দেশিকা দেখতে একটি প্রোফাইল তৈরি করুন।</string>
@@ -375,6 +397,7 @@
     <string name="content_key_menu">মেনু</string>
     <string name="content_key_enter">প্রবেশ</string>
     <string name="content_key_select">বেছে নিন</string>
+    <string name="content_key_unselect">বাদ দিন</string>
     <string name="content_key_page">পৃষ্ঠা</string>
     <string name="content_history_overlay_hint">আপনার সম্প্রতি দেখা চ্যানেল, নতুনগুলো আগে</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> দেখা হয়েছে</string>

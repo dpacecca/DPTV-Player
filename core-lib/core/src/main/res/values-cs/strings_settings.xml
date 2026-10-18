@@ -464,6 +464,9 @@
     <string name="settings_hardware_decoding">Hardwarové dekódování</string>
     <string name="settings_hardware_decoding_description">Používat hardwarový dekodér televizoru. Vypněte, pokud se některé streamy sekají nebo zobrazují obrazové vady.</string>
     <string name="settings_hardware_decoding_description_mobile">Používat hardwarový dekodér zařízení. Vypněte, pokud se některé streamy sekají nebo zobrazují obrazové vady.</string>
+    <string name="settings_software_decode_above_1080p">Softwarové dekódování nad 1080p</string>
+    <string name="settings_software_decode_above_1080p_description">Přehrává 4K a další video nad 1080p softwarově, když je hardwarový dekodér televizoru vypnutý nebo selže. Vyžaduje rychlý procesor: na většině televizorů se obraz seká.</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">Přehrává 4K a další video nad 1080p softwarově, když je hardwarový dekodér zařízení vypnutý nebo selže. Vyžaduje rychlý procesor: na mnoha zařízeních se obraz seká.</string>
     <string name="settings_movies_series_player">Přehrávač filmů a seriálů</string>
     <string name="settings_live_tv_player">Přehrávač živého vysílání</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, poté <xliff:g id="second">%2$s</xliff:g></string>

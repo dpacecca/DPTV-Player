@@ -460,6 +460,9 @@
     <string name="settings_hardware_decoding">হার্ডওয়্যার ডিকোডিং</string>
     <string name="settings_hardware_decoding_description">TV-এর হার্ডওয়্যার ডিকোডার ব্যবহার করুন। কিছু স্ট্রিম আটকে গেলে বা বিকৃত ছবি দেখালে এটি বন্ধ করুন।</string>
     <string name="settings_hardware_decoding_description_mobile">ডিভাইসের হার্ডওয়্যার ডিকোডার ব্যবহার করুন। কিছু স্ট্রিম আটকে গেলে বা বিকৃত ছবি দেখালে এটি বন্ধ করুন।</string>
+    <string name="settings_software_decode_above_1080p">1080p-এর বেশি সফটওয়্যার ডিকোডিং</string>
+    <string name="settings_software_decode_above_1080p_description">TV-এর হার্ডওয়্যার ডিকোডার বন্ধ থাকলে বা ব্যর্থ হলে 4K এবং 1080p-এর বেশি অন্যান্য ভিডিও সফটওয়্যারে চালায়। দ্রুত প্রসেসর দরকার: বেশিরভাগ TV-তে এটি আটকে যায়।</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">ডিভাইসের হার্ডওয়্যার ডিকোডার বন্ধ থাকলে বা ব্যর্থ হলে 4K এবং 1080p-এর বেশি অন্যান্য ভিডিও সফটওয়্যারে চালায়। দ্রুত প্রসেসর দরকার: অনেক ডিভাইসে এটি আটকে যায়।</string>
     <string name="settings_movies_series_player">সিনেমা ও সিরিজের প্লেয়ার</string>
     <string name="settings_live_tv_player">লাইভ টিভির প্লেয়ার</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, তারপর <xliff:g id="second">%2$s</xliff:g></string>

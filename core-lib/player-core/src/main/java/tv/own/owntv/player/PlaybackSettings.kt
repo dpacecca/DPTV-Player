@@ -34,6 +34,8 @@ import tv.own.owntv.core.theme.AppFontFamily
 data class PlaybackSettings(
     val hdrEnabled: Boolean,
     val hwDecoding: Boolean,
+    /** Software decoding allowed above 1080p — see [SettingsRepository.softwareDecodeAbove1080p]. */
+    val softwareDecodeAbove1080p: Boolean,
     val surroundMode: SurroundMode,
     val autoPlayNext: Boolean,
     val vodEnginePreference: EnginePreference,
@@ -97,6 +99,7 @@ data class PlaybackSettings(
                 s.vodBufferSecs, s.vodNetworkTimeoutSecs, s.vodReconnects,
                 s.audioPassthrough, s.nightMode, s.volumeLevelling,
                 s.maxVideoHeight, s.mobileDataMaxVideoHeight, s.tunneledPlayback, s.backgroundPlayback,
+                s.softwareDecodeAbove1080p,
             )
             return combine(sources) { v ->
                 PlaybackSettings(
@@ -133,6 +136,7 @@ data class PlaybackSettings(
                     mobileDataMaxVideoHeight = v[30] as Int,
                     tunneledPlayback = v[31] as Boolean,
                     backgroundPlayback = v[32] as Boolean,
+                    softwareDecodeAbove1080p = v[33] as Boolean,
                 )
             }.stateIn(CoroutineScope(SupervisorJob() + Dispatchers.Default), SharingStarted.Eagerly, null)
         }

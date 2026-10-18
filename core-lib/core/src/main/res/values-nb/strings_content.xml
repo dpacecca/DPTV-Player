@@ -235,6 +235,28 @@
     <string name="content_downloads_group_on_tv">På denne TV-en</string>
     <string name="content_downloads_ready">Klar til å se</string>
     <string name="content_downloads_paused">Satt på pause</string>
+    <string name="content_downloads_file_missing">Filen mangler: den er ikke lenger på stasjonen</string>
+    <string name="content_downloads_reason_account_busy">Kontoen er opptatt: en annen strøm bruker tilkoblingen</string>
+    <string name="content_downloads_reason_refused">Serveren avviste lenken</string>
+    <string name="content_downloads_reason_not_found">Serveren har ikke lenger denne filen</string>
+    <string name="content_downloads_reason_server_error">Serverfeil</string>
+    <string name="content_downloads_reason_http">Serveren sendte ikke filen</string>
+    <string name="content_downloads_reason_connection_lost">Tilkoblingen ble brutt</string>
+    <string name="content_downloads_reason_folder">Nedlastingsmappen er ikke tilgjengelig</string>
+    <string name="content_downloads_reason_no_space">Ikke nok plass</string>
+    <string name="content_downloads_reason_too_large">For stor for denne stasjonen: den kan ikke lagre filer over 4 GB. Velg en annen nedlastingsmappe, eller formater stasjonen som exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Venter: starter når du slutter å se</string>
+    <string name="content_downloads_reason_paused_watching">Satt på pause mens du ser</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Denne spillelisten tillater bare én strøm</string>
+    <string name="content_download_watch_body">En nedlasting fra <xliff:g id="playlist">%1$s</xliff:g> brukte den, så den er satt på pause inntil videre. Vil du se, eller lukke avspilleren og fortsette nedlastingen?</string>
+    <string name="content_download_watch_watch">Sett nedlastingen på pause og se</string>
+    <string name="content_download_watch_keep">Fortsett nedlastingen</string>
+    <string name="content_download_watch_remember">Ikke spør igjen</string>
+    <string name="content_download_watch_setting">Se under nedlasting</string>
+    <string name="content_download_watch_setting_description">For spillelister som bare tillater én strøm: hva som skjer med en nedlasting når du starter avspilling.</string>
+    <string name="content_download_watch_ask">Spør hver gang</string>
+    <string name="content_download_watch_pause">Sett nedlastingen på pause</string>
     <string name="content_downloads_starts_after">I kø · starter etter <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Opprett en profil for å se programoversikten.</string>
@@ -375,6 +397,7 @@
     <string name="content_key_menu">Meny</string>
     <string name="content_key_enter">Gå inn</string>
     <string name="content_key_select">Velg</string>
+    <string name="content_key_unselect">Fjern valg</string>
     <string name="content_key_page">Side</string>
     <string name="content_history_overlay_hint">Kanalene du så sist, nyeste først</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> sett</string>

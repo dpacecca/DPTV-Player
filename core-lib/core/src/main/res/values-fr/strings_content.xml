@@ -243,6 +243,28 @@
     <string name="content_downloads_group_on_tv">Sur ce téléviseur</string>
     <string name="content_downloads_ready">Prêt à regarder</string>
     <string name="content_downloads_paused">En pause</string>
+    <string name="content_downloads_file_missing">Fichier manquant : il n\'est plus sur le disque</string>
+    <string name="content_downloads_reason_account_busy">Compte occupé : un autre flux utilise la connexion</string>
+    <string name="content_downloads_reason_refused">Le serveur a refusé le lien</string>
+    <string name="content_downloads_reason_not_found">Le serveur n\'a plus ce fichier</string>
+    <string name="content_downloads_reason_server_error">Erreur du serveur</string>
+    <string name="content_downloads_reason_http">Le serveur n\'a pas envoyé le fichier</string>
+    <string name="content_downloads_reason_connection_lost">Connexion perdue</string>
+    <string name="content_downloads_reason_folder">Dossier de téléchargement indisponible</string>
+    <string name="content_downloads_reason_no_space">Espace insuffisant</string>
+    <string name="content_downloads_reason_too_large">Trop volumineux pour ce disque : il ne peut pas stocker de fichiers de plus de 4 Go. Choisissez un autre dossier de téléchargement ou formatez le disque en exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">En attente : démarre quand vous arrêtez de regarder</string>
+    <string name="content_downloads_reason_paused_watching">En pause pendant que vous regardez</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Cette playlist n\'autorise qu\'un seul flux</string>
+    <string name="content_download_watch_body">Un téléchargement depuis <xliff:g id="playlist">%1$s</xliff:g> l\'utilisait ; il est mis en pause pour l\'instant. Regarder, ou fermer le lecteur et continuer le téléchargement ?</string>
+    <string name="content_download_watch_watch">Mettre en pause et regarder</string>
+    <string name="content_download_watch_keep">Continuer le téléchargement</string>
+    <string name="content_download_watch_remember">Ne plus demander</string>
+    <string name="content_download_watch_setting">Regarder pendant un téléchargement</string>
+    <string name="content_download_watch_setting_description">Pour les playlists qui n\'autorisent qu\'un seul flux : ce qui arrive à un téléchargement quand vous lancez la lecture.</string>
+    <string name="content_download_watch_ask">Toujours demander</string>
+    <string name="content_download_watch_pause">Mettre le téléchargement en pause</string>
     <string name="content_downloads_starts_after">En attente · commence après <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> Mo/s</string>
     <string name="content_epg_create_profile">Créez un profil pour afficher le guide.</string>
@@ -392,6 +414,7 @@
     <string name="content_key_menu">Menu</string>
     <string name="content_key_enter">Entrer</string>
     <string name="content_key_select">Sélectionner</string>
+    <string name="content_key_unselect">Désélectionner</string>
     <string name="content_key_page">Page</string>
     <string name="content_history_overlay_hint">Les chaînes regardées récemment, les plus récentes en premier</string>
     <string name="content_watched_duration">Vu : <xliff:g id="value">%1$s</xliff:g></string>

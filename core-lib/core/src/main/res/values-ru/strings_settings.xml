@@ -464,6 +464,9 @@
     <string name="settings_hardware_decoding">Аппаратное декодирование</string>
     <string name="settings_hardware_decoding_description">Использовать аппаратный декодер телевизора. Отключите, если некоторые потоки воспроизводятся с рывками или артефактами.</string>
     <string name="settings_hardware_decoding_description_mobile">Использовать аппаратный декодер устройства. Отключите, если некоторые потоки воспроизводятся с рывками или артефактами.</string>
+    <string name="settings_software_decode_above_1080p">Программное декодирование выше 1080p</string>
+    <string name="settings_software_decode_above_1080p_description">Воспроизводит 4K и другое видео выше 1080p программно, когда аппаратный декодер телевизора отключён или не справляется. Нужен быстрый процессор: на большинстве телевизоров видео идёт рывками.</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">Воспроизводит 4K и другое видео выше 1080p программно, когда аппаратный декодер устройства отключён или не справляется. Нужен быстрый процессор: на многих устройствах видео идёт рывками.</string>
     <string name="settings_movies_series_player">Плеер фильмов и сериалов</string>
     <string name="settings_live_tv_player">Плеер прямого эфира</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, затем <xliff:g id="second">%2$s</xliff:g></string>

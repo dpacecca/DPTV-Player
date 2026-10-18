@@ -458,6 +458,9 @@
     <string name="settings_hardware_decoding">硬件解码</string>
     <string name="settings_hardware_decoding_description">使用电视的硬件解码器。如果部分流媒体出现卡顿或画面伪影，请关闭此功能。</string>
     <string name="settings_hardware_decoding_description_mobile">使用设备的硬件解码器。如果部分流媒体出现卡顿或画面伪影，请关闭此功能。</string>
+    <string name="settings_software_decode_above_1080p">1080p 以上软件解码</string>
+    <string name="settings_software_decode_above_1080p_description">当电视的硬件解码器关闭或失败时，用软件播放 4K 及其他 1080p 以上的视频。需要快速的处理器：在大多数电视上会卡顿。</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">当设备的硬件解码器关闭或失败时，用软件播放 4K 及其他 1080p 以上的视频。需要快速的处理器：在许多设备上会卡顿。</string>
     <string name="settings_movies_series_player">电影和剧集播放器</string>
     <string name="settings_live_tv_player">直播电视播放器</string>
     <string name="settings_engine_order">先 <xliff:g id="first">%1$s</xliff:g>，后 <xliff:g id="second">%2$s</xliff:g></string>

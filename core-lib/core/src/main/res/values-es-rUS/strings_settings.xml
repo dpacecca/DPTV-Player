@@ -462,6 +462,9 @@
     <string name="settings_hardware_decoding">Decodificación por hardware</string>
     <string name="settings_hardware_decoding_description">Usa el decodificador por hardware del televisor. Desactívalo si algunas transmisiones presentan tirones o defectos visuales.</string>
     <string name="settings_hardware_decoding_description_mobile">Usa el decodificador por hardware del dispositivo. Desactívalo si algunas transmisiones presentan tirones o defectos visuales.</string>
+    <string name="settings_software_decode_above_1080p">Decodificación por software por encima de 1080p</string>
+    <string name="settings_software_decode_above_1080p_description">Reproduce por software video 4K y otros de más de 1080p cuando el decodificador por hardware del televisor está desactivado o falla. Requiere un procesador rápido: en la mayoría de los televisores presenta tirones.</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">Reproduce por software video 4K y otros de más de 1080p cuando el decodificador por hardware del dispositivo está desactivado o falla. Requiere un procesador rápido: en muchos dispositivos presenta tirones.</string>
     <string name="settings_movies_series_player">Reproductor de películas y series</string>
     <string name="settings_live_tv_player">Reproductor de TV en vivo</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, luego <xliff:g id="second">%2$s</xliff:g></string>

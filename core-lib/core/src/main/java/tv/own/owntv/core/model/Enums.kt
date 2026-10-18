@@ -36,6 +36,45 @@ enum class HlsSupport(val code: Int) {
 enum class DownloadStatus { QUEUED, RUNNING, PAUSED, COMPLETED, FAILED }
 
 /**
+ * Why a download failed, waits or was paused — the sentence on its row instead of a bare "Failed".
+ * Null on a row with nothing to explain. Stored by name, like [RecordingFailure].
+ */
+enum class DownloadReason {
+    /** The provider says every connection the account has is in use (HTTP 429, 458, 509). */
+    ACCOUNT_BUSY,
+
+    /** The provider refused the link (HTTP 401, 403): busy, expired or blocked — it does not say which. */
+    REFUSED,
+
+    /** The provider no longer has the file (HTTP 404, 410). */
+    NOT_FOUND,
+
+    /** The provider failed (HTTP 5xx). */
+    SERVER_ERROR,
+
+    /** Any other HTTP answer that was not the file. */
+    HTTP_ERROR,
+
+    /** The network dropped, timed out or never connected. */
+    CONNECTION_LOST,
+
+    /** The download folder is gone (card or USB removed) or its permission was withdrawn. */
+    FOLDER_UNAVAILABLE,
+
+    /** The volume filled up. */
+    NO_SPACE,
+
+    /** The file is bigger than the drive can hold in one file — a FAT32 stick stops at 4 GB. */
+    FILE_TOO_LARGE,
+
+    /** Queued on a one-stream playlist that is being watched; starts once nothing plays from it. */
+    WAITING_FOR_WATCHING,
+
+    /** Paused because the user chose to watch on a one-stream playlist. */
+    PAUSED_FOR_WATCHING,
+}
+
+/**
  * Lifecycle of a live recording.
  *
  * [MISSED] is the one that does not exist for downloads, and it is the whole reason the Recordings

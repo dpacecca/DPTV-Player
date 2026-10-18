@@ -43,7 +43,7 @@
     <string name="search_movie">Film</string>
     <string name="search_series">Dizi</string>
     <string name="search_channels">Kanallar</string>
-    <string name="search_on_tv">TV\'de</string>
+    <string name="search_on_tv">TV Programları</string>
     <string name="search_go_to_channel">Kanala git</string>
     <string name="search_go_to_movie">Filme git</string>
     <string name="search_clear_recent">Son aramaları temizle</string>

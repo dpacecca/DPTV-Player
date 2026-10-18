@@ -664,6 +664,20 @@ object SupportedLocales {
             pickerVisible = false,
             coverage = 0,
         ),
+        SupportedLocale(
+            id = "eu",
+            languageTag = "eu",
+            resourceQualifier = "eu",
+            weblateCode = "eu",
+            englishName = "Basque",
+            endonym = "Euskara",
+            script = "Latn",
+            rtl = false,
+            tier = 2,
+            packaged = false,
+            pickerVisible = false,
+            coverage = 0,
+        ),
     )
 
     /** Rows the in-app picker may show after explicit catalogue promotion and readiness. */

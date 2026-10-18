@@ -571,6 +571,8 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `channels` ADD COLUMN `contentHash` INTEGER NOT NULL DEFAULT 0
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `channels` ADD COLUMN `directSource` TEXT
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `channels` ADD COLUMN `httpHeaders` TEXT
+1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `downloads` ADD COLUMN `httpCode` INTEGER
+1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `downloads` ADD COLUMN `reason` TEXT
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `epg_channels` ADD COLUMN `iconUrl` TEXT
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `epg_channels` ADD COLUMN `normId` TEXT
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `epg_channels` ADD COLUMN `normName` TEXT
@@ -1079,8 +1081,9 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	SELECT * FROM downloads WHERE status IN ('QUEUED', 'RUNNING') ORDER BY createdAt ASC
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	SELECT COUNT(*) FROM downloads WHERE profileId = :profileId
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	SELECT d.* FROM downloads d INNER JOIN episodes e ON e.id = d.itemId
-1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	UPDATE downloads SET status = :status, downloadedBytes = :downloaded, totalBytes = :total, updatedAt = :timestamp WHERE id = :id
+1	sql	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	UPDATE downloads SET status = :status, downloadedBytes = :downloaded, totalBytes = :total,
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	WHERE d.mediaType = 'EPISODE' AND e.seriesId = :seriesId
+1	sql	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	updatedAt = :timestamp, reason = :reason, httpCode = :httpCode WHERE id = :id
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/EpgDao.kt	AND startMs > :from - 86400000 AND stopMs > :from AND startMs < :to ORDER BY epgChannelId ASC, startMs ASC
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/EpgDao.kt	AND startMs > :from - 86400000 AND stopMs > :from AND startMs < :to ORDER BY startMs ASC
 1	sql	core/src/main/java/tv/own/owntv/core/database/dao/EpgDao.kt	AND title LIKE '%' || :query || '%' ORDER BY startMs ASC LIMIT :limit
@@ -1681,16 +1684,26 @@
 1	log	core/src/main/java/tv/own/owntv/core/di/DatabaseModule.kt	forced-wal
 1	log	core/src/main/java/tv/own/owntv/core/di/DatabaseModule.kt	repaired
 1	technical	core/src/main/java/tv/own/owntv/core/di/DatabaseModule.kt	wal
+2	empty	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	\0
+2	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	Content-Range
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	DownloadManager
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	Range
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	User-Agent
-1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	bytes=$existing-
-1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	download attempt $attempt/$MAX_ATTEMPTS failed id=$id: ${e.message}
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	bytes
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	bytes=$from-${to ?: ""}
+2	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	download attempt $attempt/$MAX_ATTEMPTS failed id=$id: ${e.message}
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	download target unavailable id=$id path=${d.filePath}
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadManager.kt	DownloadManager
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadManager.kt	cannot create download target in ${root.stored} for $fileName
 1	technical	core/src/main/java/tv/own/owntv/core/download/DownloadNotifications.kt	$effectiveLocale:${localized.getString(R.string.common_nav_downloads)}
 1	technical	core/src/main/java/tv/own/owntv/core/download/DownloadNotifications.kt	owntv_downloads
+2	empty	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	\0
+1	log	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	(HTTP $it)
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	EFBIG
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	ENOSPC
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	File too large
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	No space left
+1	log	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	download failed: $reason${httpCode?.let { " (HTTP $it)" } ?: ""}
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadWorker.kt	owntv-downloads
 3	empty	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	\0
 1	technical	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	%02x
@@ -3002,6 +3015,7 @@
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	detailed_diagnostics
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	direct_tune
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	download_root
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	download_watch_choice
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	downloads_wifi_only
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	epg_auto_refresh
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	epg_offset_minutes
@@ -3158,6 +3172,7 @@
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	settings_menu_order_$menu
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	settings_quick_pinned
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sheet_counts
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	software_decode_above_1080p
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sort_guide
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sort_live
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sort_movies

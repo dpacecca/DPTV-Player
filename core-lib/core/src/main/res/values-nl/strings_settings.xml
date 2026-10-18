@@ -460,6 +460,9 @@
     <string name="settings_hardware_decoding">Hardwaredecodering</string>
     <string name="settings_hardware_decoding_description">Gebruik de hardwaredecoder van de tv. Schakel dit uit als sommige streams haperen of beeldfouten vertonen.</string>
     <string name="settings_hardware_decoding_description_mobile">Gebruik de hardwaredecoder van het apparaat. Schakel dit uit als sommige streams haperen of beeldfouten vertonen.</string>
+    <string name="settings_software_decode_above_1080p">Softwaredecodering boven 1080p</string>
+    <string name="settings_software_decode_above_1080p_description">Speelt 4K en andere video boven 1080p af via software als de hardwaredecoder van de tv uit staat of faalt. Vereist een snelle processor: op de meeste tv\'s hapert het.</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">Speelt 4K en andere video boven 1080p af via software als de hardwaredecoder van het apparaat uit staat of faalt. Vereist een snelle processor: op veel apparaten hapert het.</string>
     <string name="settings_movies_series_player">Speler voor films en series</string>
     <string name="settings_live_tv_player">Speler voor live-tv</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, daarna <xliff:g id="second">%2$s</xliff:g></string>

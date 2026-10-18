@@ -43,7 +43,7 @@
     <string name="search_movie">সিনেমা</string>
     <string name="search_series">সিরিজ</string>
     <string name="search_channels">চ্যানেলগুলো</string>
-    <string name="search_on_tv">টিভিতে</string>
+    <string name="search_on_tv">টিভি অনুষ্ঠান</string>
     <string name="search_go_to_channel">চ্যানেলে যান</string>
     <string name="search_go_to_movie">সিনেমায় যান</string>
     <string name="search_clear_recent">সাম্প্রতিক অনুসন্ধান মুছুন</string>

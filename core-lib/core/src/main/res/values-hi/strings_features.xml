@@ -43,7 +43,7 @@
     <string name="search_movie">फ़िल्म</string>
     <string name="search_series">सीरीज़</string>
     <string name="search_channels">चैनल</string>
-    <string name="search_on_tv">टीवी पर</string>
+    <string name="search_on_tv">टीवी कार्यक्रम</string>
     <string name="search_go_to_channel">चैनल पर जाएँ</string>
     <string name="search_go_to_movie">फ़िल्म पर जाएँ</string>
     <string name="search_clear_recent">हाल की खोजें साफ़ करें</string>

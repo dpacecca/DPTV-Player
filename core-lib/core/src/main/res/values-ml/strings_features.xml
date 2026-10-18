@@ -43,7 +43,7 @@
     <string name="search_movie">സിനിമ</string>
     <string name="search_series">സീരീസ്</string>
     <string name="search_channels">ചാനലുകൾ</string>
-    <string name="search_on_tv">ടിവിയിൽ</string>
+    <string name="search_on_tv">ടിവി പരിപാടികൾ</string>
     <string name="search_go_to_channel">ചാനലിലേക്ക് പോകുക</string>
     <string name="search_go_to_movie">സിനിമയിലേക്ക് പോകുക</string>
     <string name="search_clear_recent">സമീപകാല തിരയലുകൾ മായ്ക്കുക</string>

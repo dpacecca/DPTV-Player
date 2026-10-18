@@ -235,6 +235,28 @@
     <string name="content_downloads_group_on_tv">Op deze tv</string>
     <string name="content_downloads_ready">Klaar om te kijken</string>
     <string name="content_downloads_paused">Gepauzeerd</string>
+    <string name="content_downloads_file_missing">Bestand ontbreekt: het staat niet meer op de schijf</string>
+    <string name="content_downloads_reason_account_busy">Account bezet: een andere stream gebruikt de verbinding</string>
+    <string name="content_downloads_reason_refused">De server heeft de link geweigerd</string>
+    <string name="content_downloads_reason_not_found">De server heeft dit bestand niet meer</string>
+    <string name="content_downloads_reason_server_error">Serverfout</string>
+    <string name="content_downloads_reason_http">De server heeft het bestand niet verstuurd</string>
+    <string name="content_downloads_reason_connection_lost">Verbinding verbroken</string>
+    <string name="content_downloads_reason_folder">Downloadmap niet beschikbaar</string>
+    <string name="content_downloads_reason_no_space">Onvoldoende ruimte</string>
+    <string name="content_downloads_reason_too_large">Te groot voor deze schijf: die kan geen bestanden boven 4 GB opslaan. Kies een andere downloadmap of formatteer de schijf als exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Wacht: start zodra je stopt met kijken</string>
+    <string name="content_downloads_reason_paused_watching">Gepauzeerd terwijl je kijkt</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Deze playlist staat maar één stream toe</string>
+    <string name="content_download_watch_body">Een download van <xliff:g id="playlist">%1$s</xliff:g> gebruikte hem en is nu gepauzeerd. Wil je kijken, of de speler sluiten en verder downloaden?</string>
+    <string name="content_download_watch_watch">Download pauzeren en kijken</string>
+    <string name="content_download_watch_keep">Doorgaan met downloaden</string>
+    <string name="content_download_watch_remember">Niet meer vragen</string>
+    <string name="content_download_watch_setting">Kijken tijdens downloaden</string>
+    <string name="content_download_watch_setting_description">Voor playlists die maar één stream toestaan: wat er met een download gebeurt als je iets afspeelt.</string>
+    <string name="content_download_watch_ask">Elke keer vragen</string>
+    <string name="content_download_watch_pause">Download pauzeren</string>
     <string name="content_downloads_starts_after">In de wachtrij · start na <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Maak een profiel aan om de programmagids te bekijken.</string>
@@ -375,6 +397,7 @@
     <string name="content_key_menu">Menu</string>
     <string name="content_key_enter">Openen</string>
     <string name="content_key_select">Selecteren</string>
+    <string name="content_key_unselect">Deselecteren</string>
     <string name="content_key_page">Pagina</string>
     <string name="content_history_overlay_hint">De zenders die je het laatst keek, nieuwste eerst</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> bekeken</string>

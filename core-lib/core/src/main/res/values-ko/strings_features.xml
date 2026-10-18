@@ -43,7 +43,7 @@
     <string name="search_movie">영화</string>
     <string name="search_series">시리즈</string>
     <string name="search_channels">채널</string>
-    <string name="search_on_tv">TV 방송</string>
+    <string name="search_on_tv">TV 프로그램</string>
     <string name="search_go_to_channel">채널로 이동</string>
     <string name="search_go_to_movie">영화로 이동</string>
     <string name="search_clear_recent">최근 검색 지우기</string>

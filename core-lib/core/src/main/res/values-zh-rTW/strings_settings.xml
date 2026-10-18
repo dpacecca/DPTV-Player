@@ -458,6 +458,9 @@
     <string name="settings_hardware_decoding">硬體解碼</string>
     <string name="settings_hardware_decoding_description">使用電視的硬體解碼器。如果部分串流播放不順或出現影像瑕疵，請關閉此功能。</string>
     <string name="settings_hardware_decoding_description_mobile">使用裝置的硬體解碼器。如果部分串流播放不順或出現影像瑕疵，請關閉此功能。</string>
+    <string name="settings_software_decode_above_1080p">1080p 以上軟體解碼</string>
+    <string name="settings_software_decode_above_1080p_description">當電視的硬體解碼器關閉或失敗時，以軟體播放 4K 及其他 1080p 以上的影片。需要快速的處理器：在大多數電視上會卡頓。</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">當裝置的硬體解碼器關閉或失敗時，以軟體播放 4K 及其他 1080p 以上的影片。需要快速的處理器：在許多裝置上會卡頓。</string>
     <string name="settings_movies_series_player">電影與影集播放器</string>
     <string name="settings_live_tv_player">電視直播播放器</string>
     <string name="settings_engine_order">先 <xliff:g id="first">%1$s</xliff:g>，後 <xliff:g id="second">%2$s</xliff:g></string>

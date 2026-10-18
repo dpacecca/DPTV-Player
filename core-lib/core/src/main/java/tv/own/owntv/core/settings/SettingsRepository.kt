@@ -454,6 +454,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val RECORDER_API_KEY = stringPreferencesKey("recorder_api_key")
         // Video Player Settings
         val HW_DECODING = booleanPreferencesKey("hw_decoding")
+        val SOFTWARE_DECODE_ABOVE_1080P = booleanPreferencesKey("software_decode_above_1080p")
         val VOD_PREFER_EXO = booleanPreferencesKey("vod_prefer_exo") // legacy; read for migration only
         val LIVE_ENGINE = stringPreferencesKey("live_engine")
         val VOD_ENGINE = stringPreferencesKey("vod_engine")
@@ -537,6 +538,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val DATA_SAVER = booleanPreferencesKey("data_saver")
         val GESTURE_SENSITIVITY_PCT = intPreferencesKey("gesture_sensitivity_pct")
         val DOWNLOADS_WIFI_ONLY = booleanPreferencesKey("downloads_wifi_only")
+        val DOWNLOAD_WATCH_CHOICE = stringPreferencesKey("download_watch_choice")
         // The mobility layer, all of it touch-host only: a window that floats over another app, a
         // screen that switches itself off, and a data plan that gets billed. A television has none of
         // the three, so every default below is what a TV does today — nothing.
@@ -1488,6 +1490,21 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         context.dataStore.edit { it[Keys.DOWNLOADS_WIFI_ONLY] = enabled }
     }
 
+    /**
+     * What playing something does to a running download when the playlist allows one stream: ask
+     * (the default), pause the download, or keep downloading. "Don't ask again" in that question
+     * writes the other two.
+     */
+    enum class DownloadWatchChoice { ASK, PAUSE, KEEP }
+
+    val downloadWatchChoice: Flow<DownloadWatchChoice> = prefsFlow { prefs ->
+        prefs[Keys.DOWNLOAD_WATCH_CHOICE]?.let { runCatching { DownloadWatchChoice.valueOf(it) }.getOrNull() } ?: DownloadWatchChoice.ASK
+    }
+
+    suspend fun setDownloadWatchChoice(choice: DownloadWatchChoice) {
+        context.dataStore.edit { it[Keys.DOWNLOAD_WATCH_CHOICE] = choice.name }
+    }
+
     /** Read once, for a caller that has to answer before it can start — the queue and the player. */
     suspend fun downloadsWifiOnlyNow(): Boolean = downloadsWifiOnly.first()
     suspend fun dataSaverNow(): Boolean = dataSaver.first()
@@ -1589,6 +1606,18 @@ class SettingsRepository(private val context: Context, private val localeStore: 
 
     suspend fun setHwDecoding(enabled: Boolean) {
         context.dataStore.edit { it[Keys.HW_DECODING] = enabled }
+    }
+
+    /**
+     * Let software decoding play video above 1080p. Off by default: a TV-class CPU usually cannot keep
+     * up with 4K in software, so playback above 1080p is stopped there with an honest error instead.
+     * On, for devices with the CPU for it, the software rescue and the "Hardware decoding = Off"
+     * path are allowed at any resolution.
+     */
+    val softwareDecodeAbove1080p: Flow<Boolean> = prefsFlow { it[Keys.SOFTWARE_DECODE_ABOVE_1080P] ?: false }
+
+    suspend fun setSoftwareDecodeAbove1080p(enabled: Boolean) {
+        context.dataStore.edit { it[Keys.SOFTWARE_DECODE_ABOVE_1080P] = enabled }
     }
 
     /**
@@ -3142,7 +3171,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             Keys.LIVE_ENGINE, Keys.VOD_ENGINE,
             Keys.MAIN_FONT_FAMILY, Keys.POPUP_FONT_FAMILY,
             Keys.PREF_AUDIO_LANG, Keys.PREF_SUB_LANG, Keys.SUB_SEARCH_LANGS, Keys.SORT_LIVE, Keys.SORT_GUIDE, Keys.SORT_MOVIES,
-            Keys.SORT_SERIES, Keys.RESUME_MODE, Keys.TIMESHIFT_RESUME_MODE, Keys.CATCHUP_TZ, Keys.CATCHUP_PLAYER, Keys.ANIMATION_LEVEL, Keys.VOD_VIEW_MODE, Keys.GUIDE_VIEW,
+            Keys.SORT_SERIES, Keys.RESUME_MODE, Keys.TIMESHIFT_RESUME_MODE, Keys.DOWNLOAD_WATCH_CHOICE, Keys.CATCHUP_TZ, Keys.CATCHUP_PLAYER, Keys.ANIMATION_LEVEL, Keys.VOD_VIEW_MODE, Keys.GUIDE_VIEW,
             Keys.EPISODE_VIEW_MODE, Keys.VOD_LAYOUT, Keys.LIVE_LAYOUT, Keys.LIVE_VIEW, Keys.REMINDER_MODE,
             Keys.WEATHER_LOCATION, Keys.RECENT_SEARCHES,
             Keys.CLOCK_TIME_COLOR, Keys.CLOCK_DATE_COLOR, Keys.CLOCK_WEATHER_COLOR,
@@ -3218,7 +3247,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             Keys.TIMESHIFT_WINDOW_MINUTES)
         val bools = listOf(
             Keys.GUIDE_SHOW_EMPTY, Keys.GUIDE_PREVIEW,
-            Keys.LIVE_PREVIEW, Keys.LIVE_PREVIEW_AUDIO, Keys.HERO_PREVIEW, Keys.HDR_ENABLED, Keys.AUTO_FRAME_RATE, Keys.AFR_MATCH_RESOLUTION, Keys.AUTO_FRAME_RATE_PROMPTED, Keys.ANDROID_TV_HOME, Keys.HW_DECODING,
+            Keys.LIVE_PREVIEW, Keys.LIVE_PREVIEW_AUDIO, Keys.HERO_PREVIEW, Keys.HDR_ENABLED, Keys.AUTO_FRAME_RATE, Keys.AFR_MATCH_RESOLUTION, Keys.AUTO_FRAME_RATE_PROMPTED, Keys.ANDROID_TV_HOME, Keys.HW_DECODING, Keys.SOFTWARE_DECODE_ABOVE_1080P,
             Keys.VOD_PREFER_EXO, Keys.MEASURED_STREAM_STATS, Keys.DETAILED_DIAGNOSTICS, Keys.DIRECT_TUNE, Keys.LIVE_LEFT_RIGHT_REWINDS, Keys.EXTERNAL_PLAYER,
             Keys.EXTERNAL_PLAYER_LIVE, Keys.EXTERNAL_PLAYER_MOVIES, Keys.EXTERNAL_PLAYER_SERIES, Keys.UPDATE_CHECK_ON_START, Keys.SURROUND_SOUND, Keys.AUTO_PLAY_NEXT, Keys.PROXY_ENABLED,
             Keys.WEATHER_ENABLED, Keys.WEATHER_FAHRENHEIT, Keys.RESUME_LAST_CHANNEL, Keys.METADATA_ENABLED, Keys.CH_NAV_ENABLED,
@@ -3315,7 +3344,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
      * Android 11 box's values were simply copied onto whatever the backup was restored to.
      */
     private val deviceSpecificSettings: Set<String> = listOf(
-        Keys.LIVE_ENGINE, Keys.VOD_ENGINE, Keys.VOD_PREFER_EXO, Keys.HW_DECODING, Keys.AUTO_FRAME_RATE,
+        Keys.LIVE_ENGINE, Keys.VOD_ENGINE, Keys.VOD_PREFER_EXO, Keys.HW_DECODING, Keys.SOFTWARE_DECODE_ABOVE_1080P, Keys.AUTO_FRAME_RATE,
         Keys.AFR_PAUSE_SECS, Keys.AFR_MATCH_RESOLUTION,
         Keys.HDR_ENABLED, Keys.SURROUND_MODE, Keys.SURROUND_SOUND, Keys.AUDIO_PASSTHROUGH,
         Keys.TUNNELED_PLAYBACK,
