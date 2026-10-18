@@ -612,9 +612,11 @@ private fun SeriesGrid(
             }
         }
         .focusGroup()
-    // ◀ from the empty search field opens the categories, as from the titles.
+    // ◀ from the search field opens the categories, as from the titles — with a query too (a search that
+    // found nothing here may be in another category), but not while typing, where ◀ moves the cursor.
+    var searchEditing by remember { mutableStateOf(false) }
     val searchLeft = Modifier.onPreviewKeyEvent { e ->
-        if (e.type == KeyEventType.KeyDown && e.key == Key.DirectionLeft && searchQuery.isEmpty() && lockedKey == null) {
+        if (e.type == KeyEventType.KeyDown && e.key == Key.DirectionLeft && !searchEditing && lockedKey == null) {
             if (cinematic) categoriesOpen = true else runCatching { railFocus.requestFocus() }
             true
         } else false
@@ -652,6 +654,7 @@ private fun SeriesGrid(
                             query = searchQuery, onQueryChange = vm::setSearchQuery,
                             placeholder = stringResource(R.string.content_search_in, headerLabel),
                             modifier = Modifier.width(440.mpx).focusRequester(listSearchFocus).then(searchLeft),
+                            onEditingChange = { searchEditing = it },
                         )
                         VodSortTool(sortMode, Modifier.focusRequester(sortFocus)) { sortOpen = true }
                         StageTool(text = stringResource(R.string.content_category_browser_title), icon = OwnTVIcon.LIST, onClick = { categoriesOpen = true })
@@ -761,6 +764,7 @@ private fun SeriesGrid(
                         query = searchQuery, onQueryChange = vm::setSearchQuery,
                         placeholder = stringResource(R.string.content_search_in, headerLabel),
                         modifier = Modifier.weight(1f).focusRequester(listSearchFocus).then(searchLeft),
+                        onEditingChange = { searchEditing = it },
                     )
                     StageTool(text = null, icon = OwnTVIcon.SORT, value = vodSortLabel(sortMode), trailingIcon = OwnTVIcon.CHEVRON_DOWN, onClick = { sortOpen = true }, modifier = Modifier.focusRequester(sortFocus))
                     StageSegmented(

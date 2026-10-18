@@ -968,6 +968,7 @@ class SeriesViewModel(
                 subtitle = show.name,
                 userAgent = source?.userAgent,
                 httpHeaders = tv.own.owntv.core.settings.SourceOverrides.headersWithReferer(episode.httpHeaders, source),
+                startPositionMs = savedPositionMs(episode),
             )
             if (pid != null) {
                 runCatching {
@@ -1011,6 +1012,7 @@ class SeriesViewModel(
                     subtitle = show.name,
                     userAgent = source?.userAgent,
                     httpHeaders = tv.own.owntv.core.settings.SourceOverrides.headersWithReferer(episode.httpHeaders, source),
+                    startPositionMs = startPositionMs, // the screen's Resume / Start over answer
                 )
                 if (pid != null) {
                     runCatching {

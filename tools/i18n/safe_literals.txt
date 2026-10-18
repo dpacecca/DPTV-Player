@@ -44,6 +44,8 @@
 1	assertion	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsViewModel.kt	EPISODE not applicable
 2	assertion	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsViewModel.kt	EPISODE not applicable to category items
 4	empty	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	\0
+2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	BULK
+2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	BULK_CLEANUP
 3	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	HIDE
 2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	NEW
 2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	PIN_CHANGE

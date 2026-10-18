@@ -162,6 +162,8 @@ fun LiveScreen(
     val previewBlockedSingleSession by vm.previewBlockedSingleSession.collectAsStateWithLifecycle()
     val nowNext by vm.nowNext.collectAsStateWithLifecycle()
     val searchQuery by vm.searchQuery.collectAsStateWithLifecycle()
+    /** The search field's keyboard is open — ◀ then moves the text cursor, not to Categories. */
+    var searchEditing by remember { mutableStateOf(false) }
     val sortMode by vm.sortMode.collectAsStateWithLifecycle()
     val livePreviewSetting by vm.livePreviewEnabled.collectAsStateWithLifecycle()
     val channels = vm.channels.collectAsLazyPagingItems()
@@ -756,6 +758,7 @@ fun LiveScreen(
                     tv.own.owntv.ui.stage.StageSearchField(
                         query = searchQuery,
                         onQueryChange = vm::setSearchQuery,
+                        onEditingChange = { searchEditing = it },
                         placeholder = if (separate) stringResource(R.string.common_search) else stringResource(R.string.content_search_in, headerLabel),
                         // The mockup's share of the list width, but never more than the two tools leave:
                         // a narrow custom list shrinks the field, not "Guide view".
@@ -764,11 +767,11 @@ fun LiveScreen(
                             .width(if (separate) listWidth * (230f / 620f) else listWidth * (456f / 846f))
                             .focusRequester(listSearchFocus)
                             .onFocusChanged { if (it.hasFocus && previewEnabled) vm.stopPreview() }
-                            // ◀ Categories from the search field too, as from the rows (not while typing).
+                            // ◀ Categories from the search field too, as from the rows (not while typing — a search that found nothing here may be in another category).
                             .onPreviewKeyEvent { e ->
                                 if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyDown &&
                                     e.key == androidx.compose.ui.input.key.Key.DirectionLeft &&
-                                    searchQuery.isEmpty() && lockedKey == null
+                                    !searchEditing && lockedKey == null
                                 ) {
                                     if (separate) runCatching { railFocus.requestFocus() } else categoriesOpen = true
                                     true

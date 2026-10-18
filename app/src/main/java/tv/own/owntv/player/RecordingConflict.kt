@@ -61,7 +61,7 @@ fun rememberRecordingConflict(error: PlaybackFailure?): RecordingConflict? {
  *
  * Matched on the type rather than on rendered text. Two shapes qualify:
  *
- * - **`Raw` carrying HTTP 458** — the provider saying outright "your account's session is already in
+ * - **`AccountInUse`**, and **`Raw` carrying HTTP 458** from older paths — the provider saying outright "your account's session is already in
  *   use", which is the code `LiveStreamQuirks.isSessionLimit` already recognises.
  * - **`StreamUnavailable`** — the generic refusal. On its own it means little, which is why this is
  *   only ever consulted *after* the caller has established that something is recording. D4 is
@@ -72,6 +72,7 @@ fun rememberRecordingConflict(error: PlaybackFailure?): RecordingConflict? {
  * provider's stream count, and offering to stop a recording would be a lie about the cause.
  */
 private fun isSessionLimitFailure(error: PlaybackFailure): Boolean = when (error) {
+    PlaybackFailure.AccountInUse -> true
     is PlaybackFailure.Raw -> error.message.contains(SESSION_LIMIT_CODE.toString())
     is PlaybackFailure.StreamUnavailable -> true
     else -> false

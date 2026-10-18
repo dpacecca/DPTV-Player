@@ -441,4 +441,16 @@ class CustomizeViewModel(
         bulk.start(keys.mapNotNull { byKey[it]?.let { row -> row.key to row.originalName } })
         return keys
     }
+
+    /**
+     * Bulk-renames every category the list shows (the section and the visibility filter in force) —
+     * the toolbar's Bulk rename / ✨ Auto cleanup, which used to exist for items only; categories had
+     * just the long-press span. Works on the ORIGINAL names, like the span.
+     */
+    fun bulkRenameAll(autocleanup: Boolean) {
+        val entries = rows.value.map { it.key to it.originalName }
+        if (entries.isEmpty()) return
+        bulk.start(entries)
+        if (autocleanup) bulk.autoCleanup()
+    }
 }

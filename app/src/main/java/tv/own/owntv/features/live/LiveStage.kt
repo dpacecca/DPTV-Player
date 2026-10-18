@@ -443,9 +443,11 @@ internal fun liveCategoryEntries(railItems: List<LiveRailItem>, railCounts: Map<
         )
     }
     val groupCountry = ProviderTags.sharedCountry(entries.mapNotNull { it.name })
+    // A group keeps its "UK|" unless the heading below says it for every group.
+    val labelled = entries.map { e -> e.name?.let { e.copy(label = ProviderTags.groupLabel(it, groupCountry)) } ?: e }
     val heading = (if (groupCountry != null) stringResource(R.string.content_live_groups_country, groupCountry) else stringResource(R.string.content_live_groups))
         .uppercase(androidx.compose.ui.text.intl.Locale.current.platformLocale)
-    return entries to heading
+    return labelled to heading
 }
 
 /**

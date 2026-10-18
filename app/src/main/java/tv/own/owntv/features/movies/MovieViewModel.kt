@@ -649,6 +649,7 @@ class MovieViewModel(
                 title = movie.name,
                 userAgent = source?.userAgent,
                 httpHeaders = SourceOverrides.headersWithReferer(movie.httpHeaders, source),
+                startPositionMs = savedPositionMs(movie),
             )
             if (pid != null) {
                 runCatching {
@@ -678,6 +679,7 @@ class MovieViewModel(
                     title = movie.name,
                     userAgent = source?.userAgent,
                     httpHeaders = SourceOverrides.headersWithReferer(movie.httpHeaders, source),
+                    startPositionMs = startPositionMs, // the screen's Resume / Start over answer
                 )
                 if (pid != null) {
                     runCatching {
