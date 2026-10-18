@@ -101,8 +101,9 @@ private fun epgMessageText(message: EpgMessage): String = when (message) {
     EpgMessage.MismatchedIds -> stringResource(R.string.content_epg_mismatched_ids)
 }
 
+/** The one line an auto-match outcome reads as — beside the Guide's button, and in the shell's toast off it. */
 @Composable
-private fun epgMatchSummaryText(summary: EpgMatchSummary): String = when (summary) {
+internal fun epgMatchSummaryText(summary: EpgMatchSummary): String = when (summary) {
     EpgMatchSummary.CatchupUnavailable -> stringResource(R.string.content_epg_catchup_unavailable)
     EpgMatchSummary.MatchedNoProgrammes -> stringResource(R.string.content_epg_matched_no_programmes)
     EpgMatchSummary.AddPlaylist -> stringResource(R.string.content_epg_add_playlist_first)
