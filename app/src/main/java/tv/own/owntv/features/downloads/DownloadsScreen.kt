@@ -158,7 +158,7 @@ fun DownloadsScreen(
 
     /** Focus the row for [id], scrolling near it first when it is not composed (the index counts no group labels, so it lands close). */
     suspend fun focusRow(id: Long) {
-        if (runCatching { focusOf(id).requestFocus() }.isSuccess) return
+        if (runCatching { focusOf(id).requestFocus() }.getOrDefault(false)) return
         runCatching { listState.scrollToItem(listIds.indexOf(id).coerceAtLeast(0)) }
         withFrameNanos { }
         runCatching { focusOf(id).requestFocus() }
@@ -167,8 +167,8 @@ fun DownloadsScreen(
     // The rail's ▶ lands on the first row, or on the tabs when this tab is empty.
     val entry: () -> Boolean = {
         val first = listIds.firstOrNull()
-        if (first != null) runCatching { focusOf(first).requestFocus() }.isSuccess || runCatching { tabFocus.requestFocus() }.isSuccess
-        else runCatching { tabFocus.requestFocus() }.isSuccess
+        if (first != null) runCatching { focusOf(first).requestFocus() }.getOrDefault(false) || runCatching { tabFocus.requestFocus() }.getOrDefault(false)
+        else runCatching { tabFocus.requestFocus() }.getOrDefault(false)
     }
     DisposableEffect(onEntryHook, listIds.firstOrNull()) {
         onEntryHook?.invoke(entry)

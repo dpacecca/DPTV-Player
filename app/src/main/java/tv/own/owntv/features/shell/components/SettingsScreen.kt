@@ -301,7 +301,7 @@ fun SettingsScreen(
         if (start.search) {
             searchMode = true
             searchFromMore = true
-            for (attempt in 0 until 10) { kotlinx.coroutines.delay(50); if (runCatching { searchFieldFocus.requestFocus() }.isSuccess) break }
+            for (attempt in 0 until 10) { kotlinx.coroutines.delay(50); if (runCatching { searchFieldFocus.requestFocus() }.getOrDefault(false)) break }
         }
         onStartConsumed()
     }

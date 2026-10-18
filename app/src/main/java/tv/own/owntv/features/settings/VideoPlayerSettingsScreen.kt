@@ -649,7 +649,7 @@ internal fun VideoPlayerGroupRows(
         dialogForQuickKey(focusRowKey)?.let { dialog = it }
         repeat(10) {
             kotlinx.coroutines.delay(50)
-            if (runCatching { rowReturnFocus.requestFocus() }.isSuccess) return@LaunchedEffect
+            if (runCatching { rowReturnFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
         }
     }
     // Kick focus into the group; the group's onEnter (below) decides the actual target.
