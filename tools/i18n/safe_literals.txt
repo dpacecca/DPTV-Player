@@ -1766,7 +1766,6 @@
 1	protocol	app/src/main/java/tv/own/owntv/ui/components/GenreColor.kt	وثائق
 1	protocol	app/src/main/java/tv/own/owntv/ui/components/GenreColor.kt	کارتون
 1	protocol	app/src/main/java/tv/own/owntv/ui/components/GenreColor.kt	کودک
-1	empty	app/src/main/java/tv/own/owntv/ui/components/MoveOrderOverlay.kt	\0
 1	performance	app/src/main/java/tv/own/owntv/ui/components/NavLadder.kt	navAccentBar
 1	performance	app/src/main/java/tv/own/owntv/ui/components/NavLadder.kt	navLadderBg
 1	performance	app/src/main/java/tv/own/owntv/ui/components/NavLadder.kt	navLadderFg

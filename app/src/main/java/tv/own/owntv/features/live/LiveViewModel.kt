@@ -56,7 +56,6 @@ import tv.own.owntv.core.recording.RecordingSchedule
 import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.customize.CategoryMove
 import tv.own.owntv.core.customize.CategoryRailEditor
-import tv.own.owntv.core.customize.MoveKind
 import tv.own.owntv.core.customize.railCategories
 import tv.own.owntv.core.database.dao.CategoryDao
 import tv.own.owntv.core.database.dao.ChannelDao
@@ -733,12 +732,11 @@ class LiveViewModel(
         }
     }
 
-    fun moveCategoryUp() {
-        _categoryMoveState.value = _categoryMoveState.value?.moved(MoveKind.UP) ?: return
-    }
-
-    fun moveCategoryDown() {
-        _categoryMoveState.value = _categoryMoveState.value?.moved(MoveKind.DOWN) ?: return
+    fun moveCategory(from: Int, to: Int) {
+        val s = _categoryMoveState.value ?: return
+        if (from !in s.rows.indices || to !in s.rows.indices || from == to) return
+        val rows = s.rows.toMutableList().apply { add(to, removeAt(from)) }
+        _categoryMoveState.value = s.copy(rows = rows, activeIndex = to, targetKey = rows[to].key)
     }
 
     fun commitCategoryMove() {
@@ -2070,22 +2068,13 @@ class LiveViewModel(
     /** The sort the user was on before [enterMoveMode] switched the list to playlist order. */
     private var sortBeforeMove: SettingsRepository.SortMode? = null
 
-    fun moveUp() {
+    /** Takes the item being moved out and puts it back at [target]; the rest close up around it. */
+    /** Takes the item at [from] out and puts it back at [to]; the rest close up around it. */
+    fun move(from: Int, to: Int) {
         val s = _moveState.value ?: return
-        if (s.activeIndex == 0) return
-        val list = s.items.toMutableList()
-        val i = s.activeIndex
-        list[i - 1] = s.items[i]; list[i] = s.items[i - 1]
-        _moveState.value = s.copy(items = list, activeIndex = i - 1)
-    }
-
-    fun moveDown() {
-        val s = _moveState.value ?: return
-        if (s.activeIndex == s.items.size - 1) return
-        val list = s.items.toMutableList()
-        val i = s.activeIndex
-        list[i + 1] = s.items[i]; list[i] = s.items[i + 1]
-        _moveState.value = s.copy(items = list, activeIndex = i + 1)
+        if (from !in s.items.indices || to !in s.items.indices || from == to) return
+        val list = s.items.toMutableList().apply { add(to, removeAt(from)) }
+        _moveState.value = s.copy(items = list, activeIndex = to)
     }
 
     fun commitMove() {

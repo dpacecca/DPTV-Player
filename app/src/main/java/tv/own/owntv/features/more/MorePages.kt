@@ -406,8 +406,7 @@ internal fun FavouritesPage(
             title = stringResource(R.string.content_move),
             itemNames = m.names,
             activeIndex = m.index,
-            onMoveUp = { vm.moveBy(-1) },
-            onMoveDown = { vm.moveBy(1) },
+            onMove = vm::move,
             onCommit = vm::commitMove,
             onCancel = vm::cancelMove,
         )

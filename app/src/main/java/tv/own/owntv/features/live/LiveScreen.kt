@@ -1153,8 +1153,7 @@ fun LiveScreen(
             title = stringResource(R.string.content_reorder_channel),
             itemNames = ms.items.map { it.name },
             activeIndex = ms.activeIndex,
-            onMoveUp = vm::moveUp,
-            onMoveDown = vm::moveDown,
+            onMove = vm::move,
             onCommit = vm::commitMove,
             onCancel = vm::cancelMove,
         )
@@ -1166,21 +1165,23 @@ fun LiveScreen(
             title = stringResource(R.string.content_move),
             itemNames = ms.items,
             activeIndex = ms.activeIndex,
-            onMoveUp = vm::moveCategoryUp,
-            onMoveDown = vm::moveCategoryDown,
+            onMove = vm::moveCategory,
             onCommit = vm::commitCategoryMove,
             onCancel = vm::cancelCategoryMove,
         )
     }
 
-    contextCategory?.let { item ->
+    // Gone in the same frame the move list opens, so two popups never hold focus at once.
+    LaunchedEffect(categoryMoveState != null) { if (categoryMoveState != null) contextCategory = null }
+    contextCategory?.takeIf { categoryMoveState == null }?.let { item ->
         val restorePlan by produceState<CategoryRestorePlan?>(null, item.key) { value = vm.categoryRestorePlan(item.key) }
         CategoryContextMenu(
             categoryName = item.displayLabel(),
             canHide = item.key is LiveKey.Folder || item.key is LiveKey.Custom,
             canMove = item.key is LiveKey.Folder || item.key is LiveKey.Custom,
             onHide = { vm.hideCategory(item.key); contextCategory = null },
-            onMove = { vm.enterCategoryMoveMode(item.key); contextCategory = null },
+            // The menu stays up until the move list is loaded, then hands over to it.
+            onMove = { vm.enterCategoryMoveMode(item.key) },
             // Always offered: the plan is read in the background and only fills in the confirmation.
             resetLabel = stringResource(if (item.key is LiveKey.Custom) R.string.content_category_restore_custom else R.string.content_category_restore_playlist),
             resetLines = restorePlan?.let { categoryRestoreSummary(it) },
