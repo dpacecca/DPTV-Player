@@ -1442,13 +1442,18 @@
     <string name="more_fav_movies_series">الأفلام والمسلسلات</string>
     <string name="more_fav_empty_title">لا توجد مفضلات بعد</string>
     <string name="more_fav_empty_body">اضغط مطولًا على OK فوق قناة أو فيلم أو مسلسل، ثم اختر «إضافة إلى المفضّلة».</string>
+    <string name="more_fav_empty_body_mobile">اضغط مطولًا على قناة أو فيلم أو مسلسل، ثم اختر «إضافة إلى المفضّلة».</string>
     <string name="more_history_empty">لم تشاهد شيئًا بعد</string>
     <string name="more_backup_never_title">لم يُنسخ احتياطيًا قط</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g> و<xliff:g id="favorites">%2$s</xliff:g> و<xliff:g id="history">%3$s</xliff:g> وكل التخصيصات موجودة على هذا التلفزيون فقط.</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g> و<xliff:g id="favorites">%2$s</xliff:g> و<xliff:g id="history">%3$s</xliff:g> وكل التخصيصات موجودة على هذا الهاتف فقط.</string>
     <string name="more_backup_now">نسخ احتياطي الآن</string>
     <string name="more_backup_now_body">احفظ ملفًا على هذا التلفاز، أو أرسله عن بُعد إلى جهاز آخر</string>
+    <string name="more_backup_now_body_mobile">احفظ ملفًا على هذا الهاتف، أو أرسله إلى جهاز آخر</string>
     <string name="more_backup_file_tv">ملف على هذا التلفزيون</string>
+    <string name="more_backup_file_tv_mobile">ملف على هذا الهاتف</string>
     <string name="more_restore_body">من ملف على هذا التلفزيون، أو عن بُعد من جهاز آخر</string>
+    <string name="more_restore_body_mobile">من ملف على هذا الهاتف، أو عن بُعد من جهاز آخر</string>
     <string name="more_backup_included">ما الذي يتضمنه</string>
     <string name="more_about_up_to_date">محدّث</string>
     <string name="more_about_checked">تم التحقق <xliff:g id="value">%1$s</xliff:g></string>
@@ -1470,7 +1475,9 @@
     <string name="more_sync_unpair">إلغاء الاقتران</string>
     <string name="more_about_license">GPLv3 · مجاني ومفتوح المصدر</string>
     <string name="more_about_description">مشغل IPTV الخاص بك لـ Android TV. لا يوفر أي قنوات أو محتوى؛ أنت تضيف مصادرك المتاحة قانونيًا.</string>
+    <string name="more_about_description_mobile">مشغل IPTV الخاص بك لـ Android. لا يوفر أي قنوات أو محتوى؛ أنت تضيف مصادرك المتاحة قانونيًا.</string>
     <string name="more_about_scan">امسح الرمز بهاتفك.</string>
+    <string name="more_about_scan_mobile">امسح الرمز أو اضغط للفتح</string>
     <plurals name="more_playlist_count">
         <item quantity="zero"><xliff:g id="count">%1$d</xliff:g> قائمة تشغيل</item>
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> قائمة تشغيل</item>
@@ -1502,6 +1509,22 @@
         <item quantity="few"><xliff:g id="count">%1$d</xliff:g> لغات</item>
         <item quantity="many"><xliff:g id="count">%1$d</xliff:g> لغة</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> لغة</item>
+    </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="zero">مثبّتة: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="one">مثبّتة: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="two">مثبّتة: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="few">مثبّتة: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="many">مثبّتة: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="other">مثبّتة: <xliff:g id="count">%1$d</xliff:g></item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="zero">قيد التنزيل: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="one">قيد التنزيل: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="two">قيد التنزيل: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="few">قيد التنزيل: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="many">قيد التنزيل: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="other">قيد التنزيل: <xliff:g id="count">%1$d</xliff:g></item>
     </plurals>
     <string name="settings_backup_location">الموقع</string>
     <string name="settings_multiview">العرض المتعدد</string>

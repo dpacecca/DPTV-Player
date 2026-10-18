@@ -1354,13 +1354,18 @@
     <string name="more_fav_movies_series">Filmer och serier</string>
     <string name="more_fav_empty_title">Inga favoriter än</string>
     <string name="more_fav_empty_body">Håll in OK på en kanal, film eller serie och välj ”Lägg till som favorit”.</string>
+    <string name="more_fav_empty_body_mobile">Håll fingret på en kanal, film eller serie och välj ”Lägg till som favorit”.</string>
     <string name="more_history_empty">Inget sett än</string>
     <string name="more_backup_never_title">Aldrig säkerhetskopierad</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> och alla anpassningar finns bara på den här tv:n.</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> och alla anpassningar finns bara på den här telefonen.</string>
     <string name="more_backup_now">Säkerhetskopiera nu</string>
     <string name="more_backup_now_body">Spara en fil på den här tv:n eller skicka den via fjärrenhet till en annan enhet</string>
+    <string name="more_backup_now_body_mobile">Spara en fil på den här telefonen eller skicka den till en annan enhet</string>
     <string name="more_backup_file_tv">Fil på den här tv:n</string>
+    <string name="more_backup_file_tv_mobile">Fil på den här telefonen</string>
     <string name="more_restore_body">Från en fil på den här tv:n, eller på distans från en annan enhet</string>
+    <string name="more_restore_body_mobile">Från en fil på den här telefonen, eller på distans från en annan enhet</string>
     <string name="more_backup_included">Vad som ingår</string>
     <string name="more_about_up_to_date">Uppdaterad</string>
     <string name="more_about_checked">Kontrollerad <xliff:g id="value">%1$s</xliff:g></string>
@@ -1382,7 +1387,9 @@
     <string name="more_sync_unpair">Ta bort parkoppling</string>
     <string name="more_about_license">GPLv3 · gratis och öppen källkod</string>
     <string name="more_about_description">Din egen IPTV-spelare för Android TV. Den tillhandahåller inga kanaler eller något innehåll; du lägger till dina egna lagliga källor.</string>
+    <string name="more_about_description_mobile">Din egen IPTV-spelare för Android. Den tillhandahåller inga kanaler eller något innehåll; du lägger till dina egna lagliga källor.</string>
     <string name="more_about_scan">Skanna med telefonen.</string>
+    <string name="more_about_scan_mobile">Skanna, eller tryck för att öppna</string>
     <plurals name="more_playlist_count">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> spellista</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> spellistor</item>
@@ -1398,6 +1405,14 @@
     <plurals name="more_about_languages">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> språk</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> språk</item>
+    </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> fäst</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> fästa</item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> pågår</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> pågår</item>
     </plurals>
     <string name="settings_backup_location">Plats</string>
     <string name="settings_multiview">Multivy</string>

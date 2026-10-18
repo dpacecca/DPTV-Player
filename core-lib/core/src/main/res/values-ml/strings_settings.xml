@@ -1354,13 +1354,18 @@
     <string name="more_fav_movies_series">സിനിമകളും സീരീസുകളും</string>
     <string name="more_fav_empty_title">ഇതുവരെ പ്രിയപ്പെട്ടവയൊന്നുമില്ല</string>
     <string name="more_fav_empty_body">ഒരു ചാനലിലോ സിനിമയിലോ ഷോയിലോ OK അമർത്തിപ്പിടിച്ച് “പ്രിയപ്പെട്ടവയിലേക്ക് ചേർക്കുക” തിരഞ്ഞെടുക്കുക.</string>
+    <string name="more_fav_empty_body_mobile">ഒരു ചാനലിലോ സിനിമയിലോ ഷോയിലോ അമർത്തിപ്പിടിച്ച് “പ്രിയപ്പെട്ടവയിലേക്ക് ചേർക്കുക” തിരഞ്ഞെടുക്കുക.</string>
     <string name="more_history_empty">ഇതുവരെ ഒന്നും കണ്ടിട്ടില്ല</string>
     <string name="more_backup_never_title">ഇതുവരെ ബാക്കപ്പ് ചെയ്തിട്ടില്ല</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g>, എല്ലാ ഇഷ്ടാനുസൃതമാക്കലുകളും ഈ ടിവിയിൽ മാത്രമാണുള്ളത്.</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g>, എല്ലാ ഇഷ്ടാനുസൃതമാക്കലുകളും ഈ ഫോണിൽ മാത്രമാണുള്ളത്.</string>
     <string name="more_backup_now">ഇപ്പോൾ ബാക്കപ്പ് ചെയ്യുക</string>
     <string name="more_backup_now_body">ഈ ടിവിയിൽ ഒരു ഫയൽ സേവ് ചെയ്യുക, അല്ലെങ്കിൽ വിദൂരമായി മറ്റൊരു ഉപകരണത്തിലേക്ക് അയയ്ക്കുക</string>
+    <string name="more_backup_now_body_mobile">ഈ ഫോണിൽ ഒരു ഫയൽ സേവ് ചെയ്യുക, അല്ലെങ്കിൽ മറ്റൊരു ഉപകരണത്തിലേക്ക് അയയ്ക്കുക</string>
     <string name="more_backup_file_tv">ഈ ടിവിയിൽ ഫയൽ</string>
+    <string name="more_backup_file_tv_mobile">ഈ ഫോണിൽ ഫയൽ</string>
     <string name="more_restore_body">ഈ ടിവിയിലെ ഒരു ഫയലിൽ നിന്ന്, അല്ലെങ്കിൽ മറ്റൊരു ഉപകരണത്തിൽ നിന്ന് റിമോട്ടായി</string>
+    <string name="more_restore_body_mobile">ഈ ഫോണിലെ ഒരു ഫയലിൽ നിന്ന്, അല്ലെങ്കിൽ മറ്റൊരു ഉപകരണത്തിൽ നിന്ന് റിമോട്ടായി</string>
     <string name="more_backup_included">ഉൾപ്പെടുന്നവ</string>
     <string name="more_about_up_to_date">ഏറ്റവും പുതിയത്</string>
     <string name="more_about_checked">പരിശോധിച്ചത്: <xliff:g id="value">%1$s</xliff:g></string>
@@ -1382,7 +1387,9 @@
     <string name="more_sync_unpair">അൺപെയർ ചെയ്യുക</string>
     <string name="more_about_license">GPLv3 · സൗജന്യവും ഓപ്പൺ സോഴ്സും</string>
     <string name="more_about_description">Android TV-യ്ക്കുള്ള നിങ്ങളുടെ സ്വന്തം IPTV പ്ലേയർ. ഇത് ചാനലുകളോ ഉള്ളടക്കമോ നൽകുന്നില്ല; നിയമപരമായി ലഭ്യമായ നിങ്ങളുടെ സ്വന്തം ഉറവിടങ്ങൾ നിങ്ങൾ ചേർക്കുന്നു.</string>
+    <string name="more_about_description_mobile">Android-നുള്ള നിങ്ങളുടെ സ്വന്തം IPTV പ്ലേയർ. ഇത് ചാനലുകളോ ഉള്ളടക്കമോ നൽകുന്നില്ല; നിയമപരമായി ലഭ്യമായ നിങ്ങളുടെ സ്വന്തം ഉറവിടങ്ങൾ നിങ്ങൾ ചേർക്കുന്നു.</string>
     <string name="more_about_scan">നിങ്ങളുടെ ഫോൺ ഉപയോഗിച്ച് സ്കാൻ ചെയ്യുക.</string>
+    <string name="more_about_scan_mobile">സ്കാൻ ചെയ്യുക, അല്ലെങ്കിൽ തുറക്കാൻ ടാപ്പ് ചെയ്യുക</string>
     <plurals name="more_playlist_count">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> പ്ലേലിസ്റ്റ്</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> പ്ലേലിസ്റ്റുകൾ</item>
@@ -1398,6 +1405,14 @@
     <plurals name="more_about_languages">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> ഭാഷ</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> ഭാഷകൾ</item>
+    </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> പിൻ ചെയ്തു</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> പിൻ ചെയ്തു</item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> നടക്കുന്നു</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> നടക്കുന്നു</item>
     </plurals>
     <string name="settings_backup_location">സ്ഥാനം</string>
     <string name="settings_multiview">മൾട്ടിവ്യൂ</string>

@@ -1332,13 +1332,18 @@
     <string name="more_fav_movies_series">电影和剧集</string>
     <string name="more_fav_empty_title">还没有收藏</string>
     <string name="more_fav_empty_body">在频道、电影或剧集上长按 OK，然后选择“添加到收藏夹”。</string>
+    <string name="more_fav_empty_body_mobile">长按频道、电影或剧集，然后选择“添加到收藏夹”。</string>
     <string name="more_history_empty">还没有观看记录</string>
     <string name="more_backup_never_title">从未备份</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>、<xliff:g id="favorites">%2$s</xliff:g>、<xliff:g id="history">%3$s</xliff:g>以及所有自定义设置都只保存在这台电视上。</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>、<xliff:g id="favorites">%2$s</xliff:g>、<xliff:g id="history">%3$s</xliff:g>以及所有自定义设置都只保存在这部手机上。</string>
     <string name="more_backup_now">立即备份</string>
     <string name="more_backup_now_body">在这台电视上保存文件，或远程发送到另一台设备</string>
+    <string name="more_backup_now_body_mobile">在这部手机上保存文件，或发送到另一台设备</string>
     <string name="more_backup_file_tv">保存到这台电视</string>
+    <string name="more_backup_file_tv_mobile">保存到这部手机</string>
     <string name="more_restore_body">从这台电视上的文件，或从另一台设备远程恢复</string>
+    <string name="more_restore_body_mobile">从这部手机上的文件，或从另一台设备远程恢复</string>
     <string name="more_backup_included">包含的内容</string>
     <string name="more_about_up_to_date">已是最新</string>
     <string name="more_about_checked">检查于 <xliff:g id="value">%1$s</xliff:g></string>
@@ -1360,7 +1365,9 @@
     <string name="more_sync_unpair">取消配对</string>
     <string name="more_about_license">GPLv3 · 免费开源</string>
     <string name="more_about_description">你自己的 Android TV IPTV 播放器。它不提供任何频道或内容；你需要添加自己合法可用的来源。</string>
+    <string name="more_about_description_mobile">你自己的 Android IPTV 播放器。它不提供任何频道或内容；你需要添加自己合法可用的来源。</string>
     <string name="more_about_scan">用手机扫描。</string>
+    <string name="more_about_scan_mobile">扫描，或点按打开</string>
     <plurals name="more_playlist_count">
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 个播放列表</item>
     </plurals>
@@ -1372,6 +1379,12 @@
     </plurals>
     <plurals name="more_about_languages">
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 种语言</item>
+    </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="other">已固定 <xliff:g id="count">%1$d</xliff:g> 项</item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 个下载中</item>
     </plurals>
     <string name="settings_backup_location">位置</string>
     <string name="settings_multiview">多画面</string>

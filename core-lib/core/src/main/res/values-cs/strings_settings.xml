@@ -1398,13 +1398,18 @@
     <string name="more_fav_movies_series">Filmy a seriály</string>
     <string name="more_fav_empty_title">Zatím žádné oblíbené</string>
     <string name="more_fav_empty_body">Podržte OK na kanálu, filmu nebo seriálu a zvolte „Přidat k oblíbeným“.</string>
+    <string name="more_fav_empty_body_mobile">Podržte prst na kanálu, filmu nebo seriálu a zvolte „Přidat k oblíbeným“.</string>
     <string name="more_history_empty">Zatím nic zhlédnuto</string>
     <string name="more_backup_never_title">Nikdy nezálohováno</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> a všechna přizpůsobení jsou jen v této televizi.</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> a všechna přizpůsobení jsou jen v tomto telefonu.</string>
     <string name="more_backup_now">Zálohovat nyní</string>
     <string name="more_backup_now_body">Uložit soubor v této televizi, nebo ho vzdáleně poslat do jiného zařízení</string>
+    <string name="more_backup_now_body_mobile">Uložit soubor v tomto telefonu, nebo ho poslat do jiného zařízení</string>
     <string name="more_backup_file_tv">Soubor v této televizi</string>
+    <string name="more_backup_file_tv_mobile">Soubor v tomto telefonu</string>
     <string name="more_restore_body">Ze souboru v této televizi, nebo na dálku z jiného zařízení</string>
+    <string name="more_restore_body_mobile">Ze souboru v tomto telefonu, nebo na dálku z jiného zařízení</string>
     <string name="more_backup_included">Co obsahuje</string>
     <string name="more_about_up_to_date">Aktuální</string>
     <string name="more_about_checked">Zkontrolováno <xliff:g id="value">%1$s</xliff:g></string>
@@ -1426,7 +1431,9 @@
     <string name="more_sync_unpair">Zrušit párování</string>
     <string name="more_about_license">GPLv3 · zdarma a open source</string>
     <string name="more_about_description">Váš vlastní přehrávač IPTV pro Android TV. Neposkytuje žádné kanály ani obsah; přidáváte vlastní legálně dostupné zdroje.</string>
+    <string name="more_about_description_mobile">Váš vlastní přehrávač IPTV pro Android. Neposkytuje žádné kanály ani obsah; přidáváte vlastní legálně dostupné zdroje.</string>
     <string name="more_about_scan">Naskenujte telefonem.</string>
+    <string name="more_about_scan_mobile">Naskenujte, nebo klepnutím otevřete</string>
     <plurals name="more_playlist_count">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> playlist</item>
         <item quantity="few"><xliff:g id="count">%1$d</xliff:g> playlisty</item>
@@ -1450,6 +1457,18 @@
         <item quantity="few"><xliff:g id="count">%1$d</xliff:g> jazyky</item>
         <item quantity="many"><xliff:g id="count">%1$d</xliff:g> jazyků</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> jazyků</item>
+    </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="one">Připnuto: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="few">Připnuto: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="many">Připnuto: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="other">Připnuto: <xliff:g id="count">%1$d</xliff:g></item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="one">Probíhá: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="few">Probíhá: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="many">Probíhá: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="other">Probíhá: <xliff:g id="count">%1$d</xliff:g></item>
     </plurals>
     <string name="settings_backup_location">Umístění</string>
     <string name="settings_multiview">Multiview</string>

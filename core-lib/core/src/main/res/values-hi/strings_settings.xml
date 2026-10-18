@@ -1354,13 +1354,18 @@
     <string name="more_fav_movies_series">फ़िल्में और सीरीज़</string>
     <string name="more_fav_empty_title">अभी कोई पसंदीदा नहीं</string>
     <string name="more_fav_empty_body">किसी चैनल, फ़िल्म या शो पर OK दबाकर रखें और “पसंदीदा में जोड़ें” चुनें।</string>
+    <string name="more_fav_empty_body_mobile">किसी चैनल, फ़िल्म या शो को दबाकर रखें और “पसंदीदा में जोड़ें” चुनें।</string>
     <string name="more_history_empty">अभी तक कुछ नहीं देखा</string>
     <string name="more_backup_never_title">कभी बैकअप नहीं लिया गया</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> और हर कस्टमाइज़ेशन सिर्फ़ इसी टीवी पर हैं।</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> और हर कस्टमाइज़ेशन सिर्फ़ इसी फ़ोन पर हैं।</string>
     <string name="more_backup_now">अभी बैकअप लें</string>
     <string name="more_backup_now_body">इस टीवी पर फ़ाइल सहेजें, या उसे दूर से किसी दूसरे डिवाइस पर भेजें</string>
+    <string name="more_backup_now_body_mobile">इस फ़ोन पर फ़ाइल सहेजें, या उसे किसी दूसरे डिवाइस पर भेजें</string>
     <string name="more_backup_file_tv">इस टीवी पर फ़ाइल</string>
+    <string name="more_backup_file_tv_mobile">इस फ़ोन पर फ़ाइल</string>
     <string name="more_restore_body">इस टीवी की फ़ाइल से, या किसी दूसरे डिवाइस से रिमोट से</string>
+    <string name="more_restore_body_mobile">इस फ़ोन की फ़ाइल से, या किसी दूसरे डिवाइस से रिमोट से</string>
     <string name="more_backup_included">क्या शामिल है</string>
     <string name="more_about_up_to_date">अप-टू-डेट</string>
     <string name="more_about_checked">जाँचा गया <xliff:g id="value">%1$s</xliff:g></string>
@@ -1382,7 +1387,9 @@
     <string name="more_sync_unpair">अनपेयर करें</string>
     <string name="more_about_license">GPLv3 · मुफ़्त और ओपन सोर्स</string>
     <string name="more_about_description">Android TV के लिए आपका अपना IPTV प्लेयर। इसमें कोई चैनल या कंटेंट नहीं है; आप अपने कानूनी रूप से उपलब्ध सोर्स जोड़ते हैं।</string>
+    <string name="more_about_description_mobile">Android के लिए आपका अपना IPTV प्लेयर। इसमें कोई चैनल या कंटेंट नहीं है; आप अपने कानूनी रूप से उपलब्ध सोर्स जोड़ते हैं।</string>
     <string name="more_about_scan">अपने फ़ोन से स्कैन करें।</string>
+    <string name="more_about_scan_mobile">स्कैन करें, या खोलने के लिए टैप करें</string>
     <plurals name="more_playlist_count">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> प्लेलिस्ट</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> प्लेलिस्ट</item>
@@ -1398,6 +1405,14 @@
     <plurals name="more_about_languages">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> भाषा</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> भाषाएँ</item>
+    </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> पिन किए गए</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> पिन किए गए</item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> चल रहा है</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> चल रहे हैं</item>
     </plurals>
     <string name="settings_backup_location">स्थान</string>
     <string name="settings_multiview">मल्टीव्यू</string>

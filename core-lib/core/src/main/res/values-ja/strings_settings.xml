@@ -1332,13 +1332,18 @@
     <string name="more_fav_movies_series">映画とシリーズ</string>
     <string name="more_fav_empty_title">お気に入りはまだありません</string>
     <string name="more_fav_empty_body">チャンネル、映画、番組で OK を長押しし、「お気に入りに追加」を選びます。</string>
+    <string name="more_fav_empty_body_mobile">チャンネル、映画、番組を長押しし、「お気に入りに追加」を選びます。</string>
     <string name="more_history_empty">まだ視聴履歴はありません</string>
     <string name="more_backup_never_title">バックアップしたことがありません</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>、<xliff:g id="favorites">%2$s</xliff:g>、<xliff:g id="history">%3$s</xliff:g> とすべてのカスタマイズは、このテレビにしかありません。</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>、<xliff:g id="favorites">%2$s</xliff:g>、<xliff:g id="history">%3$s</xliff:g> とすべてのカスタマイズは、このスマートフォンにしかありません。</string>
     <string name="more_backup_now">今すぐバックアップ</string>
     <string name="more_backup_now_body">このテレビにファイルを保存するか、リモートで別の機器に送ります</string>
+    <string name="more_backup_now_body_mobile">このスマートフォンにファイルを保存するか、別の機器に送ります</string>
     <string name="more_backup_file_tv">このテレビに保存</string>
+    <string name="more_backup_file_tv_mobile">このスマートフォンに保存</string>
     <string name="more_restore_body">このテレビのファイルから、または別のデバイスからリモートで</string>
+    <string name="more_restore_body_mobile">このスマートフォンのファイルから、または別のデバイスからリモートで</string>
     <string name="more_backup_included">含まれるもの</string>
     <string name="more_about_up_to_date">最新</string>
     <string name="more_about_checked">確認日時: <xliff:g id="value">%1$s</xliff:g></string>
@@ -1360,7 +1365,9 @@
     <string name="more_sync_unpair">ペアリング解除</string>
     <string name="more_about_license">GPLv3 · 無料のオープンソース</string>
     <string name="more_about_description">Android TV 向けのあなた専用 IPTV プレーヤー。チャンネルやコンテンツは提供しません。合法的に利用できるソースをご自身で追加してください。</string>
+    <string name="more_about_description_mobile">Android 向けのあなた専用 IPTV プレーヤー。チャンネルやコンテンツは提供しません。合法的に利用できるソースをご自身で追加してください。</string>
     <string name="more_about_scan">スマートフォンでスキャンしてください。</string>
+    <string name="more_about_scan_mobile">スキャンするか、タップして開きます</string>
     <plurals name="more_playlist_count">
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 件のプレイリスト</item>
     </plurals>
@@ -1372,6 +1379,12 @@
     </plurals>
     <plurals name="more_about_languages">
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 言語</item>
+    </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 件をピン留め</item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 件ダウンロード中</item>
     </plurals>
     <string name="settings_backup_location">保存先</string>
     <string name="settings_multiview">マルチビュー</string>

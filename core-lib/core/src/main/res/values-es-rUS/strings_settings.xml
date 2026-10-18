@@ -1376,13 +1376,18 @@
     <string name="more_fav_movies_series">Películas y series</string>
     <string name="more_fav_empty_title">Aún no hay favoritos</string>
     <string name="more_fav_empty_body">Mantén presionado OK sobre un canal, película o serie y elige “Agregar a Favoritos”.</string>
+    <string name="more_fav_empty_body_mobile">Mantén presionado un canal, película o serie y elige “Agregar a Favoritos”.</string>
     <string name="more_history_empty">Aún no has visto nada</string>
     <string name="more_backup_never_title">Nunca se hizo una copia de seguridad</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> y todas las personalizaciones solo están en esta TV.</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> y todas las personalizaciones solo están en este teléfono.</string>
     <string name="more_backup_now">Hacer copia ahora</string>
     <string name="more_backup_now_body">Guarda un archivo en esta TV o envíalo a distancia a otro dispositivo</string>
+    <string name="more_backup_now_body_mobile">Guarda un archivo en este teléfono o envíalo a otro dispositivo</string>
     <string name="more_backup_file_tv">Archivo en esta TV</string>
+    <string name="more_backup_file_tv_mobile">Archivo en este teléfono</string>
     <string name="more_restore_body">Desde un archivo en esta TV o de forma remota desde otro dispositivo</string>
+    <string name="more_restore_body_mobile">Desde un archivo en este teléfono o de forma remota desde otro dispositivo</string>
     <string name="more_backup_included">Qué incluye</string>
     <string name="more_about_up_to_date">Actualizado</string>
     <string name="more_about_checked">Verificado <xliff:g id="value">%1$s</xliff:g></string>
@@ -1404,7 +1409,9 @@
     <string name="more_sync_unpair">Desvincular</string>
     <string name="more_about_license">GPLv3 · gratuito y de código abierto</string>
     <string name="more_about_description">Tu propio reproductor IPTV para Android TV. No ofrece canales ni contenido; tú agregas tus propias fuentes legales.</string>
+    <string name="more_about_description_mobile">Tu propio reproductor IPTV para Android. No ofrece canales ni contenido; tú agregas tus propias fuentes legales.</string>
     <string name="more_about_scan">Escanéalo con tu teléfono.</string>
+    <string name="more_about_scan_mobile">Escanéalo o toca para abrir</string>
     <plurals name="more_playlist_count">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> lista</item>
         <item quantity="many"><xliff:g id="count">%1$d</xliff:g> listas</item>
@@ -1424,6 +1431,16 @@
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> idioma</item>
         <item quantity="many"><xliff:g id="count">%1$d</xliff:g> idiomas</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> idiomas</item>
+    </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> fijado</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> fijados</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> fijados</item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> en curso</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> en curso</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> en curso</item>
     </plurals>
     <string name="settings_backup_location">Ubicación</string>
     <string name="settings_multiview">Multivista</string>

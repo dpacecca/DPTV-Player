@@ -1398,13 +1398,18 @@
     <string name="more_fav_movies_series">Фильмы и сериалы</string>
     <string name="more_fav_empty_title">Избранного пока нет</string>
     <string name="more_fav_empty_body">Удерживайте OK на канале, фильме или сериале и выберите «Добавить в избранное».</string>
+    <string name="more_fav_empty_body_mobile">Нажмите и удерживайте канал, фильм или сериал и выберите «Добавить в избранное».</string>
     <string name="more_history_empty">Вы ещё ничего не смотрели</string>
     <string name="more_backup_never_title">Резервной копии ещё нет</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> и все настройки хранятся только на этом телевизоре.</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> и все настройки хранятся только на этом телефоне.</string>
     <string name="more_backup_now">Создать копию</string>
     <string name="more_backup_now_body">Сохранить файл на этом телевизоре или отправить его удалённо на другое устройство</string>
+    <string name="more_backup_now_body_mobile">Сохранить файл на этом телефоне или отправить его на другое устройство</string>
     <string name="more_backup_file_tv">Файл на этом ТВ</string>
+    <string name="more_backup_file_tv_mobile">Файл на этом телефоне</string>
     <string name="more_restore_body">Из файла на этом телевизоре или удалённо с другого устройства</string>
+    <string name="more_restore_body_mobile">Из файла на этом телефоне или удалённо с другого устройства</string>
     <string name="more_backup_included">Что входит</string>
     <string name="more_about_up_to_date">Актуальная версия</string>
     <string name="more_about_checked">Проверено <xliff:g id="value">%1$s</xliff:g></string>
@@ -1426,7 +1431,9 @@
     <string name="more_sync_unpair">Отвязать</string>
     <string name="more_about_license">GPLv3 · бесплатно и с открытым кодом</string>
     <string name="more_about_description">Ваш собственный IPTV-плеер для Android TV. Он не предоставляет каналов или контента; вы добавляете собственные легальные источники.</string>
+    <string name="more_about_description_mobile">Ваш собственный IPTV-плеер для Android. Он не предоставляет каналов или контента; вы добавляете собственные легальные источники.</string>
     <string name="more_about_scan">Отсканируйте телефоном.</string>
+    <string name="more_about_scan_mobile">Отсканируйте или нажмите, чтобы открыть</string>
     <plurals name="more_playlist_count">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> плейлист</item>
         <item quantity="few"><xliff:g id="count">%1$d</xliff:g> плейлиста</item>
@@ -1450,6 +1457,18 @@
         <item quantity="few"><xliff:g id="count">%1$d</xliff:g> языка</item>
         <item quantity="many"><xliff:g id="count">%1$d</xliff:g> языков</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> языков</item>
+    </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="one">Закреплено: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="few">Закреплено: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="many">Закреплено: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="other">Закреплено: <xliff:g id="count">%1$d</xliff:g></item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="one">Загружается: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="few">Загружается: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="many">Загружается: <xliff:g id="count">%1$d</xliff:g></item>
+        <item quantity="other">Загружается: <xliff:g id="count">%1$d</xliff:g></item>
     </plurals>
     <string name="settings_backup_location">Расположение</string>
     <string name="settings_multiview">Мультиэкран</string>

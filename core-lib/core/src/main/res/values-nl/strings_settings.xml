@@ -1354,13 +1354,18 @@
     <string name="more_fav_movies_series">Films en series</string>
     <string name="more_fav_empty_title">Nog geen favorieten</string>
     <string name="more_fav_empty_body">Houd OK ingedrukt op een zender, film of serie en kies ‘Toevoegen aan favorieten’.</string>
+    <string name="more_fav_empty_body_mobile">Houd een zender, film of serie ingedrukt en kies ‘Toevoegen aan favorieten’.</string>
     <string name="more_history_empty">Nog niets bekeken</string>
     <string name="more_backup_never_title">Nog nooit een back-up gemaakt</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> en alle aanpassingen staan alleen op deze tv.</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> en alle aanpassingen staan alleen op deze telefoon.</string>
     <string name="more_backup_now">Nu back-up maken</string>
     <string name="more_backup_now_body">Sla een bestand op deze tv op, of stuur het op afstand naar een ander apparaat</string>
+    <string name="more_backup_now_body_mobile">Sla een bestand op deze telefoon op, of stuur het naar een ander apparaat</string>
     <string name="more_backup_file_tv">Bestand op deze tv</string>
+    <string name="more_backup_file_tv_mobile">Bestand op deze telefoon</string>
     <string name="more_restore_body">Uit een bestand op deze tv, of op afstand vanaf een ander apparaat</string>
+    <string name="more_restore_body_mobile">Uit een bestand op deze telefoon, of op afstand vanaf een ander apparaat</string>
     <string name="more_backup_included">Wat erin zit</string>
     <string name="more_about_up_to_date">Up-to-date</string>
     <string name="more_about_checked">Gecontroleerd <xliff:g id="value">%1$s</xliff:g></string>
@@ -1382,7 +1387,9 @@
     <string name="more_sync_unpair">Ontkoppelen</string>
     <string name="more_about_license">GPLv3 · gratis en open source</string>
     <string name="more_about_description">Je eigen IPTV-speler voor Android TV. Hij levert geen zenders of inhoud; je gebruikt je eigen legaal toegankelijke bronnen.</string>
+    <string name="more_about_description_mobile">Je eigen IPTV-speler voor Android. Hij levert geen zenders of inhoud; je gebruikt je eigen legaal toegankelijke bronnen.</string>
     <string name="more_about_scan">Scan met je telefoon.</string>
+    <string name="more_about_scan_mobile">Scan, of tik om te openen</string>
     <plurals name="more_playlist_count">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> playlist</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> playlists</item>
@@ -1398,6 +1405,14 @@
     <plurals name="more_about_languages">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> taal</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> talen</item>
+    </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> vastgezet</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> vastgezet</item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> bezig</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> bezig</item>
     </plurals>
     <string name="settings_backup_location">Locatie</string>
     <string name="settings_multiview">Multiview</string>
