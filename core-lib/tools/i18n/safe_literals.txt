@@ -3976,6 +3976,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: connection dropped ($why) — reconnect $failures in ${wait}ms
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: first connection failed — $why
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: giving up after $failures drops — $why
+1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: no network ($why) — waiting
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: not buffered — ${e.why}
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: segment ${segment.sequence} refused
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	unreadable DASH manifest
@@ -3991,6 +3992,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftManager.kt	no data in ${firstPieceTimeoutMs}ms
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftManager.kt	not buffering: $why
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftManager.kt	not buffering: ${space / (1024 * 1024)} MB free
+1	technical	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftRules.kt	ENETUNREACH
 1	url	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftServer.kt	127.0.0.1
 1	protocol	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftServer.kt	Cache-Control: no-cache Connection: close
 1	protocol	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftServer.kt	GET
@@ -4808,12 +4810,14 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	${channel.sourceId}:${channel.id}
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' falling back to $label ($reason)
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' opened on mpv
-2	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — giving up: $detail
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — giving up: $detail
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — its ExoPlayer preview had already failed; trying the next engine
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — its saved copy lost the connection ($why); opening it again
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — no fallback left ($detail)
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — no fallback left ($detail); leaving ExoPlayer's own reconnects running
-4	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}': $detail
+3	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}': $detail
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}': $label — $reason
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${pane.first.name}' — the pane's saved copy lost the connection ($why); previewing it directly
 1	technical	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	ExoPlayer
 1	technical	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	LiveEngine
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	engine toggle '${channel.name}' -> ${if (goToMpv) "mpv" else "exoplayer"}
@@ -4828,7 +4832,6 @@
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	stalker resolve failed
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	starting mpv for '${channel.name}' — reason=$reason
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	the ExoPlayer preview had already failed
-1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	the connection was lost ($why)
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' cannot be saved — playing it directly
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' plays from its saved copy
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' plays from the recording server's copy
