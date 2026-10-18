@@ -2518,6 +2518,7 @@
 1	preference-key	core/src/main/java/tv/own/owntv/core/player/AudioOnlyStore.kt	owntv_audio_only
 1	technical	core/src/main/java/tv/own/owntv/core/player/EnginePinKey.kt	$sourceId:$mediaType:$it
 2	empty	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	\0
+1	technical	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	$title · $subtitle
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	.fileprovider
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	3gp
 3	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	User-Agent
@@ -2538,6 +2539,7 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	mts
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	rtmp
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	rtsp
+1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	title
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	ts
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	udp
 2	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	video/*
