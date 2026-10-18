@@ -129,7 +129,7 @@
     <string name="recovery_backup_hint">Bir yedekleme dosyanız varsa uygulamayı sıfırlayıp ardından bu dosyadan geri yükleyebilirsiniz. Sıfırlama işlemi bu cihazda depolanan her şeyi siler.</string>
     <string name="recovery_confirm_reset">Onay: tüm uygulama verilerini sil</string>
     <string name="recovery_reset">Uygulama verilerini sıfırla (son çare)</string>
-    <string name="home_row_now_trending">Şu Anda Popüler</string>
+    <string name="home_row_now_trending">Şu anda popüler</string>
     <string name="home_row_trending_description">Yalnızca TMDB trend başlıkları sağlayıcı kataloğunuzdaki film veya dizilerle eşleştiğinde 4–10 öğe gösterir.</string>
     <string name="home_trending_style">Trend düzeni</string>
     <string name="home_trending_style_hero">Ayrıntılı kart</string>
@@ -180,7 +180,7 @@
     <string name="home_trending_open_episodes">Bölümleri aç</string>
     <string name="home_trending_trailer">Fragman</string>
     <string name="home_trending_more_details">Daha Fazla Ayrıntı</string>
-    <string name="home_trending_all_versions">Tüm Sürümler</string>
+    <string name="home_trending_all_versions">Tüm sürümler</string>
     <string name="home_trending_why_menu">Bu başlık neden burada</string>
     <string name="home_trending_previous">Önceki</string>
     <string name="home_trending_pause">Duraklat</string>

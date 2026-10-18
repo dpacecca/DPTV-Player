@@ -92,10 +92,10 @@
     <string name="content_newest_first">Önce en yeniler</string>
     <string name="content_last_watched">Son izlenme</string>
     <string name="content_play_external">Harici oynatıcıyla oynat</string>
-    <string name="content_delete_subtitles">OpenSub altyazılarını sil</string>
+    <string name="content_delete_subtitles">OpenSubtitles altyazılarını sil</string>
     <string name="content_tmdb_details">TMDB Ayrıntıları</string>
     <string name="content_play_trailer">Fragmanı oynat</string>
-    <string name="content_refetch_tmdb">TMDB ayrıntılarını yeniden getir</string>
+    <string name="content_refetch_tmdb">Ayrıntıları güncelle</string>
     <string name="content_set_tmdb_name">TMDB adını belirle</string>
     <string name="content_close">Kapat</string>
     <string name="content_rename_hint">Yalnızca bu profil için geçerlidir. Özgün adı geri yüklemek için boş bırakın.</string>
@@ -165,17 +165,17 @@
     <string name="content_live_time_range_plain"><xliff:g id="start">%1$s</xliff:g> – <xliff:g id="stop">%2$s</xliff:g></string>
     <string name="content_category_favorites">Favoriler</string>
     <string name="content_category_history">İzleme Geçmişi</string>
-    <string name="content_category_all_channels">Tüm Kanallar</string>
+    <string name="content_category_all_channels">Tüm kanallar</string>
     <string name="content_category_united_kingdom">Birleşik Krallık</string>
     <string name="content_category_united_states">Amerika Birleşik Devletleri</string>
     <string name="content_category_germany">Almanya</string>
     <string name="content_category_sports">Spor</string>
-    <string name="content_category_all_movies">Tüm Filmler</string>
+    <string name="content_category_all_movies">Tüm filmler</string>
     <string name="content_category_action">Aksiyon</string>
     <string name="content_category_drama">Dram</string>
     <string name="content_category_comedy">Komedi</string>
     <string name="content_category_horror">Korku</string>
-    <string name="content_category_all_series">Tüm Diziler</string>
+    <string name="content_category_all_series">Tüm diziler</string>
     <string name="content_category_animation">Animasyon</string>
     <string name="content_category_documentary">Belgesel</string>
     <string name="content_category_all_downloads">Tüm İndirilenler</string>

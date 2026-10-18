@@ -101,14 +101,14 @@
     <string name="settings_show_weather">Hava durumunu göster</string>
     <string name="settings_show_weather_description">Güncel hava durumunu üst çubukta gösterin.</string>
     <string name="settings_custom_location">Özel konum</string>
-    <string name="settings_custom_location_description">Hava durumu için kullanılan şehri değiştirin. Otomatik algılama için boş bırakın veya bir şehir (ör. Londra) ya da “enlem,boylam” (ör. 51.5,-0.12) girin. Otomatik algılamanın sunucunun şehrini bulduğu VPN bağlantılarında kullanışlıdır.</string>
+    <string name="settings_custom_location_description">Hava durumu için kullanılan şehri değiştirin. Otomatik algılama için boş bırakın veya bir şehir (ör. Londra) ya da \"enlem,boylam\" (ör. 51.5,-0.12) girin. Otomatik algılamanın sunucunun şehrini bulduğu VPN bağlantılarında kullanışlıdır.</string>
     <string name="settings_use_device_location">Bu cihazın konumunu kullan</string>
     <string name="settings_use_device_location_description">Hava durumu telefonun bulunduğu yeri izler. Şehri kendiniz girmek için kapatın.</string>
     <string name="settings_temperature_unit">Sıcaklık birimi</string>
     <string name="settings_temperature_description">Sıcaklığı Celsius veya Fahrenheit cinsinden gösterin.</string>
     <string name="settings_auto">Otomatik</string>
     <string name="settings_city_latlon">Şehir veya enlem,boylam</string>
-    <string name="settings_location_hint">Genel IP adresinizden otomatik algılanması için boş bırakın. Bir şehir (ör. Londra) veya “enlem,boylam” (ör. 51.5,-0.12) girin.</string>
+    <string name="settings_location_hint">Genel IP adresinizden otomatik algılanması için boş bırakın. Bir şehir (ör. Londra) veya \"enlem,boylam\" (ör. 51.5,-0.12) girin.</string>
     <string name="settings_metadata">Meta veri (TMDB)</string>
     <string name="settings_metadata_source">Meta veri kaynağı</string>
     <string name="settings_metadata_source_description">Film ve dizi ayrıntılarının nereden alınacağını seçin.</string>
@@ -147,7 +147,7 @@
     <string name="settings_tmdb_api_key">TMDB API anahtarı (v3)</string>
     <string name="settings_metadata_empty_title">Aramak için bir başlık girin.</string>
     <string name="settings_metadata_server_unavailable">Meta veri sunucusuna ulaşılamadı — ağı / anahtarı / URL\'yi kontrol edin.</string>
-    <string name="settings_metadata_no_match">“<xliff:g id="query">%1$s</xliff:g>” için TMDB eşleşmesi bulunamadı.</string>
+    <string name="settings_metadata_no_match">\"<xliff:g id="query">%1$s</xliff:g>\" için TMDB eşleşmesi bulunamadı.</string>
     <string name="settings_metadata_lookup_failed">Arama başarısız oldu.</string>
     <string name="settings_metadata_match_result"><xliff:g id="title">%1$s</xliff:g><xliff:g id="year">%2$s</xliff:g> · tmdb #<xliff:g id="id">%3$d</xliff:g></string>
     <string name="settings_metadata_year">(<xliff:g id="year">%1$d</xliff:g>)</string>
@@ -181,7 +181,7 @@
     <string name="settings_playlists_description">M3U / Xtream oynatma listeleri ekleyin, yeniden eşitleyin veya kaldırın</string>
     <string name="settings_epg_sources">EPG Kaynakları</string>
     <string name="settings_epg_sources_nav_description">TV program rehberi için XMLTV rehber akışları ekleyin</string>
-    <string name="settings_customize">Kategorileri ve Ögeleri Özelleştir</string>
+    <string name="settings_customize">Kategorileri ve ögeleri özelleştir</string>
     <string name="settings_customize_nav_description">Ögeleri gizleyin ve gösterin, kategorileri yeniden adlandırın ve sıralayın</string>
     <string name="settings_sidebar_description_root">Kenar simgelerini oynatma listenize göre otomatik uyarlayın veya belirli simgeleri gizleyin</string>
     <string name="settings_ch_paging">Kumanda kısayolları</string>
@@ -217,7 +217,7 @@
     <string name="settings_focus_highlight_sample">Odakta</string>
     <string name="settings_glass_effect">Cam Efekti</string>
     <string name="settings_glass_description">Yarı saydam buzlu paneller, arka plan görseli ve şeffaflık</string>
-    <string name="settings_ui_zoom">Arayüz Yakınlaştırması</string>
+    <string name="settings_ui_zoom">Arayüz yakınlaştırması</string>
     <string name="settings_ui_zoom_description">Tüm arayüzü ölçeklendirin</string>
     <string name="settings_animations">Animasyonlar</string>
     <string name="settings_animations_description">Arayüz hareketlerini açın veya kapatın — Kapalı seçeneği, düşük donanımlı TV kutularında daha hızlı hissettirir</string>
