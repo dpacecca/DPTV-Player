@@ -1481,6 +1481,7 @@
     <string name="settings_multiview_use_anyway">Użyj mimo to</string>
     <string name="settings_app_icon">Ikona aplikacji</string>
     <string name="settings_app_icon_summary">Kolor ikony i logo DPTV-Player</string>
+    <string name="settings_app_icon_sheet_mobile">Jak DPTV-Player wygląda na Twoim ekranie głównym. Aplikacja uruchomi się ponownie raz.</string>
     <string name="settings_brand_accent">Logo w kolorze akcentu</string>
     <string name="app_icon_petrol">Petrolowy</string>
     <string name="app_icon_sunflower">Słonecznik</string>
@@ -1804,6 +1805,8 @@
     <string name="settings_bg_picture">Obraz</string>
     <string name="settings_bg_plain">Gładkie</string>
     <string name="settings_line_bg_picture_none">Wybierz obraz z tego telewizora lub przez Remote</string>
+    <string name="settings_line_bg_picture_none_mobile">Wybierz obraz z tego telefonu</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · z tego telefonu</string>
     <string name="settings_bg_change">Zmień</string>
     <string name="settings_bg_none">Brak</string>
     <string name="settings_bg_look">Wygląd obrazu</string>
@@ -1824,6 +1827,7 @@
     <string name="settings_line_bg_accent_light">Twój kolor akcentu świeci w rogu</string>
     <string name="settings_glass_section">Szkło</string>
     <string name="settings_line_glass_switch">Pasek, panele, menu i okna są matowe</string>
+    <string name="settings_line_glass_switch_mobile">Paski, panele, menu i okna są matowe</string>
     <string name="settings_help_glass_chrome">Matowi elementy pływające: pasek, panele kategorii, menu, okna i przyciski u góry. Listy i plakaty pozostają płaskie.</string>
     <string name="settings_glass_opacity">Krycie szkła</string>
     <string name="settings_line_glass_opacity">Mniej pokazuje więcej tła</string>

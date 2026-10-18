@@ -1397,6 +1397,7 @@
     <string name="settings_multiview_use_anyway">그래도 사용</string>
     <string name="settings_app_icon">앱 아이콘</string>
     <string name="settings_app_icon_summary">DPTV-Player 아이콘 및 로고 색상</string>
+    <string name="settings_app_icon_sheet_mobile">홈 화면에서 DPTV-Player가 표시되는 모습. 앱이 한 번 다시 시작됩니다.</string>
     <string name="settings_brand_accent">강조 색상 로고</string>
     <string name="app_icon_petrol">페트롤</string>
     <string name="app_icon_sunflower">해바라기</string>
@@ -1699,6 +1700,8 @@
     <string name="settings_bg_picture">사진</string>
     <string name="settings_bg_plain">단색</string>
     <string name="settings_line_bg_picture_none">이 TV에서 또는 Remote로 사진 선택</string>
+    <string name="settings_line_bg_picture_none_mobile">이 휴대폰에서 사진 선택</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · 이 휴대폰에서</string>
     <string name="settings_bg_change">변경</string>
     <string name="settings_bg_none">없음</string>
     <string name="settings_bg_look">사진 모습</string>
@@ -1719,6 +1722,7 @@
     <string name="settings_line_bg_accent_light">강조색이 모서리에서 빛납니다</string>
     <string name="settings_glass_section">유리</string>
     <string name="settings_line_glass_switch">메뉴 바, 시트, 메뉴, 팝업이 반투명 유리가 됩니다</string>
+    <string name="settings_line_glass_switch_mobile">바, 시트, 메뉴, 팝업이 반투명 유리가 됩니다</string>
     <string name="settings_help_glass_chrome">떠 있는 부분을 반투명 유리로 만듭니다: 메뉴 바, 카테고리 시트, 메뉴, 팝업, 위쪽 버튼. 목록과 포스터는 평평하게 유지됩니다.</string>
     <string name="settings_glass_opacity">유리 불투명도</string>
     <string name="settings_line_glass_opacity">낮을수록 배경이 더 많이 보입니다</string>

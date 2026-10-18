@@ -1481,6 +1481,7 @@
     <string name="settings_multiview_use_anyway">Přesto použít</string>
     <string name="settings_app_icon">Ikona aplikace</string>
     <string name="settings_app_icon_summary">Barva ikony a loga DPTV-Player</string>
+    <string name="settings_app_icon_sheet_mobile">Jak se DPTV-Player zobrazí na vaší domovské obrazovce. Aplikace se jednou restartuje.</string>
     <string name="settings_brand_accent">Logo v barvě zvýraznění</string>
     <string name="app_icon_petrol">Petrolejová</string>
     <string name="app_icon_sunflower">Slunečnice</string>
@@ -1804,6 +1805,8 @@
     <string name="settings_bg_picture">Obrázek</string>
     <string name="settings_bg_plain">Prosté</string>
     <string name="settings_line_bg_picture_none">Vyberte obrázek z této televize nebo přes Remote</string>
+    <string name="settings_line_bg_picture_none_mobile">Vyberte obrázek z tohoto telefonu</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · z tohoto telefonu</string>
     <string name="settings_bg_change">Změnit</string>
     <string name="settings_bg_none">Žádný</string>
     <string name="settings_bg_look">Vzhled obrázku</string>
@@ -1824,6 +1827,7 @@
     <string name="settings_line_bg_accent_light">Vaše akcentní barva září v rohu</string>
     <string name="settings_glass_section">Sklo</string>
     <string name="settings_line_glass_switch">Lišta, panely, nabídky a okna jsou matná</string>
+    <string name="settings_line_glass_switch_mobile">Lišty, panely, nabídky a okna jsou matná</string>
     <string name="settings_help_glass_chrome">Zmatní plovoucí části: lištu, panely kategorií, nabídky, okna a tlačítka nahoře. Seznamy a plakáty zůstávají ploché.</string>
     <string name="settings_glass_opacity">Krytí skla</string>
     <string name="settings_line_glass_opacity">Méně ukáže více pozadí</string>

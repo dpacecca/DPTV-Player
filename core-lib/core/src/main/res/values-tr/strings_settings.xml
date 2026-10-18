@@ -1425,6 +1425,7 @@
     <string name="settings_multiview_use_anyway">Yine de kullan</string>
     <string name="settings_app_icon">Uygulama simgesi</string>
     <string name="settings_app_icon_summary">DPTV-Player simgesinin ve logosunun rengi</string>
+    <string name="settings_app_icon_sheet_mobile">DPTV-Player’nin ana ekranınızda nasıl göründüğü. Uygulama bir kez yeniden başlar.</string>
     <string name="settings_brand_accent">Vurgu renginde logo</string>
     <string name="app_icon_petrol">Petrol Mavisi</string>
     <string name="app_icon_sunflower">Ayçiçeği</string>
@@ -1734,6 +1735,8 @@
     <string name="settings_bg_picture">Resim</string>
     <string name="settings_bg_plain">Düz</string>
     <string name="settings_line_bg_picture_none">Bu TV’den veya Remote ile bir resim seçin</string>
+    <string name="settings_line_bg_picture_none_mobile">Bu telefondan bir resim seçin</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · bu telefondan</string>
     <string name="settings_bg_change">Değiştir</string>
     <string name="settings_bg_none">Yok</string>
     <string name="settings_bg_look">Resim görünümü</string>
@@ -1754,6 +1757,7 @@
     <string name="settings_line_bg_accent_light">Vurgu renginiz köşede parlar</string>
     <string name="settings_glass_section">Cam</string>
     <string name="settings_line_glass_switch">Çubuk, paneller, menüler ve açılır pencereler buzlu</string>
+    <string name="settings_line_glass_switch_mobile">Çubuklar, paneller, menüler ve açılır pencereler buzlu</string>
     <string name="settings_help_glass_chrome">Yüzen parçaları buzlu yapar: çubuk, kategori panelleri, menüler, açılır pencereler ve üstteki düğmeler. Listeler ve afişler düz kalır.</string>
     <string name="settings_glass_opacity">Cam opaklığı</string>
     <string name="settings_line_glass_opacity">Düşük değer arka planı daha çok gösterir</string>

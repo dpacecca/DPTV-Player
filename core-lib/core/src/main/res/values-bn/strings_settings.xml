@@ -1425,6 +1425,7 @@
     <string name="settings_multiview_use_anyway">তবুও ব্যবহার করুন</string>
     <string name="settings_app_icon">অ্যাপ আইকন</string>
     <string name="settings_app_icon_summary">DPTV-Player আইকন ও লোগোর রং</string>
+    <string name="settings_app_icon_sheet_mobile">আপনার হোম স্ক্রিনে DPTV-Player কেমন দেখায়। অ্যাপটি একবার রিস্টার্ট হয়।</string>
     <string name="settings_brand_accent">অ্যাকসেন্ট রঙের লোগো</string>
     <string name="app_icon_petrol">পেট্রোল</string>
     <string name="app_icon_sunflower">সূর্যমুখী</string>
@@ -1734,6 +1735,8 @@
     <string name="settings_bg_picture">ছবি</string>
     <string name="settings_bg_plain">সাধারণ</string>
     <string name="settings_line_bg_picture_none">এই টিভি থেকে বা Remote দিয়ে একটি ছবি বেছে নিন</string>
+    <string name="settings_line_bg_picture_none_mobile">এই ফোন থেকে একটি ছবি বেছে নিন</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · এই ফোন থেকে</string>
     <string name="settings_bg_change">বদলান</string>
     <string name="settings_bg_none">কোনোটি নয়</string>
     <string name="settings_bg_look">ছবির রূপ</string>
@@ -1754,6 +1757,7 @@
     <string name="settings_line_bg_accent_light">আপনার অ্যাকসেন্ট রং কোণে জ্বলে</string>
     <string name="settings_glass_section">গ্লাস</string>
     <string name="settings_line_glass_switch">বার, প্যানেল, মেনু ও পপ-আপ ঘষা কাচের মতো</string>
+    <string name="settings_line_glass_switch_mobile">বার, প্যানেল, মেনু ও পপ-আপ ঘষা কাচের মতো</string>
     <string name="settings_help_glass_chrome">ভাসমান অংশগুলো ঘষা কাচের মতো করে: বার, বিভাগের প্যানেল, মেনু, পপ-আপ আর ওপরের বোতামগুলো। তালিকা আর পোস্টার সমতল থাকে।</string>
     <string name="settings_glass_opacity">গ্লাসের অস্বচ্ছতা</string>
     <string name="settings_line_glass_opacity">কম করলে ব্যাকগ্রাউন্ড বেশি দেখা যায়</string>

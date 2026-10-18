@@ -1397,6 +1397,7 @@
     <string name="settings_multiview_use_anyway">それでも使う</string>
     <string name="settings_app_icon">アプリアイコン</string>
     <string name="settings_app_icon_summary">DPTV-Playerのアイコンとロゴの色</string>
+    <string name="settings_app_icon_sheet_mobile">ホーム画面での DPTV-Player の見え方。アプリが一度再起動します。</string>
     <string name="settings_brand_accent">アクセントカラーのロゴ</string>
     <string name="app_icon_petrol">ペトロール</string>
     <string name="app_icon_sunflower">ひまわり</string>
@@ -1699,6 +1700,8 @@
     <string name="settings_bg_picture">画像</string>
     <string name="settings_bg_plain">無地</string>
     <string name="settings_line_bg_picture_none">このテレビまたは Remote で画像を選択</string>
+    <string name="settings_line_bg_picture_none_mobile">このスマートフォンから画像を選択</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · このスマートフォンから</string>
     <string name="settings_bg_change">変更</string>
     <string name="settings_bg_none">なし</string>
     <string name="settings_bg_look">画像の見え方</string>
@@ -1719,6 +1722,7 @@
     <string name="settings_line_bg_accent_light">アクセントカラーが隅で光ります</string>
     <string name="settings_glass_section">ガラス</string>
     <string name="settings_line_glass_switch">メニューバー、シート、メニュー、ポップアップがすりガラスになります</string>
+    <string name="settings_line_glass_switch_mobile">バー、シート、メニュー、ポップアップがすりガラスになります</string>
     <string name="settings_help_glass_chrome">浮いている部分をすりガラスにします：メニューバー、カテゴリーシート、メニュー、ポップアップ、上部のボタン。リストとポスターはフラットのままです。</string>
     <string name="settings_glass_opacity">ガラスの不透明度</string>
     <string name="settings_line_glass_opacity">低いほど背景がよく見えます</string>

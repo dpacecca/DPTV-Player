@@ -1426,6 +1426,7 @@
     <string name="settings_multiview_use_anyway">Trotzdem verwenden</string>
     <string name="settings_app_icon">App-Symbol</string>
     <string name="settings_app_icon_summary">Farbe des DPTV-Player-Symbols und -Logos</string>
+    <string name="settings_app_icon_sheet_mobile">Wie DPTV-Player auf deinem Startbildschirm erscheint. Die App startet einmal neu.</string>
     <string name="settings_brand_accent">Logo in Akzentfarbe</string>
     <string name="app_icon_petrol">Petrol</string>
     <string name="app_icon_sunflower">Sonnenblume</string>
@@ -1736,6 +1737,8 @@
     <string name="settings_bg_picture">Bild</string>
     <string name="settings_bg_plain">Schlicht</string>
     <string name="settings_line_bg_picture_none">Wähle ein Bild von diesem Fernseher oder per Remote</string>
+    <string name="settings_line_bg_picture_none_mobile">Wähle ein Bild von diesem Handy</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · von diesem Handy</string>
     <string name="settings_bg_change">Ändern</string>
     <string name="settings_bg_none">Keins</string>
     <string name="settings_bg_look">Bildwirkung</string>
@@ -1756,6 +1759,7 @@
     <string name="settings_line_bg_accent_light">Deine Akzentfarbe leuchtet in der Ecke</string>
     <string name="settings_glass_section">Glas</string>
     <string name="settings_line_glass_switch">Leiste, Seitenleisten, Menüs und Pop-ups sind mattiert</string>
+    <string name="settings_line_glass_switch_mobile">Leisten, Seitenleisten, Menüs und Pop-ups sind mattiert</string>
     <string name="settings_help_glass_chrome">Mattiert die schwebenden Teile: die Leiste, die Kategorie-Seitenleisten, Menüs, Pop-ups und die Schaltflächen oben. Listen und Poster bleiben flach.</string>
     <string name="settings_glass_opacity">Glas-Deckkraft</string>
     <string name="settings_line_glass_opacity">Weniger zeigt mehr vom Hintergrund</string>

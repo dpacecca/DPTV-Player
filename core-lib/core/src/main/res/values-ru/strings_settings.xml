@@ -1481,6 +1481,7 @@
     <string name="settings_multiview_use_anyway">Всё равно использовать</string>
     <string name="settings_app_icon">Значок приложения</string>
     <string name="settings_app_icon_summary">Цвет значка и логотипа DPTV-Player</string>
+    <string name="settings_app_icon_sheet_mobile">Как DPTV-Player выглядит на главном экране. Приложение перезапустится один раз.</string>
     <string name="settings_brand_accent">Логотип в цвете акцента</string>
     <string name="app_icon_petrol">Петроль</string>
     <string name="app_icon_sunflower">Подсолнух</string>
@@ -1804,6 +1805,8 @@
     <string name="settings_bg_picture">Картинка</string>
     <string name="settings_bg_plain">Простой</string>
     <string name="settings_line_bg_picture_none">Выберите картинку с этого телевизора или через Remote</string>
+    <string name="settings_line_bg_picture_none_mobile">Выберите картинку с этого телефона</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · с этого телефона</string>
     <string name="settings_bg_change">Изменить</string>
     <string name="settings_bg_none">Нет</string>
     <string name="settings_bg_look">Вид картинки</string>
@@ -1824,6 +1827,7 @@
     <string name="settings_line_bg_accent_light">Ваш акцентный цвет светится в углу</string>
     <string name="settings_glass_section">Стекло</string>
     <string name="settings_line_glass_switch">Панель меню, шторки, меню и окна матовые</string>
+    <string name="settings_line_glass_switch_mobile">Панели, шторки, меню и окна матовые</string>
     <string name="settings_help_glass_chrome">Делает матовыми плавающие части: панель меню, шторки категорий, меню, окна и кнопки вверху. Списки и постеры остаются плоскими.</string>
     <string name="settings_glass_opacity">Плотность стекла</string>
     <string name="settings_line_glass_opacity">Чем меньше, тем больше видно фон</string>

@@ -1453,6 +1453,7 @@
     <string name="settings_multiview_use_anyway">Usar de todos modos</string>
     <string name="settings_app_icon">Icono de la app</string>
     <string name="settings_app_icon_summary">Color del icono y del logo de DPTV-Player</string>
+    <string name="settings_app_icon_sheet_mobile">Cómo aparece DPTV-Player en tu pantalla de inicio. La app se reinicia una vez.</string>
     <string name="settings_brand_accent">Logotipo en color de acento</string>
     <string name="app_icon_petrol">Petróleo</string>
     <string name="app_icon_sunflower">Girasol</string>
@@ -1769,6 +1770,8 @@
     <string name="settings_bg_picture">Imagen</string>
     <string name="settings_bg_plain">Liso</string>
     <string name="settings_line_bg_picture_none">Elige una imagen de este televisor o por Remote</string>
+    <string name="settings_line_bg_picture_none_mobile">Elige una imagen de este móvil</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · de este móvil</string>
     <string name="settings_bg_change">Cambiar</string>
     <string name="settings_bg_none">Ninguna</string>
     <string name="settings_bg_look">Aspecto de la imagen</string>
@@ -1789,6 +1792,7 @@
     <string name="settings_line_bg_accent_light">Tu color de acento brilla en la esquina</string>
     <string name="settings_glass_section">Cristal</string>
     <string name="settings_line_glass_switch">La barra, los paneles, los menús y las ventanas son esmerilados</string>
+    <string name="settings_line_glass_switch_mobile">Las barras, los paneles, los menús y las ventanas son esmerilados</string>
     <string name="settings_help_glass_chrome">Esmerila las partes flotantes: la barra, los paneles de categorías, los menús, las ventanas y los botones de arriba. Las listas y los pósteres quedan planos.</string>
     <string name="settings_glass_opacity">Opacidad del cristal</string>
     <string name="settings_line_glass_opacity">Menos deja ver más el fondo</string>

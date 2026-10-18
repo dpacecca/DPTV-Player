@@ -2641,6 +2641,8 @@
     <string name="settings_app_icon">App icon</string>
     <!-- Translators: Subtitle under the App icon setting. -->
     <string name="settings_app_icon_summary">Color of the DPTV-Player icon and logo</string>
+    <!-- Translators: Settings › App › App icon sheet, under its title (phone). Choosing a new icon restarts the app once. -->
+    <string name="settings_app_icon_sheet_mobile">How DPTV-Player appears on your home screen. The app restarts once.</string>
     <!-- Translators: Settings, App group row: the app logo play triangle follows the accent color. -->
     <string name="settings_brand_accent">Accent-colored logo</string>
     <!-- Translators: Colour name of an app icon: a dark blue-green, like petrol. -->
@@ -3241,6 +3243,10 @@
     <string name="settings_bg_plain">Plain</string>
     <!-- Translators: Line under Picture when none is chosen. -->
     <string name="settings_line_bg_picture_none">Choose a picture from this TV or by Remote</string>
+    <!-- Translators: Phone version of settings_line_bg_picture_none: Glass & background › Picture with no picture chosen yet. -->
+    <string name="settings_line_bg_picture_none_mobile">Choose a picture from this phone</string>
+    <!-- Translators: Glass & background › Picture, line under the row: the chosen picture's file name, then where it came from. -->
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · from this phone</string>
     <!-- Translators: Value of the Picture row when one is set: OK opens the picker. -->
     <string name="settings_bg_change">Change</string>
     <!-- Translators: Value of the Picture row when none is set. -->
@@ -3281,6 +3287,8 @@
     <string name="settings_glass_section">Glass</string>
     <!-- Translators: Line under Glass. -->
     <string name="settings_line_glass_switch">Rail, sheets, menus and popups are frosted</string>
+    <!-- Translators: Phone version of settings_line_glass_switch: the phone has bars at the top and bottom instead of the TV's rail. -->
+    <string name="settings_line_glass_switch_mobile">Bars, sheets, menus and popups are frosted</string>
     <!-- Translators: Panel text for Glass and Glass opacity. -->
     <string name="settings_help_glass_chrome">Frosts the floating parts: the rail, the category sheets, menus, popups and the pills at the top. Lists and posters stay flat.</string>
     <!-- Translators: Row title: how solid the glass is. -->

@@ -1453,6 +1453,7 @@
     <string name="settings_multiview_use_anyway">Utiliser quand même</string>
     <string name="settings_app_icon">Icône de l\'application</string>
     <string name="settings_app_icon_summary">Couleur de l\'icône et du logo DPTV-Player</string>
+    <string name="settings_app_icon_sheet_mobile">L’apparence d’DPTV-Player sur votre écran d’accueil. L’app redémarre une fois.</string>
     <string name="settings_brand_accent">Logo couleur d’accent</string>
     <string name="app_icon_petrol">Pétrole</string>
     <string name="app_icon_sunflower">Tournesol</string>
@@ -1769,6 +1770,8 @@
     <string name="settings_bg_picture">Image</string>
     <string name="settings_bg_plain">Uni</string>
     <string name="settings_line_bg_picture_none">Choisissez une image sur ce téléviseur ou via Remote</string>
+    <string name="settings_line_bg_picture_none_mobile">Choisissez une image sur ce téléphone</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · de ce téléphone</string>
     <string name="settings_bg_change">Changer</string>
     <string name="settings_bg_none">Aucune</string>
     <string name="settings_bg_look">Rendu de l’image</string>
@@ -1789,6 +1792,7 @@
     <string name="settings_line_bg_accent_light">Votre couleur d’accent brille dans le coin</string>
     <string name="settings_glass_section">Verre</string>
     <string name="settings_line_glass_switch">Barre, panneaux, menus et fenêtres sont givrés</string>
+    <string name="settings_line_glass_switch_mobile">Barres, panneaux, menus et fenêtres sont givrés</string>
     <string name="settings_help_glass_chrome">Givre les éléments flottants : la barre, les panneaux de catégories, les menus, les fenêtres et les boutons en haut. Listes et affiches restent plates.</string>
     <string name="settings_glass_opacity">Opacité du verre</string>
     <string name="settings_line_glass_opacity">Plus bas, on voit davantage l’arrière-plan</string>

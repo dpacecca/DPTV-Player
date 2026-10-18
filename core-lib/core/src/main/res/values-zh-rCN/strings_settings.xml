@@ -1397,6 +1397,7 @@
     <string name="settings_multiview_use_anyway">仍然使用</string>
     <string name="settings_app_icon">应用图标</string>
     <string name="settings_app_icon_summary">DPTV-Player 图标和标志的颜色</string>
+    <string name="settings_app_icon_sheet_mobile">DPTV-Player 在主屏幕上的样子。应用会重启一次。</string>
     <string name="settings_brand_accent">强调色徽标</string>
     <string name="app_icon_petrol">石油蓝</string>
     <string name="app_icon_sunflower">向日葵</string>
@@ -1699,6 +1700,8 @@
     <string name="settings_bg_picture">图片</string>
     <string name="settings_bg_plain">纯色</string>
     <string name="settings_line_bg_picture_none">从这台电视或通过 Remote 选择图片</string>
+    <string name="settings_line_bg_picture_none_mobile">从这部手机选择图片</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · 来自这部手机</string>
     <string name="settings_bg_change">更改</string>
     <string name="settings_bg_none">无</string>
     <string name="settings_bg_look">图片效果</string>
@@ -1719,6 +1722,7 @@
     <string name="settings_line_bg_accent_light">你的强调色在角落发光</string>
     <string name="settings_glass_section">玻璃</string>
     <string name="settings_line_glass_switch">导航栏、面板、菜单和弹窗为磨砂效果</string>
+    <string name="settings_line_glass_switch_mobile">导航栏、面板、菜单和弹窗为磨砂效果</string>
     <string name="settings_help_glass_chrome">让悬浮部分呈磨砂效果：导航栏、分类面板、菜单、弹窗和顶部按钮。列表和海报保持平面。</string>
     <string name="settings_glass_opacity">玻璃不透明度</string>
     <string name="settings_line_glass_opacity">越低背景显示越多</string>

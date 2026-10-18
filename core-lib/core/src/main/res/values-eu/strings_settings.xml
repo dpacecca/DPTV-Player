@@ -1314,6 +1314,7 @@
     <string name="settings_multiview_use_anyway">Erabili hala ere</string>
     <string name="settings_app_icon">Aplikazioaren ikonoa</string>
     <string name="settings_app_icon_summary">DPTV-Playerren ikonoaren eta logoaren kolorea</string>
+    <string name="settings_app_icon_sheet_mobile">Nola agertzen den DPTV-Player hasierako pantailan. Aplikazioa behin berrabiaraziko da.</string>
     <string name="app_icon_petrol">Petrolioa</string>
     <string name="app_icon_sunflower">Eguzkilorea</string>
     <string name="app_icon_cobalt">Kobaltoa</string>
@@ -1410,4 +1411,7 @@
         <item quantity="one">atzera ikusi <xliff:g id="count">%1$s</xliff:g> katetan</item>
         <item quantity="other">atzera ikusi <xliff:g id="count">%1$s</xliff:g> katetan</item>
     </plurals>
+    <string name="settings_line_bg_picture_none_mobile">Aukeratu irudi bat telefono honetatik</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · telefono honetatik</string>
+    <string name="settings_line_glass_switch_mobile">Barrak, panelak, menuak eta leiho gainerakorrak izoztuta daude</string>
 </resources>

@@ -1425,6 +1425,7 @@
     <string name="settings_multiview_use_anyway">Brug alligevel</string>
     <string name="settings_app_icon">Appikon</string>
     <string name="settings_app_icon_summary">Farve på DPTV-Player-ikonet og -logoet</string>
+    <string name="settings_app_icon_sheet_mobile">Sådan vises DPTV-Player på din startskærm. Appen genstarter én gang.</string>
     <string name="settings_brand_accent">Logo i accentfarve</string>
     <string name="app_icon_petrol">Petrol</string>
     <string name="app_icon_sunflower">Solsikke</string>
@@ -1734,6 +1735,8 @@
     <string name="settings_bg_picture">Billede</string>
     <string name="settings_bg_plain">Ensfarvet</string>
     <string name="settings_line_bg_picture_none">Vælg et billede fra dette tv eller via Remote</string>
+    <string name="settings_line_bg_picture_none_mobile">Vælg et billede fra denne telefon</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · fra denne telefon</string>
     <string name="settings_bg_change">Skift</string>
     <string name="settings_bg_none">Intet</string>
     <string name="settings_bg_look">Billedudseende</string>
@@ -1754,6 +1757,7 @@
     <string name="settings_line_bg_accent_light">Din accentfarve lyser i hjørnet</string>
     <string name="settings_glass_section">Glas</string>
     <string name="settings_line_glass_switch">Bjælke, paneler, menuer og pop op-vinduer er matterede</string>
+    <string name="settings_line_glass_switch_mobile">Bjælker, paneler, menuer og pop op-vinduer er matterede</string>
     <string name="settings_help_glass_chrome">Matterer de svævende dele: bjælken, kategoripanelerne, menuer, pop op-vinduer og knapperne øverst. Lister og plakater forbliver flade.</string>
     <string name="settings_glass_opacity">Glassets dækkevne</string>
     <string name="settings_line_glass_opacity">Lavere viser mere af baggrunden</string>

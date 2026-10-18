@@ -1537,6 +1537,7 @@
     <string name="settings_multiview_use_anyway">استخدم على أي حال</string>
     <string name="settings_app_icon">أيقونة التطبيق</string>
     <string name="settings_app_icon_summary">لون أيقونة DPTV-Player وشعاره</string>
+    <string name="settings_app_icon_sheet_mobile">طريقة ظهور DPTV-Player على شاشتك الرئيسية. يُعاد تشغيل التطبيق مرة واحدة.</string>
     <string name="settings_brand_accent">شعار بلون التمييز</string>
     <string name="app_icon_petrol">بترولي</string>
     <string name="app_icon_sunflower">عبّاد الشمس</string>
@@ -1874,6 +1875,8 @@
     <string name="settings_bg_picture">صورة</string>
     <string name="settings_bg_plain">سادة</string>
     <string name="settings_line_bg_picture_none">اختر صورة من هذا التلفاز أو عبر Remote</string>
+    <string name="settings_line_bg_picture_none_mobile">اختر صورة من هذا الهاتف</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · من هذا الهاتف</string>
     <string name="settings_bg_change">تغيير</string>
     <string name="settings_bg_none">لا شيء</string>
     <string name="settings_bg_look">مظهر الصورة</string>
@@ -1894,6 +1897,7 @@
     <string name="settings_line_bg_accent_light">يتوهج لون التمييز في الزاوية</string>
     <string name="settings_glass_section">الزجاج</string>
     <string name="settings_line_glass_switch">الشريط واللوحات والقوائم والنوافذ المنبثقة مصنفرة</string>
+    <string name="settings_line_glass_switch_mobile">الأشرطة واللوحات والقوائم والنوافذ المنبثقة مصنفرة</string>
     <string name="settings_help_glass_chrome">يجعل الأجزاء العائمة مصنفرة: الشريط ولوحات الفئات والقوائم والنوافذ المنبثقة والأزرار في الأعلى. تبقى القوائم والملصقات مسطحة.</string>
     <string name="settings_glass_opacity">عتامة الزجاج</string>
     <string name="settings_line_glass_opacity">القيمة الأقل تُظهر المزيد من الخلفية</string>

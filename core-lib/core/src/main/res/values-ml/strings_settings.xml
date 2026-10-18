@@ -1425,6 +1425,7 @@
     <string name="settings_multiview_use_anyway">എന്നാലും ഉപയോഗിക്കുക</string>
     <string name="settings_app_icon">ആപ്പ് ഐക്കൺ</string>
     <string name="settings_app_icon_summary">DPTV-Player ഐക്കണിന്റെയും ലോഗോയുടെയും നിറം</string>
+    <string name="settings_app_icon_sheet_mobile">നിങ്ങളുടെ ഹോം സ്ക്രീനിൽ DPTV-Player എങ്ങനെ കാണപ്പെടുന്നു. ആപ്പ് ഒരിക്കൽ റീസ്റ്റാർട്ട് ചെയ്യും.</string>
     <string name="settings_brand_accent">ആക്സന്റ് നിറത്തിലുള്ള ലോഗോ</string>
     <string name="app_icon_petrol">പെട്രോൾ</string>
     <string name="app_icon_sunflower">സൂര്യകാന്തി</string>
@@ -1734,6 +1735,8 @@
     <string name="settings_bg_picture">ചിത്രം</string>
     <string name="settings_bg_plain">സാധാരണം</string>
     <string name="settings_line_bg_picture_none">ഈ ടിവിയിൽ നിന്നോ Remote വഴിയോ ഒരു ചിത്രം തിരഞ്ഞെടുക്കുക</string>
+    <string name="settings_line_bg_picture_none_mobile">ഈ ഫോണിൽ നിന്ന് ഒരു ചിത്രം തിരഞ്ഞെടുക്കുക</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · ഈ ഫോണിൽ നിന്ന്</string>
     <string name="settings_bg_change">മാറ്റുക</string>
     <string name="settings_bg_none">ഒന്നുമില്ല</string>
     <string name="settings_bg_look">ചിത്രത്തിന്റെ രൂപം</string>
@@ -1754,6 +1757,7 @@
     <string name="settings_line_bg_accent_light">നിങ്ങളുടെ ആക്സന്റ് നിറം മൂലയിൽ തിളങ്ങുന്നു</string>
     <string name="settings_glass_section">ഗ്ലാസ്</string>
     <string name="settings_line_glass_switch">ബാർ, പാനലുകൾ, മെനുകൾ, പോപ്പ്-അപ്പുകൾ എന്നിവ മഞ്ഞുഗ്ലാസ് പോലെ</string>
+    <string name="settings_line_glass_switch_mobile">ബാറുകൾ, പാനലുകൾ, മെനുകൾ, പോപ്പ്-അപ്പുകൾ എന്നിവ മഞ്ഞുഗ്ലാസ് പോലെ</string>
     <string name="settings_help_glass_chrome">പൊങ്ങിനിൽക്കുന്ന ഭാഗങ്ങളെ മഞ്ഞുഗ്ലാസ് പോലെയാക്കുന്നു: ബാർ, വിഭാഗ പാനലുകൾ, മെനുകൾ, പോപ്പ്-അപ്പുകൾ, മുകളിലെ ബട്ടണുകൾ. ലിസ്റ്റുകളും പോസ്റ്ററുകളും പരന്നുതന്നെ.</string>
     <string name="settings_glass_opacity">ഗ്ലാസിന്റെ അതാര്യത</string>
     <string name="settings_line_glass_opacity">കുറച്ചാൽ പശ്ചാത്തലം കൂടുതൽ കാണാം</string>

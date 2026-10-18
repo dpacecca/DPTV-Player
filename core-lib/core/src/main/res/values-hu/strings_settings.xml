@@ -1395,6 +1395,7 @@
     <string name="settings_multiview_use_anyway">Mégis ennyi legyen</string>
     <string name="settings_app_icon">Alkalmazásikon</string>
     <string name="settings_app_icon_summary">Az DPTV-Player ikonjának és logójának színe</string>
+    <string name="settings_app_icon_sheet_mobile">Így jelenik meg az DPTV-Player a kezdőképernyődön. Az alkalmazás egyszer újraindul.</string>
     <string name="settings_brand_accent">Kiemelőszínű logó</string>
     <string name="app_icon_petrol">Petrolkék</string>
     <string name="app_icon_sunflower">Napraforgó</string>
@@ -1704,6 +1705,8 @@
     <string name="settings_bg_picture">Kép</string>
     <string name="settings_bg_plain">Egyszerű</string>
     <string name="settings_line_bg_picture_none">Válassz képet erről a tévéről vagy a Remote-tal</string>
+    <string name="settings_line_bg_picture_none_mobile">Válassz képet erről a telefonról</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · erről a telefonról</string>
     <string name="settings_bg_change">Módosítás</string>
     <string name="settings_bg_none">Nincs</string>
     <string name="settings_bg_look">Képhatás</string>
@@ -1724,6 +1727,7 @@
     <string name="settings_line_bg_accent_light">A kiemelő színed világít a sarokban</string>
     <string name="settings_glass_section">Üveg</string>
     <string name="settings_line_glass_switch">A sáv, a panelek, a menük és a felugrók matt üvegből vannak</string>
+    <string name="settings_line_glass_switch_mobile">A sávok, a panelek, a menük és a felugrók matt üvegből vannak</string>
     <string name="settings_help_glass_chrome">Mattá teszi a lebegő részeket: a sávot, a kategóriapaneleket, a menüket, a felugrókat és a fenti gombokat. A listák és a plakátok laposak maradnak.</string>
     <string name="settings_glass_opacity">Üveg fedettsége</string>
     <string name="settings_line_glass_opacity">Kisebb érték többet mutat a háttérből</string>

@@ -1425,6 +1425,7 @@
     <string name="settings_multiview_use_anyway">Bruk likevel</string>
     <string name="settings_app_icon">Appikon</string>
     <string name="settings_app_icon_summary">Farge på DPTV-Player-ikonet og -logoen</string>
+    <string name="settings_app_icon_sheet_mobile">Hvordan DPTV-Player vises på startskjermen din. Appen starter på nytt én gang.</string>
     <string name="settings_brand_accent">Logo i aksentfarge</string>
     <string name="app_icon_petrol">Petrol</string>
     <string name="app_icon_sunflower">Solsikke</string>
@@ -1734,6 +1735,8 @@
     <string name="settings_bg_picture">Bilde</string>
     <string name="settings_bg_plain">Ensfarget</string>
     <string name="settings_line_bg_picture_none">Velg et bilde fra denne TV-en eller via Remote</string>
+    <string name="settings_line_bg_picture_none_mobile">Velg et bilde fra denne telefonen</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · fra denne telefonen</string>
     <string name="settings_bg_change">Endre</string>
     <string name="settings_bg_none">Ingen</string>
     <string name="settings_bg_look">Bildeuttrykk</string>
@@ -1754,6 +1757,7 @@
     <string name="settings_line_bg_accent_light">Aksentfargen din lyser i hjørnet</string>
     <string name="settings_glass_section">Glass</string>
     <string name="settings_line_glass_switch">Linje, paneler, menyer og popup-vinduer er matte</string>
+    <string name="settings_line_glass_switch_mobile">Linjer, paneler, menyer og popup-vinduer er matte</string>
     <string name="settings_help_glass_chrome">Gjør de svevende delene matte: linjen, kategoripanelene, menyer, popup-vinduer og knappene øverst. Lister og plakater forblir flate.</string>
     <string name="settings_glass_opacity">Glassets dekkevne</string>
     <string name="settings_line_glass_opacity">Lavere viser mer av bakgrunnen</string>

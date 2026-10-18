@@ -1397,6 +1397,7 @@
     <string name="settings_multiview_use_anyway">仍要使用</string>
     <string name="settings_app_icon">應用程式圖示</string>
     <string name="settings_app_icon_summary">DPTV-Player 圖示和標誌的顏色</string>
+    <string name="settings_app_icon_sheet_mobile">DPTV-Player 在主畫面上的樣子。應用程式會重新啟動一次。</string>
     <string name="settings_brand_accent">強調色標誌</string>
     <string name="app_icon_petrol">石油藍</string>
     <string name="app_icon_sunflower">向日葵</string>
@@ -1699,6 +1700,8 @@
     <string name="settings_bg_picture">圖片</string>
     <string name="settings_bg_plain">純色</string>
     <string name="settings_line_bg_picture_none">從這台電視或透過 Remote 選擇圖片</string>
+    <string name="settings_line_bg_picture_none_mobile">從這支手機選擇圖片</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · 來自這支手機</string>
     <string name="settings_bg_change">變更</string>
     <string name="settings_bg_none">無</string>
     <string name="settings_bg_look">圖片效果</string>
@@ -1719,6 +1722,7 @@
     <string name="settings_line_bg_accent_light">你的強調色在角落發光</string>
     <string name="settings_glass_section">玻璃</string>
     <string name="settings_line_glass_switch">導覽列、面板、選單和彈出視窗為霧面效果</string>
+    <string name="settings_line_glass_switch_mobile">導覽列、面板、選單和彈出視窗為霧面效果</string>
     <string name="settings_help_glass_chrome">讓浮動部分呈現霧面效果：導覽列、分類面板、選單、彈出視窗和頂端按鈕。清單和海報保持平面。</string>
     <string name="settings_glass_opacity">玻璃不透明度</string>
     <string name="settings_line_glass_opacity">越低越能看到背景</string>

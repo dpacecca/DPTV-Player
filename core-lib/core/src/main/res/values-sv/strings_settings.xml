@@ -1425,6 +1425,7 @@
     <string name="settings_multiview_use_anyway">Använd ändå</string>
     <string name="settings_app_icon">Appikon</string>
     <string name="settings_app_icon_summary">Färg på DPTV-Player:s ikon och logotyp</string>
+    <string name="settings_app_icon_sheet_mobile">Hur DPTV-Player visas på din startskärm. Appen startas om en gång.</string>
     <string name="settings_brand_accent">Logga i accentfärg</string>
     <string name="app_icon_petrol">Petrol</string>
     <string name="app_icon_sunflower">Solros</string>
@@ -1734,6 +1735,8 @@
     <string name="settings_bg_picture">Bild</string>
     <string name="settings_bg_plain">Enfärgad</string>
     <string name="settings_line_bg_picture_none">Välj en bild från den här tv:n eller via Remote</string>
+    <string name="settings_line_bg_picture_none_mobile">Välj en bild från den här telefonen</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · från den här telefonen</string>
     <string name="settings_bg_change">Ändra</string>
     <string name="settings_bg_none">Ingen</string>
     <string name="settings_bg_look">Bildstil</string>
@@ -1754,6 +1757,7 @@
     <string name="settings_line_bg_accent_light">Din accentfärg lyser i hörnet</string>
     <string name="settings_glass_section">Glas</string>
     <string name="settings_line_glass_switch">List, paneler, menyer och popup-fönster är frostade</string>
+    <string name="settings_line_glass_switch_mobile">Lister, paneler, menyer och popup-fönster är frostade</string>
     <string name="settings_help_glass_chrome">Frostar de svävande delarna: listen, kategoripanelerna, menyer, popup-fönster och knapparna överst. Listor och affischer förblir platta.</string>
     <string name="settings_glass_opacity">Glasets täckning</string>
     <string name="settings_line_glass_opacity">Lägre visar mer av bakgrunden</string>

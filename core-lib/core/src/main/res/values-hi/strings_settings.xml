@@ -1425,6 +1425,7 @@
     <string name="settings_multiview_use_anyway">फिर भी इस्तेमाल करें</string>
     <string name="settings_app_icon">ऐप आइकन</string>
     <string name="settings_app_icon_summary">DPTV-Player आइकन और लोगो का रंग</string>
+    <string name="settings_app_icon_sheet_mobile">आपकी होम स्क्रीन पर DPTV-Player कैसा दिखता है। ऐप एक बार रीस्टार्ट होता है।</string>
     <string name="settings_brand_accent">एक्सेंट रंग का लोगो</string>
     <string name="app_icon_petrol">पेट्रोल</string>
     <string name="app_icon_sunflower">सूरजमुखी</string>
@@ -1734,6 +1735,8 @@
     <string name="settings_bg_picture">तस्वीर</string>
     <string name="settings_bg_plain">सादा</string>
     <string name="settings_line_bg_picture_none">इस टीवी से या Remote से तस्वीर चुनें</string>
+    <string name="settings_line_bg_picture_none_mobile">इस फ़ोन से तस्वीर चुनें</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · इस फ़ोन से</string>
     <string name="settings_bg_change">बदलें</string>
     <string name="settings_bg_none">कोई नहीं</string>
     <string name="settings_bg_look">तस्वीर का रूप</string>
@@ -1754,6 +1757,7 @@
     <string name="settings_line_bg_accent_light">आपका एक्सेंट रंग कोने में चमकता है</string>
     <string name="settings_glass_section">ग्लास</string>
     <string name="settings_line_glass_switch">बार, पैनल, मेन्यू और पॉप-अप पाले जैसे धुंधले हैं</string>
+    <string name="settings_line_glass_switch_mobile">बार, पैनल, मेन्यू और पॉप-अप पाले जैसे धुंधले हैं</string>
     <string name="settings_help_glass_chrome">तैरते हिस्सों को पाले जैसा धुंधला करता है: बार, कैटेगरी पैनल, मेन्यू, पॉप-अप और ऊपर के बटन। सूचियाँ और पोस्टर सपाट रहते हैं।</string>
     <string name="settings_glass_opacity">ग्लास की अपारदर्शिता</string>
     <string name="settings_line_glass_opacity">कम करने पर बैकग्राउंड ज़्यादा दिखता है</string>
