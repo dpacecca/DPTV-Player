@@ -417,4 +417,6 @@
     <string name="content_play_from_start">最初から再生</string>
     <string name="content_episode_details">エピソードの詳細</string>
     <string name="content_season_specials">特別編</string>
+    <string name="content_poster_size">ポスターのサイズ</string>
+    <string name="content_vod_more_in"><xliff:g id="category">%1$s</xliff:g>のその他の作品</string>
 </resources>

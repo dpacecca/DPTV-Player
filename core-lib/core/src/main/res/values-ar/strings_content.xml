@@ -512,4 +512,6 @@
     <string name="content_play_from_start">التشغيل من البداية</string>
     <string name="content_episode_details">تفاصيل الحلقة</string>
     <string name="content_season_specials">حلقات خاصة</string>
+    <string name="content_poster_size">حجم الملصقات</string>
+    <string name="content_vod_more_in">المزيد في <xliff:g id="category">%1$s</xliff:g></string>
 </resources>

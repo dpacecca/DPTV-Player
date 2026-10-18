@@ -436,4 +436,6 @@
     <string name="content_play_from_start">ആദ്യം മുതൽ പ്ലേ ചെയ്യുക</string>
     <string name="content_episode_details">എപ്പിസോഡ് വിശദാംശങ്ങൾ</string>
     <string name="content_season_specials">പ്രത്യേക എപ്പിസോഡുകൾ</string>
+    <string name="content_poster_size">പോസ്റ്റർ വലുപ്പം</string>
+    <string name="content_vod_more_in"><xliff:g id="category">%1$s</xliff:g>-ൽ കൂടുതൽ</string>
 </resources>

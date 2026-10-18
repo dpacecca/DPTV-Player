@@ -436,4 +436,6 @@
     <string name="content_play_from_start">Spela från början</string>
     <string name="content_episode_details">Avsnittsdetaljer</string>
     <string name="content_season_specials">Specialavsnitt</string>
+    <string name="content_poster_size">Storlek på omslagsbilder</string>
+    <string name="content_vod_more_in">Mer i <xliff:g id="category">%1$s</xliff:g></string>
 </resources>

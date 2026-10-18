@@ -436,4 +436,6 @@
     <string name="content_play_from_start">शुरू से चलाएँ</string>
     <string name="content_episode_details">एपिसोड विवरण</string>
     <string name="content_season_specials">विशेष एपिसोड</string>
+    <string name="content_poster_size">पोस्टर का आकार</string>
+    <string name="content_vod_more_in"><xliff:g id="category">%1$s</xliff:g> में और</string>
 </resources>

@@ -823,4 +823,8 @@
     <string name="content_episode_details">Episode details</string>
     <!-- Translators: Name of a series' season 0: the specials, extras and one-off episodes outside the numbered seasons. -->
     <string name="content_season_specials">Specials</string>
+    <!-- Translators: Heading above the poster-size slider in the Movies / Series sort sheet. Shown in capitals by the style. -->
+    <string name="content_poster_size">Poster size</string>
+    <!-- Translators: Small heading on a movie's page above more posters from the same category: "More in Disney+ Kids Movies". Shown in capitals by the style. -->
+    <string name="content_vod_more_in">More in <xliff:g id="category">%1$s</xliff:g></string>
 </resources>

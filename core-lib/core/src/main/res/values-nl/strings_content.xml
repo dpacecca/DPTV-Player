@@ -436,4 +436,6 @@
     <string name="content_play_from_start">Vanaf het begin afspelen</string>
     <string name="content_episode_details">Afleveringsdetails</string>
     <string name="content_season_specials">Specials</string>
+    <string name="content_poster_size">Postergrootte</string>
+    <string name="content_vod_more_in">Meer in <xliff:g id="category">%1$s</xliff:g></string>
 </resources>

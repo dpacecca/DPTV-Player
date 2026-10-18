@@ -417,4 +417,6 @@
     <string name="content_play_from_start">从头播放</string>
     <string name="content_episode_details">剧集详情</string>
     <string name="content_season_specials">特别篇</string>
+    <string name="content_poster_size">海报大小</string>
+    <string name="content_vod_more_in"><xliff:g id="category">%1$s</xliff:g> 中的更多内容</string>
 </resources>
