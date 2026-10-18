@@ -64,6 +64,33 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.3.0
+
+### ✨ New features
+- **🎬 Movies and TV Shows back in the menu, below Live TV**
+- **📥 Movies and series imported from your playlists again**
+- **🔎 Search filter buttons: Live TV, TV Shows, Movies, Series**
+- **⏯️ Watch or keep downloading on a one-stream playlist**
+- **🔔 Notice when guide auto-match finishes**
+- **🔑 ClearKey key inline in the playlist**
+- **⚡ Faster channel up/down**
+- **↕️ Hold OK to put sports and leagues in your own order**
+- **🏟️ Live sports row on Home**
+- **📺 Broadcasts tab, venue and round in Sport**
+- **⚙️ Sport settings: live refresh, auto rebuild, playlists and strict channel filter**
+- **🖼️ Choose your own profile picture**
+- **↔️ Move several items in one window before saving**
+- **▶️ External player resumes films, episodes and recordings**
+
+### 🐛 Fixes
+- **Specials listed after the last season**
+- **Episode list says why it failed to load**
+- **Screen stays on while a film buffers**
+- **EPG source logins hidden in Settings**
+- **Right-to-left subtitles**
+- **Catch-up time zone set to Automatic by default**
+- **OwnTV core 1.0.67 and 1.0.68 fixes**
+
 ## v2.2.0
 
 ### ✨ New features
