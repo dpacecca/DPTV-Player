@@ -241,9 +241,14 @@ class LiveTuneController(
      */
     private var exoChannelId: Long? = null
 
-    /** ExoPlayer already plays [channel], healthy, by whatever address. */
+    /**
+     * ExoPlayer already plays [channel], healthy, by whatever address. A saved copy's loopback address
+     * counts only while that copy is still open: once it is lost (an outage longer than its reconnect
+     * budget) the engine sits on a closed address and the channel must be opened again.
+     */
     private fun exoHolds(channel: ChannelEntity): Boolean =
-        exoChannelId == channel.id && engines.exoUrl != null && !engines.exoFailed
+        exoChannelId == channel.id && engines.exoUrl != null && !engines.exoFailed &&
+            (!TimeshiftServer.isLocal(engines.exoUrl) || ts?.isClosed == false)
 
     /**
      * The user is opening [channel] full screen. When ExoPlayer is already previewing it, say so at once,
