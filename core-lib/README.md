@@ -66,7 +66,8 @@ have numbers that can disagree.
   decoders and passthrough
 - **HLS, MPEG-DASH and raw MPEG-TS**, chosen from what the playlist declares, what the response
   actually is, and what the panel has already been caught doing — plus **Widevine / ClearKey** for
-  channels that publish a licence server (ExoPlayer only; mpv has no CDM)
+  channels that publish a licence server, and ClearKey keys written into the playlist itself
+  (ExoPlayer only; mpv has no CDM)
 - **Watchdogs that assume the stream is hostile** — no-frame detection, stall recovery, surface
   resets, reconnect logic, and a live diagnostics log
 - Zero-copy **4K HDR** direct rendering, frame-rate matching, throughput tracking, resolution and

@@ -1838,6 +1838,9 @@ class LivePreviewEngine(
         _videoHeight.value = null; _videoAspect.value = null; _videoSize.value = null; _streamChips.value = emptyList(); _videoFps.value = null
         _videoRes.value = null // else the next channel's HUD opens showing the previous one's resolution badge
         _state.value = State.IDLE
+        // Said here, not left to STATE_IDLE: a player already idle mid-reconnect raises no new state, and
+        // a phone keeps its screen on while an engine reports buffering.
+        _buffering.value = false
         player?.run { stop(); clearMediaItems() }
         releaseHttpConnections()
         // Leaving a UHD channel (back / exit fullscreen / background): fully release the 4K decoder.
@@ -3207,7 +3210,9 @@ class LivePreviewEngine(
                     )
                     .setTsSubtitleFormats(listOf(cc1)),
             ).setLoadErrorHandlingPolicy(playedLivePolicy)
+                .setDrmSessionManagerProvider(tv.own.owntv.core.drm.InlineClearKeyDrmProvider)
             cachedHlsCcFactory = HlsMediaSource.Factory(cachedHttpDataSource!!)
+                .setDrmSessionManagerProvider(tv.own.owntv.core.drm.InlineClearKeyDrmProvider)
                 .setExtractorFactory(DefaultHlsExtractorFactory(tsFlags, true))
                 // Media3 defaults this to zero, which it documents as an *infinite* timeout: a rendition
                 // whose chunk can't be timestamp-aligned with the primary one parks its loading thread in

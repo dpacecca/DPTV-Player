@@ -644,7 +644,10 @@ class ExoSubtitleEngine(
             .setTsExtractorTimestampSearchBytes(TS_TIMESTAMP_SEARCH_PACKETS * androidx.media3.extractor.ts.TsExtractor.TS_PACKET_SIZE)
         return ExoPlayer.Builder(context)
             .setRenderersFactory(renderers)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSource, extractors))
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(dataSource, extractors)
+                    .setDrmSessionManagerProvider(tv.own.owntv.core.drm.InlineClearKeyDrmProvider),
+            )
             .setLoadControl(loadControl)
             .setTrackSelector(trackSelector)
             .build()
