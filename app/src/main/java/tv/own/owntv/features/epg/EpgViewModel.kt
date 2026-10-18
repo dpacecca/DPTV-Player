@@ -639,6 +639,20 @@ class EpgViewModel(
         }
     }
 
+    /**
+     * Save a whole run's matches in ONE write. Each [CustomizationStore.setEpgMatch] re-reads, rewrites
+     * and re-saves the profile's entire customisation, so a lineup of a few thousand matches made that
+     * many writes of an ever-growing list — minutes on a television, with the Guide still saying
+     * "Matching…" until the last one landed. Same ids, same normalisation, one write.
+     */
+    private suspend fun saveEpgMatches(profileId: Long, matches: Collection<Pair<String, String>>) {
+        val clean = matches.mapNotNull { (key, epgId) ->
+            epgId.trim().lowercase().takeIf { it.isNotEmpty() }?.let { key to it }
+        }.toMap()
+        if (clean.isEmpty()) return
+        customize.update(profileId, MediaType.LIVE) { it.copy(epgMatches = it.epgMatches + clean) }
+    }
+
     /** Set/clear a channel's manual EPG match (null clears → auto-match), then reload the guide. */
     fun setEpgMatch(channel: ChannelEntity, epgChannelId: String?) {
         viewModelScope.launch {
@@ -743,8 +757,8 @@ class EpgViewModel(
                 val outcome = autoMatcher.run(cust, playlistIds)
                 if (!outcome.hadCandidates) { _matchSummary.value = EpgMatchSummary.NoData; return@launch }
 
-                // Persist the confident hits (DataStore writes are cheap, but do them off the scan).
-                for ((key, epgId) in outcome.applied) customize.setEpgMatch(pid, MediaType.LIVE, key, epgId)
+                // Persist the confident hits — in one write, see [saveEpgMatches].
+                saveEpgMatches(pid, outcome.applied)
 
                 runApplied = outcome.applied.map { it.second }
                 openReview(outcome.review.map {
@@ -816,7 +830,7 @@ class EpgViewModel(
         if (all.isEmpty()) return
         viewModelScope.launch {
             val pid = settings.activeProfileId.first()
-            for (s in all) customize.setEpgMatch(pid, MediaType.LIVE, CustomizeKeys.channel(s.channel), s.epgChannelId)
+            saveEpgMatches(pid, all.map { CustomizeKeys.channel(it.channel) to it.epgChannelId })
             _review.value = emptyList()
             includeLogosIfTicked(all.map { it.epgChannelId })
             fillMatchedInBackground(all.map { it.epgChannelId })
