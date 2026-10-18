@@ -621,6 +621,8 @@ fun OwnTVShell(
         if (!backToGuide) focusRail()
         Unit
     }
+    // A one-stream playlist that a download was using: core paused the download; this asks what next.
+    tv.own.owntv.features.downloads.DownloadWatchPrompt(onClosePlayer = { if (playerMode != PlayerMode.NONE) exitPlayer() })
     /**
      * Turn the channel on screen into tile 1 of the grid, with [extra] filling the tiles after it.
      *

@@ -134,6 +134,8 @@ class LiveViewModel(
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
     private val externalPlayerLauncher: tv.own.owntv.core.player.ExternalPlayerLauncher,
     private val recordings: tv.own.owntv.core.recording.RecordingManager,
+    /** Keeps the preview pane off a one-stream playlist while a download is using it. */
+    private val downloadWatchGuard: tv.own.owntv.core.download.DownloadWatchGuard,
 ) : ViewModel() {
 
     // --- "Record what I'm watching" (Plan D, D3 mode b) -----------------------------------------
@@ -973,6 +975,7 @@ class LiveViewModel(
             sourceLookup = { id -> sourceById[id] },
             // A handover re-opens the channel at its live edge: the rewind is over.
             backToLiveEdge = { clearTimeshift() },
+            downloadHolds = downloadWatchGuard::holdsOnlyStream,
         ),
     )
 

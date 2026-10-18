@@ -45,6 +45,14 @@ class DownloadsViewModel(
     tracker: tv.own.owntv.core.download.DownloadActivityTracker,
 ) : ViewModel() {
 
+    /** What playing does to a running download on a one-stream playlist (the Downloads screen's tool). */
+    val downloadWatchChoice: StateFlow<SettingsRepository.DownloadWatchChoice> = settings.downloadWatchChoice
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsRepository.DownloadWatchChoice.ASK)
+
+    fun setDownloadWatchChoice(choice: SettingsRepository.DownloadWatchChoice) {
+        viewModelScope.launch { settings.setDownloadWatchChoice(choice) }
+    }
+
     /** The one transfer running now, with its speed (G3), for the focused row's "12.4 MB/s · 3 min left". */
     val active: StateFlow<tv.own.owntv.core.download.DownloadActivityTracker.ActiveDownload?> = tracker.active
 

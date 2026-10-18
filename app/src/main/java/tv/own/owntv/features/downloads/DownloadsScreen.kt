@@ -62,6 +62,7 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
+import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.database.entity.DownloadEntity
 import tv.own.owntv.core.database.entity.RecordingEntity
 import tv.own.owntv.core.download.DownloadActivityTracker
@@ -224,6 +225,7 @@ fun DownloadsScreen(
     }
 
     var showFolderPicker by remember { mutableStateOf(false) }
+    val watchChoice by vm.downloadWatchChoice.collectAsStateWithLifecycle()
 
     BoxWithConstraints(modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }) {
         // Horizontal geometry is a fraction of the mockup's 1920 width, so every zoom reflows.
@@ -278,6 +280,14 @@ fun DownloadsScreen(
                 )
             }
             Spacer(Modifier.weight(1f))
+            // What playing does to a download on a one-stream playlist; OK steps through the three answers.
+            StageTool(
+                text = stringResource(R.string.content_download_watch_setting) + stringResource(R.string.content_epg_bits_separator) +
+                    stringResource(watchChoiceLabel(watchChoice)),
+                icon = OwnTVIcon.PLAY,
+                onClick = { vm.setDownloadWatchChoice(nextWatchChoice(watchChoice)) },
+                modifier = Modifier.padding(bottom = 4.mpx),
+            )
             StageTool(
                 text = stringResource(R.string.settings_download_folder), icon = OwnTVIcon.FOLDER,
                 onClick = { showFolderPicker = true },
@@ -375,6 +385,15 @@ fun DownloadsScreen(
         else if (pickerWasOpen) { pickerWasOpen = false; withFrameNanos { }; runCatching { folderFocus.requestFocus() } }
     }
 }
+
+private fun watchChoiceLabel(c: SettingsRepository.DownloadWatchChoice): Int = when (c) {
+    SettingsRepository.DownloadWatchChoice.ASK -> R.string.content_download_watch_ask
+    SettingsRepository.DownloadWatchChoice.PAUSE -> R.string.content_download_watch_pause
+    SettingsRepository.DownloadWatchChoice.KEEP -> R.string.content_download_watch_keep
+}
+
+private fun nextWatchChoice(c: SettingsRepository.DownloadWatchChoice): SettingsRepository.DownloadWatchChoice =
+    SettingsRepository.DownloadWatchChoice.entries.let { it[(c.ordinal + 1) % it.size] }
 
 private val WarnColor = Color(0xFFFFB74D)
 private val FailColor = Color(0xFFEF4444)
