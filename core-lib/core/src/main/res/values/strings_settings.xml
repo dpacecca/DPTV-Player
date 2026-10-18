@@ -1069,7 +1069,7 @@
     <!-- Translators: Setting (Video player). How much of a film is loaded ahead of the picture. -->
     <string name="settings_vod_buffer">Film buffer</string>
     <!-- Translators: Description of settings_vod_buffer. -->
-    <string name="settings_vod_buffer_description">How far ahead films, episodes and catch-up are loaded. Auto uses what suits this device. A longer buffer rides out a bad connection better; this device’s memory still sets the limit, so a high-bitrate film may hold less than chosen.</string>
+    <string name="settings_vod_buffer_description">How far ahead films, episodes and catch-up are loaded. Auto uses what suits this device. A longer buffer rides out a bad connection better and may use more memory, up to a limit set for this device, so a very high-bitrate film may still hold less than chosen.</string>
     <!-- Translators: Setting (Video player). How long a film waits on a server that sends nothing. -->
     <string name="settings_vod_network_timeout">Network timeout</string>
     <!-- Translators: Description of settings_vod_network_timeout. mpv and ExoPlayer are the two player engines; keep the names. -->

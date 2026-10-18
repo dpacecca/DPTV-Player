@@ -842,7 +842,10 @@ class OwnTVPlayer(
         val prerollSecs = effectivePrerollSecs()
         // N18 — a film's own buffer and network timeout (Settings; 0 = Auto = the values used before).
         // Set on every load, live included, so a channel after a film gets the device's values back.
-        // demuxer-max-bytes is not touched: memory stays the tier's, so a longer buffer is "up to".
+        // demuxer-max-bytes follows the choice too (SmartBuffer): the tier's for live and Auto, a chosen
+        // buffer's own size (within the device's film ceiling) for a film. Set on every load, so a channel
+        // after a film never inherits the film's bigger cache. A low-memory trim since this load began
+        // still wins — [cacheTrimmed] is cleared only by the next load's [restoreTrimmedCache].
         val film = playbackSettings.value?.takeIf { !isLiveContent }
         val networkTimeout = if (isLiveContent) LIVE_NETWORK_TIMEOUT_SECS else FilmNetwork.mpvTimeoutSecs(film?.vodNetworkTimeoutSecs ?: 0)
         setPropertyString("network-timeout", networkTimeout.toString())
@@ -851,6 +854,12 @@ class OwnTVPlayer(
             val live = MpvLiveBuffer.resolve(effectiveLiveBufferSecs(), prerollSecs, budget)
             setPropertyString("demuxer-readahead-secs", if (isLiveContent) live.readahead else FilmNetwork.readaheadSecs(film?.vodBufferSecs ?: 0, budget))
             setPropertyString("cache-secs", if (isLiveContent) live.cache else FilmNetwork.bufferSecs(film?.vodBufferSecs ?: 0, budget).toString())
+            // The bitrate isn't known before the open; [maybeRefineFilmCache] re-sizes once it is.
+            val demuxerMax = SmartBuffer.mpvDemuxerMaxBytes(isLiveContent, film?.vodBufferSecs ?: 0, budget, bitrateBps = null, trimmed = cacheTrimmed)
+            setPropertyString("demuxer-max-bytes", demuxerMax)
+            if (!isLiveContent) {
+                android.util.Log.i(TAG, "film_buffer buffer=${film?.vodBufferSecs ?: 0}s cache=$demuxerMax net=${networkTimeout}s")
+            }
             if (isLiveContent) {
                 android.util.Log.i(TAG, "live_buffer preroll=${prerollSecs}s readahead=${live.readahead} cache=${live.cache} latency=${effectiveLiveBufferSecs() ?: -1} net=${networkTimeout}s")
             }
@@ -860,7 +869,9 @@ class OwnTVPlayer(
             setPropertyString("cache-pause-wait", prerollSecs.toString())
         } else {
             setPropertyString("cache-pause-initial", "no")
-            setPropertyString("cache-pause-wait", "1")
+            // Live keeps mpv's 1 s; a film with a chosen buffer refills longer before resuming (Auto: 1 s).
+            val resumeWait = if (isLiveContent) FilmNetwork.MPV_AUTO_RESUME_WAIT_SECS else FilmNetwork.mpvResumeWaitSecs(film?.vodBufferSecs ?: 0)
+            setPropertyString("cache-pause-wait", resumeWait.toString())
         }
         // Broken-timestamp live streams (some IPTV 4K feeds send non-increasing/duplicate PTS): mpv is
         // strict about PTS and drops nearly every frame ("Invalid video timestamp: X -> X"), which looks
@@ -4017,6 +4028,32 @@ class OwnTVPlayer(
 
     @Volatile private var cacheTrimmed = false
 
+    /**
+     * One re-size of a film's mpv cache from the bitrate mpv itself measured, [SmartBuffer.REFINE_AFTER_SECS]
+     * after the file opened — the load-time cap had to assume the tier's bitrate. Only with a chosen Film
+     * buffer (Auto keeps the tier's cap), never for live, and never once a low-memory trim has landed.
+     * Called from time-pos events, so it is cheap until the moment it acts, and acts once per load.
+     */
+    private fun maybeRefineFilmCache() {
+        val l = load
+        if (l.filmCacheRefined || !l.fileLoaded || isLiveContent || cacheTrimmed) return
+        val userSecs = playbackSettings.value?.vodBufferSecs ?: 0
+        if (userSecs <= 0) { l.filmCacheRefined = true; return }
+        if (System.currentTimeMillis() - l.fileLoadedAt < SmartBuffer.REFINE_AFTER_SECS * 1000) return
+        l.filmCacheRefined = true
+        val budget = playerBudget ?: return
+        mpvAsync {
+            // Re-checked on mpv's executor: a new load or a trim may have been queued since.
+            if (load !== l || cacheTrimmed) return@mpvAsync
+            val video = getPropertyString("video-bitrate")?.toLongOrNull()?.takeIf { it > 0 } ?: 0L
+            val audio = getPropertyString("audio-bitrate")?.toLongOrNull()?.takeIf { it > 0 } ?: 0L
+            val bitrate = (video + audio).takeIf { it > 0 }
+            val bytes = SmartBuffer.mpvDemuxerMaxBytes(isLive = false, userSecs, budget, bitrate, trimmed = false)
+            setPropertyString("demuxer-max-bytes", bytes)
+            android.util.Log.i(TAG, "film_buffer refined cache=$bytes bitrate=${bitrate ?: -1} buffer=${userSecs}s")
+        }
+    }
+
     /** Put the device budget back after an [onTrimMemory]; queued ahead of the load that calls it. */
     private fun restoreTrimmedCache() {
         if (!cacheTrimmed) return
@@ -4598,6 +4635,7 @@ class OwnTVPlayer(
                 _position.value = value * 1000
                 if (value > 0) load.expectingPlayback = false // playback actually started
                 logLiveFirstPosition()
+                maybeRefineFilmCache()
             }
             "duration" -> _duration.value = value * 1000
             "width" -> {
@@ -5382,6 +5420,8 @@ internal data class LoadState(
     @field:Volatile var firstPositionLogged: Boolean = false,
     /** The CH+/− press this item was tuned for (elapsedRealtime), claimed at load; null = not a zap. */
     val zapPressAt: Long? = null,
+    /** The film cache has been re-sized from the measured bitrate (or needs none) — see maybeRefineFilmCache. */
+    @field:Volatile var filmCacheRefined: Boolean = false,
 )
 
 internal data class ItemState(
