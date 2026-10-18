@@ -23,6 +23,8 @@ import tv.own.owntv.features.shell.components.VodGroupOrganise
 import tv.own.owntv.features.shell.components.VodGroupWatch
 import tv.own.owntv.features.shell.components.VodHeader
 import tv.own.owntv.features.shell.components.VodHero
+import tv.own.owntv.features.shell.components.VodPosterRowsH
+import tv.own.owntv.features.shell.components.VodToolbarH
 import tv.own.owntv.features.shell.components.VodListRow
 import tv.own.owntv.features.shell.components.VodOptionsMenu
 import tv.own.owntv.features.shell.components.VodPosterArt
@@ -592,7 +594,9 @@ fun MoviesScreen(
         val screenW = maxWidth
         fun fx(px: Int) = screenW * (px / 1920f)
         if (cinematic) {
-            val heroH = if (panelShares != null) maxHeight * (cinematicDetailsPct / 100f) else 464.mpx
+            // Room for two whole poster rows under the toolbar (DPTV v2.3.1): the hero takes what is left.
+            val twoRowsHeroH = (maxHeight - 122.mpx - VodToolbarH - 28.mpx - VodPosterRowsH - 24.mpx).coerceAtLeast(160.mpx)
+            val heroH = minOf(if (panelShares != null) maxHeight * (cinematicDetailsPct / 100f) else 464.mpx, twoRowsHeroH)
             val toolTop = 122.mpx + heroH
             Box(Modifier.fillMaxSize().then(if (categoriesOpen) Modifier.graphicsLayer { alpha = 0.36f } else Modifier)) {
                 VodCinematicBackdrop(titleInfo?.backdropUrl, series = false, Modifier.align(Alignment.TopEnd))
