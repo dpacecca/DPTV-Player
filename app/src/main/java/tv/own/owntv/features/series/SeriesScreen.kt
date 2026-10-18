@@ -1390,7 +1390,7 @@ private fun EpisodeView(
     val resources = androidx.compose.ui.platform.LocalResources.current
     val epName: (EpisodeEntity, tv.own.owntv.core.database.entity.MetadataCacheEntity?) -> String = { ep, meta ->
         val tmdb = meta?.title?.takeIf { it.isNotBlank() }
-        val own = EpisodeTitles.clean(ep.name, series.name)
+        val own = tv.own.owntv.core.content.EpisodeTitles.clean(ep.name, series.name)
         (if (metadataMode.tmdbWins) tmdb ?: own else own ?: tmdb)
             ?: resources.getString(R.string.player_episode_number, ep.episodeNumber)
     }
