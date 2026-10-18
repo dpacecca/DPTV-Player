@@ -9,6 +9,64 @@
 > in one bolded line of its own (e.g. **Database v46 · Backup v24 · Breaking**). The detail — what,
 > why, files and verification — belongs in the commit message, never here.
 
+## core-1.0.71 — 2026-10-18
+
+**Database v49 · Breaking (CatchupTimezone.AUTOMATIC; catch-up time zone strings renamed)**
+
+Ports upstream OwnTV Core 1.0.67 and 1.0.68, without the Sports Hub and the glass settings removal.
+
+### ✨ New features
+
+- **🔐 ClearKey channels whose playlist carries the key itself play**
+- **🔎 Search filter buttons: Live TV, TV Shows, Movies, Series**
+- **🎞️ Software decoding above 1080p (Video player switch)**
+- **⚡ Faster downloads over several connections**
+- **💬 A failed download says why**
+- **📺 Watch or keep downloading on a one-stream playlist**
+- **🗂️ Downloads and recordings whose file is gone say "File missing"**
+- **🌍 Basque**
+- **🕒 Catch-up time zone "Automatic": the Xtream panel's own zone**
+- **▶️ External player starts a film or episode where you left it**
+- **🎞️ Film buffer follows the seconds you choose (#31)**
+- **⚡ Faster zapping on one-session panels (#32)**
+- **📱 Shared phone Stage code and strings (category restore, episode titles, provider tags, phone settings)**
+- **📡 Guide "On now" can fall back to the provider's short guide**
+
+### 🐛 Fixes
+
+- **🔑 A backup that can't be opened no longer asks again for a password that was right**
+- **📲 A backup cut off on its way from the phone is refused instead of failing as a wrong password**
+- **💾 Opening a large backup needs less memory**
+- **🔗 A provider's get.php M3U link is added as Xtream, so movies and series land in their own sections**
+- **🧽 M3U links copied from a web page with "&amp;" work**
+- **📺 Shows with a Season 0 load all their episodes on Xtream**
+- **📂 Xtream seasons sent in other layouts no longer lose their episodes**
+- **🔢 Xtream episodes with no number are numbered in order instead of all showing E0**
+- **🔁 A show's episode list retries once when the provider drops the connection**
+- **▶️ Play on a new show starts at Season 1 Episode 1; Specials come after the last season**
+- **🔤 M3U episodes named "Season 1 Episode 5", "S2019E05" or with four-digit episode numbers are recognised**
+- **💾 Big downloads to a FAT32 USB stick fail with a clear reason**
+- **🌍 Channel names written "UK: …" or "IT: …" are read as their country, like "UK| …"**
+- **📺 Xtream series no longer lose every episode over one oddly written field**
+- **💬 A series whose episode list the provider refused says why instead of "No episodes"**
+- **📡 Pause and rewind live TV: a channel comes back by itself after a network outage**
+- **▶️ External player picker offers Always again, so one player can be the default**
+- **📺 Live TV falls back from mpv to ExoPlayer and gives up on time again**
+- **🔊 Opening a previewed channel keeps its volume; unmute returns to the level before**
+- **🔈 Changing sound settings during a film on ExoPlayer no longer starts a second copy**
+- **🗣️ Audio language and the episode queue survive a reload and the screensaver**
+- **🚫 A dead film link shows its error in seconds**
+- **📱 Films on mpv keep playing with the phone's screen off**
+- **⏪ M3U catch-up: every Kodi/TiviMate placeholder, catch-up-correction and timeshift="N"**
+- **⏱️ Xtream rewind counter matches the clock in the picture**
+- **🔁 Stalker catch-up Retry gets a fresh link; catch-up remembers player and zoom per channel**
+- **🧩 Pause-and-rewind no longer skips segments with signed links**
+- **🧠 Memory-pressure trim works on Android 14 and newer**
+- **🏷️ Categories keep their country ("UK|") when a list mixes countries**
+- **🔁 Retry works after a live channel gives up**
+- **👤 "Account already in use" says so, instead of loading forever on a film**
+- **🔢 First Xtream import counts a film listed in two categories once**
+
 ## core-1.0.70 — 2026-10-13
 
 ### New features
