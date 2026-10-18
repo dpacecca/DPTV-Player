@@ -4655,7 +4655,7 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	error 0xfffffff4
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	every rung spent — retrying at the panel's direct_source address
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	exo/live: $reason
-1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	first frame after ${android.os.SystemClock.elapsedRealtime() - tune.playStartedMs}ms
+1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	first frame after ${now - tune.playStartedMs}ms${ZapTiming.pressSuffix(sincePress)}
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frame hook NOT wired — no video renderer found; picture-freeze detection falls back to the no-progress backstop
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frame hook send FAILED (${it.message}) — picture-freeze detection falls back to the no-progress backstop
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frames=$frames dropped=$dropped isPlaying=${p.isPlaying}
@@ -4850,6 +4850,7 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	$reason — rescue rung 2: software decode
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	$what must be called on the main thread, was ${Thread.currentThread().name}
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	${Math.round(it)} FPS
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	${at - l.loadStartTime}ms
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	${d.refreshRate}Hz@modeId=${d.mode?.modeId}
 1	file-path	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	${font.name.lowercase(Locale.US)}.ttf
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	${h}p
@@ -4860,10 +4861,12 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	%.1f
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	%.1f Mbps
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	%.2f:1
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	(file loaded ${since(l.fileLoadedAt)}, video ${since(l.firstVideoAt)})${ZapTiming.pressSuffix(sincePress)}
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	+discardcorrupt+genpts
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	+nobuffer+genpts
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	+nobuffer+genpts+discardcorrupt
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	,
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	-
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	.m3u8
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	.ts
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	/sdk_
@@ -5094,6 +5097,7 @@
 6	protocol	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv $why — reopening with tolerant demuxing (discardcorrupt/genpts/ignore_err)
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv level=$level $safe
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv live first position after ${now - l.loadStartTime}ms
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv live mid-play reconnects exhausted ($MAX_LIVE_RECONNECTS) — surfacing error
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv live open timed out after ${openingMs}ms — surfacing error
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv ready: ${getPropertyString("mpv-version")} ffmpeg=${getPropertyString("ffmpeg-version")}
@@ -5485,3 +5489,4 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/VideoQuality.kt	video/
 1	log	player-core/src/main/java/tv/own/owntv/player/VolumeBoost.kt	volume boost failed: ${it.javaClass.simpleName}
 1	log	player-core/src/main/java/tv/own/owntv/player/VolumeBoost.kt	volume boost unavailable: ${it.javaClass.simpleName}
+1	log	player-core/src/main/java/tv/own/owntv/player/ZapTiming.kt	(zap key press to first frame ${it}ms)

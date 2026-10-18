@@ -4594,6 +4594,7 @@ class OwnTVPlayer(
             "time-pos" -> {
                 _position.value = value * 1000
                 if (value > 0) load.expectingPlayback = false // playback actually started
+                logLiveFirstPosition()
             }
             "duration" -> _duration.value = value * 1000
             "width" -> {
@@ -4604,6 +4605,7 @@ class OwnTVPlayer(
                 _videoRes.value = resolutionLabel(value.toInt())
                 load.currentHeightPx = value.toInt()
                 if (value > 0) {
+                    if (load.firstVideoAt == 0L) load.firstVideoAt = System.currentTimeMillis()
                     lastVideoHeightPx = value.toInt() // remember for recovery decisions on a later failed load
                     // Video is decoding. The watchdog stays on until playback has really moved: a load can
                     // decode its first frame and then freeze there, and it stands down by itself otherwise.
@@ -4616,6 +4618,25 @@ class OwnTVPlayer(
                 enforceDecodeGuard()
             }
         }
+    }
+
+    /**
+     * mpv's counterpart of ExoPlayer's "first frame after" line, for live loads: the first playback
+     * position since [loadUrl], with the file-open and video-size milestones on the same line so a slow
+     * start shows where the time went. mpv has no rendered-frame callback on the direct surface, so the
+     * first `time-pos` is the closest honest marker. Once per load; measurement only.
+     */
+    private fun logLiveFirstPosition() {
+        val l = load
+        if (l.firstPositionLogged || !isLiveContent || l.loadStartTime <= 0L) return
+        l.firstPositionLogged = true
+        val now = System.currentTimeMillis()
+        fun since(at: Long) = if (at > 0L) "${at - l.loadStartTime}ms" else "-"
+        val sincePress = ZapTiming.shared.takeSincePress(android.os.SystemClock.elapsedRealtime())
+        LiveDiagnosticsLog.event(
+            "mpv live first position after ${now - l.loadStartTime}ms " +
+                "(file loaded ${since(l.fileLoadedAt)}, video ${since(l.firstVideoAt)})${ZapTiming.pressSuffix(sincePress)}",
+        )
     }
 
     private fun updateAspect() {
@@ -5348,6 +5369,10 @@ internal data class LoadState(
     @field:Volatile var currentHeightPx: Int = 0,
     @field:Volatile var currentWidthPx: Int = 0,
     @field:Volatile var decodeGuardTripped: Boolean = false,
+    /** When mpv first reported a video size for this load (wall clock); 0 = not yet. Timing log only. */
+    @field:Volatile var firstVideoAt: Long = 0L,
+    /** The live first-position timing line has been logged for this load. */
+    @field:Volatile var firstPositionLogged: Boolean = false,
 )
 
 internal data class ItemState(

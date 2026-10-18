@@ -788,7 +788,10 @@ class LivePreviewEngine(
         // decoder-rebuild paths within one tune, which logged the same tune twice.
         if (!tune.firstFrameLogged && tune.playStartedMs > 0L) {
             tune.firstFrameLogged = true
-            LiveDiagnosticsLog.event("first frame after ${android.os.SystemClock.elapsedRealtime() - tune.playStartedMs}ms")
+            val now = android.os.SystemClock.elapsedRealtime()
+            // A CH+/− press that led here adds the whole wait the user saw, including the app's zap delay.
+            val sincePress = ZapTiming.shared.takeSincePress(now)
+            LiveDiagnosticsLog.event("first frame after ${now - tune.playStartedMs}ms${ZapTiming.pressSuffix(sincePress)}")
         }
     }
     private var fpsAttempts = 0
