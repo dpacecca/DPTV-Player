@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -19,7 +20,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +32,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +44,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -117,6 +127,28 @@ fun SportsScreen(
     var showLanguage by remember { mutableStateOf(false) }
     var showPhone by remember { mutableStateOf(false) }
     val remoteState by vm.remoteState.collectAsStateWithLifecycle()
+    val sportOrder by vm.sportOrder.collectAsStateWithLifecycle()
+    val strictChannels by vm.strictChannels.collectAsStateWithLifecycle()
+
+    // Live scores refresh while the hub is on screen (Sport settings › Channels › Live refresh).
+    DisposableEffect(vm) {
+        vm.setWatching(SportsViewModel.Watcher.HUB, true)
+        onDispose { vm.setWatching(SportsViewModel.Watcher.HUB, false) }
+    }
+
+    // Hold OK on a league in the rail: move mode (v5.2 port). Up/Down move it, OK or Back saves. The
+    // order is kept locally while moving and written once on save, so the rail does not wait on
+    // DataStore for every step; it lets go of the local copy once the saved order comes back.
+    var movingLeagueId by remember { mutableStateOf<String?>(null) }
+    var movingOrder by remember { mutableStateOf<List<String>?>(null) }
+    val railLeagues = movingOrder?.let { order -> order.mapNotNull { id -> leagues.firstOrNull { it.league.id == id } } } ?: leagues
+    LaunchedEffect(leagues) { if (movingLeagueId == null) movingOrder = null }
+    fun commitLeagueMove() {
+        val order = movingOrder
+        movingLeagueId = null
+        if (order != null) vm.saveLeagueOrder(order)
+    }
+    BackHandler(enabled = movingLeagueId != null) { commitLeagueMove() }
 
     val favouritesSelected = selectedLeagueId == SportsViewModel.FavouritesId
     val fixtures by vm.currentFixtures.collectAsStateWithLifecycle()
@@ -153,6 +185,18 @@ fun SportsScreen(
     val addLeaguesFocus = remember { FocusRequester() }
     val favouritesFocus = remember { FocusRequester() }
     val listState = rememberLazyListState()
+    val railState = rememberLazyListState()
+
+    // While moving, keep the moved league focused and on screen.
+    LaunchedEffect(movingOrder) {
+        val id = movingLeagueId ?: return@LaunchedEffect
+        val index = railLeagues.indexOfFirst { it.league.id == id }
+        val info = railState.layoutInfo
+        val shown = info.visibleItemsInfo.any { it.index == index && it.offset >= 0 && it.offset + it.size <= info.viewportEndOffset }
+        if (index >= 0 && !shown) runCatching { railState.animateScrollToItem((index - 1).coerceAtLeast(0)) }
+        withFrameNanos { }
+        runCatching { leagueRequester(id).requestFocus() }
+    }
 
     suspend fun focusGame(id: String) {
         if (runCatching { gameRequester(id).requestFocus() }.isSuccess) return
@@ -248,16 +292,48 @@ fun SportsScreen(
                         )
                     }
                 }
-                Text(stringResource(R.string.sport_leagues), style = stageText(20, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 14.mpx, bottom = 10.mpx))
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.mpx), modifier = Modifier.fillMaxHeight()) {
-                    items(leagues, key = { it.league.id }) { league ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(top = 14.mpx, bottom = 10.mpx),
+                ) {
+                    Text(stringResource(R.string.sport_leagues), style = stageText(20, 500), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    // Discoverability for the move mode: the rail's own key hint.
+                    Text(stringResource(R.string.sport_order_hint), style = stageText(14, 500), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                LazyColumn(state = railState, verticalArrangement = Arrangement.spacedBy(8.mpx), modifier = Modifier.fillMaxHeight()) {
+                    items(railLeagues, key = { it.league.id }) { league ->
                         val selected = league.league.id == selectedLeagueId
+                        val moving = league.league.id == movingLeagueId
                         StageSurface(
-                            onClick = { vm.selectLeague(league.league.id) },
-                            onLongClick = { vm.toggleLeagueFollowed(league.league.id) },
+                            onClick = { if (moving) commitLeagueMove() else if (movingLeagueId == null) vm.selectLeague(league.league.id) },
+                            onLongClick = {
+                                if (movingLeagueId == null) {
+                                    movingOrder = railLeagues.map { it.league.id }
+                                    movingLeagueId = league.league.id
+                                }
+                            },
                             radius = 18.mpx,
-                            modifier = Modifier.fillMaxWidth().focusRequester(leagueRequester(league.league.id)),
-                            idle = if (selected) Modifier.background(stageAccent.accent.copy(alpha = 0.14f), RoundedCornerShape(18.mpx)) else Modifier,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(leagueRequester(league.league.id))
+                                .onPreviewKeyEvent { e ->
+                                    if (!moving) return@onPreviewKeyEvent false
+                                    val up = when (e.key) {
+                                        Key.DirectionUp -> true
+                                        Key.DirectionDown -> false
+                                        // Left/Right would carry the league out of the rail mid-move.
+                                        else -> return@onPreviewKeyEvent e.key == Key.DirectionLeft || e.key == Key.DirectionRight
+                                    }
+                                    if (e.type == KeyEventType.KeyDown) {
+                                        movingOrder = SportsOrder.move(movingOrder ?: railLeagues.map { it.league.id }, league.league.id, up)
+                                    }
+                                    true
+                                },
+                            idle = when {
+                                moving -> Modifier.background(stageAccent.accent.copy(alpha = 0.30f), RoundedCornerShape(18.mpx))
+                                selected -> Modifier.background(stageAccent.accent.copy(alpha = 0.14f), RoundedCornerShape(18.mpx))
+                                else -> Modifier
+                            },
                         ) { focused ->
                             Row(
                                 Modifier.fillMaxWidth().padding(horizontal = 16.mpx, vertical = 12.mpx),
@@ -265,12 +341,15 @@ fun SportsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(12.mpx),
                             ) {
                                 OwnTVIcon(
-                                    OwnTVIcon.SPORT,
-                                    if (focused) stageAccent.onAccent else if (selected) stageAccent.accent else StageColors.NavText,
+                                    if (moving) OwnTVIcon.MOVE else OwnTVIcon.SPORT,
+                                    if (focused) stageAccent.onAccent else if (selected || moving) stageAccent.accent else StageColors.NavText,
                                     Modifier.size(24.mpx),
                                 )
                                 Column(Modifier.weight(1f)) {
                                     Text(stringResource(league.league.labelRes), style = stageText(20, if (selected) 700 else 500), color = if (focused) stageAccent.onAccent else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    if (moving) {
+                                        Text(stringResource(R.string.sport_move_hint), style = stageText(14, 500), color = if (focused) stageAccent.onAccent.copy(alpha = 0.8f) else StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    }
                                 }
                                 if (league.liveCount > 0) {
                                     LiveDot(league.liveCount.toString())
@@ -423,6 +502,7 @@ fun SportsScreen(
                         followedPlayers = followedPlayers,
                         matchesState = matchesState,
                         preferredLanguages = preferredLanguages,
+                        strictChannels = strictChannels,
                         standings = standings,
                         standingsLoading = standingsLoading,
                         matchRequester = ::matchRequester,
@@ -443,6 +523,9 @@ fun SportsScreen(
                 active = activeLeagues,
                 onToggleLeague = { vm.toggleLeagueFollowed(it) },
                 onToggleSport = { vm.toggleSport(it) },
+                sportOrder = sportOrder,
+                onSaveSportOrder = { vm.saveSportOrder(it) },
+                channelsContent = { SportsChannelOptions(vm) },
                 preferred = preferredLanguages,
                 onPreferredChange = { vm.setPreferredLanguages(it) },
                 hidden = hiddenLanguages,
@@ -484,6 +567,23 @@ fun SportsScreen(
     }
 }
 
+/** The detail pane's two lists. */
+private enum class DetailTab { CHANNELS, BROADCASTS }
+
+/**
+ * The round/stage line: "Week 6", ESPN's round ("Second Round") and its headline note ("NFL London
+ * Games"), joined; null when ESPN gives none of them (a plain league matchday).
+ */
+@Composable
+private fun stageLine(fixture: Fixture): String? {
+    val parts = listOfNotNull(
+        fixture.week?.let { stringResource(R.string.sport_round_week, it) },
+        fixture.round,
+        fixture.note,
+    )
+    return if (parts.isEmpty()) null else parts.joinToString(stringResource(R.string.sport_detail_separator))
+}
+
 /** The fixtures shown for [tab]: Live / Upcoming (soonest first) / Past (most recent first, bounded). */
 private fun fixturesFor(fixtures: List<Fixture>, tab: SportsViewModel.FixtureTab): List<Fixture> = when (tab) {
     SportsViewModel.FixtureTab.LIVE -> fixtures.filter { it.state == FixtureState.LIVE }.sortedBy { it.dateMs }
@@ -517,7 +617,8 @@ private fun FixtureTabPill(label: String, selected: Boolean, onClick: () -> Unit
     }
 }
 
-private fun dayLabel(dateMs: Long, today: String, tomorrow: String, yesterday: String): String? {
+/** "Tomorrow", "Yesterday" or a short date for a game's day; null for today (the time says enough). */
+internal fun sportDayLabel(dateMs: Long, tomorrow: String, yesterday: String): String? {
     val zone = ZoneId.systemDefault()
     val date = Instant.ofEpochMilli(dateMs).atZone(zone).toLocalDate()
     val now = LocalDate.now(zone)
@@ -645,7 +746,7 @@ private fun FixtureCard(fixture: Fixture, followedTeams: Set<String>, focused: B
                     Text(entry.name, style = stageText(17, 500), color = dimColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            val day = if (fixture.state == FixtureState.UPCOMING) dayLabel(fixture.dateMs, today, tomorrow, yesterday) else null
+            val day = if (fixture.state == FixtureState.UPCOMING) sportDayLabel(fixture.dateMs, tomorrow, yesterday) else null
             val subLine = day ?: fixture.statusLine.takeIf { fixture.state == FixtureState.FINISHED }
             if (subLine != null) {
                 Text(
@@ -706,6 +807,7 @@ private fun FixtureDetail(
     followedPlayers: Set<String>,
     matchesState: SportsViewModel.MatchesState,
     preferredLanguages: Set<SportLanguage>,
+    strictChannels: Boolean,
     standings: List<LeagueTable>,
     standingsLoading: Boolean,
     matchRequester: (Long) -> FocusRequester,
@@ -718,6 +820,8 @@ private fun FixtureDetail(
     previewArmed: Boolean,
 ) {
     val accent = stageAccent
+    // Kept across games: a viewer reading broadcasts reads them for the next game too.
+    var detailTab by remember { mutableStateOf(DetailTab.CHANNELS) }
     // The matcher already filtered by the preferred languages (before its cap) — show them as-is.
     val matches = (matchesState as? SportsViewModel.MatchesState.Content)?.matches.orEmpty()
     var entities by remember(fixture.id) { mutableStateOf(emptyList<ChannelEntity>()) }
@@ -802,15 +906,15 @@ private fun FixtureDetail(
                 if (fixture.state != FixtureState.UPCOMING || fixture.statusLine.isNotBlank()) {
                     Text(fixture.statusLine, style = stageText(18, 600), color = if (fixture.state == FixtureState.LIVE) accent.accent else StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+                // Round/stage and venue on every match page (v5.2 port), whichever ESPN fills.
+                val stage = stageLine(fixture)
+                if (stage != null) {
+                    Text(stringResource(R.string.sport_round), style = stageText(15, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(stage, style = stageText(18, 500), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
                 fixture.venue?.let { venue ->
                     Text(stringResource(R.string.sport_venue), style = stageText(15, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(venue, style = stageText(18, 500), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                }
-                if (fixture.broadcasts.isNotEmpty()) {
-                    Text(stringResource(R.string.sport_broadcast), style = stageText(15, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    fixture.broadcasts.take(4).forEach { name ->
-                        Text(name, style = stageText(18, 500), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
                 }
                 if (homeTeam != null && awayTeam != null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(10.mpx), modifier = Modifier.fillMaxWidth()) {
@@ -843,9 +947,42 @@ private fun FixtureDetail(
                 }
             }
         }
-        item(key = "channels" + fixture.id) {
+        // Channels (the matched user channels) | Broadcasts (ESPN's list, one per row) — v5.2 port.
+        item(key = "detail-tabs") {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.mpx), modifier = Modifier.fillMaxWidth().padding(top = 8.mpx)) {
+                FixtureTabPill(stringResource(R.string.sport_channels), detailTab == DetailTab.CHANNELS) { detailTab = DetailTab.CHANNELS }
+                FixtureTabPill(
+                    stringResource(R.string.sport_broadcasts_count, fixture.broadcasts.size),
+                    detailTab == DetailTab.BROADCASTS,
+                ) { detailTab = DetailTab.BROADCASTS }
+            }
+        }
+        if (detailTab == DetailTab.BROADCASTS) {
+            if (fixture.broadcasts.isEmpty()) {
+                item(key = "broadcasts-empty" + fixture.id) {
+                    Text(stringResource(R.string.sport_no_broadcasts), style = stageText(17, 500), color = StageColors.Dim, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            // One focusable row per broadcaster, so the remote scrolls a long list; OK does nothing —
+            // it is a list to read (the Channels tab is where a broadcaster's channel plays).
+            itemsIndexed(fixture.broadcasts, key = { index, _ -> "broadcast" + fixture.id + index }) { _, name ->
+                StageSurface(onClick = {}, radius = 14.mpx, focusStyle = StageFocus.FX, modifier = Modifier.fillMaxWidth()) { focused ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 14.mpx, vertical = 10.mpx),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.mpx),
+                    ) {
+                        OwnTVIcon(OwnTVIcon.LIVE_TV, if (focused) accent.onAccent else StageColors.Dim, Modifier.size(22.mpx))
+                        Text(name, style = stageText(19, 600), color = if (focused) accent.onAccent else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+        }
+        if (detailTab == DetailTab.CHANNELS) item(key = "channels" + fixture.id) {
             Column(verticalArrangement = Arrangement.spacedBy(8.mpx), modifier = Modifier.padding(top = 8.mpx)) {
-                Text(stringResource(R.string.sport_channels), style = stageText(22, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (strictChannels) {
+                    Text(stringResource(R.string.sport_strict_active), style = stageText(14, 500), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
                 if (preferredLanguages.isNotEmpty()) {
                     val languageLabels = SportLanguages.order
                         .filter { it in preferredLanguages }
@@ -935,11 +1072,13 @@ private enum class SportsSettingsTab(val labelRes: Int) {
     SPORTS(R.string.sport_settings_tab_sports),
     LEAGUES(R.string.sport_settings_tab_leagues),
     LANGUAGES(R.string.sport_settings_tab_languages),
+    CHANNELS(R.string.sport_settings_tab_channels),
 }
 
 /**
- * The Sport settings (v2.2.0), in three tabs: whole sports on or off, every league with a search, and
- * the channel languages — the ones to show, and the ones never to show.
+ * The Sport settings (v2.2.0), in four tabs: whole sports on or off (hold OK to put them in your own
+ * order), every league with a search, the channel languages — the ones to show, and the ones never to
+ * show — and the channel options of v5.2 ([SportsChannelOptions]).
  */
 @Composable
 private fun SportsSettingsDialog(
@@ -947,6 +1086,9 @@ private fun SportsSettingsDialog(
     active: Set<String>,
     onToggleLeague: (String) -> Unit,
     onToggleSport: (SportGroup) -> Unit,
+    sportOrder: List<SportGroup>,
+    onSaveSportOrder: (List<SportGroup>) -> Unit,
+    channelsContent: @Composable ColumnScope.() -> Unit,
     preferred: Set<SportLanguage>,
     onPreferredChange: (Set<SportLanguage>) -> Unit,
     hidden: Set<SportLanguage>,
@@ -961,8 +1103,26 @@ private fun SportsSettingsDialog(
         delay(60)
         runCatching { tabFocus.requestFocus() }
     }
+    // Hold OK on a sport: move mode, like the league rail. Up/Down move it, OK or Back saves.
+    var movingSport by remember { mutableStateOf<SportGroup?>(null) }
+    var localSportOrder by remember { mutableStateOf<List<SportGroup>?>(null) }
+    val sports = localSportOrder ?: sportOrder
+    LaunchedEffect(sportOrder) { if (movingSport == null) localSportOrder = null }
+    fun commitSportMove() {
+        val order = localSportOrder
+        movingSport = null
+        if (order != null) onSaveSportOrder(order)
+    }
+    val sportBring = remember { mutableStateMapOf<SportGroup, BringIntoViewRequester>() }
+    LaunchedEffect(localSportOrder) {
+        val group = movingSport ?: return@LaunchedEffect
+        withFrameNanos { }
+        runCatching { sportBring[group]?.bringIntoView() }
+    }
     BackHandler { onDismiss() }
-    OwnTVPopup(onDismissRequest = onDismiss, stageLayout = true) {
+    // Registered after the dialog's own Back, so it wins while a sport is being moved.
+    BackHandler(enabled = movingSport != null) { commitSportMove() }
+    OwnTVPopup(onDismissRequest = { if (movingSport != null) commitSportMove() else onDismiss() }, stageLayout = true) {
         Box(Modifier.fillMaxSize().background(StageColors.Scrim)) {
             Column(
                 Modifier
@@ -986,17 +1146,65 @@ private fun SportsSettingsDialog(
                                 subtitle = stringResource(R.string.sport_settings_sports_subtitle),
                             )
                             StageMenuItem(text = stringResource(R.string.sport_manage_on_phone), icon = OwnTVIcon.PHONE, onClick = onManageOnPhone)
-                            SportGroup.entries.forEach { group ->
-                                val ids = leagues.filter { it.sportGroup == group }.map { it.id }
-                                if (ids.isEmpty()) return@forEach
-                                val on = ids.count { it in active }
-                                StageMenuItem(
-                                    text = stringResource(group.labelRes),
-                                    icon = OwnTVIcon.SPORT,
-                                    value = stringResource(R.string.sport_settings_leagues_count, on, ids.size),
-                                    checked = on > 0,
-                                    onClick = { onToggleSport(group) },
-                                )
+                            Text(
+                                stringResource(R.string.sport_order_hint),
+                                style = stageText(15, 500), color = StageColors.Dim,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(start = 18.mpx, top = 8.mpx, bottom = 4.mpx),
+                            )
+                            val shownSports = sports.filter { group -> leagues.any { it.sportGroup == group } }
+                            shownSports.forEach { group ->
+                                key(group) {
+                                    val ids = leagues.filter { it.sportGroup == group }.map { it.id }
+                                    val on = ids.count { it in active }
+                                    val moving = movingSport == group
+                                    val bring = remember(group) { BringIntoViewRequester() }
+                                    DisposableEffect(group, bring) {
+                                        sportBring[group] = bring
+                                        onDispose { sportBring.remove(group) }
+                                    }
+                                    StageMenuItem(
+                                        text = stringResource(group.labelRes),
+                                        icon = if (moving) OwnTVIcon.MOVE else OwnTVIcon.SPORT,
+                                        value = if (moving) {
+                                            stringResource(R.string.sport_move_hint)
+                                        } else {
+                                            stringResource(R.string.sport_settings_leagues_count, on, ids.size)
+                                        },
+                                        checked = on > 0 && !moving,
+                                        onClick = { if (moving) commitSportMove() else if (movingSport == null) onToggleSport(group) },
+                                        onLongClick = {
+                                            if (movingSport == null) {
+                                                localSportOrder = sports
+                                                movingSport = group
+                                            }
+                                        },
+                                        modifier = Modifier
+                                            .bringIntoViewRequester(bring)
+                                            .onPreviewKeyEvent { e ->
+                                                if (!moving) return@onPreviewKeyEvent false
+                                                val up = when (e.key) {
+                                                    Key.DirectionUp -> true
+                                                    Key.DirectionDown -> false
+                                                    else -> return@onPreviewKeyEvent e.key == Key.DirectionLeft || e.key == Key.DirectionRight
+                                                }
+                                                if (e.type == KeyEventType.KeyDown) {
+                                                    // Swap with the neighbour on screen (sports without
+                                                    // leagues are not listed, but keep their place).
+                                                    val target = shownSports.getOrNull(shownSports.indexOf(group) + if (up) -1 else 1)
+                                                    if (target != null) {
+                                                        val order = (localSportOrder ?: sports).toMutableList()
+                                                        val a = order.indexOf(group)
+                                                        val b = order.indexOf(target)
+                                                        order[a] = target
+                                                        order[b] = group
+                                                        localSportOrder = order
+                                                    }
+                                                }
+                                                true
+                                            },
+                                    )
+                                }
                             }
                         }
                         SportsSettingsTab.LEAGUES -> {
@@ -1010,7 +1218,7 @@ private fun SportsSettingsDialog(
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.mpx),
                             )
                             val q = query.trim()
-                            SportGroup.entries.forEach { group ->
+                            sports.forEach { group ->
                                 val groupLabel = stringResource(group.labelRes)
                                 val groupLeagues = leagues.filter { it.sportGroup == group }
                                     .map { it to stringResource(it.labelRes) }
@@ -1068,11 +1276,98 @@ private fun SportsSettingsDialog(
                                 )
                             }
                         }
+                        SportsSettingsTab.CHANNELS -> channelsContent()
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * Sport settings › Channels (v5.2 port of OwnTV's Sports settings): how often live scores refresh,
+ * the channel-list auto rebuild (on a schedule and after a playlist/guide sync) with a manual
+ * "Rebuild now", the strict channel filter and which playlists Sport may match against. Every row
+ * applies at once; the open game's channel list is matched again where it matters.
+ */
+@Composable
+private fun ColumnScope.SportsChannelOptions(vm: SportsViewModel) {
+    val liveSeconds by vm.liveRefreshSeconds.collectAsStateWithLifecycle()
+    val rebuildMinutes by vm.autoRebuildMinutes.collectAsStateWithLifecycle()
+    val strict by vm.strictChannels.collectAsStateWithLifecycle()
+    val chosen by vm.channelPlaylists.collectAsStateWithLifecycle()
+    val playlists by vm.playlists.collectAsStateWithLifecycle()
+    var rebuilt by remember { mutableStateOf(false) }
+    StageMenuHeader(
+        title = stringResource(R.string.sport_settings_tab_channels),
+        subtitle = stringResource(R.string.sport_channels_subtitle),
+    )
+    StageMenuItem(
+        text = stringResource(R.string.sport_live_refresh),
+        icon = OwnTVIcon.CLOCK,
+        value = when {
+            liveSeconds <= 0 -> stringResource(R.string.sport_option_off)
+            liveSeconds >= 120 && liveSeconds % 60 == 0 -> stringResource(R.string.sport_option_minutes, liveSeconds / 60)
+            else -> stringResource(R.string.sport_option_seconds, liveSeconds)
+        },
+        onClick = { vm.cycleLiveRefresh() },
+    )
+    StageMenuItem(
+        text = stringResource(R.string.sport_auto_rebuild),
+        icon = OwnTVIcon.REFRESH,
+        value = if (rebuildMinutes <= 0) stringResource(R.string.sport_option_off) else stringResource(R.string.sport_option_minutes, rebuildMinutes),
+        onClick = { vm.cycleAutoRebuild() },
+    )
+    OptionNote(stringResource(R.string.sport_auto_rebuild_description))
+    StageMenuItem(
+        text = stringResource(R.string.sport_rebuild_now),
+        icon = OwnTVIcon.REFRESH,
+        value = if (rebuilt) stringResource(R.string.sport_rebuild_done) else null,
+        onClick = {
+            vm.rebuildNow()
+            rebuilt = true
+        },
+    )
+    StageMenuItem(
+        text = stringResource(R.string.sport_strict_filter),
+        icon = OwnTVIcon.SORT,
+        checked = strict,
+        onClick = { vm.toggleStrictChannels() },
+    )
+    OptionNote(stringResource(R.string.sport_strict_description))
+    Text(
+        stringResource(R.string.sport_playlists_heading),
+        style = stageText(16, 700),
+        color = StageColors.Muted,
+        maxLines = 1, overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(start = 18.mpx, top = 16.mpx, bottom = 4.mpx),
+    )
+    StageMenuItem(
+        text = stringResource(R.string.sport_playlists_all),
+        icon = OwnTVIcon.PLAYLIST,
+        checked = chosen.isEmpty(),
+        onClick = { vm.clearPlaylistFilter() },
+    )
+    playlists.forEach { playlist ->
+        StageMenuItem(
+            text = playlist.name,
+            icon = OwnTVIcon.PLAYLIST,
+            checked = playlist.id in chosen,
+            onClick = { vm.togglePlaylist(playlist.id) },
+        )
+    }
+}
+
+/** A dim explanation under a Sport settings row. */
+@Composable
+private fun OptionNote(text: String) {
+    Text(
+        text,
+        style = stageText(14, 500),
+        color = StageColors.Dim,
+        maxLines = 3, overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(start = 18.mpx, end = 12.mpx, bottom = 6.mpx),
+    )
 }
 
 /**

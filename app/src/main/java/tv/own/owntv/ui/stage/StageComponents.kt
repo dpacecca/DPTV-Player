@@ -614,6 +614,8 @@ fun StageMenuItem(
     enabled: Boolean = true,
     /** Drawn where the icon goes, for rows that lead with something else (a playlist mark). */
     leading: (@Composable () -> Unit)? = null,
+    /** Hold OK (e.g. Sport settings: hold OK on a sport to move it). */
+    onLongClick: (() -> Unit)? = null,
 ) {
     val a = stageAccent
     StageSurface(
@@ -621,6 +623,7 @@ fun StageMenuItem(
         radius = StageRadii.MenuItem,
         modifier = modifier.fillMaxWidth().height(50.mpx).alpha(if (enabled) 1f else 0.45f),
         enabled = enabled,
+        onLongClick = onLongClick,
     ) { focused ->
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 14.mpx),

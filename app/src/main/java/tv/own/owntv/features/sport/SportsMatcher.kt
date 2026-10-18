@@ -77,6 +77,9 @@ class SportsMatcher(
      * below the many English/Italian feeds that carry both teams in their titles, so a post-cut
      * filter would never see it. Filtering first lets the preferred languages win the fixed slots.
      *
+     * [strict] keeps only both-sides evidence ([strictFilter]); [playlists] narrows the live playlists
+     * searched ([allowedSources]; empty = all). Both are Sport settings (v5.2 port).
+     *
      * Never throws for a malformed playlist or a cold EPG: every DAO call is `runCatching`-guarded
      * and an empty result simply means "nothing matched".
      */
@@ -85,9 +88,11 @@ class SportsMatcher(
         languages: Set<SportLanguage> = emptySet(),
         limit: Int = DefaultLimit,
         hidden: Set<SportLanguage> = emptySet(),
+        strict: Boolean = false,
+        playlists: Set<Long> = emptySet(),
     ): List<ChannelMatch> =
         withContext(Dispatchers.IO) {
-            val sourceIds = sources.liveSourceIds()
+            val sourceIds = allowedSources(sources.liveSourceIds(), playlists)
             if (sourceIds.isEmpty()) return@withContext emptyList()
 
             val home = fixture.home
@@ -126,8 +131,11 @@ class SportsMatcher(
                     to = to,
                 )
             }.sortedByDescending { it.score }
+            // The strict filter runs before the language filter and the cut, like the language
+            // filter itself: a weak hit must not take a slot that a both-sides hit could fill.
+            val kept = if (strict) strictFilter(scored, fixture) else scored
             // Preferred languages first (never-empty fallback lives in SportLanguages.filter).
-            SportLanguages.filter(scored, languages, hidden).take(limit)
+            SportLanguages.filter(kept, languages, hidden).take(limit)
         }
 
     /** Entities for matched ids, in the matches' order — the zap context for playback. */
@@ -380,6 +388,8 @@ class SportsMatcher(
         var score = 0
         var epgTitle: String? = null
         var exact = false
+        // Set when one guide programme names both sides (see ChannelMatch.namesBothSides).
+        var epgBothSides = false
         val name = channel.name.lowercase(Locale.ROOT)
         val nameNorm = SportNameMatch.normalize(channel.name)
 
@@ -457,6 +467,8 @@ class SportsMatcher(
             if (best > 0) {
                 score += best
                 epgTitle = bestTitle
+                // This tier only scores programmes that name both teams.
+                epgBothSides = true
             }
         }
 
@@ -490,6 +502,7 @@ class SportsMatcher(
                     // Both athletes in one programme — the duel line, strongest duel signal.
                     epgSideATokens.isNotEmpty() && epgSideBTokens.isNotEmpty() &&
                         sideAAnywhere && sideBAnywhere -> {
+                        epgBothSides = true
                         var s = if (sideAInTitle && sideBInTitle) {
                             EpgBothTeamsScore
                         } else {
@@ -526,7 +539,15 @@ class SportsMatcher(
         }
 
         return if (score > 0) {
-            ChannelMatch(channel.id, channel.name, channel.logoUrl, epgTitle, score, exact)
+            ChannelMatch(
+                channelId = channel.id,
+                channelName = channel.name,
+                logoUrl = channel.logoUrl,
+                epgTitle = epgTitle,
+                score = score,
+                isExact = exact,
+                namesBothSides = exact || epgBothSides,
+            )
         } else {
             null
         }
@@ -584,6 +605,32 @@ class SportsMatcher(
     private fun String.isPlaceholderName(): Boolean = trim().equals(PlaceholderName, ignoreCase = true)
 
     companion object {
+        /**
+         * The live playlists Sport may match against: all of them when [chosen] is empty (the
+         * default), else only the chosen ones. A choice that no longer names any live playlist (the
+         * chosen playlists were removed or lost live sync) falls back to all — an empty channel pane
+         * with no hint why would be worse than a broader one.
+         */
+        internal fun allowedSources(live: List<Long>, chosen: Set<Long>): List<Long> {
+            if (chosen.isEmpty()) return live
+            return live.filter { it in chosen }.ifEmpty { live }
+        }
+
+        /**
+         * The strict channel filter (Sport settings, off by default): only channels whose own name or
+         * one guide programme names **both** sides of a two-sided fixture (two teams, or the two
+         * athletes of a duel). Broadcast-name, league-hint, one-athlete and tournament-only hits are
+         * dropped. A fixture without two sides (a Grand Prix, a golf leaderboard) has no "both" to
+         * check — its channels come only from broadcast names and hints — so it is left as it is
+         * rather than emptied.
+         */
+        internal fun strictFilter(matches: List<ChannelMatch>, fixture: Fixture): List<ChannelMatch> {
+            val twoSided = (fixture.home != null && fixture.away != null) ||
+                (fixture.format == FixtureFormat.VERSUS && fixture.entries.size == 2)
+            if (!twoSided) return matches
+            return matches.filter { it.isExact || it.namesBothSides }
+        }
+
         /** How many channels one fixture shows. 8 → 12 (Lume) → 20 (room for the language filter). */
         private const val DefaultLimit = 20
         /** Per-query cap for the channel-name search (was 20). */

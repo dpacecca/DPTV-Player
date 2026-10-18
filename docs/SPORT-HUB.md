@@ -1,4 +1,4 @@
-# docs/SPORT-HUB.md — Einstieg (Stand: 2026-10-13)
+# docs/SPORT-HUB.md — Einstieg (Stand: 2026-10-18)
 
 > Zweck: Einstiegsseite für den Sports-Hub; Detailspecs bleiben in den
 > referenzierten Dateien, damit nichts doppelt gepflegt wird.
@@ -49,6 +49,28 @@
   ohne Guide-Daten ihre Tenniskanäle finden.
 - Trade-off: Recall sinkt, wenn ein Feed im Guide nur ein Team nennt —
   Alias-Pflege in `res/raw/sports_matching.json` ist wichtiger als vorher.
+
+## OwnTV-v5.2-Port (2026-10-18, Branch `feature/sport-v5.2`)
+
+Auf DPTVs eigenem Sport-Code, keine Upstream-Sports-Tabellen.
+
+- **Eigene Reihenfolge:** OK halten auf einer Liga in der Rail bzw. einem Sport in
+  Settings › Sports = Verschiebe-Modus (▲▼, OK/Back speichert). Prefs `league_order`,
+  `sport_order`; Logik `SportsOrder` (genannte Ligen zuerst, Rest nach Sport-Reihenfolge).
+  Der alte Long-Press „Liga abwählen" in der Rail ist dadurch ersetzt (Abwählen: Settings).
+- **Home-Zeile „Live sports"** (`HomeSportsRow`, `SportsSchedule.homeRow`): live + Anpfiff
+  in ≤ 3 h aus Favourites, LIVE-Tag = `GuideTag`/`GuideLiveRed`; nur wenn SPORT im Nav und
+  `hub_visible`. Gleiche `SportsViewModel`-Instanz wie der Hub (`openFixture`).
+- **Detail:** Tabs Channels | Broadcasts (eine Zeile pro Sender, fokussierbar); Runde aus
+  `round.displayName` / `altGameNote` nach letztem Komma / `season.slug`, `week.number`,
+  `notes[].headline` (`EspnApi.stageOf`).
+- **Settings › Channels:** Live refresh (`live_refresh_seconds`, 0/30/60/120, Default 60) —
+  läuft nur solange Hub oder Home sichtbar (`Watcher`), lädt nur Boards mit Live-Spiel oder
+  älter als 15 min, still (kein Loading-Flackern). Auto rebuild (`auto_rebuild_minutes`,
+  0/15/30/60, Default 30) + bei Playlist-/Guide-Sync (`SportChannelSources.changes`).
+  Playlist-Filter (`channel_playlists`, leer = alle; veraltete Wahl → alle). Strenger Filter
+  (`strict_channels`, aus): nur `ChannelMatch.namesBothSides`; Events ohne zwei Seiten (F1,
+  Golf) bleiben ungefiltert.
 
 ## Nicht-wieder-einbauen (verifizierte Fallen)
 

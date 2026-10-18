@@ -338,6 +338,85 @@ class SportsMatcherTest {
 
     // --- fixtures / vocabulary ------------------------------------------------------------------
 
+    // --- v5.2 port: strict channel filter ------------
+
+    @Test
+    fun strictFilterKeepsOnlyBothSidesEvidenceForADuel() = runBlocking {
+        val store = FakeStore(
+            channels = listOf(
+                channel(30, "EUROSPORT 1", epgKey = "eurosport"),
+                channel(31, "US: PPV 7", epgKey = "ppv7"),
+            ),
+            programmes = listOf(
+                programme("eurosport", title = "Tennis: Shanghai Masters, Viertelfinale"),
+                programme("ppv7", title = "Khachanov vs De Minaur"),
+            ),
+        )
+        val fixture = duelFixture(tournament = "Shanghai Masters")
+
+        val loose = matcher(store).match(fixture)
+        val strict = matcher(store).match(fixture, strict = true)
+
+        assertEquals(setOf("EUROSPORT 1", "US: PPV 7"), loose.map { it.channelName }.toSet())
+        assertEquals(listOf("US: PPV 7"), strict.map { it.channelName })
+        assertTrue(strict.single().namesBothSides)
+    }
+
+    @Test
+    fun strictFilterDropsABroadcastOnlyChannelForATeamGame() = runBlocking {
+        val store = FakeStore(
+            channels = listOf(
+                channel(32, "UK: SKY SPORTS PREMIER LEAGUE"),
+                channel(33, "IT: SKY SPORT ARENA", epgKey = "arena"),
+            ),
+            programmes = listOf(programme("arena", title = "Coventry City v Newcastle United")),
+        )
+        val fixture = fixture().copy(broadcasts = listOf("Sky Sports Premier League"))
+
+        val loose = matcher(store).match(fixture)
+        val strict = matcher(store).match(fixture, strict = true)
+
+        assertTrue("UK: SKY SPORTS PREMIER LEAGUE" in loose.map { it.channelName })
+        assertEquals(listOf("IT: SKY SPORT ARENA"), strict.map { it.channelName })
+    }
+
+    @Test
+    fun strictFilterLeavesAFixtureWithoutTwoSidesAlone() {
+        val race = Fixture(
+            id = "f1/1", leagueId = "racing.f1", dateMs = Noon, state = FixtureState.UPCOMING,
+            statusLine = "14:00", format = FixtureFormat.EVENT, title = "Grand Prix",
+            broadcasts = emptyList(), venue = null,
+        )
+        val hint = ChannelMatch(1, "SKY SPORTS F1", null, null, score = 6)
+
+        assertEquals(listOf(hint), SportsMatcher.strictFilter(listOf(hint), race))
+        assertTrue(SportsMatcher.strictFilter(listOf(hint), fixture()).isEmpty())
+    }
+
+    // --- v5.2 port: playlist filter ------------
+
+    @Test
+    fun playlistFilterSearchesOnlyTheChosenPlaylists() = runBlocking {
+        val store = FakeStore(
+            channels = listOf(
+                channel(40, "IT: SKY SPORT ARENA", epgKey = "arena", sourceId = 1),
+                channel(41, "DE: SKY SPORT TOP EVENT", epgKey = "arena", sourceId = 2),
+            ),
+            programmes = listOf(programme("arena", title = "Coventry City v Newcastle United")),
+        )
+        val matcher = matcher(store, live = listOf(1L, 2L))
+
+        assertEquals(2, matcher.match(fixture()).size)
+        assertEquals(listOf("DE: SKY SPORT TOP EVENT"), matcher.match(fixture(), playlists = setOf(2L)).map { it.channelName })
+    }
+
+    @Test
+    fun allowedSourcesFallsBackToAllWhenTheChoiceIsStale() {
+        assertEquals(listOf(1L, 2L), SportsMatcher.allowedSources(listOf(1L, 2L), emptySet()))
+        assertEquals(listOf(2L), SportsMatcher.allowedSources(listOf(1L, 2L), setOf(2L, 9L)))
+        assertEquals(listOf(1L, 2L), SportsMatcher.allowedSources(listOf(1L, 2L), setOf(9L)))
+    }
+
     private val vocab = SportsVocab.of(
         aliases = mapOf("Newcastle United" to listOf("Magpies")),
         teamStopwords = setOf("fc", "club"),
@@ -345,12 +424,16 @@ class SportsMatcherTest {
         sportWords = setOf("football", "soccer", "fussball"),
     )
 
-    private fun matcher(store: FakeStore, vocab: SportsVocab = this.vocab) = SportsMatcher(
+    private fun matcher(
+        store: FakeStore,
+        vocab: SportsVocab = this.vocab,
+        live: List<Long> = listOf(SourceId),
+    ) = SportsMatcher(
         channelDao = store.channelDao,
         epgDao = store.epgDao,
         vocab = vocab,
         sources = object : LiveSourceIdsProvider {
-            override suspend fun liveSourceIds(): List<Long> = listOf(SourceId)
+            override suspend fun liveSourceIds(): List<Long> = live
         },
     )
 
@@ -388,9 +471,9 @@ class SportsMatcherTest {
         venue = null,
     )
 
-    private fun channel(id: Long, name: String, epgKey: String? = null) = ChannelEntity(
+    private fun channel(id: Long, name: String, epgKey: String? = null, sourceId: Long = SourceId) = ChannelEntity(
         id = id,
-        sourceId = SourceId,
+        sourceId = sourceId,
         name = name,
         streamUrl = "http://provider.invalid/$id.ts",
         epgChannelId = epgKey,
@@ -427,12 +510,14 @@ private class FakeStore(
         when (name) {
             "searchList" -> {
                 val query = args!![0] as String
-                channels.filter { it.name.contains(query, ignoreCase = true) }
+                val sources = (args[1] as List<*>).filterIsInstance<Long>()
+                channels.filter { it.sourceId in sources && it.name.contains(query, ignoreCase = true) }
             }
             "byEpgKeys" -> {
-                val keys = (args!![1] as List<*>).filterIsInstance<String>()
+                val sources = (args!![0] as List<*>).filterIsInstance<Long>()
+                val keys = (args[1] as List<*>).filterIsInstance<String>()
                     .map { it.trim().lowercase() }
-                channels.filter { channel -> channel.epgChannelId?.trim()?.lowercase() in keys }
+                channels.filter { channel -> channel.sourceId in sources && channel.epgChannelId?.trim()?.lowercase() in keys }
             }
             "getById" -> channels.firstOrNull { it.id == args!![0] as Long }
             else -> null

@@ -9,7 +9,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -32,7 +36,11 @@ class SportsViewModel(
     private val api: EspnApi,
     private val matcher: SportsMatcher,
     private val companion: CompanionController,
+    channelSources: SportChannelSources,
 ) : ViewModel() {
+
+    /** Who is showing live Sport data right now; the live refresh runs only while someone is. */
+    enum class Watcher { HUB, HOME }
 
     sealed interface BoardState {
         data object Loading : BoardState
@@ -84,6 +92,37 @@ class SportsViewModel(
     val languageAsked: StateFlow<Boolean> = prefs.languageAsked
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    /** The user's sport order (Settings › Sports, hold OK): every sport, stored ones first. */
+    val sportOrder: StateFlow<List<SportGroup>> = prefs.sportOrder
+        .map { SportsOrder.orderSports(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SportGroup.entries.toList())
+
+    /** The user's league order (hold OK in the rail), as stored ids — see [SportsOrder.orderLeagues]. */
+    private val leagueOrder: StateFlow<List<String>> = prefs.leagueOrder
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Live refresh interval in seconds (0 = off) — Sport settings › Channels. */
+    val liveRefreshSeconds: StateFlow<Int> = prefs.liveRefreshSeconds
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SportsSchedule.DefaultLiveRefreshSeconds)
+
+    /** Auto rebuild interval in minutes (0 = off) — Sport settings › Channels. */
+    val autoRebuildMinutes: StateFlow<Int> = prefs.autoRebuildMinutes
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SportsSchedule.DefaultAutoRebuildMinutes)
+
+    /** Playlists Sport matching may use (empty = all) — Sport settings › Channels. */
+    val channelPlaylists: StateFlow<Set<Long>> = prefs.channelPlaylists
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** Strict channel filter (off by default) — Sport settings › Channels. */
+    val strictChannels: StateFlow<Boolean> = prefs.strictChannels
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** The live playlists the playlist filter offers. */
+    val playlists: StateFlow<List<SportPlaylist>> = channelSources.playlists
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val watchers = MutableStateFlow<Set<Watcher>>(emptySet())
+
     /** Leagues that hold a followed team or athlete — loaded too, so Favourites can show them. */
     private val followedItemLeagues: StateFlow<Set<String>> = combine(followedTeams, followedPlayers) { teams, players ->
         (teams + players).mapNotNull { it.substringBefore(TeamKeySep).takeIf { id -> sportsLeagueById(id) != null } }.toSet()
@@ -112,6 +151,9 @@ class SportsViewModel(
     /** True once the user picks a tab by hand; the league default then stops overriding it. */
     private var userChoseTab = false
 
+    /** A tab [openFixture] asked for, applied when its league selection lands (instead of the default). */
+    private var pendingTab: FixtureTab? = null
+
     /** The selected league's board (null until first load), for fixtures + error state. */
     val selectedBoard: StateFlow<BoardState?> =
         combine(boards, _selectedLeagueId) { current, id -> current[id] }
@@ -127,12 +169,13 @@ class SportsViewModel(
     val standingsLoading: StateFlow<Boolean> = _standingsLoading.asStateFlow()
 
     /**
-     * The active leagues with their live counts — the rail. Grouped by sport, in the picker's order
-     * (sortedBy is stable, so the catalogue order holds within a sport).
+     * The active leagues with their live counts — the rail. In the user's order ([SportsOrder]):
+     * leagues they sorted by hand first, the rest grouped by their sport order (sortedBy is stable,
+     * so the catalogue order holds within a sport). A fresh install keeps the picker's order.
      */
     val leagues: StateFlow<List<LeagueUi>> =
-        combine(boards, activeLeagues) { current, active ->
-            SportsLeagues.filter { it.id in active }.sortedBy { it.sportGroup.ordinal }.map { league ->
+        combine(boards, activeLeagues, leagueOrder, sportOrder) { current, active, order, sports ->
+            SportsOrder.orderLeagues(SportsLeagues.filter { it.id in active }, order, sports).map { league ->
                 val board = (current[league.id] as? BoardState.Content)?.board
                 LeagueUi(
                     league = league,
@@ -172,6 +215,17 @@ class SportsViewModel(
                 .sortedWith(compareBy<Fixture> { it.state != FixtureState.LIVE }.thenBy { it.dateMs })
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /**
+     * Home's Sports row (v5.2 port): live games and games kicking off soon from [favourites], live
+     * first — see [SportsSchedule.homeRow]. The minute ticker moves the "soon" window while Home is
+     * on screen; it only runs while the row collects this.
+     */
+    val homeRow: StateFlow<List<Fixture>> =
+        combine(favourites, leagues, minuteTicker()) { favs, rail, now ->
+            val rank = rail.withIndex().associate { it.value.league.id to it.index }
+            SportsSchedule.homeRow(favs, now) { rank[it] ?: Int.MAX_VALUE }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     /** The fixtures currently shown: the selected league's, or the Favourites aggregate. */
     val currentFixtures: StateFlow<List<Fixture>> =
         combine(_selectedLeagueId, selectedBoard, favourites) { id, board, favs ->
@@ -198,11 +252,188 @@ class SportsViewModel(
         // Upcoming). The boards arrive asynchronously, so re-apply until the user picks by hand.
         viewModelScope.launch {
             _selectedLeagueId.collect {
-                userChoseTab = false
-                applyDefaultTab()
+                val forced = pendingTab
+                pendingTab = null
+                if (forced != null) {
+                    setTab(forced)
+                } else {
+                    userChoseTab = false
+                    applyDefaultTab()
+                }
             }
         }
         viewModelScope.launch { currentFixtures.collect { applyDefaultTab() } }
+        startLiveRefresh()
+        startAutoRebuild(channelSources)
+    }
+
+    /**
+     * The live refresh (Sport settings › Channels › Live refresh): while the hub or Home is on screen,
+     * every interval re-fetch the boards that have a live game ([SportsSchedule.dueLeagues]) and the
+     * ones older than the 15-minute cache (so a hub or Home left open for hours still sees new
+     * kick-offs) — quietly, so lists never blank out. Off, or nobody watching, costs nothing.
+     */
+    private fun startLiveRefresh() {
+        viewModelScope.launch {
+            combine(liveRefreshSeconds, watchers) { seconds, who -> if (who.isEmpty()) 0 else seconds }
+                .distinctUntilChanged()
+                .collectLatest { seconds ->
+                    if (seconds <= 0) return@collectLatest
+                    while (true) {
+                        delay(seconds * 1_000L)
+                        val loaded = boards.value.mapNotNull { (id, state) ->
+                            (state as? BoardState.Content)?.let { id to it.board.fixtures }
+                        }.toMap()
+                        val now = System.currentTimeMillis()
+                        val stale = loaded.keys.filter { now - (boardAt[it] ?: 0L) >= BoardTtlMs }
+                        val due = SportsSchedule.dueLeagues(loaded, now) + stale
+                        if (due.isEmpty()) continue
+                        supervisorScope {
+                            due.mapNotNull { sportsLeagueById(it) }
+                                .map { async { loadBoard(it, force = true, quiet = true) } }
+                                .awaitAll()
+                        }
+                    }
+                }
+        }
+    }
+
+    /**
+     * The auto rebuild (Sport settings › Channels › Auto rebuild): every interval, and whenever a
+     * playlist or a guide finished a sync, the cached channel lists of live/upcoming games are
+     * dropped and the open game's list is matched again (quietly — the old list stays until the new
+     * one is ready). Off disables both triggers; the manual "Rebuild now" still works.
+     */
+    private fun startAutoRebuild(channelSources: SportChannelSources) {
+        viewModelScope.launch {
+            autoRebuildMinutes.collectLatest { minutes ->
+                if (minutes <= 0) return@collectLatest
+                while (true) {
+                    delay(minutes * 60_000L)
+                    rebuildChannels()
+                }
+            }
+        }
+        viewModelScope.launch {
+            // The first value is the state at start, not a change.
+            channelSources.changes.drop(1).collect {
+                if (autoRebuildMinutes.value > 0) rebuildChannels()
+            }
+        }
+    }
+
+    /** Mark [who] as showing (or no longer showing) live Sport data — drives the live refresh. */
+    fun setWatching(who: Watcher, on: Boolean) {
+        watchers.value = if (on) watchers.value + who else watchers.value - who
+    }
+
+    /** Rebuild the channel lists now (Sport settings › Channels › Rebuild now, and the schedule). */
+    fun rebuildNow() {
+        viewModelScope.launch { rebuildChannels() }
+    }
+
+    private suspend fun rebuildChannels() {
+        val drop = matchesCache.keys.filter { id -> boardFixture(id)?.let(SportsSchedule::rebuildable) ?: true }
+        drop.forEach { matchesCache.remove(it) }
+        val fixture = _selectedFixture.value ?: return
+        if (!SportsSchedule.rebuildable(fixture)) return
+        val found = runMatch(fixture)
+        matchesCache[fixture.id] = found
+        if (_selectedFixture.value?.id == fixture.id) _matches.value = MatchesState.Content(found)
+    }
+
+    /** The loaded fixture with [id], from any board. */
+    private fun boardFixture(id: String): Fixture? =
+        boards.value.values.asSequence().filterIsInstance<BoardState.Content>()
+            .flatMap { it.board.fixtures.asSequence() }.firstOrNull { it.id == id }
+
+    /** One matcher call with every channel setting applied (languages, strict, playlists). */
+    private suspend fun runMatch(fixture: Fixture): List<ChannelMatch> =
+        runCatching {
+            matcher.match(
+                fixture,
+                preferredLanguages.value,
+                hidden = hiddenLanguages.value,
+                strict = strictChannels.value,
+                playlists = channelPlaylists.value,
+            )
+        }.getOrDefault(emptyList())
+
+    /**
+     * Open [fixture] in the hub (Home's Sports row): its league when that league is in the rail, else
+     * Favourites; the tab that holds it; the fixture selected. The tab is forced because selecting a
+     * league otherwise resets it to the league's default (Live when anything is live).
+     */
+    fun openFixture(fixture: Fixture) {
+        val leagueId = if (fixture.leagueId in activeLeagues.value) fixture.leagueId else FavouritesId
+        val tab = when (fixture.state) {
+            FixtureState.LIVE -> FixtureTab.LIVE
+            FixtureState.UPCOMING -> FixtureTab.UPCOMING
+            FixtureState.FINISHED -> FixtureTab.PAST
+        }
+        if (_selectedLeagueId.value != leagueId) {
+            pendingTab = tab
+            _selectedLeagueId.value = leagueId
+            sportsLeagueById(leagueId)?.let { league -> viewModelScope.launch { loadStandings(league) } }
+        } else {
+            setTab(tab)
+        }
+        selectFixture(fixture)
+    }
+
+    /** Store the rail's order after a move (hold OK): the shown leagues first, see [SportsOrder.merge]. */
+    fun saveLeagueOrder(visibleIds: List<String>) {
+        viewModelScope.launch { prefs.setLeagueOrder(SportsOrder.merge(visibleIds, leagueOrder.value)) }
+    }
+
+    /** Store the sport order after a move in Settings › Sports. */
+    fun saveSportOrder(order: List<SportGroup>) {
+        viewModelScope.launch { prefs.setSportOrder(order.map { it.name }) }
+    }
+
+    fun cycleLiveRefresh() {
+        viewModelScope.launch {
+            prefs.setLiveRefreshSeconds(SportsSchedule.next(SportsSchedule.LiveRefreshChoices, liveRefreshSeconds.value))
+        }
+    }
+
+    fun cycleAutoRebuild() {
+        viewModelScope.launch {
+            prefs.setAutoRebuildMinutes(SportsSchedule.next(SportsSchedule.AutoRebuildChoices, autoRebuildMinutes.value))
+        }
+    }
+
+    /** All playlists again (the filter's "All playlists" row). */
+    fun clearPlaylistFilter() {
+        viewModelScope.launch {
+            prefs.setChannelPlaylists(emptySet())
+            rematch()
+        }
+    }
+
+    /**
+     * One playlist in or out of the filter. From "all" (empty) the first pick narrows to that one;
+     * dropping the last one means all again — the language filter's rule.
+     */
+    fun togglePlaylist(id: Long) {
+        viewModelScope.launch {
+            val current = channelPlaylists.value
+            val next = when {
+                current.isEmpty() -> setOf(id)
+                id in current -> current - id
+                else -> current + id
+            }
+            prefs.setChannelPlaylists(next)
+            rematch(playlists = next)
+        }
+    }
+
+    fun toggleStrictChannels() {
+        viewModelScope.launch {
+            val on = !strictChannels.value
+            prefs.setStrictChannels(on)
+            rematch(strict = on)
+        }
     }
 
     fun setTab(tab: FixtureTab) {
@@ -298,7 +529,7 @@ class SportsViewModel(
         }
         _matches.value = MatchesState.Loading
         viewModelScope.launch {
-            val found = runCatching { matcher.match(fixture, preferredLanguages.value, hidden = hiddenLanguages.value) }.getOrDefault(emptyList())
+            val found = runMatch(fixture)
             matchesCache[fixture.id] = found
             if (_selectedFixture.value?.id == fixture.id) _matches.value = MatchesState.Content(found)
         }
@@ -350,7 +581,7 @@ class SportsViewModel(
     fun setPreferredLanguages(languages: Set<SportLanguage>) {
         viewModelScope.launch {
             prefs.setPreferredLanguages(languages.map { it.name }.toSet())
-            rematch(languages, hiddenLanguages.value)
+            rematch(languages = languages)
         }
     }
 
@@ -359,19 +590,27 @@ class SportsViewModel(
         viewModelScope.launch {
             val hidden = hiddenLanguages.value.let { if (language in it) it - language else it + language }
             prefs.setHiddenLanguages(hidden.map { it.name }.toSet())
-            rematch(preferredLanguages.value, hidden)
+            rematch(hidden = hidden)
         }
     }
 
     /**
-     * Matches are language-filtered inside the matcher, so the cache is only valid for the languages it
-     * was built with — drop it and re-resolve the selected fixture.
+     * Matches are filtered inside the matcher (languages, strict filter, playlists), so the cache is
+     * only valid for the settings it was built with — drop it and re-resolve the selected fixture.
+     * The new value is passed in because the pref flow has not emitted it yet.
      */
-    private suspend fun rematch(languages: Set<SportLanguage>, hidden: Set<SportLanguage>) {
+    private suspend fun rematch(
+        languages: Set<SportLanguage> = preferredLanguages.value,
+        hidden: Set<SportLanguage> = hiddenLanguages.value,
+        strict: Boolean = strictChannels.value,
+        playlists: Set<Long> = channelPlaylists.value,
+    ) {
         matchesCache.clear()
         val fixture = _selectedFixture.value ?: return
         _matches.value = MatchesState.Loading
-        val found = runCatching { matcher.match(fixture, languages, hidden = hidden) }.getOrDefault(emptyList())
+        val found = runCatching {
+            matcher.match(fixture, languages, hidden = hidden, strict = strict, playlists = playlists)
+        }.getOrDefault(emptyList())
         matchesCache[fixture.id] = found
         if (_selectedFixture.value?.id == fixture.id) _matches.value = MatchesState.Content(found)
     }
@@ -470,22 +709,34 @@ class SportsViewModel(
 
     fun stopPhonePicker() = companion.stop()
 
-    private suspend fun loadBoard(league: SportLeague, force: Boolean) {
+    /**
+     * Fetch one league's board. [quiet] (the live refresh) keeps the current board on screen while
+     * fetching and on failure, so the lists never blank out or flash "Loading…" every 30 seconds.
+     */
+    private suspend fun loadBoard(league: SportLeague, force: Boolean, quiet: Boolean = false) {
         val now = System.currentTimeMillis()
         if (!force) {
             val at = boardAt[league.id] ?: 0L
             if (now - at < BoardTtlMs && boards.value[league.id] is BoardState.Content) return
             if (boards.value[league.id] is BoardState.Loading) return
         }
-        boards.value = boards.value + (league.id to BoardState.Loading)
+        val hadContent = boards.value[league.id] is BoardState.Content
+        if (!(quiet && hadContent)) boards.value = boards.value + (league.id to BoardState.Loading)
         val result = runCatching { api.scoreboard(league) }
         result.onFailure { android.util.Log.w("SportsHub", "board failed " + league.id, it) }
         result.onSuccess { android.util.Log.d("SportsHub", "board ok " + league.id + " fixtures=" + it.fixtures.size) }
         boardAt[league.id] = now
-        boards.value = boards.value + (
-            league.id to
-                (result.getOrNull()?.let { BoardState.Content(it) } ?: BoardState.Error)
-            )
+        val board = result.getOrNull()
+        if (board == null && quiet && hadContent) return
+        // A league dropped from the selection while fetching must not come back.
+        if (league.id !in loadingLeagues.value) return
+        boards.value = boards.value + (league.id to (board?.let { BoardState.Content(it) } ?: BoardState.Error))
+        // The open game's score and status follow the fresh board (same id, new values); its
+        // channel list stays — the cache is keyed by id.
+        val selected = _selectedFixture.value
+        if (board != null && selected != null && selected.leagueId == league.id) {
+            board.fixtures.firstOrNull { it.id == selected.id }?.takeIf { it != selected }?.let { _selectedFixture.value = it }
+        }
     }
 
     private suspend fun loadStandings(league: SportLeague) {
@@ -512,5 +763,13 @@ class SportsViewModel(
         private const val TeamKeySep = '|'
 
         private const val BoardTtlMs = 15L * 60L * 1000L
+
+        /** The current time, then once a minute, while collected (Home's "soon" window). */
+        private fun minuteTicker() = flow {
+            while (true) {
+                emit(System.currentTimeMillis())
+                delay(60_000L)
+            }
+        }
     }
 }

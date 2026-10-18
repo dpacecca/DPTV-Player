@@ -221,6 +221,8 @@ fun OwnTVShell(
     // Docked mini-player size (% of screen width) + position, configurable in Settings and from the
     // mini-player's own controls. Read straight from settings so both entry points stay in sync.
     val settingsRepo = koinInject<tv.own.owntv.core.settings.SettingsRepository>()
+    // Home's Sports row follows the Sport hub's own visibility switch (features/sport/SportsPrefs).
+    val sportHubVisible by koinInject<tv.own.owntv.features.sport.SportsPrefs>().hubVisible.collectAsStateWithLifecycle(initialValue = false)
     val remoteShortcutsEnabled by settingsRepo.chNavEnabled.collectAsStateWithLifecycle(initialValue = true)
     val clockColors by settingsRepo.clockColors.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.ClockColors())
     val remoteShortcutBindings by settingsRepo.remoteShortcutBindings.collectAsStateWithLifecycle(
@@ -1317,6 +1319,12 @@ fun OwnTVShell(
                                 trendingSearchActive = true
                                 restoreTrendingSearchFocus = false
                                 onSelectSection(MainSection.SEARCH)
+                            },
+                            // Home's Sports row: only while Sport is in the nav and its hub is visible.
+                            sportsRow = MainSection.SPORT in visibleSections && sportHubVisible,
+                            onOpenSport = {
+                                restoreFocus = true
+                                onSelectSection(MainSection.SPORT)
                             },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                             restoreFocus = restoreFocus,
