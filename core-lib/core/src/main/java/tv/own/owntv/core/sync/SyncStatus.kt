@@ -117,9 +117,12 @@ data class SyncContentTypes(
         series = !priority.series && series,
     )
 
-    /** M3U/backup are single-stream (live-only) regardless of the persisted flags. */
+    /**
+     * A local backup source is live-only regardless of the persisted flags. M3U follows its flags: a
+     * playlist's VOD/series entries (`type="movie"`, `tvg-type="series"`, …) fill Movies and Series.
+     */
     fun constrainedTo(type: SourceType) = when (type) {
-        SourceType.M3U, SourceType.LOCAL_BACKUP -> copy(movies = false, series = false)
+        SourceType.LOCAL_BACKUP -> copy(movies = false, series = false)
         else -> this
     }
 
@@ -134,7 +137,7 @@ data class SyncContentTypes(
         /** Raw persisted enabledScope (Off = false). */
         fun enabledOf(s: SourceEntity) = SyncContentTypes(s.syncLive, s.syncMovies, s.syncSeries)
 
-        /** enabledScope constrained by source type — the completion TARGET (M3U → live-only). */
+        /** enabledScope constrained by source type — the completion TARGET (local backup → live-only). */
         fun enabledFor(s: SourceEntity) = enabledOf(s).constrainedTo(s.type)
 
         fun fromChoices(live: SyncScopeChoice, movies: SyncScopeChoice, series: SyncScopeChoice) = SyncContentTypes(

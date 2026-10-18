@@ -140,8 +140,8 @@ class SyncManager(
                     }
                     // Stamp lastSyncAt only when this pass covered every enabled+constrained section.
                     // A staged partial pass leaves it null; the background remainder worker stamps via
-                    // completesInitialSync. Comparing against enabledFor (not enabledOf) keeps M3U
-                    // live-only passes from never marking synced.
+                    // completesInitialSync. Comparing against enabledFor (not enabledOf) keeps a local
+                    // backup's live-only passes from never marking synced.
                     if (effective.isCompleteFor(target)) {
                         val markStartedAt = SystemClock.elapsedRealtime()
                         sourceDao.markSynced(source.id, System.currentTimeMillis())
