@@ -233,6 +233,8 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">İndiriliyor</string>
     <string name="content_downloads_group_on_tv">Bu TV’de</string>
+    <string name="content_downloads_group_on_phone">Bu telefonda</string>
+    <string name="content_downloads_ready_short">Hazır</string>
     <string name="content_downloads_ready">İzlemeye hazır</string>
     <string name="content_downloads_paused">Duraklatıldı</string>
     <string name="content_downloads_file_missing">Dosya yok: artık sürücüde değil</string>

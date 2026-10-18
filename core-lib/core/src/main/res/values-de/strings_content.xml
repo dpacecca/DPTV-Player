@@ -233,6 +233,8 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">Wird geladen</string>
     <string name="content_downloads_group_on_tv">Auf diesem Fernseher</string>
+    <string name="content_downloads_group_on_phone">Auf diesem Telefon</string>
+    <string name="content_downloads_ready_short">Bereit</string>
     <string name="content_downloads_ready">Bereit zum Ansehen</string>
     <string name="content_downloads_paused">Pausiert</string>
     <string name="content_downloads_file_missing">Datei fehlt: Sie ist nicht mehr auf dem Laufwerk</string>

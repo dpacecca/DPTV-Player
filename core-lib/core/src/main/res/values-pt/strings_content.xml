@@ -241,6 +241,8 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">Baixando</string>
     <string name="content_downloads_group_on_tv">Nesta TV</string>
+    <string name="content_downloads_group_on_phone">Neste celular</string>
+    <string name="content_downloads_ready_short">Pronto</string>
     <string name="content_downloads_ready">Pronto para assistir</string>
     <string name="content_downloads_paused">Pausado</string>
     <string name="content_downloads_file_missing">Arquivo ausente: ele não está mais na unidade</string>

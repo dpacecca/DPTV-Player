@@ -446,6 +446,10 @@
     <string name="content_downloads_group_downloading">Downloading</string>
     <!-- Translators: Downloads screen: heading over finished downloads stored on this TV. Shown in capitals. -->
     <string name="content_downloads_group_on_tv">On this TV</string>
+    <!-- Translators: Downloads screen on a phone: heading over finished downloads stored on this phone. Shown in capitals. -->
+    <string name="content_downloads_group_on_phone">On this phone</string>
+    <!-- Translators: Downloads screen on a phone: short status beside a finished download, after a check mark. Keep it to one short word. -->
+    <string name="content_downloads_ready_short">Ready</string>
     <!-- Translators: Downloads screen: a finished download that can be played. -->
     <string name="content_downloads_ready">Ready to watch</string>
     <!-- Translators: Downloads screen: a download the user paused. -->

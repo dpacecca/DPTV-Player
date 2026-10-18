@@ -233,6 +233,8 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">ഡൗൺലോഡ് ചെയ്യുന്നു</string>
     <string name="content_downloads_group_on_tv">ഈ ടിവിയിൽ</string>
+    <string name="content_downloads_group_on_phone">ഈ ഫോണിൽ</string>
+    <string name="content_downloads_ready_short">തയ്യാർ</string>
     <string name="content_downloads_ready">കാണാൻ തയ്യാർ</string>
     <string name="content_downloads_paused">താൽക്കാലികമായി നിർത്തി</string>
     <string name="content_downloads_file_missing">ഫയൽ കാണുന്നില്ല: ഇത് ഇനി ഡ്രൈവിൽ ഇല്ല</string>

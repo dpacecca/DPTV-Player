@@ -225,6 +225,8 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">Letöltés alatt</string>
     <string name="content_downloads_group_on_tv">Ezen a tévén</string>
+    <string name="content_downloads_group_on_phone">Ezen a telefonon</string>
+    <string name="content_downloads_ready_short">Kész</string>
     <string name="content_downloads_ready">Megtekinthető</string>
     <string name="content_downloads_paused">Szüneteltetve</string>
     <string name="content_downloads_file_missing">Hiányzó fájl: már nincs a meghajtón</string>

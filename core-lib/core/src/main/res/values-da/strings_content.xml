@@ -233,6 +233,8 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">Downloader</string>
     <string name="content_downloads_group_on_tv">På dette tv</string>
+    <string name="content_downloads_group_on_phone">På denne telefon</string>
+    <string name="content_downloads_ready_short">Klar</string>
     <string name="content_downloads_ready">Klar til at se</string>
     <string name="content_downloads_paused">Sat på pause</string>
     <string name="content_downloads_file_missing">Filen mangler: den er ikke længere på drevet</string>

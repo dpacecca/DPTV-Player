@@ -225,6 +225,8 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">다운로드 중</string>
     <string name="content_downloads_group_on_tv">이 TV에 저장됨</string>
+    <string name="content_downloads_group_on_phone">이 휴대폰에 저장됨</string>
+    <string name="content_downloads_ready_short">준비됨</string>
     <string name="content_downloads_ready">시청 가능</string>
     <string name="content_downloads_paused">일시중지됨</string>
     <string name="content_downloads_file_missing">파일 없음: 더 이상 드라이브에 없습니다</string>

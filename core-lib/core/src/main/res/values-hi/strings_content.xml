@@ -233,6 +233,8 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">डाउनलोड हो रहा है</string>
     <string name="content_downloads_group_on_tv">इस टीवी पर</string>
+    <string name="content_downloads_group_on_phone">इस फ़ोन पर</string>
+    <string name="content_downloads_ready_short">तैयार</string>
     <string name="content_downloads_ready">देखने के लिए तैयार</string>
     <string name="content_downloads_paused">रोका गया</string>
     <string name="content_downloads_file_missing">फ़ाइल नहीं मिली: यह अब ड्राइव पर नहीं है</string>

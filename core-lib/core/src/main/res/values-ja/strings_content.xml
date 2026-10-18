@@ -225,6 +225,8 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">ダウンロード中</string>
     <string name="content_downloads_group_on_tv">このテレビ内</string>
+    <string name="content_downloads_group_on_phone">このスマートフォン内</string>
+    <string name="content_downloads_ready_short">準備完了</string>
     <string name="content_downloads_ready">視聴できます</string>
     <string name="content_downloads_paused">一時停止中</string>
     <string name="content_downloads_file_missing">ファイルがありません：ドライブにもうありません</string>

@@ -241,6 +241,8 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">En cours</string>
     <string name="content_downloads_group_on_tv">Sur ce téléviseur</string>
+    <string name="content_downloads_group_on_phone">Sur ce téléphone</string>
+    <string name="content_downloads_ready_short">Prêt</string>
     <string name="content_downloads_ready">Prêt à regarder</string>
     <string name="content_downloads_paused">En pause</string>
     <string name="content_downloads_file_missing">Fichier manquant : il n\'est plus sur le disque</string>
