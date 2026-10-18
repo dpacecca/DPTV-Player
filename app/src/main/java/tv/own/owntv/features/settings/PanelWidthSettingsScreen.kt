@@ -111,13 +111,12 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
         StageFullPage(
             parents = listOf(stringResource(R.string.settings_group_layout)),
             title = stringResource(R.string.settings_panel_width),
-            count = pluralStringResource(R.plurals.settings_setting_count, 1, 1),
+            count = pluralStringResource(R.plurals.settings_setting_count, PanelSection.entries.size, PanelSection.entries.size),
             onBack = onBack,
             modifier = Modifier,
             scroll = scrollState,
         ) {
-            // DPTV-Player is Live TV only: Movies/Series panel widths have no screen to apply to.
-            listOf(PanelSection.LIVE).forEach { section ->
+            PanelSection.entries.forEach { section ->
                 val enabled by vm.panelWidthEnabled.getValue(section).collectAsStateWithLifecycle()
                 val shares by vm.panelShares.getValue(section).collectAsStateWithLifecycle()
                 val current = shares ?: defaultPanelShares(section, rowWidth)

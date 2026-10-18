@@ -387,6 +387,9 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val EPG_REFILL_CHECKED = booleanPreferencesKey("epg_refill_checked")
         val STARTUP_SYNC_DEFAULTED = booleanPreferencesKey("startup_sync_defaulted")
         val STARTUP_GUIDE_DEFAULTED = booleanPreferencesKey("startup_guide_defaulted")
+        // DPTV-Player: Movies/Series are back. Set once every playlist saved with them switched off has
+        // had them switched on again (see AutoRefresh.restoreVodScopeOnce). Device-local, not backed up.
+        val VOD_SCOPE_RESTORED = booleanPreferencesKey("vod_scope_restored")
         // Set while a backup restore is applying, cleared only when it completes (B2). A value that
         // survives to the next launch means the restore was interrupted and may be half-applied.
         val RESTORE_IN_PROGRESS = stringPreferencesKey("restore_in_progress")
@@ -2367,6 +2370,13 @@ class SettingsRepository(private val context: Context, private val localeStore: 
 
     suspend fun markStartupSyncDefaulted() {
         context.dataStore.edit { prefs -> prefs[Keys.STARTUP_SYNC_DEFAULTED] = true }
+    }
+
+    /** Whether the one-time "Movies/Series back on" switch of every playlist (VOD return) has run. */
+    val vodScopeRestored: Flow<Boolean> = prefsFlow { it[Keys.VOD_SCOPE_RESTORED] == true }
+
+    suspend fun markVodScopeRestored() {
+        context.dataStore.edit { prefs -> prefs[Keys.VOD_SCOPE_RESTORED] = true }
     }
 
     /**

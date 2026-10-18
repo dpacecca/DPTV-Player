@@ -32,6 +32,8 @@ import tv.own.owntv.features.settings.LanguageSettingsViewModel
 import tv.own.owntv.features.sport.EspnApi
 import tv.own.owntv.features.sport.LiveSourceIdsProvider
 import tv.own.owntv.features.sport.ProfileLiveSourceIdsProvider
+import tv.own.owntv.features.sport.ProfileSportChannelSources
+import tv.own.owntv.features.sport.SportChannelSources
 import tv.own.owntv.features.sport.SportsMatcher
 import tv.own.owntv.features.sport.SportsPrefs
 import tv.own.owntv.features.sport.SportsViewModel
@@ -179,6 +181,9 @@ val appModule = module {
     // repository (and is unit-testable with fake DAOs). This binding keeps production behaviour.
     single<LiveSourceIdsProvider> { ProfileLiveSourceIdsProvider(get(), get()) }
     singleOf(::SportsMatcher)
+    // Live playlists by name (Sport's playlist filter) and the playlist/guide sync fingerprint that
+    // triggers Sport's auto rebuild.
+    single<SportChannelSources> { ProfileSportChannelSources(get(), get(), get()) }
     singleOf(::SportsPrefs)
     viewModelOf(::SportsViewModel)
 }

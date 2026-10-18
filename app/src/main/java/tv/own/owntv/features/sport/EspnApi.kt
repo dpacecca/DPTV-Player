@@ -250,6 +250,7 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
         }
 
         val id = league.id + ESP + (if (nested) event.optString(IdKey) + ESP else "") + competition.optString(IdKey)
+        val stage = stageOf(event, competition, nested, venueSeparator)
 
         if (home != null && away != null) {
             return Fixture(
@@ -263,6 +264,9 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
                 away = away,
                 broadcasts = broadcasts.distinct(),
                 venue = venue,
+                round = stage.round,
+                week = stage.week,
+                note = stage.note,
             )
         }
 
@@ -282,6 +286,9 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
                 broadcasts = broadcasts.distinct(),
                 channelHints = league.extraChannelRes?.let { listOf(appContext.getString(it)) }.orEmpty(),
                 venue = venue ?: circuitVenue(event),
+                round = stage.round,
+                week = stage.week,
+                note = stage.note,
             )
         }
 
@@ -317,6 +324,9 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
             channelHints = league.extraChannelRes?.let { listOf(appContext.getString(it)) }.orEmpty(),
             tournament = tournament,
             venue = venue,
+            round = stage.round,
+            week = stage.week,
+            note = stage.note,
         )
     }
 
@@ -388,8 +398,57 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
         )
     }
 
+    /** A fixture's round/stage, week and headline note — see [stageOf]. */
+    internal data class Stage(val round: String?, val week: Int?, val note: String?)
+
     companion object {
         private const val LogTag = "SportsHub"
+
+        /**
+         * Where in the competition a game sits, from whichever field ESPN fills for that sport
+         * (checked against live answers, 2026-10-18):
+         *  - a nested tennis match: `competition.type.text` ("Men's Singles") and
+         *    `competition.round.displayName` ("Qualifying 1st Round"), joined by [separator];
+         *  - a team game: `competition.round.displayName` when present, else the part after the last
+         *    comma of `competition.altGameNote` ("German Cup, Second Round" → "Second Round"), else
+         *    the event's `season.slug` as words ("league-phase" → "League Phase"). A slug carrying
+         *    digits is the season's own name ("2026-27-german-bundesliga") and "regular-season" says
+         *    nothing, so both give no round — a plain matchday shows none;
+         *  - `event.week.number` (NFL, college football) as [Stage.week];
+         *  - the first `competition.notes[].headline` ("NFL London Games") as [Stage.note]. Tennis notes
+         *    carry the result as `text`, not a headline, and are skipped by that rule.
+         */
+        internal fun stageOf(event: JSONObject, competition: JSONObject, nested: Boolean, separator: String): Stage {
+            val roundName = competition.optJSONObject(RoundKey)?.optString(DisplayNameKey)?.takeIf { it.isNotBlank() && it != NullText }
+            val round = if (nested) {
+                val kind = competition.optJSONObject(TypeKey)?.optString(TextKey)?.takeIf { it.isNotBlank() && it != NullText }
+                listOfNotNull(kind, roundName).joinToString(separator).ifEmpty { null }
+            } else {
+                roundName
+                    ?: competition.optString(AltGameNoteKey).takeIf { CommaSpace in it }?.substringAfterLast(CommaSpace)?.trim()?.ifEmpty { null }
+                    ?: seasonSlugLabel(event.optJSONObject(SeasonKey)?.optString(SlugKey).orEmpty())
+            }
+            val week = event.optJSONObject(WeekKey)?.optInt(NumberKey, 0)?.takeIf { it > 0 }
+            var note: String? = null
+            competition.optJSONArray(NotesKey)?.let { notes ->
+                for (i in 0 until notes.length()) {
+                    val headline = notes.optJSONObject(i)?.optString(HeadlineKey)
+                    if (!headline.isNullOrBlank() && headline != NullText) {
+                        note = headline
+                        break
+                    }
+                }
+            }
+            return Stage(round, week, note)
+        }
+
+        /** "league-phase" → "League Phase"; null for a season name (digits) or the regular season. */
+        internal fun seasonSlugLabel(slug: String): String? {
+            if (slug.isBlank() || slug.any { it.isDigit() } || slug == RegularSeasonSlug) return null
+            return slug.split('-').filter { it.isNotBlank() }
+                .joinToString(' '.toString()) { word -> word.replaceFirstChar { it.uppercaseChar() } }
+                .ifEmpty { null }
+        }
 
         /**
          * ESPN omits the seconds ("2026-10-11T13:30Z") but [Instant.parse] requires them, so a
@@ -473,5 +532,17 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
         private const val StatsKey = "stats"
         private const val DisplayValueKey = "displayValue"
         private const val RankKey = "rank"
+        private const val RoundKey = "round"
+        private const val TextKey = "text"
+        private const val AltGameNoteKey = "altGameNote"
+        private const val SeasonKey = "season"
+        private const val SlugKey = "slug"
+        private const val WeekKey = "week"
+        private const val NumberKey = "number"
+        private const val NotesKey = "notes"
+        private const val HeadlineKey = "headline"
+        private const val RegularSeasonSlug = "regular-season"
+        private const val CommaSpace = ", "
+        private const val NullText = "null"
     }
 }

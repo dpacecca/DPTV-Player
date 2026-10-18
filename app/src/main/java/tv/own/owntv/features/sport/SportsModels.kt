@@ -130,6 +130,16 @@ data class Fixture(
      */
     val tournament: String? = null,
     val venue: String?,
+    /**
+     * The round or stage as ESPN names it ("Second Round", "League Phase", "Men's Singles · Round of
+     * 16"), never translated — like [statusLine] it is ESPN's own text. Null for a plain league
+     * matchday, where ESPN only repeats the season name.
+     */
+    val round: String? = null,
+    /** The week number for week-based leagues (NFL, college football); shown as a translated label. */
+    val week: Int? = null,
+    /** ESPN's headline note for this game ("NFL London Games"), when it carries one. */
+    val note: String? = null,
 )
 
 data class StandingRow(
@@ -162,6 +172,13 @@ data class ChannelMatch(
      * language filter: they are the event itself, not a foreign-language feed of it.
      */
     val isExact: Boolean = false,
+    /**
+     * True when the evidence names **both** sides of the fixture — in the channel's own name
+     * ([isExact]) or together in one guide programme. False for the weaker tiers (broadcast name,
+     * league hint, one athlete with tennis context, tournament only). The Sport settings' strict
+     * channel filter keeps only these (see [SportsMatcher.strictFilter]).
+     */
+    val namesBothSides: Boolean = isExact,
 )
 
 /** A league's team from the ESPN teams endpoint — the phone picker's team rows. */

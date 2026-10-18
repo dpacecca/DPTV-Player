@@ -3,6 +3,8 @@ package tv.own.owntv.features.sport
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -45,6 +47,57 @@ class SportsPrefs(private val context: Context) {
     /** True once the user has been asked for a language (or picked channels); the prompt never nags. */
     val languageAsked: Flow<Boolean> =
         context.sportsDataStore.data.map { it[LanguageAskedKey] ?: false }
+
+    /**
+     * The user's own league order (v5.2 port: hold OK in the league rail), as league ids. Leagues not
+     * listed follow after it — see [SportsOrder.orderLeagues]. Empty = catalogue order.
+     */
+    val leagueOrder: Flow<List<String>> =
+        context.sportsDataStore.data.map { SportsOrder.decode(it[LeagueOrderKey]) }
+
+    /** The user's own sport order (hold OK in Settings › Sports), as [SportGroup] names. */
+    val sportOrder: Flow<List<String>> =
+        context.sportsDataStore.data.map { SportsOrder.decode(it[SportOrderKey]) }
+
+    /** How often live scores refresh while Sport or its Home row is on screen, in seconds; 0 = off. */
+    val liveRefreshSeconds: Flow<Int> =
+        context.sportsDataStore.data.map { it[LiveRefreshKey] ?: SportsSchedule.DefaultLiveRefreshSeconds }
+
+    /** How often the channel lists of open/live fixtures are rebuilt, in minutes; 0 = off. */
+    val autoRebuildMinutes: Flow<Int> =
+        context.sportsDataStore.data.map { it[AutoRebuildKey] ?: SportsSchedule.DefaultAutoRebuildMinutes }
+
+    /** The live playlists Sport matching may use, as source ids; empty = all of them. */
+    val channelPlaylists: Flow<Set<Long>> =
+        context.sportsDataStore.data.map { prefs -> prefs[PlaylistsKey].orEmpty().mapNotNull { it.toLongOrNull() }.toSet() }
+
+    /** Strict channel filter: only channels naming both sides (or the event). Off by default. */
+    val strictChannels: Flow<Boolean> =
+        context.sportsDataStore.data.map { it[StrictKey] ?: false }
+
+    suspend fun setLeagueOrder(ids: List<String>) {
+        context.sportsDataStore.edit { prefs -> prefs[LeagueOrderKey] = SportsOrder.encode(ids) }
+    }
+
+    suspend fun setSportOrder(names: List<String>) {
+        context.sportsDataStore.edit { prefs -> prefs[SportOrderKey] = SportsOrder.encode(names) }
+    }
+
+    suspend fun setLiveRefreshSeconds(seconds: Int) {
+        context.sportsDataStore.edit { prefs -> prefs[LiveRefreshKey] = seconds }
+    }
+
+    suspend fun setAutoRebuildMinutes(minutes: Int) {
+        context.sportsDataStore.edit { prefs -> prefs[AutoRebuildKey] = minutes }
+    }
+
+    suspend fun setChannelPlaylists(ids: Set<Long>) {
+        context.sportsDataStore.edit { prefs -> prefs[PlaylistsKey] = ids.map { it.toString() }.toSet() }
+    }
+
+    suspend fun setStrictChannels(on: Boolean) {
+        context.sportsDataStore.edit { prefs -> prefs[StrictKey] = on }
+    }
 
     suspend fun setLeagueFollowed(leagueId: String, followed: Boolean) {
         context.sportsDataStore.edit { prefs ->
@@ -116,6 +169,12 @@ class SportsPrefs(private val context: Context) {
         private val LanguagesKey = stringSetPreferencesKey("preferred_languages")
         private val LanguageAskedKey = booleanPreferencesKey("language_asked")
         private val HiddenLanguagesKey = stringSetPreferencesKey("hidden_languages")
+        private val LeagueOrderKey = stringPreferencesKey("league_order")
+        private val SportOrderKey = stringPreferencesKey("sport_order")
+        private val LiveRefreshKey = intPreferencesKey("live_refresh_seconds")
+        private val AutoRebuildKey = intPreferencesKey("auto_rebuild_minutes")
+        private val PlaylistsKey = stringSetPreferencesKey("channel_playlists")
+        private val StrictKey = booleanPreferencesKey("strict_channels")
         private val DefaultLanguageNames = setOf(SportLanguage.GERMAN.name)
         private const val TeamSeparator = "|"
     }

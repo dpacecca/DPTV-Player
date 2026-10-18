@@ -8,6 +8,7 @@ import tv.own.owntv.core.database.dao.EpgDao
 import tv.own.owntv.core.database.dao.ProfileDao
 import tv.own.owntv.core.database.dao.resolveExistingProfileId
 import tv.own.owntv.core.epg.EpgSourceStore
+import tv.own.owntv.core.model.SourceType
 import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.settings.EpgAutoRefresh
 import tv.own.owntv.core.settings.EpgRefresh
@@ -60,6 +61,7 @@ class AutoRefresh(
         val nowMs = System.currentTimeMillis()
         val pid = profileDao.resolveExistingProfileId(settings.activeProfileId.first()) ?: return
         if (includeStartup) defaultToStartupOnce(pid)
+        if (includeStartup) restoreVodScopeOnce()
         // --- Playlist sources ---
         val playlistModes = settings.playlistAutoRefresh.first()
         run {
@@ -120,6 +122,42 @@ class AutoRefresh(
             }
         }.onFailure { Log.w(TAG, "startup sync default failed", it) }
         settings.markStartupSyncDefaulted()
+    }
+
+    /**
+     * DPTV-Player: Movies and Series are back. While they were hidden, the add-playlist form saved every
+     * Xtream and Stalker playlist with Movies/Series switched off, and M3U playlists were synced live-only
+     * whatever their switches said. Once per install, every playlist (on every profile) gets Movies and
+     * Series switched on, and each one that can now bring in more is re-synced so the films and series
+     * arrive without a manual refresh. Off chosen again afterwards stays Off. A local backup source is
+     * live-only and is left alone.
+     */
+    private suspend fun restoreVodScopeOnce() {
+        if (settings.vodScopeRestored.first()) return
+        runCatching {
+            val seen = HashSet<Long>()
+            profileDao.getAllOnce().forEach { profile ->
+                sourceRepository.observeSources(profile.id).first().forEach source@{ source ->
+                    if (!seen.add(source.id) || source.type == SourceType.LOCAL_BACKUP) return@source
+                    val updated = source.copy(syncMovies = true, syncSeries = true)
+                    val flipped = updated != source
+                    if (flipped) sourceRepository.updateSource(updated)
+                    // M3U was synced live-only before, so it needs a pass even when its switches were on.
+                    if (!flipped && source.type != SourceType.M3U) return@source
+                    val counts = importFinalizer.contentCounts(source.id)
+                    Log.i(TAG, "vodRestore sourceId=${source.id} type=${source.type} flipped=$flipped — enqueuing")
+                    catalogSyncScheduler.enqueueSync(
+                        source.id,
+                        reason = REASON,
+                        contentTypes = SyncContentTypes.enabledFor(updated),
+                        baseItemCount = counts.channels + counts.movies + counts.series,
+                        policy = ExistingWorkPolicy.KEEP,
+                    )
+                }
+            }
+        }.onFailure { Log.w(TAG, "vod scope restore failed", it) }
+        // Marked regardless, like the other one-shots: a failure must not retry on every launch.
+        settings.markVodScopeRestored()
     }
 
     /**

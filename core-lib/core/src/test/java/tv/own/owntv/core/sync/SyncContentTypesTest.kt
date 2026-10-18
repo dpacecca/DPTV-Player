@@ -10,9 +10,21 @@ import tv.own.owntv.core.model.SourceType
 class SyncContentTypesTest {
 
     @Test
-    fun `effectiveFor intersects enabled and constrains M3U to live`() {
+    fun `effectiveFor follows the M3U switches`() {
         val source = SourceEntity(
             name = "m3u", type = SourceType.M3U, url = "http://x",
+            syncLive = true, syncMovies = true, syncSeries = false,
+        )
+        val effective = SyncContentTypes().effectiveFor(source)
+        assertEquals(SyncContentTypes(live = true, movies = true, series = false), effective)
+        assertTrue(effective.isCompleteFor(SyncContentTypes.enabledFor(source)))
+        assertTrue(effective.isCompleteFor(SyncContentTypes.enabledOf(source)))
+    }
+
+    @Test
+    fun `effectiveFor constrains a local backup to live`() {
+        val source = SourceEntity(
+            name = "backup", type = SourceType.LOCAL_BACKUP, url = "http://x",
             syncLive = true, syncMovies = true, syncSeries = true,
         )
         val effective = SyncContentTypes().effectiveFor(source)
