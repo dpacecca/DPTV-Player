@@ -881,6 +881,7 @@ fun EpgScreen(
                                         onOk = { p -> onOk(channel, p) },
                                         onMenu = { p -> openDetails(channel, p) },
                                         onScrollBy = { dx -> scrollPx = (scrollPx - dx).toInt().coerceIn(0, maxScroll()) },
+                                        onSwipeRight = openSheet,
                                     )
                                 }
                             }
@@ -903,6 +904,7 @@ fun EpgScreen(
 
         // ◀ on what is on now: the categories, beside the app's menu (◀ again opens it, with Settings).
         if (sheetOpen) {
+            val sheetSwipeMin = with(LocalDensity.current) { GUIDE_SWIPE_MIN.toPx() }
             val railCounts by liveVm.railCounts.collectAsStateWithLifecycle()
             val (sheetEntries, _) = liveCategoryEntries(railItems, railCounts)
             LiveCategories(
@@ -952,6 +954,14 @@ fun EpgScreen(
                             focusGrid()
                             true
                         } else false
+                    }
+                    .pointerInput(Unit) {
+                        // Touch (v2.3.2): a swipe left closes the categories, as ▶ does.
+                        var dragged = 0f
+                        detectHorizontalDragGestures(
+                            onDragStart = { dragged = 0f },
+                            onDragEnd = { if (dragged < -sheetSwipeMin) { sheetOpen = false; focusGrid() } },
+                        ) { change, dx -> change.consume(); dragged += dx }
                     }
                     .onFocusChanged {
                         // Closes when focus leaves it — not on the "unfocused" report every node gets when it
@@ -1065,6 +1075,9 @@ fun EpgScreen(
     }
 }
 
+/** How far a finger goes sideways before it is a swipe (v2.3.2), not a nudge. */
+private val GUIDE_SWIPE_MIN = 64.dp
+
 /**
  * One guide row: the channel label, then the programmes as one focus target with a cursor. ▶ moves the
  * cursor forward programme by programme; ◀ ([onLeft]) back, as far as now; holding ◀ ([onHoldLeft]) jumps
@@ -1103,6 +1116,8 @@ private fun GuideRow(
     onMenu: (EpgProgrammeEntity?) -> Unit,
     /** Touch: a sideways drag on the programmes moves the shared timeline by this many pixels. */
     onScrollBy: (Float) -> Unit,
+    /** Touch (v2.3.2): a swipe right on the channel name, or past the start of the timeline — ◀'s categories. */
+    onSwipeRight: () -> Unit,
 ) {
     // Cache peek first, so a row scrolled back into view draws at once; a miss reads this one channel.
     val cacheRevision by vm.cacheRevision.collectAsStateWithLifecycle()
@@ -1144,6 +1159,9 @@ private fun GuideRow(
     val onStripDrag by rememberUpdatedState(onScrollBy)
     val onLabelTap by rememberUpdatedState { onOk(programmeAt(programmes.orEmpty(), now)) }
     val onLabelLongPress by rememberUpdatedState { onMenu(null) }
+    val swipeRight by rememberUpdatedState(onSwipeRight)
+    val currentScrollPx by rememberUpdatedState(scrollPx)
+    val swipeMin = with(LocalDensity.current) { GUIDE_SWIPE_MIN.toPx() }
     val divider = GuideColors.Border
     val slotPx = pxPerMin * GuideGridDefaults.SlotMin
     Row(
@@ -1156,6 +1174,12 @@ private fun GuideRow(
             channel, name, dot, selected = selectedRow, numberWidth = numberWidth,
             modifier = Modifier.width(labelWidth).pointerInput(Unit) {
                 detectTapGestures(onTap = { onLabelTap() }, onLongPress = { onLabelLongPress() })
+            }.pointerInput(Unit) {
+                var dragged = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { dragged = 0f },
+                    onDragEnd = { if (dragged > swipeMin) swipeRight() },
+                ) { change, dx -> change.consume(); dragged += dx }
             },
         )
         Box(
@@ -1179,7 +1203,18 @@ private fun GuideRow(
                     )
                 }
                 .pointerInput(Unit) {
-                    detectHorizontalDragGestures { change, dx -> change.consume(); onStripDrag(dx) }
+                    // A drag scrolls the timeline; one that starts with the timeline at its start and goes on
+                    // to the right is a swipe for the categories, as ◀ there is.
+                    var fromStart = false
+                    var dragged = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { fromStart = currentScrollPx == 0; dragged = 0f },
+                        onDragEnd = { if (fromStart && dragged > swipeMin) swipeRight() },
+                    ) { change, dx ->
+                        change.consume()
+                        dragged += dx
+                        onStripDrag(dx)
+                    }
                 }
                 .focusRequester(focusRequester)
                 .onFocusChanged {

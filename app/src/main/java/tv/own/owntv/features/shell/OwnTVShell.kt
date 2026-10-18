@@ -470,11 +470,22 @@ fun OwnTVShell(
     LaunchedEffect(showChannelList, zapChannels) {
         if (showChannelList && zapChannels.size > 1) liveVm.ensureNowPlaying(zapChannels)
     }
+    // v2.3.2: ◀ with no channel list to show (none armed yet) opens every category instead of nothing.
+    LaunchedEffect(showChannelList, zapChannels.isEmpty()) {
+        if (showChannelList && zapChannels.isEmpty() && !showCategoryBrowser) liveVm.showCategories()
+    }
+    // ...and closing those categories with still no list closes it all, so the next ◀ opens it again.
+    LaunchedEffect(showCategoryBrowser) {
+        if (!showCategoryBrowser && showChannelList && zapChannels.isEmpty()) showChannelList = false
+    }
     // Recently-watched channels for the right-hand history overlay — re-read each time it opens (and
     // after a zap, since tuning writes a new history row) so the newest channel is always on top.
     val historyEntries by produceState(emptyList<tv.own.owntv.core.database.dao.ChannelWithWatchedAt>(), showHistoryList, previewChannel?.id) {
         if (!showHistoryList) { value = emptyList(); return@produceState }
         value = runCatching { liveVm.historyChannels() }.getOrDefault(emptyList())
+        // v2.3.2: nothing watched yet draws no list, so it must not stay "open" — that left the player
+        // inert, and ◀ / ▶ did nothing until it was closed.
+        if (value.isEmpty()) showHistoryList = false
     }
     val historyChannels = remember(historyEntries) { historyEntries.map { it.channel } }
     val historyWatchedAt = remember(historyEntries) { historyEntries.associate { it.channel.id to it.watchedAt } }
@@ -1804,10 +1815,15 @@ fun OwnTVShell(
                     onAudioMode = toAudioMode,
                     // The channel-list overlay draws ABOVE the HUD; while it's open the HUD goes inert so
                     // its hide/error focus grabs can't yank D-pad focus off the overlay.
-                    inert = showChannelList || showHistoryList || showCategoryBrowser || showSubtitleSearch || showLocalSubPicker,
+                    // Only while one is drawn (v2.3.2): a list asked for but empty used to leave the HUD inert,
+                    // and ◀ / ▶ stopped opening the quick guide and the recent channels.
+                    inert = (showChannelList && (showCategoryBrowser || zapChannels.isNotEmpty())) ||
+                        (showHistoryList && historyChannels.isNotEmpty()) || showSubtitleSearch || showLocalSubPicker,
                     onChannelUp = zap?.let { z -> { z(-1) } },
                     onChannelDown = zap?.let { z -> { z(1) } },
-                    onOpenChannelList = if (isTunedLive && liveCanZap) { { showChannelList = true } } else null,
+                    // Not only when the list can zap (v2.3.2): a single-channel or unarmed list still opens,
+                    // as that list or as every category.
+                    onOpenChannelList = if (isTunedLive) { { showChannelList = true } } else null,
                     // Live channels only, and only once Multiview is switched on: the channel on screen
                     // becomes tile 1 and the grid takes over. Everything it needs is already tuned.
                     onMultiview = if (multiviewEnabled && isTunedLive && previewChannel != null) {
