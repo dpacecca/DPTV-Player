@@ -673,10 +673,10 @@ object SupportedLocales {
             endonym = "Euskara",
             script = "Latn",
             rtl = false,
-            tier = 2,
-            packaged = false,
-            pickerVisible = false,
-            coverage = 0,
+            tier = 1,
+            packaged = true,
+            pickerVisible = true,
+            coverage = 84,
         ),
     )
 
