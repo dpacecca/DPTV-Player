@@ -69,7 +69,9 @@ internal object CompanionHttpProtocol {
 
     /**
      * Read a request body without trusting Content-Length for allocation. A declared or observed
-     * body over [limit] returns null so the caller can answer 413.
+     * body over [limit] returns null so the caller can answer 413. A body that ends before its
+     * Content-Length throws [java.io.EOFException]: half an uploaded backup used to be kept and then
+     * failed to decrypt, which the TV could only report as a wrong password.
      */
     fun readBody(input: BufferedInputStream, headers: Map<String, String>, limit: Int): String? {
         val declared = headers["content-length"]?.toLongOrNull() ?: 0L
@@ -86,6 +88,7 @@ internal object CompanionHttpProtocol {
             if (total > limit) return null
             buffer.write(chunk, 0, read)
         }
+        if (total < declared) throw java.io.EOFException("Body ended at $total of $declared bytes")
         return buffer.toString(StandardCharsets.UTF_8.name())
     }
 

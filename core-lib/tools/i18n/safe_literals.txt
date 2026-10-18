@@ -23,7 +23,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/CoreBuildInfo.kt	dpacecca/DPTV-Player
 1	log	core/src/main/java/tv/own/owntv/core/CorePerf.kt	OwnTVPerf
 3	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	..
-1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	Corrupt backup header
+2	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	Corrupt backup header
 1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	OWNTVBK1
 1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	Truncated backup file
 1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	avatars/
@@ -60,6 +60,7 @@
 2	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	,
 1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	.bak
 1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	.tmp
+1	log	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	Backup unreadable: ${primary.exceptionOrNull()?.javaClass?.simpleName}
 1	log	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	BackupManager
 2	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	LIVE
 1	protocol	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	LOCAL
@@ -346,6 +347,7 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	/backup
 1	technical	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	/m3u
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	1
+1	technical	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	Body ended at $total of $declared bytes
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	OFF
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	application/json
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	autoRefresh
@@ -419,6 +421,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Companion accept failed
 1	log	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Companion connection refused — $MAX_IN_FLIGHT already in flight
 1	log	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Companion link locked after $attempts incorrect PIN attempts
+1	log	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Companion request dropped: ${e.javaClass.simpleName}
 1	log	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	CompanionServer
 2	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Connection: close
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Content-Disposition: attachment; filename="
