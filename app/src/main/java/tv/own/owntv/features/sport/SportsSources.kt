@@ -1,6 +1,15 @@
 package tv.own.owntv.features.sport
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import tv.own.owntv.core.database.entity.SourceEntity
+import tv.own.owntv.core.epg.EpgSourceStore
 import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.settings.SettingsRepository
 
@@ -40,4 +49,50 @@ class ProfileLiveSourceIdsProvider(
         val scoped = if (defaultId > 0) sources.filter { it.id == defaultId } else sources
         return scoped.filter { it.syncLive }.map { it.id }
     }
+}
+
+/** A live playlist the Sport settings' playlist filter can pick ([SportChannelSources.playlists]). */
+data class SportPlaylist(val id: Long, val name: String)
+
+/**
+ * What the Sport settings and the auto rebuild need to know about the user's playlists and guides
+ * (v5.2 port): the live playlists by name, for the playlist filter, and a fingerprint that changes
+ * whenever a playlist or an external guide finished a sync (or one was added/removed) — the
+ * "playlists or the guide changed" trigger of the auto rebuild.
+ */
+interface SportChannelSources {
+    val playlists: Flow<List<SportPlaylist>>
+    val changes: Flow<Int>
+}
+
+/**
+ * The real [SportChannelSources]: the active profile's live playlists, narrowed exactly as
+ * [ProfileLiveSourceIdsProvider] narrows them (default playlist, live sync on), so the filter never
+ * offers a playlist the matcher would not search anyway. The fingerprint hashes every playlist's and
+ * external guide's last sync time; a playlist's own (Xtream) guide arrives with its sync.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+class ProfileSportChannelSources(
+    settings: SettingsRepository,
+    sourceRepository: SourceRepository,
+    epgSourceStore: EpgSourceStore,
+) : SportChannelSources {
+
+    private val sources: Flow<List<SourceEntity>> = settings.activeProfileId.flatMapLatest { pid ->
+        if (pid < 0) flowOf(emptyList()) else sourceRepository.observeSources(pid)
+    }
+
+    override val playlists: Flow<List<SportPlaylist>> =
+        combine(sources, settings.defaultSourceId) { all, defaultId ->
+            val scoped = if (defaultId > 0) all.filter { it.id == defaultId } else all
+            scoped.filter { it.syncLive }.map { SportPlaylist(it.id, it.name) }
+        }.distinctUntilChanged()
+
+    override val changes: Flow<Int> =
+        combine(sources, epgSourceStore.sources) { playlists, guides ->
+            listOf(
+                playlists.map { Triple(it.id, it.syncLive, it.lastSyncAt) },
+                guides.map { it.id to it.lastSyncAt },
+            ).hashCode()
+        }.distinctUntilChanged()
 }
