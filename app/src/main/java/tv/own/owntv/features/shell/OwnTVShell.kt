@@ -1882,7 +1882,7 @@ fun OwnTVShell(
                             tv.own.owntv.player.LiveInfoBanner(
                                 logoUrl = ch?.displayLogoUrl,
                                 number = ch?.number?.toString(),
-                                channelName = ch?.let { tv.own.owntv.features.live.ProviderTags.parse(it.name).name }.orEmpty(),
+                                channelName = ch?.let { tv.own.owntv.core.live.ProviderTags.parse(it.name).name }.orEmpty(),
                                 chips = tv.own.owntv.features.epg.guideStreamChips(chips),
                                 catchup = ch?.catchup == true,
                                 now = epg?.now,

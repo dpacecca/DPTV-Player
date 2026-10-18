@@ -1,5 +1,6 @@
 package tv.own.owntv.features.live
 
+import tv.own.owntv.core.live.ProviderTags
 import tv.own.owntv.core.epg.displayLogoUrl
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup

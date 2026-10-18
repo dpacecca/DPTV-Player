@@ -13,7 +13,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.layout
 import tv.own.owntv.features.live.LiveCategories
-import tv.own.owntv.features.live.ProviderTags
+import tv.own.owntv.core.live.ProviderTags
 import tv.own.owntv.features.live.edgeScrollSpec
 import tv.own.owntv.features.shell.components.VodCinematicBackdrop
 import tv.own.owntv.features.shell.components.VodDetailsCard

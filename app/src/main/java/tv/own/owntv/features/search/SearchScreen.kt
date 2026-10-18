@@ -78,7 +78,7 @@ import tv.own.owntv.core.metadata.HeadlineTitle
 import tv.own.owntv.features.live.LivePlate
 import tv.own.owntv.features.live.LiveStagePane
 import tv.own.owntv.features.live.LiveViewModel
-import tv.own.owntv.features.live.ProviderTags
+import tv.own.owntv.core.live.ProviderTags
 import tv.own.owntv.features.movies.movieTitleInfo
 import tv.own.owntv.features.series.seriesTitleInfo
 import tv.own.owntv.features.settings.dotSeparator

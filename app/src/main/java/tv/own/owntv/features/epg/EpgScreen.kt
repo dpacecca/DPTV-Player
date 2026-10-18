@@ -77,7 +77,7 @@ import tv.own.owntv.core.model.RecordingStatus
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.features.live.LiveCategories
 import tv.own.owntv.features.live.LiveViewModel
-import tv.own.owntv.features.live.ProviderTags
+import tv.own.owntv.core.live.ProviderTags
 import tv.own.owntv.features.live.edgeScrollSpec
 import tv.own.owntv.features.live.liveCategoryEntries
 import tv.own.owntv.features.live.liveEpgShiftLabel
