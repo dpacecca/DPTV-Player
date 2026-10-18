@@ -79,9 +79,10 @@ schema file and a migration.
 - **M3U** is line-streamed; **Xtream JSON** is read with `JsonReader`; a huge provider payload is never
   fully buffered.
 - Refresh is **chunked, cancellable and reports progress** (`SyncStatus`, `SyncProgressText`).
-- **Live-only gate (fork change).** The M3U syncer is handed a set of content types and **skips
-  VOD/series rows**, and old VOD data is cleaned up after a successful parse. Xtream and Stalker already
-  had the gate. The result: live-only sources sync noticeably faster.
+- **Section gate.** Every syncer (M3U, Xtream, Stalker) is handed the source's enabled content types
+  (Live / Movies / Series). A section switched off is **skipped**, and for M3U its old rows are cleaned
+  up after a successful parse, so a source with only Live TV on syncs noticeably faster. M3U follows its
+  switches like the others; only a local backup source is always live-only.
 - The schedulers live in `sync/work/` (WorkManager). Background jobs **yield to playback** by observing
   `WatchSession`.
 

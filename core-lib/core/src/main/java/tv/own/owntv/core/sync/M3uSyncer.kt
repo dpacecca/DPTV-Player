@@ -63,9 +63,9 @@ internal class M3uSyncer(
         s: SourceEntity,
         progress: SyncCounters,
         stats: SyncStatsCollector,
-        // TV-only builds pass live-only here (via SyncManager's effective set): VOD/series entries
-        // are then skipped AND previously stored rows for them are cleared, so the catalogue stays
-        // in step without ever paying for the movie/series parse and insert.
+        // SyncManager's effective set (the source's Live/Movies/Series switches). A section switched
+        // off is skipped AND its previously stored rows are cleared, so the catalogue stays in step
+        // without ever paying for that section's parse and insert.
         contentTypes: SyncContentTypes = SyncContentTypes(),
     ) {
         val channelsStart = System.currentTimeMillis()
@@ -418,7 +418,7 @@ internal class M3uSyncer(
                 when {
                     // type="series" / tvg-type="series" → grouped into the Series tab.
                     e.isSeries -> {
-                        // TV-only pass: skip the row AND its category/group bookkeeping entirely.
+                        // Section switched off: skip the row AND its category/group bookkeeping entirely.
                         if (!contentTypes.series) return@onEntry
                         e.groupTitle?.let { queueCategory(MediaType.SERIES, it) }
                         val parsed = parseM3uEpisode(e.name)
@@ -442,7 +442,7 @@ internal class M3uSyncer(
                     }
                     // Other VOD tags (type="vod"/"movie", tvg-type="vod"/"movie") → the movie grid.
                     e.isVod -> {
-                        // TV-only pass: skip the row AND its category/group bookkeeping entirely.
+                        // Section switched off: skip the row AND its category/group bookkeeping entirely.
                         if (!contentTypes.movies) return@onEntry
                         e.groupTitle?.let { queueCategory(MediaType.MOVIE, it) }
                         movieBuffer.add(PendingM3uChannel(order = order++, entry = e))
@@ -497,7 +497,7 @@ internal class M3uSyncer(
                 seriesDao.deleteNullRemoteIds(s.id) // seasons/episodes cascade
                 support.pruneCategories(s.id, MediaType.SERIES, seenGroupsByType[MediaType.SERIES].orEmpty(), "M3U series", stats)
             }
-            // TV-only pass: a disabled type never reaches its prune above (its counter stays 0),
+            // Section switched off: a disabled type never reaches its prune above (its counter stays 0),
             // so drop whatever an earlier full sync left behind — rows, then their now-empty groups.
             // Runs only after a fully successful parse, like the prune itself.
             if (!contentTypes.movies) {

@@ -405,7 +405,7 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
         )
     }
     // Return focus to the language row after the dialog closes instead of letting it fall to the first
-    // row (same pattern as the former metadata screen). Gated so it can't steal entry focus on first compose.
+    // row (same pattern as MetadataSettingsScreen). Gated so it can't steal entry focus on first compose.
     LaunchedEffect(showLangPicker) {
         if (showLangPicker) {
             langPickerWasOpen = true
