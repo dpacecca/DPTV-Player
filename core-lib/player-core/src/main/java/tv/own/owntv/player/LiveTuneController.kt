@@ -633,7 +633,15 @@ class LiveTuneController(
     private suspend fun startOnExo(channel: ChannelEntity, source: SourceEntity?, resolved: String? = null) {
         mpvOutcomeJob?.cancel() // ExoPlayer owns the channel now
         _liveOnExo.value = true
-        engines.mpvStop() // mpv lets go of the connection and the decoder before ExoPlayer claims either
+        if (engines.mpvHasStream && singleSessionPanel(channel, source)) {
+            // mpv's stop is asynchronous: on a one-connection panel ExoPlayer opening while mpv still holds
+            // the previous channel's socket is the app competing with itself for the only session (458).
+            // Wait for mpv to let go first; bounded by mpv's release timeout, and only on such a panel.
+            engines.mpvStopAndAwaitRelease()
+            if (!isCurrent(channel)) return // zapped on while mpv released
+        } else {
+            engines.mpvStop() // mpv lets go of the connection and the decoder before ExoPlayer claims either
+        }
         val local = localUrl()
         if (local != null) {
             // The same address is not the same picture after a pause: "live" then means re-opening it.
@@ -958,6 +966,11 @@ class LiveTuneController(
     private fun isStillExo(channel: ChannelEntity): Boolean = _liveOnExo.value && isCurrent(channel)
 
     private fun isStillMpv(channel: ChannelEntity): Boolean = !_liveOnExo.value && isCurrent(channel)
+
+    /** The panel allows one stream at a time: it said so at sync (`max_connections = 1`) or was caught
+     *  refusing a second session this run. */
+    private fun singleSessionPanel(channel: ChannelEntity, source: SourceEntity?): Boolean =
+        source?.maxConnections == 1 || LiveStreamQuirks.isSingleSession(channel.streamUrl)
 
     private fun blockedBySingleSession(url: String, channel: ChannelEntity): Boolean {
         val blocked = (engines.mpvHasStream && LiveStreamQuirks.isSingleSession(url)) ||
