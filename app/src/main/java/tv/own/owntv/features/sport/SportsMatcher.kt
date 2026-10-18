@@ -84,6 +84,7 @@ class SportsMatcher(
         fixture: Fixture,
         languages: Set<SportLanguage> = emptySet(),
         limit: Int = DefaultLimit,
+        hidden: Set<SportLanguage> = emptySet(),
     ): List<ChannelMatch> =
         withContext(Dispatchers.IO) {
             val sourceIds = sources.liveSourceIds()
@@ -126,7 +127,7 @@ class SportsMatcher(
                 )
             }.sortedByDescending { it.score }
             // Preferred languages first (never-empty fallback lives in SportLanguages.filter).
-            SportLanguages.filter(scored, languages).take(limit)
+            SportLanguages.filter(scored, languages, hidden).take(limit)
         }
 
     /** Entities for matched ids, in the matches' order — the zap context for playback. */

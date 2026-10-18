@@ -38,6 +38,10 @@ class SportsPrefs(private val context: Context) {
     val preferredLanguages: Flow<Set<String>> =
         context.sportsDataStore.data.map { it[LanguagesKey] ?: DefaultLanguageNames }
 
+    /** Languages never shown among a fixture's channels (v2.2.0), as [SportLanguage] names. */
+    val hiddenLanguages: Flow<Set<String>> =
+        context.sportsDataStore.data.map { it[HiddenLanguagesKey].orEmpty() }
+
     /** True once the user has been asked for a language (or picked channels); the prompt never nags. */
     val languageAsked: Flow<Boolean> =
         context.sportsDataStore.data.map { it[LanguageAskedKey] ?: false }
@@ -90,6 +94,10 @@ class SportsPrefs(private val context: Context) {
         }
     }
 
+    suspend fun setHiddenLanguages(names: Set<String>) {
+        context.sportsDataStore.edit { prefs -> prefs[HiddenLanguagesKey] = names }
+    }
+
     /** Mark the language prompt as answered without changing the choice (dismissed first run). */
     suspend fun setLanguageAsked() {
         context.sportsDataStore.edit { prefs -> prefs[LanguageAskedKey] = true }
@@ -107,6 +115,7 @@ class SportsPrefs(private val context: Context) {
         private val VisibleKey = booleanPreferencesKey("hub_visible")
         private val LanguagesKey = stringSetPreferencesKey("preferred_languages")
         private val LanguageAskedKey = booleanPreferencesKey("language_asked")
+        private val HiddenLanguagesKey = stringSetPreferencesKey("hidden_languages")
         private val DefaultLanguageNames = setOf(SportLanguage.GERMAN.name)
         private const val TeamSeparator = "|"
     }

@@ -18,6 +18,17 @@ enum class SportLanguage(@StringRes val labelRes: Int) {
     SPANISH(R.string.sport_language_spanish),
     PORTUGUESE(R.string.sport_language_portuguese),
     FRENCH(R.string.sport_language_french),
+    // v2.2.0: the other feeds providers carry, so they can be shown or hidden by name.
+    ITALIAN(R.string.sport_language_italian),
+    DUTCH(R.string.sport_language_dutch),
+    POLISH(R.string.sport_language_polish),
+    TURKISH(R.string.sport_language_turkish),
+    ARABIC(R.string.sport_language_arabic),
+    GREEK(R.string.sport_language_greek),
+    ALBANIAN(R.string.sport_language_albanian),
+    BALKAN(R.string.sport_language_balkan),
+    RUSSIAN(R.string.sport_language_russian),
+    ROMANIAN(R.string.sport_language_romanian),
 }
 
 /**
@@ -40,6 +51,16 @@ object SportLanguages {
         SportLanguage.SPANISH,
         SportLanguage.PORTUGUESE,
         SportLanguage.FRENCH,
+        SportLanguage.ITALIAN,
+        SportLanguage.DUTCH,
+        SportLanguage.POLISH,
+        SportLanguage.TURKISH,
+        SportLanguage.ARABIC,
+        SportLanguage.GREEK,
+        SportLanguage.ALBANIAN,
+        SportLanguage.BALKAN,
+        SportLanguage.RUSSIAN,
+        SportLanguage.ROMANIAN,
     )
 
     /** An empty set means "all languages" — no filter. The default matches the app's audience. */
@@ -73,10 +94,17 @@ object SportLanguages {
      * tennis PPV named for the duel) always survive: they are the event itself, not a
      * foreign-language feed of it.
      */
-    fun filter(matches: List<ChannelMatch>, languages: Set<SportLanguage>): List<ChannelMatch> {
-        if (languages.isEmpty()) return matches
-        val kept = matches.filter { it.isExact || keeps(it.channelName, languages) }
-        return kept.ifEmpty { matches }
+    fun filter(
+        matches: List<ChannelMatch>,
+        languages: Set<SportLanguage>,
+        hidden: Set<SportLanguage> = emptySet(),
+    ): List<ChannelMatch> {
+        // Hidden languages (v2.2.0) go first and for good: no exact-event exception, and no
+        // never-empty fallback brings them back.
+        val visible = if (hidden.isEmpty()) matches else matches.filter { languageOfChannel(it.channelName) !in hidden }
+        if (languages.isEmpty()) return visible
+        val kept = visible.filter { it.isExact || keeps(it.channelName, languages) }
+        return kept.ifEmpty { visible }
     }
 
     private fun keeps(channelName: String, languages: Set<SportLanguage>): Boolean {
@@ -124,5 +152,48 @@ object SportLanguages {
         // French
         "FR" to SportLanguage.FRENCH,
         "BE" to SportLanguage.FRENCH,
+        // Italian
+        "IT" to SportLanguage.ITALIAN,
+        "SM" to SportLanguage.ITALIAN,
+        // Dutch
+        "NL" to SportLanguage.DUTCH,
+        // Polish
+        "PL" to SportLanguage.POLISH,
+        // Turkish
+        "TR" to SportLanguage.TURKISH,
+        // Arabic ("AR" stays Argentina, above)
+        "SA" to SportLanguage.ARABIC,
+        "AE" to SportLanguage.ARABIC,
+        "QA" to SportLanguage.ARABIC,
+        "KW" to SportLanguage.ARABIC,
+        "BH" to SportLanguage.ARABIC,
+        "OM" to SportLanguage.ARABIC,
+        "JO" to SportLanguage.ARABIC,
+        "LB" to SportLanguage.ARABIC,
+        "IQ" to SportLanguage.ARABIC,
+        "EG" to SportLanguage.ARABIC,
+        "MA" to SportLanguage.ARABIC,
+        "DZ" to SportLanguage.ARABIC,
+        "TN" to SportLanguage.ARABIC,
+        // Greek
+        "GR" to SportLanguage.GREEK,
+        "CY" to SportLanguage.GREEK,
+        // Albanian
+        "AL" to SportLanguage.ALBANIAN,
+        "XK" to SportLanguage.ALBANIAN,
+        // Serbian, Croatian, Bosnian, Slovenian, Montenegrin, Macedonian
+        "RS" to SportLanguage.BALKAN,
+        "HR" to SportLanguage.BALKAN,
+        "BA" to SportLanguage.BALKAN,
+        "SI" to SportLanguage.BALKAN,
+        "ME" to SportLanguage.BALKAN,
+        "MK" to SportLanguage.BALKAN,
+        "YU" to SportLanguage.BALKAN,
+        // Russian
+        "RU" to SportLanguage.RUSSIAN,
+        "BY" to SportLanguage.RUSSIAN,
+        // Romanian
+        "RO" to SportLanguage.ROMANIAN,
+        "MD" to SportLanguage.ROMANIAN,
     )
 }

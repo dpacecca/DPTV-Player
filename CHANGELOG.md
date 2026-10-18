@@ -64,6 +64,19 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.2.0
+
+### ✨ New features
+- **🚫 Permanently hide languages from Sport's channel matching**
+- **🗂️ Sport settings in tabs: Sports, Leagues and Languages**
+- **🔎 Search the complete league list**
+- **🌍 More channel languages: Italian, Dutch, Polish, Turkish, Arabic, Greek, Albanian, Balkan, Russian, Romanian**
+
+## v2.1.9
+
+### ✨ New features
+- **🧈 Categories scroll like the guide: the highlighted one at the top, smoothly**
+
 ## v2.1.8
 
 ### ✨ New features

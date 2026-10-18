@@ -394,6 +394,16 @@ internal val edgeScrollSpec = object : androidx.compose.foundation.gestures.Brin
     }
 }
 
+/**
+ * The guide's categories (v2.1.9), scrolled like the guide's channels: the highlighted category goes to the
+ * top, so the ones still to come are on screen, and the list eases there rather than jumping.
+ */
+internal val topScrollSpec = object : androidx.compose.foundation.gestures.BringIntoViewSpec {
+    override val scrollAnimationSpec: androidx.compose.animation.core.AnimationSpec<Float> =
+        androidx.compose.animation.core.tween(150, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = offset
+}
+
 /** A category as the Stage sheet / column shows it: the rail item, its parsed name and its count. */
 internal data class LiveCategoryEntry(
     val item: LiveRailItem,
@@ -534,7 +544,7 @@ internal fun LiveCategories(
             }
         }
         // Edge-only scrolling, as the channel list (no double step on ▼).
-        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides edgeScrollSpec) {
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides if (sheet) topScrollSpec else edgeScrollSpec) {
         LazyColumn(
             state = listState,
             modifier = Modifier

@@ -45,9 +45,17 @@ class SportLanguagesTest {
     }
 
     @Test
+    fun theOtherFeedsProvidersCarryHaveALanguage() {
+        assertEquals(SportLanguage.ITALIAN, SportLanguages.languageOfChannel("IT: SKY SPORT ARENA"))
+        assertEquals(SportLanguage.ALBANIAN, SportLanguages.languageOfChannel("AL: SUPER SPORT 3"))
+        assertEquals(SportLanguage.ARABIC, SportLanguages.languageOfChannel("QA: BEIN SPORTS 1"))
+        assertEquals(SportLanguage.BALKAN, SportLanguages.languageOfChannel("RS: ARENA SPORT 1"))
+    }
+
+    @Test
     fun anUnknownCountryMapsToNoLanguage() {
-        assertNull(SportLanguages.languageOfChannel("IT: SKY SPORT ARENA"))
-        assertNull(SportLanguages.languageOfChannel("AL: SUPER SPORT 3"))
+        assertNull(SportLanguages.languageOfChannel("HK: NOW SPORTS 1 4K"))
+        assertNull(SportLanguages.languageOfChannel("VIP: CANAL+ PREMIER LEAGUE"))
     }
 
     // --- filter ---
@@ -93,6 +101,22 @@ class SportLanguagesTest {
             listOf("FR: MAX PPV 21", "DE: SKY SPORT TENNIS"),
             kept.map { it.channelName },
         )
+    }
+
+    // --- hidden languages (v2.2.0) ---
+
+    @Test
+    fun hiddenLanguagesAreGoneEvenWithNoOtherFilter() {
+        val matches = listOf(match("DE: SKY"), match("IT: SKY SPORT ARENA"), match("UNTAGGED FEED"))
+        val kept = SportLanguages.filter(matches, emptySet(), hidden = setOf(SportLanguage.ITALIAN))
+        assertEquals(listOf("DE: SKY", "UNTAGGED FEED"), kept.map { it.channelName })
+    }
+
+    @Test
+    fun hiddenLanguagesBeatExactChannelsAndTheNeverEmptyFallback() {
+        val matches = listOf(match("QA: BEIN MAX 1", isExact = true), match("QA: BEIN SPORTS 2"))
+        val kept = SportLanguages.filter(matches, setOf(SportLanguage.ENGLISH), hidden = setOf(SportLanguage.ARABIC))
+        assertTrue(kept.isEmpty())
     }
 
     private fun match(name: String, isExact: Boolean = false) =

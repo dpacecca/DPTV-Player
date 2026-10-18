@@ -68,6 +68,7 @@ import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StageMenu
 import tv.own.owntv.ui.stage.StageMenuHeader
 import tv.own.owntv.ui.stage.StageMenuItem
+import tv.own.owntv.ui.stage.StageSearchField
 import tv.own.owntv.ui.stage.StageSurface
 import tv.own.owntv.core.theme.DptvPalette
 import tv.own.owntv.core.theme.teamColor
@@ -110,6 +111,7 @@ fun SportsScreen(
     val previewArmed by liveVm.previewArmed.collectAsStateWithLifecycle()
     val effectivePreview = previewEnabled && livePreviewSetting
     val preferredLanguages by vm.preferredLanguages.collectAsStateWithLifecycle()
+    val hiddenLanguages by vm.hiddenLanguages.collectAsStateWithLifecycle()
     val languageAsked by vm.languageAsked.collectAsStateWithLifecycle()
     var showSettings by remember { mutableStateOf(false) }
     var showLanguage by remember { mutableStateOf(false) }
@@ -440,10 +442,11 @@ fun SportsScreen(
                 leagues = SportsLeagues,
                 active = activeLeagues,
                 onToggleLeague = { vm.toggleLeagueFollowed(it) },
-                onOpenLanguage = {
-                    showSettings = false
-                    showLanguage = true
-                },
+                onToggleSport = { vm.toggleSport(it) },
+                preferred = preferredLanguages,
+                onPreferredChange = { vm.setPreferredLanguages(it) },
+                hidden = hiddenLanguages,
+                onToggleHidden = { vm.toggleLanguageHidden(it) },
                 onManageOnPhone = {
                     showSettings = false
                     showPhone = true
@@ -928,67 +931,142 @@ private fun FixtureDetail(
  * League selection for the Sports hub: which of the catalogue's leagues are active (shown in the
  * rail and loaded). TV-local checklist; the QR/phone web page is the next step (companion page).
  */
+private enum class SportsSettingsTab(val labelRes: Int) {
+    SPORTS(R.string.sport_settings_tab_sports),
+    LEAGUES(R.string.sport_settings_tab_leagues),
+    LANGUAGES(R.string.sport_settings_tab_languages),
+}
+
+/**
+ * The Sport settings (v2.2.0), in three tabs: whole sports on or off, every league with a search, and
+ * the channel languages — the ones to show, and the ones never to show.
+ */
 @Composable
 private fun SportsSettingsDialog(
     leagues: List<SportLeague>,
     active: Set<String>,
     onToggleLeague: (String) -> Unit,
-    onOpenLanguage: () -> Unit,
+    onToggleSport: (SportGroup) -> Unit,
+    preferred: Set<SportLanguage>,
+    onPreferredChange: (Set<SportLanguage>) -> Unit,
+    hidden: Set<SportLanguage>,
+    onToggleHidden: (SportLanguage) -> Unit,
     onManageOnPhone: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val firstFocus = remember { FocusRequester() }
+    var tab by remember { mutableStateOf(SportsSettingsTab.SPORTS) }
+    var query by remember { mutableStateOf("") }
+    val tabFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         delay(60)
-        runCatching { firstFocus.requestFocus() }
+        runCatching { tabFocus.requestFocus() }
     }
     BackHandler { onDismiss() }
     OwnTVPopup(onDismissRequest = onDismiss, stageLayout = true) {
         Box(Modifier.fillMaxSize().background(StageColors.Scrim)) {
             Column(
                 Modifier
-                    .padding(start = 560.mpx, top = 120.mpx, bottom = 24.mpx)
+                    .padding(start = 560.mpx, top = 96.mpx, bottom = 24.mpx)
                     .width(640.mpx)
                     .trapAllFocusExit()
                     .focusGroup(),
             ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.mpx), modifier = Modifier.padding(bottom = 12.mpx)) {
+                    SportsSettingsTab.entries.forEach { t ->
+                        Box(if (t == tab) Modifier.focusRequester(tabFocus) else Modifier) {
+                            FixtureTabPill(stringResource(t.labelRes), selected = t == tab, onClick = { tab = t })
+                        }
+                    }
+                }
                 StageMenu(Modifier.verticalScroll(rememberScrollState())) {
-                    StageMenuHeader(
-                        title = stringResource(R.string.sport_picker_title),
-                        subtitle = stringResource(R.string.sport_picker_subtitle),
-                    )
-                    StageMenuItem(
-                        text = stringResource(R.string.sport_manage_on_phone),
-                        icon = OwnTVIcon.PHONE,
-                        onClick = onManageOnPhone,
-                    )
-                    StageMenuItem(
-                        text = stringResource(R.string.sport_language),
-                        icon = OwnTVIcon.LANGUAGE,
-                        onClick = onOpenLanguage,
-                    )
-                    var first = true
-                    SportGroup.entries.forEach { group ->
-                        val groupLeagues = leagues.filter { it.sportGroup == group }
-                        if (groupLeagues.isEmpty()) return@forEach
-                        Text(
-                            stringResource(group.labelRes),
-                            style = stageText(16, 700),
-                            color = StageColors.Muted,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = 18.mpx, top = 16.mpx, bottom = 4.mpx),
-                        )
-                        groupLeagues.forEach { league ->
-                            StageMenuItem(
-                                text = stringResource(league.labelRes),
-                                icon = OwnTVIcon.SPORT,
-                                checked = league.id in active,
-                                onClick = { onToggleLeague(league.id) },
-                                modifier = if (first) {
-                                    first = false
-                                    Modifier.focusRequester(firstFocus)
-                                } else Modifier,
+                    when (tab) {
+                        SportsSettingsTab.SPORTS -> {
+                            StageMenuHeader(
+                                title = stringResource(R.string.sport_settings_tab_sports),
+                                subtitle = stringResource(R.string.sport_settings_sports_subtitle),
                             )
+                            StageMenuItem(text = stringResource(R.string.sport_manage_on_phone), icon = OwnTVIcon.PHONE, onClick = onManageOnPhone)
+                            SportGroup.entries.forEach { group ->
+                                val ids = leagues.filter { it.sportGroup == group }.map { it.id }
+                                if (ids.isEmpty()) return@forEach
+                                val on = ids.count { it in active }
+                                StageMenuItem(
+                                    text = stringResource(group.labelRes),
+                                    icon = OwnTVIcon.SPORT,
+                                    value = stringResource(R.string.sport_settings_leagues_count, on, ids.size),
+                                    checked = on > 0,
+                                    onClick = { onToggleSport(group) },
+                                )
+                            }
+                        }
+                        SportsSettingsTab.LEAGUES -> {
+                            StageMenuHeader(
+                                title = stringResource(R.string.sport_picker_title),
+                                subtitle = stringResource(R.string.sport_picker_subtitle),
+                            )
+                            StageSearchField(
+                                query = query, onQueryChange = { query = it },
+                                placeholder = stringResource(R.string.sport_settings_search_leagues),
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.mpx),
+                            )
+                            val q = query.trim()
+                            SportGroup.entries.forEach { group ->
+                                val groupLabel = stringResource(group.labelRes)
+                                val groupLeagues = leagues.filter { it.sportGroup == group }
+                                    .map { it to stringResource(it.labelRes) }
+                                    .filter { (_, label) -> q.isEmpty() || label.contains(q, ignoreCase = true) || groupLabel.contains(q, ignoreCase = true) }
+                                if (groupLeagues.isEmpty()) return@forEach
+                                Text(
+                                    groupLabel,
+                                    style = stageText(16, 700),
+                                    color = StageColors.Muted,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(start = 18.mpx, top = 16.mpx, bottom = 4.mpx),
+                                )
+                                groupLeagues.forEach { (league, label) ->
+                                    StageMenuItem(
+                                        text = label,
+                                        icon = OwnTVIcon.SPORT,
+                                        checked = league.id in active,
+                                        onClick = { onToggleLeague(league.id) },
+                                    )
+                                }
+                            }
+                        }
+                        SportsSettingsTab.LANGUAGES -> {
+                            StageMenuHeader(
+                                title = stringResource(R.string.sport_language),
+                                subtitle = stringResource(R.string.sport_language_subtitle),
+                            )
+                            StageMenuItem(
+                                text = stringResource(R.string.sport_language_all),
+                                icon = OwnTVIcon.LANGUAGE,
+                                checked = preferred.isEmpty(),
+                                onClick = { onPreferredChange(emptySet()) },
+                            )
+                            SportLanguages.order.filter { it !in hidden }.forEach { language ->
+                                StageMenuItem(
+                                    text = stringResource(language.labelRes),
+                                    icon = OwnTVIcon.LANGUAGE,
+                                    checked = language in preferred,
+                                    onClick = { onPreferredChange(toggleLanguage(preferred, language)) },
+                                )
+                            }
+                            Text(
+                                stringResource(R.string.sport_language_hide),
+                                style = stageText(16, 700),
+                                color = StageColors.Muted,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(start = 18.mpx, top = 16.mpx, bottom = 4.mpx),
+                            )
+                            SportLanguages.order.forEach { language ->
+                                StageMenuItem(
+                                    text = stringResource(language.labelRes),
+                                    icon = OwnTVIcon.LANGUAGE,
+                                    checked = language in hidden,
+                                    onClick = { onToggleHidden(language) },
+                                )
+                            }
                         }
                     }
                 }
