@@ -4655,7 +4655,7 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	error 0xfffffff4
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	every rung spent — retrying at the panel's direct_source address
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	exo/live: $reason
-1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	first frame after ${now - tune.playStartedMs}ms${ZapTiming.pressSuffix(sincePress)}
+1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	first frame after ${now - t.startedMs}ms${ZapTiming.pressSuffix(sincePress)}
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frame hook NOT wired — no video renderer found; picture-freeze detection falls back to the no-progress backstop
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frame hook send FAILED (${it.message}) — picture-freeze detection falls back to the no-progress backstop
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frames=$frames dropped=$dropped isPlaying=${p.isPlaying}

@@ -2895,7 +2895,10 @@ class OwnTVPlayer(
         // [LoadState], so forgetting it is one assignment that cannot be partially done. The four values
         // that are not simply cleared come from this call's own arguments.
         videoChainFailed = kotlinx.coroutines.CompletableDeferred()
+        // A retry keeps the CH+/− press its item claimed; a new item claims the press that caused it.
+        val zapPressAt = if (resetRetries) ZapTiming.shared.claim(android.os.SystemClock.elapsedRealtime()) else load.zapPressAt
         load = LoadState(
+            zapPressAt = zapPressAt,
             loadStartTime = System.currentTimeMillis(),
             pendingStartPaused = startPaused,
             expectingPlayback = true,
@@ -4605,7 +4608,8 @@ class OwnTVPlayer(
                 _videoRes.value = resolutionLabel(value.toInt())
                 load.currentHeightPx = value.toInt()
                 if (value > 0) {
-                    if (load.firstVideoAt == 0L) load.firstVideoAt = System.currentTimeMillis()
+                    // After this load's FILE_LOADED only, like the first position: an earlier size is the old file's.
+                    if (load.firstVideoAt == 0L && load.fileLoaded) load.firstVideoAt = System.currentTimeMillis()
                     lastVideoHeightPx = value.toInt() // remember for recovery decisions on a later failed load
                     // Video is decoding. The watchdog stays on until playback has really moved: a load can
                     // decode its first frame and then freeze there, and it stands down by itself otherwise.
@@ -4629,10 +4633,13 @@ class OwnTVPlayer(
     private fun logLiveFirstPosition() {
         val l = load
         if (l.firstPositionLogged || !isLiveContent || l.loadStartTime <= 0L) return
+        // Not before this load's FILE_LOADED: a time-pos still in flight from the previous file would
+        // otherwise be timed as the new channel's first position.
+        if (!l.fileLoaded) return
         l.firstPositionLogged = true
         val now = System.currentTimeMillis()
         fun since(at: Long) = if (at > 0L) "${at - l.loadStartTime}ms" else "-"
-        val sincePress = ZapTiming.shared.takeSincePress(android.os.SystemClock.elapsedRealtime())
+        val sincePress = ZapTiming.sincePress(l.zapPressAt, android.os.SystemClock.elapsedRealtime())
         LiveDiagnosticsLog.event(
             "mpv live first position after ${now - l.loadStartTime}ms " +
                 "(file loaded ${since(l.fileLoadedAt)}, video ${since(l.firstVideoAt)})${ZapTiming.pressSuffix(sincePress)}",
@@ -5373,6 +5380,8 @@ internal data class LoadState(
     @field:Volatile var firstVideoAt: Long = 0L,
     /** The live first-position timing line has been logged for this load. */
     @field:Volatile var firstPositionLogged: Boolean = false,
+    /** The CH+/− press this item was tuned for (elapsedRealtime), claimed at load; null = not a zap. */
+    val zapPressAt: Long? = null,
 )
 
 internal data class ItemState(
