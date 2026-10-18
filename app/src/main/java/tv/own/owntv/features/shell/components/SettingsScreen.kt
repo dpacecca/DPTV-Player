@@ -566,6 +566,7 @@ fun SettingsScreen(
             desc = if (catchupChannels > 0) pluralStringResource(R.plurals.settings_catchup_supported, catchupChannels, catchupChannels)
                 else stringResource(R.string.settings_catchup_unavailable),
             chip = when (catchupTz) {
+                SettingsRepository.CatchupTimezone.AUTOMATIC -> stringResource(R.string.settings_catchup_timezone_automatic)
                 SettingsRepository.CatchupTimezone.DEVICE -> stringResource(R.string.settings_device)
                 SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
             },
@@ -1006,7 +1007,8 @@ fun SettingsScreen(
                 chip = if (autoPlayNext) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setAutoPlayNext(!autoPlayNext) },
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_catchup), stringResource(R.string.settings_search_keywords_catchup), OwnTVIcon.CATCHUP, TileTone.SECONDARY,
                 chip = when (catchupTz) {
-                    SettingsRepository.CatchupTimezone.DEVICE -> stringResource(R.string.settings_device)
+                    SettingsRepository.CatchupTimezone.AUTOMATIC -> stringResource(R.string.settings_catchup_timezone_automatic)
+                SettingsRepository.CatchupTimezone.DEVICE -> stringResource(R.string.settings_device)
                     SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
                 }) { saveScroll(); dialogReturn = searchFieldFocus; showCatchupTime = true },
             if (playlistSources.isNotEmpty()) SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_catchup_timezone_per_playlist), stringResource(R.string.settings_search_keywords_catchup), OwnTVIcon.CATCHUP, TileTone.SECONDARY,
@@ -1885,6 +1887,7 @@ private fun CatchupSourceValueHost(settingsVm: SettingsViewModel, src: tv.own.ow
         title = src?.name ?: stringResource(R.string.settings_catchup_timezone_per_playlist),
         options = listOf(
             CATCHUP_FOLLOW to stringResource(R.string.settings_live_preroll_follow),
+            SettingsRepository.CatchupTimezone.AUTOMATIC.name to stringResource(R.string.settings_catchup_timezone_automatic),
             SettingsRepository.CatchupTimezone.DEVICE.name to stringResource(R.string.settings_catchup_timezone_device),
         ) + settingsVm.catchupOffsetChoicesMinutes.map { "$CATCHUP_MANUAL_PREFIX$it" to utcOffsetLabel(it) },
         selected = when (src?.catchupTimezone) {
@@ -2606,6 +2609,7 @@ private fun catchupOverrideLabel(source: tv.own.owntv.core.database.entity.Sourc
     when (source.catchupTimezone) {
         null -> stringResource(R.string.settings_live_preroll_follow)
         SettingsRepository.CatchupTimezone.MANUAL.name -> utcOffsetLabel(source.catchupOffsetMin ?: 0)
+        SettingsRepository.CatchupTimezone.AUTOMATIC.name -> stringResource(R.string.settings_catchup_timezone_automatic)
         else -> stringResource(R.string.settings_device)
     }
 
@@ -2635,10 +2639,10 @@ private fun CatchupTimeDialog(
     val form: @Composable () -> Unit = {
         val first = remember { FocusRequester() }
         LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
-        val modes = listOf(SettingsRepository.CatchupTimezone.DEVICE, SettingsRepository.CatchupTimezone.MANUAL)
+        val modes = listOf(SettingsRepository.CatchupTimezone.AUTOMATIC, SettingsRepository.CatchupTimezone.DEVICE, SettingsRepository.CatchupTimezone.MANUAL)
         Column(Modifier.trapAllFocusExit().focusGroup()) {
             tv.own.owntv.ui.stage.StageMenuChoice(
-                options = listOf(stringResource(R.string.settings_catchup_timezone_device), stringResource(R.string.settings_manual)),
+                options = listOf(stringResource(R.string.settings_catchup_timezone_automatic), stringResource(R.string.settings_catchup_timezone_device), stringResource(R.string.settings_manual)),
                 selected = modes.indexOf(mode),
                 onSelect = { onSetMode(modes[it]) },
                 focusRequester = first,
@@ -2691,7 +2695,7 @@ private fun CatchupTimeDialog(
         }
     }
     if (tv.own.owntv.features.settings.panelEditor(onDismiss) { form() }) return
-    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = stringResource(R.string.settings_catchup), body = stringResource(R.string.settings_catchup_description)) { form() }
+    tv.own.owntv.ui.stage.StagePopup(onDismiss = onDismiss, title = stringResource(R.string.settings_catchup), body = stringResource(R.string.settings_catchup_timezone_description)) { form() }
 }
 
 /**

@@ -117,7 +117,7 @@ internal val SETTING_HELP: Map<String, Int> = mapOf(
     "reminders" to R.string.settings_reminders_description,
     "reminder_lead" to R.string.settings_reminder_lead_description,
     "guide_days" to R.string.settings_help_guide_days,
-    "catchup" to R.string.settings_help_catchup,
+    "catchup" to R.string.settings_help_catchup_timezone,
     "catchup_sources" to R.string.settings_catchup_timezone_per_playlist_description,
     "theme" to R.string.settings_help_theme,
     "focus_highlight" to R.string.settings_help_focus,
