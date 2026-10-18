@@ -181,6 +181,7 @@
     <string name="home_trending_trailer">Fragman</string>
     <string name="home_trending_more_details">Daha Fazla Ayrıntı</string>
     <string name="home_trending_all_versions">Tüm Sürümler</string>
+    <string name="home_trending_why_menu">Bu başlık neden burada</string>
     <string name="home_trending_previous">Önceki</string>
     <string name="home_trending_pause">Duraklat</string>
     <string name="home_trending_resume">Devam Et</string>

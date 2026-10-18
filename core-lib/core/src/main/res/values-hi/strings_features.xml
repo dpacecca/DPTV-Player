@@ -181,6 +181,7 @@
     <string name="home_trending_trailer">ट्रेलर</string>
     <string name="home_trending_more_details">अधिक जानकारी</string>
     <string name="home_trending_all_versions">सभी संस्करण</string>
+    <string name="home_trending_why_menu">यह शीर्षक यहाँ क्यों है</string>
     <string name="home_trending_previous">पिछला</string>
     <string name="home_trending_pause">रोकें</string>
     <string name="home_trending_resume">फिर से शुरू करें</string>

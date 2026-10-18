@@ -181,6 +181,7 @@
     <string name="home_trending_trailer">ট্রেলার</string>
     <string name="home_trending_more_details">আরও বিস্তারিত</string>
     <string name="home_trending_all_versions">সব সংস্করণ</string>
+    <string name="home_trending_why_menu">এই শিরোনামটি এখানে কেন</string>
     <string name="home_trending_previous">আগেরটি</string>
     <string name="home_trending_pause">বিরতি</string>
     <string name="home_trending_resume">আবার চালান</string>

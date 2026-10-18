@@ -217,6 +217,7 @@
     <string name="home_trending_trailer">الإعلان التشويقي</string>
     <string name="home_trending_more_details">مزيد من التفاصيل</string>
     <string name="home_trending_all_versions">جميع الإصدارات</string>
+    <string name="home_trending_why_menu">لماذا يظهر هذا العنوان هنا</string>
     <string name="home_trending_previous">السابق</string>
     <string name="home_trending_pause">إيقاف مؤقت</string>
     <string name="home_trending_resume">متابعة</string>

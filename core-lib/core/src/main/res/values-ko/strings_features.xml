@@ -172,6 +172,7 @@
     <string name="home_trending_trailer">예고편</string>
     <string name="home_trending_more_details">상세 정보 더 보기</string>
     <string name="home_trending_all_versions">모든 버전</string>
+    <string name="home_trending_why_menu">이 작품이 여기에 있는 이유</string>
     <string name="home_trending_previous">이전</string>
     <string name="home_trending_pause">일시중지</string>
     <string name="home_trending_resume">이어보기</string>

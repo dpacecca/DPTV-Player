@@ -238,6 +238,8 @@
     <string name="home_trending_trailer">Trailer</string>
     <string name="home_trending_more_details">More Details</string>
     <string name="home_trending_all_versions">All versions</string>
+    <!-- Translators: Menu item on a Home Trending title's long-press menu; opens the sheet explaining why the title is on Home. -->
+    <string name="home_trending_why_menu">Why this title is here</string>
     <string name="home_trending_previous">Previous</string>
     <string name="home_trending_pause">Pause</string>
     <string name="home_trending_resume">Resume</string>

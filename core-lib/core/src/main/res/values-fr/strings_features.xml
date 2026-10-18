@@ -190,6 +190,7 @@
     <string name="home_trending_trailer">Bande-annonce</string>
     <string name="home_trending_more_details">Plus de détails</string>
     <string name="home_trending_all_versions">Toutes les versions</string>
+    <string name="home_trending_why_menu">Pourquoi ce titre est ici</string>
     <string name="home_trending_previous">Précédent</string>
     <string name="home_trending_pause">Pause</string>
     <string name="home_trending_resume">Reprendre</string>

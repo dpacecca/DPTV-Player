@@ -181,6 +181,7 @@
     <string name="home_trending_trailer">Előzetes</string>
     <string name="home_trending_more_details">További részletek</string>
     <string name="home_trending_all_versions">Összes változat</string>
+    <string name="home_trending_why_menu">Miért van itt ez a cím</string>
     <string name="home_trending_previous">Előző</string>
     <string name="home_trending_pause">Szünet</string>
     <string name="home_trending_resume">Folytatás</string>

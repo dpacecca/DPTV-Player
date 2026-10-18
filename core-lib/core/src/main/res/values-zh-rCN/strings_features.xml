@@ -172,6 +172,7 @@
     <string name="home_trending_trailer">预告片</string>
     <string name="home_trending_more_details">更多详情</string>
     <string name="home_trending_all_versions">全部版本</string>
+    <string name="home_trending_why_menu">为什么显示此作品</string>
     <string name="home_trending_previous">上一个</string>
     <string name="home_trending_pause">暂停</string>
     <string name="home_trending_resume">继续</string>

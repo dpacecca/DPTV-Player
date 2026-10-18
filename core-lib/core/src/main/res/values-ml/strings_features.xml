@@ -181,6 +181,7 @@
     <string name="home_trending_trailer">trailer</string>
     <string name="home_trending_more_details">കൂടുതൽ വിവരങ്ങൾ</string>
     <string name="home_trending_all_versions">എല്ലാ versions-ഉം</string>
+    <string name="home_trending_why_menu">ഈ ശീർഷകം ഇവിടെ എന്തുകൊണ്ട്</string>
     <string name="home_trending_previous">മുമ്പത്തേത്</string>
     <string name="home_trending_pause">താൽക്കാലികമായി നിർത്തുക</string>
     <string name="home_trending_resume">resume</string>

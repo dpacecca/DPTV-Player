@@ -181,6 +181,7 @@
     <string name="home_trending_trailer">Trailer</string>
     <string name="home_trending_more_details">Flere detaljer</string>
     <string name="home_trending_all_versions">Alle versjoner</string>
+    <string name="home_trending_why_menu">Hvorfor denne tittelen er her</string>
     <string name="home_trending_previous">Forrige</string>
     <string name="home_trending_pause">Pause</string>
     <string name="home_trending_resume">Fortsett</string>
