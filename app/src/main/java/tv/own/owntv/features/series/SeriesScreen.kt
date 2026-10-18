@@ -1382,7 +1382,7 @@ private fun EpisodeView(
 
     // What the main button plays: the next-up episode (resumed when started), else the first one.
     val target = nextUpId?.let { id -> episodes.firstOrNull { it.id == id } }
-        ?: episodes.minWithOrNull(compareBy({ it.seasonNumber }, { it.episodeNumber }))
+        ?: episodes.minWithOrNull(tv.own.owntv.core.content.EpisodeOrder.episodes)
     val targetProgress = target?.let { episodeProgress[it.id] }
         ?.takeIf { it.positionMs > 0 && it.durationMs > 0 && target.id !in completedIds }
     // The episode's own title: the provider's without its show/code prefix, TMDB's where that leaves
