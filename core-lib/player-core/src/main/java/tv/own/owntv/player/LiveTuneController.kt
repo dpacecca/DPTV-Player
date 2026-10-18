@@ -89,6 +89,8 @@ class LiveTuneController(
         suspend fun openServerTimeshift(channel: ChannelEntity, source: SourceEntity?, windowMinutes: Int, channelKey: String): TimeshiftBuffer? = null
         /** N11 — Settings → Maximum video quality, for the variant a buffer saves; null for none. */
         suspend fun maxVideoHeight(): Int? = null
+        /** A download is using the only stream [sourceId] allows, so the preview pane must not take it. */
+        fun downloadHoldsOnlyStream(sourceId: Long): Boolean = false
     }
 
     /**
@@ -111,7 +113,8 @@ class LiveTuneController(
 
     private val _previewBlocked = MutableStateFlow(false)
 
-    /** True while the preview pane is held back because its panel allows one stream and mpv has it. */
+    /** True while the preview pane is held back because its panel allows one stream and mpv — or a
+     *  download — has it. */
     val previewBlockedSingleSession: StateFlow<Boolean> = _previewBlocked.asStateFlow()
 
     private val recall = ChannelRecall()
@@ -225,6 +228,9 @@ class LiveTuneController(
     /** The channel the preview pane last asked ExoPlayer for (see [expectPromotion]). */
     private var previewedChannelId: Long? = null
 
+    /** The pane's last [preview] and its mute, to open it again directly when its saved copy is lost. */
+    private var lastPreview: Pair<ChannelEntity, Boolean>? = null
+
     /**
      * The channel ExoPlayer's stream belongs to, whatever address it ended up on (DPTV-Player v2.1.4).
      *
@@ -235,9 +241,14 @@ class LiveTuneController(
      */
     private var exoChannelId: Long? = null
 
-    /** ExoPlayer already plays [channel], healthy, by whatever address. */
+    /**
+     * ExoPlayer already plays [channel], healthy, by whatever address. A saved copy's loopback address
+     * counts only while that copy is still open: once it is lost (an outage longer than its reconnect
+     * budget) the engine sits on a closed address and the channel must be opened again.
+     */
     private fun exoHolds(channel: ChannelEntity): Boolean =
-        exoChannelId == channel.id && engines.exoUrl != null && !engines.exoFailed
+        exoChannelId == channel.id && engines.exoUrl != null && !engines.exoFailed &&
+            (!TimeshiftServer.isLocal(engines.exoUrl) || ts?.isClosed == false)
 
     /**
      * The user is opening [channel] full screen. When ExoPlayer is already previewing it, say so at once,
@@ -284,6 +295,7 @@ class LiveTuneController(
      * stays silent and [previewBlockedSingleSession] says why.
      */
     fun preview(channel: ChannelEntity, muted: Boolean) {
+        lastPreview = channel to muted
         if (_liveOnExo.value) {
             if (current != null) return
             // An [expectPromotion] no tune followed (an external player, a refused channel): the pane is
@@ -329,7 +341,7 @@ class LiveTuneController(
                 }
                 val url = host.resolve(source!!, channel.streamUrl) ?: return@launch
                 if (_liveOnExo.value) return@launch // promoted to full-screen while resolving
-                if (blockedBySingleSession(url)) return@launch
+                if (blockedBySingleSession(url, channel)) return@launch
                 exoStalkerCmd = channel.streamUrl
                 setReconnect(channel, source)
                 engines.exoPlay(url, muted, request(channel, source))
@@ -337,7 +349,7 @@ class LiveTuneController(
                 return@launch
             }
             val url = exoUrlFor(channel, source)
-            if (blockedBySingleSession(url)) return@launch
+            if (blockedBySingleSession(url, channel)) return@launch
             if ((engines.exoUrl == url && !engines.exoFailed) || exoHolds(channel)) {
                 engines.exoSetMuted(muted) // already previewing it (a re-focus, or Back from full screen) — just re-apply the mute
                 return@launch
@@ -590,16 +602,26 @@ class LiveTuneController(
 
     private fun localUrl(): String? = ts?.takeIf { !it.isClosed }?.let { TimeshiftServer.urlFor(it, tsFromIndex) }
 
-    /** The copy could not reconnect: the channel is lost, said on screen like any other give-up. */
+    /**
+     * The copy could not reconnect (an outage longer than its reconnect budget): the channel is opened again
+     * instead. Giving up here left the engine on the copy's closed loopback address, and its own "network
+     * restored" retry asked that address for ever (404) — "Reconnecting…" that never ended. A fresh tune
+     * starts a new copy when the provider answers, or plays the channel directly when it does not, and the
+     * live engines' own outage handling takes it from there.
+     */
     private fun onTimeshiftLost(why: String) {
+        val lostKey = ts?.channelKey
         val channel = current
         clearTimeshift()
-        if (channel == null || (!isStillExo(channel) && !isStillMpv(channel))) return
-        val detail = "the connection was lost ($why)"
-        engineLog("'${channel.name}' — giving up: $detail")
-        host.recordLadderEvent(_liveOnExo.value, PlayerFailureReason.LIVE_NO_FALLBACK, "'${channel.name}': $detail")
-        cancelLadderJobs()
-        abandon(channel, detail)
+        if (channel != null && (isStillExo(channel) || isStillMpv(channel))) {
+            engineLog("'${channel.name}' — its saved copy lost the connection ($why); opening it again")
+            tune(channel)
+            return
+        }
+        // The pane was showing the copy (Back from full screen keeps it saving): preview it directly.
+        val pane = lastPreview?.takeIf { timeshiftKey(it.first) == lostKey && TimeshiftServer.isLocal(engines.exoUrl) } ?: return
+        engineLog("'${pane.first.name}' — the pane's saved copy lost the connection ($why); previewing it directly")
+        preview(pane.first, pane.second)
     }
 
     /** The last channel whose copy could not be made (see [openTimeshift]). */
@@ -616,7 +638,15 @@ class LiveTuneController(
     private suspend fun startOnExo(channel: ChannelEntity, source: SourceEntity?, resolved: String? = null) {
         mpvOutcomeJob?.cancel() // ExoPlayer owns the channel now
         _liveOnExo.value = true
-        engines.mpvStop() // mpv lets go of the connection and the decoder before ExoPlayer claims either
+        if (engines.mpvHasStream && singleSessionPanel(channel, source)) {
+            // mpv's stop is asynchronous: on a one-connection panel ExoPlayer opening while mpv still holds
+            // the previous channel's socket is the app competing with itself for the only session (458).
+            // Wait for mpv to let go first; bounded by mpv's release timeout, and only on such a panel.
+            engines.mpvStopAndAwaitRelease()
+            if (!isCurrent(channel)) return // zapped on while mpv released
+        } else {
+            engines.mpvStop() // mpv lets go of the connection and the decoder before ExoPlayer claims either
+        }
         val local = localUrl()
         if (local != null) {
             // The same address is not the same picture after a pause: "live" then means re-opening it.
@@ -942,8 +972,14 @@ class LiveTuneController(
 
     private fun isStillMpv(channel: ChannelEntity): Boolean = !_liveOnExo.value && isCurrent(channel)
 
-    private fun blockedBySingleSession(url: String): Boolean {
-        val blocked = engines.mpvHasStream && LiveStreamQuirks.isSingleSession(url)
+    /** The panel allows one stream at a time: it said so at sync (`max_connections = 1`) or was caught
+     *  refusing a second session this run. */
+    private fun singleSessionPanel(channel: ChannelEntity, source: SourceEntity?): Boolean =
+        source?.maxConnections == 1 || LiveStreamQuirks.isSingleSession(channel.streamUrl)
+
+    private fun blockedBySingleSession(url: String, channel: ChannelEntity): Boolean {
+        val blocked = (engines.mpvHasStream && LiveStreamQuirks.isSingleSession(url)) ||
+            host.downloadHoldsOnlyStream(channel.sourceId)
         _previewBlocked.value = blocked
         return blocked
     }
@@ -1022,11 +1058,15 @@ class LiveTuneController(
         private val sourceLookup: (suspend (Long) -> SourceEntity?)? = null,
         private val engineStarted: () -> Unit = {},
         private val backToLiveEdge: () -> Unit = {},
+        /** Core's `DownloadWatchGuard.holdsOnlyStream`; see [Host.downloadHoldsOnlyStream]. */
+        private val downloadHolds: (Long) -> Boolean = { false },
     ) : Host {
         override suspend fun sourceOf(sourceId: Long): SourceEntity? =
             sourceLookup?.invoke(sourceId) ?: sourceDao.getById(sourceId)
 
         override fun needsResolve(source: SourceEntity?): Boolean = resolver.needsResolve(source)
+
+        override fun downloadHoldsOnlyStream(sourceId: Long): Boolean = downloadHolds(sourceId)
 
         override suspend fun resolve(source: SourceEntity, cmd: String): String? =
             runCatching { resolver.resolve(source, cmd) }

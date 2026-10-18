@@ -115,8 +115,6 @@
     <string name="player_error_image_format">Les sous-titres graphiques ne sont pas disponibles pour le format de ce fichier.</string>
     <string name="player_error_image_show">Impossible d’afficher les sous-titres graphiques de ce fichier.</string>
     <string name="player_external_could_not_open">Impossible d’ouvrir ce flux.</string>
-    <string name="player_external_play_with">Lire avec</string>
-    <string name="player_external_play_with_item">Lire « <xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g> » avec…</string>
     <string name="player_external_not_found">Aucun lecteur externe trouvé — installez VLC ou MX Player.</string>
     <string name="player_error_audio_no_video">Le son est lu, mais la vidéo n’a pas pu être affichée sur cet appareil.</string>
     <string name="player_error_file_corrupt">Le fichier de cette vidéo est mal formé ou corrompu et ne peut pas être lu.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">Le décodeur vidéo matériel de ce téléviseur est occupé. Réessayez dans un instant.</string>
     <string name="player_error_no_internet">Aucune connexion Internet. Vérifiez votre réseau et réessayez.</string>
     <string name="player_error_stream_unavailable">Impossible de lire ce flux. La source est peut-être hors connexion ou utilise un format non pris en charge. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Ce compte est déjà en lecture sur un autre appareil ou une autre application. Arrêtez la lecture là-bas, puis appuyez sur Réessayer.</string>
     <string name="player_error_mpv_open_decode">mpv n’a pas pu ouvrir ou décoder ce fichier.</string>
     <string name="player_error_mpv_stream_never_started">Le flux n’a jamais démarré dans mpv après plusieurs tentatives.</string>
     <string name="player_error_surround">Cette sortie audio ne prend pas en charge le son surround — passage en stéréo.</string>

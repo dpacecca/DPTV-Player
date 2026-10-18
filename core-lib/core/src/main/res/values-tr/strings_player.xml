@@ -115,8 +115,6 @@
     <string name="player_error_image_format">Görsel tabanlı altyazılar bu dosyanın biçiminde kullanılamaz.</string>
     <string name="player_error_image_show">Bu dosyanın görsel tabanlı altyazıları gösterilemedi.</string>
     <string name="player_external_could_not_open">Bu akış açılamadı.</string>
-    <string name="player_external_play_with">Şununla oynat</string>
-    <string name="player_external_play_with_item">“<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>” içeriğini şununla oynat…</string>
     <string name="player_external_not_found">Harici oynatıcı bulunamadı — VLC veya MX Player yükleyin.</string>
     <string name="player_error_audio_no_video">Ses oynatılıyor ancak video bu cihazda görüntülenemedi.</string>
     <string name="player_error_file_corrupt">Bu videonun dosyası hatalı biçimlendirilmiş veya bozuk olduğundan oynatılamıyor.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">Bu TV\'nin video kod çözücüsü meşgul. Biraz sonra tekrar deneyin.</string>
     <string name="player_error_no_internet">İnternet bağlantısı yok. Ağınızı kontrol edip tekrar deneyin.</string>
     <string name="player_error_stream_unavailable">Bu akış oynatılamadı. Kaynak çevrimdışı olabilir veya desteklenmeyen bir biçim kullanıyor olabilir. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Bu hesap zaten başka bir cihazda veya uygulamada oynatılıyor. Orada durdurun, ardından Yeniden dene düğmesine basın.</string>
     <string name="player_error_mpv_open_decode">mpv bu dosyayı açamadı veya kodunu çözemedi.</string>
     <string name="player_error_mpv_stream_never_started">Akış, birkaç kez yeniden denenmesine rağmen mpv\'de hiç başlamadı.</string>
     <string name="player_error_surround">Bu ses çıkışı çevresel sesi desteklemiyor — stereoya geçildi.</string>

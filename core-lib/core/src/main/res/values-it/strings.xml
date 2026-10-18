@@ -13,6 +13,7 @@
     <string name="common_ok">OK</string>
     <string name="common_on">Attivo</string>
     <string name="common_off">Disattivato</string>
+    <string name="common_share">Condividi</string>
     <string name="common_never">Mai</string>
     <string name="common_exit">Esci</string>
     <string name="common_resume">Riprendi</string>
@@ -33,6 +34,7 @@
     <string name="common_nav_series">Serie</string>
     <string name="common_nav_downloads">Download</string>
     <string name="common_nav_guide">Guida TV</string>
+    <string name="common_nav_guide_short">Guida TV</string>
     <string name="common_nav_library">Libreria</string>
     <string name="common_nav_more">Altro</string>
     <string name="common_cast">Trasmetti</string>

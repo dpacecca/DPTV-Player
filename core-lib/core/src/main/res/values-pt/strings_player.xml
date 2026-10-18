@@ -115,8 +115,6 @@
     <string name="player_error_image_format">Subtitles de imagem não estão disponíveis para o formato deste arquivo.</string>
     <string name="player_error_image_show">Não foi possível exibir subtitles de imagem para este arquivo.</string>
     <string name="player_external_could_not_open">Não foi possível abrir esta transmissão.</string>
-    <string name="player_external_play_with">Reproduzir com</string>
-    <string name="player_external_play_with_item">Reproduzir “<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>” com…</string>
     <string name="player_external_not_found">Nenhum reprodutor externo encontrado — instale o VLC ou o MX Player.</string>
     <string name="player_error_audio_no_video">O áudio está sendo reproduzido, mas não foi possível renderizar o vídeo neste dispositivo.</string>
     <string name="player_error_file_corrupt">O arquivo deste vídeo está malformado ou corrompido e não pode ser reproduzido.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">O decodificador de vídeo desta TV está ocupado. Tente novamente em instantes.</string>
     <string name="player_error_no_internet">Sem conexão com a internet. Verifique sua rede e tente novamente.</string>
     <string name="player_error_stream_unavailable">Não foi possível reproduzir esta transmissão. A fonte pode estar sem conexão ou usar um formato não compatível. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Esta conta já está reproduzindo em outro dispositivo ou app. Pare a reprodução lá e toque em Tentar novamente.</string>
     <string name="player_error_mpv_open_decode">O mpv não conseguiu abrir nem decodificar este arquivo.</string>
     <string name="player_error_mpv_stream_never_started">A transmissão não foi iniciada no mpv após várias tentativas.</string>
     <string name="player_error_surround">Esta saída de áudio não é compatível com som surround — alterada para estéreo.</string>

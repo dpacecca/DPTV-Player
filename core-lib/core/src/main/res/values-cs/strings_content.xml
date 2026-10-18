@@ -114,6 +114,7 @@
     <string name="content_no_movies_here">Nejsou zde žádné filmy.</string>
     <string name="content_no_series_here">Nejsou zde žádné seriály.</string>
     <string name="content_no_episodes">Nejsou k dispozici žádné epizody.</string>
+    <string name="content_episodes_load_failed">Epizody se od poskytovatele nepodařilo načíst (<xliff:g id="reason">%1$s</xliff:g>).</string>
     <string name="content_no_movies_found">Pro „<xliff:g id="query">%1$s</xliff:g>“ nebyly nalezeny žádné filmy</string>
     <plurals name="content_count_movies">
         <item quantity="one"><xliff:g id="category">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g> film)</item>
@@ -249,8 +250,32 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">Stahování</string>
     <string name="content_downloads_group_on_tv">V této televizi</string>
+    <string name="content_downloads_group_on_phone">V tomto telefonu</string>
+    <string name="content_downloads_ready_short">Připraveno</string>
     <string name="content_downloads_ready">Připraveno ke sledování</string>
     <string name="content_downloads_paused">Pozastaveno</string>
+    <string name="content_downloads_file_missing">Soubor chybí: na disku už není</string>
+    <string name="content_downloads_reason_account_busy">Účet je obsazený: připojení používá jiný stream</string>
+    <string name="content_downloads_reason_refused">Server odmítl odkaz</string>
+    <string name="content_downloads_reason_not_found">Server už tento soubor nemá</string>
+    <string name="content_downloads_reason_server_error">Chyba serveru</string>
+    <string name="content_downloads_reason_http">Server soubor neodeslal</string>
+    <string name="content_downloads_reason_connection_lost">Spojení bylo přerušeno</string>
+    <string name="content_downloads_reason_folder">Složka pro stahování není dostupná</string>
+    <string name="content_downloads_reason_no_space">Nedostatek místa</string>
+    <string name="content_downloads_reason_too_large">Pro tento disk je soubor příliš velký: neumí uložit soubory nad 4 GB. Zvolte jinou složku pro stahování nebo disk naformátujte na exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Čeká: začne, až přestanete sledovat</string>
+    <string name="content_downloads_reason_paused_watching">Pozastaveno během sledování</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Tento playlist povoluje jen jeden stream</string>
+    <string name="content_download_watch_body">Používalo ho stahování z <xliff:g id="playlist">%1$s</xliff:g>, proto je zatím pozastaveno. Chcete sledovat, nebo zavřít přehrávač a pokračovat ve stahování?</string>
+    <string name="content_download_watch_watch">Pozastavit stahování a sledovat</string>
+    <string name="content_download_watch_keep">Pokračovat ve stahování</string>
+    <string name="content_download_watch_remember">Už se neptat</string>
+    <string name="content_download_watch_setting">Sledování během stahování</string>
+    <string name="content_download_watch_setting_description">U playlistů, které povolují jen jeden stream: co se stane se stahováním, když spustíte přehrávání.</string>
+    <string name="content_download_watch_ask">Pokaždé se zeptat</string>
+    <string name="content_download_watch_pause">Pozastavit stahování</string>
     <string name="content_downloads_starts_after">Ve frontě · začne po <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Vytvořte profil, abyste mohli zobrazit TV program.</string>
@@ -352,6 +377,7 @@
     <string name="content_epg_offset_use_global">Použít globální</string>
     <string name="content_preview_single_stream">Náhled je vypnutý — tvůj poskytovatel umožňuje pouze jeden stream najednou.</string>
     <string name="content_playlist_picker_subtitle">Platí všude a zůstane uloženo</string>
+    <string name="content_playlist_marks_note">Při volbě „Všechny playlisty“ každý řádek ukazuje značku playlistu, ze kterého pochází.</string>
     <string name="content_action_next_episode">Další díl</string>
     <string name="content_search_in">Hledat v <xliff:g id="name">%1$s</xliff:g></string>
     <string name="content_live_guide_view">Zobrazení průvodce</string>
@@ -408,12 +434,15 @@
     <string name="content_key_menu">Nabídka</string>
     <string name="content_key_enter">Vstoupit</string>
     <string name="content_key_select">Vybrat</string>
+    <string name="content_key_unselect">Zrušit výběr</string>
     <string name="content_key_page">Stránka</string>
     <string name="content_history_overlay_hint">Naposledy sledované kanály, od nejnovějších</string>
     <string name="content_watched_duration">zhlédnuto <xliff:g id="value">%1$s</xliff:g></string>
     <string name="content_menu_group_show">Zobrazit</string>
     <string name="content_epg_show_empty">Kanály bez průvodce</string>
     <string name="content_epg_show_preview">Náhled videa</string>
+    <string name="content_epg_view_timeline">Časová osa</string>
+    <string name="content_menu_group_view">Zobrazení</string>
     <string name="content_vod_providers">Poskytovatelé</string>
     <string name="content_sort_movies_title">Řadit filmy</string>
     <string name="content_sort_series_title">Řadit seriály</string>
@@ -448,4 +477,6 @@
     <string name="content_play_from_start">Přehrát od začátku</string>
     <string name="content_episode_details">Podrobnosti epizody</string>
     <string name="content_season_specials">Speciály</string>
+    <string name="content_poster_size">Velikost plakátů</string>
+    <string name="content_vod_more_in">Další v kategorii <xliff:g id="category">%1$s</xliff:g></string>
 </resources>

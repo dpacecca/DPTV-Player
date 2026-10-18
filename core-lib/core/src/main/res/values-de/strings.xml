@@ -13,6 +13,7 @@
     <string name="common_ok">OK</string>
     <string name="common_on">Ein</string>
     <string name="common_off">Aus</string>
+    <string name="common_share">Teilen</string>
     <string name="common_never">Nie</string>
     <string name="common_exit">Beenden</string>
     <string name="common_resume">Fortsetzen</string>
@@ -35,6 +36,7 @@
     <string name="common_nav_guide">Programmübersicht</string>
     <string name="common_nav_sport">Sport</string>
     <string name="common_nav_dvr">Aufnahmen</string>
+    <string name="common_nav_guide_short">Programm</string>
     <string name="common_nav_library">Bibliothek</string>
     <string name="common_nav_more">Mehr</string>
     <string name="common_cast">Übertragen</string>

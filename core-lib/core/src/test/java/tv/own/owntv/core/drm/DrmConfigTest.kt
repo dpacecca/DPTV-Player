@@ -79,9 +79,77 @@ class DrmConfigTest {
         // A type with no key, and a key with no type.
         assertNull(DrmConfig.fromKodiProps(mapOf("license_type" to "com.widevine.alpha")))
         assertNull(DrmConfig.fromKodiProps(mapOf("license_key" to "https://h/k")))
-        // Inline ClearKey data is a local key, not a licence server — a different mechanism.
+        // Inline key data is ClearKey-only, and a key that is not 128 bits is not a key.
         assertNull(DrmConfig.fromKodiProps(mapOf("license_type" to "org.w3c.clearkey", "license_key" to "a1b2:c3d4")))
+        assertNull(DrmConfig.fromKodiProps(mapOf("license_type" to "com.widevine.alpha", "license_key" to "$KID:$KEY")))
         assertNull(DrmConfig.fromKodiProps(emptyMap()))
+    }
+
+    // --- inline ClearKey keys ---
+
+    @Test
+    fun `an inline hex kid and key pair is a clearkey config with no licence server`() {
+        val cfg = DrmConfig.fromKodiProps(mapOf("license_type" to "clearkey", "license_key" to "$KID:${KEY.uppercase()}"))
+        assertEquals(DrmConfig.Scheme.CLEARKEY, cfg?.scheme)
+        assertEquals("", cfg?.licenseUrl)
+        assertEquals(mapOf(KID to KEY), cfg?.clearKeys)
+    }
+
+    @Test
+    fun `several pairs and a uuid-style kid are accepted`() {
+        val uuidKid = "${KID2.substring(0, 8)}-${KID2.substring(8, 12)}-${KID2.substring(12, 16)}-" +
+            "${KID2.substring(16, 20)}-${KID2.substring(20)}"
+        val cfg = DrmConfig.fromKodiProps(
+            mapOf("license_type" to "org.w3c.clearkey", "license_key" to "$KID:$KEY, $uuidKid:$KEY2"),
+        )
+        assertEquals(mapOf(KID to KEY, KID2 to KEY2), cfg?.clearKeys)
+    }
+
+    @Test
+    fun `a jwk set is read as the same keys`() {
+        val jwks = """{"keys":[{"kty":"oct","kid":"${b64url(KID)}","k":"${b64url(KEY)}"}],"type":"temporary"}"""
+        val cfg = DrmConfig.fromKodiProps(mapOf("license_type" to "org.w3c.clearkey", "license_key" to jwks))
+        assertEquals(mapOf(KID to KEY), cfg?.clearKeys)
+    }
+
+    @Test
+    fun `one malformed pair drops the whole declaration`() {
+        assertNull(
+            DrmConfig.fromKodiProps(mapOf("license_type" to "org.w3c.clearkey", "license_key" to "$KID:$KEY,$KID2:zz")),
+        )
+    }
+
+    @Test
+    fun `inline keys survive the stored round trip`() {
+        val cfg = DrmConfig(DrmConfig.Scheme.CLEARKEY, "", clearKeys = mapOf(KID to KEY))
+        assertEquals(cfg, DrmConfig.decode(DrmConfig.encode(cfg)))
+        // Keys are ClearKey's alone: a widevine blob carrying them is not something we wrote.
+        assertNull(DrmConfig.decode("""{"scheme":"widevine","license":"","clearKeys":{"$KID":"$KEY"}}"""))
+    }
+
+    @Test
+    fun `an inline clearkey playlist entry parses`() {
+        val entries = parse(
+            """
+            #EXTM3U
+            #EXTINF:-1 group-title="Test",Inline ClearKey
+            #KODIPROP:inputstream.adaptive.license_type=clearkey
+            #KODIPROP:inputstream.adaptive.license_key=$KID:$KEY
+            https://host/live/cenc.mpd
+            """.trimIndent(),
+        )
+        assertEquals(mapOf(KID to KEY), entries[0].drm?.clearKeys)
+        assertEquals("https://host/live/cenc.mpd", entries[0].streamUrl)
+    }
+
+    private fun b64url(hex: String): String = java.util.Base64.getUrlEncoder().withoutPadding()
+        .encodeToString(ByteArray(hex.length / 2) { hex.substring(it * 2, it * 2 + 2).toInt(16).toByte() })
+
+    private companion object {
+        const val KID = "0123456789abcdef0123456789abcdef"
+        const val KEY = "fedcba9876543210fedcba9876543210"
+        const val KID2 = "00112233445566778899aabbccddeeff"
+        const val KEY2 = "ffeeddccbbaa99887766554433221100"
     }
 
     // --- encode / decode ---

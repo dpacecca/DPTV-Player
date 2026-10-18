@@ -98,6 +98,7 @@
     <string name="content_no_movies_here">Itt nincsenek filmek.</string>
     <string name="content_no_series_here">Itt nincsenek sorozatok.</string>
     <string name="content_no_episodes">Nincs elérhető epizód.</string>
+    <string name="content_episodes_load_failed">Nem sikerült betölteni az epizódokat a szolgáltatótól (<xliff:g id="reason">%1$s</xliff:g>).</string>
     <string name="content_no_movies_found">Nincs találat erre: „<xliff:g id="query">%1$s</xliff:g>”</string>
     <plurals name="content_count_movies">
         <item quantity="one"><xliff:g id="category">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g> film)</item>
@@ -225,8 +226,32 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">Letöltés alatt</string>
     <string name="content_downloads_group_on_tv">Ezen a tévén</string>
+    <string name="content_downloads_group_on_phone">Ezen a telefonon</string>
+    <string name="content_downloads_ready_short">Kész</string>
     <string name="content_downloads_ready">Megtekinthető</string>
     <string name="content_downloads_paused">Szüneteltetve</string>
+    <string name="content_downloads_file_missing">Hiányzó fájl: már nincs a meghajtón</string>
+    <string name="content_downloads_reason_account_busy">A fiók foglalt: egy másik adatfolyam használja a kapcsolatot</string>
+    <string name="content_downloads_reason_refused">A szerver elutasította a hivatkozást</string>
+    <string name="content_downloads_reason_not_found">A szerveren már nincs meg ez a fájl</string>
+    <string name="content_downloads_reason_server_error">Szerverhiba</string>
+    <string name="content_downloads_reason_http">A szerver nem küldte el a fájlt</string>
+    <string name="content_downloads_reason_connection_lost">Megszakadt a kapcsolat</string>
+    <string name="content_downloads_reason_folder">A letöltési mappa nem érhető el</string>
+    <string name="content_downloads_reason_no_space">Nincs elég hely</string>
+    <string name="content_downloads_reason_too_large">Túl nagy ehhez a meghajtóhoz: nem tud 4 GB-nál nagyobb fájlt tárolni. Válassz másik letöltési mappát, vagy formázd a meghajtót exFAT-ra</string>
+    <string name="content_downloads_reason_waiting_watching">Várakozik: akkor indul, amikor abbahagyod a nézést</string>
+    <string name="content_downloads_reason_paused_watching">Szüneteltetve, amíg nézed</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Ez a lejátszási lista csak egy adatfolyamot enged</string>
+    <string name="content_download_watch_body">Egy letöltés innen: <xliff:g id="playlist">%1$s</xliff:g> használta, ezért most szünetel. Nézed, vagy bezárod a lejátszót és folytatod a letöltést?</string>
+    <string name="content_download_watch_watch">Letöltés szüneteltetése és nézés</string>
+    <string name="content_download_watch_keep">Letöltés folytatása</string>
+    <string name="content_download_watch_remember">Ne kérdezze többé</string>
+    <string name="content_download_watch_setting">Nézés letöltés közben</string>
+    <string name="content_download_watch_setting_description">Csak egy adatfolyamot engedő lejátszási listáknál: mi történik a letöltéssel, ha elindítasz egy lejátszást.</string>
+    <string name="content_download_watch_ask">Mindig kérdezzen</string>
+    <string name="content_download_watch_pause">Letöltés szüneteltetése</string>
     <string name="content_downloads_starts_after">Sorban áll · ez után indul: <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Hozz létre egy profilt a műsorújság megjelenítéséhez.</string>
@@ -316,6 +341,7 @@
     <string name="content_epg_offset_use_global">Globális eltolás használata</string>
     <string name="content_preview_single_stream">Az előnézet ki van kapcsolva — a szolgáltatód egyszerre csak egy adást enged</string>
     <string name="content_playlist_picker_subtitle">Mindenhol érvényes, és megmarad</string>
+    <string name="content_playlist_marks_note">Az „Összes lejátszási lista” beállításnál minden sor mutatja a forráslista jelét.</string>
     <string name="content_action_next_episode">Következő epizód</string>
     <string name="content_search_in">Keresés: <xliff:g id="name">%1$s</xliff:g></string>
     <string name="content_live_guide_view">Műsorújság nézet</string>
@@ -366,12 +392,15 @@
     <string name="content_key_menu">Menü</string>
     <string name="content_key_enter">Belépés</string>
     <string name="content_key_select">Kiválasztás</string>
+    <string name="content_key_unselect">Kijelölés törlése</string>
     <string name="content_key_page">Oldal</string>
     <string name="content_history_overlay_hint">A legutóbb nézett csatornák, a legújabb elöl</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> megnézve</string>
     <string name="content_menu_group_show">Megjelenítés</string>
     <string name="content_epg_show_empty">Műsor nélküli csatornák</string>
     <string name="content_epg_show_preview">Videóelőnézet</string>
+    <string name="content_epg_view_timeline">Idővonal</string>
+    <string name="content_menu_group_view">Nézet</string>
     <string name="content_vod_providers">Szolgáltatók</string>
     <string name="content_sort_movies_title">Filmek rendezése</string>
     <string name="content_sort_series_title">Sorozatok rendezése</string>
@@ -402,4 +431,6 @@
     <string name="content_play_from_start">Lejátszás az elejéről</string>
     <string name="content_episode_details">Epizód részletei</string>
     <string name="content_season_specials">Különkiadások</string>
+    <string name="content_poster_size">Poszterméret</string>
+    <string name="content_vod_more_in">Továbbiak itt: <xliff:g id="category">%1$s</xliff:g></string>
 </resources>

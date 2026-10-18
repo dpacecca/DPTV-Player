@@ -102,6 +102,7 @@
     <string name="content_no_movies_here">ഇവിടെ സിനിമകളൊന്നുമില്ല.</string>
     <string name="content_no_series_here">ഇവിടെ സീരീസുകളൊന്നുമില്ല.</string>
     <string name="content_no_episodes">എപ്പിസോഡുകളൊന്നും ലഭ്യമല്ല.</string>
+    <string name="content_episodes_load_failed">ദാതാവിൽ നിന്ന് എപ്പിസോഡുകൾ ലോഡ് ചെയ്യാനായില്ല (<xliff:g id="reason">%1$s</xliff:g>).</string>
     <string name="content_no_movies_found">“<xliff:g id="query">%1$s</xliff:g>” എന്നതിനായി സിനിമകളൊന്നും കണ്ടെത്തിയില്ല</string>
     <plurals name="content_count_movies">
         <item quantity="one"><xliff:g id="category">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g> സിനിമ)</item>
@@ -233,8 +234,32 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">ഡൗൺലോഡ് ചെയ്യുന്നു</string>
     <string name="content_downloads_group_on_tv">ഈ ടിവിയിൽ</string>
+    <string name="content_downloads_group_on_phone">ഈ ഫോണിൽ</string>
+    <string name="content_downloads_ready_short">തയ്യാർ</string>
     <string name="content_downloads_ready">കാണാൻ തയ്യാർ</string>
     <string name="content_downloads_paused">താൽക്കാലികമായി നിർത്തി</string>
+    <string name="content_downloads_file_missing">ഫയൽ കാണുന്നില്ല: ഇത് ഇനി ഡ്രൈവിൽ ഇല്ല</string>
+    <string name="content_downloads_reason_account_busy">അക്കൗണ്ട് തിരക്കിലാണ്: മറ്റൊരു സ്ട്രീം കണക്ഷൻ ഉപയോഗിക്കുന്നു</string>
+    <string name="content_downloads_reason_refused">സെർവർ ലിങ്ക് നിരസിച്ചു</string>
+    <string name="content_downloads_reason_not_found">ഈ ഫയൽ ഇനി സെർവറിൽ ഇല്ല</string>
+    <string name="content_downloads_reason_server_error">സെർവർ പിശക്</string>
+    <string name="content_downloads_reason_http">സെർവർ ഫയൽ അയച്ചില്ല</string>
+    <string name="content_downloads_reason_connection_lost">കണക്ഷൻ നഷ്ടപ്പെട്ടു</string>
+    <string name="content_downloads_reason_folder">ഡൗൺലോഡ് ഫോൾഡർ ലഭ്യമല്ല</string>
+    <string name="content_downloads_reason_no_space">മതിയായ സ്ഥലമില്ല</string>
+    <string name="content_downloads_reason_too_large">ഈ ഡ്രൈവിന് വളരെ വലുതാണ്: 4 GB-യിൽ കൂടുതലുള്ള ഫയലുകൾ ഇതിൽ സംഭരിക്കാനാവില്ല. മറ്റൊരു ഡൗൺലോഡ് ഫോൾഡർ തിരഞ്ഞെടുക്കുക, അല്ലെങ്കിൽ ഡ്രൈവ് exFAT ആയി ഫോർമാറ്റ് ചെയ്യുക</string>
+    <string name="content_downloads_reason_waiting_watching">കാത്തിരിക്കുന്നു: നിങ്ങൾ കാണുന്നത് നിർത്തുമ്പോൾ ആരംഭിക്കും</string>
+    <string name="content_downloads_reason_paused_watching">നിങ്ങൾ കാണുമ്പോൾ താൽക്കാലികമായി നിർത്തി</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">ഈ പ്ലേലിസ്റ്റ് ഒരു സ്ട്രീം മാത്രമേ അനുവദിക്കൂ</string>
+    <string name="content_download_watch_body"><xliff:g id="playlist">%1$s</xliff:g>-ൽ നിന്നുള്ള ഒരു ഡൗൺലോഡ് ഇത് ഉപയോഗിക്കുകയായിരുന്നു, അതിനാൽ അത് ഇപ്പോൾ താൽക്കാലികമായി നിർത്തി. കാണണോ, അതോ പ്ലെയർ അടച്ച് ഡൗൺലോഡ് തുടരണോ?</string>
+    <string name="content_download_watch_watch">ഡൗൺലോഡ് നിർത്തി കാണുക</string>
+    <string name="content_download_watch_keep">ഡൗൺലോഡ് തുടരുക</string>
+    <string name="content_download_watch_remember">വീണ്ടും ചോദിക്കരുത്</string>
+    <string name="content_download_watch_setting">ഡൗൺലോഡ് ചെയ്യുമ്പോൾ കാണൽ</string>
+    <string name="content_download_watch_setting_description">ഒരു സ്ട്രീം മാത്രം അനുവദിക്കുന്ന പ്ലേലിസ്റ്റുകൾക്ക്: പ്ലേ ചെയ്യാൻ തുടങ്ങുമ്പോൾ ഡൗൺലോഡിന് എന്ത് സംഭവിക്കും.</string>
+    <string name="content_download_watch_ask">ഓരോ തവണയും ചോദിക്കുക</string>
+    <string name="content_download_watch_pause">ഡൗൺലോഡ് താൽക്കാലികമായി നിർത്തുക</string>
     <string name="content_downloads_starts_after">ക്യൂവിൽ · <xliff:g id="title">%1$s</xliff:g> കഴിഞ്ഞ് ആരംഭിക്കും</string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">ഗൈഡ് കാണാൻ ഒരു പ്രൊഫൈൽ സൃഷ്ടിക്കുക.</string>
@@ -324,6 +349,7 @@
     <string name="content_epg_offset_use_global">ആഗോള ഓഫ്സെറ്റ് ഉപയോഗിക്കുക</string>
     <string name="content_preview_single_stream">പ്രിവ്യൂ ഓഫ് — നിങ്ങളുടെ പ്രൊവൈഡർ ഒരു സമയം ഒരു സ്ട്രീം മാത്രമേ അനുവദിക്കൂ</string>
     <string name="content_playlist_picker_subtitle">എല്ലായിടത്തും ബാധകം, ഓർമ്മിച്ചുവയ്ക്കും</string>
+    <string name="content_playlist_marks_note">എല്ലാ പ്ലേലിസ്റ്റുകളും ഓണായിരിക്കുമ്പോൾ ഓരോ വരിയും അത് വന്ന പ്ലേലിസ്റ്റിന്റെ അടയാളം കാണിക്കുന്നു.</string>
     <string name="content_action_next_episode">അടുത്ത എപ്പിസോഡ്</string>
     <string name="content_search_in"><xliff:g id="name">%1$s</xliff:g>-ൽ തിരയുക</string>
     <string name="content_live_guide_view">ഗൈഡ് കാഴ്ച</string>
@@ -374,12 +400,15 @@
     <string name="content_key_menu">മെനു</string>
     <string name="content_key_enter">തുറക്കുക</string>
     <string name="content_key_select">തിരഞ്ഞെടുക്കുക</string>
+    <string name="content_key_unselect">ഒഴിവാക്കുക</string>
     <string name="content_key_page">പേജ്</string>
     <string name="content_history_overlay_hint">നിങ്ങൾ അടുത്തിടെ കണ്ട ചാനലുകൾ, പുതിയത് ആദ്യം</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> കണ്ടു</string>
     <string name="content_menu_group_show">കാണിക്കുക</string>
     <string name="content_epg_show_empty">ഗൈഡില്ലാത്ത ചാനലുകൾ</string>
     <string name="content_epg_show_preview">വീഡിയോ പ്രിവ്യൂ</string>
+    <string name="content_epg_view_timeline">ടൈംലൈൻ</string>
+    <string name="content_menu_group_view">കാഴ്ച</string>
     <string name="content_vod_providers">ദാതാക്കൾ</string>
     <string name="content_sort_movies_title">സിനിമകൾ ക്രമീകരിക്കുക</string>
     <string name="content_sort_series_title">സീരീസുകൾ ക്രമീകരിക്കുക</string>
@@ -410,4 +439,6 @@
     <string name="content_play_from_start">ആദ്യം മുതൽ പ്ലേ ചെയ്യുക</string>
     <string name="content_episode_details">എപ്പിസോഡ് വിശദാംശങ്ങൾ</string>
     <string name="content_season_specials">പ്രത്യേക എപ്പിസോഡുകൾ</string>
+    <string name="content_poster_size">പോസ്റ്റർ വലുപ്പം</string>
+    <string name="content_vod_more_in"><xliff:g id="category">%1$s</xliff:g>-ൽ കൂടുതൽ</string>
 </resources>

@@ -39,6 +39,8 @@
     <string name="profiles_save">Save</string>
     <!-- Translators: Heading on the profile gate / lock screen. -->
     <string name="profiles_gate_title">Who\'s watching?</string>
+    <!-- Translators: Line under Who's watching? on the profile picker. -->
+    <string name="profiles_gate_subtitle">Each profile keeps its own favorites and history</string>
     <!-- Translators: Error text on the PIN entry screen when the wrong PIN is entered. -->
     <string name="profiles_wrong_pin">Wrong PIN \u2014 try again</string>
     <!-- Translators: PIN entry prompt. "name" is the profile name. -->
@@ -89,8 +91,8 @@
     <string name="search_series">Series</string>
     <!-- Translators: Content type label in search results. -->
     <string name="search_channels">Channels</string>
-    <!-- Translators: Search results heading for TV programmes whose title matches, with the channel showing them. -->
-    <string name="search_on_tv">On TV</string>
+    <!-- Translators: Search filter button and results heading for TV guide programmes (on now or later today) whose title matches, with the channel showing them. Not films or series from the catalogue. -->
+    <string name="search_on_tv">TV Shows</string>
     <!-- Translators: Key hint on a channel search result: OK takes you to the channel in Live TV (it does not play it). -->
     <string name="search_go_to_channel">Go to channel</string>
     <!-- Translators: Key hint on a movie search result: OK takes you to the movie in Movies (it does not play it). -->
@@ -238,6 +240,8 @@
     <string name="home_trending_trailer">Trailer</string>
     <string name="home_trending_more_details">More Details</string>
     <string name="home_trending_all_versions">All versions</string>
+    <!-- Translators: Menu item on a Home Trending title's long-press menu; opens the sheet explaining why the title is on Home. -->
+    <string name="home_trending_why_menu">Why this title is here</string>
     <string name="home_trending_previous">Previous</string>
     <string name="home_trending_pause">Pause</string>
     <string name="home_trending_resume">Resume</string>

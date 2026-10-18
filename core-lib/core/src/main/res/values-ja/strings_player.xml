@@ -115,8 +115,6 @@
     <string name="player_error_image_format">このファイル形式では、画像形式の字幕を利用できません。</string>
     <string name="player_error_image_show">このファイルの画像形式の字幕を表示できませんでした。</string>
     <string name="player_external_could_not_open">このストリームを開けませんでした。</string>
-    <string name="player_external_play_with">再生に使用するアプリ</string>
-    <string name="player_external_play_with_item">「<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>」を再生するアプリ…</string>
     <string name="player_external_not_found">外部プレーヤーが見つかりません — VLCまたはMX Playerをインストールしてください。</string>
     <string name="player_error_audio_no_video">音声は再生されていますが、このデバイスでは映像を表示できませんでした。</string>
     <string name="player_error_file_corrupt">このビデオのファイルは形式が不正か破損しているため、再生できません。</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">このテレビのビデオデコーダーは使用中です。しばらくしてからもう一度お試しください。</string>
     <string name="player_error_no_internet">インターネットに接続されていません。ネットワークを確認して、もう一度お試しください。</string>
     <string name="player_error_stream_unavailable">このストリームを再生できませんでした。ソースがオフラインか、未対応の形式が使用されている可能性があります。<xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">このアカウントは別のデバイスまたはアプリですでに再生中です。そちらで停止してから、再試行を押してください。</string>
     <string name="player_error_mpv_open_decode">mpvでこのファイルを開くかデコードできませんでした。</string>
     <string name="player_error_mpv_stream_never_started">数回再試行しましたが、mpvでストリームが開始されませんでした。</string>
     <string name="player_error_surround">この音声出力ではサラウンドを利用できないため、ステレオに切り替えました。</string>

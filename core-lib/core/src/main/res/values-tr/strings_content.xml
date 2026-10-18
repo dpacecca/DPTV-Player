@@ -92,16 +92,17 @@
     <string name="content_newest_first">Önce en yeniler</string>
     <string name="content_last_watched">Son izlenme</string>
     <string name="content_play_external">Harici oynatıcıyla oynat</string>
-    <string name="content_delete_subtitles">OpenSub altyazılarını sil</string>
+    <string name="content_delete_subtitles">OpenSubtitles altyazılarını sil</string>
     <string name="content_tmdb_details">TMDB Ayrıntıları</string>
     <string name="content_play_trailer">Fragmanı oynat</string>
-    <string name="content_refetch_tmdb">TMDB ayrıntılarını yeniden getir</string>
+    <string name="content_refetch_tmdb">Ayrıntıları güncelle</string>
     <string name="content_set_tmdb_name">TMDB adını belirle</string>
     <string name="content_close">Kapat</string>
     <string name="content_rename_hint">Yalnızca bu profil için geçerlidir. Özgün adı geri yüklemek için boş bırakın.</string>
     <string name="content_no_movies_here">Burada film yok.</string>
     <string name="content_no_series_here">Burada dizi yok.</string>
     <string name="content_no_episodes">Kullanılabilir bölüm yok.</string>
+    <string name="content_episodes_load_failed">Bölümler sağlayıcıdan yüklenemedi (<xliff:g id="reason">%1$s</xliff:g>).</string>
     <string name="content_no_movies_found">“<xliff:g id="query">%1$s</xliff:g>” için film bulunamadı</string>
     <plurals name="content_count_movies">
         <item quantity="one"><xliff:g id="category">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g> film)</item>
@@ -165,17 +166,17 @@
     <string name="content_live_time_range_plain"><xliff:g id="start">%1$s</xliff:g> – <xliff:g id="stop">%2$s</xliff:g></string>
     <string name="content_category_favorites">Favoriler</string>
     <string name="content_category_history">İzleme Geçmişi</string>
-    <string name="content_category_all_channels">Tüm Kanallar</string>
+    <string name="content_category_all_channels">Tüm kanallar</string>
     <string name="content_category_united_kingdom">Birleşik Krallık</string>
     <string name="content_category_united_states">Amerika Birleşik Devletleri</string>
     <string name="content_category_germany">Almanya</string>
     <string name="content_category_sports">Spor</string>
-    <string name="content_category_all_movies">Tüm Filmler</string>
+    <string name="content_category_all_movies">Tüm filmler</string>
     <string name="content_category_action">Aksiyon</string>
     <string name="content_category_drama">Dram</string>
     <string name="content_category_comedy">Komedi</string>
     <string name="content_category_horror">Korku</string>
-    <string name="content_category_all_series">Tüm Diziler</string>
+    <string name="content_category_all_series">Tüm diziler</string>
     <string name="content_category_animation">Animasyon</string>
     <string name="content_category_documentary">Belgesel</string>
     <string name="content_category_all_downloads">Tüm İndirilenler</string>
@@ -233,8 +234,32 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">İndiriliyor</string>
     <string name="content_downloads_group_on_tv">Bu TV’de</string>
+    <string name="content_downloads_group_on_phone">Bu telefonda</string>
+    <string name="content_downloads_ready_short">Hazır</string>
     <string name="content_downloads_ready">İzlemeye hazır</string>
     <string name="content_downloads_paused">Duraklatıldı</string>
+    <string name="content_downloads_file_missing">Dosya yok: artık sürücüde değil</string>
+    <string name="content_downloads_reason_account_busy">Hesap meşgul: bağlantıyı başka bir akış kullanıyor</string>
+    <string name="content_downloads_reason_refused">Sunucu bağlantıyı reddetti</string>
+    <string name="content_downloads_reason_not_found">Sunucuda artık bu dosya yok</string>
+    <string name="content_downloads_reason_server_error">Sunucu hatası</string>
+    <string name="content_downloads_reason_http">Sunucu dosyayı göndermedi</string>
+    <string name="content_downloads_reason_connection_lost">Bağlantı kesildi</string>
+    <string name="content_downloads_reason_folder">İndirme klasörü kullanılamıyor</string>
+    <string name="content_downloads_reason_no_space">Yeterli alan yok</string>
+    <string name="content_downloads_reason_too_large">Bu sürücü için çok büyük: 4 GB üzerindeki dosyaları saklayamaz. Başka bir indirme klasörü seçin veya sürücüyü exFAT olarak biçimlendirin</string>
+    <string name="content_downloads_reason_waiting_watching">Bekliyor: izlemeyi bıraktığınızda başlar</string>
+    <string name="content_downloads_reason_paused_watching">İzlerken duraklatıldı</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Bu oynatma listesi yalnızca bir akışa izin veriyor</string>
+    <string name="content_download_watch_body"><xliff:g id="playlist">%1$s</xliff:g> kaynağından bir indirme bunu kullanıyordu, bu yüzden şimdilik duraklatıldı. İzlemek mi, yoksa oynatıcıyı kapatıp indirmeye devam etmek mi istersiniz?</string>
+    <string name="content_download_watch_watch">İndirmeyi duraklat ve izle</string>
+    <string name="content_download_watch_keep">İndirmeye devam et</string>
+    <string name="content_download_watch_remember">Bir daha sorma</string>
+    <string name="content_download_watch_setting">İndirme sırasında izleme</string>
+    <string name="content_download_watch_setting_description">Yalnızca bir akışa izin veren oynatma listelerinde: oynatmaya başladığınızda indirmeye ne olacağı.</string>
+    <string name="content_download_watch_ask">Her seferinde sor</string>
+    <string name="content_download_watch_pause">İndirmeyi duraklat</string>
     <string name="content_downloads_starts_after">Sırada · <xliff:g id="title">%1$s</xliff:g> bitince başlar</string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/sn</string>
     <string name="content_epg_create_profile">Rehberi görmek için bir profil oluşturun.</string>
@@ -324,6 +349,7 @@
     <string name="content_epg_offset_use_global">Genel farkı kullan</string>
     <string name="content_preview_single_stream">Önizleme kapalı — sağlayıcınız aynı anda yalnızca bir yayına izin veriyor</string>
     <string name="content_playlist_picker_subtitle">Her yerde geçerlidir ve hatırlanır</string>
+    <string name="content_playlist_marks_note">Tüm oynatma listeleri açıkken her satır, geldiği listenin işaretini gösterir.</string>
     <string name="content_action_next_episode">Sonraki bölüm</string>
     <string name="content_search_in"><xliff:g id="name">%1$s</xliff:g> içinde ara</string>
     <string name="content_live_guide_view">Rehber görünümü</string>
@@ -374,12 +400,15 @@
     <string name="content_key_menu">Menü</string>
     <string name="content_key_enter">Gir</string>
     <string name="content_key_select">Seç</string>
+    <string name="content_key_unselect">Seçimi kaldır</string>
     <string name="content_key_page">Sayfa</string>
     <string name="content_history_overlay_hint">En son izlediğiniz kanallar, en yeniler önce</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> izlendi</string>
     <string name="content_menu_group_show">Göster</string>
     <string name="content_epg_show_empty">Rehberi olmayan kanallar</string>
     <string name="content_epg_show_preview">Video önizleme</string>
+    <string name="content_epg_view_timeline">Zaman çizelgesi</string>
+    <string name="content_menu_group_view">Görünüm</string>
     <string name="content_vod_providers">Sağlayıcılar</string>
     <string name="content_sort_movies_title">Filmleri sırala</string>
     <string name="content_sort_series_title">Dizileri sırala</string>
@@ -410,4 +439,6 @@
     <string name="content_play_from_start">Baştan oynat</string>
     <string name="content_episode_details">Bölüm ayrıntıları</string>
     <string name="content_season_specials">Özel bölümler</string>
+    <string name="content_poster_size">Afiş boyutu</string>
+    <string name="content_vod_more_in"><xliff:g id="category">%1$s</xliff:g> kategorisinde daha fazlası</string>
 </resources>

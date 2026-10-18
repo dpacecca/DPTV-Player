@@ -102,6 +102,7 @@
     <string name="content_no_movies_here">Inga filmer här.</string>
     <string name="content_no_series_here">Inga serier här.</string>
     <string name="content_no_episodes">Inga avsnitt är tillgängliga.</string>
+    <string name="content_episodes_load_failed">Det gick inte att hämta avsnitten från leverantören (<xliff:g id="reason">%1$s</xliff:g>).</string>
     <string name="content_no_movies_found">Inga filmer hittades för ”<xliff:g id="query">%1$s</xliff:g>”</string>
     <plurals name="content_count_movies">
         <item quantity="one"><xliff:g id="category">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g> film)</item>
@@ -233,8 +234,32 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">Laddar ned</string>
     <string name="content_downloads_group_on_tv">På den här tv:n</string>
+    <string name="content_downloads_group_on_phone">På den här telefonen</string>
+    <string name="content_downloads_ready_short">Klar</string>
     <string name="content_downloads_ready">Klar att titta</string>
     <string name="content_downloads_paused">Pausad</string>
+    <string name="content_downloads_file_missing">Filen saknas: den finns inte längre på enheten</string>
+    <string name="content_downloads_reason_account_busy">Kontot är upptaget: en annan ström använder anslutningen</string>
+    <string name="content_downloads_reason_refused">Servern nekade länken</string>
+    <string name="content_downloads_reason_not_found">Servern har inte längre den här filen</string>
+    <string name="content_downloads_reason_server_error">Serverfel</string>
+    <string name="content_downloads_reason_http">Servern skickade inte filen</string>
+    <string name="content_downloads_reason_connection_lost">Anslutningen bröts</string>
+    <string name="content_downloads_reason_folder">Nedladdningsmappen är inte tillgänglig</string>
+    <string name="content_downloads_reason_no_space">Inte tillräckligt med utrymme</string>
+    <string name="content_downloads_reason_too_large">För stor för den här enheten: den kan inte lagra filer över 4 GB. Välj en annan nedladdningsmapp eller formatera enheten som exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Väntar: startar när du slutar titta</string>
+    <string name="content_downloads_reason_paused_watching">Pausad medan du tittar</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Den här spellistan tillåter bara en ström</string>
+    <string name="content_download_watch_body">En nedladdning från <xliff:g id="playlist">%1$s</xliff:g> använde den och är nu pausad. Vill du titta, eller stänga spelaren och fortsätta ladda ner?</string>
+    <string name="content_download_watch_watch">Pausa nedladdningen och titta</string>
+    <string name="content_download_watch_keep">Fortsätt ladda ner</string>
+    <string name="content_download_watch_remember">Fråga inte igen</string>
+    <string name="content_download_watch_setting">Titta under nedladdning</string>
+    <string name="content_download_watch_setting_description">För spellistor som bara tillåter en ström: vad som händer med en nedladdning när du börjar spela upp.</string>
+    <string name="content_download_watch_ask">Fråga varje gång</string>
+    <string name="content_download_watch_pause">Pausa nedladdningen</string>
     <string name="content_downloads_starts_after">I kö · startar efter <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Skapa en profil för att se programguiden.</string>
@@ -324,6 +349,7 @@
     <string name="content_epg_offset_use_global">Använd global</string>
     <string name="content_preview_single_stream">Förhandsvisning av — din leverantör tillåter bara en ström i taget.</string>
     <string name="content_playlist_picker_subtitle">Gäller överallt och sparas</string>
+    <string name="content_playlist_marks_note">Med ”Alla spellistor” visar varje rad märket för spellistan den kommer från.</string>
     <string name="content_action_next_episode">Nästa avsnitt</string>
     <string name="content_search_in">Sök i <xliff:g id="name">%1$s</xliff:g></string>
     <string name="content_live_guide_view">Guidevy</string>
@@ -374,12 +400,15 @@
     <string name="content_key_menu">Meny</string>
     <string name="content_key_enter">Öppna</string>
     <string name="content_key_select">Välj</string>
+    <string name="content_key_unselect">Avmarkera</string>
     <string name="content_key_page">Sida</string>
     <string name="content_history_overlay_hint">Kanalerna du såg senast, nyaste först</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> sedda</string>
     <string name="content_menu_group_show">Visa</string>
     <string name="content_epg_show_empty">Kanaler utan guide</string>
     <string name="content_epg_show_preview">Förhandsvisning av video</string>
+    <string name="content_epg_view_timeline">Tidslinje</string>
+    <string name="content_menu_group_view">Vy</string>
     <string name="content_vod_providers">Leverantörer</string>
     <string name="content_sort_movies_title">Sortera filmer</string>
     <string name="content_sort_series_title">Sortera serier</string>
@@ -410,4 +439,6 @@
     <string name="content_play_from_start">Spela från början</string>
     <string name="content_episode_details">Avsnittsdetaljer</string>
     <string name="content_season_specials">Specialavsnitt</string>
+    <string name="content_poster_size">Storlek på omslagsbilder</string>
+    <string name="content_vod_more_in">Mer i <xliff:g id="category">%1$s</xliff:g></string>
 </resources>

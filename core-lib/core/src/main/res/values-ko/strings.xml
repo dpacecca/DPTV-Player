@@ -13,6 +13,7 @@
     <string name="common_ok">확인</string>
     <string name="common_on">켜짐</string>
     <string name="common_off">꺼짐</string>
+    <string name="common_share">공유</string>
     <string name="common_never">안 함</string>
     <string name="common_exit">종료</string>
     <string name="common_resume">이어보기</string>
@@ -33,6 +34,7 @@
     <string name="common_nav_series">시리즈</string>
     <string name="common_nav_downloads">다운로드</string>
     <string name="common_nav_guide">편성표</string>
+    <string name="common_nav_guide_short">편성표</string>
     <string name="common_nav_library">라이브러리</string>
     <string name="common_nav_more">더보기</string>
     <string name="common_cast">전송</string>

@@ -33,7 +33,26 @@ data class SearchResults(
     val programmes: List<ProgrammeSearchResult> = emptyList(),
 ) {
     val isEmpty: Boolean get() = channels.isEmpty() && movies.isEmpty() && series.isEmpty() && programmes.isEmpty()
+
+    /** How many results are of [kind] — the count each filter button shows. */
+    fun count(kind: SearchKind): Int = when (kind) {
+        SearchKind.LIVE -> channels.size
+        SearchKind.TV_SHOWS -> programmes.size
+        SearchKind.MOVIES -> movies.size
+        SearchKind.SERIES -> series.size
+    }
+
+    /** Only the kinds in [kinds]. None picked is no filter at all: everything. */
+    fun only(kinds: Set<SearchKind>): SearchResults = if (kinds.isEmpty()) this else SearchResults(
+        channels = if (SearchKind.LIVE in kinds) channels else emptyList(),
+        movies = if (SearchKind.MOVIES in kinds) movies else emptyList(),
+        series = if (SearchKind.SERIES in kinds) series else emptyList(),
+        programmes = if (SearchKind.TV_SHOWS in kinds) programmes else emptyList(),
+    )
 }
+
+/** The search filter's buttons, each switched on and off on its own. TV shows are guide programmes. */
+enum class SearchKind { LIVE, TV_SHOWS, MOVIES, SERIES }
 
 /** A programme found by its title, with the channel showing it; times are on the user's clock. */
 @Immutable

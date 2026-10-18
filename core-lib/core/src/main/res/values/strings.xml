@@ -27,6 +27,8 @@
     <string name="common_on">On</string>
     <!-- Translators: Compact state label for "disabled" used in settings toggles and chips. This is a state, not a command. -->
     <string name="common_off">Off</string>
+    <!-- Translators: Button that opens the system share sheet (e.g. to send a backup file to another app). -->
+    <string name="common_share">Share</string>
     <!-- Translators: Compact label for an option that switches a time limit off entirely, i.e. "wait forever". Used as a choice alongside durations such as "15 seconds". -->
     <string name="common_never">Never</string>
     <!-- Translators: Generic exit action or button label. -->
@@ -72,6 +74,8 @@
     <string name="common_nav_sport">Sport</string>
     <!-- Translators: Navigation item for the recorded programmes (digital video recorder). Keep it short. -->
     <string name="common_nav_dvr">DVR</string>
+    <!-- Translators: The TV Guide place in the phone's bottom bar, a fifth of the screen wide. Keep it one short word if the full name is long (German: "Programm"). -->
+    <string name="common_nav_guide_short">TV Guide</string>
     <!-- Translators: Navigation label for the Library tab (Movies and Series together) on phones. -->
     <string name="common_nav_library">Library</string>
     <!-- Translators: Navigation label for the More tab on phones, which holds the items that do not fit the bottom bar. -->

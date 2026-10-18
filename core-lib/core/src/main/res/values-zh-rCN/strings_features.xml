@@ -19,6 +19,7 @@
     <string name="profiles_create">创建</string>
     <string name="profiles_save">保存</string>
     <string name="profiles_gate_title">谁在观看？</string>
+    <string name="profiles_gate_subtitle">每个个人资料都有自己的收藏和历史记录</string>
     <string name="profiles_wrong_pin">PIN 错误——请重试</string>
     <string name="profiles_enter_pin"><xliff:g id="name">%1$s</xliff:g>——请输入 PIN</string>
     <string name="profiles_kids_badge">儿童</string>
@@ -172,6 +173,7 @@
     <string name="home_trending_trailer">预告片</string>
     <string name="home_trending_more_details">更多详情</string>
     <string name="home_trending_all_versions">全部版本</string>
+    <string name="home_trending_why_menu">为什么显示此作品</string>
     <string name="home_trending_previous">上一个</string>
     <string name="home_trending_pause">暂停</string>
     <string name="home_trending_resume">继续</string>

@@ -13,6 +13,7 @@
     <string name="common_ok">OK</string>
     <string name="common_on">Zapnuto</string>
     <string name="common_off">Vypnuto</string>
+    <string name="common_share">Sdílet</string>
     <string name="common_never">Nikdy</string>
     <string name="common_exit">Ukončit</string>
     <string name="common_resume">Pokračovat</string>
@@ -33,6 +34,7 @@
     <string name="common_nav_series">Seriály</string>
     <string name="common_nav_downloads">Stahování</string>
     <string name="common_nav_guide">TV program</string>
+    <string name="common_nav_guide_short">Program</string>
     <string name="common_nav_library">Knihovna</string>
     <string name="common_nav_more">Více</string>
     <string name="common_cast">Odesílat</string>

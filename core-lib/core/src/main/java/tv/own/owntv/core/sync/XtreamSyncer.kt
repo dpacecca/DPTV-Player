@@ -44,9 +44,11 @@ internal class XtreamSyncer(
             // tune and reading the 458 back (F30). Stored, so it also survives a restart.
             support.sourceDao.updateMaxConnections(s.id, details.maxConnections)
             if (details.maxConnections == 1) tv.own.owntv.core.player.LiveSessionLimit.singleSession(s.url)
+            // The zone its timeshift `start` is written in — catch-up's Automatic time zone (M6).
+            support.sourceDao.updateServerTimeZone(s.id, details.serverTimeZone)
         }
         val semaphore = Semaphore(PHASE_CONCURRENCY)
-        Log.i(TAG, "Xtream sync scheduling sourceId=${s.id} contentTypes=$contentTypes concurrency=$PHASE_CONCURRENCY hlsSupported=${details?.hlsSupported} maxConnections=${details?.maxConnections}")
+        Log.i(TAG, "Xtream sync scheduling sourceId=${s.id} contentTypes=$contentTypes concurrency=$PHASE_CONCURRENCY hlsSupported=${details?.hlsSupported} maxConnections=${details?.maxConnections} serverTimeZone=${details?.serverTimeZone}")
         coroutineScope {
             if (contentTypes.live) async { semaphore.withPermit { syncLive(s, progress, stats) } }
             if (contentTypes.movies) async { semaphore.withPermit { syncMovies(s, progress, stats) } }
@@ -241,7 +243,11 @@ internal class XtreamSyncer(
             { rows -> support.upsertStable(rows, hashDeferred!!, p.adapter) }
         }
         val total = intArrayOf(0)
-        val remoteIds = if (freshSource) null else HashSet<String>()
+        // Every stream id seen this pass. Filters duplicates on a fresh import too: panels list one film
+        // under several categories, the insert keeps only the first, and without the filter the
+        // "unique" count reported to the import screen counted every copy (123,602 for 118,363 films).
+        // Only a re-sync prunes against it.
+        val remoteIds = HashSet<String>()
         var done = false
         bulkInsertHelper.withOptimizedBulkInsert(
             p.table,
@@ -279,7 +285,7 @@ internal class XtreamSyncer(
                 }
             }
             if (!freshSource && done && !backfillIncomplete) {
-                support.pruneRemoteIds(label, s.id, remoteIds!!, stats, p.adapter.remoteIdsForSource, p.adapter.deleteByRemoteIds)
+                support.pruneRemoteIds(label, s.id, remoteIds, stats, p.adapter.remoteIdsForSource, p.adapter.deleteByRemoteIds)
                 support.pruneCategories(s.id, p.type, categories.seenRemoteIds, label, stats)
             } else if (!freshSource) {
                 Log.i(TAG, "$label prune skipped sourceId=${s.id} reason=incomplete_bulk")
@@ -308,7 +314,7 @@ internal class XtreamSyncer(
                     count = total[0],
                 ),
             )
-            if (!freshSource) pruneAfterFallback(s, p, label, categories, outcome, remoteIds!!, stats)
+            if (!freshSource) pruneAfterFallback(s, p, label, categories, outcome, remoteIds, stats)
         }
         progress.update(p.phase, total[0])
         p.timingKey?.let { stats.phaseTiming[it] = System.currentTimeMillis() - phaseStart }

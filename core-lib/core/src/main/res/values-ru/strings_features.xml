@@ -19,6 +19,7 @@
     <string name="profiles_create">Создать</string>
     <string name="profiles_save">Сохранить</string>
     <string name="profiles_gate_title">Кто смотрит?</string>
+    <string name="profiles_gate_subtitle">У каждого профиля своё избранное и своя история</string>
     <string name="profiles_wrong_pin">Неверный PIN — попробуйте ещё раз</string>
     <string name="profiles_enter_pin"><xliff:g id="name">%1$s</xliff:g> — введите PIN</string>
     <string name="profiles_kids_badge">ДЕТСКИЙ</string>
@@ -43,7 +44,7 @@
     <string name="search_movie">Фильм</string>
     <string name="search_series">Сериал</string>
     <string name="search_channels">Каналы</string>
-    <string name="search_on_tv">В эфире</string>
+    <string name="search_on_tv">Телепередачи</string>
     <string name="search_go_to_channel">К каналу</string>
     <string name="search_go_to_movie">К фильму</string>
     <string name="search_clear_recent">Очистить недавние запросы</string>
@@ -199,6 +200,7 @@
     <string name="home_trending_trailer">Трейлер</string>
     <string name="home_trending_more_details">Подробнее</string>
     <string name="home_trending_all_versions">Все версии</string>
+    <string name="home_trending_why_menu">Почему здесь этот фильм или сериал</string>
     <string name="home_trending_previous">Предыдущий</string>
     <string name="home_trending_pause">Пауза</string>
     <string name="home_trending_resume">Продолжить</string>

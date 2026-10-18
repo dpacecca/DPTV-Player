@@ -115,8 +115,6 @@
     <string name="player_error_image_format">Obrazové titulky nejsou pro formát tohoto souboru dostupné.</string>
     <string name="player_error_image_show">Obrazové titulky pro tento soubor se nepodařilo zobrazit.</string>
     <string name="player_external_could_not_open">Tento stream se nepodařilo otevřít.</string>
-    <string name="player_external_play_with">Přehrát pomocí</string>
-    <string name="player_external_play_with_item">Přehrát „<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>“ pomocí…</string>
     <string name="player_external_not_found">Nebyl nalezen žádný externí přehrávač — nainstalujte VLC nebo MX Player.</string>
     <string name="player_error_audio_no_video">Zvuk se přehrává, ale video se na tomto zařízení nepodařilo vykreslit.</string>
     <string name="player_error_file_corrupt">Soubor tohoto videa je poškozený nebo má nesprávnou strukturu a nelze ho přehrát.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">Videodekodér tohoto televizoru je zaneprázdněný. Zkuste to za chvíli znovu.</string>
     <string name="player_error_no_internet">Není k dispozici připojení k internetu. Zkontrolujte síť a zkuste to znovu.</string>
     <string name="player_error_stream_unavailable">Tento stream se nepodařilo přehrát. Zdroj může být bez připojení nebo používat nepodporovaný formát. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Tento účet už přehrává na jiném zařízení nebo v jiné aplikaci. Zastavte přehrávání tam a stiskněte Zkusit znovu.</string>
     <string name="player_error_mpv_open_decode">mpv nedokázal tento soubor otevřít nebo dekódovat.</string>
     <string name="player_error_mpv_stream_never_started">Stream se v mpv nespustil ani po několika pokusech.</string>
     <string name="player_error_surround">Tento zvukový výstup nepodporuje prostorový zvuk — přepnuto na stereo.</string>

@@ -102,6 +102,7 @@
     <string name="content_no_movies_here">Ingen film her.</string>
     <string name="content_no_series_here">Ingen serier her.</string>
     <string name="content_no_episodes">Ingen tilgængelige afsnit.</string>
+    <string name="content_episodes_load_failed">Afsnittene kunne ikke hentes fra udbyderen (<xliff:g id="reason">%1$s</xliff:g>).</string>
     <string name="content_no_movies_found">Der blev ikke fundet nogen film for “<xliff:g id="query">%1$s</xliff:g>”</string>
     <plurals name="content_count_movies">
         <item quantity="one"><xliff:g id="category">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g> film)</item>
@@ -233,8 +234,32 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">Downloader</string>
     <string name="content_downloads_group_on_tv">På dette tv</string>
+    <string name="content_downloads_group_on_phone">På denne telefon</string>
+    <string name="content_downloads_ready_short">Klar</string>
     <string name="content_downloads_ready">Klar til at se</string>
     <string name="content_downloads_paused">Sat på pause</string>
+    <string name="content_downloads_file_missing">Filen mangler: den er ikke længere på drevet</string>
+    <string name="content_downloads_reason_account_busy">Kontoen er optaget: en anden stream bruger forbindelsen</string>
+    <string name="content_downloads_reason_refused">Serveren afviste linket</string>
+    <string name="content_downloads_reason_not_found">Serveren har ikke længere denne fil</string>
+    <string name="content_downloads_reason_server_error">Serverfejl</string>
+    <string name="content_downloads_reason_http">Serveren sendte ikke filen</string>
+    <string name="content_downloads_reason_connection_lost">Forbindelsen blev afbrudt</string>
+    <string name="content_downloads_reason_folder">Downloadmappen er ikke tilgængelig</string>
+    <string name="content_downloads_reason_no_space">Ikke nok plads</string>
+    <string name="content_downloads_reason_too_large">For stor til dette drev: det kan ikke gemme filer over 4 GB. Vælg en anden downloadmappe, eller formatér drevet som exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Venter: starter, når du holder op med at se</string>
+    <string name="content_downloads_reason_paused_watching">Sat på pause, mens du ser</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Denne playliste tillader kun én stream</string>
+    <string name="content_download_watch_body">En download fra <xliff:g id="playlist">%1$s</xliff:g> brugte den, så den er sat på pause indtil videre. Vil du se, eller lukke afspilleren og fortsætte downloadet?</string>
+    <string name="content_download_watch_watch">Sæt download på pause, og se</string>
+    <string name="content_download_watch_keep">Fortsæt download</string>
+    <string name="content_download_watch_remember">Spørg ikke igen</string>
+    <string name="content_download_watch_setting">Se under download</string>
+    <string name="content_download_watch_setting_description">For playlister, der kun tillader én stream: hvad der sker med et download, når du starter afspilning.</string>
+    <string name="content_download_watch_ask">Spørg hver gang</string>
+    <string name="content_download_watch_pause">Sæt download på pause</string>
     <string name="content_downloads_starts_after">I kø · starter efter <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Opret en profil for at se programguiden.</string>
@@ -324,6 +349,7 @@
     <string name="content_epg_offset_use_global">Brug global</string>
     <string name="content_preview_single_stream">Forhåndsvisning er slået fra – din udbyder tillader kun én stream ad gangen</string>
     <string name="content_playlist_picker_subtitle">Gælder overalt og huskes</string>
+    <string name="content_playlist_marks_note">Med »Alle playlister« viser hver række mærket for den playliste, den kommer fra.</string>
     <string name="content_action_next_episode">Næste afsnit</string>
     <string name="content_search_in">Søg i <xliff:g id="name">%1$s</xliff:g></string>
     <string name="content_live_guide_view">Guidevisning</string>
@@ -374,12 +400,15 @@
     <string name="content_key_menu">Menu</string>
     <string name="content_key_enter">Gå ind</string>
     <string name="content_key_select">Vælg</string>
+    <string name="content_key_unselect">Fravælg</string>
     <string name="content_key_page">Side</string>
     <string name="content_history_overlay_hint">De kanaler, du sidst så, nyeste først</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> set</string>
     <string name="content_menu_group_show">Vis</string>
     <string name="content_epg_show_empty">Kanaler uden guide</string>
     <string name="content_epg_show_preview">Videoforhåndsvisning</string>
+    <string name="content_epg_view_timeline">Tidslinje</string>
+    <string name="content_menu_group_view">Visning</string>
     <string name="content_vod_providers">Udbydere</string>
     <string name="content_sort_movies_title">Sortér film</string>
     <string name="content_sort_series_title">Sortér serier</string>
@@ -410,4 +439,6 @@
     <string name="content_play_from_start">Afspil fra start</string>
     <string name="content_episode_details">Afsnitsdetaljer</string>
     <string name="content_season_specials">Specialafsnit</string>
+    <string name="content_poster_size">Plakatstørrelse</string>
+    <string name="content_vod_more_in">Mere i <xliff:g id="category">%1$s</xliff:g></string>
 </resources>

@@ -321,7 +321,7 @@
     <string name="settings_all_surfaces_off">सभी सतहें: बंद</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">पैनलों के आर-पार कितना दिखाई देगा (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%)। अधिक मान पर पैनल अधिक ठोस होगा।</string>
-    <string name="settings_catchup_description">कैच-अप टाइमस्टैम्प कैसे भेजे जाते हैं। अपने डिवाइस का समय क्षेत्र उपयोग करें या अपने प्रदाता के सर्वर द्वारा अपेक्षित ऑफ़सेट सेट करें।</string>
+    <string name="settings_catchup_timezone_description">कैच-अप टाइमस्टैम्प कैसे भेजे जाते हैं। अपने-आप विकल्प आपके प्रदाता के सर्वर द्वारा बताए गए समय क्षेत्र का उपयोग करता है, और यदि वह कोई समय क्षेत्र नहीं बताता तो आपके डिवाइस का। आप डिवाइस भी चुन सकते हैं या ऑफ़सेट खुद सेट कर सकते हैं।</string>
     <string name="settings_manual">मैन्युअल</string>
     <string name="settings_theme_dark">गहरी</string>
     <string name="settings_theme_light">हल्की</string>
@@ -460,6 +460,9 @@
     <string name="settings_hardware_decoding">हार्डवेयर डिकोडिंग</string>
     <string name="settings_hardware_decoding_description">TV के हार्डवेयर डिकोडर का उपयोग करें। यदि कुछ स्ट्रीम अटकती हैं या उनमें दृश्य विकृतियाँ दिखाई देती हैं, तो इसे बंद कर दें।</string>
     <string name="settings_hardware_decoding_description_mobile">डिवाइस के हार्डवेयर डिकोडर का उपयोग करें। यदि कुछ स्ट्रीम अटकती हैं या उनमें दृश्य विकृतियाँ दिखाई देती हैं, तो इसे बंद कर दें।</string>
+    <string name="settings_software_decode_above_1080p">1080p से ऊपर सॉफ़्टवेयर डिकोडिंग</string>
+    <string name="settings_software_decode_above_1080p_description">TV का हार्डवेयर डिकोडर बंद होने या विफल होने पर 4K और 1080p से ऊपर के अन्य वीडियो सॉफ़्टवेयर से चलाता है। तेज़ प्रोसेसर चाहिए: अधिकांश TV पर यह अटकता है।</string>
+    <string name="settings_software_decode_above_1080p_description_mobile">डिवाइस का हार्डवेयर डिकोडर बंद होने या विफल होने पर 4K और 1080p से ऊपर के अन्य वीडियो सॉफ़्टवेयर से चलाता है। तेज़ प्रोसेसर चाहिए: कई डिवाइस पर यह अटकता है।</string>
     <string name="settings_movies_series_player">फ़िल्मों और सीरीज़ का प्लेयर</string>
     <string name="settings_live_tv_player">लाइव टीवी का प्लेयर</string>
     <string name="settings_engine_order"><xliff:g id="first">%1$s</xliff:g>, फिर <xliff:g id="second">%2$s</xliff:g></string>
@@ -642,6 +645,7 @@
         <item quantity="one"><xliff:g id="total">%2$d</xliff:g> में से <xliff:g id="count">%1$d</xliff:g> सतह</item>
         <item quantity="other"><xliff:g id="total">%2$d</xliff:g> में से <xliff:g id="count">%1$d</xliff:g> सतहें</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">अपने-आप</string>
     <string name="settings_catchup_timezone_device">डिवाइस</string>
     <string name="settings_catchup_player_ask">हमेशा पूछें</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1351,13 +1355,18 @@
     <string name="more_fav_movies_series">फ़िल्में और सीरीज़</string>
     <string name="more_fav_empty_title">अभी कोई पसंदीदा नहीं</string>
     <string name="more_fav_empty_body">किसी चैनल, फ़िल्म या शो पर OK दबाकर रखें और “पसंदीदा में जोड़ें” चुनें।</string>
+    <string name="more_fav_empty_body_mobile">किसी चैनल, फ़िल्म या शो को दबाकर रखें और “पसंदीदा में जोड़ें” चुनें।</string>
     <string name="more_history_empty">अभी तक कुछ नहीं देखा</string>
     <string name="more_backup_never_title">कभी बैकअप नहीं लिया गया</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> और हर कस्टमाइज़ेशन सिर्फ़ इसी टीवी पर हैं।</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> और हर कस्टमाइज़ेशन सिर्फ़ इसी फ़ोन पर हैं।</string>
     <string name="more_backup_now">अभी बैकअप लें</string>
     <string name="more_backup_now_body">इस टीवी पर फ़ाइल सहेजें, या उसे दूर से किसी दूसरे डिवाइस पर भेजें</string>
+    <string name="more_backup_now_body_mobile">इस फ़ोन पर फ़ाइल सहेजें, या उसे किसी दूसरे डिवाइस पर भेजें</string>
     <string name="more_backup_file_tv">इस टीवी पर फ़ाइल</string>
+    <string name="more_backup_file_tv_mobile">इस फ़ोन पर फ़ाइल</string>
     <string name="more_restore_body">इस टीवी की फ़ाइल से, या किसी दूसरे डिवाइस से रिमोट से</string>
+    <string name="more_restore_body_mobile">इस फ़ोन की फ़ाइल से, या किसी दूसरे डिवाइस से रिमोट से</string>
     <string name="more_backup_included">क्या शामिल है</string>
     <string name="more_about_up_to_date">अप-टू-डेट</string>
     <string name="more_about_checked">जाँचा गया <xliff:g id="value">%1$s</xliff:g></string>
@@ -1379,7 +1388,9 @@
     <string name="more_sync_unpair">अनपेयर करें</string>
     <string name="more_about_license">GPLv3 · मुफ़्त और ओपन सोर्स</string>
     <string name="more_about_description">Android TV के लिए आपका अपना IPTV प्लेयर। इसमें कोई चैनल या कंटेंट नहीं है; आप अपने कानूनी रूप से उपलब्ध सोर्स जोड़ते हैं।</string>
+    <string name="more_about_description_mobile">Android के लिए आपका अपना IPTV प्लेयर। इसमें कोई चैनल या कंटेंट नहीं है; आप अपने कानूनी रूप से उपलब्ध सोर्स जोड़ते हैं।</string>
     <string name="more_about_scan">अपने फ़ोन से स्कैन करें।</string>
+    <string name="more_about_scan_mobile">स्कैन करें, या खोलने के लिए टैप करें</string>
     <plurals name="more_playlist_count">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> प्लेलिस्ट</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> प्लेलिस्ट</item>
@@ -1396,6 +1407,14 @@
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> भाषा</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> भाषाएँ</item>
     </plurals>
+    <plurals name="more_settings_pinned_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> पिन किए गए</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> पिन किए गए</item>
+    </plurals>
+    <plurals name="more_downloads_running_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> चल रहा है</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> चल रहे हैं</item>
+    </plurals>
     <string name="settings_backup_location">स्थान</string>
     <string name="settings_multiview">मल्टीव्यू</string>
     <string name="settings_multiview_description">एक साथ कई लाइव चैनल देखें। हर बार आप तय करते हैं कि कितने, इस सीमा तक — हर टाइल आपके प्रदाता का एक कनेक्शन इस्तेमाल करती है।</string>
@@ -1407,6 +1426,7 @@
     <string name="settings_multiview_use_anyway">फिर भी इस्तेमाल करें</string>
     <string name="settings_app_icon">ऐप आइकन</string>
     <string name="settings_app_icon_summary">DPTV-Player आइकन और लोगो का रंग</string>
+    <string name="settings_app_icon_sheet_mobile">आपकी होम स्क्रीन पर DPTV-Player कैसा दिखता है। ऐप एक बार रीस्टार्ट होता है।</string>
     <string name="settings_brand_accent">एक्सेंट रंग का लोगो</string>
     <string name="app_icon_petrol">पेट्रोल</string>
     <string name="app_icon_sunflower">सूरजमुखी</string>
@@ -1432,6 +1452,13 @@
     <string name="settings_nav_widen_desc">डॉक और कॉम्पैक्ट: रेल पर फ़ोकस रहते समय सामग्री के ऊपर नाम दिखाता है</string>
     <string name="settings_nav_menu_items">मेनू आइटम</string>
     <string name="settings_nav_menu_items_desc">डायनेमिक: प्लेलिस्ट की सामग्री के अनुसार · स्टैटिक: आप खुद चुनें</string>
+    <string name="settings_nav_bar">बार</string>
+    <string name="settings_nav_labels">नाम</string>
+    <string name="settings_nav_icons_only">सिर्फ़ आइकन</string>
+    <string name="settings_nav_hide_scrolling">स्क्रॉल करते समय छिपाएँ</string>
+    <string name="settings_nav_hide_scrolling_desc">नीचे स्क्रॉल करने पर बार हट जाता है और ऊपर स्क्रॉल करने पर लौट आता है</string>
+    <string name="settings_sheet_counts">गिनती दिखाएँ</string>
+    <string name="settings_sheet_counts_desc">पैनलों में चैनलों और शीर्षकों की गिनती</string>
     <string name="settings_search_keywords_navigation">रेल, साइडबार, मेनू, नेविगेशन, छिपाएँ, फ़्लोटिंग, डॉक, आकार, कॉम्पैक्ट, चौड़ी, लंबाई, पूरी ऊँचाई</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">कॉम्पैक्ट: आइकन · सामान्य: नाम · चौड़ी: नाम और गिनती · अतिरिक्त चौड़ी: विवरण सहित</string>
@@ -1574,7 +1601,7 @@
     <string name="settings_help_playlists">लिंक, Xtream लॉगिन, Stalker पोर्टल या फ़ाइल से प्लेलिस्ट जोड़ें, उसे फिर से सिंक करें या हटाएँ।</string>
     <string name="settings_help_epg_sources">लिंक से XMLTV गाइड फ़ीड जोड़ें, रीफ़्रेश करें या हटाएँ। फ़ीड से टीवी गाइड और लाइव टीवी की कार्यक्रम पंक्तियाँ भरती हैं।</string>
     <string name="settings_help_guide_days">गाइड कितने दिनों के कार्यक्रम आगे तक रखे। कम दिन रखने से गाइड जल्दी रीफ़्रेश होती है और डेटाबेस छोटा रहता है।</string>
-    <string name="settings_help_catchup">कैच-अप आपके प्रोवाइडर के आर्काइव से कार्यक्रम चलाता है। ज़्यादातर प्रोवाइडर टीवी की अपनी घड़ी पर चलते हैं; अगर कैच-अप गलत समय पर शुरू हो, तो एक तय UTC ऑफ़सेट चुनें। कैच-अप कौन-सा प्लेयर इस्तेमाल करे, यह भी यहीं चुनें।</string>
+    <string name="settings_help_catchup_timezone">कैच-अप आपके प्रोवाइडर के आर्काइव से कार्यक्रम चलाता है। अपने-आप विकल्प प्रोवाइडर द्वारा बताए गए समय क्षेत्र का उपयोग करता है, और अगर वह कुछ नहीं बताता तो टीवी की अपनी घड़ी का; अगर कैच-अप फिर भी गलत समय पर शुरू हो, तो एक तय UTC ऑफ़सेट चुनें। कैच-अप कौन-सा प्लेयर इस्तेमाल करे, यह भी यहीं चुनें।</string>
     <string name="settings_help_theme">DPTV-Player डार्क थीम के लिए बना है। सिस्टम टीवी की अपनी सेटिंग मानता है, अगर हो; लाइट रोशन कमरे के लिए ठीक है।</string>
     <string name="settings_help_accent">हर जगह बटन, फ़ोकस की चमक, प्रोग्रेस बार और हाइलाइट रंगता है। कोई प्रीसेट चुनें, या पैलेट और कोई भी हेक्स कोड पाने के लिए OK दबाएँ।</string>
     <string name="settings_help_focus">फ़ोकस वाली चीज़ के चारों ओर का घेरा। उसका रंग और मोटाई चुनें ताकि सोफ़े से आसानी से दिखे।</string>
@@ -1709,6 +1736,8 @@
     <string name="settings_bg_picture">तस्वीर</string>
     <string name="settings_bg_plain">सादा</string>
     <string name="settings_line_bg_picture_none">इस टीवी से या Remote से तस्वीर चुनें</string>
+    <string name="settings_line_bg_picture_none_mobile">इस फ़ोन से तस्वीर चुनें</string>
+    <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · इस फ़ोन से</string>
     <string name="settings_bg_change">बदलें</string>
     <string name="settings_bg_none">कोई नहीं</string>
     <string name="settings_bg_look">तस्वीर का रूप</string>
@@ -1729,9 +1758,80 @@
     <string name="settings_line_bg_accent_light">आपका एक्सेंट रंग कोने में चमकता है</string>
     <string name="settings_glass_section">ग्लास</string>
     <string name="settings_line_glass_switch">बार, पैनल, मेन्यू और पॉप-अप पाले जैसे धुंधले हैं</string>
+    <string name="settings_line_glass_switch_mobile">बार, पैनल, मेन्यू और पॉप-अप पाले जैसे धुंधले हैं</string>
     <string name="settings_help_glass_chrome">तैरते हिस्सों को पाले जैसा धुंधला करता है: बार, कैटेगरी पैनल, मेन्यू, पॉप-अप और ऊपर के बटन। सूचियाँ और पोस्टर सपाट रहते हैं।</string>
     <string name="settings_glass_opacity">ग्लास की अपारदर्शिता</string>
     <string name="settings_line_glass_opacity">कम करने पर बैकग्राउंड ज़्यादा दिखता है</string>
     <string name="settings_line_glass_reset">Stage रंग, ग्लास चालू, <xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">इस बैकग्राउंड के साथ लाइव टीवी। बदलाव चलते-चलते दिखते हैं।</string>
+    <string name="settings_root_hint_mobile">किसी पंक्ति को त्वरित में पिन करने के लिए उसे दबाए रखें</string>
+    <string name="settings_card_layout_mobile">नेविगेशन, होम, सूचियाँ, मेनू</string>
+    <string name="settings_card_watching_mobile">स्किप, फिर से शुरू, मिनी-प्लेयर, रिकॉर्डिंग</string>
+    <string name="settings_line_live_preview_mobile">चुना हुआ चैनल लाइव टीवी में सबसे ऊपर चलाएँ</string>
+    <string name="settings_line_hw_mobile">फ़ोन का अपना डिकोडर इस्तेमाल करें</string>
+    <string name="settings_line_surround_mobile">फ़ोन को जैसा मिले वैसे 5.1 और 7.1</string>
+    <string name="settings_line_passthrough_mobile">बिना डिकोड किए जुड़े हुए रिसीवर तक</string>
+    <string name="settings_line_navigation_mobile">नीचे की पट्टी: लेबल, स्क्रॉल करते समय छिपाएँ, आइटम</string>
+    <string name="settings_vod_view_mobile">फ़िल्में और सीरीज़ का दृश्य</string>
+    <string name="settings_line_vod_view_mobile">कोई श्रेणी कैसे खुलती है</string>
+    <string name="settings_guide_size_mobile">कार्यक्रम गाइड का आकार</string>
+    <string name="settings_line_guide_size_mobile">ग्रिड एक बार में कितना समय दिखाता है</string>
+    <string name="settings_line_download_folder_mobile">फ़िल्में, एपिसोड और रिकॉर्डिंग कहाँ सहेजी जाती हैं</string>
+    <string name="settings_browsing_value_both">दोनों</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> पंक्ति</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> पंक्तियाँ</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> छिपी</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> छिपी</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">समय क्षेत्र</string>
+    <string name="settings_help_add_from_phone_mobile">उसी वाई-फ़ाई पर किसी भी डिवाइस — कंप्यूटर, टैबलेट या टीवी — के ब्राउज़र में पता खोलें या कोड स्कैन करें, वहीं अपनी प्लेलिस्ट भरें और यहाँ भेजें। फ़ोन पर URL टाइप करने से कहीं तेज़।</string>
+    <string name="settings_line_add_type_here_mobile">Xtream, M3U या Stalker</string>
+    <string name="setup_local_file_hint_mobile">इस फ़ोन पर .m3u या .m3u8</string>
+    <plurals name="settings_sources_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> स्रोत</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> स्रोत</item>
+    </plurals>
+    <string name="settings_sources_status_default">डिफ़ॉल्ट</string>
+    <string name="settings_epg_sources_addresses_note">पते उपयोगकर्ता नाम और पासवर्ड के बिना दिखाए जाते हैं।</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> श्रेणी</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> श्रेणियाँ</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">किसी पंक्ति को दबाए रखें: नाम बदलें · ले जाएँ · छिपाएँ · या एक साथ कई बदलने के लिए एक दायरा शुरू करें।</string>
+    <string name="settings_line_quick_channel_numbers_mobile">चैनल बदलने के लिए नंबर टाइप करें</string>
+    <string name="settings_line_playlists_mobile">M3U / Xtream / Stalker जोड़ें, फिर से सिंक करें या हटाएँ</string>
+    <string name="settings_line_accent_mobile">हर जगह बटन, हाइलाइट और बार रंगता है</string>
+    <string name="settings_line_glass_bg_mobile">धुंधली बार और शीट, बैकग्राउंड तस्वीर</string>
+    <string name="settings_line_popup_size_mobile">शीट और मेनू का आकार बदलें, टेक्स्ट बदले बिना</string>
+    <string name="settings_line_animations_mobile">बंद करने पर पुराने फ़ोन पर तेज़ लगता है</string>
+    <string name="settings_line_vod_buffer_mobile">फ़िल्में और कैच-अप कितना पहले लोड हों</string>
+    <string name="settings_line_vod_timeout_mobile">चुप सर्वर का कितना इंतज़ार करें</string>
+    <string name="settings_line_vod_reconnects_mobile">टूटी स्ट्रीम कितनी बार फिर खोली जाए</string>
+    <string name="settings_line_sw_decode_mobile">हार्डवेयर डिकोडर विफल होने पर 1080p से ऊपर सॉफ़्टवेयर में</string>
+    <string name="settings_line_rec_mobile_data_mobile">बंद: मोबाइल डेटा पर पड़ने वाली रिकॉर्डिंग छोड़ दी जाती है</string>
+    <string name="settings_line_pip_mobile">ऐप छोड़ने पर वीडियो को एक विंडो में छोटा करें</string>
+    <string name="settings_line_pip_size_mobile">फ़्लोटिंग विंडो किस आकार में शुरू हो</string>
+    <string name="settings_line_pip_snap_mobile">विंडो सबसे पास वाले किनारे से चिपक जाती है</string>
+    <string name="settings_line_audio_screen_off_mobile">ऐसा वीडियो डिकोड करना बंद करें जिसे कोई नहीं देखता</string>
+    <string name="settings_line_audio_per_channel_mobile">अगली बार ऐसे ही खुलता है</string>
+    <string name="settings_line_seek_step_mobile">पीछे या आगे का एक टैप कितना कूदता है</string>
+    <string name="settings_line_rewind_step_mobile">लाइव चैनल पर एक टैप कितना कूदता है</string>
+    <string name="settings_line_gesture_mobile">स्वाइप से वॉल्यूम, चमक या स्थिति कितनी बदलती है</string>
+    <string name="settings_line_rec_watching_mobile">प्लेयर में एक रिकॉर्ड बटन</string>
+    <string name="settings_line_rec_pre_roll_mobile">बताए गए शुरू से पहले शुरू करें</string>
+    <string name="settings_line_rec_post_roll_mobile">बताए गए अंत के बाद जारी रखें</string>
+    <string name="settings_line_sub_lang_mobile">यह सबटाइटल ट्रैक अपने आप चुनें</string>
+    <string name="settings_line_sub_style_mobile">आकार, फ़ॉन्ट, रंग, स्थिति, बैकग्राउंड</string>
+    <string name="settings_customize_short_mobile">कस्टमाइज़ करें</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> कार्यक्रम</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> कार्यक्रम</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> पर कैच-अप</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> पर कैच-अप</item>
+    </plurals>
 </resources>

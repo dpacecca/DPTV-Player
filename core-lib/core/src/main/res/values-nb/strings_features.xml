@@ -19,6 +19,7 @@
     <string name="profiles_create">Opprett</string>
     <string name="profiles_save">Lagre</string>
     <string name="profiles_gate_title">Hvem ser på?</string>
+    <string name="profiles_gate_subtitle">Hver profil har sine egne favoritter og sin egen historikk</string>
     <string name="profiles_wrong_pin">Feil PIN – prøv igjen</string>
     <string name="profiles_enter_pin"><xliff:g id="name">%1$s</xliff:g> – angi PIN</string>
     <string name="profiles_kids_badge">BARN</string>
@@ -43,7 +44,7 @@
     <string name="search_movie">Film</string>
     <string name="search_series">Serier</string>
     <string name="search_channels">Kanaler</string>
-    <string name="search_on_tv">På TV</string>
+    <string name="search_on_tv">TV-programmer</string>
     <string name="search_go_to_channel">Gå til kanal</string>
     <string name="search_go_to_movie">Gå til film</string>
     <string name="search_clear_recent">Tøm nylige søk</string>
@@ -181,6 +182,7 @@
     <string name="home_trending_trailer">Trailer</string>
     <string name="home_trending_more_details">Flere detaljer</string>
     <string name="home_trending_all_versions">Alle versjoner</string>
+    <string name="home_trending_why_menu">Hvorfor denne tittelen er her</string>
     <string name="home_trending_previous">Forrige</string>
     <string name="home_trending_pause">Pause</string>
     <string name="home_trending_resume">Fortsett</string>

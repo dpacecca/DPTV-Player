@@ -19,6 +19,7 @@
     <string name="profiles_create">സൃഷ്ടിക്കുക</string>
     <string name="profiles_save">സംരക്ഷിക്കുക</string>
     <string name="profiles_gate_title">ആരാണ് കാണുന്നത്?</string>
+    <string name="profiles_gate_subtitle">ഓരോ പ്രൊഫൈലും സ്വന്തം പ്രിയപ്പെട്ടവയും ചരിത്രവും സൂക്ഷിക്കുന്നു</string>
     <string name="profiles_wrong_pin">തെറ്റായ PIN — വീണ്ടും ശ്രമിക്കുക</string>
     <string name="profiles_enter_pin"><xliff:g id="name">%1$s</xliff:g> — PIN നൽകുക</string>
     <string name="profiles_kids_badge">കുട്ടികൾ</string>
@@ -43,7 +44,7 @@
     <string name="search_movie">സിനിമ</string>
     <string name="search_series">സീരീസ്</string>
     <string name="search_channels">ചാനലുകൾ</string>
-    <string name="search_on_tv">ടിവിയിൽ</string>
+    <string name="search_on_tv">ടിവി പരിപാടികൾ</string>
     <string name="search_go_to_channel">ചാനലിലേക്ക് പോകുക</string>
     <string name="search_go_to_movie">സിനിമയിലേക്ക് പോകുക</string>
     <string name="search_clear_recent">സമീപകാല തിരയലുകൾ മായ്ക്കുക</string>
@@ -181,6 +182,7 @@
     <string name="home_trending_trailer">trailer</string>
     <string name="home_trending_more_details">കൂടുതൽ വിവരങ്ങൾ</string>
     <string name="home_trending_all_versions">എല്ലാ versions-ഉം</string>
+    <string name="home_trending_why_menu">ഈ ശീർഷകം ഇവിടെ എന്തുകൊണ്ട്</string>
     <string name="home_trending_previous">മുമ്പത്തേത്</string>
     <string name="home_trending_pause">താൽക്കാലികമായി നിർത്തുക</string>
     <string name="home_trending_resume">resume</string>

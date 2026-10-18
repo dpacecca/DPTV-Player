@@ -782,13 +782,17 @@ class LivePreviewEngine(
     private var videoRenderer: Renderer? = null
     // The first rendered frame of a load is also the answer to "how long did this tune take?", so it is
     // logged with the elapsed time since play(). It is the number the Happy Eyeballs measurement reads.
+    private val firstFrameGate = FirstFrameGate()
     private val frameListener = VideoFrameMetadataListener { _, _, _, _ ->
         frameCounter.incrementAndGet()
-        // Latched on the tune, not on the counter: the counter is reset again by the surface-reset and
-        // decoder-rebuild paths within one tune, which logged the same tune twice.
-        if (!tune.firstFrameLogged && tune.playStartedMs > 0L) {
-            tune.firstFrameLogged = true
-            LiveDiagnosticsLog.event("first frame after ${android.os.SystemClock.elapsedRealtime() - tune.playStartedMs}ms")
+        // Latched per tune by the gate, not on the counter: the counter is reset again by the surface-reset
+        // and decoder-rebuild paths within one tune, which logged the same tune twice. The gate also skips
+        // the previous channel's frames that still arrive right after play() on the reused player.
+        firstFrameGate.take()?.let { t ->
+            val now = android.os.SystemClock.elapsedRealtime()
+            // A CH+/− press that led here adds the whole wait the user saw, including the app's zap delay.
+            val sincePress = ZapTiming.sincePress(t.pressAtMs, now)
+            LiveDiagnosticsLog.event("first frame after ${now - t.startedMs}ms${ZapTiming.pressSuffix(sincePress)}")
         }
     }
     private var fpsAttempts = 0
@@ -1005,6 +1009,10 @@ class LivePreviewEngine(
         p.setMediaSource(mediaSourceFor(url))
         p.prepare()
         p.playWhenReady = true
+        // Delivered on the playback thread after it has applied the source above (it handles commands in
+        // order), so only frames rendered from here on can be this tune's first frame.
+        val gen = firstFrameGate.current
+        runCatching { p.createMessage { _, _ -> firstFrameGate.open(gen) }.send() }
         armOpenWatchdog()
     }
 
@@ -1502,6 +1510,8 @@ class LivePreviewEngine(
         // THE reset. Everything a new channel must not inherit from the previous one lives in
         // [TuneState], so forgetting it is one assignment that cannot be partially done.
         tune = TuneState(playStartedMs = android.os.SystemClock.elapsedRealtime())
+        // The CH+/− press that caused this tune (if any) is claimed now, so only this tune is timed from it.
+        firstFrameGate.arm(tune.playStartedMs, ZapTiming.shared.claim(tune.playStartedMs))
         deadlineMisses.set(0); deadlineArmed = false
         cancelPrepareOnSurface() // the previous channel's held prepare
         _stalledSinceMs.value = null
@@ -1562,6 +1572,7 @@ class LivePreviewEngine(
             else -> defaultVolume
         }
         if (!sameChannelReopen) {
+            preMuteVolume = null // a HUD mute's level belongs to the channel it was made on
             applyAudioDelay(baseAudioDelayMs)
             _audioDelayRemembered.value = false
             _videoQualityPick.value = null // a Quality pick belongs to the channel it was made on
@@ -1735,9 +1746,27 @@ class LivePreviewEngine(
         // Kept: which engine is unmuted, and who changed it. Multiview's doubled sound was finally
         // named by exactly this line — an unmuted engine the tile pool had never built.
         if (muted != m) LiveDiagnosticsLog.event("setMuted engine=$engineId muted=$m")
+        val unmuting = muted && !m
         muted = m
-        _volume.value = if (m) 0 else 100
+        if (m) _volume.value = 0
         applyMute()
+        if (unmuting) restoreVolumeAfterMute()
+    }
+
+    /** The level a HUD mute took away, so unmute returns to it (as mpv does) rather than to a flat 100. */
+    private var preMuteVolume: Int? = null
+
+    /**
+     * Unmuted: the HUD's own pre-mute level if there is one, otherwise the level an unmuted tune of this
+     * channel would have started at — Default volume, then the channel's remembered one. That is what a
+     * preview promoted to full screen gets.
+     */
+    private fun restoreVolumeAfterMute() {
+        val back = preMuteVolume
+        preMuteVolume = null
+        _volume.value = 0
+        adjustVolume(back ?: defaultVolume) // also re-aims the LoudnessEnhancer boost
+        if (back == null) applyRememberedPrefs(_currentMeta.value.contentKey ?: lastTunedUrl ?: return, volumeOnly = true)
     }
 
     /** Push [muted] onto the player: volume, plus the audio-track deselect that also silences a
@@ -1838,6 +1867,9 @@ class LivePreviewEngine(
         _videoHeight.value = null; _videoAspect.value = null; _videoSize.value = null; _streamChips.value = emptyList(); _videoFps.value = null
         _videoRes.value = null // else the next channel's HUD opens showing the previous one's resolution badge
         _state.value = State.IDLE
+        // Said here, not left to STATE_IDLE: a player already idle mid-reconnect raises no new state, and
+        // a phone keeps its screen on while an engine reports buffering.
+        _buffering.value = false
         player?.run { stop(); clearMediaItems() }
         releaseHttpConnections()
         // Leaving a UHD channel (back / exit fullscreen / background): fully release the 4K decoder.
@@ -2595,6 +2627,7 @@ class LivePreviewEngine(
         val v = (_volume.value + delta).coerceIn(0, MAX_VOLUME)
         _volume.value = v
         muted = v == 0
+        if (v > 0) preMuteVolume = null // turned up by hand: that level is the one to come back to now
         applyMute() // re-enables/deselects the audio track when crossing 0 (passthrough-safe mute)
         player?.volume = v.coerceAtMost(100) / 100f
         applyVolumeBoost(v)
@@ -2603,12 +2636,17 @@ class LivePreviewEngine(
     // --- Per-item zoom / volume the user asked us to remember (playback_prefs, DB v32) ---
 
     /** Apply this channel's remembered zoom/volume over the defaults just set by the tune. The read
-     *  can't hold up the tune, so a late answer is dropped if the user has already zapped away. */
-    private fun applyRememberedPrefs(key: String) {
+     *  can't hold up the tune, so a late answer is dropped if the user has already zapped away.
+     *  [volumeOnly] is the unmute of a muted tune, which has had its zoom and delay all along. */
+    private fun applyRememberedPrefs(key: String, volumeOnly: Boolean = false) {
         val tunedUrl = lastTunedUrl
         scope.launch {
             val row = playbackPrefs.prefsFor(key) ?: return@launch
             if (tunedUrl != lastTunedUrl) return@launch
+            if (volumeOnly) {
+                if (!muted) row.volumeBoost?.let { adjustVolume(it - _volume.value) }
+                return@launch
+            }
             row.zoomMode?.let { name ->
                 runCatching { ZoomMode.valueOf(name) }.getOrNull()?.let { _zoomMode.value = it }
             }
@@ -2672,7 +2710,10 @@ class LivePreviewEngine(
 
     private fun releaseLoudness() = boost.release()
 
-    override fun toggleMute() = setMuted(!muted)
+    override fun toggleMute() {
+        if (!muted) preMuteVolume = _volume.value
+        setMuted(!muted)
+    }
     override fun retry() {
         val url = currentUrl ?: return
         // Replay the identity this channel was tuned with — HUD Retry used to re-open with the URL only,
@@ -2962,7 +3003,8 @@ class LivePreviewEngine(
                         // The header that says WHEN to come back is only ever on the response — by the time
                         // the failure reaches [onPlayerError] there is nothing left to read it from.
                         if (response.code == HTTP_TOO_MANY_REQUESTS) {
-                            retryAfterSecs(response.header("Retry-After"))?.let { providerRetryAfterSecs = it }
+                            // Every refusal replaces the pending deadline — an over-long one clears it.
+                            providerRetryAfterSecs = retryAfterSecs(response.header("Retry-After"))
                         }
                     }
                     if (LiveDiagnosticsLog.enabled) {
@@ -3207,7 +3249,9 @@ class LivePreviewEngine(
                     )
                     .setTsSubtitleFormats(listOf(cc1)),
             ).setLoadErrorHandlingPolicy(playedLivePolicy)
+                .setDrmSessionManagerProvider(tv.own.owntv.core.drm.InlineClearKeyDrmProvider)
             cachedHlsCcFactory = HlsMediaSource.Factory(cachedHttpDataSource!!)
+                .setDrmSessionManagerProvider(tv.own.owntv.core.drm.InlineClearKeyDrmProvider)
                 .setExtractorFactory(DefaultHlsExtractorFactory(tsFlags, true))
                 // Media3 defaults this to zero, which it documents as an *infinite* timeout: a rendition
                 // whose chunk can't be timestamp-aligned with the primary one parks its loading thread in
@@ -3629,12 +3673,13 @@ class LivePreviewEngine(
         internal const val DECODER_EXHAUSTED_REASON = "decoder exhausted: no MediaCodec instance available"
 
         /**
-         * Seconds named by a numeric `Retry-After`, or null when the header is absent, an HTTP-date, or
-         * nonsense. `0` means "ask again now", which is one tick of the countdown here. Pure, so the rule
-         * is unit-testable.
+         * Seconds named by a numeric `Retry-After`, or null when the header is absent, an HTTP-date,
+         * nonsense, or longer than [MAX_RETRY_AFTER_SECS] — that one goes to the error screen instead.
+         * `0` means "ask again now", which is one tick of the countdown here. Pure, so the rule is
+         * unit-testable.
          */
         internal fun retryAfterSecs(header: String?): Int? =
-            header?.trim()?.toIntOrNull()?.takeIf { it >= 0 }?.coerceIn(1, MAX_RETRY_AFTER_SECS)
+            header?.trim()?.toIntOrNull()?.takeIf { it in 0..MAX_RETRY_AFTER_SECS }?.coerceAtLeast(1)
 
         /** How long to wait for a single-session panel to notice the other engine's socket is gone.
          *
@@ -3836,9 +3881,8 @@ internal data class TuneState(
     /** `SystemClock.elapsedRealtime()` of the last forward position move. */
     var lastProgressWallMs: Long = 0L,
     var frozenChecks: Int = 0,
-    /** elapsedRealtime of the last play() call, and whether its first frame has been timed. */
+    /** elapsedRealtime of the last play() call. Its first frame is timed by [FirstFrameGate]. */
     @field:Volatile var playStartedMs: Long = 0L,
-    @field:Volatile var firstFrameLogged: Boolean = false,
 )
 
 /**

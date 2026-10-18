@@ -115,8 +115,6 @@
     <string name="player_error_image_format">Графические субтитры недоступны для формата этого файла.</string>
     <string name="player_error_image_show">Не удалось показать графические субтитры для этого файла.</string>
     <string name="player_external_could_not_open">Не удалось открыть этот поток.</string>
-    <string name="player_external_play_with">Воспроизвести с помощью</string>
-    <string name="player_external_play_with_item">Воспроизвести «<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>» с помощью…</string>
     <string name="player_external_not_found">Внешний плеер не найден — установите VLC или MX Player.</string>
     <string name="player_error_audio_no_video">Звук воспроизводится, но видео не удалось отобразить на этом устройстве.</string>
     <string name="player_error_file_corrupt">Файл этого видео имеет неверную структуру или повреждён и не может быть воспроизведён.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">Видеодекодер этого телевизора занят. Повторите попытку через некоторое время.</string>
     <string name="player_error_no_internet">Нет подключения к интернету. Проверьте сеть и повторите попытку.</string>
     <string name="player_error_stream_unavailable">Не удалось воспроизвести этот поток. Возможно, источник не в сети или использует неподдерживаемый формат. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Эта учётная запись уже воспроизводит на другом устройстве или в другом приложении. Остановите воспроизведение там и нажмите «Повторить».</string>
     <string name="player_error_mpv_open_decode">mpv не удалось открыть или декодировать этот файл.</string>
     <string name="player_error_mpv_stream_never_started">После нескольких попыток поток так и не запустился в mpv.</string>
     <string name="player_error_surround">Этот аудиовыход не поддерживает многоканальный звук — выполнено переключение на стерео.</string>

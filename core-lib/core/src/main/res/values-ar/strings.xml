@@ -13,6 +13,7 @@
     <string name="common_ok">موافق</string>
     <string name="common_on">مفعّل</string>
     <string name="common_off">معطّل</string>
+    <string name="common_share">مشاركة</string>
     <string name="common_never">أبدًا</string>
     <string name="common_exit">خروج</string>
     <string name="common_resume">استئناف</string>
@@ -33,6 +34,7 @@
     <string name="common_nav_series">مسلسلات</string>
     <string name="common_nav_downloads">التنزيلات</string>
     <string name="common_nav_guide">دليل البرامج</string>
+    <string name="common_nav_guide_short">الدليل</string>
     <string name="common_nav_library">المكتبة</string>
     <string name="common_nav_more">المزيد</string>
     <string name="common_cast">البث</string>

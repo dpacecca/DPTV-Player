@@ -13,6 +13,7 @@
     <string name="common_ok">OK</string>
     <string name="common_on">Be</string>
     <string name="common_off">Ki</string>
+    <string name="common_share">Megosztás</string>
     <string name="common_never">Soha</string>
     <string name="common_exit">Kilépés</string>
     <string name="common_resume">Folytatás</string>
@@ -33,6 +34,7 @@
     <string name="common_nav_series">Sorozatok</string>
     <string name="common_nav_downloads">Letöltések</string>
     <string name="common_nav_guide">Műsorújság</string>
+    <string name="common_nav_guide_short">Műsor</string>
     <string name="common_nav_library">Könyvtár</string>
     <string name="common_nav_more">Továbbiak</string>
     <string name="common_cast">Átküldés</string>

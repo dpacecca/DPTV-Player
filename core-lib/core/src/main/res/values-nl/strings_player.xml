@@ -115,8 +115,6 @@
     <string name="player_error_image_format">Beeldondertiteling is niet beschikbaar voor de indeling van dit bestand.</string>
     <string name="player_error_image_show">Kan de beeldondertiteling voor dit bestand niet weergeven.</string>
     <string name="player_external_could_not_open">Kan deze stream niet openen.</string>
-    <string name="player_external_play_with">Afspelen met</string>
-    <string name="player_external_play_with_item">“<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>” afspelen met…</string>
     <string name="player_external_not_found">Geen externe speler gevonden — installeer VLC of MX Player.</string>
     <string name="player_error_audio_no_video">De audio wordt afgespeeld, maar de video kan niet op dit apparaat worden weergegeven.</string>
     <string name="player_error_file_corrupt">Het bestand van deze video is ongeldig of beschadigd en kan niet worden afgespeeld.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">De videodecoder van deze tv is bezet. Probeer het zo nogmaals.</string>
     <string name="player_error_no_internet">Geen internetverbinding. Controleer je netwerk en probeer het opnieuw.</string>
     <string name="player_error_stream_unavailable">Kan deze stream niet afspelen. De bron is mogelijk offline of gebruikt een niet-ondersteunde indeling. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Dit account speelt al af op een ander apparaat of in een andere app. Stop het daar en druk dan op Opnieuw proberen.</string>
     <string name="player_error_mpv_open_decode">mpv kan dit bestand niet openen of decoderen.</string>
     <string name="player_error_mpv_stream_never_started">De stream is na meerdere pogingen niet gestart in mpv.</string>
     <string name="player_error_surround">Deze audio-uitgang ondersteunt geen surroundgeluid — overgeschakeld naar stereo.</string>

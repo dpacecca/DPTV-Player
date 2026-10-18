@@ -96,6 +96,7 @@
     <string name="content_no_movies_here">这里没有电影。</string>
     <string name="content_no_series_here">这里没有剧集。</string>
     <string name="content_no_episodes">没有可用的集。</string>
+    <string name="content_episodes_load_failed">无法从提供商加载剧集（<xliff:g id="reason">%1$s</xliff:g>）。</string>
     <string name="content_no_movies_found">未找到与“<xliff:g id="query">%1$s</xliff:g>”相关的电影</string>
     <plurals name="content_count_movies">
         <item quantity="other"><xliff:g id="category">%1$s</xliff:g>（<xliff:g id="count">%2$d</xliff:g> 部电影）</item>
@@ -225,8 +226,32 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">正在下载</string>
     <string name="content_downloads_group_on_tv">已存于本电视</string>
+    <string name="content_downloads_group_on_phone">已存于本手机</string>
+    <string name="content_downloads_ready_short">就绪</string>
     <string name="content_downloads_ready">可以观看</string>
     <string name="content_downloads_paused">已暂停</string>
+    <string name="content_downloads_file_missing">文件丢失：它已不在驱动器上</string>
+    <string name="content_downloads_reason_account_busy">账户繁忙：另一个串流正在使用该连接</string>
+    <string name="content_downloads_reason_refused">服务器拒绝了该链接</string>
+    <string name="content_downloads_reason_not_found">服务器上已没有此文件</string>
+    <string name="content_downloads_reason_server_error">服务器错误</string>
+    <string name="content_downloads_reason_http">服务器未发送该文件</string>
+    <string name="content_downloads_reason_connection_lost">连接已断开</string>
+    <string name="content_downloads_reason_folder">下载文件夹不可用</string>
+    <string name="content_downloads_reason_no_space">空间不足</string>
+    <string name="content_downloads_reason_too_large">文件对此驱动器来说过大：它无法存储超过 4 GB 的文件。请选择其他下载文件夹，或将驱动器格式化为 exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">等待中：停止观看后开始</string>
+    <string name="content_downloads_reason_paused_watching">观看期间已暂停</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">此播放列表只允许一个串流</string>
+    <string name="content_download_watch_body">来自 <xliff:g id="playlist">%1$s</xliff:g> 的下载正在使用它，因此已暂时暂停。要观看，还是关闭播放器继续下载？</string>
+    <string name="content_download_watch_watch">暂停下载并观看</string>
+    <string name="content_download_watch_keep">继续下载</string>
+    <string name="content_download_watch_remember">不再询问</string>
+    <string name="content_download_watch_setting">下载时观看</string>
+    <string name="content_download_watch_setting_description">适用于只允许一个串流的播放列表：开始播放时如何处理正在进行的下载。</string>
+    <string name="content_download_watch_ask">每次询问</string>
+    <string name="content_download_watch_pause">暂停下载</string>
     <string name="content_downloads_starts_after">排队中 · 在<xliff:g id="title">%1$s</xliff:g>之后开始</string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/秒</string>
     <string name="content_epg_create_profile">创建用户档案以查看节目指南。</string>
@@ -310,6 +335,7 @@
     <string name="content_epg_offset_use_global">使用全局</string>
     <string name="content_preview_single_stream">预览已关闭——你的提供商一次只允许一个流。</string>
     <string name="content_playlist_picker_subtitle">在所有界面生效并会被记住</string>
+    <string name="content_playlist_marks_note">选择“所有播放列表”时，每一行都会显示其所属播放列表的标记。</string>
     <string name="content_action_next_episode">下一集</string>
     <string name="content_search_in">搜索<xliff:g id="name">%1$s</xliff:g></string>
     <string name="content_live_guide_view">节目指南视图</string>
@@ -357,12 +383,15 @@
     <string name="content_key_menu">菜单</string>
     <string name="content_key_enter">进入</string>
     <string name="content_key_select">选择</string>
+    <string name="content_key_unselect">取消选择</string>
     <string name="content_key_page">翻页</string>
     <string name="content_history_overlay_hint">最近观看的频道，最新的在前</string>
     <string name="content_watched_duration">已看 <xliff:g id="value">%1$s</xliff:g></string>
     <string name="content_menu_group_show">显示</string>
     <string name="content_epg_show_empty">无节目指南的频道</string>
     <string name="content_epg_show_preview">视频预览</string>
+    <string name="content_epg_view_timeline">时间线</string>
+    <string name="content_menu_group_view">视图</string>
     <string name="content_vod_providers">提供商</string>
     <string name="content_sort_movies_title">电影排序</string>
     <string name="content_sort_series_title">剧集排序</string>
@@ -391,4 +420,6 @@
     <string name="content_play_from_start">从头播放</string>
     <string name="content_episode_details">剧集详情</string>
     <string name="content_season_specials">特别篇</string>
+    <string name="content_poster_size">海报大小</string>
+    <string name="content_vod_more_in"><xliff:g id="category">%1$s</xliff:g> 中的更多内容</string>
 </resources>

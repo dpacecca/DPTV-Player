@@ -96,6 +96,7 @@
     <string name="content_no_movies_here">여기에 영화가 없습니다.</string>
     <string name="content_no_series_here">여기에 시리즈가 없습니다.</string>
     <string name="content_no_episodes">이용 가능한 에피소드가 없습니다.</string>
+    <string name="content_episodes_load_failed">공급자에서 에피소드를 불러오지 못했습니다(<xliff:g id="reason">%1$s</xliff:g>).</string>
     <string name="content_no_movies_found">“<xliff:g id="query">%1$s</xliff:g>”에 대한 영화를 찾지 못했습니다</string>
     <plurals name="content_count_movies">
         <item quantity="other"><xliff:g id="category">%1$s</xliff:g>(영화 <xliff:g id="count">%2$d</xliff:g>편)</item>
@@ -225,8 +226,32 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">다운로드 중</string>
     <string name="content_downloads_group_on_tv">이 TV에 저장됨</string>
+    <string name="content_downloads_group_on_phone">이 휴대폰에 저장됨</string>
+    <string name="content_downloads_ready_short">준비됨</string>
     <string name="content_downloads_ready">시청 가능</string>
     <string name="content_downloads_paused">일시중지됨</string>
+    <string name="content_downloads_file_missing">파일 없음: 더 이상 드라이브에 없습니다</string>
+    <string name="content_downloads_reason_account_busy">계정 사용 중: 다른 스트림이 연결을 사용하고 있습니다</string>
+    <string name="content_downloads_reason_refused">서버가 링크를 거부했습니다</string>
+    <string name="content_downloads_reason_not_found">서버에 더 이상 이 파일이 없습니다</string>
+    <string name="content_downloads_reason_server_error">서버 오류</string>
+    <string name="content_downloads_reason_http">서버가 파일을 보내지 않았습니다</string>
+    <string name="content_downloads_reason_connection_lost">연결이 끊어졌습니다</string>
+    <string name="content_downloads_reason_folder">다운로드 폴더를 사용할 수 없습니다</string>
+    <string name="content_downloads_reason_no_space">저장 공간이 부족합니다</string>
+    <string name="content_downloads_reason_too_large">이 드라이브에는 너무 큽니다. 4GB를 넘는 파일은 저장할 수 없습니다. 다른 다운로드 폴더를 선택하거나 드라이브를 exFAT로 포맷하세요</string>
+    <string name="content_downloads_reason_waiting_watching">대기 중: 시청을 멈추면 시작됩니다</string>
+    <string name="content_downloads_reason_paused_watching">시청 중이라 일시 중지됨</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">이 재생목록은 스트림을 하나만 허용합니다</string>
+    <string name="content_download_watch_body"><xliff:g id="playlist">%1$s</xliff:g>의 다운로드가 사용 중이어서 지금은 일시 중지되었습니다. 시청하시겠습니까, 아니면 플레이어를 닫고 다운로드를 계속하시겠습니까?</string>
+    <string name="content_download_watch_watch">다운로드 일시 중지하고 시청</string>
+    <string name="content_download_watch_keep">다운로드 계속</string>
+    <string name="content_download_watch_remember">다시 묻지 않기</string>
+    <string name="content_download_watch_setting">다운로드 중 시청</string>
+    <string name="content_download_watch_setting_description">스트림을 하나만 허용하는 재생목록에서 재생을 시작할 때 다운로드를 어떻게 할지 정합니다.</string>
+    <string name="content_download_watch_ask">매번 묻기</string>
+    <string name="content_download_watch_pause">다운로드 일시 중지</string>
     <string name="content_downloads_starts_after">대기 중 · <xliff:g id="title">%1$s</xliff:g> 다음에 시작</string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g>MB/s</string>
     <string name="content_epg_create_profile">편성표를 보려면 프로필을 만드세요.</string>
@@ -310,6 +335,7 @@
     <string name="content_epg_offset_use_global">글로벌 오프셋 사용</string>
     <string name="content_preview_single_stream">미리보기 꺼짐 — 제공자가 한 번에 하나의 스트림만 허용합니다.</string>
     <string name="content_playlist_picker_subtitle">모든 화면에 적용되며 기억됩니다</string>
+    <string name="content_playlist_marks_note">모든 재생목록을 켜면 각 행에 해당 재생목록의 표시가 나타납니다.</string>
     <string name="content_action_next_episode">다음 에피소드</string>
     <string name="content_search_in"><xliff:g id="name">%1$s</xliff:g> 검색</string>
     <string name="content_live_guide_view">편성표 보기</string>
@@ -357,12 +383,15 @@
     <string name="content_key_menu">메뉴</string>
     <string name="content_key_enter">들어가기</string>
     <string name="content_key_select">선택</string>
+    <string name="content_key_unselect">선택 해제</string>
     <string name="content_key_page">페이지</string>
     <string name="content_history_overlay_hint">최근에 본 채널, 최신순</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> 시청함</string>
     <string name="content_menu_group_show">표시</string>
     <string name="content_epg_show_empty">편성표 없는 채널</string>
     <string name="content_epg_show_preview">동영상 미리보기</string>
+    <string name="content_epg_view_timeline">타임라인</string>
+    <string name="content_menu_group_view">보기</string>
     <string name="content_vod_providers">제공자</string>
     <string name="content_sort_movies_title">영화 정렬</string>
     <string name="content_sort_series_title">시리즈 정렬</string>
@@ -391,4 +420,6 @@
     <string name="content_play_from_start">처음부터 재생</string>
     <string name="content_episode_details">에피소드 세부정보</string>
     <string name="content_season_specials">스페셜</string>
+    <string name="content_poster_size">포스터 크기</string>
+    <string name="content_vod_more_in"><xliff:g id="category">%1$s</xliff:g>의 다른 작품</string>
 </resources>

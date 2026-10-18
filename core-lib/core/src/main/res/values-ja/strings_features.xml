@@ -19,6 +19,7 @@
     <string name="profiles_create">作成</string>
     <string name="profiles_save">保存</string>
     <string name="profiles_gate_title">どなたが視聴しますか？</string>
+    <string name="profiles_gate_subtitle">プロフィールごとにお気に入りと履歴が分かれます</string>
     <string name="profiles_wrong_pin">PINが正しくありません — もう一度お試しください</string>
     <string name="profiles_enter_pin"><xliff:g id="name">%1$s</xliff:g> — PINを入力</string>
     <string name="profiles_kids_badge">キッズ</string>
@@ -172,6 +173,7 @@
     <string name="home_trending_trailer">予告編</string>
     <string name="home_trending_more_details">詳細を見る</string>
     <string name="home_trending_all_versions">すべてのバージョン</string>
+    <string name="home_trending_why_menu">このタイトルが表示される理由</string>
     <string name="home_trending_previous">前へ</string>
     <string name="home_trending_pause">一時停止</string>
     <string name="home_trending_resume">再開</string>

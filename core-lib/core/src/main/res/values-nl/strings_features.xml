@@ -19,6 +19,7 @@
     <string name="profiles_create">Aanmaken</string>
     <string name="profiles_save">Opslaan</string>
     <string name="profiles_gate_title">Wie kijkt er?</string>
+    <string name="profiles_gate_subtitle">Elk profiel heeft eigen favorieten en een eigen geschiedenis</string>
     <string name="profiles_wrong_pin">Onjuiste PIN — probeer het opnieuw</string>
     <string name="profiles_enter_pin"><xliff:g id="name">%1$s</xliff:g> — voer PIN in</string>
     <string name="profiles_kids_badge">KINDEREN</string>
@@ -43,7 +44,7 @@
     <string name="search_movie">Film</string>
     <string name="search_series">Series</string>
     <string name="search_channels">Zenders</string>
-    <string name="search_on_tv">Op tv</string>
+    <string name="search_on_tv">Tv-programma\'s</string>
     <string name="search_go_to_channel">Naar zender</string>
     <string name="search_go_to_movie">Naar film</string>
     <string name="search_clear_recent">Recente zoekopdrachten wissen</string>
@@ -181,6 +182,7 @@
     <string name="home_trending_trailer">Trailer</string>
     <string name="home_trending_more_details">Meer details</string>
     <string name="home_trending_all_versions">Alle versies</string>
+    <string name="home_trending_why_menu">Waarom deze titel hier staat</string>
     <string name="home_trending_previous">Vorige</string>
     <string name="home_trending_pause">Pauzeren</string>
     <string name="home_trending_resume">Hervatten</string>

@@ -102,6 +102,7 @@
     <string name="content_no_movies_here">Hier sind keine Filme.</string>
     <string name="content_no_series_here">Hier sind keine Serien.</string>
     <string name="content_no_episodes">Keine Folgen verfügbar.</string>
+    <string name="content_episodes_load_failed">Die Folgen konnten nicht vom Anbieter geladen werden (<xliff:g id="reason">%1$s</xliff:g>).</string>
     <string name="content_no_movies_found">Keine Filme für „<xliff:g id="query">%1$s</xliff:g>“ gefunden</string>
     <plurals name="content_count_movies">
         <item quantity="one"><xliff:g id="category">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g> Film)</item>
@@ -233,8 +234,32 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">Wird geladen</string>
     <string name="content_downloads_group_on_tv">Auf diesem Fernseher</string>
+    <string name="content_downloads_group_on_phone">Auf diesem Telefon</string>
+    <string name="content_downloads_ready_short">Bereit</string>
     <string name="content_downloads_ready">Bereit zum Ansehen</string>
     <string name="content_downloads_paused">Pausiert</string>
+    <string name="content_downloads_file_missing">Datei fehlt: Sie ist nicht mehr auf dem Laufwerk</string>
+    <string name="content_downloads_reason_account_busy">Konto ausgelastet: Ein anderer Stream nutzt die Verbindung</string>
+    <string name="content_downloads_reason_refused">Der Server hat den Link abgelehnt</string>
+    <string name="content_downloads_reason_not_found">Der Server hat diese Datei nicht mehr</string>
+    <string name="content_downloads_reason_server_error">Serverfehler</string>
+    <string name="content_downloads_reason_http">Der Server hat die Datei nicht gesendet</string>
+    <string name="content_downloads_reason_connection_lost">Verbindung unterbrochen</string>
+    <string name="content_downloads_reason_folder">Downloadordner nicht verfügbar</string>
+    <string name="content_downloads_reason_no_space">Nicht genügend Speicherplatz</string>
+    <string name="content_downloads_reason_too_large">Zu groß für dieses Laufwerk: Es kann keine Dateien über 4 GB speichern. Wählen Sie einen anderen Downloadordner oder formatieren Sie das Laufwerk als exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">Wartet: startet, sobald Sie nicht mehr schauen</string>
+    <string name="content_downloads_reason_paused_watching">Pausiert, während Sie schauen</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">Diese Playlist erlaubt nur einen Stream</string>
+    <string name="content_download_watch_body">Ein Download von <xliff:g id="playlist">%1$s</xliff:g> hat ihn genutzt und ist jetzt pausiert. Möchten Sie schauen oder den Player schließen und weiter herunterladen?</string>
+    <string name="content_download_watch_watch">Download pausieren und schauen</string>
+    <string name="content_download_watch_keep">Weiter herunterladen</string>
+    <string name="content_download_watch_remember">Nicht mehr fragen</string>
+    <string name="content_download_watch_setting">Schauen während eines Downloads</string>
+    <string name="content_download_watch_setting_description">Bei Playlists, die nur einen Stream erlauben: was mit einem Download passiert, wenn Sie die Wiedergabe starten.</string>
+    <string name="content_download_watch_ask">Jedes Mal fragen</string>
+    <string name="content_download_watch_pause">Download pausieren</string>
     <string name="content_downloads_starts_after">Wartet · startet nach <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_epg_create_profile">Erstelle ein Profil, um die Programmübersicht anzuzeigen.</string>
@@ -324,6 +349,7 @@
     <string name="content_epg_offset_use_global">Globalen Versatz verwenden</string>
     <string name="content_preview_single_stream">Vorschau deaktiviert – dein Anbieter erlaubt nur einen Stream gleichzeitig</string>
     <string name="content_playlist_picker_subtitle">Gilt überall und wird gespeichert</string>
+    <string name="content_playlist_marks_note">Mit „Alle Playlists“ zeigt jede Zeile das Kürzel der Playlist, aus der sie stammt.</string>
     <string name="content_action_next_episode">Nächste Folge</string>
     <string name="content_search_in"><xliff:g id="name">%1$s</xliff:g> durchsuchen</string>
     <string name="content_live_guide_view">Guide-Ansicht</string>
@@ -374,12 +400,15 @@
     <string name="content_key_menu">Menü</string>
     <string name="content_key_enter">Öffnen</string>
     <string name="content_key_select">Auswählen</string>
+    <string name="content_key_unselect">Abwählen</string>
     <string name="content_key_page">Seite</string>
     <string name="content_history_overlay_hint">Die zuletzt gesehenen Sender, neueste zuerst</string>
     <string name="content_watched_duration"><xliff:g id="value">%1$s</xliff:g> gesehen</string>
     <string name="content_menu_group_show">Anzeigen</string>
     <string name="content_epg_show_empty">Sender ohne Programm</string>
     <string name="content_epg_show_preview">Videovorschau</string>
+    <string name="content_epg_view_timeline">Zeitleiste</string>
+    <string name="content_menu_group_view">Ansicht</string>
     <string name="content_vod_providers">Anbieter</string>
     <string name="content_sort_movies_title">Filme sortieren</string>
     <string name="content_sort_series_title">Serien sortieren</string>
@@ -410,4 +439,6 @@
     <string name="content_play_from_start">Von vorne abspielen</string>
     <string name="content_episode_details">Episodendetails</string>
     <string name="content_season_specials">Specials</string>
+    <string name="content_poster_size">Postergröße</string>
+    <string name="content_vod_more_in">Mehr in <xliff:g id="category">%1$s</xliff:g></string>
 </resources>

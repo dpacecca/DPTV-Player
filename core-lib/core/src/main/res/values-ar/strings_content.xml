@@ -126,6 +126,7 @@
     <string name="content_no_movies_here">لا توجد أفلام هنا.</string>
     <string name="content_no_series_here">لا توجد مسلسلات هنا.</string>
     <string name="content_no_episodes">لا تتوفر حلقات.</string>
+    <string name="content_episodes_load_failed">تعذّر تحميل الحلقات من المزوّد (<xliff:g id="reason">%1$s</xliff:g>).</string>
     <string name="content_no_movies_found">لم يتم العثور على أفلام لـ «<xliff:g id="query">%1$s</xliff:g>»</string>
     <plurals name="content_count_movies">
         <item quantity="zero"><xliff:g id="category">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g> فيلم)</item>
@@ -265,8 +266,32 @@
     <string name="content_downloads_unknown_size">—</string>
     <string name="content_downloads_group_downloading">جارٍ التنزيل</string>
     <string name="content_downloads_group_on_tv">على هذا التلفزيون</string>
+    <string name="content_downloads_group_on_phone">على هذا الهاتف</string>
+    <string name="content_downloads_ready_short">جاهز</string>
     <string name="content_downloads_ready">جاهز للمشاهدة</string>
     <string name="content_downloads_paused">متوقف مؤقتًا</string>
+    <string name="content_downloads_file_missing">الملف مفقود: لم يعد موجودًا على محرك الأقراص</string>
+    <string name="content_downloads_reason_account_busy">الحساب مشغول: بث آخر يستخدم الاتصال</string>
+    <string name="content_downloads_reason_refused">رفض الخادم الرابط</string>
+    <string name="content_downloads_reason_not_found">لم يعد هذا الملف متوفرًا على الخادم</string>
+    <string name="content_downloads_reason_server_error">خطأ في الخادم</string>
+    <string name="content_downloads_reason_http">لم يُرسل الخادم الملف</string>
+    <string name="content_downloads_reason_connection_lost">انقطع الاتصال</string>
+    <string name="content_downloads_reason_folder">مجلد التنزيل غير متاح</string>
+    <string name="content_downloads_reason_no_space">لا توجد مساحة كافية</string>
+    <string name="content_downloads_reason_too_large">الملف كبير جدًا على محرك الأقراص هذا: لا يمكنه تخزين ملفات أكبر من 4 غيغابايت. اختر مجلد تنزيل آخر، أو هيّئ المحرك بنظام exFAT</string>
+    <string name="content_downloads_reason_waiting_watching">في الانتظار: يبدأ عندما تتوقف عن المشاهدة</string>
+    <string name="content_downloads_reason_paused_watching">متوقف مؤقتًا أثناء المشاهدة</string>
+    <string name="content_downloads_reason_with_code"><xliff:g id="reason">%1$s</xliff:g> (HTTP <xliff:g id="code">%2$d</xliff:g>)</string>
+    <string name="content_download_watch_title">تسمح قائمة التشغيل هذه ببث واحد فقط</string>
+    <string name="content_download_watch_body">كان تنزيل من <xliff:g id="playlist">%1$s</xliff:g> يستخدمه، لذلك أُوقف مؤقتًا الآن. هل تريد المشاهدة، أم إغلاق المشغل ومتابعة التنزيل؟</string>
+    <string name="content_download_watch_watch">إيقاف التنزيل مؤقتًا والمشاهدة</string>
+    <string name="content_download_watch_keep">متابعة التنزيل</string>
+    <string name="content_download_watch_remember">عدم السؤال مرة أخرى</string>
+    <string name="content_download_watch_setting">المشاهدة أثناء التنزيل</string>
+    <string name="content_download_watch_setting_description">لقوائم التشغيل التي تسمح ببث واحد فقط: ما يحدث للتنزيل عندما تبدأ التشغيل.</string>
+    <string name="content_download_watch_ask">السؤال في كل مرة</string>
+    <string name="content_download_watch_pause">إيقاف التنزيل مؤقتًا</string>
     <string name="content_downloads_starts_after">في الانتظار · يبدأ بعد <xliff:g id="title">%1$s</xliff:g></string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> ميغابايت/ث</string>
     <string name="content_epg_create_profile">أنشئ ملفًا شخصيًا لعرض دليل البرامج.</string>
@@ -380,6 +405,7 @@
     <string name="content_epg_offset_use_global">استخدم الإزاحة العامة</string>
     <string name="content_preview_single_stream">المعاينة متوقفة — مزود الخدمة لديك يسمح ببث واحد فقط في كل مرة</string>
     <string name="content_playlist_picker_subtitle">يُطبَّق في كل مكان ويُحفَظ</string>
+    <string name="content_playlist_marks_note">عند اختيار «كل القوائم» يعرض كل صف شارة القائمة التي جاء منها.</string>
     <string name="content_action_next_episode">الحلقة التالية</string>
     <string name="content_search_in">ابحث في <xliff:g id="name">%1$s</xliff:g></string>
     <string name="content_live_guide_view">عرض الدليل</string>
@@ -442,12 +468,15 @@
     <string name="content_key_menu">القائمة</string>
     <string name="content_key_enter">دخول</string>
     <string name="content_key_select">اختيار</string>
+    <string name="content_key_unselect">إلغاء الاختيار</string>
     <string name="content_key_page">صفحة</string>
     <string name="content_history_overlay_hint">القنوات التي شاهدتها مؤخرًا، الأحدث أولًا</string>
     <string name="content_watched_duration">تمت مشاهدة <xliff:g id="value">%1$s</xliff:g></string>
     <string name="content_menu_group_show">العرض</string>
     <string name="content_epg_show_empty">القنوات بلا دليل</string>
     <string name="content_epg_show_preview">معاينة الفيديو</string>
+    <string name="content_epg_view_timeline">المخطط الزمني</string>
+    <string name="content_menu_group_view">العرض</string>
     <string name="content_vod_providers">مقدمو الخدمة</string>
     <string name="content_sort_movies_title">ترتيب الأفلام</string>
     <string name="content_sort_series_title">ترتيب المسلسلات</string>
@@ -486,4 +515,6 @@
     <string name="content_play_from_start">التشغيل من البداية</string>
     <string name="content_episode_details">تفاصيل الحلقة</string>
     <string name="content_season_specials">حلقات خاصة</string>
+    <string name="content_poster_size">حجم الملصقات</string>
+    <string name="content_vod_more_in">المزيد في <xliff:g id="category">%1$s</xliff:g></string>
 </resources>

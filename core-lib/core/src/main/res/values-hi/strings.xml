@@ -13,6 +13,7 @@
     <string name="common_ok">ठीक है</string>
     <string name="common_on">चालू</string>
     <string name="common_off">बंद</string>
+    <string name="common_share">शेयर करें</string>
     <string name="common_never">कभी नहीं</string>
     <string name="common_exit">बाहर निकलें</string>
     <string name="common_resume">जारी रखें</string>
@@ -33,6 +34,7 @@
     <string name="common_nav_series">सीरीज़</string>
     <string name="common_nav_downloads">डाउनलोड</string>
     <string name="common_nav_guide">कार्यक्रम गाइड</string>
+    <string name="common_nav_guide_short">गाइड</string>
     <string name="common_nav_library">लाइब्रेरी</string>
     <string name="common_nav_more">अधिक</string>
     <string name="common_cast">कास्ट करें</string>

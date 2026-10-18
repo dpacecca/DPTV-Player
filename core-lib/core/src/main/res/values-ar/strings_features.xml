@@ -19,6 +19,7 @@
     <string name="profiles_create">إنشاء</string>
     <string name="profiles_save">حفظ</string>
     <string name="profiles_gate_title">من يشاهد الآن؟</string>
+    <string name="profiles_gate_subtitle">يحتفظ كل ملف شخصي بمفضلاته وسجله الخاص</string>
     <string name="profiles_wrong_pin">PIN غير صحيح — حاول مجددًا</string>
     <string name="profiles_enter_pin"><xliff:g id="name">%1$s</xliff:g> — أدخل PIN</string>
     <string name="profiles_kids_badge">أطفال</string>
@@ -43,7 +44,7 @@
     <string name="search_movie">فيلم</string>
     <string name="search_series">مسلسل</string>
     <string name="search_channels">قنوات</string>
-    <string name="search_on_tv">على التلفزيون</string>
+    <string name="search_on_tv">برامج التلفزيون</string>
     <string name="search_go_to_channel">الانتقال إلى القناة</string>
     <string name="search_go_to_movie">الانتقال إلى الفيلم</string>
     <string name="search_clear_recent">مسح عمليات البحث الأخيرة</string>
@@ -217,6 +218,7 @@
     <string name="home_trending_trailer">الإعلان التشويقي</string>
     <string name="home_trending_more_details">مزيد من التفاصيل</string>
     <string name="home_trending_all_versions">جميع الإصدارات</string>
+    <string name="home_trending_why_menu">لماذا يظهر هذا العنوان هنا</string>
     <string name="home_trending_previous">السابق</string>
     <string name="home_trending_pause">إيقاف مؤقت</string>
     <string name="home_trending_resume">متابعة</string>

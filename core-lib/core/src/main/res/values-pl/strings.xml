@@ -13,6 +13,7 @@
     <string name="common_ok">OK</string>
     <string name="common_on">Wł.</string>
     <string name="common_off">Wył.</string>
+    <string name="common_share">Udostępnij</string>
     <string name="common_never">Nigdy</string>
     <string name="common_exit">Wyjdź</string>
     <string name="common_resume">Wznów</string>
@@ -33,6 +34,7 @@
     <string name="common_nav_series">Seriale</string>
     <string name="common_nav_downloads">Pobrane</string>
     <string name="common_nav_guide">Przewodnik TV</string>
+    <string name="common_nav_guide_short">Program</string>
     <string name="common_nav_library">Biblioteka</string>
     <string name="common_nav_more">Więcej</string>
     <string name="common_cast">Przesyłaj</string>

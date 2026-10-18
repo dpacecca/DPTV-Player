@@ -19,6 +19,7 @@
     <string name="profiles_create">Skapa</string>
     <string name="profiles_save">Spara</string>
     <string name="profiles_gate_title">Vem tittar?</string>
+    <string name="profiles_gate_subtitle">Varje profil har egna favoriter och egen historik</string>
     <string name="profiles_wrong_pin">Fel PIN — försök igen</string>
     <string name="profiles_enter_pin"><xliff:g id="name">%1$s</xliff:g> — ange PIN</string>
     <string name="profiles_kids_badge">BARN</string>
@@ -43,7 +44,7 @@
     <string name="search_movie">Film</string>
     <string name="search_series">Serier</string>
     <string name="search_channels">Kanaler</string>
-    <string name="search_on_tv">På tv</string>
+    <string name="search_on_tv">Tv-program</string>
     <string name="search_go_to_channel">Gå till kanal</string>
     <string name="search_go_to_movie">Gå till film</string>
     <string name="search_clear_recent">Rensa senaste sökningar</string>
@@ -181,6 +182,7 @@
     <string name="home_trending_trailer">Trailer</string>
     <string name="home_trending_more_details">Mer information</string>
     <string name="home_trending_all_versions">Alla versioner</string>
+    <string name="home_trending_why_menu">Varför den här titeln finns här</string>
     <string name="home_trending_previous">Föregående</string>
     <string name="home_trending_pause">Pausa</string>
     <string name="home_trending_resume">Fortsätt</string>

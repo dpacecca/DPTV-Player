@@ -115,8 +115,6 @@
     <string name="player_error_image_format">ഈ ഫയലിന്റെ ഫോർമാറ്റിൽ ചിത്രാധിഷ്ഠിത സബ്‌ടൈറ്റിലുകൾ ലഭ്യമല്ല.</string>
     <string name="player_error_image_show">ഈ ഫയലിന്റെ ചിത്രാധിഷ്ഠിത സബ്‌ടൈറ്റിലുകൾ കാണിക്കാനായില്ല.</string>
     <string name="player_external_could_not_open">ഈ സ്ട്രീം തുറക്കാനായില്ല.</string>
-    <string name="player_external_play_with">ഇത് ഉപയോഗിച്ച് പ്ലേ ചെയ്യുക</string>
-    <string name="player_external_play_with_item">“<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>” ഇത് ഉപയോഗിച്ച് പ്ലേ ചെയ്യുക…</string>
     <string name="player_external_not_found">ബാഹ്യ പ്ലെയറൊന്നും കണ്ടെത്തിയില്ല — VLC അല്ലെങ്കിൽ MX പ്ലെയർ ഇൻസ്റ്റാൾ ചെയ്യുക.</string>
     <string name="player_error_audio_no_video">ഓഡിയോ പ്ലേ ചെയ്യുന്നുണ്ട്, പക്ഷേ ഈ ഉപകരണത്തിൽ വീഡിയോ ദൃശ്യമാക്കാനായില്ല.</string>
     <string name="player_error_file_corrupt">ഈ വീഡിയോയുടെ ഫയൽ തെറ്റായ ഘടനയിലുള്ളതോ കേടായതോ ആയതിനാൽ പ്ലേ ചെയ്യാനാകില്ല.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">ഈ ടിവിയുടെ വീഡിയോ ഡീകോഡർ തിരക്കിലാണ്. അൽപ്പസമയം കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കുക.</string>
     <string name="player_error_no_internet">ഇന്റർനെറ്റ് കണക്ഷനില്ല. നെറ്റ്‌വർക്ക് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.</string>
     <string name="player_error_stream_unavailable">ഈ സ്ട്രീം പ്ലേ ചെയ്യാനായില്ല. ഉറവിടം ഓഫ്‌ലൈൻ ആയിരിക്കാം അല്ലെങ്കിൽ പിന്തുണയ്ക്കാത്ത ഫോർമാറ്റ് ഉപയോഗിക്കുന്നുണ്ടാകാം. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">ഈ അക്കൗണ്ട് ഇതിനകം മറ്റൊരു ഉപകരണത്തിലോ ആപ്പിലോ പ്ലേ ചെയ്യുന്നുണ്ട്. അവിടെ നിർത്തിയ ശേഷം വീണ്ടും ശ്രമിക്കുക അമർത്തുക.</string>
     <string name="player_error_mpv_open_decode">ഈ ഫയൽ തുറക്കാനോ ഡീകോഡ് ചെയ്യാനോ mpv-ന് കഴിഞ്ഞില്ല.</string>
     <string name="player_error_mpv_stream_never_started">നിരവധി തവണ വീണ്ടും ശ്രമിച്ചിട്ടും mpv-ൽ സ്ട്രീം ആരംഭിച്ചില്ല.</string>
     <string name="player_error_surround">ഈ ഓഡിയോ ഔട്ട്‌പുട്ടിൽ സറൗണ്ട് ലഭ്യമല്ല — സ്റ്റീരിയോയിലേക്ക് മാറി.</string>

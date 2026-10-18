@@ -13,6 +13,7 @@
     <string name="common_ok">OK</string>
     <string name="common_on">Til</string>
     <string name="common_off">Fra</string>
+    <string name="common_share">Del</string>
     <string name="common_never">Aldrig</string>
     <string name="common_exit">Afslut</string>
     <string name="common_resume">Fortsæt</string>
@@ -33,6 +34,7 @@
     <string name="common_nav_series">Serier</string>
     <string name="common_nav_downloads">Downloads</string>
     <string name="common_nav_guide">Programguide</string>
+    <string name="common_nav_guide_short">Guide</string>
     <string name="common_nav_library">Bibliotek</string>
     <string name="common_nav_more">Mere</string>
     <string name="common_cast">Cast</string>

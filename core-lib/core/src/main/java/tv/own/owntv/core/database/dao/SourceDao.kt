@@ -53,6 +53,10 @@ interface SourceDao {
     @Query("UPDATE sources SET maxConnections = :maxConnections WHERE id = :id")
     suspend fun updateMaxConnections(id: Long, maxConnections: Int)
 
+    /** The Xtream panel's own time zone (a `TimeZone` ID), read at every sync; null = not reported. */
+    @Query("UPDATE sources SET serverTimeZone = :zone WHERE id = :id")
+    suspend fun updateServerTimeZone(id: Long, zone: String?)
+
     /**
      * Record a *measured* limit and when it was measured.
      *

@@ -45,7 +45,7 @@ class LiveTimeshiftLocalTest {
             override val hasError = false
             override val hasActiveStream = true
         },
-        loadArchive = { _, start, _ -> archiveLoads += start; true },
+        loadArchive = { _, start, _ -> archiveLoads += start; start },
         onLiveEdge = { liveEdge++ },
         coalesceMs = 10,
         tickMs = 10,

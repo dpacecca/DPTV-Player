@@ -141,7 +141,9 @@
     <string name="settings_reminder_lead_description">How long before the programme starts the reminder comes.</string>
     <string name="more_fav_empty_title">No favourites yet</string>
     <string name="more_fav_empty_body">Hold OK on a channel, film or show and choose Add to Favourites.</string>
+    <string name="more_fav_empty_body_mobile">Touch and hold a channel, film or show and choose Add to Favourites.</string>
     <string name="more_backup_never_body"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> and every customisation live only on this TV.</string>
+    <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> and every customisation live only on this phone.</string>
     <plurals name="more_count_favorites">
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> favourite</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> favourites</item>
@@ -152,7 +154,7 @@
     <string name="settings_help_focus">The ring drawn around whatever has focus. Pick its colour and thickness so it stays easy to follow from the sofa.</string>
     <string name="settings_help_epg_sources">Add an XMLTV guide feed by its link, refresh it, or remove it. Feeds fill the TV Guide and the programme lines in Live TV.</string>
     <string name="settings_help_guide_days">How many days of programmemes the guide stores ahead. Fewer days make guide refreshes faster and the database smaller.</string>
-    <string name="settings_help_catchup">Catch-up plays programmemes from your provider’s archive. Most providers run it on your TV’s own clock; choose a fixed UTC offset if catch-up starts at the wrong time. This is also where you choose which player catch-up uses.</string>
+    <string name="settings_help_catchup_timezone">Catch-up plays programmes from your provider’s archive. Automatic uses the time zone your provider reports, or your TV’s own clock if it reports none; choose a fixed UTC offset if catch-up still starts at the wrong time. This is also where you choose which player catch-up uses.</string>
     <string name="settings_help_profiles">Each viewer keeps their own favourites, watch history, resume points and Home rows. Kids mode shows only the categories you allow; a PIN stops anyone else from opening the profile.</string>
     <string name="settings_profile_add_line">A viewer with their own favourites, history and settings</string>
     <string name="settings_help_startup">What DPTV-Player shows when it starts: Home, the channel you watched last, your favourites, or a channel you pick.</string>

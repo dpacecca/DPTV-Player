@@ -115,8 +115,6 @@
     <string name="player_error_image_format">Billedbaserede undertekster er ikke tilgængelige for denne fils format.</string>
     <string name="player_error_image_show">Kunne ikke vise billedbaserede undertekster for denne fil.</string>
     <string name="player_external_could_not_open">Kunne ikke åbne denne stream.</string>
-    <string name="player_external_play_with">Afspil med</string>
-    <string name="player_external_play_with_item">Afspil “<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>” med…</string>
     <string name="player_external_not_found">Ingen ekstern afspiller fundet — installér VLC eller MX Player.</string>
     <string name="player_error_audio_no_video">Lyden afspilles, men videoen kunne ikke gengives på denne enhed.</string>
     <string name="player_error_file_corrupt">Denne videos fil er ugyldig eller beskadiget og kan ikke afspilles.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">Dette tv\'s videodekoder er optaget. Prøv igen om et øjeblik.</string>
     <string name="player_error_no_internet">Ingen internetforbindelse. Kontrollér dit netværk, og prøv igen.</string>
     <string name="player_error_stream_unavailable">Kunne ikke afspille denne stream. Kilden er muligvis offline eller bruger et format, der ikke understøttes. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Denne konto afspiller allerede på en anden enhed eller app. Stop den der, og tryk derefter på Prøv igen.</string>
     <string name="player_error_mpv_open_decode">mpv kunne ikke åbne eller afkode denne fil.</string>
     <string name="player_error_mpv_stream_never_started">Streamen startede aldrig i mpv efter flere forsøg.</string>
     <string name="player_error_surround">Denne lydudgang understøtter ikke surroundlyd — der blev skiftet til stereo.</string>

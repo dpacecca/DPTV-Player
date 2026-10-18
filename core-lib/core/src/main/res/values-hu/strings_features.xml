@@ -19,6 +19,7 @@
     <string name="profiles_create">Létrehozás</string>
     <string name="profiles_save">Mentés</string>
     <string name="profiles_gate_title">Ki néz most?</string>
+    <string name="profiles_gate_subtitle">Minden profil saját kedvenceket és előzményeket tárol</string>
     <string name="profiles_wrong_pin">Hibás PIN-kód — próbáld újra</string>
     <string name="profiles_enter_pin"><xliff:g id="name">%1$s</xliff:g> — add meg a PIN-kódot</string>
     <string name="profiles_kids_badge">GYEREK</string>
@@ -43,7 +44,7 @@
     <string name="search_movie">Film</string>
     <string name="search_series">Sorozatok</string>
     <string name="search_channels">Csatornák</string>
-    <string name="search_on_tv">A tévében</string>
+    <string name="search_on_tv">Tévéműsorok</string>
     <string name="search_go_to_channel">Ugrás a csatornára</string>
     <string name="search_go_to_movie">Ugrás a filmre</string>
     <string name="search_clear_recent">Legutóbbi keresések törlése</string>
@@ -181,6 +182,7 @@
     <string name="home_trending_trailer">Előzetes</string>
     <string name="home_trending_more_details">További részletek</string>
     <string name="home_trending_all_versions">Összes változat</string>
+    <string name="home_trending_why_menu">Miért van itt ez a cím</string>
     <string name="home_trending_previous">Előző</string>
     <string name="home_trending_pause">Szünet</string>
     <string name="home_trending_resume">Folytatás</string>

@@ -19,6 +19,7 @@
     <string name="profiles_create">Utwórz</string>
     <string name="profiles_save">Zapisz</string>
     <string name="profiles_gate_title">Kto ogląda?</string>
+    <string name="profiles_gate_subtitle">Każdy profil ma własne ulubione i historię</string>
     <string name="profiles_wrong_pin">Nieprawidłowy PIN — spróbuj ponownie</string>
     <string name="profiles_enter_pin"><xliff:g id="name">%1$s</xliff:g> — wprowadź PIN</string>
     <string name="profiles_kids_badge">DZIECI</string>
@@ -43,7 +44,7 @@
     <string name="search_movie">Film</string>
     <string name="search_series">Serial</string>
     <string name="search_channels">Kanały</string>
-    <string name="search_on_tv">W telewizji</string>
+    <string name="search_on_tv">Programy TV</string>
     <string name="search_go_to_channel">Przejdź do kanału</string>
     <string name="search_go_to_movie">Przejdź do filmu</string>
     <string name="search_clear_recent">Wyczyść ostatnie wyszukiwania</string>
@@ -199,6 +200,7 @@
     <string name="home_trending_trailer">Zwiastun</string>
     <string name="home_trending_more_details">Więcej szczegółów</string>
     <string name="home_trending_all_versions">Wszystkie wersje</string>
+    <string name="home_trending_why_menu">Dlaczego ten tytuł jest tutaj</string>
     <string name="home_trending_previous">Poprzedni</string>
     <string name="home_trending_pause">Wstrzymaj</string>
     <string name="home_trending_resume">Wznów</string>

@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import tv.own.owntv.core.model.DownloadReason
 import tv.own.owntv.core.model.DownloadStatus
 import tv.own.owntv.core.model.MediaType
 
@@ -289,6 +290,10 @@ data class DownloadEntity(
     val totalBytes: Long = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
+    /** Why it failed, waits or was paused (v48); null when there is nothing to say. */
+    val reason: DownloadReason? = null,
+    /** The HTTP status behind a failure, shown beside the reason (v48); null when there was none. */
+    val httpCode: Int? = null,
 )
 
 /**

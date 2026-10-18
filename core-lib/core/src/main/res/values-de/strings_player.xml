@@ -115,8 +115,6 @@
     <string name="player_error_image_format">Bildbasierte Untertitel sind für das Format dieser Datei nicht verfügbar.</string>
     <string name="player_error_image_show">Bildbasierte Untertitel konnten für diese Datei nicht angezeigt werden.</string>
     <string name="player_external_could_not_open">Dieser Stream konnte nicht geöffnet werden.</string>
-    <string name="player_external_play_with">Wiedergeben mit</string>
-    <string name="player_external_play_with_item">„<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>“ wiedergeben mit…</string>
     <string name="player_external_not_found">Kein externer Player gefunden – installiere VLC oder MX Player.</string>
     <string name="player_error_audio_no_video">Der Ton wird wiedergegeben, aber das Bild konnte auf diesem Gerät nicht dargestellt werden.</string>
     <string name="player_error_file_corrupt">Die Datei dieses Videos ist fehlerhaft oder beschädigt und kann nicht wiedergegeben werden.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">Der Videodecoder dieses Fernsehers ist ausgelastet. Versuche es gleich noch einmal.</string>
     <string name="player_error_no_internet">Keine Internetverbindung. Prüfe dein Netzwerk und versuche es erneut.</string>
     <string name="player_error_stream_unavailable">Dieser Stream konnte nicht wiedergegeben werden. Die Quelle ist möglicherweise Offline oder verwendet ein nicht unterstütztes Format. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Dieses Konto spielt bereits auf einem anderen Gerät oder in einer anderen App ab. Beende die Wiedergabe dort und drücke dann auf Erneut versuchen.</string>
     <string name="player_error_mpv_open_decode">mpv konnte diese Datei nicht öffnen oder decodieren.</string>
     <string name="player_error_mpv_stream_never_started">Der Stream wurde in mpv auch nach mehreren Versuchen nicht gestartet.</string>
     <string name="player_error_surround">Diese Audioausgabe unterstützt keinen Surround-Sound – zu Stereo gewechselt.</string>

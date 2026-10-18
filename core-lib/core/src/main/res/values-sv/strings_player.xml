@@ -115,8 +115,6 @@
     <string name="player_error_image_format">Bildbaserade undertexter är inte tillgängliga för den här filens format.</string>
     <string name="player_error_image_show">Det gick inte att visa bildbaserade undertexter för den här filen.</string>
     <string name="player_external_could_not_open">Det gick inte att öppna den här strömmen.</string>
-    <string name="player_external_play_with">Spela upp med</string>
-    <string name="player_external_play_with_item">Spela upp ”<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>” med…</string>
     <string name="player_external_not_found">Ingen extern spelare hittades – installera VLC eller MX Player.</string>
     <string name="player_error_audio_no_video">Ljudet spelas upp, men videon kunde inte visas på den här enheten.</string>
     <string name="player_error_file_corrupt">Videofilen är felaktig eller skadad och kan inte spelas upp.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">Tv:ns videoavkodare är upptagen. Försök igen om en stund.</string>
     <string name="player_error_no_internet">Ingen internetanslutning. Kontrollera nätverket och försök igen.</string>
     <string name="player_error_stream_unavailable">Det gick inte att spela upp den här strömmen. Källan kan vara offline eller använda ett format som inte stöds. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Det här kontot spelar redan upp på en annan enhet eller app. Stoppa uppspelningen där och tryck sedan på Försök igen.</string>
     <string name="player_error_mpv_open_decode">mpv kunde inte öppna eller avkoda den här filen.</string>
     <string name="player_error_mpv_stream_never_started">Strömmen startade aldrig i mpv efter flera försök.</string>
     <string name="player_error_surround">Den här ljudutgången kan inte återge surroundljud – bytte till stereo.</string>

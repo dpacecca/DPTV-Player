@@ -23,7 +23,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/CoreBuildInfo.kt	dpacecca/DPTV-Player
 1	log	core/src/main/java/tv/own/owntv/core/CorePerf.kt	OwnTVPerf
 3	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	..
-1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	Corrupt backup header
+2	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	Corrupt backup header
 1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	OWNTVBK1
 1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	Truncated backup file
 1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupContainer.kt	avatars/
@@ -60,6 +60,7 @@
 2	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	,
 1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	.bak
 1	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	.tmp
+1	log	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	Backup unreadable: ${primary.exceptionOrNull()?.javaClass?.simpleName}
 1	log	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	BackupManager
 2	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	LIVE
 1	protocol	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	LOCAL
@@ -346,6 +347,7 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	/backup
 1	technical	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	/m3u
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	1
+1	technical	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	Body ended at $total of $declared bytes
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	OFF
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	application/json
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	autoRefresh
@@ -419,6 +421,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Companion accept failed
 1	log	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Companion connection refused — $MAX_IN_FLIGHT already in flight
 1	log	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Companion link locked after $attempts incorrect PIN attempts
+1	log	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Companion request dropped: ${e.javaClass.simpleName}
 1	log	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	CompanionServer
 2	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Connection: close
 1	protocol	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	Content-Disposition: attachment; filename="
@@ -508,6 +511,9 @@
 1	technical	core/src/main/java/tv/own/owntv/core/content/AirDate.kt	UTC
 1	regex	core/src/main/java/tv/own/owntv/core/content/AirDate.kt	\\d{4}-\\d{2}-\\d{2}
 1	technical	core/src/main/java/tv/own/owntv/core/content/AirDate.kt	yyyy-MM-dd
+3	empty	core/src/main/java/tv/own/owntv/core/content/EpisodeTitles.kt	\0
+1	regex	core/src/main/java/tv/own/owntv/core/content/EpisodeTitles.kt	^(?:S\\d{1,3}\\s*E\\d{1,4}|\\d{1,3}x\\d{1,4})\\b
+1	regex	core/src/main/java/tv/own/owntv/core/content/EpisodeTitles.kt	^[\\s\\-–—:|.·]+
 1	empty	core/src/main/java/tv/own/owntv/core/content/SearchReader.kt	\0
 1	sql	core/src/main/java/tv/own/owntv/core/content/SearchReader.kt	$it*
 1	technical	core/src/main/java/tv/own/owntv/core/content/SearchReader.kt	[^\\p{L}\\p{Nd}]+
@@ -561,6 +567,7 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `$table` ADD COLUMN `providerLanguage` TEXT
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `$table` ADD COLUMN `qualityRank` INTEGER NOT NULL DEFAULT 0
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `$table` ADD COLUMN `titleSignature` TEXT NOT NULL DEFAULT ''
+1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `channels` ADD COLUMN `catchupCorrectionMin` INTEGER NOT NULL DEFAULT 0
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `channels` ADD COLUMN `catchupDays` INTEGER NOT NULL DEFAULT 0
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `channels` ADD COLUMN `catchupSource` TEXT
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `channels` ADD COLUMN `catchupType` TEXT
@@ -568,6 +575,8 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `channels` ADD COLUMN `contentHash` INTEGER NOT NULL DEFAULT 0
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `channels` ADD COLUMN `directSource` TEXT
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `channels` ADD COLUMN `httpHeaders` TEXT
+1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `downloads` ADD COLUMN `httpCode` INTEGER
+1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `downloads` ADD COLUMN `reason` TEXT
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `epg_channels` ADD COLUMN `iconUrl` TEXT
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `epg_channels` ADD COLUMN `normId` TEXT
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `epg_channels` ADD COLUMN `normName` TEXT
@@ -599,6 +608,7 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `sources` ADD COLUMN `mac` TEXT
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `sources` ADD COLUMN `maxConnectionsProbedAt` INTEGER NOT NULL DEFAULT 0
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `sources` ADD COLUMN `maxConnections` INTEGER NOT NULL DEFAULT 0
+1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `sources` ADD COLUMN `serverTimeZone` TEXT
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `sources` ADD COLUMN `stalkerDeviceId2` TEXT
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `sources` ADD COLUMN `stalkerDeviceId` TEXT
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	ALTER TABLE `sources` ADD COLUMN `stalkerSerialNumber` TEXT
@@ -873,12 +883,13 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	addedAt
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	audioLang
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	catchup
+1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	catchupCorrectionMin
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	catchupDays
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	catchupOffsetMin
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	catchupSource
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	catchupTimezone
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	catchupType
-10	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	channels
+11	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	channels
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	channels_fts
 4	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	contentHash
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	directSource
@@ -906,8 +917,9 @@
 4	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	playback_prefs
 5	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	series
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	series_fts
+1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	serverTimeZone
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	sourceId
-17	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	sources
+18	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	sources
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	stalkerDeviceId
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	stalkerDeviceId2
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	stalkerSerialNumber
@@ -1076,8 +1088,9 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	SELECT * FROM downloads WHERE status IN ('QUEUED', 'RUNNING') ORDER BY createdAt ASC
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	SELECT COUNT(*) FROM downloads WHERE profileId = :profileId
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	SELECT d.* FROM downloads d INNER JOIN episodes e ON e.id = d.itemId
-1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	UPDATE downloads SET status = :status, downloadedBytes = :downloaded, totalBytes = :total, updatedAt = :timestamp WHERE id = :id
+1	sql	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	UPDATE downloads SET status = :status, downloadedBytes = :downloaded, totalBytes = :total,
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	WHERE d.mediaType = 'EPISODE' AND e.seriesId = :seriesId
+1	sql	core/src/main/java/tv/own/owntv/core/database/dao/DownloadDao.kt	updatedAt = :timestamp, reason = :reason, httpCode = :httpCode WHERE id = :id
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/EpgDao.kt	AND startMs > :from - 86400000 AND stopMs > :from AND startMs < :to ORDER BY epgChannelId ASC, startMs ASC
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/EpgDao.kt	AND startMs > :from - 86400000 AND stopMs > :from AND startMs < :to ORDER BY startMs ASC
 1	sql	core/src/main/java/tv/own/owntv/core/database/dao/EpgDao.kt	AND title LIKE '%' || :query || '%' ORDER BY startMs ASC LIMIT :limit
@@ -1485,6 +1498,7 @@
 1	sql	core/src/main/java/tv/own/owntv/core/database/dao/SourceDao.kt	UPDATE sources SET liveTuneTimeoutSecs = :secs WHERE id = :id
 1	sql	core/src/main/java/tv/own/owntv/core/database/dao/SourceDao.kt	UPDATE sources SET maxConnections = :maxConnections WHERE id = :id
 1	sql	core/src/main/java/tv/own/owntv/core/database/dao/SourceDao.kt	UPDATE sources SET maxConnections = :maxConnections, maxConnectionsProbedAt = :probedAt WHERE id = :id
+1	sql	core/src/main/java/tv/own/owntv/core/database/dao/SourceDao.kt	UPDATE sources SET serverTimeZone = :zone WHERE id = :id
 1	sql	core/src/main/java/tv/own/owntv/core/database/dao/SourceDao.kt	UPDATE sources SET vodEnginePreference = :preference WHERE id = :id
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/SourceDao.kt	WHERE ps.profileId = :profileId ORDER BY s.createdAt ASC
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/SubtitleDao.kt	DELETE FROM subtitle_cache WHERE id = :id
@@ -1543,7 +1557,7 @@
 4	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/CatalogBackfillEntities.kt	sourceId
 4	empty	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	\0
 4	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	''
-6	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	0
+7	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	0
 4	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	addedAt
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	categories
 16	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	categoryId
@@ -1678,31 +1692,49 @@
 1	log	core/src/main/java/tv/own/owntv/core/di/DatabaseModule.kt	forced-wal
 1	log	core/src/main/java/tv/own/owntv/core/di/DatabaseModule.kt	repaired
 1	technical	core/src/main/java/tv/own/owntv/core/di/DatabaseModule.kt	wal
+2	empty	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	\0
+2	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	Content-Range
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	DownloadManager
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	Range
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	User-Agent
-1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	bytes=$existing-
-1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	download attempt $attempt/$MAX_ATTEMPTS failed id=$id: ${e.message}
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	bytes
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	bytes=$from-${to ?: ""}
+2	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	download attempt $attempt/$MAX_ATTEMPTS failed id=$id: ${e.message}
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadEngine.kt	download target unavailable id=$id path=${d.filePath}
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadManager.kt	DownloadManager
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadManager.kt	cannot create download target in ${root.stored} for $fileName
 1	technical	core/src/main/java/tv/own/owntv/core/download/DownloadNotifications.kt	$effectiveLocale:${localized.getString(R.string.common_nav_downloads)}
 1	technical	core/src/main/java/tv/own/owntv/core/download/DownloadNotifications.kt	owntv_downloads
+2	empty	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	\0
+1	log	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	(HTTP $it)
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	EFBIG
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	ENOSPC
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	File too large
+1	protocol	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	No space left
+1	log	core/src/main/java/tv/own/owntv/core/download/DownloadReasons.kt	download failed: $reason${httpCode?.let { " (HTTP $it)" } ?: ""}
 1	log	core/src/main/java/tv/own/owntv/core/download/DownloadWorker.kt	owntv-downloads
+3	empty	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	\0
+1	technical	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	%02x
+1	technical	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	-
 1	protocol	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	B
 1	protocol	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	R
 1	protocol	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	R{SSM}
 1	technical	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	UTF-8
 1	protocol	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	b{SSM}
+1	json	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	clearKeys
 2	protocol	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	clearkey
 1	json	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	headers
 1	protocol	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	http://
 1	protocol	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	https://
+1	json	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	k
+1	json	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	keys
+1	json	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	kid
 1	json	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	license
 1	protocol	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	license_key
 1	protocol	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	license_type
 1	json	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	scheme
 2	protocol	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	widevine
+1	technical	core/src/main/java/tv/own/owntv/core/drm/DrmConfig.kt	{
 2	empty	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	\0
 1	uri	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	$base&$body
 1	uri	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	$base?$body
@@ -1717,29 +1749,22 @@
 1	uri	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	?
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	?$it
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	?utc={utc}&lutc={lutc}
-1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	H
-1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	M
-1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	S
 2	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	UTC
-1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	Y
-1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	\\$?\\{([A-Za-z_][A-Za-z0-9_-]*)\\}
+1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	YmdHMS
+1	regex	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	\\$?\\{([A-Za-z_][A-Za-z0-9_-]*)(?::([^}]*))?\\}
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	^(.+?)/timeshift/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/.]+)\\.(?:ts|m3u8)$
 1	regex	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	^(https?://[^/]+)/(?:live/)?([^/]+)/([^/]+)/(\\d+)(?:\\.[A-Za-z0-9]+)?$
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	append
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	currenttime
-3	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	d
-1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	duration
+1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	default
+2	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	duration
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	end
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	end-timestamp
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	flussonic
-2	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	h
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	lutc
-3	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	m
-2	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	min
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	mpegts
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	now
-1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	offset
-2	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	s
+2	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	offset
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	shift
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	start
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	start-timestamp
@@ -1753,7 +1778,6 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	utcstart
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	xc
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	xtream
-2	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	y
 1	protocol	core/src/main/java/tv/own/owntv/core/epg/CatchupUrl.kt	yyyy-MM-dd:HH-mm
 1	log	core/src/main/java/tv/own/owntv/core/epg/EpgAutoMatcher.kt	applied=${applied.size} review=${review.size} withheld=$withheld
 1	log	core/src/main/java/tv/own/owntv/core/epg/EpgAutoMatcher.kt	channels=${channels.size} unmatched=${unmatched.size}
@@ -2017,6 +2041,8 @@
 1	log	core/src/main/java/tv/own/owntv/core/live/LiveEpgReader.kt	live_nowplaying channels=${channels.size} keyed=${channelKeys.size}
 1	log	core/src/main/java/tv/own/owntv/core/live/LiveEpgReader.kt	totalMs=${android.os.SystemClock.elapsedRealtime() - startedAt}
 1	uri	core/src/main/java/tv/own/owntv/core/live/LiveEpgReader.kt	ts
+1	protocol	core/src/main/java/tv/own/owntv/core/live/LiveEpgReader.kt	xc
+1	protocol	core/src/main/java/tv/own/owntv/core/live/LiveEpgReader.kt	xtream
 2	preference-key	core/src/main/java/tv/own/owntv/core/live/LiveKey.kt	ALL
 2	preference-key	core/src/main/java/tv/own/owntv/core/live/LiveKey.kt	CATCHUP
 2	preference-key	core/src/main/java/tv/own/owntv/core/live/LiveKey.kt	CUSTOM:
@@ -2032,6 +2058,13 @@
 1	log	core/src/main/java/tv/own/owntv/core/live/ProbeChannelSource.kt	portal offered ${genres.size} genre(s) for source ${source.id}
 1	log	core/src/main/java/tv/own/owntv/core/live/ProbeChannelSource.kt	probe could not resolve '${channel.name}': ${it.message}
 1	json	core/src/main/java/tv/own/owntv/core/live/ProbeChannelSource.kt	vod
+1	technical	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	\0
+1	technical	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	${name.country}| ${name.name}
+1	technical	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	TV
+1	technical	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	UK
+1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	\\s+
+1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	^([A-Z]{2,3})\\s*\\|\\s*
+1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	^([A-Z]{2}):\\s*
 1	log	core/src/main/java/tv/own/owntv/core/live/WatchSession.kt	WatchSession
 1	log	core/src/main/java/tv/own/owntv/core/live/WatchSession.kt	watch close sourceId=$sourceId watching=${_watching.value}
 1	log	core/src/main/java/tv/own/owntv/core/live/WatchSession.kt	watch open sourceId=$sourceId watching=${_watching.value}
@@ -2313,6 +2346,7 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	M3uParser
 1	technical	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	UTF-8
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	catchup
+2	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	catchup-correction
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	catchup-days
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	catchup-source
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	catchup-type
@@ -2324,6 +2358,8 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	parse start
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	parseOrReadMs=$parseOrReadDelta callbackMs=$callbackDelta
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	series
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	shift
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	timeshift
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	totalMs=${now - startedAt}
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	totalParseOrReadMs=${metrics.parseOrReadMs} totalCallbackMs=${metrics.callbackMs}
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/M3uParser.kt	tvg-chno
@@ -2397,8 +2433,9 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	&stream_id=$streamId&limit=$limit
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	0
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	1
+1	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	GMT$sign${(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	Stream truncated after $count items label=$label — partial list kept
-1	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	UTC
+2	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	UTC
 6	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	UTF-8
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	XtreamClient
 1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	active_cons
@@ -2428,6 +2465,7 @@
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	get_vod_streams
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	id
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	info
+1	log	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	isXtreamAccount: no (${e.message})
 1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	is_trial
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	last_modified
 1	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	max_connections
@@ -2446,6 +2484,7 @@
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	releasedate
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	season
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	series_id
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	server_info
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	start_timestamp
 1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	status
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	stop_timestamp
@@ -2455,6 +2494,9 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	streamArray start label=$label
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	stream_icon
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	stream_id
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	time_now
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	timestamp_now
+1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	timezone
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	title
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	totalMs=${SystemClock.elapsedRealtime() - startedAt}
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	totalMs=${now - startedAt}
@@ -2463,8 +2505,22 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	tv_archive_duration
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	user_info
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	year
+1	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	yyyy-MM-dd HH:mm:ss
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	yyyy-MM-dd:HH-mm
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	—
+1	empty	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	\0
+1	url	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	$scheme://$authority${path.dropLast("/get.php".length)}
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	&
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	&amp;
+2	url	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	/get.php
+1	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	UTF-8
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	hls
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	http
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	https
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	m3u8
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	output
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	password
+1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamM3uLink.kt	username
 1	technical	core/src/main/java/tv/own/owntv/core/player/ArchiveDecodeStore.kt	$host$SEPARATOR$at
 1	preference-key	core/src/main/java/tv/own/owntv/core/player/ArchiveDecodeStore.kt	owntv_archive_decode
 1	preference-key	core/src/main/java/tv/own/owntv/core/player/ArchiveDecodeStore.kt	software_archive_hosts
@@ -2473,7 +2529,9 @@
 1	technical	core/src/main/java/tv/own/owntv/core/player/AudioOnlyStore.kt	moved_to_db_v44
 1	preference-key	core/src/main/java/tv/own/owntv/core/player/AudioOnlyStore.kt	owntv_audio_only
 1	technical	core/src/main/java/tv/own/owntv/core/player/EnginePinKey.kt	$sourceId:$mediaType:$it
+1	preference-key	core/src/main/java/tv/own/owntv/core/player/EnginePinKey.kt	CATCHUP
 2	empty	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	\0
+1	technical	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	$title · $subtitle
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	.fileprovider
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	3gp
 3	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	User-Agent
@@ -2492,8 +2550,10 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	mov
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	mp4
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	mts
+1	technical	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	position
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	rtmp
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	rtsp
+1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	title
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	ts
 1	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	udp
 2	protocol	core/src/main/java/tv/own/owntv/core/player/ExternalPlayerLauncher.kt	video/*
@@ -2868,12 +2928,12 @@
 1	technical	core/src/main/java/tv/own/owntv/core/repository/EpisodeMerge.kt	s${seasonNumber}e$episodeNumber
 1	technical	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	\0
 1	technical	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	${season.id}:$epNo
+1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	${source.type} episode load failed seriesId=${series.id}
+1	technical	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	HTTP ${e.code}
 1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	SeriesRepository
 1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	episodes seriesId=$seriesId fetched=${fetched.size} new=${plan.inserts.size}
-1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	stalker episode load failed seriesId=${series.id}
 1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	stalker episodes seriesId=${series.id} remoteId=$remoteId seasons=${seasons.size} episodes=${episodes.size}
 1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	updated=${plan.updates.size} removed=${plan.deleteIds.size}
-1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	xtream episode load failed seriesId=${series.id}
 1	technical	core/src/main/java/tv/own/owntv/core/repository/SourceRepository.kt	Cancelled
 1	technical	core/src/main/java/tv/own/owntv/core/repository/SourceRepository.kt	Failed
 1	log	core/src/main/java/tv/own/owntv/core/repository/SourceRepository.kt	SourceRepository
@@ -2974,6 +3034,7 @@
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	detailed_diagnostics
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	direct_tune
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	download_root
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	download_watch_choice
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	downloads_wifi_only
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	epg_auto_refresh
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	epg_offset_minutes
@@ -3076,6 +3137,8 @@
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	panel_w_series_list
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	panel_w_series_on
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	panel_w_series_preview
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	phone_nav_hide_on_scroll
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	phone_nav_labels
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	pip_enabled
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	pip_on_back
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	pip_size
@@ -3127,6 +3190,8 @@
 1	log	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	settings import: skipped ${k.name}
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	settings_menu_order_$menu
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	settings_quick_pinned
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sheet_counts
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	software_decode_above_1080p
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sort_guide
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sort_live
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sort_movies
@@ -3180,6 +3245,8 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/setup/SetupText.kt	Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/601.1 (KHTML, like Gecko) MAG420 stbapp ver: 4 rev: 2721 Safari/601.1
 13	empty	core/src/main/java/tv/own/owntv/core/setup/SourceImporter.kt	\0
 1	file-path	core/src/main/java/tv/own/owntv/core/setup/SourceImporter.kt	/
+1	log	core/src/main/java/tv/own/owntv/core/setup/SourceImporter.kt	M3U link is an Xtream account — importing it as Xtream
+1	log	core/src/main/java/tv/own/owntv/core/setup/SourceImporter.kt	SourceImporter
 1	technical	core/src/main/java/tv/own/owntv/core/setup/SourceImporter.kt	add_remainder
 1	url	core/src/main/java/tv/own/owntv/core/setup/SourceImporter.kt	content://
 1	url	core/src/main/java/tv/own/owntv/core/setup/SourceImporter.kt	file://
@@ -3521,7 +3588,8 @@
 1	technical	core/src/main/java/tv/own/owntv/core/sync/M3uSyncer.kt	${show.name}$KEY_SEPARATOR$group
 1	technical	core/src/main/java/tv/own/owntv/core/sync/M3uSyncer.kt	${show.name}$KEY_SEPARATOR${show.group.orEmpty()}
 1	regex	core/src/main/java/tv/own/owntv/core/sync/M3uSyncer.kt	(?i)\\b(\\d{1,2})x(\\d{1,3})\\b
-1	regex	core/src/main/java/tv/own/owntv/core/sync/M3uSyncer.kt	(?i)\\bS(\\d{1,2})\\s*[.\\-_ ]?\\s*E(\\d{1,3})\\b
+1	regex	core/src/main/java/tv/own/owntv/core/sync/M3uSyncer.kt	(?i)\\bS(\\d{1,4})\\s*[.\\-_ ]?\\s*E(\\d{1,4})\\b
+1	regex	core/src/main/java/tv/own/owntv/core/sync/M3uSyncer.kt	(?i)\\bSeason\\s*(\\d{1,4})\\s*[.,:\\-_ ]*\\s*(?:Episode|Ep\\.?)\\s*(\\d{1,4})\\b
 3	technical	core/src/main/java/tv/own/owntv/core/sync/M3uSyncer.kt	/
 1	log	core/src/main/java/tv/own/owntv/core/sync/M3uSyncer.kt	M3U categories flush sourceId=${s.id} rows=${pendingCategories.size} ms=${SystemClock.elapsedRealtime() - start}
 1	log	core/src/main/java/tv/own/owntv/core/sync/M3uSyncer.kt	M3U channel flush sourceId=${s.id} rows=${channels.size} dbInserted=${upsert.inserted}
@@ -3693,7 +3761,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	ABORTING fallback
 1	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	HTTP
 4	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	SyncManager
-1	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	Xtream sync scheduling sourceId=${s.id} contentTypes=$contentTypes concurrency=$PHASE_CONCURRENCY hlsSupported=${details?.hlsSupported} maxConnections=${details?.maxConnections}
+1	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	Xtream sync scheduling sourceId=${s.id} contentTypes=$contentTypes concurrency=$PHASE_CONCURRENCY hlsSupported=${details?.hlsSupported} maxConnections=${details?.maxConnections} serverTimeZone=${details?.serverTimeZone}
 2	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	channels
 1	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	channels_fts
 1	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	complete=$complete newUnique=$delta totalUnique=${total[0]} ms=${SystemClock.elapsedRealtime() - categoryStart}
@@ -3920,11 +3988,14 @@
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	the DASH representation went away
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	the playlist ended
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	the stream ended
+1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: DASH segment ${segment.number} has an unreadable address — skipped
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: DASH segment ${segment.number} refused
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: connection dropped ($why) — reconnect $failures in ${wait}ms
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: first connection failed — $why
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: giving up after $failures drops — $why
+1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: no network ($why) — waiting
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: not buffered — ${e.why}
+1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: segment ${segment.sequence} has an unreadable address — skipped
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	timeshift: segment ${segment.sequence} refused
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	unreadable DASH manifest
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftDownloader.kt	unreadable HLS variant address
@@ -3939,6 +4010,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftManager.kt	no data in ${firstPieceTimeoutMs}ms
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftManager.kt	not buffering: $why
 1	log	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftManager.kt	not buffering: ${space / (1024 * 1024)} MB free
+1	technical	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftRules.kt	ENETUNREACH
 1	url	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftServer.kt	127.0.0.1
 1	protocol	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftServer.kt	Cache-Control: no-cache Connection: close
 1	protocol	core/src/main/java/tv/own/owntv/core/timeshift/TimeshiftServer.kt	GET
@@ -4096,6 +4168,71 @@
 1	log	core/src/main/java/tv/own/owntv/core/tv/TvHomeRepository.kt	syncMovie profile=$profileId movieId=$movieId groupId=$groupId existing=${existing?.providerProgramId ?: -1}
 1	log	core/src/main/java/tv/own/owntv/core/tv/TvHomeRepository.kt	syncMovie skip hidden profile=$profileId movieId=$movieId sourceId=${movie.sourceId}
 1	log	core/src/main/java/tv/own/owntv/core/tv/TvHomeRepository.kt	syncMovie skip user-hidden profile=$profileId movieId=$movieId groupId=$groupId
+1	empty	core/src/main/java/tv/own/owntv/core/ui/stage/PlaylistMark.kt	\0
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/PlaylistMark.kt	IPTV
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/PlaylistMark.kt	TV
+1	regex	core/src/main/java/tv/own/owntv/core/ui/stage/PlaylistMark.kt	[^\\p{L}\\p{N}]+
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M11 19 3 12l8-7zM21 19l-8-7 8-7z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M12 3 2 20h20zM12 10v4M12 17h.01
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.9 1.8-1.8 0-1.3-1-1.6-1-2.7 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3zM6.3 11a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0zM8.8 7a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0zM13.8 7.5a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M12 3l9 5-9 5-9-5zM3 13l9 5 9-5
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M12 3v12M7 10l5 5 5-5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M12 5v14M5 12h14
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M13 19l8-7-8-7zM3 19l8-7-8-7z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M14 4h6v6M20 4l-6.5 6.5M10 20H4v-6M4 20l6.5-6.5
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M15 18l-6-6 6-6
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M18 5v14M5 5.5v13L15 12z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M18 8.5a6 6 0 0 0-12 0c0 7-3 8.5-3 8.5h18s-3-1.5-3-8.5M13.7 21a2 2 0 0 1-3.4 0
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M19.5 12a7.5 7.5 0 1 1-2.2-5.3L19.5 9M19.5 4.5V9H15
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0zM10 8.5l5 3.5-5 3.5z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0zM12 16.5v-5M12 8h.01
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0zM12 7v5l3.5 2
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0zM12 7v5l3.5 2M12 1.5v2
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0zM3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3 12a9 9 0 1 0 2.6-6.4L3 8M3 3v5h5M12 7.5V12l3 2
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3 17l6-6 4 4 8-8M15 7h6v6
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3 3l18 18M10.6 5.1A9.8 9.8 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-2.7 3.6M6.6 6.6A16.7 16.7 0 0 0 2.5 12S6 19 12 19a9.4 9.4 0 0 0 4.4-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3.4 12a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0zM10.4 12a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0zM17.4 12a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M3.5 17v-4a8.5 8.5 0 0 1 17 0v4M5.3 14H6.2A1.8 1.8 0 0 1 8 15.8V19.2A1.8 1.8 0 0 1 6.2 21H5.3A1.8 1.8 0 0 1 3.5 19.2V15.8A1.8 1.8 0 0 1 5.3 14zM17.8 14H18.7A1.8 1.8 0 0 1 20.5 15.8V19.2A1.8 1.8 0 0 1 18.7 21H17.8A1.8 1.8 0 0 1 16 19.2V15.8A1.8 1.8 0 0 1 17.8 14z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M4 11a7 7 0 1 0 14 0a7 7 0 1 0 -14 0zM20.5 20.5l-4.2-4.2
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M4 20v-6M8.5 20V8M13 20v-9M17.5 20V5M21 20v-4
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 6a2 2 0 1 0 4 0a2 2 0 1 0 -4 0zM8 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0zM16 18a2 2 0 1 0 4 0a2 2 0 1 0 -4 0z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M4 6h16M7 12h10M10 18h4
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M4 9.5h3.5L12 5.5v13l-4.5-4H4zM15.5 9a4.2 4.2 0 0 1 0 6M18.3 6.3a8 8 0 0 1 0 11.4
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M4.5 12.5l5 5 10-11
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9M4.5 4.5V9H9
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M4.5 4H9.5A1.5 1.5 0 0 1 11 5.5V9.5A1.5 1.5 0 0 1 9.5 11H4.5A1.5 1.5 0 0 1 3 9.5V5.5A1.5 1.5 0 0 1 4.5 4zM14.5 4H19.5A1.5 1.5 0 0 1 21 5.5V9.5A1.5 1.5 0 0 1 19.5 11H14.5A1.5 1.5 0 0 1 13 9.5V5.5A1.5 1.5 0 0 1 14.5 4zM4.5 13H9.5A1.5 1.5 0 0 1 11 14.5V18.5A1.5 1.5 0 0 1 9.5 20H4.5A1.5 1.5 0 0 1 3 18.5V14.5A1.5 1.5 0 0 1 4.5 13zM14.5 13H19.5A1.5 1.5 0 0 1 21 14.5V18.5A1.5 1.5 0 0 1 19.5 20H14.5A1.5 1.5 0 0 1 13 18.5V14.5A1.5 1.5 0 0 1 14.5 13z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M5.5 3.5H8.5A2 2 0 0 1 10.5 5.5V8.5A2 2 0 0 1 8.5 10.5H5.5A2 2 0 0 1 3.5 8.5V5.5A2 2 0 0 1 5.5 3.5zM15.5 3.5H18.5A2 2 0 0 1 20.5 5.5V8.5A2 2 0 0 1 18.5 10.5H15.5A2 2 0 0 1 13.5 8.5V5.5A2 2 0 0 1 15.5 3.5zM5.5 13.5H8.5A2 2 0 0 1 10.5 15.5V18.5A2 2 0 0 1 8.5 20.5H5.5A2 2 0 0 1 3.5 18.5V15.5A2 2 0 0 1 5.5 13.5zM15.5 13.5H18.5A2 2 0 0 1 20.5 15.5V18.5A2 2 0 0 1 18.5 20.5H15.5A2 2 0 0 1 13.5 18.5V15.5A2 2 0 0 1 15.5 13.5z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M5.5 6H18.5A3 3 0 0 1 21.5 9V17A3 3 0 0 1 18.5 20H5.5A3 3 0 0 1 2.5 17V9A3 3 0 0 1 5.5 6zM8 2.5l4 3.5 4-3.5
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 12a6 6 0 1 0 12 0a6 6 0 1 0 -12 0z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 15l6-6 6 6
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 3H18A3 3 0 0 1 21 6V18A3 3 0 0 1 18 21H6A3 3 0 0 1 3 18V6A3 3 0 0 1 6 3zM3 9h18M3 15h18M9 3v18
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 3H18A3 3 0 0 1 21 6V18A3 3 0 0 1 18 21H6A3 3 0 0 1 3 18V6A3 3 0 0 1 6 3zM7.5 3v18M16.5 3v18M3 12h18M3 7.5h4.5M16.5 7.5H21M3 16.5h4.5M16.5 16.5H21
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 4.5H18A3 3 0 0 1 21 7.5V18A3 3 0 0 1 18 21H6A3 3 0 0 1 3 18V7.5A3 3 0 0 1 6 4.5zM3 10h18M8 2.5v4M16 2.5v4
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 4H18A3 3 0 0 1 21 7V18A3 3 0 0 1 18 21H6A3 3 0 0 1 3 18V7A3 3 0 0 1 6 4zM3 9.5h18M8 2.5v3M16 2.5v3M7 13.5h4M7 17h7M14.5 13.5h2.5
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 5H18A3 3 0 0 1 21 8V16A3 3 0 0 1 18 19H6A3 3 0 0 1 3 16V8A3 3 0 0 1 6 5zM7 14h4M13 14h4M7 10.5h10
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 5v14M19 5.5v13L9 12z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 6l12 12M18 6 6 18
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 8.5H18A3 3 0 0 1 21 11.5V18A3 3 0 0 1 18 21H6A3 3 0 0 1 3 18V11.5A3 3 0 0 1 6 8.5zM5.5 5.2h13M8 2.2h8
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M6 9l6 6 6-6
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M7 4.5v15l12.5-7.5z
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M8 5v14M16 5v14
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M8 8a4 4 0 1 0 8 0a4 4 0 1 0 -8 0zM4 21a8 8 0 0 1 16 0
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M9 18l6-6-6-6
+1	technical	core/src/main/java/tv/own/owntv/core/ui/stage/StageGlyph.kt	M9.5 2.5H14.5A2.5 2.5 0 0 1 17 5V19A2.5 2.5 0 0 1 14.5 21.5H9.5A2.5 2.5 0 0 1 7 19V5A2.5 2.5 0 0 1 9.5 2.5zM11 18.5h2
 1	technical	core/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	.apk
 1	technical	core/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	Accept
 2	technical	core/src/main/java/tv/own/owntv/core/update/UpdateManager.kt	OwnTV
@@ -4210,6 +4347,14 @@
 1	log	core/src/main/java/tv/own/owntv/core/weather/WeatherRepository.kt	results
 1	log	core/src/main/java/tv/own/owntv/core/weather/WeatherRepository.kt	temperature_2m
 1	log	core/src/main/java/tv/own/owntv/core/weather/WeatherRepository.kt	weather_code
+1	uri	player-core/src/main/java/tv/own/owntv/core/drm/DrmMediaItem.kt	data:application/json;base64,
+1	json	player-core/src/main/java/tv/own/owntv/core/drm/DrmMediaItem.kt	k
+1	json	player-core/src/main/java/tv/own/owntv/core/drm/DrmMediaItem.kt	keys
+1	json	player-core/src/main/java/tv/own/owntv/core/drm/DrmMediaItem.kt	kid
+1	json	player-core/src/main/java/tv/own/owntv/core/drm/DrmMediaItem.kt	kty
+1	json	player-core/src/main/java/tv/own/owntv/core/drm/DrmMediaItem.kt	oct
+1	json	player-core/src/main/java/tv/own/owntv/core/drm/DrmMediaItem.kt	temporary
+1	json	player-core/src/main/java/tv/own/owntv/core/drm/DrmMediaItem.kt	type
 1	technical	player-core/src/main/java/tv/own/owntv/core/subtitles/SubtitleController.kt	,
 2	technical	player-core/src/main/java/tv/own/owntv/core/subtitles/SubtitleController.kt	MOVIE
 1	log	player-core/src/main/java/tv/own/owntv/core/subtitles/SubtitleController.kt	OpenSubtitles
@@ -4370,6 +4515,7 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	device
 1	technical	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	exo/vod: $reason
 1	log	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	film connection dropped at ${pos}ms — reopening in place ($next/$filmReconnects)
+1	log	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	film_buffer max=${maxBufferMs}ms bytes=$builtTargetBytes bitrateHint=${lastFilmBitrateBps ?: -1} heapClassMb=$heapClassMb
 3	technical	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	hardware
 1	technical	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	hevc
 1	technical	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	kind unknown
@@ -4528,7 +4674,7 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	error 0xfffffff4
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	every rung spent — retrying at the panel's direct_source address
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	exo/live: $reason
-1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	first frame after ${android.os.SystemClock.elapsedRealtime() - tune.playStartedMs}ms
+1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	first frame after ${now - t.startedMs}ms${ZapTiming.pressSuffix(sincePress)}
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frame hook NOT wired — no video renderer found; picture-freeze detection falls back to the no-progress backstop
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frame hook send FAILED (${it.message}) — picture-freeze detection falls back to the no-progress backstop
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frames=$frames dropped=$dropped isPlaying=${p.isPlaying}
@@ -4683,12 +4829,14 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	${channel.sourceId}:${channel.id}
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' falling back to $label ($reason)
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' opened on mpv
-2	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — giving up: $detail
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — giving up: $detail
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — its ExoPlayer preview had already failed; trying the next engine
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — its saved copy lost the connection ($why); opening it again
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — no fallback left ($detail)
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}' — no fallback left ($detail); leaving ExoPlayer's own reconnects running
-4	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}': $detail
+3	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}': $detail
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${channel.name}': $label — $reason
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	'${pane.first.name}' — the pane's saved copy lost the connection ($why); previewing it directly
 1	technical	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	ExoPlayer
 1	technical	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	LiveEngine
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	engine toggle '${channel.name}' -> ${if (goToMpv) "mpv" else "exoplayer"}
@@ -4703,7 +4851,6 @@
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	stalker resolve failed
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	starting mpv for '${channel.name}' — reason=$reason
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	the ExoPlayer preview had already failed
-1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	the connection was lost ($why)
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' cannot be saved — playing it directly
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' plays from its saved copy
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' plays from the recording server's copy
@@ -4715,13 +4862,14 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/MpvAudioChannels.kt	InlinedApi
 1	technical	player-core/src/main/java/tv/own/owntv/player/MpvAudioChannels.kt	auto-safe
 1	technical	player-core/src/main/java/tv/own/owntv/player/MpvAudioChannels.kt	stereo
-13	empty	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	\0
+11	empty	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	\0
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	$STREAM_RECONNECT_OPTIONS,$LIVE_TS_RECONNECT_OPTIONS
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	$reason — archive rescue: reopening mid-GOP catch-up in software decode
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	$reason — rescue rung 1: hwdec=mediacodec-copy (GL compositing)
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	$reason — rescue rung 2: software decode
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	$what must be called on the main thread, was ${Thread.currentThread().name}
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	${Math.round(it)} FPS
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	${at - l.loadStartTime}ms
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	${d.refreshRate}Hz@modeId=${d.mode?.modeId}
 1	file-path	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	${font.name.lowercase(Locale.US)}.ttf
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	${h}p
@@ -4732,16 +4880,17 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	%.1f
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	%.1f Mbps
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	%.2f:1
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	(file loaded ${since(l.fileLoadedAt)}, video ${since(l.firstVideoAt)})${ZapTiming.pressSuffix(sincePress)}
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	+discardcorrupt+genpts
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	+nobuffer+genpts
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	+nobuffer+genpts+discardcorrupt
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	,
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	-
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	.m3u8
-2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	.ts
+1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	.ts
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	/sdk_
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	/timeshift/
 4	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	0
-1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	1
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	1.0
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	10
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	1000000
@@ -4757,12 +4906,15 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	60
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	7.1
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	8MiB
+1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	://
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	Android SDK built for
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	CC software-decode override ${if (on) "ON" else "OFF"} (height=${load.currentHeightPx}px)
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	CC track selected but software decode not viable (height=${load.currentHeightPx}px, gl=${!glUnsupported}) — captions may stay empty
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	Could not prepare subtitle fonts: ${it.message}
+1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	DEPRECATION
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	Decode guard TRIPPED: ${h}px on software decoder
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	END_FILE STOP with no credit left — app-caused, not a failure
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	END_FILE before FILE_LOADED — account session in use, showing the error
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	END_FILE before FILE_LOADED — demuxer rejected file, hard-resetting
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	END_FILE reason=${endFileReasonName(reason)} error=$error live=$isLiveContent
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	EXO
@@ -4779,6 +4931,7 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	OFF
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	OMX.google
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	ON
+2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	OwnTV:mpv
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	OwnTVPlayer
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	PlayerBudget: $budget
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	STEREO
@@ -4812,7 +4965,7 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio drained ${"%.1f".format(vfps / cfps)}× too fast
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio filters: ${getPropertyString("af").orEmpty().ifEmpty { "none" }}
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio output produced no sound
-1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio-bitrate
+2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio-bitrate
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio-channels
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio-channels=$it
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio-channels=$value
@@ -4824,6 +4977,7 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio-params/samplerate
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio-pts
 3	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audio-samplerate
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audioFormat=${getPropertyString("audio-format")}
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	audiotrack
 4	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	auto
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	av1
@@ -4859,7 +5013,7 @@
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	demuxer-lavf-o
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	demuxer-lavf-probesize
 3	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	demuxer-max-back-bytes
-4	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	demuxer-max-bytes
+6	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	demuxer-max-bytes
 4	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	demuxer-readahead-secs
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	demuxerLavfO="$demuxerOptions" streamLavfO="${streamLavfOptionsFor(url, isLiveContent, effectiveHls)}"
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	demuxerLavfO="$trimmedOptions"
@@ -4898,6 +5052,8 @@
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	fbo=${getPropertyString("fbo-format")} cache=${getPropertyString("demuxer-max-bytes")}
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	fflags=$fflags
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	ffmpeg-version
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	film_buffer buffer=${film?.vodBufferSecs ?: 0}s cache=$demuxerMax net=${networkTimeout}s
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	film_buffer refined cache=$bytes bitrate=${bitrate ?: -1} buffer=${userSecs}s
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	flatten-editions
 5	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	force-window
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	frame-drop-count
@@ -4966,6 +5122,7 @@
 6	protocol	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv $why — reopening with tolerant demuxing (discardcorrupt/genpts/ignore_err)
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv level=$level $safe
+1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv live first position after ${now - l.loadStartTime}ms
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv live mid-play reconnects exhausted ($MAX_LIVE_RECONNECTS) — surfacing error
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv live open timed out after ${openingMs}ms — surfacing error
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	mpv ready: ${getPropertyString("mpv-version")} ffmpeg=${getPropertyString("ffmpeg-version")}
@@ -5075,7 +5232,7 @@
 4	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	vid
 2	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	video
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	video-aspect-override
-4	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	video-bitrate
+5	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	video-bitrate
 1	log	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	video-bitrate=${getPropertyString("video-bitrate")}
 4	protocol	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	video-codec
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	video-frame-info/interlaced
@@ -5123,6 +5280,10 @@
 28	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	yes
 1	technical	player-core/src/main/java/tv/own/owntv/player/OwnTVPlayer.kt	ytdl
 1	technical	player-core/src/main/java/tv/own/owntv/player/PlaybackEngines.kt	DEPRECATION
+1	log	player-core/src/main/java/tv/own/owntv/player/PlaybackEngines.kt	OwnTV-Memory
+1	log	player-core/src/main/java/tv/own/owntv/player/PlaybackEngines.kt	memory poll off
+1	log	player-core/src/main/java/tv/own/owntv/player/PlaybackEngines.kt	memory poll on
+1	log	player-core/src/main/java/tv/own/owntv/player/PlaybackEngines.kt	memory pressure $pressure avail=${info.availMem shr 20}MiB threshold=${info.threshold shr 20}MiB
 6	empty	player-core/src/main/java/tv/own/owntv/player/PlaybackErrorLog.kt	\0
 2	file-path	player-core/src/main/java/tv/own/owntv/player/PlaybackErrorLog.kt	$relativePath$EXPORT_NAME
 1	technical	player-core/src/main/java/tv/own/owntv/player/PlaybackErrorLog.kt	${Build.MANUFACTURER} ${Build.MODEL}
@@ -5264,6 +5425,12 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/ResponseDeadline.kt	owntv-response-deadline
 1	log	player-core/src/main/java/tv/own/owntv/player/ScreenOff.kt	ScreenOff
 1	log	player-core/src/main/java/tv/own/owntv/player/ScreenOff.kt	lockNow failed
+1	empty	player-core/src/main/java/tv/own/owntv/player/SmartBuffer.kt	\0
+1	technical	player-core/src/main/java/tv/own/owntv/player/SmartBuffer.kt	${roundUpToMib(bytes) / MIB}MiB
+1	regex	player-core/src/main/java/tv/own/owntv/player/SmartBuffer.kt	(\\d+)\\s*([KkMmGg]i[Bb])?
+1	technical	player-core/src/main/java/tv/own/owntv/player/SmartBuffer.kt	gib
+1	technical	player-core/src/main/java/tv/own/owntv/player/SmartBuffer.kt	kib
+1	technical	player-core/src/main/java/tv/own/owntv/player/SmartBuffer.kt	mib
 1	empty	player-core/src/main/java/tv/own/owntv/player/StreamFormatLabels.kt	\0
 1	protocol	player-core/src/main/java/tv/own/owntv/player/StreamFormatLabels.kt	DASH
 1	protocol	player-core/src/main/java/tv/own/owntv/player/StreamFormatLabels.kt	HLS
@@ -5357,3 +5524,4 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/VideoQuality.kt	video/
 1	log	player-core/src/main/java/tv/own/owntv/player/VolumeBoost.kt	volume boost failed: ${it.javaClass.simpleName}
 1	log	player-core/src/main/java/tv/own/owntv/player/VolumeBoost.kt	volume boost unavailable: ${it.javaClass.simpleName}
+1	log	player-core/src/main/java/tv/own/owntv/player/ZapTiming.kt	(zap key press to first frame ${it}ms)

@@ -20,10 +20,15 @@ object SourceOverrides {
         val mode = source?.catchupTimezone
             ?.let { runCatching { SettingsRepository.CatchupTimezone.valueOf(it) }.getOrNull() } ?: return null
         return when (mode) {
+            SettingsRepository.CatchupTimezone.AUTOMATIC -> panelTimeZoneOf(source) ?: TimeZone.getDefault()
             SettingsRepository.CatchupTimezone.DEVICE -> TimeZone.getDefault()
             SettingsRepository.CatchupTimezone.MANUAL -> SimpleTimeZone((source.catchupOffsetMin ?: 0) * 60_000, "catchup")
         }
     }
+
+    /** The zone the Xtream panel reported for itself at the last sync (v49), or null when unknown. */
+    fun panelTimeZoneOf(source: SourceEntity?): TimeZone? =
+        source?.serverTimeZone?.let { TimeZone.getTimeZone(it) }
 
     /** [source]'s own Movies & Series engine, or null when it follows the global one. */
     fun vodEngineOf(source: SourceEntity?): EnginePreference? =

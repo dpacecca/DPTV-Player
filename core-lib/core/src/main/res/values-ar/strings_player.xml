@@ -115,8 +115,6 @@
     <string name="player_error_image_format">الترجمات الصورية غير متاحة مع تنسيق هذا الملف.</string>
     <string name="player_error_image_show">تعذّر عرض الترجمات الصورية لهذا الملف.</string>
     <string name="player_external_could_not_open">تعذّر فتح هذا البث.</string>
-    <string name="player_external_play_with">تشغيل باستخدام</string>
-    <string name="player_external_play_with_item">تشغيل «<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>» باستخدام…</string>
     <string name="player_external_not_found">لم يتم العثور على مشغّل خارجي — ثبّت VLC أو MX Player.</string>
     <string name="player_error_audio_no_video">يجري تشغيل الصوت، ولكن تعذّر عرض الفيديو على هذا الجهاز.</string>
     <string name="player_error_file_corrupt">ملف هذا الفيديو غير صالح أو تالف ولا يمكن تشغيله.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">وحدة فك ترميز الفيديو في هذا التلفزيون مشغولة. حاول مجددًا بعد قليل.</string>
     <string name="player_error_no_internet">لا يوجد اتصال بالإنترنت. تحقّق من شبكتك وحاول مجددًا.</string>
     <string name="player_error_stream_unavailable">تعذّر تشغيل هذا البث. قد يكون المصدر غير متصل أو يستخدم تنسيقًا غير مدعوم. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">هذا الحساب قيد التشغيل بالفعل على جهاز أو تطبيق آخر. أوقفه هناك، ثم اضغط على إعادة المحاولة.</string>
     <string name="player_error_mpv_open_decode">تعذّر على mpv فتح هذا الملف أو فك ترميزه.</string>
     <string name="player_error_mpv_stream_never_started">لم يبدأ البث في mpv بعد عدة محاولات.</string>
     <string name="player_error_surround">لا يدعم مخرج الصوت هذا الصوت المحيطي — تم التبديل إلى صوت ستيريو.</string>

@@ -115,8 +115,6 @@
     <string name="player_error_image_format">I sottotitoli basati su immagini non sono disponibili per il formato di questo file.</string>
     <string name="player_error_image_show">Impossibile visualizzare i sottotitoli basati su immagini per questo file.</string>
     <string name="player_external_could_not_open">Impossibile aprire questo flusso.</string>
-    <string name="player_external_play_with">Riproduci con</string>
-    <string name="player_external_play_with_item">Riproduci “<xliff:g id="channel">%1$s</xliff:g> · <xliff:g id="programme">%2$s</xliff:g>” con…</string>
     <string name="player_external_not_found">Nessun player esterno trovato: installa VLC o MX Player.</string>
     <string name="player_error_audio_no_video">L\'audio è in riproduzione, ma non è stato possibile visualizzare il video su questo dispositivo.</string>
     <string name="player_error_file_corrupt">Il file di questo video è danneggiato o non valido e non può essere riprodotto.</string>
@@ -124,6 +122,7 @@
     <string name="player_error_decoder_busy">Il decoder video di questo televisore è occupato. Riprova tra poco.</string>
     <string name="player_error_no_internet">Nessuna connessione a Internet. Controlla la rete e riprova.</string>
     <string name="player_error_stream_unavailable">Impossibile riprodurre questo flusso. La fonte potrebbe essere offline o utilizzare un formato non supportato. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Questo account è già in riproduzione su un altro dispositivo o app. Interrompila lì, poi premi Riprova.</string>
     <string name="player_error_mpv_open_decode">mpv non è riuscito ad aprire o decodificare questo file.</string>
     <string name="player_error_mpv_stream_never_started">Il flusso non si è mai avviato in mpv dopo diversi tentativi.</string>
     <string name="player_error_surround">Questa uscita audio non supporta il surround: passaggio allo stereo effettuato.</string>

@@ -1840,11 +1840,11 @@ class LiveViewModel(
      * Turn one point in [ch]'s archive into a playing stream — the "URL out" half of [LiveTimeshift],
      * and the only part of a rewind that needs this view model's collaborators.
      *
-     * Returns false when no archive URL can be built, or when the user reached the live edge while it
-     * was being resolved.
+     * Returns the instant the archive really starts at (an Xtream archive starts on the minute), or null
+     * when no archive URL can be built, or when the user reached the live edge while it was being resolved.
      */
-    private suspend fun loadArchiveStream(ch: ChannelEntity, startMs: Long, offsetSec: Int): Boolean {
-        val (url, sourceUa) = withContext(Dispatchers.IO) {
+    private suspend fun loadArchiveStream(ch: ChannelEntity, startMs: Long, offsetSec: Int): Long? {
+        val (archive, sourceUa) = withContext(Dispatchers.IO) {
             val source = sourceDao.getById(ch.sourceId) ?: return@withContext null
             val tz = settings.resolveCatchupTimeZone(source)
             archiveUrls.forTimeshift(ch, source, startMs, offsetSec, tz)?.let { it to source.userAgent }
@@ -1852,23 +1852,24 @@ class LiveViewModel(
             // The rewind hands back to the live edge from here (see LiveTimeshift.scheduleLoad), which
             // on its own looks exactly like the button doing nothing. Say why.
             _catchupUnavailable.tryEmit(Unit)
-            return false
+            return null
         }
-        if (timeshift.offsetSec.value == null) return false // user jumped back to live meanwhile
+        if (timeshift.offsetSec.value == null) return null // user jumped back to live meanwhile
         // Keep the rewind instant semantic. The player HUD formats it with the current
         // localized context, so an in-session locale switch updates an already-visible subtitle.
         _previewChannel.value = ch
         clearLiveOnExo() // archive plays as a VOD-style mpv stream, not the live ExoPlayer channel
         player.play(
-            url = url,
+            url = archive.url,
             title = ch.name,
             logoUrl = ch.displayLogoUrl,
             isArchive = true,
             userAgent = sourceUa,
             httpHeaders = headersFor(ch),
-            rewindStartMs = startMs,
+            rewindStartMs = archive.startMs,
+            reconnectProvider = archive.reconnect,
         )
-        return true
+        return archive.startMs
     }
 
     fun toggleFavorite(channel: ChannelEntity) {
