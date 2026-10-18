@@ -40,7 +40,6 @@ import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.customize.applyCustomizations
 import tv.own.owntv.core.customize.CategoryMove
 import tv.own.owntv.core.customize.CategoryRailEditor
-import tv.own.owntv.core.customize.MoveKind
 import tv.own.owntv.core.customize.railCategories
 import tv.own.owntv.core.customize.CustomizeKeys
 import tv.own.owntv.core.database.dao.CategoryDao
@@ -65,6 +64,7 @@ import tv.own.owntv.core.launcher.LauncherIntegrationRepository
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.util.throttleLatest
 import tv.own.owntv.core.download.DownloadManager
+import tv.own.owntv.core.repository.EpisodeLoad
 import tv.own.owntv.core.repository.SeriesRepository
 import tv.own.owntv.core.storage.StorageAccess
 import tv.own.owntv.core.storage.MediaFolders
@@ -339,6 +339,10 @@ class SeriesViewModel(
     private val _episodesLoading = MutableStateFlow(false)
     val episodesLoading: StateFlow<Boolean> = _episodesLoading.asStateFlow()
 
+    /** Why the opened show has no episodes when the provider refused or failed the request; null otherwise. */
+    private val _episodesFailure = MutableStateFlow<String?>(null)
+    val episodesFailure: StateFlow<String?> = _episodesFailure.asStateFlow()
+
     /**
      * The queue item the player is actually on, pinned when it starts playing — the only thing a
      * resume position may be written against.
@@ -423,14 +427,18 @@ class SeriesViewModel(
     private var playingQueue: PlayingQueue? = null
 
     /** A season's last episode finished with auto-play on — start the next season's first episode, if any.
-     *  Matches the just-finished episode by its stream URL (robust to in-season auto-advance). */
+     *  Matches the just-finished episode by its stream URL (robust to in-season auto-advance). The next
+     *  season is the next in watching order: a gap in the numbering no longer ends the show, and the
+     *  Specials follow the finale rather than leading into Season 1. */
     private fun continueToNextSeason() {
         val url = player.currentMediaUrl ?: return
         val all = episodes.value
         val finished = all.firstOrNull { it.streamUrl == url } ?: return // not one of this series' episodes
+        val nextSeason = tv.own.owntv.core.content.EpisodeOrder.seasonAfter(all.map { it.seasonNumber }, finished.seasonNumber)
+            ?: return // no next season — series finished
         val nextEpisode = all
-            .filter { it.seasonNumber == finished.seasonNumber + 1 }
-            .minByOrNull { it.episodeNumber } ?: return // no next season — series finished
+            .filter { it.seasonNumber == nextSeason }
+            .minByOrNull { it.episodeNumber } ?: return
         playEpisode(nextEpisode)
     }
 
@@ -609,7 +617,7 @@ class SeriesViewModel(
     val nextUpEpisodeId: StateFlow<Long?> = combine(episodes, episodeProgress) { eps, prog ->
         if (eps.isEmpty()) null
         else {
-            val ordered = eps.sortedWith(compareBy({ it.seasonNumber }, { it.episodeNumber }))
+            val ordered = eps.sortedWith(tv.own.owntv.core.content.EpisodeOrder.episodes)
             val lastWatched = prog.values.maxByOrNull { it.updatedAt }
             when {
                 lastWatched == null -> ordered.first().id
@@ -835,8 +843,9 @@ class SeriesViewModel(
             } else {
                 // Mirror the screen's own fallback: a show whose seasons start at 0 or 2 displays its
                 // first season, and fetching the requested-but-absent season would leave the grid blank.
-                val available = eps.map { it.seasonNumber }.distinct().sorted()
-                val active = if (available.contains(season)) season else available.firstOrNull() ?: season
+                val available = eps.map { it.seasonNumber }.distinct()
+                val active = if (available.contains(season)) season
+                else tv.own.owntv.core.content.EpisodeOrder.openingSeason(available) ?: season
                 show to eps.filter { it.seasonNumber == active }
             }
         }
@@ -875,7 +884,8 @@ class SeriesViewModel(
         Log.d(TAG, "openSeries seriesId=${s.id} profile=${ctx.value.profileId}")
         viewModelScope.launch {
             _episodesLoading.value = true
-            seriesRepository.loadEpisodes(s)
+            _episodesFailure.value = null
+            _episodesFailure.value = (seriesRepository.loadEpisodes(s) as? EpisodeLoad.Failed)?.reason
             // Jump to where you left off: seed the last-watched episode (and its season) from saved progress
             // BEFORE clearing loading, so the screen's focus effect lands on it instead of episode 1 (#22).
             val eps = seriesDao.episodesBySeries(s.id).first()
@@ -910,7 +920,7 @@ class SeriesViewModel(
         val pid = currentProfileId() ?: return false
         if (!tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, show.categoryId, profileDao, categoryDao)) return false
         seriesRepository.loadEpisodes(show)
-        val queue = seriesDao.episodesBySeries(show.id).first()
+        val queue = seriesDao.episodesBySeries(show.id).first().sortedWith(tv.own.owntv.core.content.EpisodeOrder.episodes)
         if (queue.isEmpty()) return false
         playEpisodeQueue(show, queue, episode, startPositionMs)
         return true
@@ -963,6 +973,7 @@ class SeriesViewModel(
                 subtitle = show.name,
                 userAgent = source?.userAgent,
                 httpHeaders = tv.own.owntv.core.settings.SourceOverrides.headersWithReferer(episode.httpHeaders, source),
+                startPositionMs = savedPositionMs(episode),
             )
             if (pid != null) {
                 runCatching {
@@ -1006,6 +1017,7 @@ class SeriesViewModel(
                     subtitle = show.name,
                     userAgent = source?.userAgent,
                     httpHeaders = tv.own.owntv.core.settings.SourceOverrides.headersWithReferer(episode.httpHeaders, source),
+                    startPositionMs = startPositionMs, // the screen's Resume / Start over answer
                 )
                 if (pid != null) {
                     runCatching {
@@ -1209,12 +1221,11 @@ class SeriesViewModel(
         }
     }
 
-    fun moveCategoryUp() {
-        _categoryMoveState.value = _categoryMoveState.value?.moved(MoveKind.UP) ?: return
-    }
-
-    fun moveCategoryDown() {
-        _categoryMoveState.value = _categoryMoveState.value?.moved(MoveKind.DOWN) ?: return
+    fun moveCategory(from: Int, to: Int) {
+        val s = _categoryMoveState.value ?: return
+        if (from !in s.rows.indices || to !in s.rows.indices || from == to) return
+        val rows = s.rows.toMutableList().apply { add(to, removeAt(from)) }
+        _categoryMoveState.value = s.copy(rows = rows, activeIndex = to, targetKey = rows[to].key)
     }
 
     fun commitCategoryMove() {
@@ -1258,22 +1269,13 @@ class SeriesViewModel(
     /** The sort the user was on before [enterMoveMode] switched the list to playlist order. */
     private var sortBeforeMove: SettingsRepository.SortMode? = null
 
-    fun moveUp() {
+    /** Takes the item being moved out and puts it back at [target]; the rest close up around it. */
+    /** Takes the item at [from] out and puts it back at [to]; the rest close up around it. */
+    fun move(from: Int, to: Int) {
         val s = _moveState.value ?: return
-        if (s.activeIndex == 0) return
-        val list = s.items.toMutableList()
-        val i = s.activeIndex
-        list[i - 1] = s.items[i]; list[i] = s.items[i - 1]
-        _moveState.value = s.copy(items = list, activeIndex = i - 1)
-    }
-
-    fun moveDown() {
-        val s = _moveState.value ?: return
-        if (s.activeIndex == s.items.size - 1) return
-        val list = s.items.toMutableList()
-        val i = s.activeIndex
-        list[i + 1] = s.items[i]; list[i] = s.items[i + 1]
-        _moveState.value = s.copy(items = list, activeIndex = i + 1)
+        if (from !in s.items.indices || to !in s.items.indices || from == to) return
+        val list = s.items.toMutableList().apply { add(to, removeAt(from)) }
+        _moveState.value = s.copy(items = list, activeIndex = to)
     }
 
     fun commitMove() {

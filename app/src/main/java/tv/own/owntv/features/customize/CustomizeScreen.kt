@@ -411,6 +411,10 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         PickerDialog(
             title = stringResource(R.string.common_nav_more),
             options = listOfNotNull(
+                // Bulk rename over every listed category, as the items page has it (the long-press span
+                // stays). In ⋯ rather than the tool row: two more pills pushed ⋯ itself off the screen.
+                "BULK" to stringResource(R.string.settings_bulk_rename_title),
+                "BULK_CLEANUP" to stringResource(R.string.settings_bulk_rename_auto_cleanup),
                 "NEW" to stringResource(
                     R.string.settings_customize_new_categories_button,
                     stringResource(if (hideNewCategories) R.string.settings_customize_behavior_hide else R.string.settings_customize_behavior_show),
@@ -425,6 +429,8 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             onSelect = { value ->
                 showMoreMenu = false
                 when (value) {
+                    "BULK" -> { dialogReturn = moreFocus; vm.bulkRenameAll(autocleanup = false) }
+                    "BULK_CLEANUP" -> { dialogReturn = moreFocus; vm.bulkRenameAll(autocleanup = true) }
                     "NEW" -> showNewCatPicker = true
                     "PIN_SET", "PIN_CHANGE" -> {
                         firstPin = ""; confirmPinStage = false; pinMismatch = false

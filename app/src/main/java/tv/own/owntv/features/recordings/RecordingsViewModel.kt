@@ -211,11 +211,12 @@ class RecordingsViewModel(
             } else {
                 recording.filePath ?: return@launch
             }
+            val startMs = if (resume) resumePositionMs(recording) ?: 0L else 0L
             if (settings.externalPlayerFor(MediaType.LIVE).first()) {
-                externalPlayerLauncher.launch(path, recording.title)
+                // Resume carries over to the other app: it starts where the recording was left.
+                externalPlayerLauncher.launch(path, recording.title, startPositionMs = startMs)
                 return@launch
             }
-            val startMs = if (resume) resumePositionMs(recording) ?: 0L else 0L
             if (!resume) forgetProgress(recording.id)
             player.play(path, title = recording.title, isLive = false, startPositionMs = startMs)
             track(recording.id, path)

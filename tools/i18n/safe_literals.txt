@@ -44,6 +44,8 @@
 1	assertion	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsViewModel.kt	EPISODE not applicable
 2	assertion	app/src/main/java/tv/own/owntv/features/customize/CustomizeItemsViewModel.kt	EPISODE not applicable to category items
 4	empty	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	\0
+2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	BULK
+2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	BULK_CLEANUP
 3	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	HIDE
 2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	NEW
 2	technical	app/src/main/java/tv/own/owntv/features/customize/CustomizeScreen.kt	PIN_CHANGE
@@ -155,13 +157,14 @@
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	ensurePlaying history record failed channelId=${channel.id} profile=$pid
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	stalker resolve failed channelId=${channel.id}
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	tuneByNumber($number) failed
+1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	zap: tune wait ${delayMs}ms — ${zapWaitReason(lastZapPressMs, now, singleConnection)}
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveZapList.kt	LiveZapList
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveZapList.kt	direct tune: zap rebuild failed
-1	technical	app/src/main/java/tv/own/owntv/features/live/ProviderTags.kt	\0
-1	regex	app/src/main/java/tv/own/owntv/features/live/ProviderTags.kt	\\s+
-1	regex	app/src/main/java/tv/own/owntv/features/live/ProviderTags.kt	^([A-Z]{2,3})\\s*\\|\\s*
 1	technical	app/src/main/java/tv/own/owntv/features/live/ScheduleRecordingDialog.kt	:
 1	technical	app/src/main/java/tv/own/owntv/features/live/ScheduleRecordingDialog.kt	EEEMMMd
+1	log	app/src/main/java/tv/own/owntv/features/live/ZapTuneDelay.kt	(single-connection)
+1	log	app/src/main/java/tv/own/owntv/features/live/ZapTuneDelay.kt	isolated$panel
+1	log	app/src/main/java/tv/own/owntv/features/live/ZapTuneDelay.kt	rapid (previous press ${nowMs - (lastPressMs ?: nowMs)}ms ago)$panel
 2	technical	app/src/main/java/tv/own/owntv/features/more/MorePages.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/more/MorePages.kt	$it
 1	technical	app/src/main/java/tv/own/owntv/features/more/MorePages.kt	%d:%02d
@@ -199,7 +202,12 @@
 1	url	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	w1280
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	·
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	◀
-4	empty	app/src/main/java/tv/own/owntv/features/profiles/ProfileComponents.kt	\0
+5	empty	app/src/main/java/tv/own/owntv/features/profiles/ProfileComponents.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/profiles/ProfilePictureChooser.kt	bmp
+1	technical	app/src/main/java/tv/own/owntv/features/profiles/ProfilePictureChooser.kt	jpeg
+1	technical	app/src/main/java/tv/own/owntv/features/profiles/ProfilePictureChooser.kt	jpg
+1	technical	app/src/main/java/tv/own/owntv/features/profiles/ProfilePictureChooser.kt	png
+1	technical	app/src/main/java/tv/own/owntv/features/profiles/ProfilePictureChooser.kt	webp
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/DvrScreen.kt	%d:%02d
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/DvrScreen.kt	%d:%02d:%02d
 1	locale	app/src/main/java/tv/own/owntv/features/recordings/DvrScreen.kt	EEEdMMM
@@ -235,9 +243,6 @@
 2	empty	app/src/main/java/tv/own/owntv/features/search/SearchViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/search/SearchViewModel.kt	m${item.id}
 1	technical	app/src/main/java/tv/own/owntv/features/search/SearchViewModel.kt	s${item.id}
-3	empty	app/src/main/java/tv/own/owntv/features/series/EpisodeTitles.kt	\0
-1	regex	app/src/main/java/tv/own/owntv/features/series/EpisodeTitles.kt	^(?:S\\d{1,3}\\s*E\\d{1,4}|\\d{1,3}x\\d{1,4})\\b
-1	regex	app/src/main/java/tv/own/owntv/features/series/EpisodeTitles.kt	^[\\s\\-–—:|.·]+
 1	empty	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	,
 2	preference-key	app/src/main/java/tv/own/owntv/features/series/SeriesScreen.kt	delete_subtitles
@@ -689,16 +694,11 @@
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	United Kingdom
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	United States
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	ass
-1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	bmp
 1	performance	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	epg-preload
-1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	jpeg
-1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	jpg
-1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	png
 1	performance	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	shell-composed
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	srt
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	ssa
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	vtt
-1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	webp
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	webvtt
 1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	·
 8	technical	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	\0
@@ -1847,7 +1847,6 @@
 1	protocol	app/src/main/java/tv/own/owntv/ui/components/GenreColor.kt	وثائق
 1	protocol	app/src/main/java/tv/own/owntv/ui/components/GenreColor.kt	کارتون
 1	protocol	app/src/main/java/tv/own/owntv/ui/components/GenreColor.kt	کودک
-1	empty	app/src/main/java/tv/own/owntv/ui/components/MoveOrderOverlay.kt	\0
 1	performance	app/src/main/java/tv/own/owntv/ui/components/NavLadder.kt	navAccentBar
 1	performance	app/src/main/java/tv/own/owntv/ui/components/NavLadder.kt	navLadderBg
 1	performance	app/src/main/java/tv/own/owntv/ui/components/NavLadder.kt	navLadderFg

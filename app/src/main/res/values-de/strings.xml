@@ -122,6 +122,8 @@
     <string name="sport_settings_sports_subtitle">Eine ganze Sportart ein- oder ausschalten</string>
     <string name="sport_settings_leagues_count">%1$d von %2$d</string>
     <string name="sport_settings_search_leagues">Ligen suchen</string>
+    <!-- Move window (Live TV, Movies, Series, Favorites): help line under the title. -->
+    <string name="sport_move_instructions">▲ ▼ Zeile wählen · OK nimmt sie auf oder legt sie ab · Speichern übernimmt die Reihenfolge</string>
     <string name="sport_order_hint">OK halten · Verschieben</string>
     <string name="sport_move_hint">▲▼ Verschieben · OK Fertig</string>
     <string name="sport_round">Runde</string>

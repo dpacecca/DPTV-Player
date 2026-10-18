@@ -62,6 +62,7 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
+import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.database.entity.DownloadEntity
 import tv.own.owntv.core.database.entity.RecordingEntity
 import tv.own.owntv.core.download.DownloadActivityTracker
@@ -157,7 +158,7 @@ fun DownloadsScreen(
 
     /** Focus the row for [id], scrolling near it first when it is not composed (the index counts no group labels, so it lands close). */
     suspend fun focusRow(id: Long) {
-        if (runCatching { focusOf(id).requestFocus() }.isSuccess) return
+        if (runCatching { focusOf(id).requestFocus() }.getOrDefault(false)) return
         runCatching { listState.scrollToItem(listIds.indexOf(id).coerceAtLeast(0)) }
         withFrameNanos { }
         runCatching { focusOf(id).requestFocus() }
@@ -166,8 +167,8 @@ fun DownloadsScreen(
     // The rail's ▶ lands on the first row, or on the tabs when this tab is empty.
     val entry: () -> Boolean = {
         val first = listIds.firstOrNull()
-        if (first != null) runCatching { focusOf(first).requestFocus() }.isSuccess || runCatching { tabFocus.requestFocus() }.isSuccess
-        else runCatching { tabFocus.requestFocus() }.isSuccess
+        if (first != null) runCatching { focusOf(first).requestFocus() }.getOrDefault(false) || runCatching { tabFocus.requestFocus() }.getOrDefault(false)
+        else runCatching { tabFocus.requestFocus() }.getOrDefault(false)
     }
     DisposableEffect(onEntryHook, listIds.firstOrNull()) {
         onEntryHook?.invoke(entry)
@@ -224,6 +225,7 @@ fun DownloadsScreen(
     }
 
     var showFolderPicker by remember { mutableStateOf(false) }
+    val watchChoice by vm.downloadWatchChoice.collectAsStateWithLifecycle()
 
     BoxWithConstraints(modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }) {
         // Horizontal geometry is a fraction of the mockup's 1920 width, so every zoom reflows.
@@ -278,6 +280,14 @@ fun DownloadsScreen(
                 )
             }
             Spacer(Modifier.weight(1f))
+            // What playing does to a download on a one-stream playlist; OK steps through the three answers.
+            StageTool(
+                text = stringResource(R.string.content_download_watch_setting) + stringResource(R.string.content_epg_bits_separator) +
+                    stringResource(watchChoiceLabel(watchChoice)),
+                icon = OwnTVIcon.PLAY,
+                onClick = { vm.setDownloadWatchChoice(nextWatchChoice(watchChoice)) },
+                modifier = Modifier.padding(bottom = 4.mpx),
+            )
             StageTool(
                 text = stringResource(R.string.settings_download_folder), icon = OwnTVIcon.FOLDER,
                 onClick = { showFolderPicker = true },
@@ -375,6 +385,15 @@ fun DownloadsScreen(
         else if (pickerWasOpen) { pickerWasOpen = false; withFrameNanos { }; runCatching { folderFocus.requestFocus() } }
     }
 }
+
+private fun watchChoiceLabel(c: SettingsRepository.DownloadWatchChoice): Int = when (c) {
+    SettingsRepository.DownloadWatchChoice.ASK -> R.string.content_download_watch_ask
+    SettingsRepository.DownloadWatchChoice.PAUSE -> R.string.content_download_watch_pause
+    SettingsRepository.DownloadWatchChoice.KEEP -> R.string.content_download_watch_keep
+}
+
+private fun nextWatchChoice(c: SettingsRepository.DownloadWatchChoice): SettingsRepository.DownloadWatchChoice =
+    SettingsRepository.DownloadWatchChoice.entries.let { it[(c.ordinal + 1) % it.size] }
 
 private val WarnColor = Color(0xFFFFB74D)
 private val FailColor = Color(0xFFEF4444)

@@ -122,6 +122,8 @@
     <string name="sport_settings_sports_subtitle">Turn a whole sport on or off</string>
     <string name="sport_settings_leagues_count">%1$d of %2$d</string>
     <string name="sport_settings_search_leagues">Search leagues</string>
+    <!-- Move window (Live TV, Movies, Series, Favorites): help line under the title. -->
+    <string name="sport_move_instructions">▲ ▼ choose a row · OK picks it up or puts it down · Save keeps the new order</string>
     <string name="sport_order_hint">Hold OK · Move</string>
     <string name="sport_move_hint">▲▼ Move · OK Done</string>
     <string name="sport_round">Round</string>

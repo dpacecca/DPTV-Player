@@ -296,6 +296,9 @@ fun SettingsScreen(
     val saveScroll = { savedScrollPx = pageScroll.value }
     // The rows column: fresh entry and a lost focus land here, on the page's first row.
     val rowsFocus = remember { FocusRequester() }
+    // Opens the search field's keyboard as it appears, so one OK reaches typing (More's search box too).
+    var searchAutoEdit by remember { mutableStateOf(false) }
+    LaunchedEffect(searchAutoEdit) { if (searchAutoEdit) { kotlinx.coroutines.delay(1000); searchAutoEdit = false } }
     LaunchedEffect(start) {
         if (start == null) return@LaunchedEffect
         tab = SettingsTab.ROOT
@@ -303,7 +306,8 @@ fun SettingsScreen(
         if (start.search) {
             searchMode = true
             searchFromMore = true
-            for (attempt in 0 until 10) { kotlinx.coroutines.delay(50); if (runCatching { searchFieldFocus.requestFocus() }.isSuccess) break }
+            searchAutoEdit = true
+            for (attempt in 0 until 10) { kotlinx.coroutines.delay(50); if (runCatching { searchFieldFocus.requestFocus() }.getOrDefault(false)) break }
         }
         onStartConsumed()
     }
@@ -396,8 +400,6 @@ fun SettingsScreen(
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back.
     var lastTab by rememberSaveable { mutableStateOf<SettingsTab?>(null) }
-    var searchAutoEdit by remember { mutableStateOf(false) }
-    LaunchedEffect(searchAutoEdit) { if (searchAutoEdit) { kotlinx.coroutines.delay(1000); searchAutoEdit = false } }
     // Built from the enum, not hand-listed. It used to be a literal map of twenty entries, and
     // adding SettingsTab.RECORDING without adding a line to it crashed the whole Settings screen
     // with "Key RECORDING is missing in the map" — a `getValue` on a map that had quietly gone
@@ -1032,7 +1034,7 @@ fun SettingsScreen(
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_catchup), stringResource(R.string.settings_search_keywords_catchup), OwnTVIcon.CATCHUP, TileTone.SECONDARY,
                 chip = when (catchupTz) {
                     SettingsRepository.CatchupTimezone.AUTOMATIC -> stringResource(R.string.settings_catchup_timezone_automatic)
-                SettingsRepository.CatchupTimezone.DEVICE -> stringResource(R.string.settings_device)
+                    SettingsRepository.CatchupTimezone.DEVICE -> stringResource(R.string.settings_device)
                     SettingsRepository.CatchupTimezone.MANUAL -> utcOffsetLabel(catchupOffset)
                 }) { saveScroll(); dialogReturn = searchFieldFocus; showCatchupTime = true },
             if (playlistSources.isNotEmpty()) SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_catchup_timezone_per_playlist), stringResource(R.string.settings_search_keywords_catchup), OwnTVIcon.CATCHUP, TileTone.SECONDARY,
@@ -2748,10 +2750,14 @@ private fun CatchupTimeDialog(
     val form: @Composable () -> Unit = {
         val first = remember { FocusRequester() }
         LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
-        val modes = listOf(SettingsRepository.CatchupTimezone.AUTOMATIC, SettingsRepository.CatchupTimezone.DEVICE, SettingsRepository.CatchupTimezone.MANUAL)
+        val modes = SettingsRepository.CatchupTimezone.entries
         Column(Modifier.trapAllFocusExit().focusGroup()) {
             tv.own.owntv.ui.stage.StageMenuChoice(
-                options = listOf(stringResource(R.string.settings_catchup_timezone_automatic), stringResource(R.string.settings_catchup_timezone_device), stringResource(R.string.settings_manual)),
+                options = listOf(
+                    stringResource(R.string.settings_catchup_timezone_automatic),
+                    stringResource(R.string.settings_catchup_timezone_device),
+                    stringResource(R.string.settings_manual),
+                ),
                 selected = modes.indexOf(mode),
                 onSelect = { onSetMode(modes[it]) },
                 focusRequester = first,
