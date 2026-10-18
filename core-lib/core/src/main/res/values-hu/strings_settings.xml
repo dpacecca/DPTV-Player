@@ -1402,6 +1402,13 @@
     <string name="settings_nav_widen_desc">Rögzített és kompakt: fókuszkor a nevek a tartalom fölött jelennek meg</string>
     <string name="settings_nav_menu_items">Menüelemek</string>
     <string name="settings_nav_menu_items_desc">Dinamikus: a lejátszási lista tartalmát követi · Statikus: te választod ki</string>
+    <string name="settings_nav_bar">Sáv</string>
+    <string name="settings_nav_labels">Feliratok</string>
+    <string name="settings_nav_icons_only">Csak ikonok</string>
+    <string name="settings_nav_hide_scrolling">Elrejtés görgetéskor</string>
+    <string name="settings_nav_hide_scrolling_desc">A sáv lefelé görgetéskor eltűnik, felfelé görgetéskor visszatér</string>
+    <string name="settings_sheet_counts">Számok mutatása</string>
+    <string name="settings_sheet_counts_desc">Csatornák és címek száma a panelekben</string>
     <string name="settings_search_keywords_navigation">sáv, oldalsáv, menü, navigáció, elrejtés, lebegő, rögzített, méret, kompakt, széles, hossz, teljes magasság</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Kompakt: ikonok · Normál: nevek · Széles: nevek és számok · Extra széles: részletekkel</string>

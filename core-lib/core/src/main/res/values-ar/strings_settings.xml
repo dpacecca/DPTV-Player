@@ -1536,6 +1536,13 @@
     <string name="settings_nav_widen_desc">مثبتة ومضغوطة: تعرض الأسماء فوق المحتوى أثناء تركيز الشريط</string>
     <string name="settings_nav_menu_items">عناصر القائمة</string>
     <string name="settings_nav_menu_items_desc">ديناميكي: يتبع محتوى قائمة التشغيل · ثابت: تختارها بنفسك</string>
+    <string name="settings_nav_bar">الشريط</string>
+    <string name="settings_nav_labels">التسميات</string>
+    <string name="settings_nav_icons_only">الأيقونات فقط</string>
+    <string name="settings_nav_hide_scrolling">الإخفاء أثناء التمرير</string>
+    <string name="settings_nav_hide_scrolling_desc">يختفي الشريط عند التمرير لأسفل ويعود عند التمرير لأعلى</string>
+    <string name="settings_sheet_counts">إظهار الأعداد</string>
+    <string name="settings_sheet_counts_desc">عدد القنوات والعناوين في اللوحات</string>
     <string name="settings_search_keywords_navigation">شريط، شريط جانبي، قائمة، تنقل، إخفاء، عائم، مثبّت، حجم، مضغوط، عريض، طول، كامل الارتفاع</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">مضغوط: أيقونات · عادي: أسماء · عريض: أسماء وأعداد · عريض جدًا: مع التفاصيل</string>

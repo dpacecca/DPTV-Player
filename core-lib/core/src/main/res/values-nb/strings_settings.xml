@@ -1432,6 +1432,13 @@
     <string name="settings_nav_widen_desc">Festet og kompakt: viser navnene over innholdet mens menyen har fokus</string>
     <string name="settings_nav_menu_items">Menyelementer</string>
     <string name="settings_nav_menu_items_desc">Dynamisk: følger innholdet i spillelisten · Fast: du velger selv</string>
+    <string name="settings_nav_bar">Linje</string>
+    <string name="settings_nav_labels">Navn</string>
+    <string name="settings_nav_icons_only">Bare ikoner</string>
+    <string name="settings_nav_hide_scrolling">Skjul under rulling</string>
+    <string name="settings_nav_hide_scrolling_desc">Linjen glir bort når du ruller ned, og kommer tilbake når du ruller opp</string>
+    <string name="settings_sheet_counts">Vis antall</string>
+    <string name="settings_sheet_counts_desc">Antall kanaler og titler i panelene</string>
     <string name="settings_search_keywords_navigation">linje, sidelinje, meny, navigasjon, skjul, svevende, fast, størrelse, kompakt, bred, lengde, full høyde</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Kompakt: ikoner · Normal: navn · Bred: navn og antall · Ekstra bred: med detaljer</string>

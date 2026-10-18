@@ -1432,6 +1432,13 @@
     <string name="settings_nav_widen_desc">ഡോക്ക് ചെയ്തതും കോംപാക്റ്റും: റെയിലിൽ ഫോക്കസ് ഉള്ളപ്പോൾ ഉള്ളടക്കത്തിനു മുകളിൽ പേരുകൾ കാണിക്കുന്നു</string>
     <string name="settings_nav_menu_items">മെനു ഇനങ്ങൾ</string>
     <string name="settings_nav_menu_items_desc">ചലനാത്മകം: പ്ലേലിസ്റ്റിലെ ഉള്ളടക്കം പിന്തുടരുന്നു · സ്ഥിരം: നിങ്ങൾ തിരഞ്ഞെടുക്കുക</string>
+    <string name="settings_nav_bar">ബാർ</string>
+    <string name="settings_nav_labels">പേരുകൾ</string>
+    <string name="settings_nav_icons_only">ഐക്കണുകൾ മാത്രം</string>
+    <string name="settings_nav_hide_scrolling">സ്ക്രോൾ ചെയ്യുമ്പോൾ മറയ്ക്കുക</string>
+    <string name="settings_nav_hide_scrolling_desc">താഴേക്ക് സ്ക്രോൾ ചെയ്യുമ്പോൾ ബാർ മാറും, മുകളിലേക്ക് സ്ക്രോൾ ചെയ്യുമ്പോൾ തിരികെ വരും</string>
+    <string name="settings_sheet_counts">എണ്ണം കാണിക്കുക</string>
+    <string name="settings_sheet_counts_desc">പാനലുകളിൽ ചാനലുകളുടെയും ശീർഷകങ്ങളുടെയും എണ്ണം</string>
     <string name="settings_search_keywords_navigation">റെയിൽ, സൈഡ്ബാർ, മെനു, നാവിഗേഷൻ, മറയ്ക്കുക, ഫ്ലോട്ടിംഗ്, ഡോക്ക്, വലുപ്പം, കോംപാക്റ്റ്, വീതി, നീളം, മുഴുവൻ ഉയരം</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">കോംപാക്റ്റ്: ഐക്കണുകൾ · സാധാരണ: പേരുകൾ · വീതിയുള്ളത്: പേരുകളും എണ്ണവും · കൂടുതൽ വീതി: വിശദാംശങ്ങളോടെ</string>

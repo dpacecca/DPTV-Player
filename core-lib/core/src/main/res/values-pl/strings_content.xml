@@ -352,6 +352,7 @@
     <string name="content_epg_offset_use_global">Użyj globalnego</string>
     <string name="content_preview_single_stream">Podgląd wyłączony — twój dostawca pozwala tylko na jeden strumień naraz</string>
     <string name="content_playlist_picker_subtitle">Obowiązuje wszędzie i jest zapamiętywane</string>
+    <string name="content_playlist_marks_note">Przy „Wszystkie playlisty” każdy wiersz pokazuje oznaczenie playlisty, z której pochodzi.</string>
     <string name="content_action_next_episode">Następny odcinek</string>
     <string name="content_search_in">Szukaj w: <xliff:g id="name">%1$s</xliff:g></string>
     <string name="content_live_guide_view">Widok przewodnika</string>

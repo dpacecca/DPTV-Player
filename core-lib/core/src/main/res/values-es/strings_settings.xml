@@ -1458,6 +1458,13 @@
     <string name="settings_nav_widen_desc">Fijo y compacto: muestra los nombres sobre el contenido mientras el menú tiene el foco</string>
     <string name="settings_nav_menu_items">Elementos del menú</string>
     <string name="settings_nav_menu_items_desc">Dinámico: según el contenido de la lista · Estático: los eliges tú</string>
+    <string name="settings_nav_bar">Barra</string>
+    <string name="settings_nav_labels">Etiquetas</string>
+    <string name="settings_nav_icons_only">Solo iconos</string>
+    <string name="settings_nav_hide_scrolling">Ocultar al desplazar</string>
+    <string name="settings_nav_hide_scrolling_desc">La barra se oculta al desplazarte hacia abajo y vuelve al subir</string>
+    <string name="settings_sheet_counts">Mostrar recuentos</string>
+    <string name="settings_sheet_counts_desc">Número de canales y títulos en los paneles</string>
     <string name="settings_search_keywords_navigation">barra, barra lateral, menú, navegación, ocultar, flotante, fija, tamaño, compacta, ancha, longitud, altura completa</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Compacta: iconos · Normal: nombres · Ancha: nombres y recuentos · Extra ancha: con detalles</string>

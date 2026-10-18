@@ -1432,6 +1432,13 @@
     <string name="settings_nav_widen_desc">Sabit ve kompakt: menü odaktayken adları içeriğin üzerinde gösterir</string>
     <string name="settings_nav_menu_items">Menü öğeleri</string>
     <string name="settings_nav_menu_items_desc">Dinamik: çalma listesinin içeriğine göre · Sabit: kendiniz seçin</string>
+    <string name="settings_nav_bar">Çubuk</string>
+    <string name="settings_nav_labels">Etiketler</string>
+    <string name="settings_nav_icons_only">Yalnızca simgeler</string>
+    <string name="settings_nav_hide_scrolling">Kaydırırken gizle</string>
+    <string name="settings_nav_hide_scrolling_desc">Aşağı kaydırınca çubuk kaybolur, yukarı kaydırınca geri gelir</string>
+    <string name="settings_sheet_counts">Sayıları göster</string>
+    <string name="settings_sheet_counts_desc">Panellerde kanal ve başlık sayıları</string>
     <string name="settings_search_keywords_navigation">çubuk, kenar çubuğu, menü, gezinme, gizle, yüzen, sabit, boyut, kompakt, geniş, uzunluk, tam yükseklik</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Kompakt: simgeler · Normal: adlar · Geniş: adlar ve sayılar · Çok geniş: ayrıntılarla</string>

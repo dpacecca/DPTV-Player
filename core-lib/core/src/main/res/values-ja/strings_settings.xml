@@ -1406,6 +1406,13 @@
     <string name="settings_nav_widen_desc">固定かつコンパクト時：レールにフォーカスがある間、コンテンツの上に名前を表示</string>
     <string name="settings_nav_menu_items">メニュー項目</string>
     <string name="settings_nav_menu_items_desc">動的：プレイリストの内容に合わせる · 固定：自分で選択</string>
+    <string name="settings_nav_bar">バー</string>
+    <string name="settings_nav_labels">ラベル</string>
+    <string name="settings_nav_icons_only">アイコンのみ</string>
+    <string name="settings_nav_hide_scrolling">スクロール中は隠す</string>
+    <string name="settings_nav_hide_scrolling_desc">下にスクロールするとバーが隠れ、上にスクロールすると戻ります</string>
+    <string name="settings_sheet_counts">件数を表示</string>
+    <string name="settings_sheet_counts_desc">パネルにチャンネル数とタイトル数を表示</string>
     <string name="settings_search_keywords_navigation">レール, サイドバー, メニュー, ナビゲーション, 隠す, フローティング, 固定, サイズ, コンパクト, ワイド, 長さ, 全高</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">コンパクト：アイコン · 標準：名前 · ワイド：名前と件数 · エクストラワイド：詳細付き</string>

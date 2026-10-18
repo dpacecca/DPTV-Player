@@ -1484,6 +1484,13 @@
     <string name="settings_nav_widen_desc">Ukotvená a kompaktní: při výběru lišty ukáže názvy přes obsah</string>
     <string name="settings_nav_menu_items">Položky nabídky</string>
     <string name="settings_nav_menu_items_desc">Dynamické: podle obsahu playlistu · Pevné: vyberete si sami</string>
+    <string name="settings_nav_bar">Lišta</string>
+    <string name="settings_nav_labels">Popisky</string>
+    <string name="settings_nav_icons_only">Jen ikony</string>
+    <string name="settings_nav_hide_scrolling">Skrývat při posouvání</string>
+    <string name="settings_nav_hide_scrolling_desc">Lišta zmizí při posouvání dolů a vrátí se při posouvání nahoru</string>
+    <string name="settings_sheet_counts">Zobrazit počty</string>
+    <string name="settings_sheet_counts_desc">Počty kanálů a titulů v panelech</string>
     <string name="settings_search_keywords_navigation">lišta, postranní panel, nabídka, navigace, skrýt, plovoucí, ukotvená, velikost, kompaktní, široká, délka, celá výška</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Kompaktní: ikony · Normální: názvy · Široká: názvy a počty · Extra široká: s podrobnostmi</string>

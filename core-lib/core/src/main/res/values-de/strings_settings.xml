@@ -1434,6 +1434,13 @@
     <string name="settings_nav_widen_desc">Angedockt und Kompakt: zeigt die Namen über dem Inhalt, solange die Leiste den Fokus hat</string>
     <string name="settings_nav_menu_items">Menüeinträge</string>
     <string name="settings_nav_menu_items_desc">Dynamisch: folgt dem Inhalt der Playlist · Statisch: selbst auswählen</string>
+    <string name="settings_nav_bar">Leiste</string>
+    <string name="settings_nav_labels">Beschriftung</string>
+    <string name="settings_nav_icons_only">Nur Symbole</string>
+    <string name="settings_nav_hide_scrolling">Beim Scrollen ausblenden</string>
+    <string name="settings_nav_hide_scrolling_desc">Die Leiste verschwindet beim Herunterscrollen und kommt beim Hochscrollen zurück</string>
+    <string name="settings_sheet_counts">Anzahl anzeigen</string>
+    <string name="settings_sheet_counts_desc">Anzahl der Sender und Titel in den Auswahllisten</string>
     <string name="settings_search_keywords_navigation">Leiste, Seitenleiste, Menü, Navigation, ausblenden, schwebend, angedockt, Größe, kompakt, breit, Länge, volle Höhe</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Kompakt: Symbole · Normal: Namen · Breit: Namen und Anzahl · Extrabreit: mit Details</string>

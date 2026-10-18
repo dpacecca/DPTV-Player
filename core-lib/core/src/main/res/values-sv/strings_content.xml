@@ -324,6 +324,7 @@
     <string name="content_epg_offset_use_global">Använd global</string>
     <string name="content_preview_single_stream">Förhandsvisning av — din leverantör tillåter bara en ström i taget.</string>
     <string name="content_playlist_picker_subtitle">Gäller överallt och sparas</string>
+    <string name="content_playlist_marks_note">Med ”Alla spellistor” visar varje rad märket för spellistan den kommer från.</string>
     <string name="content_action_next_episode">Nästa avsnitt</string>
     <string name="content_search_in">Sök i <xliff:g id="name">%1$s</xliff:g></string>
     <string name="content_live_guide_view">Guidevy</string>

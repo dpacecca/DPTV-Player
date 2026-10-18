@@ -1484,6 +1484,13 @@
     <string name="settings_nav_widen_desc">Закреплённая и компактная: показывает названия поверх контента, пока панель в фокусе</string>
     <string name="settings_nav_menu_items">Пункты меню</string>
     <string name="settings_nav_menu_items_desc">Динамически: по содержимому плейлиста · Вручную: выбираете вы</string>
+    <string name="settings_nav_bar">Панель</string>
+    <string name="settings_nav_labels">Подписи</string>
+    <string name="settings_nav_icons_only">Только значки</string>
+    <string name="settings_nav_hide_scrolling">Скрывать при прокрутке</string>
+    <string name="settings_nav_hide_scrolling_desc">Панель уезжает при прокрутке вниз и возвращается при прокрутке вверх</string>
+    <string name="settings_sheet_counts">Показывать количество</string>
+    <string name="settings_sheet_counts_desc">Количество каналов и названий в панелях</string>
     <string name="settings_search_keywords_navigation">панель, боковая панель, меню, навигация, скрыть, плавающая, закреплённая, размер, компактная, широкая, длина, вся высота</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Компактная: значки · Обычная: названия · Широкая: названия и числа · Очень широкая: с подробностями</string>

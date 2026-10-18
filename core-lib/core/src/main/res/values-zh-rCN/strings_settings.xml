@@ -1406,6 +1406,13 @@
     <string name="settings_nav_widen_desc">固定且紧凑：导航栏获得焦点时在内容上方显示名称</string>
     <string name="settings_nav_menu_items">菜单项</string>
     <string name="settings_nav_menu_items_desc">动态：跟随播放列表内容 · 静态：自行选择</string>
+    <string name="settings_nav_bar">导航栏</string>
+    <string name="settings_nav_labels">显示名称</string>
+    <string name="settings_nav_icons_only">仅图标</string>
+    <string name="settings_nav_hide_scrolling">滚动时隐藏</string>
+    <string name="settings_nav_hide_scrolling_desc">向下滚动时导航栏收起，向上滚动时恢复</string>
+    <string name="settings_sheet_counts">显示数量</string>
+    <string name="settings_sheet_counts_desc">在面板中显示频道和影片数量</string>
     <string name="settings_search_keywords_navigation">导航栏, 侧边栏, 菜单, 导航, 隐藏, 悬浮, 停靠, 大小, 紧凑, 宽, 长度, 全高</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">紧凑：图标 · 标准：名称 · 宽：名称和数量 · 超宽：含详情</string>

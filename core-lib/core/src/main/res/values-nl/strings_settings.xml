@@ -1432,6 +1432,13 @@
     <string name="settings_nav_widen_desc">Vastgezet en compact: toont de namen over de inhoud zolang de balk focus heeft</string>
     <string name="settings_nav_menu_items">Menu-items</string>
     <string name="settings_nav_menu_items_desc">Dynamisch: volgt de inhoud van de playlist · Statisch: je kiest zelf</string>
+    <string name="settings_nav_bar">Balk</string>
+    <string name="settings_nav_labels">Labels</string>
+    <string name="settings_nav_icons_only">Alleen pictogrammen</string>
+    <string name="settings_nav_hide_scrolling">Verbergen tijdens scrollen</string>
+    <string name="settings_nav_hide_scrolling_desc">De balk verdwijnt als je omlaag scrolt en komt terug als je omhoog scrolt</string>
+    <string name="settings_sheet_counts">Aantallen tonen</string>
+    <string name="settings_sheet_counts_desc">Aantal zenders en titels in de panelen</string>
     <string name="settings_search_keywords_navigation">balk, zijbalk, menu, navigatie, verbergen, zwevend, vast, grootte, compact, breed, lengte, volle hoogte</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Compact: pictogrammen · Normaal: namen · Breed: namen en aantallen · Extra breed: met details</string>

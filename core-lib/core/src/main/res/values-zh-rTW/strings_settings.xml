@@ -1406,6 +1406,13 @@
     <string name="settings_nav_widen_desc">固定且精簡：導覽列取得焦點時在內容上方顯示名稱</string>
     <string name="settings_nav_menu_items">選單項目</string>
     <string name="settings_nav_menu_items_desc">動態：依播放清單內容 · 靜態：自行選擇</string>
+    <string name="settings_nav_bar">導覽列</string>
+    <string name="settings_nav_labels">顯示名稱</string>
+    <string name="settings_nav_icons_only">僅圖示</string>
+    <string name="settings_nav_hide_scrolling">捲動時隱藏</string>
+    <string name="settings_nav_hide_scrolling_desc">向下捲動時導覽列收起，向上捲動時恢復</string>
+    <string name="settings_sheet_counts">顯示數量</string>
+    <string name="settings_sheet_counts_desc">在面板中顯示頻道和影片數量</string>
     <string name="settings_search_keywords_navigation">導覽列, 側邊欄, 選單, 導覽, 隱藏, 懸浮, 固定, 大小, 精簡, 寬, 長度, 全高</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">精簡：圖示 · 標準：名稱 · 寬：名稱和數量 · 超寬：含詳細資訊</string>

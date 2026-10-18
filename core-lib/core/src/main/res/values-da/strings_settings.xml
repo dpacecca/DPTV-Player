@@ -1432,6 +1432,13 @@
     <string name="settings_nav_widen_desc">Fastgjort og kompakt: viser navnene over indholdet, mens menuen har fokus</string>
     <string name="settings_nav_menu_items">Menupunkter</string>
     <string name="settings_nav_menu_items_desc">Dynamisk: følger playlistens indhold · Fast: du vælger selv</string>
+    <string name="settings_nav_bar">Bjælke</string>
+    <string name="settings_nav_labels">Navne</string>
+    <string name="settings_nav_icons_only">Kun ikoner</string>
+    <string name="settings_nav_hide_scrolling">Skjul under rulning</string>
+    <string name="settings_nav_hide_scrolling_desc">Bjælken glider væk, når du ruller ned, og kommer tilbage, når du ruller op</string>
+    <string name="settings_sheet_counts">Vis antal</string>
+    <string name="settings_sheet_counts_desc">Antal kanaler og titler i panelerne</string>
     <string name="settings_search_keywords_navigation">bjælke, sidebjælke, menu, navigation, skjul, svævende, fast, størrelse, kompakt, bred, længde, fuld højde</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Kompakt: ikoner · Normal: navne · Bred: navne og antal · Ekstra bred: med detaljer</string>

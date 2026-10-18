@@ -1458,6 +1458,13 @@
     <string name="settings_nav_widen_desc">Ancré et compact : affiche les noms par-dessus le contenu tant que le menu a le focus</string>
     <string name="settings_nav_menu_items">Éléments du menu</string>
     <string name="settings_nav_menu_items_desc">Dynamique : selon le contenu de la playlist · Statique : à vous de choisir</string>
+    <string name="settings_nav_bar">Barre</string>
+    <string name="settings_nav_labels">Libellés</string>
+    <string name="settings_nav_icons_only">Icônes seules</string>
+    <string name="settings_nav_hide_scrolling">Masquer pendant le défilement</string>
+    <string name="settings_nav_hide_scrolling_desc">La barre disparaît quand vous faites défiler vers le bas et revient vers le haut</string>
+    <string name="settings_sheet_counts">Afficher les nombres</string>
+    <string name="settings_sheet_counts_desc">Nombre de chaînes et de titres dans les panneaux</string>
     <string name="settings_search_keywords_navigation">barre, barre latérale, menu, navigation, masquer, flottante, ancrée, taille, compacte, large, longueur, pleine hauteur</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Compacte : icônes · Normale : noms · Large : noms et nombres · Très large : avec détails</string>

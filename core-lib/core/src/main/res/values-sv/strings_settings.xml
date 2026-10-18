@@ -1432,6 +1432,13 @@
     <string name="settings_nav_widen_desc">Dockad och kompakt: visar namnen över innehållet medan menyn har fokus</string>
     <string name="settings_nav_menu_items">Menyobjekt</string>
     <string name="settings_nav_menu_items_desc">Dynamisk: följer spellistans innehåll · Fast: du väljer själv</string>
+    <string name="settings_nav_bar">Fält</string>
+    <string name="settings_nav_labels">Etiketter</string>
+    <string name="settings_nav_icons_only">Endast ikoner</string>
+    <string name="settings_nav_hide_scrolling">Dölj vid rullning</string>
+    <string name="settings_nav_hide_scrolling_desc">Fältet glider undan när du rullar nedåt och kommer tillbaka när du rullar uppåt</string>
+    <string name="settings_sheet_counts">Visa antal</string>
+    <string name="settings_sheet_counts_desc">Antal kanaler och titlar i panelerna</string>
     <string name="settings_search_keywords_navigation">list, sidolist, meny, navigering, dölj, flytande, fast, storlek, kompakt, bred, längd, full höjd</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Kompakt: ikoner · Normal: namn · Bred: namn och antal · Extra bred: med detaljer</string>

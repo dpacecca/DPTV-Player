@@ -1458,6 +1458,13 @@
     <string name="settings_nav_widen_desc">Fixo e compacto: mostra os nomes sobre o conteúdo enquanto o menu está em foco</string>
     <string name="settings_nav_menu_items">Itens do menu</string>
     <string name="settings_nav_menu_items_desc">Dinâmico: segue o conteúdo da playlist · Estático: você escolhe</string>
+    <string name="settings_nav_bar">Barra</string>
+    <string name="settings_nav_labels">Rótulos</string>
+    <string name="settings_nav_icons_only">Só ícones</string>
+    <string name="settings_nav_hide_scrolling">Ocultar ao rolar</string>
+    <string name="settings_nav_hide_scrolling_desc">A barra some ao rolar para baixo e volta ao rolar para cima</string>
+    <string name="settings_sheet_counts">Mostrar contagens</string>
+    <string name="settings_sheet_counts_desc">Número de canais e títulos nos painéis</string>
     <string name="settings_search_keywords_navigation">barra, barra lateral, menu, navegação, ocultar, flutuante, fixa, tamanho, compacta, larga, comprimento, altura total</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">Compacta: ícones · Normal: nomes · Larga: nomes e contagens · Extra larga: com detalhes</string>

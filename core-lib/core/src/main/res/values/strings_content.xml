@@ -614,6 +614,8 @@
     <string name="content_preview_single_stream">Preview off — your provider allows one stream at a time</string>
     <!-- Translators: Subtitle of the playlist picker menu: the choice applies to every screen and is kept. -->
     <string name="content_playlist_picker_subtitle">Applies everywhere and is remembered</string>
+    <!-- Translators: Footnote under the playlist switcher sheet. A "mark" is the short coloured badge (e.g. GOLD) naming the playlist a row comes from. -->
+    <string name="content_playlist_marks_note">With All playlists on, every row shows the mark of the playlist it comes from.</string>
     <!-- Translators: Small label in the top-right Continue button when the next episode of a series is ready to play. -->
     <string name="content_action_next_episode">Next episode</string>
     <!-- Translators: Placeholder of a search field that searches inside one category. "name" is the category name, e.g. Search Sky Cinema. -->

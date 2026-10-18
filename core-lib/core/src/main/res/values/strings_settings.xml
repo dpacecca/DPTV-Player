@@ -2663,6 +2663,20 @@
     <string name="settings_nav_menu_items">Menu items</string>
     <!-- Translators: Explains the Menu items setting: Dynamic and Static are its two choices (settings_dynamic, settings_static); keep the same words. -->
     <string name="settings_nav_menu_items_desc">Dynamic: follows what the playlist has · Static: you pick them</string>
+    <!-- Translators: Small group label in the phone Navigation sheet, above the Labels / Icons only choice for the bottom bar. Shown in capitals by the style. -->
+    <string name="settings_nav_bar">Bar</string>
+    <!-- Translators: Phone bottom bar option: show a name under each icon. -->
+    <string name="settings_nav_labels">Labels</string>
+    <!-- Translators: Phone bottom bar option: icons without names. -->
+    <string name="settings_nav_icons_only">Icons only</string>
+    <!-- Translators: Phone setting: the bottom bar slides away while a list scrolls. -->
+    <string name="settings_nav_hide_scrolling">Hide while scrolling</string>
+    <!-- Translators: Description of settings_nav_hide_scrolling. -->
+    <string name="settings_nav_hide_scrolling_desc">The bar slides away as you scroll down, back on the way up</string>
+    <!-- Translators: Phone setting: show how many channels / titles each playlist or category has in the pickers. -->
+    <string name="settings_sheet_counts">Show counts</string>
+    <!-- Translators: Description of settings_sheet_counts. "Sheets" are the panels that slide up from the bottom. -->
+    <string name="settings_sheet_counts_desc">Channel and title counts in the sheets</string>
     <!-- Translators: Hidden keyword bag for the Navigation settings. Translate as individual search terms. -->
     <string name="settings_search_keywords_navigation">rail, sidebar, menu, navigation, hide, floating, docked, size, compact, wide, length, full height</string>
     <!-- Translators: Small heading above a settings popup title: where the setting lives, e.g. "SETTINGS · LAYOUT". Keep the separator unless your language uses another one. -->

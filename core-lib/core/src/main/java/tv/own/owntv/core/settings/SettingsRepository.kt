@@ -598,6 +598,11 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val NAV_WIDEN = stringPreferencesKey("nav_widen")
         // In-app logos: the play triangle in the user's accent instead of the icon's own colour.
         val BRAND_ACCENT_TRIANGLE = booleanPreferencesKey("brand_accent_triangle")
+        // Phone bottom bar (not the TV rail keys — a different control): names under the icons, and
+        // whether it slides away while a list scrolls down. Plus counts in the browse sheets.
+        val PHONE_NAV_LABELS = booleanPreferencesKey("phone_nav_labels")
+        val PHONE_NAV_HIDE_ON_SCROLL = booleanPreferencesKey("phone_nav_hide_on_scroll")
+        val SHEET_COUNTS = booleanPreferencesKey("sheet_counts")
         // CH+- key paging for browse panels (Live/Movies/Series: category rail + item list/grid).
         // Master toggle + a per-direction skip count (CH+ toward first, CH− toward last). Counts are
         // clamped to [1, CH_NAV_HARD_MAX] on write; the UI warns above CH_NAV_WARN_THRESHOLD.
@@ -1264,6 +1269,27 @@ class SettingsRepository(private val context: Context, private val localeStore: 
 
     suspend fun setNavWiden(size: NavSize?) {
         context.dataStore.edit { it[Keys.NAV_WIDEN] = size?.name ?: NAV_WIDEN_OFF }
+    }
+
+    /** Phone bottom bar: names under the icons (default) or icons only. */
+    val phoneNavLabels: Flow<Boolean> = prefsFlow { it[Keys.PHONE_NAV_LABELS] ?: true }
+
+    suspend fun setPhoneNavLabels(on: Boolean) {
+        context.dataStore.edit { it[Keys.PHONE_NAV_LABELS] = on }
+    }
+
+    /** Phone bottom bar: slides away while a list scrolls down, back on the way up (default on). */
+    val phoneNavHideOnScroll: Flow<Boolean> = prefsFlow { it[Keys.PHONE_NAV_HIDE_ON_SCROLL] ?: true }
+
+    suspend fun setPhoneNavHideOnScroll(on: Boolean) {
+        context.dataStore.edit { it[Keys.PHONE_NAV_HIDE_ON_SCROLL] = on }
+    }
+
+    /** Channel and title counts in the phone's browse sheets: playlists, categories (default on). */
+    val sheetCounts: Flow<Boolean> = prefsFlow { it[Keys.SHEET_COUNTS] ?: true }
+
+    suspend fun setSheetCounts(on: Boolean) {
+        context.dataStore.edit { it[Keys.SHEET_COUNTS] = on }
     }
 
     /** In-app logos: the play triangle in the accent (default) or in the chosen icon's own colour. */
@@ -3206,6 +3232,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             // Touch-host settings. They travel even though a television has no row for them: a phone
             // restored from a phone must keep them, and a television simply ignores what it never reads.
             Keys.BACKGROUND_PLAYBACK, Keys.PIP_ENABLED, Keys.DATA_SAVER, Keys.DOWNLOADS_WIFI_ONLY,
+            Keys.PHONE_NAV_LABELS, Keys.PHONE_NAV_HIDE_ON_SCROLL, Keys.SHEET_COUNTS,
             Keys.PIP_ON_BACK, Keys.PIP_SNAP, Keys.AUDIO_ON_SCREEN_OFF, Keys.AUDIO_ON_MOBILE_DATA,
             Keys.AUDIO_PER_CHANNEL,
             Keys.MULTIVIEW_ENABLED, Keys.MULTIVIEW_WARNING_ACCEPTED,

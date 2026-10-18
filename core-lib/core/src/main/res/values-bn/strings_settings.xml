@@ -1432,6 +1432,13 @@
     <string name="settings_nav_widen_desc">ডক করা ও কমপ্যাক্ট: রেলে ফোকাস থাকলে কনটেন্টের উপর নাম দেখায়</string>
     <string name="settings_nav_menu_items">মেনু আইটেম</string>
     <string name="settings_nav_menu_items_desc">গতিশীল: প্লেলিস্টে যা আছে তা অনুসরণ করে · স্থির: আপনি নিজে বেছে নিন</string>
+    <string name="settings_nav_bar">বার</string>
+    <string name="settings_nav_labels">নাম</string>
+    <string name="settings_nav_icons_only">শুধু আইকন</string>
+    <string name="settings_nav_hide_scrolling">স্ক্রল করার সময় লুকান</string>
+    <string name="settings_nav_hide_scrolling_desc">নিচে স্ক্রল করলে বারটি সরে যায়, উপরে স্ক্রল করলে ফিরে আসে</string>
+    <string name="settings_sheet_counts">সংখ্যা দেখান</string>
+    <string name="settings_sheet_counts_desc">প্যানেলে চ্যানেল ও শিরোনামের সংখ্যা</string>
     <string name="settings_search_keywords_navigation">রেল, সাইডবার, মেনু, নেভিগেশন, লুকান, ভাসমান, ডক, আকার, কমপ্যাক্ট, চওড়া, দৈর্ঘ্য, পুরো উচ্চতা</string>
     <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
     <string name="settings_nav_size_desc">কমপ্যাক্ট: আইকন · সাধারণ: নাম · চওড়া: নাম ও সংখ্যা · অতিরিক্ত চওড়া: বিস্তারিতসহ</string>
