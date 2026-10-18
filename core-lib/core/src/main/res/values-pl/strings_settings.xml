@@ -1829,4 +1829,86 @@
     <string name="settings_line_glass_opacity">Mniej pokazuje więcej tła</string>
     <string name="settings_line_glass_reset">Kolory Stage, szkło włączone, <xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">Telewizja na żywo z tym tłem. Zmiany widać podczas poruszania się.</string>
+    <string name="settings_root_hint_mobile">Przytrzymaj wiersz, aby przypiąć go do Szybkie</string>
+    <string name="settings_card_layout_mobile">Nawigacja, Strona główna, listy, menu</string>
+    <string name="settings_card_watching_mobile">Przeskoki, wznawianie, miniodtwarzacz, nagrywanie</string>
+    <string name="settings_line_live_preview_mobile">Odtwarzaj wybrany kanał na górze Telewizji na żywo</string>
+    <string name="settings_line_hw_mobile">Użyj dekodera telefonu</string>
+    <string name="settings_line_surround_mobile">5.1 i 7.1 tak, jak otrzymuje je telefon</string>
+    <string name="settings_line_passthrough_mobile">Bez dekodowania do podłączonego odbiornika</string>
+    <string name="settings_line_navigation_mobile">Pasek na dole: etykiety, ukrywanie przy przewijaniu, pozycje</string>
+    <string name="settings_vod_view_mobile">Widok Filmów i Seriali</string>
+    <string name="settings_line_vod_view_mobile">Jak otwiera się kategoria</string>
+    <string name="settings_guide_size_mobile">Rozmiar Przewodnika TV</string>
+    <string name="settings_line_guide_size_mobile">Ile czasu siatka pokazuje naraz</string>
+    <string name="settings_line_download_folder_mobile">Gdzie trafiają filmy, odcinki i nagrania</string>
+    <string name="settings_browsing_value_both">Oba</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> wiersz</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> wiersze</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> wierszy</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> wierszy</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> ukryta</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> ukryte</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> ukrytych</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> ukrytych</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">Strefa czasowa</string>
+    <string name="settings_help_add_from_phone_mobile">Otwórz adres lub zeskanuj kod w przeglądarce dowolnego urządzenia w tej samej sieci Wi-Fi — komputera, tabletu lub telewizora — wypełnij tam playlistę i wyślij ją tutaj. Znacznie szybciej niż wpisywanie adresu URL na telefonie.</string>
+    <string name="settings_line_add_type_here_mobile">Xtream, M3U lub Stalker</string>
+    <string name="setup_local_file_hint_mobile">.m3u lub .m3u8 na tym telefonie</string>
+    <plurals name="settings_sources_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> źródło</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> źródła</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> źródeł</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> źródeł</item>
+    </plurals>
+    <string name="settings_sources_status_default">Domyślna</string>
+    <string name="settings_epg_sources_addresses_note">Adresy są pokazywane bez nazwy użytkownika i hasła.</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> kategoria</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> kategorie</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> kategorii</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> kategorii</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">Przytrzymaj wiersz: Zmień nazwę · Przenieś · Ukryj · lub zacznij zakres, aby zmienić wiele naraz.</string>
+    <string name="settings_line_quick_channel_numbers_mobile">Wpisz numer, aby przełączyć kanał</string>
+    <string name="settings_line_playlists_mobile">Dodaj, zsynchronizuj ponownie lub usuń M3U / Xtream / Stalker</string>
+    <string name="settings_line_accent_mobile">Barwi przyciski, wyróżnienia i paski wszędzie</string>
+    <string name="settings_line_glass_bg_mobile">Matowe paski i panele, obraz tła</string>
+    <string name="settings_line_popup_size_mobile">Skaluj panele i menu bez zmiany tekstu</string>
+    <string name="settings_line_animations_mobile">Wyłączone działa płynniej na starszych telefonach</string>
+    <string name="settings_line_vod_buffer_mobile">Jak daleko naprzód ładowane są filmy i catch-up</string>
+    <string name="settings_line_vod_timeout_mobile">Jak długo czekać na milczący serwer</string>
+    <string name="settings_line_vod_reconnects_mobile">Ile razy utracony strumień jest otwierany ponownie</string>
+    <string name="settings_line_sw_decode_mobile">Powyżej 1080p programowo, gdy dekoder sprzętowy zawiedzie</string>
+    <string name="settings_line_rec_mobile_data_mobile">Wyłączone: nagranie na danych mobilnych jest pomijane</string>
+    <string name="settings_line_pip_mobile">Zmniejsz wideo do okna po wyjściu z aplikacji</string>
+    <string name="settings_line_pip_size_mobile">Jak duże jest okno pływające na starcie</string>
+    <string name="settings_line_pip_snap_mobile">Okno przylega do najbliższej krawędzi</string>
+    <string name="settings_line_audio_screen_off_mobile">Nie dekoduj wideo, którego nikt nie widzi</string>
+    <string name="settings_line_audio_per_channel_mobile">Następnym razem otworzy się tak samo</string>
+    <string name="settings_line_seek_step_mobile">Jak daleko skacze jedno dotknięcie wstecz lub naprzód</string>
+    <string name="settings_line_rewind_step_mobile">Jak daleko skacze jedno dotknięcie na kanale na żywo</string>
+    <string name="settings_line_gesture_mobile">Jak bardzo przesunięcie zmienia głośność, jasność lub pozycję</string>
+    <string name="settings_line_rec_watching_mobile">Przycisk nagrywania w odtwarzaczu</string>
+    <string name="settings_line_rec_pre_roll_mobile">Zacznij przed podanym początkiem</string>
+    <string name="settings_line_rec_post_roll_mobile">Kontynuuj po podanym końcu</string>
+    <string name="settings_line_sub_lang_mobile">Automatycznie wybieraj tę ścieżkę napisów</string>
+    <string name="settings_line_sub_style_mobile">Rozmiar, czcionka, kolor, położenie, tło</string>
+    <string name="settings_customize_short_mobile">Dostosuj</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> program</item>
+        <item quantity="few"><xliff:g id="count">%1$s</xliff:g> programy</item>
+        <item quantity="many"><xliff:g id="count">%1$s</xliff:g> programów</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> programów</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="one">catch-up na <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="few">catch-up na <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="many">catch-up na <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="other">catch-up na <xliff:g id="count">%1$s</xliff:g></item>
+    </plurals>
 </resources>

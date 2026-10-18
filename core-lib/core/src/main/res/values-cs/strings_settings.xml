@@ -1829,4 +1829,86 @@
     <string name="settings_line_glass_opacity">Méně ukáže více pozadí</string>
     <string name="settings_line_glass_reset">Barvy Stage, sklo zapnuto, <xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">Živá TV s tímto pozadím. Změny se ukazují, jak se pohybujete.</string>
+    <string name="settings_root_hint_mobile">Podržením řádku ho připnete do Rychlé</string>
+    <string name="settings_card_layout_mobile">Navigace, Domů, seznamy, nabídky</string>
+    <string name="settings_card_watching_mobile">Přeskakování, pokračování, minipřehrávač, nahrávání</string>
+    <string name="settings_line_live_preview_mobile">Přehrát vybraný kanál nahoře v Živém vysílání</string>
+    <string name="settings_line_hw_mobile">Použít vlastní dekodér telefonu</string>
+    <string name="settings_line_surround_mobile">5.1 a 7.1 tak, jak je telefon dostane</string>
+    <string name="settings_line_passthrough_mobile">Bez dekódování do připojeného přijímače</string>
+    <string name="settings_line_navigation_mobile">Lišta dole: popisky, skrývání při posouvání, položky</string>
+    <string name="settings_vod_view_mobile">Zobrazení Filmů a Seriálů</string>
+    <string name="settings_line_vod_view_mobile">Jak se kategorie otevře</string>
+    <string name="settings_guide_size_mobile">Velikost TV programu</string>
+    <string name="settings_line_guide_size_mobile">Kolik času mřížka ukazuje najednou</string>
+    <string name="settings_line_download_folder_mobile">Kam se ukládají filmy, díly a nahrávky</string>
+    <string name="settings_browsing_value_both">Obojí</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> řádek</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> řádky</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> řádků</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> řádků</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> skrytá</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> skryté</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> skrytých</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> skrytých</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">Časové pásmo</string>
+    <string name="settings_help_add_from_phone_mobile">Otevřete adresu nebo naskenujte kód v prohlížeči libovolného zařízení ve stejné Wi-Fi — počítače, tabletu nebo televize —, vyplňte tam svůj playlist a odešlete ho sem. Mnohem rychlejší než psát adresu URL na telefonu.</string>
+    <string name="settings_line_add_type_here_mobile">Xtream, M3U nebo Stalker</string>
+    <string name="setup_local_file_hint_mobile">.m3u nebo .m3u8 v tomto telefonu</string>
+    <plurals name="settings_sources_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> zdroj</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> zdroje</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> zdrojů</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> zdrojů</item>
+    </plurals>
+    <string name="settings_sources_status_default">Výchozí</string>
+    <string name="settings_epg_sources_addresses_note">Adresy se zobrazují bez uživatelského jména a hesla.</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> kategorie</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> kategorie</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> kategorií</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> kategorií</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">Podržte řádek: Přejmenovat · Přesunout · Skrýt · nebo začněte rozsah a změňte jich víc najednou.</string>
+    <string name="settings_line_quick_channel_numbers_mobile">Zadejte číslo pro přepnutí kanálu</string>
+    <string name="settings_line_playlists_mobile">Přidat, znovu synchronizovat nebo odebrat M3U / Xtream / Stalker</string>
+    <string name="settings_line_accent_mobile">Obarví tlačítka, zvýraznění a lišty všude</string>
+    <string name="settings_line_glass_bg_mobile">Matné lišty a panely, obrázek pozadí</string>
+    <string name="settings_line_popup_size_mobile">Změní velikost panelů a nabídek bez změny textu</string>
+    <string name="settings_line_animations_mobile">Vypnuto je svižnější na starších telefonech</string>
+    <string name="settings_line_vod_buffer_mobile">Jak daleko dopředu se načítají filmy a catch-up</string>
+    <string name="settings_line_vod_timeout_mobile">Jak dlouho čekat na mlčící server</string>
+    <string name="settings_line_vod_reconnects_mobile">Kolikrát se ztracený stream znovu otevře</string>
+    <string name="settings_line_sw_decode_mobile">Nad 1080p softwarově, když hardwarový dekodér selže</string>
+    <string name="settings_line_rec_mobile_data_mobile">Vypnuto: nahrávka přes mobilní data se přeskočí</string>
+    <string name="settings_line_pip_mobile">Zmenšit video do okna při opuštění aplikace</string>
+    <string name="settings_line_pip_size_mobile">Jak velké plovoucí okno začíná</string>
+    <string name="settings_line_pip_snap_mobile">Okno se přichytí k nejbližšímu okraji</string>
+    <string name="settings_line_audio_screen_off_mobile">Nedekódovat video, které nikdo nevidí</string>
+    <string name="settings_line_audio_per_channel_mobile">Příště se otevře stejně</string>
+    <string name="settings_line_seek_step_mobile">Jak daleko skočí jedno klepnutí zpět nebo vpřed</string>
+    <string name="settings_line_rewind_step_mobile">Jak daleko skočí jedno klepnutí na živém kanálu</string>
+    <string name="settings_line_gesture_mobile">Jak moc přejetí mění hlasitost, jas nebo pozici</string>
+    <string name="settings_line_rec_watching_mobile">Tlačítko nahrávání v přehrávači</string>
+    <string name="settings_line_rec_pre_roll_mobile">Začít před uvedeným začátkem</string>
+    <string name="settings_line_rec_post_roll_mobile">Pokračovat po uvedeném konci</string>
+    <string name="settings_line_sub_lang_mobile">Automaticky vybrat tuto stopu titulků</string>
+    <string name="settings_line_sub_style_mobile">Velikost, písmo, barva, poloha, pozadí</string>
+    <string name="settings_customize_short_mobile">Přizpůsobit</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> pořad</item>
+        <item quantity="few"><xliff:g id="count">%1$s</xliff:g> pořady</item>
+        <item quantity="many"><xliff:g id="count">%1$s</xliff:g> pořadů</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> pořadů</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="one">catch-up na <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="few">catch-up na <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="many">catch-up na <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="other">catch-up na <xliff:g id="count">%1$s</xliff:g></item>
+    </plurals>
 </resources>

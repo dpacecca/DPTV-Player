@@ -1724,4 +1724,68 @@
     <string name="settings_line_glass_opacity">越低背景显示越多</string>
     <string name="settings_line_glass_reset">Stage 颜色，玻璃开启，<xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">使用此背景的直播电视。移动时即可看到变化。</string>
+    <string name="settings_root_hint_mobile">长按一行可将其固定到快捷</string>
+    <string name="settings_card_layout_mobile">导航、主页、列表、菜单</string>
+    <string name="settings_card_watching_mobile">跳转、续播、迷你播放器、录制</string>
+    <string name="settings_line_live_preview_mobile">在直播电视顶部播放所选频道</string>
+    <string name="settings_line_hw_mobile">使用手机自带的解码器</string>
+    <string name="settings_line_surround_mobile">按手机收到的样子输出 5.1 和 7.1</string>
+    <string name="settings_line_passthrough_mobile">不解码直接送往已连接的接收器</string>
+    <string name="settings_line_navigation_mobile">底部栏：标签、滚动时隐藏、项目</string>
+    <string name="settings_vod_view_mobile">电影和剧集视图</string>
+    <string name="settings_line_vod_view_mobile">分类的打开方式</string>
+    <string name="settings_guide_size_mobile">节目指南大小</string>
+    <string name="settings_line_guide_size_mobile">网格一次显示多长时间</string>
+    <string name="settings_line_download_folder_mobile">电影、剧集分集和录制的保存位置</string>
+    <string name="settings_browsing_value_both">两者</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 行</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 个已隐藏</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">时区</string>
+    <string name="settings_help_add_from_phone_mobile">在同一 Wi-Fi 下任意设备（电脑、平板或电视）的浏览器中打开地址或扫描二维码，在那里填写播放列表并发送到这里。比在手机上输入网址快得多。</string>
+    <string name="settings_line_add_type_here_mobile">Xtream、M3U 或 Stalker</string>
+    <string name="setup_local_file_hint_mobile">此手机上的 .m3u 或 .m3u8</string>
+    <plurals name="settings_sources_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 个来源</item>
+    </plurals>
+    <string name="settings_sources_status_default">默认</string>
+    <string name="settings_epg_sources_addresses_note">地址显示时不含用户名和密码。</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 个分类</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">长按一行：重命名 · 移动 · 隐藏 · 或开始一个范围以一次更改多项。</string>
+    <string name="settings_line_quick_channel_numbers_mobile">输入号码切换频道</string>
+    <string name="settings_line_playlists_mobile">添加、重新同步或删除 M3U / Xtream / Stalker</string>
+    <string name="settings_line_accent_mobile">为各处的按钮、高亮和栏着色</string>
+    <string name="settings_line_glass_bg_mobile">磨砂栏与面板，背景图片</string>
+    <string name="settings_line_popup_size_mobile">缩放面板和菜单而不改变文字</string>
+    <string name="settings_line_animations_mobile">关闭后在旧手机上更流畅</string>
+    <string name="settings_line_vod_buffer_mobile">电影和回看预先加载多远</string>
+    <string name="settings_line_vod_timeout_mobile">等待无响应服务器多久</string>
+    <string name="settings_line_vod_reconnects_mobile">断开的流会重新打开几次</string>
+    <string name="settings_line_sw_decode_mobile">硬件解码失败时以软件解码 1080p 以上</string>
+    <string name="settings_line_rec_mobile_data_mobile">关闭：落在移动数据上的录制会跳过</string>
+    <string name="settings_line_pip_mobile">离开应用时将视频缩小到窗口</string>
+    <string name="settings_line_pip_size_mobile">悬浮窗口的初始大小</string>
+    <string name="settings_line_pip_snap_mobile">窗口会贴靠到最近的边缘</string>
+    <string name="settings_line_audio_screen_off_mobile">停止解码没人看的视频</string>
+    <string name="settings_line_audio_per_channel_mobile">下次也这样打开</string>
+    <string name="settings_line_seek_step_mobile">后退或快进点一下跳多远</string>
+    <string name="settings_line_rewind_step_mobile">直播频道点一下跳多远</string>
+    <string name="settings_line_gesture_mobile">滑动对音量、亮度或进度的改变幅度</string>
+    <string name="settings_line_rec_watching_mobile">在播放器中显示录制按钮</string>
+    <string name="settings_line_rec_pre_roll_mobile">在预定开始前开始</string>
+    <string name="settings_line_rec_post_roll_mobile">在预定结束后继续</string>
+    <string name="settings_line_sub_lang_mobile">自动选择此字幕轨道</string>
+    <string name="settings_line_sub_style_mobile">大小、字体、颜色、位置、背景</string>
+    <string name="settings_customize_short_mobile">自定义</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> 个节目</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> 个频道可回看</item>
+    </plurals>
 </resources>

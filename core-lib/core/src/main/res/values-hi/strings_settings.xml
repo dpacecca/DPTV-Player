@@ -1759,4 +1759,74 @@
     <string name="settings_line_glass_opacity">कम करने पर बैकग्राउंड ज़्यादा दिखता है</string>
     <string name="settings_line_glass_reset">Stage रंग, ग्लास चालू, <xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">इस बैकग्राउंड के साथ लाइव टीवी। बदलाव चलते-चलते दिखते हैं।</string>
+    <string name="settings_root_hint_mobile">किसी पंक्ति को त्वरित में पिन करने के लिए उसे दबाए रखें</string>
+    <string name="settings_card_layout_mobile">नेविगेशन, होम, सूचियाँ, मेनू</string>
+    <string name="settings_card_watching_mobile">स्किप, फिर से शुरू, मिनी-प्लेयर, रिकॉर्डिंग</string>
+    <string name="settings_line_live_preview_mobile">चुना हुआ चैनल लाइव टीवी में सबसे ऊपर चलाएँ</string>
+    <string name="settings_line_hw_mobile">फ़ोन का अपना डिकोडर इस्तेमाल करें</string>
+    <string name="settings_line_surround_mobile">फ़ोन को जैसा मिले वैसे 5.1 और 7.1</string>
+    <string name="settings_line_passthrough_mobile">बिना डिकोड किए जुड़े हुए रिसीवर तक</string>
+    <string name="settings_line_navigation_mobile">नीचे की पट्टी: लेबल, स्क्रॉल करते समय छिपाएँ, आइटम</string>
+    <string name="settings_vod_view_mobile">फ़िल्में और सीरीज़ का दृश्य</string>
+    <string name="settings_line_vod_view_mobile">कोई श्रेणी कैसे खुलती है</string>
+    <string name="settings_guide_size_mobile">कार्यक्रम गाइड का आकार</string>
+    <string name="settings_line_guide_size_mobile">ग्रिड एक बार में कितना समय दिखाता है</string>
+    <string name="settings_line_download_folder_mobile">फ़िल्में, एपिसोड और रिकॉर्डिंग कहाँ सहेजी जाती हैं</string>
+    <string name="settings_browsing_value_both">दोनों</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> पंक्ति</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> पंक्तियाँ</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> छिपी</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> छिपी</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">समय क्षेत्र</string>
+    <string name="settings_help_add_from_phone_mobile">उसी वाई-फ़ाई पर किसी भी डिवाइस — कंप्यूटर, टैबलेट या टीवी — के ब्राउज़र में पता खोलें या कोड स्कैन करें, वहीं अपनी प्लेलिस्ट भरें और यहाँ भेजें। फ़ोन पर URL टाइप करने से कहीं तेज़।</string>
+    <string name="settings_line_add_type_here_mobile">Xtream, M3U या Stalker</string>
+    <string name="setup_local_file_hint_mobile">इस फ़ोन पर .m3u या .m3u8</string>
+    <plurals name="settings_sources_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> स्रोत</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> स्रोत</item>
+    </plurals>
+    <string name="settings_sources_status_default">डिफ़ॉल्ट</string>
+    <string name="settings_epg_sources_addresses_note">पते उपयोगकर्ता नाम और पासवर्ड के बिना दिखाए जाते हैं।</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> श्रेणी</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> श्रेणियाँ</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">किसी पंक्ति को दबाए रखें: नाम बदलें · ले जाएँ · छिपाएँ · या एक साथ कई बदलने के लिए एक दायरा शुरू करें।</string>
+    <string name="settings_line_quick_channel_numbers_mobile">चैनल बदलने के लिए नंबर टाइप करें</string>
+    <string name="settings_line_playlists_mobile">M3U / Xtream / Stalker जोड़ें, फिर से सिंक करें या हटाएँ</string>
+    <string name="settings_line_accent_mobile">हर जगह बटन, हाइलाइट और बार रंगता है</string>
+    <string name="settings_line_glass_bg_mobile">धुंधली बार और शीट, बैकग्राउंड तस्वीर</string>
+    <string name="settings_line_popup_size_mobile">शीट और मेनू का आकार बदलें, टेक्स्ट बदले बिना</string>
+    <string name="settings_line_animations_mobile">बंद करने पर पुराने फ़ोन पर तेज़ लगता है</string>
+    <string name="settings_line_vod_buffer_mobile">फ़िल्में और कैच-अप कितना पहले लोड हों</string>
+    <string name="settings_line_vod_timeout_mobile">चुप सर्वर का कितना इंतज़ार करें</string>
+    <string name="settings_line_vod_reconnects_mobile">टूटी स्ट्रीम कितनी बार फिर खोली जाए</string>
+    <string name="settings_line_sw_decode_mobile">हार्डवेयर डिकोडर विफल होने पर 1080p से ऊपर सॉफ़्टवेयर में</string>
+    <string name="settings_line_rec_mobile_data_mobile">बंद: मोबाइल डेटा पर पड़ने वाली रिकॉर्डिंग छोड़ दी जाती है</string>
+    <string name="settings_line_pip_mobile">ऐप छोड़ने पर वीडियो को एक विंडो में छोटा करें</string>
+    <string name="settings_line_pip_size_mobile">फ़्लोटिंग विंडो किस आकार में शुरू हो</string>
+    <string name="settings_line_pip_snap_mobile">विंडो सबसे पास वाले किनारे से चिपक जाती है</string>
+    <string name="settings_line_audio_screen_off_mobile">ऐसा वीडियो डिकोड करना बंद करें जिसे कोई नहीं देखता</string>
+    <string name="settings_line_audio_per_channel_mobile">अगली बार ऐसे ही खुलता है</string>
+    <string name="settings_line_seek_step_mobile">पीछे या आगे का एक टैप कितना कूदता है</string>
+    <string name="settings_line_rewind_step_mobile">लाइव चैनल पर एक टैप कितना कूदता है</string>
+    <string name="settings_line_gesture_mobile">स्वाइप से वॉल्यूम, चमक या स्थिति कितनी बदलती है</string>
+    <string name="settings_line_rec_watching_mobile">प्लेयर में एक रिकॉर्ड बटन</string>
+    <string name="settings_line_rec_pre_roll_mobile">बताए गए शुरू से पहले शुरू करें</string>
+    <string name="settings_line_rec_post_roll_mobile">बताए गए अंत के बाद जारी रखें</string>
+    <string name="settings_line_sub_lang_mobile">यह सबटाइटल ट्रैक अपने आप चुनें</string>
+    <string name="settings_line_sub_style_mobile">आकार, फ़ॉन्ट, रंग, स्थिति, बैकग्राउंड</string>
+    <string name="settings_customize_short_mobile">कस्टमाइज़ करें</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> कार्यक्रम</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> कार्यक्रम</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> पर कैच-अप</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> पर कैच-अप</item>
+    </plurals>
 </resources>

@@ -1759,4 +1759,74 @@
     <string name="settings_line_glass_opacity">Düşük değer arka planı daha çok gösterir</string>
     <string name="settings_line_glass_reset">Stage renkleri, cam açık, <xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">Bu arka planla Canlı TV. Değişiklikler siz gezindikçe görünür.</string>
+    <string name="settings_root_hint_mobile">Bir satırı Hızlı’ya sabitlemek için basılı tutun</string>
+    <string name="settings_card_layout_mobile">Gezinme, Ana sayfa, listeler, menüler</string>
+    <string name="settings_card_watching_mobile">Atlama, devam, mini oynatıcı, kayıt</string>
+    <string name="settings_line_live_preview_mobile">Seçilen kanalı Canlı TV’nin üstünde oynatın</string>
+    <string name="settings_line_hw_mobile">Telefonun kendi kod çözücüsünü kullanın</string>
+    <string name="settings_line_surround_mobile">Telefona geldiği gibi 5.1 ve 7.1</string>
+    <string name="settings_line_passthrough_mobile">Kodu çözülmeden bağlı bir alıcıya</string>
+    <string name="settings_line_navigation_mobile">Alttaki çubuk: etiketler, kaydırırken gizle, öğeler</string>
+    <string name="settings_vod_view_mobile">Filmler ve Diziler görünümü</string>
+    <string name="settings_line_vod_view_mobile">Bir kategorinin nasıl açılacağı</string>
+    <string name="settings_guide_size_mobile">TV Rehberi boyutu</string>
+    <string name="settings_line_guide_size_mobile">Izgaranın tek seferde ne kadar zaman gösterdiği</string>
+    <string name="settings_line_download_folder_mobile">Filmlerin, bölümlerin ve kayıtların gideceği yer</string>
+    <string name="settings_browsing_value_both">İkisi de</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> satır</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> satır</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> gizli</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> gizli</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">Saat dilimi</string>
+    <string name="settings_help_add_from_phone_mobile">Aynı Wi-Fi’daki herhangi bir cihazın — bilgisayar, tablet veya TV — tarayıcısında adresi açın ya da kodu tarayın, oynatma listenizi orada doldurup buraya gönderin. Telefonda URL yazmaktan çok daha hızlı.</string>
+    <string name="settings_line_add_type_here_mobile">Xtream, M3U veya Stalker</string>
+    <string name="setup_local_file_hint_mobile">Bu telefondaki .m3u veya .m3u8</string>
+    <plurals name="settings_sources_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> kaynak</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> kaynak</item>
+    </plurals>
+    <string name="settings_sources_status_default">Varsayılan</string>
+    <string name="settings_epg_sources_addresses_note">Adresler kullanıcı adı ve şifre olmadan gösterilir.</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> kategori</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> kategori</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">Bir satırı basılı tutun: Yeniden adlandır · Taşı · Gizle · ya da birçoğunu birden değiştirmek için bir aralık başlatın.</string>
+    <string name="settings_line_quick_channel_numbers_mobile">Kanal değiştirmek için bir numara yazın</string>
+    <string name="settings_line_playlists_mobile">M3U / Xtream / Stalker ekle, yeniden eşitle veya kaldır</string>
+    <string name="settings_line_accent_mobile">Düğmeleri, vurguları ve çubukları her yerde renklendirir</string>
+    <string name="settings_line_glass_bg_mobile">Buzlu çubuklar ve paneller, arka plan resmi</string>
+    <string name="settings_line_popup_size_mobile">Panelleri ve menüleri metni değiştirmeden ölçekler</string>
+    <string name="settings_line_animations_mobile">Kapalı, eski telefonlarda daha akıcı</string>
+    <string name="settings_line_vod_buffer_mobile">Filmlerin ve geçmiş yayının ne kadar önden yükleneceği</string>
+    <string name="settings_line_vod_timeout_mobile">Sessiz bir sunucu için ne kadar bekleneceği</string>
+    <string name="settings_line_vod_reconnects_mobile">Kopan bir yayının kaç kez yeniden açılacağı</string>
+    <string name="settings_line_sw_decode_mobile">Donanım kod çözücü başarısız olursa 1080p üstü yazılımla</string>
+    <string name="settings_line_rec_mobile_data_mobile">Kapalı: mobil veride düşen kayıt atlanır</string>
+    <string name="settings_line_pip_mobile">Uygulamadan çıkınca videoyu bir pencereye küçült</string>
+    <string name="settings_line_pip_size_mobile">Kayan pencerenin başlangıç boyutu</string>
+    <string name="settings_line_pip_snap_mobile">Pencere en yakın kenara oturur</string>
+    <string name="settings_line_audio_screen_off_mobile">Kimsenin görmediği videonun kodunu çözmeyi bırak</string>
+    <string name="settings_line_audio_per_channel_mobile">Bir dahaki sefere böyle açılır</string>
+    <string name="settings_line_seek_step_mobile">Geri veya ileri bir dokunuşun ne kadar atladığı</string>
+    <string name="settings_line_rewind_step_mobile">Canlı kanalda bir dokunuşun ne kadar atladığı</string>
+    <string name="settings_line_gesture_mobile">Bir kaydırmanın sesi, parlaklığı veya konumu ne kadar değiştirdiği</string>
+    <string name="settings_line_rec_watching_mobile">Oynatıcıda bir kayıt düğmesi</string>
+    <string name="settings_line_rec_pre_roll_mobile">Belirtilen başlangıçtan önce başla</string>
+    <string name="settings_line_rec_post_roll_mobile">Belirtilen bitişten sonra devam et</string>
+    <string name="settings_line_sub_lang_mobile">Bu altyazı parçasını otomatik seç</string>
+    <string name="settings_line_sub_style_mobile">Boyut, yazı tipi, renk, konum, arka plan</string>
+    <string name="settings_customize_short_mobile">Özelleştir</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> program</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> program</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> kanalda geçmiş yayın</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> kanalda geçmiş yayın</item>
+    </plurals>
 </resources>

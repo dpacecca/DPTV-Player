@@ -1899,4 +1899,98 @@
     <string name="settings_line_glass_opacity">القيمة الأقل تُظهر المزيد من الخلفية</string>
     <string name="settings_line_glass_reset">ألوان Stage، الزجاج مفعّل، <xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">البث المباشر بهذه الخلفية. تظهر التغييرات أثناء تنقلك.</string>
+    <string name="settings_root_hint_mobile">اضغط مطولاً على صف لتثبيته في سريع</string>
+    <string name="settings_card_layout_mobile">التنقل والرئيسية والقوائم وقوائم الإجراءات</string>
+    <string name="settings_card_watching_mobile">التخطي والاستئناف والمشغّل المصغّر والتسجيل</string>
+    <string name="settings_line_live_preview_mobile">تشغيل القناة المختارة أعلى البث التلفزيوني المباشر</string>
+    <string name="settings_line_hw_mobile">استخدام وحدة فك الترميز في الهاتف</string>
+    <string name="settings_line_surround_mobile">‏5.1 و7.1 كما يستقبلها الهاتف</string>
+    <string name="settings_line_passthrough_mobile">دون فك ترميز إلى جهاز استقبال متصل</string>
+    <string name="settings_line_navigation_mobile">الشريط السفلي: التسميات، والإخفاء أثناء التمرير، والعناصر</string>
+    <string name="settings_vod_view_mobile">عرض الأفلام والمسلسلات</string>
+    <string name="settings_line_vod_view_mobile">كيف تُفتح الفئة</string>
+    <string name="settings_guide_size_mobile">حجم دليل البرامج</string>
+    <string name="settings_line_guide_size_mobile">مقدار الوقت الذي تعرضه الشبكة دفعة واحدة</string>
+    <string name="settings_line_download_folder_mobile">مكان حفظ الأفلام والحلقات والتسجيلات</string>
+    <string name="settings_browsing_value_both">كلاهما</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="zero"><xliff:g id="count">%1$d</xliff:g> صف</item>
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> صف</item>
+        <item quantity="two"><xliff:g id="count">%1$d</xliff:g> صفان</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> صفوف</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> صفًا</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> صف</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="zero"><xliff:g id="count">%1$d</xliff:g> مخفي</item>
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> مخفي</item>
+        <item quantity="two"><xliff:g id="count">%1$d</xliff:g> مخفيان</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> مخفية</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> مخفيًا</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> مخفي</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">المنطقة الزمنية</string>
+    <string name="settings_help_add_from_phone_mobile">افتح العنوان أو امسح الرمز في متصفح أي جهاز على شبكة Wi-Fi نفسها — حاسوب أو جهاز لوحي أو تلفاز — واملأ قائمة التشغيل هناك ثم أرسلها إلى هنا. أسرع بكثير من كتابة عنوان URL على الهاتف.</string>
+    <string name="settings_line_add_type_here_mobile">Xtream أو M3U أو Stalker</string>
+    <string name="setup_local_file_hint_mobile">‏.m3u أو .m3u8 على هذا الهاتف</string>
+    <plurals name="settings_sources_count">
+        <item quantity="zero"><xliff:g id="count">%1$d</xliff:g> مصدر</item>
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> مصدر</item>
+        <item quantity="two"><xliff:g id="count">%1$d</xliff:g> مصدر</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> مصادر</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> مصدرًا</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> مصدر</item>
+    </plurals>
+    <string name="settings_sources_status_default">افتراضي</string>
+    <string name="settings_epg_sources_addresses_note">تُعرض العناوين دون اسم المستخدم وكلمة المرور.</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="zero"><xliff:g id="count">%1$d</xliff:g> فئة</item>
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> فئة</item>
+        <item quantity="two"><xliff:g id="count">%1$d</xliff:g> فئتان</item>
+        <item quantity="few"><xliff:g id="count">%1$d</xliff:g> فئات</item>
+        <item quantity="many"><xliff:g id="count">%1$d</xliff:g> فئة</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> فئة</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">اضغط مطولاً على صف: إعادة التسمية · النقل · الإخفاء · أو ابدأ نطاقًا لتغيير الكثير دفعة واحدة.</string>
+    <string name="settings_line_quick_channel_numbers_mobile">اكتب رقمًا للتبديل إلى القناة</string>
+    <string name="settings_line_playlists_mobile">إضافة M3U / Xtream / Stalker أو إعادة مزامنتها أو إزالتها</string>
+    <string name="settings_line_accent_mobile">يلوّن الأزرار والتمييزات والأشرطة في كل مكان</string>
+    <string name="settings_line_glass_bg_mobile">أشرطة ولوحات زجاجية مصقولة، صورة الخلفية</string>
+    <string name="settings_line_popup_size_mobile">تغيير حجم اللوحات والقوائم دون تغيير نصها</string>
+    <string name="settings_line_animations_mobile">الإيقاف أسرع على الهواتف الأقدم</string>
+    <string name="settings_line_vod_buffer_mobile">مقدار ما يُحمَّل مسبقًا من الأفلام وإعادة البث</string>
+    <string name="settings_line_vod_timeout_mobile">مدة انتظار خادم لا يستجيب</string>
+    <string name="settings_line_vod_reconnects_mobile">عدد مرات إعادة فتح البث المنقطع</string>
+    <string name="settings_line_sw_decode_mobile">فوق 1080p برمجيًا عند فشل وحدة فك الترميز</string>
+    <string name="settings_line_rec_mobile_data_mobile">إيقاف: يُتخطّى التسجيل على بيانات الجوال</string>
+    <string name="settings_line_pip_mobile">تصغير الفيديو إلى نافذة عند مغادرة التطبيق</string>
+    <string name="settings_line_pip_size_mobile">حجم النافذة العائمة عند بدئها</string>
+    <string name="settings_line_pip_snap_mobile">تستقر النافذة على أقرب حافة</string>
+    <string name="settings_line_audio_screen_off_mobile">إيقاف فك ترميز فيديو لا يراه أحد</string>
+    <string name="settings_line_audio_per_channel_mobile">يُفتح هكذا في المرة القادمة</string>
+    <string name="settings_line_seek_step_mobile">مقدار قفزة لمسة رجوع أو تقديم</string>
+    <string name="settings_line_rewind_step_mobile">مقدار قفزة لمسة على قناة مباشرة</string>
+    <string name="settings_line_gesture_mobile">مقدار ما يغيّره السحب في الصوت أو السطوع أو الموضع</string>
+    <string name="settings_line_rec_watching_mobile">زر تسجيل في المشغّل</string>
+    <string name="settings_line_rec_pre_roll_mobile">البدء قبل الموعد المعلن</string>
+    <string name="settings_line_rec_post_roll_mobile">المتابعة بعد النهاية المعلنة</string>
+    <string name="settings_line_sub_lang_mobile">اختيار مسار الترجمة هذا تلقائيًا</string>
+    <string name="settings_line_sub_style_mobile">الحجم والخط واللون والموضع والخلفية</string>
+    <string name="settings_customize_short_mobile">تخصيص</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="zero"><xliff:g id="count">%1$s</xliff:g> برنامج</item>
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> برنامج</item>
+        <item quantity="two"><xliff:g id="count">%1$s</xliff:g> برنامج</item>
+        <item quantity="few"><xliff:g id="count">%1$s</xliff:g> برامج</item>
+        <item quantity="many"><xliff:g id="count">%1$s</xliff:g> برنامجًا</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> برنامج</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="zero">إعادة البث على <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="one">إعادة البث على <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="two">إعادة البث على <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="few">إعادة البث على <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="many">إعادة البث على <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="other">إعادة البث على <xliff:g id="count">%1$s</xliff:g></item>
+    </plurals>
 </resources>

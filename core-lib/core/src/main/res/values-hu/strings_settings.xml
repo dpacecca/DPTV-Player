@@ -1729,4 +1729,74 @@
     <string name="settings_line_glass_opacity">Kisebb érték többet mutat a háttérből</string>
     <string name="settings_line_glass_reset">Stage-színek, üveg be, <xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">Élő tévé ezzel a háttérrel. A változások mozgás közben látszanak.</string>
+    <string name="settings_root_hint_mobile">Tarts lenyomva egy sort a Gyors közé tűzéshez</string>
+    <string name="settings_card_layout_mobile">Navigáció, Kezdőlap, listák, menük</string>
+    <string name="settings_card_watching_mobile">Ugrás, folytatás, mini lejátszó, felvétel</string>
+    <string name="settings_line_live_preview_mobile">A választott csatorna lejátszása az Élő TV tetején</string>
+    <string name="settings_line_hw_mobile">A telefon saját dekóderének használata</string>
+    <string name="settings_line_surround_mobile">5.1 és 7.1, ahogy a telefon kapja</string>
+    <string name="settings_line_passthrough_mobile">Dekódolás nélkül egy csatlakoztatott vevőre</string>
+    <string name="settings_line_navigation_mobile">Az alsó sáv: feliratok, elrejtés görgetéskor, elemek</string>
+    <string name="settings_vod_view_mobile">Filmek és Sorozatok nézete</string>
+    <string name="settings_line_vod_view_mobile">Hogyan nyílik meg egy kategória</string>
+    <string name="settings_guide_size_mobile">A Műsorújság mérete</string>
+    <string name="settings_line_guide_size_mobile">Mennyi időt mutat egyszerre a rács</string>
+    <string name="settings_line_download_folder_mobile">Hová kerülnek a filmek, epizódok és felvételek</string>
+    <string name="settings_browsing_value_both">Mindkettő</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> sor</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> sor</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> rejtett</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> rejtett</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">Időzóna</string>
+    <string name="settings_help_add_from_phone_mobile">Nyisd meg a címet vagy olvasd be a kódot bármelyik eszköz böngészőjében ugyanazon a Wi-Fin – számítógépen, táblagépen vagy tévén –, töltsd ki ott a lejátszási listát, és küldd ide. Sokkal gyorsabb, mint telefonon URL-t gépelni.</string>
+    <string name="settings_line_add_type_here_mobile">Xtream, M3U vagy Stalker</string>
+    <string name="setup_local_file_hint_mobile">.m3u vagy .m3u8 ezen a telefonon</string>
+    <plurals name="settings_sources_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> forrás</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> forrás</item>
+    </plurals>
+    <string name="settings_sources_status_default">Alapértelmezett</string>
+    <string name="settings_epg_sources_addresses_note">A címek felhasználónév és jelszó nélkül jelennek meg.</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> kategória</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> kategória</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">Tarts lenyomva egy sort: Átnevezés · Áthelyezés · Elrejtés · vagy kezdj egy tartományt, hogy egyszerre többet módosíts.</string>
+    <string name="settings_line_quick_channel_numbers_mobile">Írj be egy számot a csatornaváltáshoz</string>
+    <string name="settings_line_playlists_mobile">M3U / Xtream / Stalker hozzáadása, újraszinkronizálása vagy törlése</string>
+    <string name="settings_line_accent_mobile">Mindenhol színezi a gombokat, kiemeléseket és sávokat</string>
+    <string name="settings_line_glass_bg_mobile">Matt sávok és lapok, háttérkép</string>
+    <string name="settings_line_popup_size_mobile">Lapok és menük méretezése a szöveg módosítása nélkül</string>
+    <string name="settings_line_animations_mobile">Kikapcsolva gyorsabbnak hat régebbi telefonokon</string>
+    <string name="settings_line_vod_buffer_mobile">Mennyire előre töltődnek a filmek és a visszanézés</string>
+    <string name="settings_line_vod_timeout_mobile">Meddig vár egy néma szerverre</string>
+    <string name="settings_line_vod_reconnects_mobile">Hányszor nyílik újra egy megszakadt adás</string>
+    <string name="settings_line_sw_decode_mobile">1080p felett szoftveresen, ha a hardveres dekóder elakad</string>
+    <string name="settings_line_rec_mobile_data_mobile">Ki: a mobilnetes felvétel kimarad</string>
+    <string name="settings_line_pip_mobile">A videó kis ablakká zsugorítása az alkalmazás elhagyásakor</string>
+    <string name="settings_line_pip_size_mobile">Mekkora a lebegő ablak induláskor</string>
+    <string name="settings_line_pip_snap_mobile">Az ablak a legközelebbi szélhez igazodik</string>
+    <string name="settings_line_audio_screen_off_mobile">Ne dekódoljon olyan videót, amit senki sem lát</string>
+    <string name="settings_line_audio_per_channel_mobile">Legközelebb így nyílik meg</string>
+    <string name="settings_line_seek_step_mobile">Mennyit ugrik egy koppintás vissza vagy előre</string>
+    <string name="settings_line_rewind_step_mobile">Mennyit ugrik egy koppintás élő csatornán</string>
+    <string name="settings_line_gesture_mobile">Mennyit változtat egy csúsztatás a hangerőn, fényerőn vagy pozíción</string>
+    <string name="settings_line_rec_watching_mobile">Felvétel gomb a lejátszóban</string>
+    <string name="settings_line_rec_pre_roll_mobile">Kezdés a megadott kezdés előtt</string>
+    <string name="settings_line_rec_post_roll_mobile">Folytatás a megadott vég után</string>
+    <string name="settings_line_sub_lang_mobile">Ennek a feliratsávnak az automatikus kiválasztása</string>
+    <string name="settings_line_sub_style_mobile">Méret, betűtípus, szín, pozíció, háttér</string>
+    <string name="settings_customize_short_mobile">Testreszabás</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> műsor</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> műsor</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="one">visszanézés <xliff:g id="count">%1$s</xliff:g> csatornán</item>
+        <item quantity="other">visszanézés <xliff:g id="count">%1$s</xliff:g> csatornán</item>
+    </plurals>
 </resources>

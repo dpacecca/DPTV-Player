@@ -1724,4 +1724,68 @@
     <string name="settings_line_glass_opacity">越低越能看到背景</string>
     <string name="settings_line_glass_reset">Stage 顏色，玻璃開啟，<xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">使用此背景的直播電視。移動時就能看到變化。</string>
+    <string name="settings_root_hint_mobile">長按一列可將其釘選至快捷</string>
+    <string name="settings_card_layout_mobile">導覽、首頁、清單、選單</string>
+    <string name="settings_card_watching_mobile">跳轉、續播、迷你播放器、錄影</string>
+    <string name="settings_line_live_preview_mobile">在電視直播頂端播放所選頻道</string>
+    <string name="settings_line_hw_mobile">使用手機內建的解碼器</string>
+    <string name="settings_line_surround_mobile">依手機收到的樣子輸出 5.1 和 7.1</string>
+    <string name="settings_line_passthrough_mobile">不解碼直接送往已連接的接收器</string>
+    <string name="settings_line_navigation_mobile">底部列：標籤、捲動時隱藏、項目</string>
+    <string name="settings_vod_view_mobile">電影與影集檢視</string>
+    <string name="settings_line_vod_view_mobile">類別的開啟方式</string>
+    <string name="settings_guide_size_mobile">節目表大小</string>
+    <string name="settings_line_guide_size_mobile">格狀檢視一次顯示多長時間</string>
+    <string name="settings_line_download_folder_mobile">電影、集數和錄影的儲存位置</string>
+    <string name="settings_browsing_value_both">兩者</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 列</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 個已隱藏</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">時區</string>
+    <string name="settings_help_add_from_phone_mobile">在同一個 Wi-Fi 下任何裝置（電腦、平板或電視）的瀏覽器中開啟位址或掃描條碼，在那裡填寫播放清單並傳送到這裡。比在手機上輸入網址快得多。</string>
+    <string name="settings_line_add_type_here_mobile">Xtream、M3U 或 Stalker</string>
+    <string name="setup_local_file_hint_mobile">這支手機上的 .m3u 或 .m3u8</string>
+    <plurals name="settings_sources_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 個來源</item>
+    </plurals>
+    <string name="settings_sources_status_default">預設</string>
+    <string name="settings_epg_sources_addresses_note">位址顯示時不含使用者名稱和密碼。</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> 個類別</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">長按一列：重新命名 · 移動 · 隱藏 · 或開始一個範圍以一次變更多項。</string>
+    <string name="settings_line_quick_channel_numbers_mobile">輸入號碼切換頻道</string>
+    <string name="settings_line_playlists_mobile">新增、重新同步或移除 M3U / Xtream / Stalker</string>
+    <string name="settings_line_accent_mobile">為各處的按鈕、醒目提示和列上色</string>
+    <string name="settings_line_glass_bg_mobile">霧面列與面板，背景圖片</string>
+    <string name="settings_line_popup_size_mobile">縮放面板和選單而不改變文字</string>
+    <string name="settings_line_animations_mobile">關閉後在較舊手機上更流暢</string>
+    <string name="settings_line_vod_buffer_mobile">電影和回看預先載入多遠</string>
+    <string name="settings_line_vod_timeout_mobile">等待無回應伺服器多久</string>
+    <string name="settings_line_vod_reconnects_mobile">中斷的串流會重新開啟幾次</string>
+    <string name="settings_line_sw_decode_mobile">硬體解碼失敗時以軟體解碼 1080p 以上</string>
+    <string name="settings_line_rec_mobile_data_mobile">關閉：落在行動數據上的錄影會略過</string>
+    <string name="settings_line_pip_mobile">離開應用程式時將影片縮小成視窗</string>
+    <string name="settings_line_pip_size_mobile">浮動視窗的初始大小</string>
+    <string name="settings_line_pip_snap_mobile">視窗會貼靠到最近的邊緣</string>
+    <string name="settings_line_audio_screen_off_mobile">停止解碼沒人看的影片</string>
+    <string name="settings_line_audio_per_channel_mobile">下次也這樣開啟</string>
+    <string name="settings_line_seek_step_mobile">倒轉或快轉點一下跳多遠</string>
+    <string name="settings_line_rewind_step_mobile">直播頻道點一下跳多遠</string>
+    <string name="settings_line_gesture_mobile">滑動對音量、亮度或進度的改變幅度</string>
+    <string name="settings_line_rec_watching_mobile">在播放器中顯示錄影按鈕</string>
+    <string name="settings_line_rec_pre_roll_mobile">在預定開始前開始</string>
+    <string name="settings_line_rec_post_roll_mobile">在預定結束後繼續</string>
+    <string name="settings_line_sub_lang_mobile">自動選擇此字幕軌</string>
+    <string name="settings_line_sub_style_mobile">大小、字型、顏色、位置、背景</string>
+    <string name="settings_customize_short_mobile">自訂</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> 個節目</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> 個頻道可回看</item>
+    </plurals>
 </resources>

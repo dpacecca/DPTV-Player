@@ -1759,4 +1759,74 @@
     <string name="settings_line_glass_opacity">Lavere viser mere af baggrunden</string>
     <string name="settings_line_glass_reset">Stage-farver, glas til, <xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">Live-tv med denne baggrund. Ændringer vises, mens du bevæger dig.</string>
+    <string name="settings_root_hint_mobile">Hold på en række for at fastgøre den til Hurtig</string>
+    <string name="settings_card_layout_mobile">Navigation, Hjem, lister, menuer</string>
+    <string name="settings_card_watching_mobile">Spring, genoptag, miniafspiller, optagelse</string>
+    <string name="settings_line_live_preview_mobile">Afspil den valgte kanal øverst i Live-tv</string>
+    <string name="settings_line_hw_mobile">Brug telefonens egen dekoder</string>
+    <string name="settings_line_surround_mobile">5.1 og 7.1, som telefonen får dem</string>
+    <string name="settings_line_passthrough_mobile">Uafkodet til en tilsluttet receiver</string>
+    <string name="settings_line_navigation_mobile">Bjælken nederst: etiketter, skjul ved rulning, punkter</string>
+    <string name="settings_vod_view_mobile">Visning af Film og Serier</string>
+    <string name="settings_line_vod_view_mobile">Hvordan en kategori åbner</string>
+    <string name="settings_guide_size_mobile">Størrelse på programguiden</string>
+    <string name="settings_line_guide_size_mobile">Hvor meget tid gitteret viser ad gangen</string>
+    <string name="settings_line_download_folder_mobile">Hvor film, afsnit og optagelser gemmes</string>
+    <string name="settings_browsing_value_both">Begge</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> række</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> rækker</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> skjult</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> skjulte</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">Tidszone</string>
+    <string name="settings_help_add_from_phone_mobile">Åbn adressen eller scan koden i en browser på en vilkårlig enhed på samme wi-fi – computer, tablet eller tv – udfyld din playliste dér, og send den hertil. Meget hurtigere end at skrive en URL på en telefon.</string>
+    <string name="settings_line_add_type_here_mobile">Xtream, M3U eller Stalker</string>
+    <string name="setup_local_file_hint_mobile">.m3u eller .m3u8 på denne telefon</string>
+    <plurals name="settings_sources_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> kilde</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> kilder</item>
+    </plurals>
+    <string name="settings_sources_status_default">Standard</string>
+    <string name="settings_epg_sources_addresses_note">Adresser vises uden brugernavn og adgangskode.</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> kategori</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> kategorier</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">Hold på en række: Omdøb · Flyt · Skjul · eller start et udsnit for at ændre mange på én gang.</string>
+    <string name="settings_line_quick_channel_numbers_mobile">Tast et nummer for at skifte kanal</string>
+    <string name="settings_line_playlists_mobile">Tilføj, gensynkroniser eller fjern M3U / Xtream / Stalker</string>
+    <string name="settings_line_accent_mobile">Farver knapper, markeringer og bjælker overalt</string>
+    <string name="settings_line_glass_bg_mobile">Matterede bjælker og paneler, baggrundsbillede</string>
+    <string name="settings_line_popup_size_mobile">Skaler paneler og menuer uden at ændre deres tekst</string>
+    <string name="settings_line_animations_mobile">Fra føles hurtigere på ældre telefoner</string>
+    <string name="settings_line_vod_buffer_mobile">Hvor langt frem film og catch-up indlæses</string>
+    <string name="settings_line_vod_timeout_mobile">Hvor længe der ventes på en tavs server</string>
+    <string name="settings_line_vod_reconnects_mobile">Hvor mange gange en tabt stream genåbnes</string>
+    <string name="settings_line_sw_decode_mobile">Over 1080p i software, når hardwaredekoderen svigter</string>
+    <string name="settings_line_rec_mobile_data_mobile">Fra: en optagelse på mobildata springes over</string>
+    <string name="settings_line_pip_mobile">Formindsk videoen til et vindue, når du forlader appen</string>
+    <string name="settings_line_pip_size_mobile">Hvor stort det svævende vindue starter</string>
+    <string name="settings_line_pip_snap_mobile">Vinduet lægger sig mod den nærmeste kant</string>
+    <string name="settings_line_audio_screen_off_mobile">Stop afkodning af video, ingen ser</string>
+    <string name="settings_line_audio_per_channel_mobile">Åbner sådan næste gang</string>
+    <string name="settings_line_seek_step_mobile">Hvor langt ét tryk på tilbage eller frem springer</string>
+    <string name="settings_line_rewind_step_mobile">Hvor langt ét tryk springer på en live-kanal</string>
+    <string name="settings_line_gesture_mobile">Hvor meget et stryg ændrer lydstyrke, lysstyrke eller position</string>
+    <string name="settings_line_rec_watching_mobile">En optageknap i afspilleren</string>
+    <string name="settings_line_rec_pre_roll_mobile">Start før den angivne start</string>
+    <string name="settings_line_rec_post_roll_mobile">Fortsæt efter den angivne slutning</string>
+    <string name="settings_line_sub_lang_mobile">Vælg automatisk dette undertekstspor</string>
+    <string name="settings_line_sub_style_mobile">Størrelse, skrifttype, farve, placering, baggrund</string>
+    <string name="settings_customize_short_mobile">Tilpas</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> udsendelse</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> udsendelser</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="one">catch-up på <xliff:g id="count">%1$s</xliff:g></item>
+        <item quantity="other">catch-up på <xliff:g id="count">%1$s</xliff:g></item>
+    </plurals>
 </resources>

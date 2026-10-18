@@ -1759,4 +1759,74 @@
     <string name="settings_line_glass_opacity">കുറച്ചാൽ പശ്ചാത്തലം കൂടുതൽ കാണാം</string>
     <string name="settings_line_glass_reset">Stage നിറങ്ങൾ, ഗ്ലാസ് ഓൺ, <xliff:g id="percent" example="56%">%1$s</xliff:g></string>
     <string name="settings_bg_preview_note">ഈ പശ്ചാത്തലത്തോടെ ലൈവ് ടിവി. നീങ്ങുമ്പോൾ മാറ്റങ്ങൾ കാണാം.</string>
+    <string name="settings_root_hint_mobile">ഒരു വരി പെട്ടെന്ന് എന്നതിൽ പിൻ ചെയ്യാൻ അത് അമർത്തിപ്പിടിക്കുക</string>
+    <string name="settings_card_layout_mobile">നാവിഗേഷൻ, ഹോം, പട്ടികകൾ, മെനുകൾ</string>
+    <string name="settings_card_watching_mobile">സ്കിപ്പ്, തുടരൽ, മിനി പ്ലെയർ, റെക്കോർഡിംഗ്</string>
+    <string name="settings_line_live_preview_mobile">തിരഞ്ഞെടുത്ത ചാനൽ തത്സമയ ടിവിയുടെ മുകളിൽ പ്ലേ ചെയ്യുക</string>
+    <string name="settings_line_hw_mobile">ഫോണിന്റെ സ്വന്തം ഡീകോഡർ ഉപയോഗിക്കുക</string>
+    <string name="settings_line_surround_mobile">ഫോണിന് ലഭിക്കുന്നതുപോലെ 5.1, 7.1</string>
+    <string name="settings_line_passthrough_mobile">ഡീകോഡ് ചെയ്യാതെ ബന്ധിപ്പിച്ച റിസീവറിലേക്ക്</string>
+    <string name="settings_line_navigation_mobile">താഴെയുള്ള ബാർ: ലേബലുകൾ, സ്ക്രോൾ ചെയ്യുമ്പോൾ മറയ്ക്കുക, ഇനങ്ങൾ</string>
+    <string name="settings_vod_view_mobile">സിനിമകളുടെയും സീരീസുകളുടെയും കാഴ്ച</string>
+    <string name="settings_line_vod_view_mobile">ഒരു വിഭാഗം എങ്ങനെ തുറക്കുന്നു</string>
+    <string name="settings_guide_size_mobile">പരിപാടികളുടെ ഗൈഡിന്റെ വലുപ്പം</string>
+    <string name="settings_line_guide_size_mobile">ഗ്രിഡ് ഒറ്റയടിക്ക് എത്ര സമയം കാണിക്കുന്നു</string>
+    <string name="settings_line_download_folder_mobile">സിനിമകളും എപ്പിസോഡുകളും റെക്കോർഡിംഗുകളും എവിടേക്ക് പോകുന്നു</string>
+    <string name="settings_browsing_value_both">രണ്ടും</string>
+    <plurals name="settings_home_rows_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> വരി</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> വരികൾ</item>
+    </plurals>
+    <plurals name="settings_customize_hidden_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> മറച്ചത്</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> മറച്ചവ</item>
+    </plurals>
+    <string name="settings_catchup_timezone_label">സമയ മേഖല</string>
+    <string name="settings_help_add_from_phone_mobile">അതേ വൈ-ഫൈയിലുള്ള ഏത് ഉപകരണത്തിന്റെയും — കമ്പ്യൂട്ടർ, ടാബ്‌ലെറ്റ് അല്ലെങ്കിൽ ടിവി — ബ്രൗസറിൽ വിലാസം തുറക്കുകയോ കോഡ് സ്കാൻ ചെയ്യുകയോ ചെയ്ത്, അവിടെ പ്ലേലിസ്റ്റ് പൂരിപ്പിച്ച് ഇങ്ങോട്ട് അയയ്ക്കുക. ഫോണിൽ URL ടൈപ്പ് ചെയ്യുന്നതിനേക്കാൾ വളരെ വേഗം.</string>
+    <string name="settings_line_add_type_here_mobile">Xtream, M3U അല്ലെങ്കിൽ Stalker</string>
+    <string name="setup_local_file_hint_mobile">ഈ ഫോണിലെ .m3u അല്ലെങ്കിൽ .m3u8</string>
+    <plurals name="settings_sources_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> ഉറവിടം</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> ഉറവിടങ്ങൾ</item>
+    </plurals>
+    <string name="settings_sources_status_default">ഡിഫോൾട്ട്</string>
+    <string name="settings_epg_sources_addresses_note">വിലാസങ്ങൾ ഉപയോക്തൃനാമവും പാസ്‌വേഡും ഇല്ലാതെയാണ് കാണിക്കുന്നത്.</string>
+    <plurals name="settings_customize_categories_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> വിഭാഗം</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> വിഭാഗങ്ങൾ</item>
+    </plurals>
+    <string name="settings_customize_hold_note_mobile">ഒരു വരി അമർത്തിപ്പിടിക്കുക: പേര് മാറ്റുക · മാറ്റുക · മറയ്ക്കുക · അല്ലെങ്കിൽ പലതും ഒരുമിച്ച് മാറ്റാൻ ഒരു ശ്രേണി ആരംഭിക്കുക.</string>
+    <string name="settings_line_quick_channel_numbers_mobile">ചാനൽ മാറാൻ ഒരു നമ്പർ ടൈപ്പ് ചെയ്യുക</string>
+    <string name="settings_line_playlists_mobile">M3U / Xtream / Stalker ചേർക്കുക, വീണ്ടും സിങ്ക് ചെയ്യുക അല്ലെങ്കിൽ നീക്കം ചെയ്യുക</string>
+    <string name="settings_line_accent_mobile">എല്ലായിടത്തും ബട്ടണുകളും ഹൈലൈറ്റുകളും ബാറുകളും നിറം നൽകുന്നു</string>
+    <string name="settings_line_glass_bg_mobile">മഞ്ഞുപോലെയുള്ള ബാറുകളും ഷീറ്റുകളും, പശ്ചാത്തല ചിത്രം</string>
+    <string name="settings_line_popup_size_mobile">ടെക്സ്റ്റ് മാറ്റാതെ ഷീറ്റുകളുടെയും മെനുകളുടെയും വലുപ്പം മാറ്റുക</string>
+    <string name="settings_line_animations_mobile">ഓഫ് ആക്കിയാൽ പഴയ ഫോണുകളിൽ വേഗത കൂടും</string>
+    <string name="settings_line_vod_buffer_mobile">സിനിമകളും ക്യാച്ച്-അപ്പും എത്ര മുൻകൂട്ടി ലോഡ് ചെയ്യുന്നു</string>
+    <string name="settings_line_vod_timeout_mobile">നിശബ്ദമായ സെർവറിനായി എത്ര നേരം കാത്തിരിക്കണം</string>
+    <string name="settings_line_vod_reconnects_mobile">നഷ്ടപ്പെട്ട സ്ട്രീം എത്ര തവണ വീണ്ടും തുറക്കുന്നു</string>
+    <string name="settings_line_sw_decode_mobile">ഹാർഡ്‌വെയർ ഡീകോഡർ പരാജയപ്പെട്ടാൽ 1080p-ന് മുകളിൽ സോഫ്റ്റ്‌വെയറിൽ</string>
+    <string name="settings_line_rec_mobile_data_mobile">ഓഫ്: മൊബൈൽ ഡാറ്റയിൽ വരുന്ന റെക്കോർഡിംഗ് ഒഴിവാക്കും</string>
+    <string name="settings_line_pip_mobile">ആപ്പ് വിടുമ്പോൾ വീഡിയോ ഒരു വിൻഡോയിലേക്ക് ചുരുക്കുക</string>
+    <string name="settings_line_pip_size_mobile">ഫ്ലോട്ടിംഗ് വിൻഡോ എത്ര വലുപ്പത്തിൽ തുടങ്ങുന്നു</string>
+    <string name="settings_line_pip_snap_mobile">വിൻഡോ ഏറ്റവും അടുത്ത അരികിൽ ചേരുന്നു</string>
+    <string name="settings_line_audio_screen_off_mobile">ആരും കാണാത്ത വീഡിയോ ഡീകോഡ് ചെയ്യുന്നത് നിർത്തുക</string>
+    <string name="settings_line_audio_per_channel_mobile">അടുത്ത തവണ ഇങ്ങനെ തുറക്കും</string>
+    <string name="settings_line_seek_step_mobile">പിന്നോട്ടോ മുന്നോട്ടോ ഒരു ടാപ്പ് എത്ര ചാടുന്നു</string>
+    <string name="settings_line_rewind_step_mobile">തത്സമയ ചാനലിൽ ഒരു ടാപ്പ് എത്ര ചാടുന്നു</string>
+    <string name="settings_line_gesture_mobile">സ്വൈപ്പ് ശബ്ദം, തെളിച്ചം അല്ലെങ്കിൽ സ്ഥാനം എത്ര മാറ്റുന്നു</string>
+    <string name="settings_line_rec_watching_mobile">പ്ലെയറിൽ ഒരു റെക്കോർഡ് ബട്ടൺ</string>
+    <string name="settings_line_rec_pre_roll_mobile">പറഞ്ഞ തുടക്കത്തിന് മുമ്പ് ആരംഭിക്കുക</string>
+    <string name="settings_line_rec_post_roll_mobile">പറഞ്ഞ അവസാനത്തിന് ശേഷവും തുടരുക</string>
+    <string name="settings_line_sub_lang_mobile">ഈ സബ്‌ടൈറ്റിൽ ട്രാക്ക് സ്വയം തിരഞ്ഞെടുക്കുക</string>
+    <string name="settings_line_sub_style_mobile">വലുപ്പം, ഫോണ്ട്, നിറം, സ്ഥാനം, പശ്ചാത്തലം</string>
+    <string name="settings_customize_short_mobile">ഇഷ്ടാനുസൃതമാക്കുക</string>
+    <plurals name="settings_epg_line_programmes">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> പരിപാടി</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> പരിപാടികൾ</item>
+    </plurals>
+    <plurals name="settings_epg_line_catchup">
+        <item quantity="one"><xliff:g id="count">%1$s</xliff:g> ചാനലിൽ ക്യാച്ച്-അപ്പ്</item>
+        <item quantity="other"><xliff:g id="count">%1$s</xliff:g> ചാനലുകളിൽ ക്യാച്ച്-അപ്പ്</item>
+    </plurals>
 </resources>
