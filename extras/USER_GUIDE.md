@@ -272,7 +272,9 @@ The spinner stays up with a live countdown and DPTV-Player retries by itself. Do
 wait.
 
 ### 🔒 Protected (DRM) channels
-Widevine and ClearKey channels play with nothing to set up — your TV does the unlocking. They always
+Widevine and ClearKey channels play with nothing to set up — your TV does the unlocking. That
+includes ClearKey channels whose playlist writes the key itself (`license_key=kid:key`); a playlist
+added before this update needs one refresh to pick the key up. They always
 use ExoPlayer, so the engine toggle is hidden for them. Some cheaper boxes only allow standard
 definition; that is the device's decision, not DPTV-Player's.
 
