@@ -1272,6 +1272,9 @@ class LiveViewModel(
         zapList.next(delta)?.let { zapTo(it) }
     }
 
+    /** When the last CH+/- press moved the channel (elapsedRealtime); null before the first. */
+    private var lastZapPressMs: Long? = null
+
     /**
      * CH+/- step: show the channel at once, open the stream once the user stops moving.
      *
@@ -1287,16 +1290,36 @@ class LiveViewModel(
      *
      * Deliberately NOT applied to deliberate picks ([ensurePlaying] from the channel list, Guide, Home
      * or a deep link): those are a single considered choice and must open immediately.
+     *
+     * An isolated press is one of those too: with no zap key for [ZAP_ISOLATED_PRESS_MS] it opens at once,
+     * on single-connection panels as well (see [zapTuneDelayMs]). Only presses that follow it closely wait, so a held key or a burst still
+     * costs at most two opens — the first step and the channel the user stops on.
      */
     private fun zapTo(channel: ChannelEntity) {
         _previewChannel.value = channel
+        val now = android.os.SystemClock.elapsedRealtime()
+        val delayMs = zapTuneDelayMs(lastZapPressMs, now)
+        // Logged only: single-connection panels follow the same rule (see ZAP_ISOLATED_PRESS_MS).
+        val singleConnection = sourceById[channel.sourceId]?.maxConnections == 1 ||
+            tv.own.owntv.player.LiveStreamQuirks.isSingleSession(channel.streamUrl)
+        tv.own.owntv.player.LiveDiagnosticsLog.event(
+            "zap: tune wait ${delayMs}ms — ${zapWaitReason(lastZapPressMs, now, singleConnection)}",
+        )
+        lastZapPressMs = now
+        // Diagnostics only: the tune this press causes claims it and times its first frame from here.
+        tv.own.owntv.player.ZapTiming.shared.markPress(now)
         pendingZapTuneJob?.cancel()
+        if (delayMs <= 0L) {
+            pendingZapTuneJob = null
+            startTune(channel)
+            return
+        }
         pendingZapTuneJob = viewModelScope.launch {
-            delay(ZAP_TUNE_DELAY_MS)
-            // Cleared before handing over, so this tune's own [ensurePlaying] doesn't cancel the job
+            delay(delayMs)
+            // Cleared before handing over, so this tune's own [startTune] doesn't cancel the job
             // it is running inside.
             pendingZapTuneJob = null
-            ensurePlaying(channel)
+            startTune(channel)
         }
     }
 
@@ -1483,6 +1506,13 @@ class LiveViewModel(
      *  because it's still loading (clicking OK before the preview is ready used to drop to mpv and
      *  stick on a black screen for HLS). */
     fun ensurePlaying(channel: ChannelEntity) {
+        // A deliberate pick, not a CH+/- step: an unclaimed zap press must not be timed against it.
+        tv.own.owntv.player.ZapTiming.shared.clear()
+        startTune(channel)
+    }
+
+    /** [ensurePlaying] without forgetting the zap press: the tune a CH+/- step opens, timed from that press. */
+    private fun startTune(channel: ChannelEntity) {
         zapList.cancelPendingRebuild()
         // A deliberate pick supersedes a CH+/- step still waiting out its delay — otherwise the deferred
         // tune would land half a second later and drag the user off the channel they just chose.
@@ -2113,10 +2143,7 @@ class LiveViewModel(
         // → All Channels fallback so a huge playlist can't be pulled into memory on every tune.
         const val ZAP_LIST_LIMIT = 2_000
 
-        /** How long a CH+/- step waits before it actually opens the stream. Comfortably longer than the
-         *  ~170 ms D-pad repeat, so a held key resolves to one tune, and short enough that a single
-         *  deliberate step still feels immediate. */
-        const val ZAP_TUNE_DELAY_MS = 500L
+        // The CH+/- timing constants (ZAP_TUNE_DELAY_MS, ZAP_ISOLATED_PRESS_MS) live in ZapTuneDelay.kt.
         const val HISTORY_LIST_LIMIT = 30
         val defaultRail = listOf(
             LiveRailItem(LiveKey.Favorites, icon = OwnTVIcon.FAVORITE),
