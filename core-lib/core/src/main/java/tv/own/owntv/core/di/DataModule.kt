@@ -318,5 +318,5 @@ val dataModule = module {
     // profileDao, sourceDao, sourceRepository, backup, settings, connectivity, importFinalizer,
     // launcherIntegration, catalogSyncScheduler, stalkerAuth — onboarding: add a source, sync it,
     // undo it when it fails. Factory, not single: each wizard run owns its own state machine.
-    factory { tv.own.owntv.core.setup.SourceImporter(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { tv.own.owntv.core.setup.SourceImporter(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
 }
