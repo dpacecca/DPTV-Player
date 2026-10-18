@@ -36,6 +36,15 @@ class ProviderTagsTest {
     fun tagOnlyNameKeepsTheProviderSpelling() = assertEquals("DE| ᴴᴰ", ProviderTags.parse("DE| ᴴᴰ").name)
 
     @Test
+    fun groupLabelKeepsTheCountryUnlessTheHeadingShowsIt() {
+        val uk = ProviderTags.parse("UK| Sky Max ᴴᴰ")
+        assertEquals("UK| Sky Max", ProviderTags.groupLabel(uk, headingCountry = null))
+        assertEquals("Sky Max", ProviderTags.groupLabel(uk, headingCountry = "UK"))
+        assertEquals("UK| Sky Max", ProviderTags.groupLabel(uk, headingCountry = "DE"))
+        assertEquals("Sky Max", ProviderTags.groupLabel(ProviderTags.parse("Sky Max"), headingCountry = null))
+    }
+
+    @Test
     fun sharedCountryWhenAllAgree() = assertEquals(
         "DE",
         ProviderTags.sharedCountry(listOf(ProviderTags.parse("DE| A"), ProviderTags.parse("DE| B"))),

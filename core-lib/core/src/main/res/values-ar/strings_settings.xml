@@ -329,7 +329,7 @@
     <string name="settings_all_surfaces_off">كل الأسطح: متوقفة</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">مقدار ما يظهر عبر اللوحات (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). تؤدي القيمة الأعلى إلى مظهر أكثر تعتيمًا.</string>
-    <string name="settings_catchup_description">كيفية إرسال الطوابع الزمنية لمشاهدة البث الفائت. استخدم المنطقة الزمنية لجهازك، أو عيّن الإزاحة التي يتوقعها خادم المزوّد.</string>
+    <string name="settings_catchup_timezone_description">كيفية إرسال الطوابع الزمنية لمشاهدة البث الفائت. يستخدم الوضع التلقائي المنطقة الزمنية التي يعلنها خادم المزوّد، أو منطقة جهازك إن لم يعلن عن أي منطقة. يمكنك أيضًا اختيار الجهاز، أو تعيين الإزاحة بنفسك.</string>
     <string name="settings_manual">يدوي</string>
     <string name="settings_theme_dark">داكنة</string>
     <string name="settings_theme_light">فاتحة</string>
@@ -661,6 +661,7 @@
         <item quantity="many"><xliff:g id="count">%1$d</xliff:g> من أصل <xliff:g id="total">%2$d</xliff:g> سطحًا</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> من أصل <xliff:g id="total">%2$d</xliff:g> سطح</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">تلقائي</string>
     <string name="settings_catchup_timezone_device">الجهاز</string>
     <string name="settings_catchup_player_ask">السؤال دائمًا</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1716,7 +1717,7 @@
     <string name="settings_help_playlists">أضف قائمة تشغيل من رابط أو تسجيل دخول Xtream أو بوابة Stalker أو ملف، أو أعد مزامنة إحداها، أو احذفها.</string>
     <string name="settings_help_epg_sources">أضف مصدر دليل XMLTV عبر رابطه، أو حدّثه، أو احذفه. تملأ المصادر دليل التلفاز وسطور البرامج في البث المباشر.</string>
     <string name="settings_help_guide_days">عدد أيام البرامج التي يخزنها الدليل مسبقًا. أيام أقل تعني تحديثًا أسرع للدليل وقاعدة بيانات أصغر.</string>
-    <string name="settings_help_catchup">تشغّل المشاهدة الاستدراكية البرامج من أرشيف مزوّدك. يعتمد معظم المزوّدين على ساعة التلفاز نفسها؛ اختر إزاحة UTC ثابتة إذا بدأت المشاهدة في وقت خاطئ. ومن هنا أيضًا تختار المشغّل الذي تستخدمه.</string>
+    <string name="settings_help_catchup_timezone">تشغّل المشاهدة الاستدراكية البرامج من أرشيف مزوّدك. يستخدم الوضع التلقائي المنطقة الزمنية التي يعلنها مزوّدك، أو ساعة التلفاز نفسها إن لم يعلن عنها؛ اختر إزاحة UTC ثابتة إذا ظلت المشاهدة تبدأ في وقت خاطئ. ومن هنا أيضًا تختار المشغّل الذي تستخدمه.</string>
     <string name="settings_help_theme">صُمّم DPTV-Player للوضع الداكن. يتبع خيار النظام إعداد التلفاز إن وُجد، ويناسب الوضع الفاتح الغرف المضيئة.</string>
     <string name="settings_help_accent">يلوّن الأزرار وتوهج التركيز وأشرطة التقدم والتمييزات في كل مكان. اختر لونًا جاهزًا، أو اضغط OK لفتح لوحة الألوان وإدخال أي رمز سداسي.</string>
     <string name="settings_help_focus">الحلقة المرسومة حول العنصر المحدد. اختر لونها وسُمكها لتبقى سهلة التتبع من الأريكة.</string>

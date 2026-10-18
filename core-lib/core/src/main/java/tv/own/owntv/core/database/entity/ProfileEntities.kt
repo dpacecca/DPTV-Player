@@ -154,6 +154,14 @@ data class SourceEntity(
     val liveTuneTimeoutSecs: Int? = null,
     /** An HTTP `Referer` this provider's streams require (N16). */
     val httpReferer: String? = null,
+    /**
+     * The time zone an Xtream panel reports for itself (v49), as a `java.util.TimeZone` ID: its
+     * `server_info.timezone`, or a `GMT±hh:mm` worked out from `time_now` vs `timestamp_now` when the
+     * name is missing or unknown. Re-read at every sync and never backed up — like [maxConnections] it
+     * is the provider's fact, not the user's. Null = not known (M3U/Stalker, or not synced since v49).
+     * Catch-up's Automatic time zone uses it.
+     */
+    val serverTimeZone: String? = null,
 )
 
 /** Many-to-many link letting a source be shared across profiles (hybrid model). */

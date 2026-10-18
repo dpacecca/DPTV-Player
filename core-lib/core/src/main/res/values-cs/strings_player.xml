@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">Videodekodér tohoto televizoru je zaneprázdněný. Zkuste to za chvíli znovu.</string>
     <string name="player_error_no_internet">Není k dispozici připojení k internetu. Zkontrolujte síť a zkuste to znovu.</string>
     <string name="player_error_stream_unavailable">Tento stream se nepodařilo přehrát. Zdroj může být bez připojení nebo používat nepodporovaný formát. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Tento účet už přehrává na jiném zařízení nebo v jiné aplikaci. Zastavte přehrávání tam a stiskněte Zkusit znovu.</string>
     <string name="player_error_mpv_open_decode">mpv nedokázal tento soubor otevřít nebo dekódovat.</string>
     <string name="player_error_mpv_stream_never_started">Stream se v mpv nespustil ani po několika pokusech.</string>
     <string name="player_error_surround">Tento zvukový výstup nepodporuje prostorový zvuk — přepnuto na stereo.</string>

@@ -319,7 +319,7 @@
     <string name="settings_all_surfaces_off">すべての領域：オフ</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>：<xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">パネルの透け具合（<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%）。値が高いほど不透明になります。</string>
-    <string name="settings_catchup_description">見逃し配信のタイムスタンプの送信方法です。デバイスのタイムゾーンを使用するか、プロバイダーのサーバーが想定するオフセットを設定します。</string>
+    <string name="settings_catchup_timezone_description">見逃し配信のタイムスタンプの送信方法です。自動では、プロバイダーのサーバーが通知するタイムゾーンを使い、通知がなければデバイスのタイムゾーンを使います。デバイスを選ぶか、オフセットを自分で設定することもできます。</string>
     <string name="settings_manual">手動</string>
     <string name="settings_theme_dark">ダーク</string>
     <string name="settings_theme_light">ライト</string>
@@ -641,6 +641,7 @@
     <plurals name="settings_surface_count">
         <item quantity="other">全<xliff:g id="total">%2$d</xliff:g>サーフェス中<xliff:g id="count">%1$d</xliff:g>個</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">自動</string>
     <string name="settings_catchup_timezone_device">デバイス</string>
     <string name="settings_catchup_player_ask">常に確認</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1571,7 +1572,7 @@
     <string name="settings_help_playlists">リンク、Xtream ログイン、Stalker ポータル、ファイルからプレイリストを追加し、再同期または削除します。</string>
     <string name="settings_help_epg_sources">XMLTV ガイドフィードをリンクで追加し、更新または削除します。フィードは番組表とライブ TV の番組行に使われます。</string>
     <string name="settings_help_guide_days">ガイドが先の何日分の番組を保存するか。日数を減らすとガイドの更新が速くなり、データベースも小さくなります。</string>
-    <string name="settings_help_catchup">キャッチアップはプロバイダーのアーカイブから番組を再生します。多くはテレビ本体の時計に従います。開始時刻がずれる場合は固定の UTC オフセットを選んでください。キャッチアップで使うプレーヤーもここで選びます。</string>
+    <string name="settings_help_catchup_timezone">キャッチアップはプロバイダーのアーカイブから番組を再生します。自動では、プロバイダーが通知するタイムゾーンを使い、通知がなければテレビ本体の時計に従います。それでも開始時刻がずれる場合は固定の UTC オフセットを選んでください。キャッチアップで使うプレーヤーもここで選びます。</string>
     <string name="settings_help_theme">DPTV-Player はダーク向けに設計されています。システムはテレビ本体の設定があればそれに従い、ライトは明るい部屋に向いています。</string>
     <string name="settings_help_accent">ボタン、フォーカスの光、進行バー、ハイライトをすべて色付けします。プリセットを選ぶか、OK でパレットを開いて任意の 16 進コードを入力できます。</string>
     <string name="settings_help_focus">フォーカス中の項目を囲むリング。ソファからでも追いやすいよう、色と太さを選べます。</string>

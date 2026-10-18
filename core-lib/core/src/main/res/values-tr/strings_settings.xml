@@ -321,7 +321,7 @@
     <string name="settings_all_surfaces_off">Tüm yüzeyler: Kapalı</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">Panellerin arkasının ne kadar görüneceği (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). Değer yükseldikçe panel daha opak olur.</string>
-    <string name="settings_catchup_description">Geri izleme zaman damgalarının nasıl gönderileceği. Cihazınızın saat dilimini kullanın veya sağlayıcınızın sunucusunun beklediği zaman farkını ayarlayın.</string>
+    <string name="settings_catchup_timezone_description">Geri izleme zaman damgalarının nasıl gönderileceği. Otomatik, sağlayıcınızın sunucusunun bildirdiği saat dilimini, bildirmiyorsa cihazınızın saat dilimini kullanır. Cihaz seçeneğini de seçebilir veya zaman farkını kendiniz ayarlayabilirsiniz.</string>
     <string name="settings_manual">Manuel</string>
     <string name="settings_theme_dark">Koyu</string>
     <string name="settings_theme_light">Açık</string>
@@ -645,6 +645,7 @@
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> / <xliff:g id="total">%2$d</xliff:g> yüzey</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> / <xliff:g id="total">%2$d</xliff:g> yüzey</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">Otomatik</string>
     <string name="settings_catchup_timezone_device">Cihaz</string>
     <string name="settings_catchup_player_ask">Her zaman sor</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1600,7 +1601,7 @@
     <string name="settings_help_playlists">Bir bağlantıdan, Xtream girişinden, Stalker portalından veya dosyadan oynatma listesi ekleyin, yeniden eşitleyin ya da kaldırın.</string>
     <string name="settings_help_epg_sources">Bir XMLTV rehber kaynağını bağlantısıyla ekleyin, yenileyin veya kaldırın. Kaynaklar TV Rehberi’ni ve Canlı TV’deki program satırlarını doldurur.</string>
     <string name="settings_help_guide_days">Rehberin ileriye dönük kaç günlük programı sakladığı. Daha az gün, daha hızlı yenileme ve daha küçük veritabanı demektir.</string>
-    <string name="settings_help_catchup">Geriye dönük izleme, programları sağlayıcınızın arşivinden oynatır. Çoğu sağlayıcı TV’nin kendi saatini kullanır; yanlış saatte başlıyorsa sabit bir UTC farkı seçin. Hangi oynatıcının kullanılacağını da burada seçersiniz.</string>
+    <string name="settings_help_catchup_timezone">Geriye dönük izleme, programları sağlayıcınızın arşivinden oynatır. Otomatik, sağlayıcınızın bildirdiği saat dilimini, bildirmiyorsa TV’nin kendi saatini kullanır; yine de yanlış saatte başlıyorsa sabit bir UTC farkı seçin. Hangi oynatıcının kullanılacağını da burada seçersiniz.</string>
     <string name="settings_help_theme">DPTV-Player koyu tema için tasarlandı. Sistem, varsa TV’nin kendi ayarını izler; açık tema aydınlık bir oda için uygundur.</string>
     <string name="settings_help_accent">Düğmeleri, odak parıltısını, ilerleme çubuklarını ve vurguları her yerde renklendirir. Hazır bir renk seçin veya palet ve istediğiniz onaltılık kod için OK’ye basın.</string>
     <string name="settings_help_focus">Odaktaki öğenin çevresindeki halka. Kanepeden kolayca izlenebilmesi için rengini ve kalınlığını seçin.</string>

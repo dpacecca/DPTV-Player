@@ -319,7 +319,7 @@
     <string name="settings_all_surfaces_off">所有区域：关闭</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>：<xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">面板透出背景的程度（<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%）。数值越高，面板越不透明。</string>
-    <string name="settings_catchup_description">回看时间戳的发送方式。使用设备时区，或设置服务提供商服务器所需的时差。</string>
+    <string name="settings_catchup_timezone_description">回看时间戳的发送方式。自动使用服务提供商服务器报告的时区，如未报告则使用设备时区。也可以选择设备时区，或自行设置时差。</string>
     <string name="settings_manual">手动</string>
     <string name="settings_theme_dark">深色</string>
     <string name="settings_theme_light">浅色</string>
@@ -641,6 +641,7 @@
     <plurals name="settings_surface_count">
         <item quantity="other">已启用 <xliff:g id="count">%1$d</xliff:g>/<xliff:g id="total">%2$d</xliff:g> 个界面元素</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">自动</string>
     <string name="settings_catchup_timezone_device">设备</string>
     <string name="settings_catchup_player_ask">总是询问</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1571,7 +1572,7 @@
     <string name="settings_help_playlists">通过链接、Xtream 登录、Stalker 门户或文件添加播放列表，也可重新同步或删除。</string>
     <string name="settings_help_epg_sources">通过链接添加 XMLTV 节目指南源，或刷新、删除它。这些源会填充节目指南和直播电视中的节目信息。</string>
     <string name="settings_help_guide_days">节目指南预先保存多少天的节目。天数越少，指南刷新越快，数据库也越小。</string>
-    <string name="settings_help_catchup">回看会播放提供商存档中的节目。大多数提供商按电视自身的时钟运行；如果回看开始时间不对，请选择固定的 UTC 偏移。回看使用哪个播放器也在这里选择。</string>
+    <string name="settings_help_catchup_timezone">回看会播放提供商存档中的节目。自动模式使用提供商报告的时区，如未报告则按电视自身的时钟运行；如果回看开始时间仍然不对，请选择固定的 UTC 偏移。回看使用哪个播放器也在这里选择。</string>
     <string name="settings_help_theme">DPTV-Player 是为深色主题设计的。“系统”在电视有相应设置时跟随电视；浅色适合明亮的房间。</string>
     <string name="settings_help_accent">为按钮、焦点光晕、进度条和高亮统一着色。选择一个预设，或按 OK 打开调色板并输入任意十六进制代码。</string>
     <string name="settings_help_focus">焦点项目周围的边框。选择它的颜色和粗细，让你坐在沙发上也能看清。</string>

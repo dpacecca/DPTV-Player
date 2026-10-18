@@ -321,7 +321,7 @@
     <string name="settings_all_surfaces_off">Alle overflader: Fra</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">Hvor meget der kan ses gennem panelerne (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). En højere værdi gør dem mere massive.</string>
-    <string name="settings_catchup_description">Hvordan tidsstempler til arkiv sendes. Brug enhedens tidszone, eller angiv den forskydning, som din udbyders server forventer.</string>
+    <string name="settings_catchup_timezone_description">Hvordan tidsstempler til arkiv sendes. Automatisk bruger den tidszone, din udbyders server oplyser, eller enhedens, hvis den ikke oplyser nogen. Du kan også vælge Enhed eller selv angive forskydningen.</string>
     <string name="settings_manual">Manuel</string>
     <string name="settings_theme_dark">Mørkt</string>
     <string name="settings_theme_light">Lyst</string>
@@ -645,6 +645,7 @@
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> af <xliff:g id="total">%2$d</xliff:g> flade</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> af <xliff:g id="total">%2$d</xliff:g> flader</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">Automatisk</string>
     <string name="settings_catchup_timezone_device">Enhed</string>
     <string name="settings_catchup_player_ask">Spørg altid</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1600,7 +1601,7 @@
     <string name="settings_help_playlists">Tilføj en playliste fra et link, et Xtream-login, en Stalker-portal eller en fil, synkroniser den igen, eller fjern den.</string>
     <string name="settings_help_epg_sources">Tilføj en XMLTV-guidekilde via dens link, opdater den, eller fjern den. Kilderne fylder tv-guiden og programlinjerne i Live-tv.</string>
     <string name="settings_help_guide_days">Hvor mange dages programmer guiden gemmer frem. Færre dage giver hurtigere opdatering og en mindre database.</string>
-    <string name="settings_help_catchup">Catch-up afspiller udsendelser fra udbyderens arkiv. De fleste udbydere følger tv’ets eget ur; vælg en fast UTC-forskydning, hvis catch-up starter på det forkerte tidspunkt. Her vælger du også, hvilken afspiller catch-up bruger.</string>
+    <string name="settings_help_catchup_timezone">Catch-up afspiller udsendelser fra udbyderens arkiv. Automatisk bruger den tidszone, udbyderen oplyser, eller tv’ets eget ur, hvis den ikke oplyser nogen; vælg en fast UTC-forskydning, hvis catch-up stadig starter på det forkerte tidspunkt. Her vælger du også, hvilken afspiller catch-up bruger.</string>
     <string name="settings_help_theme">DPTV-Player er designet til mørk. System følger tv’ets egen indstilling, hvis den findes; lys passer til et lyst rum.</string>
     <string name="settings_help_accent">Farver knapper, fokusskæret, statuslinjer og fremhævninger overalt. Vælg en forudindstilling, eller tryk på OK for paletten og en vilkårlig hex-kode.</string>
     <string name="settings_help_focus">Ringen om det, der har fokus. Vælg farve og tykkelse, så den er nem at følge fra sofaen.</string>

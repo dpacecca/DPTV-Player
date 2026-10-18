@@ -117,6 +117,47 @@ class M3uHeaderParsingTest {
         assertEquals(7, entries[0].catchupDays)
     }
 
+    /** M7 — `catchup-correction` is hours (fractional, signed); the `#EXTM3U` value is the default. */
+    @Test
+    fun catchupCorrectionIsReadPerEntryWithTheHeaderAsDefault() {
+        val entries = parse(
+            """
+            #EXTM3U catchup-correction="-1"
+            #EXTINF:-1 catchup="shift",Uses the header
+            http://host/a.ts
+            #EXTINF:-1 catchup="shift" catchup-correction="1.5",Own value
+            http://host/b.ts
+            #EXTINF:-1 catchup="shift" catchup-correction="soon",Not a number
+            http://host/c.ts
+            """.trimIndent(),
+        )
+        assertEquals(-60, entries[0].catchupCorrectionMin)
+        assertEquals(90, entries[1].catchupCorrectionMin)
+        assertEquals(-60, entries[2].catchupCorrectionMin)
+        assertEquals(0, parse("#EXTM3U\n#EXTINF:-1,Plain\nhttp://host/d.ts")[0].catchupCorrectionMin)
+    }
+
+    /** M7 — legacy SIPTV `timeshift="N"` is `catchup="shift"` with N days; the newer attributes win. */
+    @Test
+    fun legacyTimeshiftAttributeMeansShiftCatchup() {
+        val entries = parse(
+            """
+            #EXTM3U
+            #EXTINF:-1 timeshift="3",Legacy
+            http://host/a.ts
+            #EXTINF:-1 timeshift="3" catchup="append" catchup-source="?u={utc}" catchup-days="7",Both
+            http://host/b.ts
+            #EXTINF:-1 timeshift="0",Zero
+            http://host/c.ts
+            """.trimIndent(),
+        )
+        assertEquals("shift", entries[0].catchup)
+        assertEquals(3, entries[0].catchupDays)
+        assertEquals("append", entries[1].catchup)
+        assertEquals(7, entries[1].catchupDays)
+        assertEquals(null, entries[2].catchup)
+    }
+
     @Test
     fun serializationRoundTrips() {
         val headers = mapOf("User-Agent" to "UA/1", "Referer" to "http://r/")

@@ -370,7 +370,7 @@
     <string name="settings_all_surfaces_off">Minden felület: Ki</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">Mennyi látszik át a felületeken (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). A magasabb érték tömörebb.</string>
-    <string name="settings_catchup_description">Hogyan küldjük a visszanézési időbélyegeket. Használd az eszközöd időzónáját, vagy add meg az eltolást, amit a szolgáltatód kiszolgálója vár.</string>
+    <string name="settings_catchup_timezone_description">Hogyan küldjük a visszanézési időbélyegeket. Az Automatikus a szolgáltatód kiszolgálója által jelzett időzónát használja, ha pedig az nem jelez semmit, az eszközödét. Választhatod az Eszköz lehetőséget is, vagy magad is megadhatod az eltolást.</string>
     <string name="settings_manual">Kézi</string>
     <string name="settings_theme_dark">Sötét</string>
     <string name="settings_theme_light">Világos</string>
@@ -660,6 +660,7 @@
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> / <xliff:g id="total">%2$d</xliff:g> felület</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> / <xliff:g id="total">%2$d</xliff:g> felület</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">Automatikus</string>
     <string name="settings_catchup_timezone_device">Eszköz</string>
     <string name="settings_catchup_player_ask">Mindig kérdezzen</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1570,7 +1571,7 @@
     <string name="settings_help_playlists">Adjon hozzá lejátszási listát hivatkozásból, Xtream-bejelentkezésből, Stalker-portálról vagy fájlból, szinkronizálja újra, vagy távolítsa el.</string>
     <string name="settings_help_epg_sources">Adjon hozzá XMLTV-műsorforrást a hivatkozásával, frissítse vagy távolítsa el. A források töltik meg a tévéműsort és az élő tévé műsorsorait.</string>
     <string name="settings_help_guide_days">Hány nap műsorát tárolja előre a műsorújság. Kevesebb nap gyorsabb frissítést és kisebb adatbázist jelent.</string>
-    <string name="settings_help_catchup">A visszanézés a szolgáltató archívumából játssza le a műsorokat. A legtöbb szolgáltató a tévé saját óráját követi; ha a visszanézés rossz időben indul, válasszon rögzített UTC-eltolást. Itt választhatja ki azt is, melyik lejátszót használja.</string>
+    <string name="settings_help_catchup_timezone">A visszanézés a szolgáltató archívumából játssza le a műsorokat. Az Automatikus a szolgáltató által jelzett időzónát használja, ha pedig az nem jelez semmit, a tévé saját óráját; ha a visszanézés így is rossz időben indul, válasszon rögzített UTC-eltolást. Itt választhatja ki azt is, melyik lejátszót használja.</string>
     <string name="settings_help_theme">Az DPTV-Player sötét témára készült. A Rendszer a tévé saját beállítását követi, ha van ilyen; a Világos világos szobába való.</string>
     <string name="settings_help_accent">Mindenhol színezi a gombokat, a kijelölés fényét, a folyamatjelzőket és a kiemeléseket. Válasszon előre beállított színt, vagy nyomja meg az OK gombot a palettához és bármilyen hexakódhoz.</string>
     <string name="settings_help_focus">A kijelölt elem körüli keret. Válassza ki a színét és vastagságát, hogy a kanapéról is könnyen követhető legyen.</string>

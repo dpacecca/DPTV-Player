@@ -1067,9 +1067,10 @@ class SettingsRepository(private val context: Context, private val localeStore: 
 
     // --- Catch-up (archive) playback ---
 
-    /** Which timezone to format Xtream timeshift URLs in. Most panels run on the server's local time, which
-     *  usually matches the user's region — so **Device** is the default; a manual UTC offset is the fallback. */
-    enum class CatchupTimezone { DEVICE, MANUAL }
+    /** Which timezone to format Xtream timeshift URLs in. Panels run on the server's local time, so
+     *  **Automatic** — the zone the panel reports for itself at sync, else the device's — is the default
+     *  (and what an unset key reads as); Device and a manual UTC offset stay as explicit choices. */
+    enum class CatchupTimezone { AUTOMATIC, DEVICE, MANUAL }
 
     /** Manual UTC offset bounds, in minutes. */
     val catchupOffsetRangeMinutes: IntRange = -12 * 60..14 * 60
@@ -1089,7 +1090,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         ).sorted()
 
     val catchupTimezone: Flow<CatchupTimezone> = prefsFlow { prefs ->
-        prefs[Keys.CATCHUP_TZ]?.let { runCatching { CatchupTimezone.valueOf(it) }.getOrNull() } ?: CatchupTimezone.DEVICE
+        prefs[Keys.CATCHUP_TZ]?.let { runCatching { CatchupTimezone.valueOf(it) }.getOrNull() } ?: CatchupTimezone.AUTOMATIC
     }
 
     /** Manual mode's offset from UTC, in minutes (0 = UTC, the previous default). */
@@ -1154,15 +1155,17 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         context.dataStore.edit { it[Keys.EPG_OFFSET_MIN] = minutes.coerceIn(epgOffsetRangeMinutes) }
     }
 
-    /** The timezone catch-up/timeshift URLs are formatted in — device tz, or a manual UTC offset. */
-    suspend fun resolveCatchupTimeZone(): java.util.TimeZone = when (catchupTimezone.first()) {
-        CatchupTimezone.DEVICE -> java.util.TimeZone.getDefault()
-        CatchupTimezone.MANUAL -> java.util.SimpleTimeZone(catchupOffsetMinutes.first() * 60_000, "catchup")
-    }
-
-    /** [resolveCatchupTimeZone] with [source]'s own choice winning when it has one (v44). */
+    /**
+     * The timezone [source]'s catch-up/timeshift URLs are formatted in: its own choice when it has one
+     * (v44), else the global one — the panel's reported zone (v49) or the device's for Automatic, the
+     * device's for Device, a fixed UTC offset for Manual.
+     */
     suspend fun resolveCatchupTimeZone(source: tv.own.owntv.core.database.entity.SourceEntity?): java.util.TimeZone =
-        SourceOverrides.catchupTimeZoneOf(source) ?: resolveCatchupTimeZone()
+        SourceOverrides.catchupTimeZoneOf(source) ?: when (catchupTimezone.first()) {
+            CatchupTimezone.AUTOMATIC -> SourceOverrides.panelTimeZoneOf(source) ?: java.util.TimeZone.getDefault()
+            CatchupTimezone.DEVICE -> java.util.TimeZone.getDefault()
+            CatchupTimezone.MANUAL -> java.util.SimpleTimeZone(catchupOffsetMinutes.first() * 60_000, "catchup")
+        }
 
     /** Automatically check GitHub Releases for a newer version shortly after launch. */
     val updateCheckOnStart: Flow<Boolean> = prefsFlow { it[Keys.UPDATE_CHECK_ON_START] ?: true }
@@ -1769,8 +1772,9 @@ class SettingsRepository(private val context: Context, private val localeStore: 
      *  forcing a multichannel-LPCM path exposes flaky vendor audio HALs / lying HDMI-ARC chips that claim
      *  5.1 then mis-play it (drained 2× → "fast video, no sound", #25). So default stereo for stability;
      *  users with a real 5.1/7.1 receiver turn this on. On: mpv decodes Dolby/DTS to multichannel LPCM (the
-     *  sink picks the layout), with a runaway-detector that auto-falls-back to stereo on a broken output. We
-     *  never bitstream/passthrough (its AudioTrack reports no clock and stutters video to a slideshow).
+     *  sink picks the layout), with a runaway-detector that auto-falls-back to stereo on a broken output. mpv
+     *  never bitstreams (its passthrough AudioTrack reports no clock and stutters video to a slideshow);
+     *  ExoPlayer may, under the separate [audioPassthrough] switch.
      *  Second, subtler failure mode (confirmed in the field): even when multichannel LPCM plays correctly,
      *  the wider HDMI/ARC buffer adds latency the TV/soundbar doesn't report back, so audio lags video
      *  (lip-sync drift) on VODs. Stereo's small, well-reported buffer stays locked. Hence: default OFF. */

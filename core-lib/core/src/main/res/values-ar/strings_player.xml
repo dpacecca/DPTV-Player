@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">وحدة فك ترميز الفيديو في هذا التلفزيون مشغولة. حاول مجددًا بعد قليل.</string>
     <string name="player_error_no_internet">لا يوجد اتصال بالإنترنت. تحقّق من شبكتك وحاول مجددًا.</string>
     <string name="player_error_stream_unavailable">تعذّر تشغيل هذا البث. قد يكون المصدر غير متصل أو يستخدم تنسيقًا غير مدعوم. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">هذا الحساب قيد التشغيل بالفعل على جهاز أو تطبيق آخر. أوقفه هناك، ثم اضغط على إعادة المحاولة.</string>
     <string name="player_error_mpv_open_decode">تعذّر على mpv فتح هذا الملف أو فك ترميزه.</string>
     <string name="player_error_mpv_stream_never_started">لم يبدأ البث في mpv بعد عدة محاولات.</string>
     <string name="player_error_surround">لا يدعم مخرج الصوت هذا الصوت المحيطي — تم التبديل إلى صوت ستيريو.</string>

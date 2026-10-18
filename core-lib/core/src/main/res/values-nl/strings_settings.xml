@@ -321,7 +321,7 @@
     <string name="settings_all_surfaces_off">Alle oppervlakken: Uit</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">Hoeveel er door de panelen heen zichtbaar is (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). Hoger is minder transparant.</string>
-    <string name="settings_catchup_description">Hoe tijdstempels voor terugkijken worden verzonden. Gebruik de tijdzone van je apparaat of stel de tijdsafwijking in die de server van je aanbieder verwacht.</string>
+    <string name="settings_catchup_timezone_description">Hoe tijdstempels voor terugkijken worden verzonden. Automatisch gebruikt de tijdzone die de server van je aanbieder doorgeeft, of die van je apparaat als hij er geen doorgeeft. Je kunt ook Apparaat kiezen of de tijdsafwijking zelf instellen.</string>
     <string name="settings_manual">Handmatig</string>
     <string name="settings_theme_dark">Donker</string>
     <string name="settings_theme_light">Licht</string>
@@ -645,6 +645,7 @@
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> van <xliff:g id="total">%2$d</xliff:g> oppervlak</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> van <xliff:g id="total">%2$d</xliff:g> oppervlakken</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">Automatisch</string>
     <string name="settings_catchup_timezone_device">Apparaat</string>
     <string name="settings_catchup_player_ask">Altijd vragen</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1600,7 +1601,7 @@
     <string name="settings_help_playlists">Voeg een afspeellijst toe via een link, een Xtream-login, een Stalker-portaal of een bestand, synchroniseer hem opnieuw of verwijder hem.</string>
     <string name="settings_help_epg_sources">Voeg een XMLTV-gidsbron toe via de link, vernieuw hem of verwijder hem. Bronnen vullen de tv-gids en de programmaregels in Live tv.</string>
     <string name="settings_help_guide_days">Hoeveel dagen aan programma’s de gids vooruit bewaart. Minder dagen maken het vernieuwen sneller en de database kleiner.</string>
-    <string name="settings_help_catchup">Terugkijken speelt programma’s af uit het archief van je aanbieder. De meeste aanbieders volgen de klok van de tv; kies een vaste UTC-verschuiving als terugkijken op het verkeerde moment begint. Hier kies je ook welke speler terugkijken gebruikt.</string>
+    <string name="settings_help_catchup_timezone">Terugkijken speelt programma’s af uit het archief van je aanbieder. Automatisch gebruikt de tijdzone die je aanbieder doorgeeft, of de klok van de tv als hij er geen doorgeeft; kies een vaste UTC-verschuiving als terugkijken nog steeds op het verkeerde moment begint. Hier kies je ook welke speler terugkijken gebruikt.</string>
     <string name="settings_help_theme">DPTV-Player is ontworpen voor donker. Systeem volgt de instelling van de tv, als die er is; licht past bij een lichte kamer.</string>
     <string name="settings_help_accent">Kleurt knoppen, de focusgloed, voortgangsbalken en accenten overal. Kies een voorinstelling of druk op OK voor het palet en elke hexcode.</string>
     <string name="settings_help_focus">De rand rond wat de focus heeft. Kies kleur en dikte zodat je hem vanaf de bank goed kunt volgen.</string>

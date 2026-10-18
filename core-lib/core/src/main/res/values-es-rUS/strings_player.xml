@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">El decodificador de video de este televisor está ocupado. Vuelve a intentarlo en un momento.</string>
     <string name="player_error_no_internet">No hay conexión a Internet. Verifica tu red y vuelve a intentarlo.</string>
     <string name="player_error_stream_unavailable">No se pudo reproducir esta transmisión. Es posible que la fuente esté sin conexión o use un formato no compatible. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Esta cuenta ya se está reproduciendo en otro dispositivo o app. Detenla allí y presiona Reintentar.</string>
     <string name="player_error_mpv_open_decode">mpv no pudo abrir ni decodificar este archivo.</string>
     <string name="player_error_mpv_stream_never_started">La transmisión nunca se inició en mpv después de varios intentos.</string>
     <string name="player_error_surround">Esta salida de audio no admite sonido envolvente; se cambió a estéreo.</string>

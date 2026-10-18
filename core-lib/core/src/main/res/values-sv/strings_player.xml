@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">Tv:ns videoavkodare är upptagen. Försök igen om en stund.</string>
     <string name="player_error_no_internet">Ingen internetanslutning. Kontrollera nätverket och försök igen.</string>
     <string name="player_error_stream_unavailable">Det gick inte att spela upp den här strömmen. Källan kan vara offline eller använda ett format som inte stöds. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Det här kontot spelar redan upp på en annan enhet eller app. Stoppa uppspelningen där och tryck sedan på Försök igen.</string>
     <string name="player_error_mpv_open_decode">mpv kunde inte öppna eller avkoda den här filen.</string>
     <string name="player_error_mpv_stream_never_started">Strömmen startade aldrig i mpv efter flera försök.</string>
     <string name="player_error_surround">Den här ljudutgången kan inte återge surroundljud – bytte till stereo.</string>

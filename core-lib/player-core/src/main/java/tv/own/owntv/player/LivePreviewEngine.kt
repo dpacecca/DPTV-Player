@@ -1572,6 +1572,7 @@ class LivePreviewEngine(
             else -> defaultVolume
         }
         if (!sameChannelReopen) {
+            preMuteVolume = null // a HUD mute's level belongs to the channel it was made on
             applyAudioDelay(baseAudioDelayMs)
             _audioDelayRemembered.value = false
             _videoQualityPick.value = null // a Quality pick belongs to the channel it was made on
@@ -1745,9 +1746,27 @@ class LivePreviewEngine(
         // Kept: which engine is unmuted, and who changed it. Multiview's doubled sound was finally
         // named by exactly this line — an unmuted engine the tile pool had never built.
         if (muted != m) LiveDiagnosticsLog.event("setMuted engine=$engineId muted=$m")
+        val unmuting = muted && !m
         muted = m
-        _volume.value = if (m) 0 else 100
+        if (m) _volume.value = 0
         applyMute()
+        if (unmuting) restoreVolumeAfterMute()
+    }
+
+    /** The level a HUD mute took away, so unmute returns to it (as mpv does) rather than to a flat 100. */
+    private var preMuteVolume: Int? = null
+
+    /**
+     * Unmuted: the HUD's own pre-mute level if there is one, otherwise the level an unmuted tune of this
+     * channel would have started at — Default volume, then the channel's remembered one. That is what a
+     * preview promoted to full screen gets.
+     */
+    private fun restoreVolumeAfterMute() {
+        val back = preMuteVolume
+        preMuteVolume = null
+        _volume.value = 0
+        adjustVolume(back ?: defaultVolume) // also re-aims the LoudnessEnhancer boost
+        if (back == null) applyRememberedPrefs(_currentMeta.value.contentKey ?: lastTunedUrl ?: return, volumeOnly = true)
     }
 
     /** Push [muted] onto the player: volume, plus the audio-track deselect that also silences a
@@ -2608,6 +2627,7 @@ class LivePreviewEngine(
         val v = (_volume.value + delta).coerceIn(0, MAX_VOLUME)
         _volume.value = v
         muted = v == 0
+        if (v > 0) preMuteVolume = null // turned up by hand: that level is the one to come back to now
         applyMute() // re-enables/deselects the audio track when crossing 0 (passthrough-safe mute)
         player?.volume = v.coerceAtMost(100) / 100f
         applyVolumeBoost(v)
@@ -2616,12 +2636,17 @@ class LivePreviewEngine(
     // --- Per-item zoom / volume the user asked us to remember (playback_prefs, DB v32) ---
 
     /** Apply this channel's remembered zoom/volume over the defaults just set by the tune. The read
-     *  can't hold up the tune, so a late answer is dropped if the user has already zapped away. */
-    private fun applyRememberedPrefs(key: String) {
+     *  can't hold up the tune, so a late answer is dropped if the user has already zapped away.
+     *  [volumeOnly] is the unmute of a muted tune, which has had its zoom and delay all along. */
+    private fun applyRememberedPrefs(key: String, volumeOnly: Boolean = false) {
         val tunedUrl = lastTunedUrl
         scope.launch {
             val row = playbackPrefs.prefsFor(key) ?: return@launch
             if (tunedUrl != lastTunedUrl) return@launch
+            if (volumeOnly) {
+                if (!muted) row.volumeBoost?.let { adjustVolume(it - _volume.value) }
+                return@launch
+            }
             row.zoomMode?.let { name ->
                 runCatching { ZoomMode.valueOf(name) }.getOrNull()?.let { _zoomMode.value = it }
             }
@@ -2685,7 +2710,10 @@ class LivePreviewEngine(
 
     private fun releaseLoudness() = boost.release()
 
-    override fun toggleMute() = setMuted(!muted)
+    override fun toggleMute() {
+        if (!muted) preMuteVolume = _volume.value
+        setMuted(!muted)
+    }
     override fun retry() {
         val url = currentUrl ?: return
         // Replay the identity this channel was tuned with — HUD Retry used to re-open with the URL only,
@@ -2975,7 +3003,8 @@ class LivePreviewEngine(
                         // The header that says WHEN to come back is only ever on the response — by the time
                         // the failure reaches [onPlayerError] there is nothing left to read it from.
                         if (response.code == HTTP_TOO_MANY_REQUESTS) {
-                            retryAfterSecs(response.header("Retry-After"))?.let { providerRetryAfterSecs = it }
+                            // Every refusal replaces the pending deadline — an over-long one clears it.
+                            providerRetryAfterSecs = retryAfterSecs(response.header("Retry-After"))
                         }
                     }
                     if (LiveDiagnosticsLog.enabled) {
@@ -3644,12 +3673,13 @@ class LivePreviewEngine(
         internal const val DECODER_EXHAUSTED_REASON = "decoder exhausted: no MediaCodec instance available"
 
         /**
-         * Seconds named by a numeric `Retry-After`, or null when the header is absent, an HTTP-date, or
-         * nonsense. `0` means "ask again now", which is one tick of the countdown here. Pure, so the rule
-         * is unit-testable.
+         * Seconds named by a numeric `Retry-After`, or null when the header is absent, an HTTP-date,
+         * nonsense, or longer than [MAX_RETRY_AFTER_SECS] — that one goes to the error screen instead.
+         * `0` means "ask again now", which is one tick of the countdown here. Pure, so the rule is
+         * unit-testable.
          */
         internal fun retryAfterSecs(header: String?): Int? =
-            header?.trim()?.toIntOrNull()?.takeIf { it >= 0 }?.coerceIn(1, MAX_RETRY_AFTER_SECS)
+            header?.trim()?.toIntOrNull()?.takeIf { it in 0..MAX_RETRY_AFTER_SECS }?.coerceAtLeast(1)
 
         /** How long to wait for a single-session panel to notice the other engine's socket is gone.
          *

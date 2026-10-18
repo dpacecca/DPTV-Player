@@ -325,7 +325,7 @@
     <string name="settings_all_surfaces_off">Все поверхности: выкл.</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">Насколько содержимое просвечивает сквозь панели (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). Чем выше значение, тем менее прозрачны панели.</string>
-    <string name="settings_catchup_description">Как отправляются временные метки архива. Используйте часовой пояс устройства или задайте смещение, ожидаемое сервером поставщика.</string>
+    <string name="settings_catchup_timezone_description">Как отправляются временные метки архива. В автоматическом режиме используется часовой пояс, который сообщает сервер поставщика, а если он его не сообщает, часовой пояс устройства. Можно также выбрать Устройство или задать смещение вручную.</string>
     <string name="settings_manual">Вручную</string>
     <string name="settings_theme_dark">Тёмная</string>
     <string name="settings_theme_light">Светлая</string>
@@ -653,6 +653,7 @@
         <item quantity="many">Включено <xliff:g id="count">%1$d</xliff:g> поверхностей из <xliff:g id="total">%2$d</xliff:g>.</item>
         <item quantity="other">Включено <xliff:g id="count">%1$d</xliff:g> поверхностей из <xliff:g id="total">%2$d</xliff:g>.</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">Автоматически</string>
     <string name="settings_catchup_timezone_device">Устройство</string>
     <string name="settings_catchup_player_ask">Всегда спрашивать</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1658,7 +1659,7 @@
     <string name="settings_help_playlists">Добавьте плейлист по ссылке, входу Xtream, порталу Stalker или из файла, синхронизируйте заново или удалите.</string>
     <string name="settings_help_epg_sources">Добавьте источник телегида XMLTV по ссылке, обновите или удалите его. Источники заполняют телегид и строки передач в прямом эфире.</string>
     <string name="settings_help_guide_days">Сколько дней передач телегид хранит вперёд. Чем меньше дней, тем быстрее обновление и меньше база данных.</string>
-    <string name="settings_help_catchup">Архив воспроизводит передачи из хранилища провайдера. Большинство провайдеров используют часы телевизора; выберите фиксированное смещение UTC, если архив начинается не вовремя. Здесь же выбирается плеер для архива.</string>
+    <string name="settings_help_catchup_timezone">Архив воспроизводит передачи из хранилища провайдера. В автоматическом режиме используется часовой пояс, который сообщает провайдер, а если он его не сообщает, часы телевизора; выберите фиксированное смещение UTC, если архив всё равно начинается не вовремя. Здесь же выбирается плеер для архива.</string>
     <string name="settings_help_theme">DPTV-Player создан для тёмной темы. Системная следует настройке телевизора, если она есть; светлая подходит для яркой комнаты.</string>
     <string name="settings_help_accent">Окрашивает кнопки, свечение выделения, полосы прогресса и акценты везде. Выберите готовый цвет или нажмите OK, чтобы открыть палитру и ввести любой HEX-код.</string>
     <string name="settings_help_focus">Рамка вокруг выделенного элемента. Выберите её цвет и толщину, чтобы она была хорошо видна с дивана.</string>

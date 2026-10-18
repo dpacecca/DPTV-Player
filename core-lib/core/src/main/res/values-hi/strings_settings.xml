@@ -321,7 +321,7 @@
     <string name="settings_all_surfaces_off">सभी सतहें: बंद</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">पैनलों के आर-पार कितना दिखाई देगा (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%)। अधिक मान पर पैनल अधिक ठोस होगा।</string>
-    <string name="settings_catchup_description">कैच-अप टाइमस्टैम्प कैसे भेजे जाते हैं। अपने डिवाइस का समय क्षेत्र उपयोग करें या अपने प्रदाता के सर्वर द्वारा अपेक्षित ऑफ़सेट सेट करें।</string>
+    <string name="settings_catchup_timezone_description">कैच-अप टाइमस्टैम्प कैसे भेजे जाते हैं। अपने-आप विकल्प आपके प्रदाता के सर्वर द्वारा बताए गए समय क्षेत्र का उपयोग करता है, और यदि वह कोई समय क्षेत्र नहीं बताता तो आपके डिवाइस का। आप डिवाइस भी चुन सकते हैं या ऑफ़सेट खुद सेट कर सकते हैं।</string>
     <string name="settings_manual">मैन्युअल</string>
     <string name="settings_theme_dark">गहरी</string>
     <string name="settings_theme_light">हल्की</string>
@@ -645,6 +645,7 @@
         <item quantity="one"><xliff:g id="total">%2$d</xliff:g> में से <xliff:g id="count">%1$d</xliff:g> सतह</item>
         <item quantity="other"><xliff:g id="total">%2$d</xliff:g> में से <xliff:g id="count">%1$d</xliff:g> सतहें</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">अपने-आप</string>
     <string name="settings_catchup_timezone_device">डिवाइस</string>
     <string name="settings_catchup_player_ask">हमेशा पूछें</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1600,7 +1601,7 @@
     <string name="settings_help_playlists">लिंक, Xtream लॉगिन, Stalker पोर्टल या फ़ाइल से प्लेलिस्ट जोड़ें, उसे फिर से सिंक करें या हटाएँ।</string>
     <string name="settings_help_epg_sources">लिंक से XMLTV गाइड फ़ीड जोड़ें, रीफ़्रेश करें या हटाएँ। फ़ीड से टीवी गाइड और लाइव टीवी की कार्यक्रम पंक्तियाँ भरती हैं।</string>
     <string name="settings_help_guide_days">गाइड कितने दिनों के कार्यक्रम आगे तक रखे। कम दिन रखने से गाइड जल्दी रीफ़्रेश होती है और डेटाबेस छोटा रहता है।</string>
-    <string name="settings_help_catchup">कैच-अप आपके प्रोवाइडर के आर्काइव से कार्यक्रम चलाता है। ज़्यादातर प्रोवाइडर टीवी की अपनी घड़ी पर चलते हैं; अगर कैच-अप गलत समय पर शुरू हो, तो एक तय UTC ऑफ़सेट चुनें। कैच-अप कौन-सा प्लेयर इस्तेमाल करे, यह भी यहीं चुनें।</string>
+    <string name="settings_help_catchup_timezone">कैच-अप आपके प्रोवाइडर के आर्काइव से कार्यक्रम चलाता है। अपने-आप विकल्प प्रोवाइडर द्वारा बताए गए समय क्षेत्र का उपयोग करता है, और अगर वह कुछ नहीं बताता तो टीवी की अपनी घड़ी का; अगर कैच-अप फिर भी गलत समय पर शुरू हो, तो एक तय UTC ऑफ़सेट चुनें। कैच-अप कौन-सा प्लेयर इस्तेमाल करे, यह भी यहीं चुनें।</string>
     <string name="settings_help_theme">DPTV-Player डार्क थीम के लिए बना है। सिस्टम टीवी की अपनी सेटिंग मानता है, अगर हो; लाइट रोशन कमरे के लिए ठीक है।</string>
     <string name="settings_help_accent">हर जगह बटन, फ़ोकस की चमक, प्रोग्रेस बार और हाइलाइट रंगता है। कोई प्रीसेट चुनें, या पैलेट और कोई भी हेक्स कोड पाने के लिए OK दबाएँ।</string>
     <string name="settings_help_focus">फ़ोकस वाली चीज़ के चारों ओर का घेरा। उसका रंग और मोटाई चुनें ताकि सोफ़े से आसानी से दिखे।</string>

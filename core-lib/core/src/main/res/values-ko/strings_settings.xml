@@ -319,7 +319,7 @@
     <string name="settings_all_surfaces_off">모든 표면: 꺼짐</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">패널 뒤쪽이 비치는 정도입니다(<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). 값이 높을수록 더 불투명합니다.</string>
-    <string name="settings_catchup_description">다시보기 타임스탬프를 전송하는 방식입니다. 기기의 시간대를 사용하거나 제공업체 서버에서 요구하는 오프셋을 설정하세요.</string>
+    <string name="settings_catchup_timezone_description">다시보기 타임스탬프를 전송하는 방식입니다. 자동은 제공업체 서버가 알려 주는 시간대를 사용하고, 알려 주지 않으면 기기의 시간대를 사용합니다. 기기를 선택하거나 오프셋을 직접 설정할 수도 있습니다.</string>
     <string name="settings_manual">수동</string>
     <string name="settings_theme_dark">어둡게</string>
     <string name="settings_theme_light">밝게</string>
@@ -641,6 +641,7 @@
     <plurals name="settings_surface_count">
         <item quantity="other">전체 <xliff:g id="total">%2$d</xliff:g>개 중 <xliff:g id="count">%1$d</xliff:g>개 표면</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">자동</string>
     <string name="settings_catchup_timezone_device">기기</string>
     <string name="settings_catchup_player_ask">항상 묻기</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1571,7 +1572,7 @@
     <string name="settings_help_playlists">링크, Xtream 로그인, Stalker 포털 또는 파일로 재생목록을 추가하고, 다시 동기화하거나 삭제합니다.</string>
     <string name="settings_help_epg_sources">링크로 XMLTV 가이드 피드를 추가하고 새로 고치거나 삭제합니다. 피드는 TV 가이드와 실시간 TV의 프로그램 줄을 채웁니다.</string>
     <string name="settings_help_guide_days">가이드가 앞으로 며칠분의 프로그램을 보관할지 정합니다. 일수가 적을수록 가이드 새로 고침이 빠르고 데이터베이스가 작아집니다.</string>
-    <string name="settings_help_catchup">다시보기는 제공자의 아카이브에서 프로그램을 재생합니다. 대부분 TV 자체 시계를 따르므로, 다시보기가 잘못된 시간에 시작되면 고정 UTC 오프셋을 선택하세요. 다시보기에 쓸 플레이어도 여기서 고릅니다.</string>
+    <string name="settings_help_catchup_timezone">다시보기는 제공자의 아카이브에서 프로그램을 재생합니다. 자동은 제공자가 알려 주는 시간대를 사용하고, 알려 주지 않으면 TV 자체 시계를 따릅니다. 그래도 다시보기가 잘못된 시간에 시작되면 고정 UTC 오프셋을 선택하세요. 다시보기에 쓸 플레이어도 여기서 고릅니다.</string>
     <string name="settings_help_theme">DPTV-Player는 다크 테마에 맞춰 디자인되었습니다. 시스템은 TV 자체 설정이 있으면 그것을 따르고, 라이트는 밝은 방에 어울립니다.</string>
     <string name="settings_help_accent">버튼, 포커스 빛, 진행 표시줄, 강조 표시에 모두 적용됩니다. 프리셋을 고르거나 OK를 눌러 팔레트와 원하는 16진수 코드를 지정하세요.</string>
     <string name="settings_help_focus">포커스된 항목을 둘러싼 테두리입니다. 소파에서도 잘 보이도록 색상과 두께를 고르세요.</string>

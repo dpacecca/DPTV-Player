@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">Videodekoderen på denne TV-en er opptatt. Prøv igjen om litt.</string>
     <string name="player_error_no_internet">Ingen internettilkobling. Kontroller nettverket og prøv igjen.</string>
     <string name="player_error_stream_unavailable">Kunne ikke spille av denne strømmen. Kilden kan være uten nett eller bruke et format som ikke støttes. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Denne kontoen spiller allerede på en annen enhet eller app. Stopp den der, og trykk deretter på Prøv igjen.</string>
     <string name="player_error_mpv_open_decode">mpv kunne ikke åpne eller dekode denne filen.</string>
     <string name="player_error_mpv_stream_never_started">Strømmen startet aldri i mpv etter flere forsøk.</string>
     <string name="player_error_surround">Denne lydutgangen støtter ikke surroundlyd – byttet til stereo.</string>

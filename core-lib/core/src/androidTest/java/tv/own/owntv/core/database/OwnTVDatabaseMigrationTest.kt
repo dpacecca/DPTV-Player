@@ -741,6 +741,60 @@ class OwnTVDatabaseMigrationTest {
         }
     }
 
+    /**
+     * v49 (playback audit M6/M7): the panel's time zone on the source and the M3U catch-up correction
+     * on the channel. Existing rows come through whole and read "not known" (null / 0) — exactly what
+     * builds the catch-up URLs they built before — until the next sync fills them.
+     */
+    @Test
+    fun migrateVersion48To49_addsServerTimeZoneAndCatchupCorrection_keepingSourcesAndChannels() {
+        context.deleteDatabase(DB_NAME)
+        val db48 = context.openOrCreateDatabase(DB_NAME, Context.MODE_PRIVATE, null)
+        try {
+            executeSchemaQueries(db48, "tv.own.owntv.core.database.OwnTVDatabase/48.json")
+            db48.execSQL(
+                "INSERT INTO sources (id, name, type, url, username, password, syncLive, syncMovies, syncSeries, hlsSupported, " +
+                    "preferHls, livePrerollSecs, liveLatencyCustomSecs, maxConnections, maxConnectionsProbedAt, createdAt, catchupTimezone) " +
+                    "VALUES (10, 'Playlist', '${SourceType.XTREAM.name}', 'https://example.test', 'user', 'pass', 1, 1, 1, 0, " +
+                    "0, -1, -1, 1, 0, 2, 'MANUAL')",
+            )
+            db48.execSQL(
+                "INSERT INTO channels (id, sourceId, name, streamUrl, remoteId, sortOrder, catchup, catchupDays, catchupType, contentHash) " +
+                    "VALUES (30, 10, 'News', 'https://example.test/live.ts', 'ch-30', 0, 1, 7, 'shift', 42)",
+            )
+            db48.version = 48
+        } finally {
+            db48.close()
+        }
+
+        val db = openWithAllMigrations()
+        try {
+            val sqlite = openForAssertions(db)
+            assertColumnExists(sqlite, "sources", "serverTimeZone")
+            assertColumnExists(sqlite, "channels", "catchupCorrectionMin")
+            sqlite.prepare("SELECT name, maxConnections, catchupTimezone, serverTimeZone FROM sources").use {
+                assertTrue(it.step())
+                assertEquals("Playlist", it.getText(0))
+                assertEquals(1L, it.getLong(1))
+                assertEquals("MANUAL", it.getText(2))
+                assertTrue(it.isNull(3))
+            }
+            sqlite.prepare("SELECT name, catchupDays, catchupType, contentHash, catchupCorrectionMin FROM channels").use {
+                assertTrue(it.step())
+                assertEquals("News", it.getText(0))
+                assertEquals(7L, it.getLong(1))
+                assertEquals("shift", it.getText(2))
+                // Unchanged hash: the next resync must not rewrite every channel.
+                assertEquals(42L, it.getLong(3))
+                assertEquals(0L, it.getLong(4))
+            }
+            sqlite.execSQL("UPDATE sources SET serverTimeZone = 'Europe/London' WHERE id = 10")
+            sqlite.execSQL("UPDATE channels SET catchupCorrectionMin = -60 WHERE id = 30")
+        } finally {
+            db.close()
+        }
+    }
+
     private fun normNameOf(db: SQLiteConnection, epgChannelId: String): String? =
         db.prepare("SELECT normName FROM epg_channels WHERE epgChannelId = ?").use {
             it.bindText(1, epgChannelId)

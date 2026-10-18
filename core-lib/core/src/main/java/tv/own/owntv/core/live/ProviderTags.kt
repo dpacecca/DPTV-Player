@@ -43,6 +43,14 @@ object ProviderTags {
     fun sharedCountry(names: List<ProviderName>): String? =
         names.map { it.country }.distinct().singleOrNull()
 
+    /**
+     * A group's label in a category list: the bare name when [headingCountry] already shows its country
+     * above the groups, else the name with its country put back ("UK| Sky Max"). A mixed list (UK|, US|)
+     * has no shared heading, and stripping the prefix there left rows nobody could tell apart.
+     */
+    fun groupLabel(name: ProviderName, headingCountry: String?): String =
+        if (name.country == null || name.country == headingCountry) name.name else "${name.country}| ${name.name}"
+
     // Superscript digits and letters, and the small-capital/modifier letters providers use for them
     // (ᴴᴰ, ʳᴬᵂ, ⁴ᴷ). Each folds to a plain letter or digit under NFKC.
     private fun isSuperscript(c: Char): Boolean =

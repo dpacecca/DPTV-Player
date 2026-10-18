@@ -321,7 +321,7 @@
     <string name="settings_all_surfaces_off">Alle Flächen: Aus</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">Wie viel durch die Paneele hindurchscheint (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). Höhere Werte machen sie deckender.</string>
-    <string name="settings_catchup_description">Wie Catch-up-Zeitstempel gesendet werden. Verwenden Sie die Zeitzone Ihres Geräts oder legen Sie den von Ihrem Anbieterserver erwarteten Versatz fest.</string>
+    <string name="settings_catchup_timezone_description">Wie Catch-up-Zeitstempel gesendet werden. Automatisch verwendet die Zeitzone, die der Server Ihres Anbieters meldet, sonst die Ihres Geräts. Sie können auch Gerät wählen oder den Versatz selbst festlegen.</string>
     <string name="settings_manual">Manuell</string>
     <string name="settings_theme_dark">Dunkel</string>
     <string name="settings_theme_light">Hell</string>
@@ -646,6 +646,7 @@
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> von <xliff:g id="total">%2$d</xliff:g> Oberfläche</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> von <xliff:g id="total">%2$d</xliff:g> Oberflächen</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">Automatisch</string>
     <string name="settings_catchup_timezone_device">Gerät</string>
     <string name="settings_catchup_player_ask">Immer fragen</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1602,7 +1603,7 @@
     <string name="settings_help_playlists">Fügen Sie eine Playlist per Link, Xtream-Login, Stalker-Portal oder Datei hinzu, synchronisieren Sie sie neu oder entfernen Sie sie.</string>
     <string name="settings_help_epg_sources">Fügen Sie einen XMLTV-Guide per Link hinzu, aktualisieren oder entfernen Sie ihn. Die Quellen füllen den TV-Guide und die Sendungszeilen in Live-TV.</string>
     <string name="settings_help_guide_days">Wie viele Tage Sendungen der Guide im Voraus speichert. Weniger Tage machen Aktualisierungen schneller und die Datenbank kleiner.</string>
-    <string name="settings_help_catchup">Catch-up spielt Sendungen aus dem Archiv Ihres Anbieters ab. Die meisten Anbieter richten sich nach der Uhr des Fernsehers; wählen Sie einen festen UTC-Versatz, wenn Catch-up zur falschen Zeit beginnt. Hier wählen Sie auch den Player für Catch-up.</string>
+    <string name="settings_help_catchup_timezone">Catch-up spielt Sendungen aus dem Archiv Ihres Anbieters ab. Automatisch verwendet die Zeitzone, die Ihr Anbieter meldet, sonst die Uhr des Fernsehers; wählen Sie einen festen UTC-Versatz, wenn Catch-up trotzdem zur falschen Zeit beginnt. Hier wählen Sie auch den Player für Catch-up.</string>
     <string name="settings_help_theme">DPTV-Player ist für Dunkel gestaltet. System folgt der Einstellung des Fernsehers, sofern vorhanden; Hell passt zu einem hellen Raum.</string>
     <string name="settings_help_accent">Färbt Schaltflächen, das Fokusleuchten, Fortschrittsbalken und Hervorhebungen überall. Wählen Sie eine Vorgabe oder drücken Sie OK für die Palette und einen beliebigen Hex-Code.</string>
     <string name="settings_help_focus">Der Ring um das, was den Fokus hat. Wählen Sie Farbe und Stärke, damit er vom Sofa aus gut zu verfolgen ist.</string>

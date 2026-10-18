@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">Видеодекодер этого телевизора занят. Повторите попытку через некоторое время.</string>
     <string name="player_error_no_internet">Нет подключения к интернету. Проверьте сеть и повторите попытку.</string>
     <string name="player_error_stream_unavailable">Не удалось воспроизвести этот поток. Возможно, источник не в сети или использует неподдерживаемый формат. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Эта учётная запись уже воспроизводит на другом устройстве или в другом приложении. Остановите воспроизведение там и нажмите «Повторить».</string>
     <string name="player_error_mpv_open_decode">mpv не удалось открыть или декодировать этот файл.</string>
     <string name="player_error_mpv_stream_never_started">После нескольких попыток поток так и не запустился в mpv.</string>
     <string name="player_error_surround">Этот аудиовыход не поддерживает многоканальный звук — выполнено переключение на стерео.</string>

@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">इस टीवी का वीडियो डिकोडर व्यस्त है। कुछ देर बाद फिर से कोशिश करें।</string>
     <string name="player_error_no_internet">इंटरनेट कनेक्शन नहीं है। अपना नेटवर्क जाँचें और फिर से कोशिश करें।</string>
     <string name="player_error_stream_unavailable">यह स्ट्रीम नहीं चलाई जा सकी। स्रोत ऑफ़लाइन हो सकता है या असमर्थित फ़ॉर्मैट का उपयोग कर सकता है। <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">यह खाता पहले से किसी दूसरे डिवाइस या ऐप पर चल रहा है। वहाँ इसे रोकें, फिर दोबारा कोशिश करें दबाएँ।</string>
     <string name="player_error_mpv_open_decode">mpv इस फ़ाइल को खोल या डिकोड नहीं सका।</string>
     <string name="player_error_mpv_stream_never_started">कई बार कोशिश करने के बाद भी स्ट्रीम mpv में शुरू नहीं हुई।</string>
     <string name="player_error_surround">यह ऑडियो आउटपुट सराउंड ध्वनि नहीं चला सकता — स्टीरियो पर स्विच किया गया।</string>

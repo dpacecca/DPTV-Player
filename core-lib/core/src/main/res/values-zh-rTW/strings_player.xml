@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">此電視的視訊解碼器忙碌中。請稍後再試。</string>
     <string name="player_error_no_internet">沒有網際網路連線。請檢查網路後再試一次。</string>
     <string name="player_error_stream_unavailable">無法播放此串流。來源可能離線，或使用不支援的格式。<xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">此帳戶已在其他裝置或應用程式上播放。請在那裡停止播放，然後按「重試」。</string>
     <string name="player_error_mpv_open_decode">mpv 無法開啟或解碼此檔案。</string>
     <string name="player_error_mpv_stream_never_started">多次重試後，串流仍未在 mpv 中開始播放。</string>
     <string name="player_error_surround">此音訊輸出不支援環繞音效 — 已切換至立體聲。</string>

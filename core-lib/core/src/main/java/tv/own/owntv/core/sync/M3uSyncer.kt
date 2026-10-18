@@ -213,6 +213,7 @@ internal class M3uSyncer(
                         catchupDays = entry.catchupDays ?: 0,
                         catchupSource = entry.catchupSource,
                         catchupType = entry.catchup,
+                        catchupCorrectionMin = entry.catchupCorrectionMin,
                         httpHeaders = StreamHeaders.encode(entry.headers),
                         drmConfig = DrmConfig.encode(entry.drm),
                         manifestType = ManifestType.encode(entry.manifestType),

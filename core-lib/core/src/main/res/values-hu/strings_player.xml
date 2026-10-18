@@ -108,6 +108,7 @@
     <string name="player_error_decoder_busy">Ennek a tévének a videódekódere le van terhelve. Próbáld újra egy pillanat múlva.</string>
     <string name="player_error_no_internet">Nincs internetkapcsolat. Ellenőrizd a hálózatot, és próbáld újra.</string>
     <string name="player_error_stream_unavailable">Ezt az adatfolyamot nem sikerült lejátszani. Lehet, hogy a forrás offline, vagy nem támogatott formátumot használ. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Ez a fiók már lejátszik egy másik eszközön vagy alkalmazásban. Állítsa le ott, majd nyomja meg az Újra gombot.</string>
     <string name="player_error_mpv_open_decode">Az mpv nem tudta megnyitni vagy dekódolni ezt a fájlt.</string>
     <string name="player_error_mpv_stream_never_started">Az adatfolyam több próbálkozás után sem indult el az mpv-ben.</string>
     <string name="player_error_surround">Ez a hangkimenet nem támogatja a térhangzást — átváltás sztereóra.</string>

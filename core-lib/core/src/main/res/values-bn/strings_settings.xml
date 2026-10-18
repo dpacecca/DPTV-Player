@@ -321,7 +321,7 @@
     <string name="settings_all_surfaces_off">সব পৃষ্ঠতল: বন্ধ</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">প্যানেলের ভেতর দিয়ে কতটা দেখা যাবে (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%)। বেশি হলে আরও অস্বচ্ছ হবে।</string>
-    <string name="settings_catchup_description">ক্যাচ-আপের টাইমস্ট্যাম্প যেভাবে পাঠানো হবে। ডিভাইসের সময় অঞ্চল ব্যবহার করুন অথবা প্রদানকারীর সার্ভার যে অফসেট প্রত্যাশা করে তা নির্ধারণ করুন।</string>
+    <string name="settings_catchup_timezone_description">ক্যাচ-আপের টাইমস্ট্যাম্প যেভাবে পাঠানো হবে। স্বয়ংক্রিয় বিকল্পটি প্রদানকারীর সার্ভারের জানানো সময় অঞ্চল ব্যবহার করে, কিছু না জানালে আপনার ডিভাইসেরটি। আপনি ডিভাইসও বেছে নিতে পারেন, অথবা নিজে অফসেট নির্ধারণ করতে পারেন।</string>
     <string name="settings_manual">ম্যানুয়াল</string>
     <string name="settings_theme_dark">গাঢ়</string>
     <string name="settings_theme_light">হালকা</string>
@@ -645,6 +645,7 @@
         <item quantity="one"><xliff:g id="total">%2$d</xliff:g>টি পৃষ্ঠের মধ্যে <xliff:g id="count">%1$d</xliff:g>টি</item>
         <item quantity="other"><xliff:g id="total">%2$d</xliff:g>টি পৃষ্ঠের মধ্যে <xliff:g id="count">%1$d</xliff:g>টি</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">স্বয়ংক্রিয়</string>
     <string name="settings_catchup_timezone_device">ডিভাইস</string>
     <string name="settings_catchup_player_ask">সব সময় জিজ্ঞাসা করুন</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1600,7 +1601,7 @@
     <string name="settings_help_playlists">লিংক, Xtream লগইন, Stalker পোর্টাল বা ফাইল থেকে প্লেলিস্ট যোগ করুন, আবার সিঙ্ক করুন বা সরান।</string>
     <string name="settings_help_epg_sources">লিংক দিয়ে XMLTV গাইড ফিড যোগ করুন, রিফ্রেশ করুন বা সরান। ফিড দিয়ে টিভি গাইড ও লাইভ টিভির অনুষ্ঠান-সারি ভরে।</string>
     <string name="settings_help_guide_days">গাইড কত দিনের অনুষ্ঠান আগে থেকে রাখবে। কম দিন হলে গাইড দ্রুত রিফ্রেশ হয় আর ডেটাবেস ছোট থাকে।</string>
-    <string name="settings_help_catchup">ক্যাচ-আপ আপনার প্রোভাইডারের আর্কাইভ থেকে অনুষ্ঠান চালায়। বেশিরভাগ প্রোভাইডার টিভির নিজের ঘড়ি অনুযায়ী চালায়; ক্যাচ-আপ ভুল সময়ে শুরু হলে একটি নির্দিষ্ট UTC অফসেট বেছে নিন। ক্যাচ-আপ কোন প্লেয়ারে চলবে, তাও এখানে বাছবেন।</string>
+    <string name="settings_help_catchup_timezone">ক্যাচ-আপ আপনার প্রোভাইডারের আর্কাইভ থেকে অনুষ্ঠান চালায়। স্বয়ংক্রিয় বিকল্পটি প্রোভাইডারের জানানো সময় অঞ্চল ব্যবহার করে, কিছু না জানালে টিভির নিজের ঘড়ি; তবুও ক্যাচ-আপ ভুল সময়ে শুরু হলে একটি নির্দিষ্ট UTC অফসেট বেছে নিন। ক্যাচ-আপ কোন প্লেয়ারে চলবে, তাও এখানে বাছবেন।</string>
     <string name="settings_help_theme">DPTV-Player ডার্ক থিমের জন্য তৈরি। সিস্টেম টিভির নিজের সেটিং মেনে চলে, যদি থাকে; লাইট উজ্জ্বল ঘরের জন্য ভালো।</string>
     <string name="settings_help_accent">সব জায়গায় বোতাম, ফোকাসের আভা, প্রগ্রেস বার ও হাইলাইট রাঙায়। একটি প্রিসেট বাছুন, অথবা প্যালেট ও যেকোনো হেক্স কোডের জন্য OK চাপুন।</string>
     <string name="settings_help_focus">ফোকাস করা জিনিসের চারপাশের রিং। রং ও পুরুত্ব বেছে নিন, যাতে সোফা থেকে সহজে দেখা যায়।</string>

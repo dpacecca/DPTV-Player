@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">이 TV의 비디오 디코더가 사용 중입니다. 잠시 후 다시 시도하세요.</string>
     <string name="player_error_no_internet">인터넷에 연결되어 있지 않습니다. 네트워크를 확인하고 다시 시도하세요.</string>
     <string name="player_error_stream_unavailable">이 스트림을 재생하지 못했습니다. 소스가 오프라인 상태이거나 지원되지 않는 형식을 사용할 수 있습니다. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">이 계정은 이미 다른 기기나 앱에서 재생 중입니다. 그곳에서 중지한 다음 다시 시도를 누르세요.</string>
     <string name="player_error_mpv_open_decode">mpv가 이 파일을 열거나 디코딩하지 못했습니다.</string>
     <string name="player_error_mpv_stream_never_started">여러 번 다시 시도했지만 mpv에서 스트림이 시작되지 않았습니다.</string>
     <string name="player_error_surround">이 오디오 출력은 서라운드를 지원하지 않아 스테레오로 전환했습니다.</string>

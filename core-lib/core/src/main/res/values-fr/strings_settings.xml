@@ -323,7 +323,7 @@
     <string name="settings_all_surfaces_off">Toutes les surfaces : désactivées</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g> : <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">Degré de visibilité à travers les panneaux (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). Une valeur élevée les rend plus opaques.</string>
-    <string name="settings_catchup_description">Mode d’envoi des horodatages de rattrapage. Utilisez le fuseau horaire de votre appareil ou définissez le décalage attendu par le serveur de votre fournisseur.</string>
+    <string name="settings_catchup_timezone_description">Mode d’envoi des horodatages de rattrapage. Automatique utilise le fuseau horaire indiqué par le serveur de votre fournisseur, ou celui de votre appareil s’il n’en indique aucun. Vous pouvez aussi choisir Appareil ou définir le décalage vous-même.</string>
     <string name="settings_manual">Manuel</string>
     <string name="settings_theme_dark">Sombre</string>
     <string name="settings_theme_light">Clair</string>
@@ -649,6 +649,7 @@
         <item quantity="many"><xliff:g id="count">%1$d</xliff:g> surfaces sur <xliff:g id="total">%2$d</xliff:g></item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> surfaces sur <xliff:g id="total">%2$d</xliff:g></item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">Automatique</string>
     <string name="settings_catchup_timezone_device">Appareil</string>
     <string name="settings_catchup_player_ask">Toujours demander</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1629,7 +1630,7 @@
     <string name="settings_help_playlists">Ajoutez une playlist depuis un lien, un identifiant Xtream, un portail Stalker ou un fichier, resynchronisez-la ou supprimez-la.</string>
     <string name="settings_help_epg_sources">Ajoutez un flux de guide XMLTV par son lien, actualisez-le ou supprimez-le. Les flux remplissent le guide TV et les lignes de programme de TV en direct.</string>
     <string name="settings_help_guide_days">Combien de jours de programmes le guide conserve à l’avance. Moins de jours rendent les mises à jour plus rapides et la base de données plus petite.</string>
-    <string name="settings_help_catchup">Le replay lit les programmes de l’archive de votre fournisseur. La plupart suivent l’horloge du téléviseur ; choisissez un décalage UTC fixe si le replay démarre au mauvais moment. C’est aussi ici que vous choisissez le lecteur du replay.</string>
+    <string name="settings_help_catchup_timezone">Le replay lit les programmes de l’archive de votre fournisseur. Automatique utilise le fuseau horaire indiqué par votre fournisseur, ou l’horloge du téléviseur s’il n’en indique aucun ; choisissez un décalage UTC fixe si le replay démarre encore au mauvais moment. C’est aussi ici que vous choisissez le lecteur du replay.</string>
     <string name="settings_help_theme">DPTV-Player est conçu pour le thème sombre. Système suit le réglage du téléviseur s’il en a un ; Clair convient à une pièce lumineuse.</string>
     <string name="settings_help_accent">Teinte les boutons, le halo du focus, les barres de progression et les surbrillances partout. Choisissez une présélection, ou appuyez sur OK pour la palette et n’importe quel code hexadécimal.</string>
     <string name="settings_help_focus">L’anneau autour de l’élément sélectionné. Choisissez sa couleur et son épaisseur pour bien le suivre depuis le canapé.</string>

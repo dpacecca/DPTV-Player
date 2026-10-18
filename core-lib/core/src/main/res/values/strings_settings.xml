@@ -729,8 +729,8 @@
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <!-- Translators: Description of the glass transparency setting. 'min' and 'max' are percentages. -->
     <string name="settings_transparency_description">How much shows through the panels (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). Higher is more solid.</string>
-    <!-- Translators: Description of the catch-up timestamp setting. -->
-    <string name="settings_catchup_description">How catch-up timestamps are sent. Use your device timezone, or set the offset your provider\'s server expects.</string>
+    <!-- Translators: Description of the catch-up time zone setting. Automatic and Device are its first two choices (settings_catchup_timezone_automatic, settings_catchup_timezone_device). -->
+    <string name="settings_catchup_timezone_description">How catch-up timestamps are sent. Automatic uses the time zone your provider\'s server reports, or your device\'s if it reports none. You can also choose Device, or set the offset yourself.</string>
     <!-- Translators: Option label for manual catch-up timestamp offset. -->
     <string name="settings_manual">Manual</string>
     <!-- Translators: Theme option: dark mode. -->
@@ -1319,6 +1319,8 @@
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> of <xliff:g id="total">%2$d</xliff:g> surface</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> of <xliff:g id="total">%2$d</xliff:g> surfaces</item>
     </plurals>
+    <!-- Translators: Catch-up timezone option, the default: use the time zone the provider's server reports, else the device timezone. -->
+    <string name="settings_catchup_timezone_automatic">Automatic</string>
     <!-- Translators: Catch-up timezone option: use the device timezone. -->
     <string name="settings_catchup_timezone_device">Device</string>
     <!-- Translators: Catch-up player option: always ask which player to use. -->
@@ -2992,7 +2994,7 @@
     <!-- Translators: Explanation shown in the panel beside the Settings rows (P10) while this setting has focus. -->
     <string name="settings_help_guide_days">How many days of programs the guide stores ahead. Fewer days make guide refreshes faster and the database smaller.</string>
     <!-- Translators: Explanation shown in the panel beside the Settings rows (P10) while this setting has focus. -->
-    <string name="settings_help_catchup">Catch-up plays programs from your provider’s archive. Most providers run it on your TV’s own clock; choose a fixed UTC offset if catch-up starts at the wrong time. This is also where you choose which player catch-up uses.</string>
+    <string name="settings_help_catchup_timezone">Catch-up plays programs from your provider’s archive. Automatic uses the time zone your provider reports, or your TV’s own clock if it reports none; choose a fixed UTC offset if catch-up still starts at the wrong time. This is also where you choose which player catch-up uses.</string>
     <!-- Translators: Explanation shown in the panel beside the Settings rows (P10) while this setting has focus. -->
     <string name="settings_help_theme">Dark is what DPTV-Player is designed for. System follows the TV’s own setting where it has one; Light suits a bright room.</string>
     <!-- Translators: Explanation shown in the panel beside the Settings rows (P10) while this setting has focus. -->

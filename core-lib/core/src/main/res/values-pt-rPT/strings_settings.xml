@@ -323,7 +323,7 @@
     <string name="settings_all_surfaces_off">Todas as superfícies: Desativadas</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">O quanto é visível através dos painéis (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). Um valor mais elevado torna-os mais opacos.</string>
-    <string name="settings_catchup_description">Como são enviados os carimbos de data e hora dos programas em diferido. Utilize o fuso horário do dispositivo ou defina a diferença esperada pelo servidor do fornecedor.</string>
+    <string name="settings_catchup_timezone_description">Como são enviados os carimbos de data e hora dos programas em diferido. Automático utiliza o fuso horário indicado pelo servidor do fornecedor ou, se não indicar nenhum, o do dispositivo. Também pode escolher Dispositivo ou definir a diferença manualmente.</string>
     <string name="settings_manual">Manual</string>
     <string name="settings_theme_dark">Escuro</string>
     <string name="settings_theme_light">Claro</string>
@@ -649,6 +649,7 @@
         <item quantity="many"><xliff:g id="count">%1$d</xliff:g> superfícies de um total de <xliff:g id="total">%2$d</xliff:g></item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> superfícies de um total de <xliff:g id="total">%2$d</xliff:g></item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">Automático</string>
     <string name="settings_catchup_timezone_device">Dispositivo</string>
     <string name="settings_catchup_player_ask">Perguntar sempre</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1629,7 +1630,7 @@
     <string name="settings_help_playlists">Adicione uma playlist por ligação, início de sessão Xtream, portal Stalker ou ficheiro, sincronize-a de novo ou remova-a.</string>
     <string name="settings_help_epg_sources">Adicione uma fonte de guia XMLTV pela ligação, atualize-a ou remova-a. As fontes preenchem o Guia TV e as linhas de programa da TV em direto.</string>
     <string name="settings_help_guide_days">Quantos dias de programas o guia guarda à frente. Menos dias tornam a atualização mais rápida e a base de dados mais pequena.</string>
-    <string name="settings_help_catchup">O catch-up reproduz programas do arquivo do seu fornecedor. A maioria segue o relógio da própria TV; escolha um desvio UTC fixo se o catch-up começar à hora errada. Aqui também escolhe o leitor que o catch-up usa.</string>
+    <string name="settings_help_catchup_timezone">O catch-up reproduz programas do arquivo do seu fornecedor. Automático utiliza o fuso horário indicado pelo fornecedor ou, se não indicar nenhum, o relógio da própria TV; escolha um desvio UTC fixo se o catch-up continuar a começar à hora errada. Aqui também escolhe o leitor que o catch-up usa.</string>
     <string name="settings_help_theme">O DPTV-Player foi feito para o tema escuro. Sistema segue a definição da própria TV, quando existe; Claro adequa-se a uma sala iluminada.</string>
     <string name="settings_help_accent">Colore botões, o brilho do foco, as barras de progresso e os destaques em toda a app. Escolha uma predefinição ou prima OK para a paleta e qualquer código hexadecimal.</string>
     <string name="settings_help_focus">O anel à volta do que está em foco. Escolha a cor e a espessura para o seguir bem a partir do sofá.</string>

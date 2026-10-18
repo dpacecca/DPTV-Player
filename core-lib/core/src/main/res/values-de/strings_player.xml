@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">Der Videodecoder dieses Fernsehers ist ausgelastet. Versuche es gleich noch einmal.</string>
     <string name="player_error_no_internet">Keine Internetverbindung. Prüfe dein Netzwerk und versuche es erneut.</string>
     <string name="player_error_stream_unavailable">Dieser Stream konnte nicht wiedergegeben werden. Die Quelle ist möglicherweise Offline oder verwendet ein nicht unterstütztes Format. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">Dieses Konto spielt bereits auf einem anderen Gerät oder in einer anderen App ab. Beende die Wiedergabe dort und drücke dann auf Erneut versuchen.</string>
     <string name="player_error_mpv_open_decode">mpv konnte diese Datei nicht öffnen oder decodieren.</string>
     <string name="player_error_mpv_stream_never_started">Der Stream wurde in mpv auch nach mehreren Versuchen nicht gestartet.</string>
     <string name="player_error_surround">Diese Audioausgabe unterstützt keinen Surround-Sound – zu Stereo gewechselt.</string>

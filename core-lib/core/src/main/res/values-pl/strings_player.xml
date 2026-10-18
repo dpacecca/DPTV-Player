@@ -122,6 +122,7 @@
     <string name="player_error_decoder_busy">Dekoder wideo tego telewizora jest zajęty. Spróbuj ponownie za chwilę.</string>
     <string name="player_error_no_internet">Brak połączenia z internetem. Sprawdź sieć i spróbuj ponownie.</string>
     <string name="player_error_stream_unavailable">Nie udało się odtworzyć tego strumienia. Źródło może być bez połączenia lub używać nieobsługiwanego formatu. <xliff:g id="hint">%1$s</xliff:g></string>
+    <string name="player_error_account_in_use">To konto już odtwarza na innym urządzeniu lub w innej aplikacji. Zatrzymaj odtwarzanie tam, a potem naciśnij Spróbuj ponownie.</string>
     <string name="player_error_mpv_open_decode">mpv nie mógł otworzyć ani zdekodować tego pliku.</string>
     <string name="player_error_mpv_stream_never_started">Po kilku próbach strumień nadal nie uruchomił się w mpv.</string>
     <string name="player_error_surround">To wyjście audio nie obsługuje dźwięku przestrzennego — przełączono na stereo.</string>

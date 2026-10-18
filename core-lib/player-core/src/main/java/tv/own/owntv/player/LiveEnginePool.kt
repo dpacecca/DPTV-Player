@@ -36,6 +36,11 @@ class LiveEnginePool(private val newEngine: () -> LivePreviewEngine) {
     /** How many engines exist right now — tiles that have been asked for, filled or not. */
     val size: Int get() = engines.size
 
+    private val _inUse = MutableStateFlow(false)
+
+    /** True while any tile has an engine — what [PlaybackEngines] watches for memory pressure. */
+    val inUse: StateFlow<Boolean> = _inUse.asStateFlow()
+
     /**
      * The engine for [tile], building it the first time. A new engine starts muted and capped: it is
      * given the sound only by an explicit [giveSoundTo], so a tile can never steal audio by opening.
@@ -46,7 +51,7 @@ class LiveEnginePool(private val newEngine: () -> LivePreviewEngine) {
             it.setMaxVideoHeight(BACKGROUND_TILE_HEIGHT)
             it.setTunnelingAllowed(false)
         }
-    }
+    }.also { _inUse.value = true }
 
     /** The engine for [tile] if it has one, without building one. */
     fun peek(tile: Int): LivePreviewEngine? = engines[tile]
@@ -87,6 +92,7 @@ class LiveEnginePool(private val newEngine: () -> LivePreviewEngine) {
     fun release(tile: Int) {
         engines.remove(tile)?.release()
         if (_audibleTile.value == tile) _audibleTile.value = null
+        _inUse.value = engines.isNotEmpty()
     }
 
     /** Home / screensaver: every tile remembers its channel and frees its stream — the grid used to keep
@@ -104,6 +110,7 @@ class LiveEnginePool(private val newEngine: () -> LivePreviewEngine) {
         engines.values.forEach { it.release() }
         engines.clear()
         _audibleTile.value = null
+        _inUse.value = false
     }
 
     companion object {

@@ -370,7 +370,7 @@
     <string name="settings_all_surfaces_off">Gainazal guztiak: Desaktibatuta</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">Zenbat ikusten den panelen bidez (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). Altuagoa, solidoagoa.</string>
-    <string name="settings_catchup_description">Berrikusteko denbora-zigiluak nola bidaltzen diren. Erabili zure gailuaren ordu-zona, edo ezarri zure hornitzailearen zerbitzariak espero duen desplazamendua.</string>
+    <string name="settings_catchup_timezone_description">Berrikusteko denbora-zigiluak nola bidaltzen diren. Automatikoak zure hornitzailearen zerbitzariak adierazten duen ordu-zona erabiltzen du, edo zure gailuarena, ez badu bat ere adierazten. Gailua ere aukera dezakezu, edo desplazamendua zuk zeuk ezarri.</string>
     <string name="settings_manual">Eskuzkoa</string>
     <string name="settings_theme_dark">Iluna</string>
     <string name="settings_theme_light">Argia</string>
@@ -653,6 +653,7 @@
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> / <xliff:g id="total">%2$d</xliff:g> gainazal</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> / <xliff:g id="total">%2$d</xliff:g> gainazal</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">Automatikoa</string>
     <string name="settings_catchup_timezone_device">Gailua</string>
     <string name="settings_catchup_player_ask">Galdetu beti</string>
     <string name="settings_catchup_player_internal">DPTV-Player erreproduzigailua</string>
@@ -1414,4 +1415,5 @@
     <string name="settings_line_bg_picture_none_mobile">Aukeratu irudi bat telefono honetatik</string>
     <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · telefono honetatik</string>
     <string name="settings_line_glass_switch_mobile">Barrak, panelak, menuak eta leiho gainerakorrak izoztuta daude</string>
+    <string name="settings_help_catchup_timezone">Berrikusteak zure hornitzailearen artxiboko saioak erreproduzitzen ditu. Automatikoak hornitzaileak adierazten duen ordu-zona erabiltzen du, edo telebistaren erlojua, ez badu bat ere adierazten; aukeratu UTC desplazamendu finko bat berrikustea oraindik ordu okerrean hasten bada. Hemen aukeratzen duzu berrikusteak zein erreproduzitzaile erabiltzen duen ere.</string>
 </resources>

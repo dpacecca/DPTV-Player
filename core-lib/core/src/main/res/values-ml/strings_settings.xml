@@ -321,7 +321,7 @@
     <string name="settings_all_surfaces_off">എല്ലാ പ്രതലങ്ങളും: ഓഫ്</string>
     <string name="settings_surface_toggle"><xliff:g id="surface">%1$s</xliff:g>: <xliff:g id="state">%2$s</xliff:g></string>
     <string name="settings_transparency_description">പാനലുകൾക്കിടയിലൂടെ എത്രത്തോളം കാണണമെന്നത് (<xliff:g id="min">%1$d</xliff:g>%%–<xliff:g id="max">%2$d</xliff:g>%%). ഉയർന്ന മൂല്യം കൂടുതൽ അതാര്യമായിരിക്കും.</string>
-    <string name="settings_catchup_description">ക്യാച്ച്-അപ്പ് സമയമുദ്രകൾ അയയ്ക്കുന്ന വിധം. നിങ്ങളുടെ ഉപകരണത്തിന്റെ സമയമേഖല ഉപയോഗിക്കുക, അല്ലെങ്കിൽ സേവനദാതാവിന്റെ സെർവർ പ്രതീക്ഷിക്കുന്ന സമയ വ്യത്യാസം സജ്ജമാക്കുക.</string>
+    <string name="settings_catchup_timezone_description">ക്യാച്ച്-അപ്പ് സമയമുദ്രകൾ അയയ്ക്കുന്ന വിധം. സ്വയം എന്ന ഓപ്ഷൻ സേവനദാതാവിന്റെ സെർവർ അറിയിക്കുന്ന സമയമേഖല ഉപയോഗിക്കുന്നു, അത് അറിയിക്കുന്നില്ലെങ്കിൽ നിങ്ങളുടെ ഉപകരണത്തിന്റേത്. ഉപകരണം തിരഞ്ഞെടുക്കാം, അല്ലെങ്കിൽ സമയ വ്യത്യാസം നിങ്ങൾക്കുതന്നെ സജ്ജമാക്കാം.</string>
     <string name="settings_manual">നേരിട്ട്</string>
     <string name="settings_theme_dark">ഡാർക്ക്</string>
     <string name="settings_theme_light">ലൈറ്റ്</string>
@@ -645,6 +645,7 @@
         <item quantity="one"><xliff:g id="count">%1$d</xliff:g> / <xliff:g id="total">%2$d</xliff:g> പ്രതലം</item>
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> / <xliff:g id="total">%2$d</xliff:g> പ്രതലങ്ങൾ</item>
     </plurals>
+    <string name="settings_catchup_timezone_automatic">സ്വയം</string>
     <string name="settings_catchup_timezone_device">ഉപകരണം</string>
     <string name="settings_catchup_player_ask">എപ്പോഴും ചോദിക്കുക</string>
     <string name="settings_catchup_player_internal">DPTV-Player</string>
@@ -1600,7 +1601,7 @@
     <string name="settings_help_playlists">ലിങ്ക്, Xtream ലോഗിൻ, Stalker പോർട്ടൽ അല്ലെങ്കിൽ ഫയൽ വഴി പ്ലേലിസ്റ്റ് ചേർക്കുക, വീണ്ടും സിങ്ക് ചെയ്യുക, അല്ലെങ്കിൽ നീക്കം ചെയ്യുക.</string>
     <string name="settings_help_epg_sources">ലിങ്ക് വഴി XMLTV ഗൈഡ് ഫീഡ് ചേർക്കുക, പുതുക്കുക, അല്ലെങ്കിൽ നീക്കം ചെയ്യുക. ഫീഡുകൾ ടിവി ഗൈഡും ലൈവ് ടിവിയിലെ പരിപാടി വരികളും നിറയ്ക്കും.</string>
     <string name="settings_help_guide_days">ഗൈഡ് എത്ര ദിവസത്തെ പരിപാടികൾ മുന്നോട്ട് സൂക്ഷിക്കണം. ദിവസങ്ങൾ കുറച്ചാൽ ഗൈഡ് വേഗം പുതുക്കും, ഡാറ്റാബേസ് ചെറുതാകും.</string>
-    <string name="settings_help_catchup">ക്യാച്ച്-അപ്പ് നിങ്ങളുടെ ദാതാവിന്റെ ആർക്കൈവിൽ നിന്ന് പരിപാടികൾ പ്ലേ ചെയ്യുന്നു. മിക്ക ദാതാക്കളും ടിവിയുടെ സ്വന്തം സമയം പിന്തുടരുന്നു; ക്യാച്ച്-അപ്പ് തെറ്റായ സമയത്ത് തുടങ്ങുന്നുവെങ്കിൽ ഒരു സ്ഥിര UTC ഓഫ്സെറ്റ് തിരഞ്ഞെടുക്കുക. ക്യാച്ച്-അപ്പ് ഏത് പ്ലെയർ ഉപയോഗിക്കണമെന്നും ഇവിടെ തിരഞ്ഞെടുക്കാം.</string>
+    <string name="settings_help_catchup_timezone">ക്യാച്ച്-അപ്പ് നിങ്ങളുടെ ദാതാവിന്റെ ആർക്കൈവിൽ നിന്ന് പരിപാടികൾ പ്ലേ ചെയ്യുന്നു. സ്വയം എന്ന ഓപ്ഷൻ ദാതാവ് അറിയിക്കുന്ന സമയമേഖല ഉപയോഗിക്കുന്നു, അറിയിക്കുന്നില്ലെങ്കിൽ ടിവിയുടെ സ്വന്തം സമയം; എന്നിട്ടും ക്യാച്ച്-അപ്പ് തെറ്റായ സമയത്ത് തുടങ്ങുന്നുവെങ്കിൽ ഒരു സ്ഥിര UTC ഓഫ്സെറ്റ് തിരഞ്ഞെടുക്കുക. ക്യാച്ച്-അപ്പ് ഏത് പ്ലെയർ ഉപയോഗിക്കണമെന്നും ഇവിടെ തിരഞ്ഞെടുക്കാം.</string>
     <string name="settings_help_theme">DPTV-Player ഡാർക്കിനായി രൂപകൽപ്പന ചെയ്തതാണ്. സിസ്റ്റം ടിവിയുടെ സ്വന്തം ക്രമീകരണം ഉണ്ടെങ്കിൽ പിന്തുടരും; ലൈറ്റ് വെളിച്ചമുള്ള മുറിക്ക് യോജിക്കും.</string>
     <string name="settings_help_accent">എല്ലായിടത്തും ബട്ടണുകൾ, ഫോക്കസ് തിളക്കം, പുരോഗതി ബാറുകൾ, ഹൈലൈറ്റുകൾ എന്നിവയ്ക്ക് നിറം നൽകുന്നു. ഒരു പ്രീസെറ്റ് തിരഞ്ഞെടുക്കുക, അല്ലെങ്കിൽ പാലറ്റിനും ഏത് ഹെക്സ് കോഡിനും OK അമർത്തുക.</string>
     <string name="settings_help_focus">ഫോക്കസ് ഉള്ളതിന് ചുറ്റും വരയ്ക്കുന്ന വളയം. സോഫയിൽ നിന്ന് എളുപ്പം കാണാൻ നിറവും കനവും തിരഞ്ഞെടുക്കുക.</string>
