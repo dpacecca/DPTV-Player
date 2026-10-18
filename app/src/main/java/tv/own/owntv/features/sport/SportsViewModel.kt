@@ -75,6 +75,11 @@ class SportsViewModel(
         .map { names -> names.mapNotNull { runCatching { SportLanguage.valueOf(it) }.getOrNull() }.toSet() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SportLanguages.default)
 
+    /** Languages never shown among a fixture's channels (v2.2.0). */
+    val hiddenLanguages: StateFlow<Set<SportLanguage>> = prefs.hiddenLanguages
+        .map { names -> names.mapNotNull { runCatching { SportLanguage.valueOf(it) }.getOrNull() }.toSet() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
     /** True once the language prompt was answered (or dismissed); it is shown at most once. */
     val languageAsked: StateFlow<Boolean> = prefs.languageAsked
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
@@ -293,7 +298,7 @@ class SportsViewModel(
         }
         _matches.value = MatchesState.Loading
         viewModelScope.launch {
-            val found = runCatching { matcher.match(fixture, preferredLanguages.value) }.getOrDefault(emptyList())
+            val found = runCatching { matcher.match(fixture, preferredLanguages.value, hidden = hiddenLanguages.value) }.getOrDefault(emptyList())
             matchesCache[fixture.id] = found
             if (_selectedFixture.value?.id == fixture.id) _matches.value = MatchesState.Content(found)
         }
@@ -345,14 +350,38 @@ class SportsViewModel(
     fun setPreferredLanguages(languages: Set<SportLanguage>) {
         viewModelScope.launch {
             prefs.setPreferredLanguages(languages.map { it.name }.toSet())
-            // Matches are language-filtered inside the matcher, so the cache is only valid for the
-            // languages it was built with — drop it and re-resolve the selected fixture.
-            matchesCache.clear()
-            val fixture = _selectedFixture.value ?: return@launch
-            _matches.value = MatchesState.Loading
-            val found = runCatching { matcher.match(fixture, languages) }.getOrDefault(emptyList())
-            matchesCache[fixture.id] = found
-            if (_selectedFixture.value?.id == fixture.id) _matches.value = MatchesState.Content(found)
+            rematch(languages, hiddenLanguages.value)
+        }
+    }
+
+    /** Hide a language from every fixture's channels for good, or show it again (v2.2.0). */
+    fun toggleLanguageHidden(language: SportLanguage) {
+        viewModelScope.launch {
+            val hidden = hiddenLanguages.value.let { if (language in it) it - language else it + language }
+            prefs.setHiddenLanguages(hidden.map { it.name }.toSet())
+            rematch(preferredLanguages.value, hidden)
+        }
+    }
+
+    /**
+     * Matches are language-filtered inside the matcher, so the cache is only valid for the languages it
+     * was built with — drop it and re-resolve the selected fixture.
+     */
+    private suspend fun rematch(languages: Set<SportLanguage>, hidden: Set<SportLanguage>) {
+        matchesCache.clear()
+        val fixture = _selectedFixture.value ?: return
+        _matches.value = MatchesState.Loading
+        val found = runCatching { matcher.match(fixture, languages, hidden = hidden) }.getOrDefault(emptyList())
+        matchesCache[fixture.id] = found
+        if (_selectedFixture.value?.id == fixture.id) _matches.value = MatchesState.Content(found)
+    }
+
+    /** A whole sport on or off (v2.2.0): every league of [group] follows — off when any was on. */
+    fun toggleSport(group: SportGroup) {
+        viewModelScope.launch {
+            val ids = SportsLeagues.filter { it.sportGroup == group }.map { it.id }.toSet()
+            val active = activeLeagues.value
+            prefs.setActiveLeagues(if (ids.any { it in active }) active - ids else active + ids)
         }
     }
 

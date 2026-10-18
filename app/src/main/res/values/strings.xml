@@ -106,4 +106,21 @@
     <string name="sport_dvr_resume">Resume from %1$s</string>
     <string name="sport_dvr_start_over">Start over</string>
     <string name="sport_guide_no_info">No information available</string>
+    <string name="sport_language_italian">Italian</string>
+    <string name="sport_language_dutch">Dutch</string>
+    <string name="sport_language_polish">Polish</string>
+    <string name="sport_language_turkish">Turkish</string>
+    <string name="sport_language_arabic">Arabic</string>
+    <string name="sport_language_greek">Greek</string>
+    <string name="sport_language_albanian">Albanian</string>
+    <string name="sport_language_balkan">Serbian, Croatian, Bosnian</string>
+    <string name="sport_language_russian">Russian</string>
+    <string name="sport_language_romanian">Romanian</string>
+    <string name="sport_language_hide">Always hide these languages</string>
+    <string name="sport_settings_tab_sports">Sports</string>
+    <string name="sport_settings_tab_leagues">Leagues</string>
+    <string name="sport_settings_tab_languages">Languages</string>
+    <string name="sport_settings_sports_subtitle">Turn a whole sport on or off</string>
+    <string name="sport_settings_leagues_count">%1$d of %2$d</string>
+    <string name="sport_settings_search_leagues">Search leagues</string>
 </resources>
