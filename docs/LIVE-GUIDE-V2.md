@@ -158,3 +158,8 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
   schiebt die Zeitachse ebenfalls nur auf halbe Stunden.
 - ▲▼: der Fokus springt sofort, die Zeilen gleiten in 150 ms nach (`animateScrollBy`); die Zeitachse
   gleitet in 180 ms (`shownScrollPx`, `animateIntAsState`).
+
+## v2.1.9
+
+- Kategorien-Panel: `topScrollSpec` (BringIntoViewSpec) legt die fokussierte Kategorie an den oberen Rand
+  und scrollt in 150 ms dorthin, wie die Kanäle im Guide. Die Spalte außerhalb des Guides behält `edgeScrollSpec`.
