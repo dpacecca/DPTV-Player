@@ -4497,7 +4497,7 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	device
 1	technical	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	exo/vod: $reason
 1	log	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	film connection dropped at ${pos}ms — reopening in place ($next/$filmReconnects)
-1	log	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	film_buffer max=${maxBufferMs}ms bytes=$builtTargetBytes bitrateHint=${lastFilmBitrateBps ?: -1}
+1	log	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	film_buffer max=${maxBufferMs}ms bytes=$builtTargetBytes bitrateHint=${lastFilmBitrateBps ?: -1} heapClassMb=$heapClassMb
 3	technical	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	hardware
 1	technical	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	hevc
 1	technical	player-core/src/main/java/tv/own/owntv/player/ExoSubtitleEngine.kt	kind unknown

@@ -99,11 +99,20 @@ internal object SmartBuffer {
     }
 
     /**
-     * ExoPlayer's `targetBufferBytes` for a film: [tierTargetBytes] (today's value) for Auto, otherwise
-     * [filmBytes]. Clamped to Int because that is what Media3 takes.
+     * The most of the app's Java heap ExoPlayer's film buffer may take: a quarter of [heapClassMb]
+     * (`ActivityManager.memoryClass`, or `largeMemoryClass` for an app that declares `largeHeap`).
+     * ExoPlayer, unlike mpv, buffers on the Java heap, so [PlayerBudget.filmCeilingBytes] (sized for the
+     * device's RAM) can be far more than the heap holds. 0 when the heap class is unknown.
      */
-    fun exoTargetBytes(userSecs: Int, budget: PlayerBudget, tierTargetBytes: Int, tierSecs: Int, bitrateBps: Long?): Int =
-        filmBytes(userSecs, tierTargetBytes.toLong(), tierSecs, budget.filmCeilingBytes, bitrateBps)
+    fun exoHeapCapBytes(heapClassMb: Int): Long = heapClassMb.coerceAtLeast(0) * MIB / HEAP_SHARE_DIVISOR
+
+    /**
+     * ExoPlayer's `targetBufferBytes` for a film: [tierTargetBytes] (today's value) for Auto, otherwise
+     * [filmBytes] within the lower of the film ceiling and [exoHeapCapBytes]. Never below the tier's
+     * value (a cap under it means the tier wins). Clamped to Int because that is what Media3 takes.
+     */
+    fun exoTargetBytes(userSecs: Int, budget: PlayerBudget, tierTargetBytes: Int, tierSecs: Int, bitrateBps: Long?, heapClassMb: Int): Int =
+        filmBytes(userSecs, tierTargetBytes.toLong(), tierSecs, minOf(budget.filmCeilingBytes, exoHeapCapBytes(heapClassMb)), bitrateBps)
             .coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 
     /** "48MiB" / "512KiB" / "1GiB" / "1048576" → bytes; null for anything else. */
@@ -126,5 +135,8 @@ internal object SmartBuffer {
     private fun roundUpToMib(bytes: Long): Long = ((bytes.coerceAtLeast(0) + MIB - 1) / MIB) * MIB
 
     private const val DEFAULT_TIER_SECS = 30
+
+    /** ExoPlayer's film buffer gets at most 1/4 of the heap: decoders, artwork and the UI need the rest. */
+    private const val HEAP_SHARE_DIVISOR = 4L
     private val MPV_BYTES = Regex("(\\d+)\\s*([KkMmGg]i[Bb])?")
 }

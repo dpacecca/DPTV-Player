@@ -10,6 +10,9 @@ class SmartBufferTest {
 
     private val mib = 1024L * 1024L
 
+    /** A heap class whose quarter (128 MiB) never binds below the low tier's 96 MiB film ceiling. */
+    private val roomyHeapMb = 512
+
     // The three tiers exactly as PlayerBudget.compute builds them.
     private val low = PlayerBudget("48MiB", "16MiB", "10", "30", lowSpec = true, filmCeilingBytes = PlayerBudget.LOW_FILM_CEILING_BYTES)
     private val mid = PlayerBudget("128MiB", "32MiB", "30", "60", lowSpec = false, filmCeilingBytes = PlayerBudget.MID_FILM_CEILING_BYTES)
@@ -38,8 +41,8 @@ class SmartBufferTest {
 
     @Test
     fun `Auto keeps ExoPlayer's tier target exactly`() {
-        assertEquals((16 * mib).toInt(), SmartBuffer.exoTargetBytes(0, low, (16 * mib).toInt(), 30, null))
-        assertEquals((48 * mib).toInt(), SmartBuffer.exoTargetBytes(0, mid, (48 * mib).toInt(), 60, 40_000_000))
+        assertEquals((16 * mib).toInt(), SmartBuffer.exoTargetBytes(0, low, (16 * mib).toInt(), 30, null, roomyHeapMb))
+        assertEquals((48 * mib).toInt(), SmartBuffer.exoTargetBytes(0, mid, (48 * mib).toInt(), 60, 40_000_000, roomyHeapMb))
     }
 
     // --- Live -------------------------------------------------------------------------------------
@@ -66,9 +69,43 @@ class SmartBufferTest {
     fun `ExoPlayer's 16 MiB low-RAM cap now follows a chosen buffer, up to the ceiling`() {
         val tier = (16 * mib).toInt()
         // 60 s on a 30 s tier: twice the tier's bytes.
-        assertEquals((32 * mib).toInt(), SmartBuffer.exoTargetBytes(60, low, tier, 30, null))
+        assertEquals((32 * mib).toInt(), SmartBuffer.exoTargetBytes(60, low, tier, 30, null, roomyHeapMb))
         // 300 s would be 160 MiB; the low tier's film ceiling holds it at 96.
-        assertEquals((96 * mib).toInt(), SmartBuffer.exoTargetBytes(300, low, tier, 30, null))
+        assertEquals((96 * mib).toInt(), SmartBuffer.exoTargetBytes(300, low, tier, 30, null, roomyHeapMb))
+    }
+
+    @Test
+    fun `ExoPlayer's heap cap is a quarter of the heap class`() {
+        assertEquals(32 * mib, SmartBuffer.exoHeapCapBytes(128))
+        assertEquals(48 * mib, SmartBuffer.exoHeapCapBytes(192))
+        assertEquals(64 * mib, SmartBuffer.exoHeapCapBytes(256))
+        assertEquals(96 * mib, SmartBuffer.exoHeapCapBytes(384))
+        assertEquals(0L, SmartBuffer.exoHeapCapBytes(0))
+    }
+
+    @Test
+    fun `ExoPlayer's film buffer stops at the heap cap, below the film ceiling`() {
+        // Mid tier: 48 MiB today, ceiling 256 MiB. A 192 MiB heap allows 48, so 300 s stays at 48;
+        // a 384 MiB heap allows 96.
+        val tier = (48 * mib).toInt()
+        assertEquals(tier, SmartBuffer.exoTargetBytes(300, mid, tier, 60, null, heapClassMb = 192))
+        assertEquals((96 * mib).toInt(), SmartBuffer.exoTargetBytes(300, mid, tier, 60, null, heapClassMb = 384))
+        // Low tier with a 192 MiB heap: 300 s would be 160 MiB, the ceiling 96, the heap 48.
+        assertEquals((48 * mib).toInt(), SmartBuffer.exoTargetBytes(300, low, (16 * mib).toInt(), 30, null, heapClassMb = 192))
+    }
+
+    @Test
+    fun `a heap cap below the tier's value leaves the tier's value`() {
+        val tier = (72 * mib).toInt()
+        assertEquals(tier, SmartBuffer.exoTargetBytes(300, high, tier, 120, 40_000_000, heapClassMb = 128))
+        // Unknown heap class: no raise at all.
+        assertEquals(tier, SmartBuffer.exoTargetBytes(300, high, tier, 120, null, heapClassMb = 0))
+    }
+
+    @Test
+    fun `the heap cap leaves mpv's native ceilings alone`() {
+        assertEquals("256MiB", mpvFilm(mid, 300))
+        assertEquals("96MiB", mpvFilm(low, 300))
     }
 
     @Test
