@@ -14,8 +14,17 @@ object ProviderTags {
     // "DE|", "DE |", "UK |" — two or three capitals and a bar at the very start.
     private val countryPrefix = Regex("""^([A-Z]{2,3})\s*\|\s*""")
 
+    // "UK: Sky Sports", "IT: DAZN 1" — some providers write a colon. A colon also ends plain labels
+    // ("TV:", "VIP:", "PRIME:"), so it counts only after a real country code, and "TV" (Tuvalu) never.
+    private val colonPrefix = Regex("""^([A-Z]{2}):\s*""")
+    private val colonCountries: Set<String> =
+        java.util.Locale.getISOCountries().toSet() + "UK" - "TV"
+
+    private fun prefixOf(raw: String): MatchResult? =
+        countryPrefix.find(raw) ?: colonPrefix.find(raw)?.takeIf { it.groupValues[1] in colonCountries }
+
     fun parse(raw: String): ProviderName {
-        val prefix = countryPrefix.find(raw)
+        val prefix = prefixOf(raw)
         var rest = if (prefix != null) raw.substring(prefix.range.last + 1) else raw
         val tags = mutableListOf<String>()
         val name = StringBuilder()

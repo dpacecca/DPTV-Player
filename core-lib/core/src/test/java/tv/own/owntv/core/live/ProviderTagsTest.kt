@@ -59,4 +59,16 @@ class ProviderTagsTest {
     fun noSharedCountryWhenOneHasNone() = assertNull(
         ProviderTags.sharedCountry(listOf(ProviderTags.parse("DE| A"), ProviderTags.parse("B"))),
     )
+
+    @Test
+    fun colonPrefixIsACountryOnlyForARealCode() {
+        assertEquals("UK", ProviderTags.parse("UK: PREMIER LEAGUE+ 1").country)
+        assertEquals("PREMIER LEAGUE+ 1", ProviderTags.parse("UK: PREMIER LEAGUE+ 1").name)
+        assertEquals("IT", ProviderTags.parse("IT: DAZN 1").country)
+        // Labels a provider ends with a colon are not countries.
+        assertNull(ProviderTags.parse("TV: DAZN LALIGA 2").country)
+        assertNull(ProviderTags.parse("VIP: KOMBAT SPORT").country)
+        assertNull(ProviderTags.parse("PRIME: 3SAT").country)
+        assertEquals("TV: DAZN LALIGA 2", ProviderTags.parse("TV: DAZN LALIGA 2").name)
+    }
 }
