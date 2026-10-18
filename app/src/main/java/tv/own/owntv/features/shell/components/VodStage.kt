@@ -219,26 +219,36 @@ internal fun VodCinematicBackdrop(url: String?, series: Boolean, modifier: Modif
     }
 }
 
+/** Cinematic's toolbar (search, sort, categories) as laid out: the search field is the tallest. */
+internal val VodToolbarH get() = 60.mpx
+
+/** Two Cinematic poster rows: 294 high, 30 apart. */
+internal val VodPosterRowsH get() = 294.mpx * 2 + 30.mpx
+
 /**
- * The Cinematic hero (P5-01 / P5-10): title art 170 high (the name in 92/800 when there is none or it
- * fails to load), the meta line, a two-line synopsis and six cast photos. Display only — focus never
+ * The Cinematic hero (P5-01 / P5-10): title art 96 high (the name in the live guide's 40/800 when there
+ * is none or it fails to load), the meta line, a two-line synopsis and six cast photos. Display only — focus never
  * leaves the poster row.
  */
 @Composable
 internal fun VodHero(info: VodTitleInfo, modifier: Modifier = Modifier) {
     Column(modifier.clipToBounds()) {
         var logoFailed by remember(info.logoUrl) { mutableStateOf(false) }
-        Box(Modifier.fillMaxWidth().height(170.mpx), contentAlignment = Alignment.BottomStart) {
-            if (!info.logoUrl.isNullOrBlank() && !logoFailed) {
+        if (!info.logoUrl.isNullOrBlank() && !logoFailed) {
+            Box(Modifier.fillMaxWidth().height(96.mpx), contentAlignment = Alignment.BottomStart) {
                 StageTitleArt(
                     url = info.logoUrl,
                     contentDescription = null,
                     onFailed = { logoFailed = true },
                     modifier = Modifier.fillMaxSize(),
                 )
-            } else {
-                VodHeroTitle(info.title)
             }
+        } else {
+            // The live guide's title (DPTV v2.3.1): 40/800, two lines, so the poster rows get the room.
+            Text(
+                HeadlineTitle.of(info.title), style = stageText(40, 800, (-0.5).mpxSp), color = StageColors.Text,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
         }
         VodMeta(
             parts = listOfNotNull(info.year?.toString(), info.genres.takeIf { it.isNotEmpty() }?.joinToString(", "), info.runtimeSecs?.let { vodRuntime(it) }),

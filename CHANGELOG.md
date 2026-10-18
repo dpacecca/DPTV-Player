@@ -64,6 +64,12 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.3.1
+
+### 🐛 Fixes
+- **Movies and TV Shows titles in the live guide's size**
+- **Two rows of posters visible in Movies and TV Shows**
+
 ## v2.3.0
 
 ### ✨ New features
