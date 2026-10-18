@@ -33,6 +33,7 @@
     <string name="common_nav_series">剧集</string>
     <string name="common_nav_downloads">下载内容</string>
     <string name="common_nav_guide">节目指南</string>
+    <string name="common_nav_guide_short">节目单</string>
     <string name="common_nav_library">媒体库</string>
     <string name="common_nav_more">更多</string>
     <string name="common_cast">投屏</string>

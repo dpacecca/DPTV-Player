@@ -415,6 +415,8 @@
     <string name="content_menu_group_show">Zobrazit</string>
     <string name="content_epg_show_empty">Kanály bez průvodce</string>
     <string name="content_epg_show_preview">Náhled videa</string>
+    <string name="content_epg_view_timeline">Časová osa</string>
+    <string name="content_menu_group_view">Zobrazení</string>
     <string name="content_vod_providers">Poskytovatelé</string>
     <string name="content_sort_movies_title">Řadit filmy</string>
     <string name="content_sort_series_title">Řadit seriály</string>

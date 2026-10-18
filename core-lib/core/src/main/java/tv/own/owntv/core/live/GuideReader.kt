@@ -185,14 +185,24 @@ class GuideReader(
         globalShiftMinutes: Int,
         atMs: Long,
         lookAheadMs: Long,
+        /**
+         * Ask the provider's short guide for the channels the stored guide cannot answer — what [row]
+         * does for a grid row. Only for a caller passing the handful of channels on screen (the phone's
+         * On now list): it is one request per unanswered channel, cached as [row]'s are.
+         */
+        providerFallback: Boolean = false,
     ): Map<Long, GuideSlot> {
         val rows = slice(channels, cust, globalShiftMinutes, atMs, atMs + lookAheadMs)
         val result = HashMap<Long, GuideSlot>(rows.size)
         for ((channelId, list) in rows) {
-            val now = list.firstOrNull { atMs in it.startMs until it.stopMs }
-            val next = list.firstOrNull { it.startMs > (now?.startMs ?: atMs) }
-            if (now == null && next == null) continue
-            result[channelId] = GuideSlot(now = now, next = next)
+            guideSlotAt(list, atMs)?.let { result[channelId] = it }
+        }
+        if (providerFallback) {
+            for (channel in channels) {
+                if (channel.id in result) continue
+                val provider = liveEpgReader.providerProgrammes(channel, cust, globalShiftMinutes)
+                guideSlotAt(provider, atMs)?.let { result[channel.id] = it }
+            }
         }
         return result
     }
@@ -207,6 +217,13 @@ class GuideReader(
 internal fun epgKeyOf(channel: ChannelEntity, cust: SectionCustomizations): String? =
     (cust.epgMatchResolver.epgIdFor(channel) ?: channel.epgChannelId)
         ?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+
+/** What is on at [atMs] in one channel's programmes (sorted by start), and what follows; null when neither. */
+internal fun guideSlotAt(list: List<EpgProgrammeEntity>, atMs: Long): GuideSlot? {
+    val now = list.firstOrNull { atMs in it.startMs until it.stopMs }
+    val next = list.firstOrNull { it.startMs > (now?.startMs ?: atMs) }
+    return if (now == null && next == null) null else GuideSlot(now = now, next = next)
+}
 
 /** What is on a channel now, and what follows it — both already on the user's clock. */
 data class GuideSlot(val now: EpgProgrammeEntity?, val next: EpgProgrammeEntity?)

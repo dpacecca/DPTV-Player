@@ -381,6 +381,8 @@
     <string name="content_menu_group_show">दिखाएँ</string>
     <string name="content_epg_show_empty">बिना गाइड वाले चैनल</string>
     <string name="content_epg_show_preview">वीडियो प्रीव्यू</string>
+    <string name="content_epg_view_timeline">टाइमलाइन</string>
+    <string name="content_menu_group_view">व्यू</string>
     <string name="content_vod_providers">प्रदाता</string>
     <string name="content_sort_movies_title">फ़िल्में क्रमबद्ध करें</string>
     <string name="content_sort_series_title">सीरीज़ क्रमबद्ध करें</string>

@@ -35,6 +35,7 @@
     <string name="common_nav_guide">Programmübersicht</string>
     <string name="common_nav_sport">Sport</string>
     <string name="common_nav_dvr">Aufnahmen</string>
+    <string name="common_nav_guide_short">Programm</string>
     <string name="common_nav_library">Bibliothek</string>
     <string name="common_nav_more">Mehr</string>
     <string name="common_cast">Übertragen</string>

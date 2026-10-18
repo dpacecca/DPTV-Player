@@ -33,6 +33,7 @@
     <string name="common_nav_series">Séries</string>
     <string name="common_nav_downloads">Téléchargements</string>
     <string name="common_nav_guide">Guide TV</string>
+    <string name="common_nav_guide_short">Guide TV</string>
     <string name="common_nav_library">Bibliothèque</string>
     <string name="common_nav_more">Plus</string>
     <string name="common_cast">Diffuser</string>

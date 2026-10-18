@@ -33,6 +33,7 @@
     <string name="common_nav_series">Diziler</string>
     <string name="common_nav_downloads">İndirilenler</string>
     <string name="common_nav_guide">TV Rehberi</string>
+    <string name="common_nav_guide_short">Rehber</string>
     <string name="common_nav_library">Kütüphane</string>
     <string name="common_nav_more">Daha fazla</string>
     <string name="common_cast">Yayınla</string>

@@ -33,6 +33,7 @@
     <string name="common_nav_series">Serier</string>
     <string name="common_nav_downloads">Downloads</string>
     <string name="common_nav_guide">Programguide</string>
+    <string name="common_nav_guide_short">Guide</string>
     <string name="common_nav_library">Bibliotek</string>
     <string name="common_nav_more">Mere</string>
     <string name="common_cast">Cast</string>

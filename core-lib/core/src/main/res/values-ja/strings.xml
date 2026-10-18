@@ -33,6 +33,7 @@
     <string name="common_nav_series">シリーズ</string>
     <string name="common_nav_downloads">ダウンロード</string>
     <string name="common_nav_guide">番組表</string>
+    <string name="common_nav_guide_short">番組表</string>
     <string name="common_nav_library">ライブラリ</string>
     <string name="common_nav_more">その他</string>
     <string name="common_cast">キャスト</string>

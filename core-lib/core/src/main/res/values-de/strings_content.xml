@@ -381,6 +381,8 @@
     <string name="content_menu_group_show">Anzeigen</string>
     <string name="content_epg_show_empty">Sender ohne Programm</string>
     <string name="content_epg_show_preview">Videovorschau</string>
+    <string name="content_epg_view_timeline">Zeitleiste</string>
+    <string name="content_menu_group_view">Ansicht</string>
     <string name="content_vod_providers">Anbieter</string>
     <string name="content_sort_movies_title">Filme sortieren</string>
     <string name="content_sort_series_title">Serien sortieren</string>

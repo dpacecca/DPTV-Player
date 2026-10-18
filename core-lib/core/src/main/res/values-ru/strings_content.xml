@@ -415,6 +415,8 @@
     <string name="content_menu_group_show">Показывать</string>
     <string name="content_epg_show_empty">Каналы без телегида</string>
     <string name="content_epg_show_preview">Предпросмотр видео</string>
+    <string name="content_epg_view_timeline">Хронология</string>
+    <string name="content_menu_group_view">Вид</string>
     <string name="content_vod_providers">Провайдеры</string>
     <string name="content_sort_movies_title">Сортировка фильмов</string>
     <string name="content_sort_series_title">Сортировка сериалов</string>

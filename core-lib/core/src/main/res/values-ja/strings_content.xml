@@ -364,6 +364,8 @@
     <string name="content_menu_group_show">表示</string>
     <string name="content_epg_show_empty">番組表のないチャンネル</string>
     <string name="content_epg_show_preview">動画プレビュー</string>
+    <string name="content_epg_view_timeline">タイムライン</string>
+    <string name="content_menu_group_view">表示</string>
     <string name="content_vod_providers">プロバイダー</string>
     <string name="content_sort_movies_title">映画を並べ替え</string>
     <string name="content_sort_series_title">シリーズを並べ替え</string>

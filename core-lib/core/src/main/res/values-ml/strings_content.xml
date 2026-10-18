@@ -381,6 +381,8 @@
     <string name="content_menu_group_show">കാണിക്കുക</string>
     <string name="content_epg_show_empty">ഗൈഡില്ലാത്ത ചാനലുകൾ</string>
     <string name="content_epg_show_preview">വീഡിയോ പ്രിവ്യൂ</string>
+    <string name="content_epg_view_timeline">ടൈംലൈൻ</string>
+    <string name="content_menu_group_view">കാഴ്ച</string>
     <string name="content_vod_providers">ദാതാക്കൾ</string>
     <string name="content_sort_movies_title">സിനിമകൾ ക്രമീകരിക്കുക</string>
     <string name="content_sort_series_title">സീരീസുകൾ ക്രമീകരിക്കുക</string>

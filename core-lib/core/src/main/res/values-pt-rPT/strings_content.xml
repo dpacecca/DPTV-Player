@@ -398,6 +398,8 @@
     <string name="content_menu_group_show">Mostrar</string>
     <string name="content_epg_show_empty">Canais sem guia</string>
     <string name="content_epg_show_preview">Pré-visualização de vídeo</string>
+    <string name="content_epg_view_timeline">Cronologia</string>
+    <string name="content_menu_group_view">Vista</string>
     <string name="content_vod_providers">Fornecedores</string>
     <string name="content_sort_movies_title">Ordenar filmes</string>
     <string name="content_sort_series_title">Ordenar séries</string>

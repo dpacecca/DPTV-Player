@@ -415,6 +415,8 @@
     <string name="content_menu_group_show">Pokaż</string>
     <string name="content_epg_show_empty">Kanały bez przewodnika</string>
     <string name="content_epg_show_preview">Podgląd wideo</string>
+    <string name="content_epg_view_timeline">Oś czasu</string>
+    <string name="content_menu_group_view">Widok</string>
     <string name="content_vod_providers">Dostawcy</string>
     <string name="content_sort_movies_title">Sortuj filmy</string>
     <string name="content_sort_series_title">Sortuj seriale</string>

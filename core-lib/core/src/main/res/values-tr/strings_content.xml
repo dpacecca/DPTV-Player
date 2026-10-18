@@ -381,6 +381,8 @@
     <string name="content_menu_group_show">Göster</string>
     <string name="content_epg_show_empty">Rehberi olmayan kanallar</string>
     <string name="content_epg_show_preview">Video önizleme</string>
+    <string name="content_epg_view_timeline">Zaman çizelgesi</string>
+    <string name="content_menu_group_view">Görünüm</string>
     <string name="content_vod_providers">Sağlayıcılar</string>
     <string name="content_sort_movies_title">Filmleri sırala</string>
     <string name="content_sort_series_title">Dizileri sırala</string>

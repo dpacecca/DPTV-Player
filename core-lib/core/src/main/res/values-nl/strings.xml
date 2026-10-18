@@ -33,6 +33,7 @@
     <string name="common_nav_series">Series</string>
     <string name="common_nav_downloads">Downloads</string>
     <string name="common_nav_guide">Tv-gids</string>
+    <string name="common_nav_guide_short">Tv-gids</string>
     <string name="common_nav_library">Bibliotheek</string>
     <string name="common_nav_more">Meer</string>
     <string name="common_cast">Casten</string>

@@ -33,6 +33,7 @@
     <string name="common_nav_series">Sorozatok</string>
     <string name="common_nav_downloads">Letöltések</string>
     <string name="common_nav_guide">Műsorújság</string>
+    <string name="common_nav_guide_short">Műsor</string>
     <string name="common_nav_library">Könyvtár</string>
     <string name="common_nav_more">Továbbiak</string>
     <string name="common_cast">Átküldés</string>

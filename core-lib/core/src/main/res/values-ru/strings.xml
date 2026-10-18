@@ -33,6 +33,7 @@
     <string name="common_nav_series">Сериалы</string>
     <string name="common_nav_downloads">Загрузки</string>
     <string name="common_nav_guide">Программа передач</string>
+    <string name="common_nav_guide_short">Программа</string>
     <string name="common_nav_library">Библиотека</string>
     <string name="common_nav_more">Ещё</string>
     <string name="common_cast">Транслировать</string>

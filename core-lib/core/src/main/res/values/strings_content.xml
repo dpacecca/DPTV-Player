@@ -719,6 +719,10 @@
     <string name="content_epg_show_empty">Channels without guide</string>
     <!-- Translators: TV Guide order menu: play the focused channel in the small video pane at the top of the Guide (On / Off). When off, the channel logo shows instead. -->
     <string name="content_epg_show_preview">Video preview</string>
+    <!-- Translators: TV Guide on a phone, the View choices Grid / On now / Timeline: one channel's programmes read top to bottom. Short, a segmented button. -->
+    <string name="content_epg_view_timeline">Timeline</string>
+    <!-- Translators: Group heading in the TV Guide order sheet (shown in capitals): Grid / On now / Timeline. -->
+    <string name="content_menu_group_view">View</string>
     <!-- Translators: Heading above the provider categories in the Movies / Series category list. Shown in capitals by the style. -->
     <string name="content_vod_providers">Providers</string>
     <!-- Translators: Title of the Movies sort menu. -->

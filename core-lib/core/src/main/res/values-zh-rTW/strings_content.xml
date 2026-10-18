@@ -364,6 +364,8 @@
     <string name="content_menu_group_show">顯示</string>
     <string name="content_epg_show_empty">無節目表的頻道</string>
     <string name="content_epg_show_preview">影片預覽</string>
+    <string name="content_epg_view_timeline">時間軸</string>
+    <string name="content_menu_group_view">檢視</string>
     <string name="content_vod_providers">供應商</string>
     <string name="content_sort_movies_title">電影排序</string>
     <string name="content_sort_series_title">影集排序</string>
