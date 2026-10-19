@@ -131,6 +131,10 @@
     <string name="sport_detail_separator">" · "</string>
     <string name="sport_broadcasts_count">Übertragungen (%1$d)</string>
     <string name="sport_no_broadcasts">ESPN nennt für dieses Spiel keine Übertragungen</string>
+    <string name="sport_no_broadcasts_sofascore">SofaScore nennt für dieses Spiel keine Übertragungen</string>
+    <string name="sport_table_played">Sp.</string>
+    <string name="sport_table_difference">Diff.</string>
+    <string name="sport_table_points">Pkt.</string>
     <string name="sport_strict_active">Strenger Filter: nur Sender, die beide Seiten nennen</string>
     <string name="sport_home_row_title">Live-Sport</string>
     <string name="sport_settings_tab_channels">Sender</string>
