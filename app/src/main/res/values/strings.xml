@@ -148,17 +148,29 @@
     <string name="sport_playlists_heading">Playlists Sport may use</string>
     <string name="sport_playlists_all">All playlists</string>
     <string name="sport_exit_back_again">Press Back again to exit.</string>
-    <!-- Trakt rows on Home and their settings (v2.4.0) -->
-    <string name="sport_home_row_trakt_movies">Trending movies</string>
-    <string name="sport_home_row_trakt_shows">Trending shows</string>
-    <string name="sport_home_row_trakt_movies_description">Trakt\'s trending movies, or your Trakt list, that your playlists have</string>
-    <string name="sport_home_row_trakt_shows_description">Trakt\'s trending shows, or your Trakt list, that your playlists have</string>
-    <string name="sport_settings_trakt">Trakt</string>
-    <string name="sport_settings_trakt_key">Trakt API key</string>
-    <string name="sport_settings_trakt_key_description">The Client ID of your own Trakt API app. With it, Home shows Trending movies and Trending shows from Trakt, limited to titles your playlists have. Leave it empty to hide both rows.</string>
-    <string name="sport_settings_trakt_movies_list">Trending movies list</string>
-    <string name="sport_settings_trakt_shows_list">Trending shows list</string>
-    <string name="sport_settings_trakt_list_placeholder">Empty: Trakt trending</string>
-    <string name="sport_settings_trakt_movies_list_description">A Trakt list for the Trending movies row: its link (trakt.tv/users/name/lists/list) or name/list. Empty uses Trakt\'s trending movies.</string>
-    <string name="sport_settings_trakt_shows_list_description">A Trakt list for the Trending shows row: its link (trakt.tv/users/name/lists/list) or name/list. Empty uses Trakt\'s trending shows.</string>
+    <!-- Trending movies / Trending shows on Home, from TMDB, and their settings (v2.4.0) -->
+    <string name="sport_home_row_trending_movies">Trending movies</string>
+    <string name="sport_home_row_trending_shows">Trending shows</string>
+    <string name="sport_home_row_trending_movies_description">Popular movies from TMDB that your playlists have</string>
+    <string name="sport_home_row_trending_shows_description">Popular shows from TMDB that your playlists have</string>
+    <string name="sport_settings_trending_home">Trending on Home</string>
+    <string name="sport_settings_trending_source">Source</string>
+    <string name="sport_settings_trending_source_description">Where Trending movies and Trending shows on Home come from. On streaming: the most popular titles on subscription streaming services in your country. Trending this week: what is trending on TMDB worldwide this week. Only titles your playlists have are shown, and only while library details use TMDB.</string>
+    <string name="sport_settings_trending_source_streaming">On streaming</string>
+    <string name="sport_settings_trending_source_weekly">Trending this week</string>
+    <string name="sport_settings_trending_country">Country</string>
+    <string name="sport_settings_trending_country_description">Whose streaming services count for On streaming. Automatic uses this device\'s country, or Australia when it has none.</string>
+    <string name="sport_settings_trending_country_auto">Automatic: %1$s</string>
+    <string name="sport_settings_trending_country_name">%1$s (%2$s)</string>
+    <string name="sport_settings_trending_services">Streaming services</string>
+    <string name="sport_settings_trending_services_description">Limit On streaming to the services you tick. None ticked means all services. Not used for Trending this week.</string>
+    <string name="sport_settings_trending_services_all">All services</string>
+    <plurals name="sport_settings_trending_services_count">
+        <item quantity="one">%1$d service</item>
+        <item quantity="other">%1$d services</item>
+    </plurals>
+    <string name="sport_settings_trending_services_loading">Loading services…</string>
+    <string name="sport_settings_trending_services_none">No services found. TMDB may be off or unreachable.</string>
+    <string name="sport_settings_trending_english">English titles only</string>
+    <string name="sport_settings_trending_english_description">Show only titles originally made in English.</string>
 </resources>

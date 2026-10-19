@@ -14,7 +14,7 @@ import tv.own.owntv.features.recordings.RecordingsViewModel
 import tv.own.owntv.features.epg.EpgViewModel
 import tv.own.owntv.core.content.SearchReader
 import tv.own.owntv.core.home.HomeFeedReader
-import tv.own.owntv.core.home.TraktHomeReader
+import tv.own.owntv.core.home.TrendingHomeReader
 import tv.own.owntv.core.live.GuideReader
 import tv.own.owntv.core.live.LiveEpgReader
 import tv.own.owntv.features.home.HomeViewModel
@@ -67,8 +67,8 @@ val appModule = module {
     singleOf(::GuideReader)
     singleOf(::SearchReader)
     singleOf(::HomeFeedReader)
-    // Home's Trakt rows (v2.4.0): Trakt's titles matched to the playlists, on the same visibility rules.
-    singleOf(::TraktHomeReader)
+    // Home's Trending movies / Trending shows (v2.4.0): TMDB's titles matched to the playlists, on the same visibility rules.
+    singleOf(::TrendingHomeReader)
     // Process-long scope for work that must outlive the screen that started it (a first-run restore).
     single<kotlinx.coroutines.CoroutineScope> {
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
@@ -156,6 +156,7 @@ val appModule = module {
             livePreview = get(),
             enginePool = get(),
             importer = get(),
+            homeTrendingFeed = get(),
         )
     }
     viewModelOf(::LocalSyncViewModel)

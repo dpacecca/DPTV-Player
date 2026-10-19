@@ -573,10 +573,10 @@ fun HomeScreen(
                 modifier = rowModifier,
             )
     
-            // Trakt's rows (v2.4.0): the favourites' poster row, so they look and open the same way.
-            HomeRow.TRAKT_MOVIES -> FavoritePosterRow(
+            // Trending movies / Trending shows (v2.4.0): the favourites' poster row, so they look and open the same way.
+            HomeRow.TRENDING_MOVIES -> FavoritePosterRow(
                 title = row.displayTitle(),
-                items = state.traktMovies,
+                items = state.trendingMovies,
                 key = { it.item.id },
                 name = { it.item.name },
                 poster = { it.posterUrl },
@@ -588,9 +588,9 @@ fun HomeScreen(
                 modifier = rowModifier,
             )
 
-            HomeRow.TRAKT_SHOWS -> FavoritePosterRow(
+            HomeRow.TRENDING_SHOWS -> FavoritePosterRow(
                 title = row.displayTitle(),
-                items = state.traktShows,
+                items = state.trendingShows,
                 key = { it.item.id },
                 name = { it.item.name },
                 poster = { it.posterUrl },
@@ -730,8 +730,8 @@ private fun rowHasData(row: HomeRow, state: HomeUiState): Boolean = when (row) {
     HomeRow.FAVORITE_SERIES -> state.favoriteSeries.isNotEmpty()
     HomeRow.CONTINUE_MOVIES -> state.continueMovies.isNotEmpty()
     HomeRow.CONTINUE_SERIES -> state.continueSeries.isNotEmpty()
-    HomeRow.TRAKT_MOVIES -> state.traktMovies.isNotEmpty()
-    HomeRow.TRAKT_SHOWS -> state.traktShows.isNotEmpty()
+    HomeRow.TRENDING_MOVIES -> state.trendingMovies.isNotEmpty()
+    HomeRow.TRENDING_SHOWS -> state.trendingShows.isNotEmpty()
 }
 
 private fun rowCanRender(row: HomeRow, state: HomeUiState, showHeroFallback: Boolean): Boolean =

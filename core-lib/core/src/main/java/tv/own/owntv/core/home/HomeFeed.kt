@@ -220,7 +220,7 @@ class HomeFeedReader(
             val recentLiveAsync = async {
                 channelDao.recentlyWatchedWithTimestampFiltered(profileId, liveIds.toList(), RECENT_LIVE_ROW_LIMIT).first()
             }
-            // Off Home since v2.4.0 (Trakt's rows replace it): nothing to read for a row nobody sees.
+            // Off Home since v2.4.0 (Trending movies / Trending shows replace it): nothing to read for a row nobody sees.
             val trending = if (HomeRow.TRENDING !in config.visibleOrder) emptyList() else buildTrendingItems(
                 movieSourceIds = movieIds,
                 seriesSourceIds = seriesIds,
@@ -299,7 +299,7 @@ class HomeFeedReader(
     }
 
     /**
-     * Which films and shows Home may show [profileId] (v2.4.0, for the Trakt rows): the active playlists
+     * Which films and shows Home may show [profileId] (v2.4.0, for the Trending movies / shows rows): the active playlists
      * of each section, less hidden items, hidden categories and a kids profile's adult ones — the same
      * rules every other rail here follows.
      */

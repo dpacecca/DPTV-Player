@@ -67,8 +67,8 @@
 ## v2.4.0
 
 ### ✨ New features
-- **📈 Trending movies and Trending shows rows on Home, from Trakt**
-- **🔑 Trakt API key and lists in Content & metadata**
+- **📈 Trending movies and Trending shows rows on Home, from TMDB (streaming in your country)**
+- **⚙️ Trending source, country, streaming services and English only in Content & metadata**
 - **🚪 Back on the menu bar asks to exit; Back again exits**
 
 ### 🐛 Fixes

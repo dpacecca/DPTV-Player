@@ -518,7 +518,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsStage.kt	▲ ▼
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsStage.kt	▶
 3	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsStage.kt	◀ ▶
-35	empty	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	\0
+33	empty	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	FIT
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	Metadata cache wipe after language change failed: ${it.message}
 1	protocol	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	Network is unreachable
@@ -602,6 +602,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	WATCH
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	Wish · 38 min left
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	X
+1	empty	app/src/main/java/tv/own/owntv/features/settings/TrendingHomeSettings.kt	\0
 16	empty	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	$c ›
 1	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	$exo · $mpv

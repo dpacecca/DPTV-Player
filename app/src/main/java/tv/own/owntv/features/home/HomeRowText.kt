@@ -28,8 +28,8 @@ fun HomeRow.displayTitle(): String = stringResource(
         HomeRow.FAVORITE_SERIES -> R.string.home_row_favorite_series
         HomeRow.CONTINUE_MOVIES -> R.string.home_row_continue_movies
         HomeRow.CONTINUE_SERIES -> R.string.home_row_continue_series
-        HomeRow.TRAKT_MOVIES -> R.string.sport_home_row_trakt_movies
-        HomeRow.TRAKT_SHOWS -> R.string.sport_home_row_trakt_shows
+        HomeRow.TRENDING_MOVIES -> R.string.sport_home_row_trending_movies
+        HomeRow.TRENDING_SHOWS -> R.string.sport_home_row_trending_shows
     },
 )
 
@@ -44,8 +44,8 @@ fun HomeRow.settingsDescription(): String = stringResource(
         HomeRow.FAVORITE_SERIES -> R.string.home_row_favorite_series_description
         HomeRow.CONTINUE_MOVIES -> R.string.home_row_continue_movies_description
         HomeRow.CONTINUE_SERIES -> R.string.home_row_continue_series_description
-        HomeRow.TRAKT_MOVIES -> R.string.sport_home_row_trakt_movies_description
-        HomeRow.TRAKT_SHOWS -> R.string.sport_home_row_trakt_shows_description
+        HomeRow.TRENDING_MOVIES -> R.string.sport_home_row_trending_movies_description
+        HomeRow.TRENDING_SHOWS -> R.string.sport_home_row_trending_shows_description
     },
 )
 

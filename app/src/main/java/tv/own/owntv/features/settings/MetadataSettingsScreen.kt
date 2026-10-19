@@ -125,9 +125,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val testState by vm.metadataTest.collectAsStateWithLifecycle()
     val language by vm.metadataLanguage.collectAsStateWithLifecycle()
     val budget by vm.metadataBudgetStatus.collectAsStateWithLifecycle()
-    val storedTraktKey by vm.traktClientId.collectAsStateWithLifecycle()
-    val storedTraktMovies by vm.traktMoviesList.collectAsStateWithLifecycle()
-    val storedTraktShows by vm.traktShowsList.collectAsStateWithLifecycle()
+    // Which Trending on Home picker is open (v2.4.0); drawn after the page like the others.
+    var trendingPicker by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     LaunchedEffect(tier) {
         if (tier == MetadataConfig.Tier.DEFAULT_WORKER) vm.refreshMetadataBudget()
@@ -180,8 +179,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val back = stringResource(R.string.common_back)
     val content = stringResource(R.string.settings_group_content_metadata)
     val modeLabels = tv.own.owntv.core.metadata.MetadataMode.entries.map { stringResource(metadataModeLabelRes(it)) }
-    // The Trakt group's three rows count whatever the TMDB mode (v2.4.0).
-    val rows = (if (mode.enrich) 4 else 1) + 3
+    // The Trending on Home group's rows count whatever the TMDB mode (v2.4.0).
+    val rows = (if (mode.enrich) 4 else 1) + TRENDING_HOME_SETTING_ROWS
     StageFullPage(
         parents = listOf(content),
         title = stringResource(R.string.settings_metadata),
@@ -275,15 +274,9 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             )
         }
 
-        // Trakt (v2.4.0): the client id and the lists behind Home's Trending movies / Trending shows.
-        TraktSettingsGroup(
-            storedKey = storedTraktKey,
-            storedMovies = storedTraktMovies,
-            storedShows = storedTraktShows,
-            onKey = vm::setTraktClientId,
-            onMovies = vm::setTraktMoviesList,
-            onShows = vm::setTraktShowsList,
-        )
+        // Trending on Home (v2.4.0): source, country, streaming services and English only for Home's
+        // Trending movies / Trending shows, from TMDB.
+        TrendingHomeSettingsGroup(vm, onOpen = { trendingPicker = it })
 
         // TMDB attribution — logo + line, required by TMDB's API terms.
         Column(Modifier.padding(start = 22.mpx, top = 28.mpx)) {
@@ -356,6 +349,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         )
     }
 
+    TrendingHomeDialogs(vm, open = trendingPicker, onClose = { trendingPicker = null })
+
     if (showModePicker) {
         PickerDialog(
             title = stringResource(R.string.settings_metadata_source),
@@ -426,66 +421,6 @@ private fun MetadataTestLabel(state: SettingsViewModel.MetadataTestState) {
     if (text != null) {
         Text(text, style = stageText(16, 600), color = color)
     }
-}
-
-/**
- * The Trakt group (v2.4.0). The client id is a password row (dots, ▶ shows it) and its panel names the
- * saved key by [maskSecret], as the TMDB key is shown; each list row takes a list URL or `user/slug`,
- * blank meaning Trakt's own trending. Every field saves when editing ends.
- */
-@Composable
-private fun TraktSettingsGroup(
-    storedKey: String,
-    storedMovies: String,
-    storedShows: String,
-    onKey: (String) -> Unit,
-    onMovies: (String) -> Unit,
-    onShows: (String) -> Unit,
-) {
-    var key by remember(storedKey) { mutableStateOf(storedKey) }
-    var movies by remember(storedMovies) { mutableStateOf(storedMovies) }
-    var shows by remember(storedShows) { mutableStateOf(storedShows) }
-    StageSettingsHeading(stringResource(R.string.sport_settings_trakt), 3)
-    val keyLabel = stringResource(R.string.sport_settings_trakt_key)
-    StageFieldRow(
-        icon = OwnTVIcon.GEAR,
-        label = keyLabel,
-        value = key,
-        onValueChange = { key = it },
-        placeholder = stringResource(R.string.settings_metadata_optional),
-        password = true,
-        help = SettingHelp(
-            keyLabel,
-            stringResource(R.string.sport_settings_trakt_key_description),
-            extra = if (storedKey.isBlank()) null else {
-                { Text(maskSecret(storedKey), style = stageText(17, 500), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 12.mpx)) }
-            },
-        ),
-        onDone = { if (key.trim() != storedKey) onKey(key) },
-    )
-    val listHint = stringResource(R.string.sport_settings_trakt_list_placeholder)
-    val moviesLabel = stringResource(R.string.sport_settings_trakt_movies_list)
-    StageFieldRow(
-        icon = OwnTVIcon.MOVIES,
-        label = moviesLabel,
-        value = movies,
-        onValueChange = { movies = it },
-        placeholder = listHint,
-        keyboardType = androidx.compose.ui.text.input.KeyboardType.Uri,
-        help = SettingHelp(moviesLabel, stringResource(R.string.sport_settings_trakt_movies_list_description)),
-        onDone = { if (movies.trim() != storedMovies) onMovies(movies) },
-    )
-    val showsLabel = stringResource(R.string.sport_settings_trakt_shows_list)
-    StageFieldRow(
-        icon = OwnTVIcon.SERIES,
-        label = showsLabel,
-        value = shows,
-        onValueChange = { shows = it },
-        placeholder = listHint,
-        keyboardType = androidx.compose.ui.text.input.KeyboardType.Uri,
-        help = SettingHelp(showsLabel, stringResource(R.string.sport_settings_trakt_shows_list_description)),
-        onDone = { if (shows.trim() != storedShows) onShows(shows) },
-    )
 }
 
 /** Show only the tail of a secret: enough to tell two keys apart, useless to a shoulder-surfer. */

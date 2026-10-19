@@ -52,6 +52,8 @@ data class TrendingCandidate(
     val popularity: Double,
     /** One-based position in TMDB's media-specific Trending response before local filtering. */
     val trendingRank: Int,
+    /** TMDB `original_language` (ISO 639-1): what Home's "English titles only" keeps (v2.4.0). */
+    val originalLanguage: String? = null,
 )
 
 /**
@@ -208,6 +210,15 @@ interface MetadataProvider {
      * transport/auth/parsing fails. Pages are one-based; merge them with [TrendingFeedPage.merge].
      */
     suspend fun trendingPage(type: MetadataType, page: Int): TrendingFeedPage?
+
+    /**
+     * One page of Home's Trending movies / Trending shows feed (v2.4.0): TMDB discover for what streams
+     * in [query]'s country, or this week's trending. Null on transport/auth/parsing failure.
+     */
+    suspend fun homeTrendingPage(type: MetadataType, query: HomeTrendingQuery, page: Int): TrendingFeedPage?
+
+    /** The streaming services TMDB lists for [type] in [region] (v2.4.0); null on failure. */
+    suspend fun watchProviders(type: MetadataType, region: String): List<WatchProvider>?
 
     /**
      * Search movies by cleaned [title] (+ optional [year]). Best matches first.

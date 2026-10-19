@@ -37,7 +37,7 @@ import tv.own.owntv.ui.theme.stageText
 /**
  * Settings › Layout › Home screen (P10B-01): the Home rows (shown or hidden, in Home's order; the focused
  * row's Hide / Move / Mode in the panel, Hold OK = Move), then Android TV home. Now trending and Keep
- * watching are gone from Home since v2.4.0; Trakt's rows are set up under Content & metadata.
+ * watching are gone from Home since v2.4.0; Trending movies / Trending shows are set up under Content & metadata.
  */
 @Composable
 fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
@@ -69,7 +69,7 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         rowsFocus = rowsFocus,
         handleBack = moving == null,
     ) {
-        // Now trending and Keep watching left Home in v2.4.0 (Trakt's rows replace the first), and their
+        // Now trending and Keep watching left Home in v2.4.0 (Trending movies / Trending shows replace the first), and their
         // settings with them.
         StageSettingsHeading(stringResource(R.string.settings_sections), config.settingsRows.size, first = true)
         val hiddenNote = stringResource(R.string.settings_hidden_sections)
@@ -193,6 +193,6 @@ private val HomeRow.icon: OwnTVIcon get() = when (this) {
     HomeRow.FAVORITE_SERIES -> OwnTVIcon.SERIES
     HomeRow.CONTINUE_MOVIES -> OwnTVIcon.MOVIES
     HomeRow.CONTINUE_SERIES -> OwnTVIcon.SERIES
-    HomeRow.TRAKT_MOVIES -> OwnTVIcon.MOVIES
-    HomeRow.TRAKT_SHOWS -> OwnTVIcon.SERIES
+    HomeRow.TRENDING_MOVIES -> OwnTVIcon.MOVIES
+    HomeRow.TRENDING_SHOWS -> OwnTVIcon.SERIES
 }

@@ -35,7 +35,7 @@ class SettingsBackupCoverageTest {
         // Exported only in their portable forms (backupLastCategoryKeys).
         "last_live_category", "last_movies_category", "last_series_category",
         // Secrets: sealed into the encrypted section, or never written in plain text.
-        "proxy_pass", "tmdb_api_key", "open_subtitles_api_key", "trakt_client_id",
+        "proxy_pass", "tmdb_api_key", "open_subtitles_api_key",
         // The DPTV-Recorder server: its key is a secret, and its address belongs with the key on this device.
         "recorder_server_url", "recorder_api_key",
     )
@@ -70,6 +70,13 @@ class SettingsBackupCoverageTest {
             "multiview_enabled", "multiview_tiles", "multiview_warning_accepted",
             "recording_reserve_connection", "record_what_im_watching", "recording_pre_roll_minutes",
             "recording_post_roll_minutes", "recording_over_mobile_data",
+        ).forEach { assertTrue(it, it in backedUp) }
+    }
+
+    @Test
+    fun `the Trending on Home settings are backed up (v2_4_0)`() {
+        listOf(
+            "home_trending_source", "home_trending_country", "home_trending_providers", "home_trending_english_only",
         ).forEach { assertTrue(it, it in backedUp) }
     }
 

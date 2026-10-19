@@ -578,11 +578,13 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val METADATA_SERVER_URL = stringPreferencesKey("metadata_server_url")
         val OPEN_SUBTITLES_API_KEY = stringPreferencesKey("open_subtitles_api_key")
         val OPEN_SUBTITLES_SERVER_URL = stringPreferencesKey("open_subtitles_server_url")
-        // Trakt (v2.4.0): the user's own client id (a secret, like the TMDB key) and the list behind each
-        // of Home's two trending rows. A blank list = Trakt's own trending.
-        val TRAKT_CLIENT_ID = stringPreferencesKey("trakt_client_id")
-        val TRAKT_MOVIES_LIST = stringPreferencesKey("trakt_movies_list")
-        val TRAKT_SHOWS_LIST = stringPreferencesKey("trakt_shows_list")
+        // Trending on Home (v2.4.0): where Home's Trending movies / Trending shows come from (a
+        // HomeTrendingSource name), the country (blank = device's, else AU), the streaming services
+        // (TMDB provider ids; none = all) and whether only English originals show.
+        val HOME_TRENDING_SOURCE = stringPreferencesKey("home_trending_source")
+        val HOME_TRENDING_COUNTRY = stringPreferencesKey("home_trending_country")
+        val HOME_TRENDING_PROVIDERS = stringSetPreferencesKey("home_trending_providers")
+        val HOME_TRENDING_ENGLISH_ONLY = booleanPreferencesKey("home_trending_english_only")
         // TMDB content language (ISO 639-1, optionally with region — e.g. "el", "pt-BR"). Blank = the
         // TMDB default (en-US), which is what every install used before this setting existed, so leaving
         // it blank keeps existing users' metadata exactly as it was. "auto" = follow the device locale.
@@ -1015,28 +1017,38 @@ class SettingsRepository(private val context: Context, private val localeStore: 
     val openSubtitlesServerUrl: Flow<String> = prefsFlow { it[Keys.OPEN_SUBTITLES_SERVER_URL] ?: "" }
     suspend fun setOpenSubtitlesServerUrl(url: String) { context.dataStore.edit { it[Keys.OPEN_SUBTITLES_SERVER_URL] = url.trim() } }
 
-    // --- Trakt (v2.4.0): Home's trending rows ---
+    // --- Trending on Home (v2.4.0): Home's Trending movies / Trending shows rows, from TMDB ---
 
-    val traktClientId: Flow<String> = prefsFlow { it[Keys.TRAKT_CLIENT_ID] ?: "" }
-    suspend fun setTraktClientId(id: String) { context.dataStore.edit { it[Keys.TRAKT_CLIENT_ID] = id.trim() } }
+    private fun readHomeTrending(p: Preferences) = tv.own.owntv.core.metadata.HomeTrendingConfig(
+        source = tv.own.owntv.core.metadata.HomeTrendingSource.fromName(p[Keys.HOME_TRENDING_SOURCE]),
+        country = p[Keys.HOME_TRENDING_COUNTRY] ?: "",
+        providerIds = p[Keys.HOME_TRENDING_PROVIDERS].orEmpty().mapNotNull { it.toIntOrNull() }.toSet(),
+        englishOnly = p[Keys.HOME_TRENDING_ENGLISH_ONLY] ?: true,
+    )
 
-    val traktMoviesList: Flow<String> = prefsFlow { it[Keys.TRAKT_MOVIES_LIST] ?: "" }
-    suspend fun setTraktMoviesList(list: String) { context.dataStore.edit { it[Keys.TRAKT_MOVIES_LIST] = list.trim() } }
+    val homeTrending: Flow<tv.own.owntv.core.metadata.HomeTrendingConfig> = prefsFlow(::readHomeTrending)
 
-    val traktShowsList: Flow<String> = prefsFlow { it[Keys.TRAKT_SHOWS_LIST] ?: "" }
-    suspend fun setTraktShowsList(list: String) { context.dataStore.edit { it[Keys.TRAKT_SHOWS_LIST] = list.trim() } }
+    /** All Trending on Home settings in one read, for [tv.own.owntv.core.metadata.HomeTrendingFeed]. */
+    suspend fun homeTrendingConfig(): tv.own.owntv.core.metadata.HomeTrendingConfig =
+        readHomeTrending(context.dataStore.data.first())
 
-    /** All three Trakt settings in one read, for [tv.own.owntv.core.metadata.TraktClient]. */
-    suspend fun traktConfig(): tv.own.owntv.core.metadata.TraktConfig = context.dataStore.data.first().let { p ->
-        tv.own.owntv.core.metadata.TraktConfig(
-            clientId = p[Keys.TRAKT_CLIENT_ID] ?: "",
-            moviesList = p[Keys.TRAKT_MOVIES_LIST] ?: "",
-            showsList = p[Keys.TRAKT_SHOWS_LIST] ?: "",
-        )
+    suspend fun setHomeTrendingSource(source: tv.own.owntv.core.metadata.HomeTrendingSource) {
+        context.dataStore.edit { it[Keys.HOME_TRENDING_SOURCE] = source.name }
     }
 
-    /** The user's Trakt client id — a secret; BackupManager exports it encrypted-only (like the TMDB key). */
-    suspend fun currentTraktClientId(): String = context.dataStore.data.first()[Keys.TRAKT_CLIENT_ID] ?: ""
+    /** An ISO country code; blank goes back to the default (the device's country, else AU). */
+    suspend fun setHomeTrendingCountry(code: String) {
+        context.dataStore.edit { it[Keys.HOME_TRENDING_COUNTRY] = code.trim().uppercase(java.util.Locale.ROOT) }
+    }
+
+    /** TMDB provider ids; empty means every service. */
+    suspend fun setHomeTrendingProviders(ids: Set<Int>) {
+        context.dataStore.edit { it[Keys.HOME_TRENDING_PROVIDERS] = ids.map(Int::toString).toSet() }
+    }
+
+    suspend fun setHomeTrendingEnglishOnly(on: Boolean) {
+        context.dataStore.edit { it[Keys.HOME_TRENDING_ENGLISH_ONLY] = on }
+    }
 
     suspend fun currentOpenSubtitlesApiKey(): String = context.dataStore.data.first()[Keys.OPEN_SUBTITLES_API_KEY] ?: ""
     suspend fun currentOpenSubtitlesServerUrl(): String = context.dataStore.data.first()[Keys.OPEN_SUBTITLES_SERVER_URL] ?: ""
@@ -3233,9 +3245,8 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             // secret and is deliberately NOT backed up in plaintext (same policy as the proxy password).
             Keys.METADATA_SERVER_URL, Keys.METADATA_MODE, Keys.METADATA_LANGUAGE,
             Keys.OPEN_SUBTITLES_SERVER_URL,
-            // Trakt rows (v2.4.0): the two list choices travel; the client id (Keys.TRAKT_CLIENT_ID) is a secret
-            // and goes with the TMDB key, encrypted or not at all.
-            Keys.TRAKT_MOVIES_LIST, Keys.TRAKT_SHOWS_LIST,
+            // Trending on Home (v2.4.0): source and country (the services are a string set, English only a bool).
+            Keys.HOME_TRENDING_SOURCE, Keys.HOME_TRENDING_COUNTRY,
             // Download folder. Backed up so a same-device reinstall keeps the chosen folder; on a different
             // device a path that no longer exists is harmless — StorageAccess.resolveRoot falls back to app
             // storage, so a stale restore never breaks downloads.
@@ -3278,6 +3289,8 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             // The STATIC-mode hidden set rides with backup so a reinstall keeps the user's hidden icons.
             Keys.NAV_MENU_HIDDEN,
             Keys.REMOTE_SHORTCUT_BINDINGS,
+            // Trending on Home's streaming services (v2.4.0).
+            Keys.HOME_TRENDING_PROVIDERS,
         )
         val ints = listOf(Keys.GUIDE_DAYS_TO_KEEP, Keys.FOCUS_HIGHLIGHT_WIDTH, Keys.DEFAULT_VOLUME, Keys.SEEK_STEP_SEC, Keys.LIVE_REWIND_STEP_SEC, Keys.UI_ZOOM_PCT, Keys.FONT_SIZE_PCT, Keys.AUDIO_DELAY_MS, Keys.CATCHUP_OFFSET_MIN, Keys.EPG_OFFSET_MIN, Keys.PROXY_PORT, Keys.DNS_PORT, Keys.CH_NAV_UP_SKIP, Keys.CH_NAV_DOWN_SKIP, Keys.MINI_PLAYER_SIZE_PCT, Keys.LIVE_LATENCY_CUSTOM_SECS, Keys.LIVE_PREROLL_SECS, Keys.LIVE_TUNE_TIMEOUT_SECS, Keys.GLASS_SCOPE, Keys.GLASS_ALPHA, Keys.GLASS_BLUR, Keys.GLASS_HIGHLIGHT, Keys.BG_DIM, Keys.BG_BLUR, Keys.SUB_BG_OPACITY,
             Keys.PANEL_W_LIVE_CAT, Keys.PANEL_W_LIVE_LIST, Keys.PANEL_W_LIVE_PREVIEW,
@@ -3322,6 +3335,8 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             Keys.RECORDING_RESERVE_CONNECTION, Keys.RECORD_WHAT_IM_WATCHING, Keys.RECORDING_OVER_MOBILE_DATA,
             Keys.AUDIO_PASSTHROUGH, Keys.NIGHT_MODE, Keys.VOLUME_LEVELLING, Keys.TUNNELED_PLAYBACK,
             Keys.TIMESHIFT_ENABLED,
+            // Trending on Home's "English titles only" (v2.4.0).
+            Keys.HOME_TRENDING_ENGLISH_ONLY,
         )
         val floats = listOf(Keys.SUB_SCALE, Keys.SUB_SCALE_MPV, Keys.SUB_SCALE_EXO)
 
