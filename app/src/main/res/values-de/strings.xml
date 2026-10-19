@@ -147,4 +147,17 @@
     <string name="sport_strict_description">Nur Sender, die beide Teams oder Spieler im Namen oder in einer Sendung des Programmführers nennen</string>
     <string name="sport_playlists_heading">Playlists für Sport</string>
     <string name="sport_playlists_all">Alle Playlists</string>
+    <!-- Trakt rows on Home and their settings (v2.4.0) -->
+    <string name="sport_home_row_trakt_movies">Filme im Trend</string>
+    <string name="sport_home_row_trakt_shows">Serien im Trend</string>
+    <string name="sport_home_row_trakt_movies_description">Die Trend-Filme von Trakt oder deine Trakt-Liste, soweit deine Playlists sie haben</string>
+    <string name="sport_home_row_trakt_shows_description">Die Trend-Serien von Trakt oder deine Trakt-Liste, soweit deine Playlists sie haben</string>
+    <string name="sport_settings_trakt">Trakt</string>
+    <string name="sport_settings_trakt_key">Trakt-API-Schlüssel</string>
+    <string name="sport_settings_trakt_key_description">Die Client-ID deiner eigenen Trakt-API-App. Damit zeigt die Startseite Filme im Trend und Serien im Trend von Trakt, beschränkt auf Titel aus deinen Playlists. Leer lassen, um beide Reihen auszublenden.</string>
+    <string name="sport_settings_trakt_movies_list">Liste für Filme im Trend</string>
+    <string name="sport_settings_trakt_shows_list">Liste für Serien im Trend</string>
+    <string name="sport_settings_trakt_list_placeholder">Leer: Trakt-Trends</string>
+    <string name="sport_settings_trakt_movies_list_description">Eine Trakt-Liste für die Reihe Filme im Trend: ihr Link (trakt.tv/users/name/lists/liste) oder name/liste. Leer nutzt die Trend-Filme von Trakt.</string>
+    <string name="sport_settings_trakt_shows_list_description">Eine Trakt-Liste für die Reihe Serien im Trend: ihr Link (trakt.tv/users/name/lists/liste) oder name/liste. Leer nutzt die Trend-Serien von Trakt.</string>
 </resources>

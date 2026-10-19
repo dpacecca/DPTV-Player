@@ -578,6 +578,11 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         val METADATA_SERVER_URL = stringPreferencesKey("metadata_server_url")
         val OPEN_SUBTITLES_API_KEY = stringPreferencesKey("open_subtitles_api_key")
         val OPEN_SUBTITLES_SERVER_URL = stringPreferencesKey("open_subtitles_server_url")
+        // Trakt (v2.4.0): the user's own client id (a secret, like the TMDB key) and the list behind each
+        // of Home's two trending rows. A blank list = Trakt's own trending.
+        val TRAKT_CLIENT_ID = stringPreferencesKey("trakt_client_id")
+        val TRAKT_MOVIES_LIST = stringPreferencesKey("trakt_movies_list")
+        val TRAKT_SHOWS_LIST = stringPreferencesKey("trakt_shows_list")
         // TMDB content language (ISO 639-1, optionally with region — e.g. "el", "pt-BR"). Blank = the
         // TMDB default (en-US), which is what every install used before this setting existed, so leaving
         // it blank keeps existing users' metadata exactly as it was. "auto" = follow the device locale.
@@ -1009,6 +1014,29 @@ class SettingsRepository(private val context: Context, private val localeStore: 
 
     val openSubtitlesServerUrl: Flow<String> = prefsFlow { it[Keys.OPEN_SUBTITLES_SERVER_URL] ?: "" }
     suspend fun setOpenSubtitlesServerUrl(url: String) { context.dataStore.edit { it[Keys.OPEN_SUBTITLES_SERVER_URL] = url.trim() } }
+
+    // --- Trakt (v2.4.0): Home's trending rows ---
+
+    val traktClientId: Flow<String> = prefsFlow { it[Keys.TRAKT_CLIENT_ID] ?: "" }
+    suspend fun setTraktClientId(id: String) { context.dataStore.edit { it[Keys.TRAKT_CLIENT_ID] = id.trim() } }
+
+    val traktMoviesList: Flow<String> = prefsFlow { it[Keys.TRAKT_MOVIES_LIST] ?: "" }
+    suspend fun setTraktMoviesList(list: String) { context.dataStore.edit { it[Keys.TRAKT_MOVIES_LIST] = list.trim() } }
+
+    val traktShowsList: Flow<String> = prefsFlow { it[Keys.TRAKT_SHOWS_LIST] ?: "" }
+    suspend fun setTraktShowsList(list: String) { context.dataStore.edit { it[Keys.TRAKT_SHOWS_LIST] = list.trim() } }
+
+    /** All three Trakt settings in one read, for [tv.own.owntv.core.metadata.TraktClient]. */
+    suspend fun traktConfig(): tv.own.owntv.core.metadata.TraktConfig = context.dataStore.data.first().let { p ->
+        tv.own.owntv.core.metadata.TraktConfig(
+            clientId = p[Keys.TRAKT_CLIENT_ID] ?: "",
+            moviesList = p[Keys.TRAKT_MOVIES_LIST] ?: "",
+            showsList = p[Keys.TRAKT_SHOWS_LIST] ?: "",
+        )
+    }
+
+    /** The user's Trakt client id — a secret; BackupManager exports it encrypted-only (like the TMDB key). */
+    suspend fun currentTraktClientId(): String = context.dataStore.data.first()[Keys.TRAKT_CLIENT_ID] ?: ""
 
     suspend fun currentOpenSubtitlesApiKey(): String = context.dataStore.data.first()[Keys.OPEN_SUBTITLES_API_KEY] ?: ""
     suspend fun currentOpenSubtitlesServerUrl(): String = context.dataStore.data.first()[Keys.OPEN_SUBTITLES_SERVER_URL] ?: ""
@@ -3205,6 +3233,9 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             // secret and is deliberately NOT backed up in plaintext (same policy as the proxy password).
             Keys.METADATA_SERVER_URL, Keys.METADATA_MODE, Keys.METADATA_LANGUAGE,
             Keys.OPEN_SUBTITLES_SERVER_URL,
+            // Trakt rows (v2.4.0): the two list choices travel; the client id (Keys.TRAKT_CLIENT_ID) is a secret
+            // and goes with the TMDB key, encrypted or not at all.
+            Keys.TRAKT_MOVIES_LIST, Keys.TRAKT_SHOWS_LIST,
             // Download folder. Backed up so a same-device reinstall keeps the chosen folder; on a different
             // device a path that no longer exists is harmless — StorageAccess.resolveRoot falls back to app
             // storage, so a stale restore never breaks downloads.

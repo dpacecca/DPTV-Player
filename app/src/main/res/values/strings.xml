@@ -147,4 +147,17 @@
     <string name="sport_strict_description">Only channels that name both teams or players in their name or in one guide programme</string>
     <string name="sport_playlists_heading">Playlists Sport may use</string>
     <string name="sport_playlists_all">All playlists</string>
+    <!-- Trakt rows on Home and their settings (v2.4.0) -->
+    <string name="sport_home_row_trakt_movies">Trending movies</string>
+    <string name="sport_home_row_trakt_shows">Trending shows</string>
+    <string name="sport_home_row_trakt_movies_description">Trakt\'s trending movies, or your Trakt list, that your playlists have</string>
+    <string name="sport_home_row_trakt_shows_description">Trakt\'s trending shows, or your Trakt list, that your playlists have</string>
+    <string name="sport_settings_trakt">Trakt</string>
+    <string name="sport_settings_trakt_key">Trakt API key</string>
+    <string name="sport_settings_trakt_key_description">The Client ID of your own Trakt API app. With it, Home shows Trending movies and Trending shows from Trakt, limited to titles your playlists have. Leave it empty to hide both rows.</string>
+    <string name="sport_settings_trakt_movies_list">Trending movies list</string>
+    <string name="sport_settings_trakt_shows_list">Trending shows list</string>
+    <string name="sport_settings_trakt_list_placeholder">Empty: Trakt trending</string>
+    <string name="sport_settings_trakt_movies_list_description">A Trakt list for the Trending movies row: its link (trakt.tv/users/name/lists/list) or name/list. Empty uses Trakt\'s trending movies.</string>
+    <string name="sport_settings_trakt_shows_list_description">A Trakt list for the Trending shows row: its link (trakt.tv/users/name/lists/list) or name/list. Empty uses Trakt\'s trending shows.</string>
 </resources>
