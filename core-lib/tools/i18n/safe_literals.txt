@@ -161,7 +161,7 @@
 1	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	sections
 2	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	selections
 3	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	session
-8	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	settings
+9	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	settings
 3	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	sl
 3	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	sort
 2	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	source
@@ -183,6 +183,7 @@
 3	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	tmdbOverrides
 4	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	tmdb_key_enc
 3	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	tombstones
+4	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	trakt_key_enc
 3	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	type
 4	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	u
 2	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	url
@@ -1207,6 +1208,7 @@
 1	sql	core/src/main/java/tv/own/owntv/core/database/dao/MetadataDao.kt	SELECT * FROM metadata_cache WHERE key IN (:keys)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/MetadataDao.kt	SELECT * FROM metadata_match WHERE localKey = :localKey LIMIT 1
 1	sql	core/src/main/java/tv/own/owntv/core/database/dao/MetadataDao.kt	SELECT * FROM metadata_match WHERE localKey IN (:keys)
+1	sql	core/src/main/java/tv/own/owntv/core/database/dao/MetadataDao.kt	SELECT * FROM metadata_match WHERE type = :type AND tmdbId IN (:tmdbIds)
 1	sql	core/src/main/java/tv/own/owntv/core/database/dao/MovieDao.kt	(SELECT rowid FROM movies_fts WHERE movies_fts MATCH :ftsQuery)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/MovieDao.kt	AND (categoryId IS NULL OR categoryId NOT IN (:excludedCategoryIds))
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/dao/MovieDao.kt	AND id IN (SELECT rowid FROM movies_fts WHERE movies_fts MATCH :ftsQuery) ORDER BY name ASC LIMIT :limit
@@ -1980,6 +1982,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/home/HomeFeed.kt	episode:${episode.id}
 1	technical	core/src/main/java/tv/own/owntv/core/home/HomeFeed.kt	live:${channel.id}
 1	technical	core/src/main/java/tv/own/owntv/core/home/HomeFeed.kt	movie:${movie.id}
+1	technical	core/src/main/java/tv/own/owntv/core/home/TraktHomeReader.kt	:kids
 1	empty	core/src/main/java/tv/own/owntv/core/i18n/AppLocale.kt	\0
 1	empty	core/src/main/java/tv/own/owntv/core/i18n/LocaleStore.kt	\0
 1	technical	core/src/main/java/tv/own/owntv/core/i18n/LocaleStore.kt	Failed to persist application locale
@@ -2238,6 +2241,42 @@
 1	json	core/src/main/java/tv/own/owntv/core/metadata/TmdbTrendingParser.kt	total_pages
 1	json	core/src/main/java/tv/own/owntv/core/metadata/TmdbTrendingParser.kt	vote_average
 1	technical	core/src/main/java/tv/own/owntv/core/metadata/TrailerKeys.kt	,
+5	empty	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	\0
+1	url	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	$baseUrl/$path
+1	url	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	$it?limit=$LIST_LIMIT
+1	url	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	${kind.path}/trending?limit=$TRENDING_LIMIT
+1	protocol	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	2
+1	protocol	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	Content-Type
+1	log	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	HTTP ${response.code}
+1	log	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	Trakt ${kind.path} failed: ${e.message}
+1	log	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	Trakt list not understood kind=${kind.path}
+1	log	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	Trakt parse failed kind=${kind.path}
+1	log	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	TraktClient
+1	regex	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	^(?:www\\.|app\\.)?trakt\\.tv(?:/|$)
+1	regex	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	^[A-Za-z0-9._~%-]+$
+1	regex	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	^[a-zA-Z][a-zA-Z0-9+.-]*://
+1	mime	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	application/json
+1	url	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	https://api.trakt.tv
+1	json	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	ids
+1	json	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	imdb
+3	url	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	lists
+1	url	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	lists/$id/items/${kind.path}
+1	protocol	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	movie
+1	protocol	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	movies
+1	json	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	null
+1	url	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	official
+1	protocol	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	show
+1	protocol	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	shows
+1	json	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	slug
+1	json	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	title
+1	json	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	tmdb
+1	json	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	trakt
+1	protocol	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	trakt-api-key
+1	protocol	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	trakt-api-version
+1	protocol	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	tt
+2	url	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	users
+1	url	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	users/$user/lists/$slug/items/${kind.path}
+1	json	core/src/main/java/tv/own/owntv/core/metadata/TraktClient.kt	year
 2	preference-key	core/src/main/java/tv/own/owntv/core/model/HomeRow.kt	favoriteLiveMode
 1	technical	core/src/main/java/tv/own/owntv/core/model/HomeRow.kt	heroIncludeLive
 1	technical	core/src/main/java/tv/own/owntv/core/model/HomeRow.kt	heroIncludeMovies
@@ -2966,7 +3005,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsImportRules.kt	live_rewind_step_sec
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsImportRules.kt	mini_player_position
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsImportRules.kt	seek_step_sec
-40	empty	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	\0
+47	empty	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	\0
 2	log	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	${mode.name}$SEPARATOR$manualDays
 3	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	,
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	ALL
@@ -3219,6 +3258,9 @@
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	timeshift_resume_mode
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	timeshift_window_minutes
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	tmdb_api_key
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	trakt_client_id
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	trakt_movies_list
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	trakt_shows_list
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	tunneled_playback
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	tunneling_failed
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	ui_language

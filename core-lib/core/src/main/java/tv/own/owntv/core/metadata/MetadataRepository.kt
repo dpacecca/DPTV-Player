@@ -674,8 +674,8 @@ class MetadataRepository(
 
     companion object {
         private const val TAG = "MetadataRepository"
-        private const val TYPE_MOVIE = "movie"
-        private const val TYPE_TV = "tv"
+        internal const val TYPE_MOVIE = "movie"
+        internal const val TYPE_TV = "tv"
         private const val TYPE_EPISODE = "episode"
 
         /** Not real metadata — a "this season has been fetched" flag, so a season TMDB does not have

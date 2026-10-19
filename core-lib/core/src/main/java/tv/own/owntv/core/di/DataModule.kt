@@ -125,6 +125,11 @@ val dataModule = module {
     single<tv.own.owntv.core.metadata.MetadataProvider> {
         tv.own.owntv.core.metadata.TmdbProvider(get(), get(), get(), get())
     }
+    // Trakt (v2.4.0): Home's trending rows, on the shared OkHttpClient, with the user's own client id.
+    single {
+        val settings = get<tv.own.owntv.core.settings.SettingsRepository>()
+        tv.own.owntv.core.metadata.TraktClient(get(), config = { settings.traktConfig() })
+    }
     // provider, metadataDao, settings, overrideStore — the on-demand resolve + cache orchestrator (plan §7, §11.2 U5b).
     single { tv.own.owntv.core.metadata.MetadataRepository(get(), get(), get(), get(), get()) }
     single { tv.own.owntv.core.metadata.OriginalLanguageLookup(get(), get(), get()) }

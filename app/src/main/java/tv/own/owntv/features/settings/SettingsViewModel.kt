@@ -1641,6 +1641,19 @@ class SettingsViewModel(
         settings.metadataServerUrl.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setMetadataServerUrl(url: String) { viewModelScope.launch { settings.setMetadataServerUrl(url) } }
 
+    // Trakt (v2.4.0): the client id and the list behind each of Home's two trending rows.
+    val traktClientId: StateFlow<String> =
+        settings.traktClientId.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    fun setTraktClientId(id: String) { viewModelScope.launch { settings.setTraktClientId(id) } }
+
+    val traktMoviesList: StateFlow<String> =
+        settings.traktMoviesList.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    fun setTraktMoviesList(list: String) { viewModelScope.launch { settings.setTraktMoviesList(list) } }
+
+    val traktShowsList: StateFlow<String> =
+        settings.traktShowsList.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+    fun setTraktShowsList(list: String) { viewModelScope.launch { settings.setTraktShowsList(list) } }
+
     val openSubtitlesApiKey: StateFlow<String> = settings.openSubtitlesApiKey
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setOpenSubtitlesApiKey(key: String) { viewModelScope.launch { settings.setOpenSubtitlesApiKey(key) } }

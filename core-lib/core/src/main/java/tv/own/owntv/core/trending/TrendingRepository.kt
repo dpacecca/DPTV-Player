@@ -68,7 +68,7 @@ class TrendingRepository(
         if (!config.enabled) return TrendingRefreshOutcome.SkippedProviderMode
         val source = sourceDao.getById(sourceId) ?: return TrendingRefreshOutcome.SourceMissing
         val trendingVisible = sourceDao.profileIdsForSource(sourceId).any { profileId ->
-            HomeRow.TRENDING !in settings.homeConfig(profileId).first().hidden
+            HomeRow.TRENDING in settings.homeConfig(profileId).first().visibleOrder
         }
         if (!trendingVisible) return TrendingRefreshOutcome.SkippedHidden
         val enabled = SyncContentTypes.enabledFor(source)

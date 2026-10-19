@@ -38,6 +38,9 @@ import tv.own.owntv.core.database.entity.MetadataCacheEntity
 import tv.own.owntv.core.home.GuideSliceState
 import tv.own.owntv.core.home.HeroItem
 import tv.own.owntv.core.home.HomeFeedReader
+import tv.own.owntv.core.home.TraktHomeReader
+import tv.own.owntv.core.home.TraktHomeRows
+import tv.own.owntv.core.home.TraktPick
 import tv.own.owntv.core.home.TrendingHomeItem
 import tv.own.owntv.core.home.homeKey
 import tv.own.owntv.core.launcher.LauncherContinuationItem
@@ -91,6 +94,9 @@ data class HomeUiState(
     val favoriteLive: List<ChannelEntity> = emptyList(),
     val favoriteMovies: List<MovieEntity> = emptyList(),
     val favoriteSeries: List<SeriesEntity> = emptyList(),
+    /** Trakt's trending films and shows found in the playlists (v2.4.0); empty hides the row. */
+    val traktMovies: List<TraktPick<MovieEntity>> = emptyList(),
+    val traktShows: List<TraktPick<SeriesEntity>> = emptyList(),
     val config: HomeConfig = HomeConfig(),
     val recentGuide: GuideSliceState = GuideSliceState(),
     val favoriteGuide: GuideSliceState = GuideSliceState(),
@@ -139,6 +145,7 @@ class HomeViewModel(
     private val trendingDao: TrendingDao,
     private val favoriteDao: tv.own.owntv.core.database.dao.FavoriteDao,
     private val userDataWriter: tv.own.owntv.core.backup.UserDataWriter,
+    private val trakt: TraktHomeReader,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -403,15 +410,45 @@ class HomeViewModel(
             favoriteLive = data.favoriteLive,
             favoriteMovies = data.favoriteMovies,
             favoriteSeries = data.favoriteSeries,
+            // Kept across the rebuild: the Trakt pass below runs after, and blanking the rows meanwhile
+            // would make them blink out on every refresh.
+            traktMovies = previous.traktMovies,
+            traktShows = previous.traktShows,
             config = data.config,
             recentGuide = data.recentGuide,
             favoriteGuide = data.favoriteGuide,
             isLoading = false,
         )
         tv.own.owntv.core.util.Perf.stamp("home-data")
+        loadTrakt(profileId)
         _uiState.value.trendingItems.getOrNull(_uiState.value.activeTrendingIndex)?.let(::resolveTrendingExtras)
         // Keep watching shows every card as a still, so each needs its artwork up front, not on focus.
         _uiState.value.heroItems.indices.forEach { resolveHeroMetadata(it) }
+    }
+
+    private var traktJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * The Trakt rows (v2.4.0), after the rest of Home has painted: Trakt is a network call (cached for
+     * 30 minutes in core), so it never holds the other rails back. Cache-only posters first, then TMDB's
+     * where the user's own TMDB key can fetch them. Any failure leaves the rows empty, which hides them.
+     */
+    private fun loadTrakt(profileId: Long) {
+        traktJob?.cancel()
+        traktJob = viewModelScope.launch {
+            val rows = runCatching { trakt.load(profileId) }.getOrElse { e ->
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                TraktHomeRows()
+            }
+            publishTrakt(rows)
+            if (rows.movies.isEmpty() && rows.shows.isEmpty()) return@launch
+            val withPosters = runCatching { trakt.withTmdbPosters(rows) }.getOrNull() ?: return@launch
+            if (withPosters != rows) publishTrakt(withPosters)
+        }
+    }
+
+    private fun publishTrakt(rows: TraktHomeRows) {
+        _uiState.value = _uiState.value.copy(traktMovies = rows.movies, traktShows = rows.shows)
     }
 
     private fun resolveHeroMetadata(index: Int) {
