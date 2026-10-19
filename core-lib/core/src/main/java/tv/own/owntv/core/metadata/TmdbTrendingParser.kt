@@ -2,7 +2,7 @@ package tv.own.owntv.core.metadata
 
 import org.json.JSONObject
 
-/** Pure parser/merger for TMDB's media-specific `/trending/{type}/day` pages. */
+/** Pure parser for TMDB's `/trending/{type}/day|week` and `/discover/{type}` pages (same result shape). */
 internal object TmdbTrendingParser {
 
     fun parsePage(type: MetadataType, requestedPage: Int, body: String): TrendingFeedPage? = runCatching {
@@ -38,6 +38,7 @@ internal object TmdbTrendingParser {
                 rating = item.optDouble("vote_average", 0.0).takeIf { it > 0.0 },
                 popularity = item.optDouble("popularity", 0.0),
                 trendingRank = ((responsePage - 1) * TMDB_PAGE_SIZE) + index + 1,
+                originalLanguage = item.optString("original_language").nullUnlessValue(),
             )
         }
 

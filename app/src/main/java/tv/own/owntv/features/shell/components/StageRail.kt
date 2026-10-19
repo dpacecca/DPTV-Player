@@ -146,8 +146,6 @@ fun StageRail(
     onFocused: () -> Unit,
     /** The dimming behind the open rail; off where the content moves aside for it (the guide's categories). */
     scrim: Boolean = true,
-    /** ◀ on the rail, which has nothing further to its left (v2.1.3: the app's exit prompt). */
-    onLeftEdge: (() -> Unit)? = null,
     nowPlaying: NowPlayingRail?,
     onNowPlaying: () -> Unit,
     modifier: Modifier = Modifier,
@@ -227,10 +225,8 @@ fun StageRail(
                 .onKeyEvent { e ->
                     val out = if (rtl) Key.DirectionLeft else Key.DirectionRight
                     val edge = if (rtl) Key.DirectionRight else Key.DirectionLeft
-                    if (e.key == edge && onLeftEdge != null) {
-                        if (e.type == KeyEventType.KeyDown) onLeftEdge()
-                        return@onKeyEvent true
-                    }
+                    // ◀ has nothing further to its left: it stays put (v2.3.3: Back, not ◀, asks to leave the app).
+                    if (e.key == edge) return@onKeyEvent true
                     if (e.key != out) return@onKeyEvent false
                     if (e.type == KeyEventType.KeyDown) scope.launch {
                         if (enterContent?.invoke() != true) runCatching { contentFocusRequester.requestFocus() }

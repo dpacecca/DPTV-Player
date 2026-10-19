@@ -23,6 +23,13 @@ interface MetadataDao {
     @Query("SELECT * FROM metadata_match WHERE localKey IN (:keys)")
     suspend fun getMatches(keys: List<String>): List<MetadataMatchEntity>
 
+    /**
+     * The local items already matched to any of [tmdbIds] (v2.4.0): how a Home trending title, which carries its
+     * TMDB id, finds the playlist entries it is. Negative rows have no id, so they never come back.
+     */
+    @Query("SELECT * FROM metadata_match WHERE type = :type AND tmdbId IN (:tmdbIds)")
+    suspend fun matchesForTmdbIds(type: String, tmdbIds: List<Int>): List<MetadataMatchEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertMatch(match: MetadataMatchEntity)
 

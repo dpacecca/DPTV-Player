@@ -125,6 +125,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val testState by vm.metadataTest.collectAsStateWithLifecycle()
     val language by vm.metadataLanguage.collectAsStateWithLifecycle()
     val budget by vm.metadataBudgetStatus.collectAsStateWithLifecycle()
+    // Which Trending on Home picker is open (v2.4.0); drawn after the page like the others.
+    var trendingPicker by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     LaunchedEffect(tier) {
         if (tier == MetadataConfig.Tier.DEFAULT_WORKER) vm.refreshMetadataBudget()
@@ -177,7 +179,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val back = stringResource(R.string.common_back)
     val content = stringResource(R.string.settings_group_content_metadata)
     val modeLabels = tv.own.owntv.core.metadata.MetadataMode.entries.map { stringResource(metadataModeLabelRes(it)) }
-    val rows = if (mode.enrich) 4 else 1
+    // The Trending on Home group's rows count whatever the TMDB mode (v2.4.0).
+    val rows = (if (mode.enrich) 4 else 1) + TRENDING_HOME_SETTING_ROWS
     StageFullPage(
         parents = listOf(content),
         title = stringResource(R.string.settings_metadata),
@@ -271,6 +274,10 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             )
         }
 
+        // Trending on Home (v2.4.0): source, country, streaming services and English only for Home's
+        // Trending movies / Trending shows, from TMDB.
+        TrendingHomeSettingsGroup(vm, onOpen = { trendingPicker = it })
+
         // TMDB attribution — logo + line, required by TMDB's API terms.
         Column(Modifier.padding(start = 22.mpx, top = 28.mpx)) {
             androidx.compose.foundation.Image(
@@ -341,6 +348,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             onDismiss = { showRemoteHandover = false },
         )
     }
+
+    TrendingHomeDialogs(vm, open = trendingPicker, onClose = { trendingPicker = null })
 
     if (showModePicker) {
         PickerDialog(

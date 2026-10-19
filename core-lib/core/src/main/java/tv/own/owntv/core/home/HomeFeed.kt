@@ -140,6 +140,17 @@ data class GuideSliceState(
         get() = channels.isNotEmpty()
 }
 
+/** What [HomeFeedReader.vodVisibility] allows: an item must be in an active playlist and not hidden (v2.4.0). */
+class VodVisibility(
+    val movieSourceIds: Set<Long>,
+    val seriesSourceIds: Set<Long>,
+    private val movieAllowed: (MovieEntity) -> Boolean,
+    private val seriesAllowed: (SeriesEntity) -> Boolean,
+) {
+    fun allows(movie: MovieEntity): Boolean = movie.sourceId in movieSourceIds && movieAllowed(movie)
+    fun allows(series: SeriesEntity): Boolean = series.sourceId in seriesSourceIds && seriesAllowed(series)
+}
+
 /** Everything Home shows, for one profile, at one moment. */
 @Immutable
 data class HomeFeed(
@@ -209,7 +220,8 @@ class HomeFeedReader(
             val recentLiveAsync = async {
                 channelDao.recentlyWatchedWithTimestampFiltered(profileId, liveIds.toList(), RECENT_LIVE_ROW_LIMIT).first()
             }
-            val trending = buildTrendingItems(
+            // Off Home since v2.4.0 (Trending movies / Trending shows replace it): nothing to read for a row nobody sees.
+            val trending = if (HomeRow.TRENDING !in config.visibleOrder) emptyList() else buildTrendingItems(
                 movieSourceIds = movieIds,
                 seriesSourceIds = seriesIds,
                 hidden = hidden,
@@ -250,7 +262,8 @@ class HomeFeedReader(
                 else seriesDao.snapshotFavoritesManual(profileId, ContentOrderEntity.FAV_CONTEXT, seriesIds.toList(), FAVORITE_VOD_ROW_LIMIT)
                     .filterNot { CustomizeKeys.series(it) in hidden.series.hiddenItems || (it.categoryId != null && it.categoryId in hidden.seriesCats) }
             }
-            val heroItems = buildHeroItems(items, liveWithTs, config)
+            // Keep watching left Home in v2.4.0; without the row its cards (and their artwork) are not built.
+            val heroItems = if (HomeRow.HERO !in config.visibleOrder) emptyList() else buildHeroItems(items, liveWithTs, config)
             // The two guide slices read different channel sets and never depend on each other.
             val recentGuideAsync = async {
                 if (HomeRow.RECENT_CHANNELS in config.visibleOrder && config.recentLiveMode == HomeLiveRowMode.ON_NOW) {
@@ -283,6 +296,23 @@ class HomeFeedReader(
                 favoriteGuide = favoriteGuideAsync.await(),
             )
         }
+    }
+
+    /**
+     * Which films and shows Home may show [profileId] (v2.4.0, for the Trending movies / shows rows): the active playlists
+     * of each section, less hidden items, hidden categories and a kids profile's adult ones — the same
+     * rules every other rail here follows.
+     */
+    suspend fun vodVisibility(profileId: Long): VodVisibility = withContext(Dispatchers.IO) {
+        val movieIds = activeSourceIds(settings, sourceDao, profileId, MediaType.MOVIE).toSet()
+        val seriesIds = activeSourceIds(settings, sourceDao, profileId, MediaType.SERIES).toSet()
+        val hidden = hiddenState(profileId, sourceDao.sourceIdsForProfile(profileId))
+        VodVisibility(
+            movieSourceIds = movieIds,
+            seriesSourceIds = seriesIds,
+            movieAllowed = { m -> CustomizeKeys.movie(m) !in hidden.movie.hiddenItems && (m.categoryId == null || m.categoryId !in hidden.movieCats) },
+            seriesAllowed = { s -> CustomizeKeys.series(s) !in hidden.series.hiddenItems && (s.categoryId == null || s.categoryId !in hidden.seriesCats) },
+        )
     }
 
     /** This profile's hide customizations across all three sections, with category keys resolved to ids. */

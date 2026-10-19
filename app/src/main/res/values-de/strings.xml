@@ -147,4 +147,30 @@
     <string name="sport_strict_description">Nur Sender, die beide Teams oder Spieler im Namen oder in einer Sendung des Programmführers nennen</string>
     <string name="sport_playlists_heading">Playlists für Sport</string>
     <string name="sport_playlists_all">Alle Playlists</string>
+    <string name="sport_exit_back_again">Zum Beenden erneut Zurück drücken.</string>
+    <!-- Filme im Trend / Serien im Trend auf der Startseite, von TMDB, und ihre Einstellungen (v2.4.0) -->
+    <string name="sport_home_row_trending_movies">Filme im Trend</string>
+    <string name="sport_home_row_trending_shows">Serien im Trend</string>
+    <string name="sport_home_row_trending_movies_description">Beliebte Filme von TMDB, soweit deine Playlists sie haben</string>
+    <string name="sport_home_row_trending_shows_description">Beliebte Serien von TMDB, soweit deine Playlists sie haben</string>
+    <string name="sport_settings_trending_home">Trends auf der Startseite</string>
+    <string name="sport_settings_trending_source">Quelle</string>
+    <string name="sport_settings_trending_source_description">Woher Filme im Trend und Serien im Trend auf der Startseite kommen. Beim Streaming: die beliebtesten Titel bei Abo-Streamingdiensten in deinem Land. Trends dieser Woche: was diese Woche weltweit auf TMDB im Trend ist. Gezeigt werden nur Titel aus deinen Playlists, und nur solange die Bibliotheksdetails TMDB nutzen.</string>
+    <string name="sport_settings_trending_source_streaming">Beim Streaming</string>
+    <string name="sport_settings_trending_source_weekly">Trends dieser Woche</string>
+    <string name="sport_settings_trending_country">Land</string>
+    <string name="sport_settings_trending_country_description">Wessen Streamingdienste für Beim Streaming zählen. Automatisch nutzt das Land dieses Geräts, oder Australien, wenn es keines hat.</string>
+    <string name="sport_settings_trending_country_auto">Automatisch: %1$s</string>
+    <string name="sport_settings_trending_country_name">%1$s (%2$s)</string>
+    <string name="sport_settings_trending_services">Streamingdienste</string>
+    <string name="sport_settings_trending_services_description">Beim Streaming auf die angehakten Dienste beschränken. Keiner angehakt heißt alle Dienste. Für Trends dieser Woche ohne Wirkung.</string>
+    <string name="sport_settings_trending_services_all">Alle Dienste</string>
+    <plurals name="sport_settings_trending_services_count">
+        <item quantity="one">%1$d Dienst</item>
+        <item quantity="other">%1$d Dienste</item>
+    </plurals>
+    <string name="sport_settings_trending_services_loading">Dienste werden geladen…</string>
+    <string name="sport_settings_trending_services_none">Keine Dienste gefunden. TMDB ist vielleicht aus oder nicht erreichbar.</string>
+    <string name="sport_settings_trending_english">Nur englische Titel</string>
+    <string name="sport_settings_trending_english_description">Nur Titel zeigen, die ursprünglich auf Englisch gedreht wurden.</string>
 </resources>

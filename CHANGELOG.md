@@ -64,6 +64,17 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.4.0
+
+### ✨ New features
+- **📈 Trending movies and Trending shows rows on Home, from TMDB (streaming in your country)**
+- **⚙️ Trending source, country, streaming services and English only in Content & metadata**
+- **🚪 Back on the menu bar asks to exit; Back again exits**
+
+### 🐛 Fixes
+- **Left on the menu bar no longer opens the exit prompt**
+- **Keep watching removed from Home**
+
 ## v2.3.2
 
 ### ✨ New features

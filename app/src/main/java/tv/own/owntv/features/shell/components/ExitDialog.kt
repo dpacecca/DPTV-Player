@@ -8,7 +8,8 @@ import tv.own.owntv.ui.theme.mpx
 
 /**
  * The exit question shown when the user presses Back from the main menu, as a small Stage popup.
- * Cancel takes initial focus so an accidental second Back doesn't quit the app.
+ * v2.3.3: a second Back while it is up exits (Back twice to leave); Cancel still takes initial focus so
+ * an accidental OK doesn't quit the app.
  */
 @Composable
 fun ExitDialog(
@@ -17,12 +18,13 @@ fun ExitDialog(
 ) {
     StageConfirm(
         title = stringResource(R.string.content_exit_owntv),
-        body = stringResource(R.string.content_exit_confirmation),
+        body = stringResource(R.string.sport_exit_back_again),
         confirm = stringResource(R.string.common_exit),
         onConfirm = onConfirm,
         onCancel = onDismiss,
         focusCancel = true,
         eyebrow = null,
         width = 560.mpx,
+        onBack = onConfirm,
     )
 }

@@ -13,9 +13,23 @@ enum class HomeRow {
     FAVORITE_MOVIES,
     FAVORITE_SERIES,
     CONTINUE_MOVIES,
-    CONTINUE_SERIES;
+    CONTINUE_SERIES,
+    /** TMDB's trending films / shows (on streaming in the user's country, or this week), matched to the playlists (v2.4.0). */
+    TRENDING_MOVIES,
+    TRENDING_SHOWS;
 
     val implemented: Boolean get() = true
+
+    companion object {
+        /**
+         * Off Home since v2.4.0: Keep watching (the owner's call), and TMDB's Now trending, which the
+         * two TMDB Trending movies / Trending shows rows replace. Their code and stored choices stay, so bringing one back is this set.
+         */
+        val RETIRED: Set<HomeRow> = setOf(TRENDING, HERO)
+
+        /** Trending movies / Trending shows: not reordered on their own, they always follow Recent channels (v2.4.0). */
+        val TRENDING_ROWS: List<HomeRow> = listOf(TRENDING_MOVIES, TRENDING_SHOWS)
+    }
 }
 
 enum class HomeLiveRowMode {
@@ -54,14 +68,17 @@ data class HomeConfig(
 ) {
     val visibleOrder: List<HomeRow>
         get() = buildList {
-            // Trending is a fixed, optional Home feature rather than a reorderable content row.
-            // When enabled it always owns the top position, regardless of any previously saved order.
-            if (HomeRow.TRENDING !in hidden) add(HomeRow.TRENDING)
-            addAll(order.filter { it != HomeRow.TRENDING && it.implemented && it !in hidden })
+            // Trending used to own the top position here; since v2.4.0 it and Keep watching are off
+            // Home ([HomeRow.RETIRED]). The two Trending rows sit right under Recent channels — at its
+            // place in the order even while that row itself is hidden.
+            order.filter { it !in HomeRow.RETIRED && it !in HomeRow.TRENDING_ROWS && it.implemented }.forEach { row ->
+                if (row !in hidden) add(row)
+                if (row == HomeRow.RECENT_CHANNELS) addAll(HomeRow.TRENDING_ROWS.filter { it !in hidden })
+            }
         }
 
     val settingsRows: List<HomeRow>
-        get() = order.filter { it != HomeRow.TRENDING && it.implemented }
+        get() = order.filter { it !in HomeRow.RETIRED && it !in HomeRow.TRENDING_ROWS && it.implemented }
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("order", JSONArray(order.map { it.name }))

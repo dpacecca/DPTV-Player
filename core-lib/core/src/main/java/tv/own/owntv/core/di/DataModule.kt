@@ -125,6 +125,16 @@ val dataModule = module {
     single<tv.own.owntv.core.metadata.MetadataProvider> {
         tv.own.owntv.core.metadata.TmdbProvider(get(), get(), get(), get())
     }
+    // Home's Trending movies / Trending shows (v2.4.0): TMDB through the provider above, so the same
+    // tiers and allowance; held in memory for 30 minutes.
+    single {
+        val settings = get<tv.own.owntv.core.settings.SettingsRepository>()
+        tv.own.owntv.core.metadata.HomeTrendingFeed(
+            provider = get(),
+            metadataConfig = { settings.metadataConfig() },
+            trendingConfig = { settings.homeTrendingConfig() },
+        )
+    }
     // provider, metadataDao, settings, overrideStore — the on-demand resolve + cache orchestrator (plan §7, §11.2 U5b).
     single { tv.own.owntv.core.metadata.MetadataRepository(get(), get(), get(), get(), get()) }
     single { tv.own.owntv.core.metadata.OriginalLanguageLookup(get(), get(), get()) }

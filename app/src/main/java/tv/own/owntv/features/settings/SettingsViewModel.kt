@@ -97,6 +97,8 @@ class SettingsViewModel(
     private val enginePool: tv.own.owntv.player.LiveEnginePool,
     // Adding a playlist is core's sequence, not a copy of it — see [importState].
     private val importer: SourceImporter,
+    // Trending on Home's streaming-service picker (v2.4.0).
+    private val homeTrendingFeed: tv.own.owntv.core.metadata.HomeTrendingFeed,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OwnTVHome"
@@ -1640,6 +1642,39 @@ class SettingsViewModel(
     val metadataServerUrl: StateFlow<String> =
         settings.metadataServerUrl.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
     fun setMetadataServerUrl(url: String) { viewModelScope.launch { settings.setMetadataServerUrl(url) } }
+
+    // Trending on Home (v2.4.0): source, country, streaming services and English only for Home's
+    // Trending movies / Trending shows rows.
+    val homeTrending: StateFlow<tv.own.owntv.core.metadata.HomeTrendingConfig> =
+        settings.homeTrending.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), tv.own.owntv.core.metadata.HomeTrendingConfig())
+    fun setHomeTrendingSource(source: tv.own.owntv.core.metadata.HomeTrendingSource) { viewModelScope.launch { settings.setHomeTrendingSource(source) } }
+    fun setHomeTrendingCountry(code: String) { viewModelScope.launch { settings.setHomeTrendingCountry(code) } }
+    fun setHomeTrendingProviders(ids: Set<Int>) { viewModelScope.launch { settings.setHomeTrendingProviders(ids) } }
+    fun setHomeTrendingEnglishOnly(on: Boolean) { viewModelScope.launch { settings.setHomeTrendingEnglishOnly(on) } }
+
+    /** The services TMDB lists for one country, for the picker (v2.4.0); [loading] while TMDB is asked. */
+    data class WatchProviderList(
+        val region: String = "",
+        val loading: Boolean = false,
+        val providers: List<tv.own.owntv.core.metadata.WatchProvider> = emptyList(),
+    )
+
+    private val _watchProviders = MutableStateFlow(WatchProviderList())
+    val watchProviders: StateFlow<WatchProviderList> = _watchProviders.asStateFlow()
+
+    /** Asks TMDB (cached 30 min in core) for [region]'s services; an empty list when metadata is off or TMDB fails. */
+    fun loadWatchProviders(region: String) {
+        val current = _watchProviders.value
+        if (current.region == region && (current.loading || current.providers.isNotEmpty())) return
+        _watchProviders.value = WatchProviderList(region, loading = true)
+        viewModelScope.launch {
+            val list = runCatching { homeTrendingFeed.watchProviders(region) }.getOrElse { e ->
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                emptyList()
+            }
+            if (_watchProviders.value.region == region) _watchProviders.value = WatchProviderList(region, providers = list)
+        }
+    }
 
     val openSubtitlesApiKey: StateFlow<String> = settings.openSubtitlesApiKey
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")

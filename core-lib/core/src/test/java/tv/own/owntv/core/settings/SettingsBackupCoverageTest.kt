@@ -74,6 +74,13 @@ class SettingsBackupCoverageTest {
     }
 
     @Test
+    fun `the Trending on Home settings are backed up (v2_4_0)`() {
+        listOf(
+            "home_trending_source", "home_trending_country", "home_trending_providers", "home_trending_english_only",
+        ).forEach { assertTrue(it, it in backedUp) }
+    }
+
+    @Test
     fun `pip_on_back is never exported but stays importable`() {
         assertTrue(Keys.PIP_ON_BACK.name in backedUp)
         assertFalse(BackupKeys.exports(Keys.PIP_ON_BACK, mutablePreferencesOf(Keys.PIP_ON_BACK to true)))

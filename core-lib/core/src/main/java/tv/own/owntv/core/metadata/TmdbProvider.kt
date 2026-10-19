@@ -128,6 +128,27 @@ class TmdbProvider(
         }
     }
 
+    override suspend fun homeTrendingPage(type: MetadataType, query: HomeTrendingQuery, page: Int): TrendingFeedPage? {
+        require(type == MetadataType.MOVIE || type == MetadataType.TV)
+        require(page > 0)
+        val endpoint = resolveEndpoint()
+        val url = buildHomeTrendingUrl(endpoint.baseUrl, endpoint.apiKey, endpoint.language, type, query, page)
+        val body = fetch(endpoint, url, "Home trending source=${query.source} type=$type page=$page") ?: return null
+        return TmdbTrendingParser.parsePage(type, page, body).also {
+            if (it == null) Log.w(TAG, "TMDB Home trending parse failed type=$type page=$page")
+        }
+    }
+
+    override suspend fun watchProviders(type: MetadataType, region: String): List<WatchProvider>? {
+        require(type == MetadataType.MOVIE || type == MetadataType.TV)
+        val endpoint = resolveEndpoint()
+        val url = buildWatchProvidersUrl(endpoint.baseUrl, endpoint.apiKey, endpoint.language, type, region)
+        val body = fetch(endpoint, url, "watch providers type=$type") ?: return null
+        return TmdbWatchProviderParser.parse(body, region).also {
+            if (it == null) Log.w(TAG, "TMDB watch providers parse failed type=$type")
+        }
+    }
+
     override suspend fun searchMovie(title: String, year: Int?, includeAdult: Boolean): List<MetadataSearchResult>? =
         search(MetadataType.MOVIE, title, year, includeAdult)
 
@@ -434,5 +455,74 @@ class TmdbProvider(
                     ?.let { append("&api_key=").append(URLEncoder.encode(it, "UTF-8")) }
             }
         }
+
+        /**
+         * Home's trending feed (v2.4.0). [HomeTrendingSource.STREAMING]: `/3/discover/{type}` by popularity,
+         * only subscription ("flatrate") titles in [HomeTrendingQuery.region], narrowed to the chosen
+         * services (ids joined with `|`, TMDB's "any of") and, with English only, to English originals.
+         * [HomeTrendingSource.WEEKLY]: `/3/trending/{type}/week`, which takes no filter — the caller
+         * filters by language.
+         */
+        internal fun buildHomeTrendingUrl(
+            baseUrl: String,
+            apiKey: String?,
+            language: String,
+            type: MetadataType,
+            query: HomeTrendingQuery,
+            page: Int,
+        ): String {
+            require(page > 0)
+            val mediaPath = mediaPath(type)
+            return buildString {
+                append(baseUrl.trimEnd('/'))
+                when (query.source) {
+                    HomeTrendingSource.STREAMING -> append("/3/discover/").append(mediaPath)
+                    HomeTrendingSource.WEEKLY -> append("/3/trending/").append(mediaPath).append("/week")
+                }
+                append("?page=").append(page)
+                if (query.source == HomeTrendingSource.STREAMING) {
+                    append("&sort_by=popularity.desc&include_adult=false")
+                    append("&watch_region=").append(encode(query.region))
+                    append("&with_watch_monetization_types=flatrate")
+                    if (query.providerIds.isNotEmpty()) {
+                        append("&with_watch_providers=").append(encode(query.providerIds.sorted().joinToString("|")))
+                    }
+                    if (query.englishOnly) append("&with_original_language=en")
+                }
+                appendLanguageAndKey(language, apiKey)
+            }
+        }
+
+        /** The streaming services TMDB knows for [region] (v2.4.0): `/3/watch/providers/{type}`. */
+        internal fun buildWatchProvidersUrl(
+            baseUrl: String,
+            apiKey: String?,
+            language: String,
+            type: MetadataType,
+            region: String,
+        ): String = buildString {
+            append(baseUrl.trimEnd('/')).append("/3/watch/providers/").append(mediaPath(type))
+            append("?watch_region=").append(encode(region))
+            appendLanguageAndKey(language, apiKey)
+        }
+
+        /** TMDB's path segment for a MOVIE or TV call (v2.4.0). */
+        private fun mediaPath(type: MetadataType): String {
+            require(type == MetadataType.MOVIE || type == MetadataType.TV)
+            return if (type == MetadataType.TV) TV_PATH else MOVIE_PATH
+        }
+
+        private fun encode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8.name())
+
+        /** The optional `language` and `api_key` parameters every Home trending URL ends with (v2.4.0). */
+        private fun StringBuilder.appendLanguageAndKey(language: String, apiKey: String?) {
+            if (language.isNotBlank()) append(LANGUAGE_PARAM).append(encode(language))
+            apiKey?.takeIf { it.isNotBlank() }?.let { append(API_KEY_PARAM).append(encode(it)) }
+        }
+
+        private const val MOVIE_PATH = "movie"
+        private const val TV_PATH = "tv"
+        private const val LANGUAGE_PARAM = "&language="
+        private const val API_KEY_PARAM = "&api_key="
     }
 }

@@ -573,6 +573,35 @@ fun HomeScreen(
                 modifier = rowModifier,
             )
     
+            // Trending movies / Trending shows (v2.4.0): the favourites' poster row, so they look and open the same way.
+            HomeRow.TRENDING_MOVIES -> FavoritePosterRow(
+                title = row.displayTitle(),
+                items = state.trendingMovies,
+                key = { it.item.id },
+                name = { it.item.name },
+                poster = { it.posterUrl },
+                start = contentStart,
+                onItemClick = { onOpenMovie(it.item) },
+                onFocus = onNonHeroFocused,
+                firstItemFocusRequester = firstItemFocusRequester,
+                track = track,
+                modifier = rowModifier,
+            )
+
+            HomeRow.TRENDING_SHOWS -> FavoritePosterRow(
+                title = row.displayTitle(),
+                items = state.trendingShows,
+                key = { it.item.id },
+                name = { it.item.name },
+                poster = { it.posterUrl },
+                start = contentStart,
+                onItemClick = { onOpenSeries(it.item) },
+                onFocus = onNonHeroFocused,
+                firstItemFocusRequester = firstItemFocusRequester,
+                track = track,
+                modifier = rowModifier,
+            )
+
             HomeRow.CONTINUE_MOVIES -> ContinuePosterRow(
                 title = row.displayTitle(),
                 items = state.continueMovies,
@@ -701,6 +730,8 @@ private fun rowHasData(row: HomeRow, state: HomeUiState): Boolean = when (row) {
     HomeRow.FAVORITE_SERIES -> state.favoriteSeries.isNotEmpty()
     HomeRow.CONTINUE_MOVIES -> state.continueMovies.isNotEmpty()
     HomeRow.CONTINUE_SERIES -> state.continueSeries.isNotEmpty()
+    HomeRow.TRENDING_MOVIES -> state.trendingMovies.isNotEmpty()
+    HomeRow.TRENDING_SHOWS -> state.trendingShows.isNotEmpty()
 }
 
 private fun rowCanRender(row: HomeRow, state: HomeUiState, showHeroFallback: Boolean): Boolean =
