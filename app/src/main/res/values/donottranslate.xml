@@ -102,6 +102,12 @@
     <string name="sport_league_rugby_289262" translatable="false">Major League Rugby</string>
     <string name="sport_league_rugby_289234" translatable="false">International Test Match</string>
     <string name="sport_league_rugby_league_3" translatable="false">NRL</string>
+    <string name="sport_league_sofascore_10055" translatable="false">World Rugby Sevens Series</string>
+    <string name="sport_league_sofascore_11623" translatable="false">World Rugby Sevens Series, Women</string>
+    <string name="sport_league_sofascore_431" translatable="false">Rugby League World Cup</string>
+    <string name="sport_league_sofascore_791" translatable="false">State of Origin</string>
+    <string name="sport_league_sofascore_302" translatable="false">Super League</string>
+    <string name="sport_league_sofascore_1590" translatable="false">World Club Challenge</string>
     <string name="sport_league_volleyball_womens_college_volleyball" translatable="false">NCAA Women\'s Volleyball</string>
     <string name="sport_league_golf_lpga" translatable="false">LPGA</string>
     <string name="sport_league_golf_liv" translatable="false">LIV Golf</string>

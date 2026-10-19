@@ -10,6 +10,8 @@ import tv.own.owntv.R
  * ESPN slugs: scoreboard lives at site.api.espn.com/apis/site/v2/sports/{sport}/{league}.
  * Names are proper nouns and live in `res/values/donottranslate.xml` (not translated).
  * `kind = EVENT` marks sports without home/away competitors (golf/racing/MMA/tennis).
+ * `source = SOFASCORE` entries (v2.5.0) come from SofaScore's unique tournaments instead — only
+ * competitions ESPN does not carry; see [SofaScoreApi].
  */
 val SportsLeagues: List<SportLeague> = listOf(
     SportLeague(
@@ -870,6 +872,27 @@ val SportsLeagues: List<SportLeague> = listOf(
         kind = LeagueKind.TEAMS,
         defaultActive = false,
     ),
+    // World Rugby Sevens Series (SVNS), men and women: not on ESPN, so from SofaScore (v2.5.0).
+    SportLeague(
+        id = "sofascore.10055",
+        espnSport = "rugby",
+        espnLeague = "10055",
+        labelRes = R.string.sport_league_sofascore_10055,
+        region = LeagueRegion.INTERNATIONAL,
+        kind = LeagueKind.TEAMS,
+        defaultActive = false,
+        source = LeagueSource.SOFASCORE,
+    ),
+    SportLeague(
+        id = "sofascore.11623",
+        espnSport = "rugby",
+        espnLeague = "11623",
+        labelRes = R.string.sport_league_sofascore_11623,
+        region = LeagueRegion.INTERNATIONAL,
+        kind = LeagueKind.TEAMS,
+        defaultActive = false,
+        source = LeagueSource.SOFASCORE,
+    ),
     SportLeague(
         id = "rugby.289237",
         espnSport = "rugby",
@@ -905,6 +928,48 @@ val SportsLeagues: List<SportLeague> = listOf(
         region = LeagueRegion.REST,
         kind = LeagueKind.TEAMS,
         defaultActive = false,
+    ),
+    // Rugby league beyond the NRL, from SofaScore (v2.5.0). 431 is the league World Cup; 421, the
+    // union one, stays on ESPN (rugby.164205).
+    SportLeague(
+        id = "sofascore.431",
+        espnSport = "rugby-league",
+        espnLeague = "431",
+        labelRes = R.string.sport_league_sofascore_431,
+        region = LeagueRegion.INTERNATIONAL,
+        kind = LeagueKind.TEAMS,
+        defaultActive = false,
+        source = LeagueSource.SOFASCORE,
+    ),
+    SportLeague(
+        id = "sofascore.791",
+        espnSport = "rugby-league",
+        espnLeague = "791",
+        labelRes = R.string.sport_league_sofascore_791,
+        region = LeagueRegion.REST,
+        kind = LeagueKind.TEAMS,
+        defaultActive = false,
+        source = LeagueSource.SOFASCORE,
+    ),
+    SportLeague(
+        id = "sofascore.302",
+        espnSport = "rugby-league",
+        espnLeague = "302",
+        labelRes = R.string.sport_league_sofascore_302,
+        region = LeagueRegion.EUROPE,
+        kind = LeagueKind.TEAMS,
+        defaultActive = false,
+        source = LeagueSource.SOFASCORE,
+    ),
+    SportLeague(
+        id = "sofascore.1590",
+        espnSport = "rugby-league",
+        espnLeague = "1590",
+        labelRes = R.string.sport_league_sofascore_1590,
+        region = LeagueRegion.INTERNATIONAL,
+        kind = LeagueKind.TEAMS,
+        defaultActive = false,
+        source = LeagueSource.SOFASCORE,
     ),
     SportLeague(
         id = "volleyball.womens-college-volleyball",

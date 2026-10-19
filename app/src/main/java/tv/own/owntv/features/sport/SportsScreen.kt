@@ -960,7 +960,13 @@ private fun FixtureDetail(
         if (detailTab == DetailTab.BROADCASTS) {
             if (fixture.broadcasts.isEmpty()) {
                 item(key = "broadcasts-empty" + fixture.id) {
-                    Text(stringResource(R.string.sport_no_broadcasts), style = stageText(17, 500), color = StageColors.Dim, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    // SofaScore carries no broadcasters at all, so its leagues say so plainly (v2.5.0).
+                    val noBroadcasts = if (sportsLeagueById(fixture.leagueId)?.source == LeagueSource.SOFASCORE) {
+                        R.string.sport_no_broadcasts_sofascore
+                    } else {
+                        R.string.sport_no_broadcasts
+                    }
+                    Text(stringResource(noBroadcasts), style = stageText(17, 500), color = StageColors.Dim, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
             // One focusable row per broadcaster, so the remote scrolls a long list; OK does nothing —

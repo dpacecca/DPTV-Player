@@ -31,6 +31,8 @@ import tv.own.owntv.features.settings.EpgSourcesViewModel
 import tv.own.owntv.features.settings.HomeSettingsViewModel
 import tv.own.owntv.features.settings.LanguageSettingsViewModel
 import tv.own.owntv.features.sport.EspnApi
+import tv.own.owntv.features.sport.SofaScoreApi
+import tv.own.owntv.features.sport.SportsApi
 import tv.own.owntv.features.sport.LiveSourceIdsProvider
 import tv.own.owntv.features.sport.ProfileLiveSourceIdsProvider
 import tv.own.owntv.features.sport.ProfileSportChannelSources
@@ -178,6 +180,9 @@ val appModule = module {
     viewModelOf(::RailCountsViewModel)
     // Sports hub (Lume-style): ESPN fixtures/scores/standings matched to the user's channels.
     singleOf(::EspnApi)
+    // SofaScore for the competitions ESPN lacks, and the per-league router in front of both (v2.5.0).
+    singleOf(::SofaScoreApi)
+    singleOf(::SportsApi)
     // Static matcher vocabulary (team aliases/exonyms + stop-words) from res/raw/sports_matching.json.
     // Takes a Context, resolved from androidContext().
     single { SportsVocab.load(androidContext()) }

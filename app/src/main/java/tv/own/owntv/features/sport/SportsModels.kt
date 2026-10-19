@@ -27,12 +27,22 @@ enum class SportGroup {
  */
 enum class LeagueKind { TEAMS, EVENT }
 
+/**
+ * Where a league's fixtures, live scores and standings come from (v2.5.0). ESPN serves everything it
+ * covers; SofaScore fills in only the competitions ESPN lacks (rugby sevens and rugby league events),
+ * mapped by [SofaScoreApi] into the same models, so the rest of Sport never asks which one it is.
+ */
+enum class LeagueSource { ESPN, SOFASCORE }
+
 data class SportLeague(
     /** Stable id, also the follow key (e.g. "soccer.ger.1"). */
     val id: String,
-    /** ESPN scoreboard path segment, e.g. "soccer". */
+    /**
+     * ESPN scoreboard path segment, e.g. "soccer". A [LeagueSource.SOFASCORE] league keeps the ESPN
+     * slug of its sport here too ("rugby", "rugby-league"), which places it in its [sportGroup].
+     */
     val espnSport: String,
-    /** ESPN league slug, e.g. "ger.1". */
+    /** ESPN league slug, e.g. "ger.1"; for a [LeagueSource.SOFASCORE] league its unique-tournament id. */
     val espnLeague: String,
     /** Non-translatable display name (proper noun) in `donottranslate.xml`. */
     @StringRes val labelRes: Int,
@@ -46,6 +56,8 @@ data class SportLeague(
      * lives in `donottranslate.xml`.
      */
     @StringRes val extraChannelRes: Int? = null,
+    /** The data source (v2.5.0); every league but the few ESPN lacks stays on ESPN. */
+    val source: LeagueSource = LeagueSource.ESPN,
 ) {
     /** Derived from the ESPN sport slug, so a new league lands in its sport's group by itself. */
     val sportGroup: SportGroup

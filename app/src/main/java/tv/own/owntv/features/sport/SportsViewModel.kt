@@ -33,7 +33,7 @@ import tv.own.owntv.core.companion.CompanionServerState
  */
 class SportsViewModel(
     private val prefs: SportsPrefs,
-    private val api: EspnApi,
+    private val api: SportsApi,
     private val matcher: SportsMatcher,
     private val companion: CompanionController,
     channelSources: SportChannelSources,
@@ -723,11 +723,15 @@ class SportsViewModel(
         val hadContent = boards.value[league.id] is BoardState.Content
         if (!(quiet && hadContent)) boards.value = boards.value + (league.id to BoardState.Loading)
         val result = runCatching { api.scoreboard(league) }
-        result.onFailure { android.util.Log.w("SportsHub", "board failed " + league.id, it) }
+        // SofaScore already logged its one line (v2.5.0).
+        result.onFailure { if (league.source == LeagueSource.ESPN) android.util.Log.w("SportsHub", "board failed " + league.id, it) }
         result.onSuccess { android.util.Log.d("SportsHub", "board ok " + league.id + " fixtures=" + it.fixtures.size) }
         boardAt[league.id] = now
+        if (result.isFailure && quiet && hadContent) return
+        // A SofaScore league that failed shows nothing rather than an error, and is fetched again
+        // by the next refresh once its board is stale (v2.5.0).
         val board = result.getOrNull()
-        if (board == null && quiet && hadContent) return
+            ?: if (league.source == LeagueSource.SOFASCORE) EspnApi.Scoreboard(league.id, emptyList()) else null
         // A league dropped from the selection while fetching must not come back.
         if (league.id !in loadingLeagues.value) return
         boards.value = boards.value + (league.id to (board?.let { BoardState.Content(it) } ?: BoardState.Error))

@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.5.0
+
+### ✨ New features
+- **🏉 Sevens Series, Rugby League World Cup, State of Origin, Super League and World Club Challenge in Sport**
+
 ## v2.4.0
 
 ### ✨ New features
