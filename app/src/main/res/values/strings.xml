@@ -147,4 +147,5 @@
     <string name="sport_strict_description">Only channels that name both teams or players in their name or in one guide programme</string>
     <string name="sport_playlists_heading">Playlists Sport may use</string>
     <string name="sport_playlists_all">All playlists</string>
+    <string name="sport_exit_back_again">Press Back again to exit.</string>
 </resources>

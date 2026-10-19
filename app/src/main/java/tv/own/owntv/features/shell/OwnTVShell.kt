@@ -960,7 +960,10 @@ fun OwnTVShell(
             selectedSection == MainSection.SETTINGS -> backFromSettings()
             // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
-            // v2.1.3: Back in the guide is full screen on the channel in its video (◀ on the menu leaves the app).
+            // v2.3.3: Back on the menu asks to leave the app (◀ there no longer does); a second Back
+            // while the prompt is up exits. Ahead of the guide, whose Back would otherwise go full screen.
+            railHasFocus -> showExit = true
+            // v2.1.3: Back in the guide is full screen on the channel in its video.
             selectedSection == MainSection.LIVE_TV -> previewChannel?.let { ch ->
                 restoreFocus = false
                 liveVm.watchFromGuide(ch)
@@ -1566,8 +1569,6 @@ fun OwnTVShell(
                 },
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
                 scrim = !guideSide,
-                // v2.1.3: ◀ on the menu — the third ◀ from the guide — asks to leave the app.
-                onLeftEdge = { showExit = true },
                 nowPlaying = nowPlayingRail,
                 onNowPlaying = enterNowPlaying,
             )

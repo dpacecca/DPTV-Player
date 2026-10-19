@@ -147,4 +147,5 @@
     <string name="sport_strict_description">Nur Sender, die beide Teams oder Spieler im Namen oder in einer Sendung des Programmführers nennen</string>
     <string name="sport_playlists_heading">Playlists für Sport</string>
     <string name="sport_playlists_all">Alle Playlists</string>
+    <string name="sport_exit_back_again">Zum Beenden erneut Zurück drücken.</string>
 </resources>
