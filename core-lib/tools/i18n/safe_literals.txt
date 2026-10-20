@@ -4897,6 +4897,12 @@
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' cannot be saved — playing it directly
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' plays from its saved copy
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' plays from the recording server's copy
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' previews directly; one stream, so the recording server's copy waits for full screen
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' — the recording server's copy is ready after ${host.nowMs() - askedAt}ms; the picture stays on the provider's stream until a pause or a rewind
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${current?.name}' moves from the provider's stream onto its saved copy
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: one stream — waited ${host.nowMs() - from}ms for the recording server to let go (answered=$released)
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: the copy beside '${(channel ?: lastPreview?.first)?.name}' was lost ($why); the picture is unaffected
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: the recording server could not keep '${channel.name}'; it plays without rewind
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	tune '${channel.name}' -> ${route.why} [${route.preference.name}]
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	user chose compatibility mode
 1	technical	player-core/src/main/java/tv/own/owntv/player/MpvAudioChannels.kt	,

@@ -64,6 +64,17 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.5.1
+
+### ✨ New features
+- **📌 Categories docked beside the guide: ◀ widens them, ◀ again to the menu, ▶ back**
+
+### 🐛 Fixes
+- **⚡ Guide preview starts at once on another channel**
+- **Back on the menu bar asks to exit everywhere, Settings and the guide included**
+- **Back from a film or show opened on Home returns to Home**
+- **Categories no longer open and close by themselves**
+
 ## v2.5.0
 
 ### ✨ New features

@@ -3,12 +3,14 @@ package tv.own.owntv.player
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.SourceEntity
@@ -87,6 +89,14 @@ class LiveTuneController(
          * for it); null when no server is set up or it cannot keep this channel.
          */
         suspend fun openServerTimeshift(channel: ChannelEntity, source: SourceEntity?, windowMinutes: Int, channelKey: String): TimeshiftBuffer? = null
+        /**
+         * (v2.5.1) Whether [channel]'s copy would be kept by the recording server ([openServerTimeshift]),
+         * asked without opening one. Such a copy takes seconds to cut its first piece, so the picture
+         * starts on the provider's stream instead (see [preview]).
+         */
+        suspend fun serverTimeshiftAvailable(channel: ChannelEntity, source: SourceEntity?): Boolean = false
+        /** (v2.5.1) The wall clock the saved copies are measured on. */
+        fun wallNowMs(): Long = System.currentTimeMillis()
         /** N11 — Settings → Maximum video quality, for the variant a buffer saves; null for none. */
         suspend fun maxVideoHeight(): Int? = null
         /** A download is using the only stream [sourceId] allows, so the preview pane must not take it. */
@@ -124,6 +134,14 @@ class LiveTuneController(
     private var tsFromIndex: Long? = null
     private var tsRequest: LiveRequest? = null
     private var tsWindowSec = 0
+    /**
+     * (v2.5.1) [ts] is kept beside the picture rather than on screen: the engine plays the provider's
+     * stream, and moves onto the copy only when the user rewinds, or resumes after a pause.
+     */
+    private var tsStandby = false
+    /** (v2.5.1) The channel whose recording server copy is being made in the background ([scheduleCopy]). */
+    private var copyKey: String? = null
+    private var copyJob: Job? = null
     private val _localTimeshift = MutableStateFlow<LocalTimeshift?>(null)
 
     /** N4 — non-null while the channel plays from its saved copy (see [LocalTimeshift]). */
@@ -133,6 +151,22 @@ class LiveTuneController(
         host.timeshift?.let { manager ->
             scope.launch {
                 manager.gaveUp.collect { (token, why) -> if (ts?.token == token) onTimeshiftLost(why) }
+            }
+        }
+        // (v2.5.1) A pause on the provider's stream with a copy beside it: resuming continues from the copy
+        // at the paused moment, as a pause on the copy itself would have.
+        engines.exoUserPaused?.let { paused ->
+            scope.launch {
+                var pausedAt: Long? = null
+                paused.collect { now ->
+                    if (now) {
+                        pausedAt = host.wallNowMs().takeIf { tsStandby && current != null }
+                    } else {
+                        val at = pausedAt ?: return@collect
+                        pausedAt = null
+                        resumeOntoCopy(at)
+                    }
+                }
             }
         }
     }
@@ -211,7 +245,10 @@ class LiveTuneController(
             panelRefusesSegments = panelRefusesSegments(channel, source),
         )
         engineLog("tune '${channel.name}' -> ${route.why} [${route.preference.name}]")
-        openTimeshift(channel, source, resolved)
+        if (route.onMpv || !keepCopyBeside(channel, source)) {
+            cancelBackgroundCopy()
+            openTimeshift(channel, source, resolved)
+        }
         arm(channel, source, route.preference)
         when {
             route.onMpv -> startOnMpv(channel, source, route.why, resolved = resolved)
@@ -303,24 +340,36 @@ class LiveTuneController(
             _liveOnExo.value = false
         }
         previewedChannelId = channel.id
+        val key = timeshiftKey(channel)
+        if (copyKey != key) cancelBackgroundCopy() // (v2.5.1) a copy for the channel left is not wanted
+        var leavingServer: ServerTimeshift.Buffer? = null
         ts?.let { session ->
-            // The pane already shows this channel from its saved copy (Back from full screen): it keeps
-            // saving, because the user has not left the channel.
-            if (session.channelKey == timeshiftKey(channel) && TimeshiftServer.isLocal(engines.exoUrl) && !engines.exoFailed) {
+            // The pane already shows this channel, from its saved copy (Back from full screen) or from the
+            // provider's stream with the copy beside it (v2.5.1): it keeps saving, because the user has
+            // not left the channel.
+            if (session.channelKey == key && !engines.exoFailed && (TimeshiftServer.isLocal(engines.exoUrl) || exoHolds(channel))) {
                 previewJob?.cancel()
                 engines.exoSetMuted(muted)
                 return
             }
-            // Browsing to another channel is leaving this one.
+            // Browsing to another channel is leaving this one. A server's copy is let go of in the
+            // background (v2.5.1): the next channel never waits for it, except on a one-stream playlist.
+            leavingServer = session as? ServerTimeshift.Buffer
             parkTimeshift()
         }
         previewJob?.cancel()
         previewJob = scope.launch {
             val source = host.sourceOf(channel.sourceId)
+            val window = if (engines.mpvHasStream) null else copyWindow(channel)
+            // (v2.5.1) The recording server's copy takes seconds to cut its first piece (2–8 s measured
+            // with polling): the pane plays the provider's stream at once instead, and the copy is made
+            // beside it where the playlist allows a second stream ([scheduleCopy]).
+            val onServer = window != null && host.serverTimeshiftAvailable(channel, source)
             // Local timeshift on (DPTV-Player v2.1.5): the pane plays the channel from its saved copy, as
             // full screen does, so OK promotes this very stream. Before, full screen stopped the direct
-            // preview and re-opened the channel through the copy — a 3–4 s reload on every OK.
-            if (!engines.mpvHasStream && host.timeshiftWindowMinutes() != null && openTimeshift(channel, source, resolved = null)) {
+            // preview and re-opened the channel through the copy — a 3–4 s reload on every OK. A copy on
+            // this device has its first bytes as soon as the provider answers, so it costs no more.
+            if (window != null && !onServer && openTimeshift(channel, source, resolved = null)) {
                 if (_liveOnExo.value) return@launch // promoted while the copy connected: start() plays it
                 tsFromIndex = null
                 publishTimeshift(resumeAtWallMs = null)
@@ -333,6 +382,15 @@ class LiveTuneController(
                     exoChannelId = channel.id
                     return@launch
                 }
+            }
+            val twoStreams = parallelCopyAllowed(channel, source)
+            if (onServer && twoStreams) {
+                scheduleCopy(channel, source, window!!)
+            } else if (!twoStreams) {
+                // (v2.5.1) One stream (or an unknown limit): the provider's stream is opened only once the
+                // server has let go of the channel left, so the playlist never sees two at once.
+                leavingServer?.let { awaitServerRelease(it) }
+                if (onServer) engineLog("timeshift: '${channel.name}' previews directly; one stream, so the recording server's copy waits for full screen")
             }
             if (host.needsResolve(source)) {
                 if (exoStalkerCmd == channel.streamUrl && !engines.exoFailed) {
@@ -391,6 +449,7 @@ class LiveTuneController(
     /** Stop ExoPlayer (the preview, or a detached stream) without touching mpv. */
     fun stopExo() {
         previewJob?.cancel()
+        cancelBackgroundCopy() // (v2.5.1) nothing is left to keep a copy beside
         exoResolveJob?.cancel()
         exoWatchJob?.cancel()
         exoStalkerCmd = null
@@ -414,6 +473,7 @@ class LiveTuneController(
      * outside [launch] uses [cancelTune] first.
      */
     fun releaseForArchive() {
+        cancelBackgroundCopy()
         parkTimeshift()
         cancelLadderJobs()
         current = null
@@ -443,7 +503,27 @@ class LiveTuneController(
         tsFromIndex = if (wallMs == null) null else session.pieceAt(wallMs) ?: return
         publishTimeshift(resumeAtWallMs = null)
         val url = localUrl() ?: return
-        if (_liveOnExo.value) engines.exoPlay(url, muted = false, request) else engines.mpvPlay(url, request)
+        if (tsStandby) engineLog("timeshift: '${current?.name}' moves from the provider's stream onto its saved copy")
+        tsStandby = false // (v2.5.1) the picture is on the copy from here
+        if (_liveOnExo.value) {
+            engines.exoPlay(url, muted = false, request)
+            exoChannelId = current?.id
+        } else {
+            engines.mpvPlay(url, request)
+        }
+    }
+
+    /**
+     * (v2.5.1) The user resumes after pausing the provider's stream at [pausedAtWallMs] with a copy beside
+     * it: continue from the copy at that moment. A short pause is left to the engine's own buffer.
+     */
+    private fun resumeOntoCopy(pausedAtWallMs: Long) {
+        val channel = current ?: return
+        val session = ts ?: return
+        if (!tsStandby || session.isClosed || session.channelKey != timeshiftKey(channel) || !isStillExo(channel)) return
+        if (host.wallNowMs() - pausedAtWallMs < LIVE_SLACK_MS) return
+        // The provider's picture is a little behind the copy's clock (the engine's own buffer).
+        seekTimeshift(pausedAtWallMs - DIRECT_BEHIND_COPY_MS)
     }
 
     /**
@@ -472,6 +552,7 @@ class LiveTuneController(
 
     /** What is on screen on the wall clock, while playing from a copy. */
     fun timeshiftWatchingWallMs(): Long? {
+        if (tsStandby) return null // (v2.5.1) the picture is the provider's stream, not the copy
         val session = ts ?: return null
         return session.readingFromWallMs?.plus(engines.positionMs(_liveOnExo.value))
     }
@@ -501,6 +582,7 @@ class LiveTuneController(
         // The recording server's copy of this channel is still running (a Back, an OK): keep reading it.
         val running = ts
         if (running is ServerTimeshift.Buffer && running.channelKey == key && !running.isClosed) {
+            tsStandby = false // (v2.5.1) this order plays the copy itself
             useCopy(channel, source, window)
             return true
         }
@@ -514,6 +596,7 @@ class LiveTuneController(
                 scope.launch { if (ts?.token == buffer.token) onTimeshiftLost(why) }
             }
             ts = buffer
+            tsStandby = false
             tsFromIndex = null
             useCopy(channel, source, window)
             engineLog("timeshift: '${channel.name}' plays from the recording server's copy")
@@ -553,6 +636,7 @@ class LiveTuneController(
             return false
         }
         ts = opened.session
+        tsStandby = false
         val resumeAt = opened.resumeAtWallMs
         val mode = if (resumeAt == null) SettingsRepository.ResumeMode.ASK else host.timeshiftResumeMode()
         // AUTO opens the copy where the user was; NEVER plays it from the live edge. Neither asks.
@@ -582,8 +666,105 @@ class LiveTuneController(
         publishTimeshift(resumeAtWallMs = null)
     }
 
+    /** (v2.5.1) The rewind window in minutes [channel] would be saved with; null when it is not saved. */
+    private suspend fun copyWindow(channel: ChannelEntity): Int? =
+        if (channel.catchup || channel.drmConfig != null) null else host.timeshiftWindowMinutes()
+
+    /**
+     * (v2.5.1) The playlist is known to allow a second stream, so the recording server's connection to the
+     * provider may run beside the picture's own. An unknown limit (0) counts as one: a panel that drops
+     * the older session instead of refusing the newer would otherwise flap between the two.
+     */
+    private fun parallelCopyAllowed(channel: ChannelEntity, source: SourceEntity?): Boolean =
+        (source?.maxConnections ?: 0) >= 2 &&
+            !LiveStreamQuirks.isSingleSession(channel.streamUrl) &&
+            !host.downloadHoldsOnlyStream(channel.sourceId)
+
+    /**
+     * (v2.5.1) A full-screen tune that keeps the picture on the provider's stream, with the recording
+     * server's copy beside it — kept when it is already running for this channel (OK on the preview, so
+     * nothing reloads), started in the background otherwise. False when that order does not apply, and
+     * the caller opens the copy first as before.
+     */
+    private suspend fun keepCopyBeside(channel: ChannelEntity, source: SourceEntity?): Boolean {
+        val window = copyWindow(channel) ?: return false
+        if (!parallelCopyAllowed(channel, source) || !host.serverTimeshiftAvailable(channel, source)) return false
+        val key = timeshiftKey(channel)
+        val running = ts
+        if (running != null && running.channelKey == key && !running.isClosed) {
+            useCopy(channel, source, window)
+            return true
+        }
+        if (running != null) parkTimeshift()
+        host.timeshift?.watching(key) // a copy this device was saving lets go of the provider
+        scheduleCopy(channel, source, window)
+        return true
+    }
+
+    /**
+     * (v2.5.1) Start [channel]'s copy on the recording server in the background, beside the provider's
+     * stream that is already on screen. It waits [COPY_SETTLE_MS] first, so a run of OK presses or zaps
+     * opens one copy and not one per channel passed. Once asked, the server's answer is always dealt with
+     * (kept, or closed when the user has moved on), so a copy is never left running on the server.
+     */
+    private fun scheduleCopy(channel: ChannelEntity, source: SourceEntity?, window: Int) {
+        val key = timeshiftKey(channel)
+        if (copyKey == key) return
+        if (ts?.let { it.channelKey == key && !it.isClosed } == true) return
+        cancelBackgroundCopy()
+        copyKey = key
+        copyJob = scope.launch {
+            delay(COPY_SETTLE_MS)
+            if (copyKey != key) return@launch
+            val askedAt = host.nowMs()
+            withContext(NonCancellable) {
+                val buffer = host.openServerTimeshift(channel, source, window, key)
+                when {
+                    buffer == null -> if (copyKey == key) {
+                        copyKey = null
+                        engineLog("timeshift: the recording server could not keep '${channel.name}'; it plays without rewind")
+                    }
+                    copyKey != key || ts != null -> discard(buffer)
+                    else -> {
+                        copyKey = null
+                        (buffer as? ServerTimeshift.Buffer)?.onLost = { why ->
+                            scope.launch { if (ts?.token == buffer.token) onTimeshiftLost(why) }
+                        }
+                        ts = buffer
+                        tsStandby = true
+                        tsFromIndex = null
+                        useCopy(channel, source, window)
+                        engineLog("timeshift: '${channel.name}' — the recording server's copy is ready after ${host.nowMs() - askedAt}ms; the picture stays on the provider's stream until a pause or a rewind")
+                    }
+                }
+            }
+        }
+    }
+
+    /** (v2.5.1) Forget the copy being made in the background; one the server already answers is closed. */
+    private fun cancelBackgroundCopy() {
+        copyKey = null
+        copyJob?.cancel()
+        copyJob = null
+    }
+
+    private fun discard(buffer: TimeshiftBuffer) {
+        when (buffer) {
+            is ServerTimeshift.Buffer -> buffer.close()
+            is TimeshiftSession -> host.timeshift?.park(buffer, null)
+        }
+    }
+
+    /** (v2.5.1) Bounded: a server that does not answer must not hold the next channel for long. */
+    private suspend fun awaitServerRelease(buffer: ServerTimeshift.Buffer) {
+        val from = host.nowMs()
+        val released = buffer.awaitReleased(SERVER_RELEASE_WAIT_MS)
+        engineLog("timeshift: one stream — waited ${host.nowMs() - from}ms for the recording server to let go (answered=$released)")
+    }
+
     private fun clearTimeshift() {
         ts = null
+        tsStandby = false
         tsRequest = null
         _localTimeshift.value = null
     }
@@ -612,7 +793,13 @@ class LiveTuneController(
     private fun onTimeshiftLost(why: String) {
         val lostKey = ts?.channelKey
         val channel = current
+        val standby = tsStandby
         clearTimeshift()
+        if (standby) {
+            // (v2.5.1) The copy was only beside the picture: the provider's stream plays on, without rewind.
+            engineLog("timeshift: the copy beside '${(channel ?: lastPreview?.first)?.name}' was lost ($why); the picture is unaffected")
+            return
+        }
         if (channel != null && (isStillExo(channel) || isStillMpv(channel))) {
             engineLog("'${channel.name}' — its saved copy lost the connection ($why); opening it again")
             tune(channel)
@@ -647,7 +834,8 @@ class LiveTuneController(
         } else {
             engines.mpvStop() // mpv lets go of the connection and the decoder before ExoPlayer claims either
         }
-        val local = localUrl()
+        // (v2.5.1) A copy beside the picture stays beside it: the provider's stream is promoted instead.
+        val local = localUrl().takeUnless { tsStandby }
         if (local != null) {
             // The same address is not the same picture after a pause: "live" then means re-opening it.
             if (engines.exoUrl == local && !behindLive()) {
@@ -763,6 +951,7 @@ class LiveTuneController(
             return
         }
         localUrl()?.let { local ->
+            tsStandby = false // (v2.5.1) mpv has no pause hook: it plays the copy itself
             setReconnect(null, null)
             engines.mpvPlay(local, tsRequest ?: request(channel, source))
             host.onEngineStarted()
@@ -857,7 +1046,7 @@ class LiveTuneController(
         armedBudgetMs = if (secs <= 0) LiveLadder.NO_BUDGET else secs * 1000L
         ladder.arm(channel.streamUrl, preference, budgetMs = armedBudgetMs, nowMs = host.nowMs()) {
             // A saved copy is one address; the ladder is only the two engines.
-            ts == null && hasHlsAlternative(channel, source)
+            (ts == null || tsStandby) && hasHlsAlternative(channel, source)
         }
         startAlarm(channel)
     }
@@ -1131,6 +1320,12 @@ class LiveTuneController(
             return server.open(streamId, channelKey, windowMinutes, SERVER_TIMESHIFT_FIRST_PIECE_MS)
         }
 
+        override suspend fun serverTimeshiftAvailable(channel: ChannelEntity, source: SourceEntity?): Boolean {
+            if (source?.type != tv.own.owntv.core.model.SourceType.XTREAM || channel.remoteId == null) return false
+            val server = org.koin.core.context.GlobalContext.getOrNull()?.getOrNull<ServerTimeshift>() ?: return false
+            return server.isSetUp()
+        }
+
         override suspend fun maxVideoHeight(): Int? =
             PlaybackSettings.await(settings).maxVideoHeight.takeIf { it > 0 }
 
@@ -1156,5 +1351,17 @@ class LiveTuneController(
 
         /** Behind the copy's edge by more than this is not live any more (the rewind counter's own slack). */
         const val LIVE_SLACK_MS = 8_000L
+
+        /**
+         * (v2.5.1) How long the provider's stream must stay on one channel before the recording server is
+         * asked for its copy: longer than a run of presses, so browsing opens one copy, not one per channel.
+         */
+        const val COPY_SETTLE_MS = 1_500L
+
+        /** (v2.5.1) The most a one-stream playlist's next channel waits for the server to let go of the last. */
+        const val SERVER_RELEASE_WAIT_MS = 2_000L
+
+        /** (v2.5.1) How far the provider's picture runs behind the copy's clock (the engine's own buffer). */
+        const val DIRECT_BEHIND_COPY_MS = 2_000L
     }
 }
