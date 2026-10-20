@@ -213,6 +213,11 @@ fun OwnTVShell(
         onSelectSection(if (settingsFromLive) MainSection.LIVE_TV else MainSection.MORE)
     }
     var searchReturn by remember { mutableStateOf<MainSection?>(null) }
+    // (v2.5.1) The section a Home card opened (a film in Movies, a show in TV Shows), so Back there returns
+    // to Home, onto [homeCard] — the row and item id of that card — once [restoreHomeCard] is set.
+    var homeReturn by remember { mutableStateOf<MainSection?>(null) }
+    var homeCard by remember { mutableStateOf<Pair<tv.own.owntv.core.model.HomeRow, Long>?>(null) }
+    var restoreHomeCard by remember { mutableStateOf(false) }
     var restoreTrendingSearchFocus by remember { mutableStateOf(false) }
     var trendingSearchActive by remember { mutableStateOf(false) }
     val player = koinInject<OwnTVPlayer>()
@@ -940,10 +945,19 @@ fun OwnTVShell(
     }
     LaunchedEffect(selectedSection) {
         if (selectedSection != MainSection.SEARCH && selectedSection != searchReturn) searchReturn = null
+        if (selectedSection != MainSection.HOME && selectedSection != homeReturn) homeReturn = null
+    }
+    // (v2.5.1) Back from what a Home card opened: Home again, focus on that card (or Home's usual return).
+    fun returnToHome() {
+        homeReturn = null
+        restoreHomeCard = homeCard != null
+        restoreFocus = homeCard == null
+        onSelectSection(MainSection.HOME)
     }
     val openedSeries by seriesVm.openedSeries.collectAsStateWithLifecycle()
     LaunchedEffect(openedSeries == null) {
         if (openedSeries == null && searchReturn == MainSection.SERIES && selectedSection == MainSection.SERIES) returnToSearch()
+        if (openedSeries == null && homeReturn == MainSection.SERIES && selectedSection == MainSection.SERIES) returnToHome()
     }
 
     BackHandler {
@@ -965,6 +979,8 @@ fun OwnTVShell(
             selectedSection == MainSection.SETTINGS -> backFromSettings()
             // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
+            // (v2.5.1) Reached from a Home card: Back returns to Home, on that card.
+            homeReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToHome()
             // v2.1.3: Back in the guide is full screen on the channel in its video.
             selectedSection == MainSection.LIVE_TV -> previewChannel?.let { ch ->
                 restoreFocus = false
@@ -1328,6 +1344,8 @@ fun OwnTVShell(
                                         is TrendingHomeItem.Series -> {
                                             seriesVm.openSeries(current.series)
                                             restoreFocus = true
+                                            homeCard = null // the hero, which Home's usual return focuses
+                                            homeReturn = MainSection.SERIES
                                             onSelectSection(MainSection.SERIES)
                                         }
                                         null -> onUnavailable()
@@ -1337,13 +1355,17 @@ fun OwnTVShell(
                             onOpenMovie = { movie ->
                                 restoreFocus = false
                                 movieVm.revealMovie(movie)
+                                homeReturn = MainSection.MOVIES
                                 onSelectSection(MainSection.MOVIES)
                             },
                             onOpenSeries = { series ->
                                 seriesVm.openSeries(series)
                                 restoreFocus = true
+                                homeReturn = MainSection.SERIES
                                 onSelectSection(MainSection.SERIES)
                             },
+                            onCardOpened = { row, id -> homeCard = row to id },
+                            restoreCard = homeCard.takeIf { restoreHomeCard },
                             onOpenTrendingSearch = { query ->
                                 searchVm.setQuery(query)
                                 trendingSearchActive = true
@@ -1362,6 +1384,7 @@ fun OwnTVShell(
                             onRestored = {
                                 restoreFocus = false
                                 restoreTrendingSearchFocus = false
+                                restoreHomeCard = false
                             },
                             previewEnabled = playerMode == PlayerMode.NONE,
                             firstRowFocusRequester = homeFirstRowFocus,

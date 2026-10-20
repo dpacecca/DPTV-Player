@@ -41,6 +41,9 @@ class ServerTimeshift(
 
     private val http = client.newBuilder().readTimeout(30, TimeUnit.SECONDS).build()
 
+    /** (v2.5.1) A recording server is set up, so a channel's copy would be kept there, not on this device. */
+    suspend fun isSetUp(): Boolean = configOf() != null
+
     /**
      * Ask the server to keep the channel with Xtream `stream_id` [channelStreamId] for [windowMinutes],
      * and wait up to [firstPieceTimeoutMs] for its first piece. Null — the device keeps the copy, or
@@ -58,7 +61,14 @@ class ServerTimeshift(
         buffer.apply(state)
         TimeshiftServer.register(buffer)
         buffer.startPolling()
-        if (!buffer.awaitFirstPiece(firstPieceTimeoutMs)) {
+        // (v2.5.1) A caller that gave up while the server cut its first piece must not leave it running.
+        val ready = try {
+            buffer.awaitFirstPiece(firstPieceTimeoutMs)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            buffer.close()
+            throw e
+        }
+        if (!ready) {
             android.util.Log.w(TAG, "the recording server's buffer had nothing after ${firstPieceTimeoutMs}ms")
             buffer.close()
             return null
@@ -94,6 +104,16 @@ class ServerTimeshift(
         @Volatile var onLost: ((String) -> Unit)? = null
 
         override val isClosed: Boolean get() = closed
+
+        /** (v2.5.1) Completed once the server has answered the DELETE that [close] sends. */
+        private val released = kotlinx.coroutines.CompletableDeferred<Unit>()
+
+        /**
+         * (v2.5.1) Wait up to [timeoutMs] for the server to let go of the channel after [close]. Only a
+         * one-connection playlist waits for this, so the next stream is not the provider's second one.
+         */
+        suspend fun awaitReleased(timeoutMs: Long): Boolean =
+            kotlinx.coroutines.withTimeoutOrNull(timeoutMs) { released.await() } != null
 
         internal fun apply(state: JSONObject) {
             val list = state.optJSONArray("pieces")
@@ -197,6 +217,7 @@ class ServerTimeshift(
                             .header("Authorization", "Bearer " + config.apiKey).delete().build(),
                     ).execute().close()
                 }
+                released.complete(Unit)
             }.apply { isDaemon = true }.start()
         }
     }

@@ -151,6 +151,10 @@ fun HomeScreen(
     onChildFocused: () -> Unit,
     restoreFocus: Boolean = false,
     restoreTrendingSearchFocus: Boolean = false,
+    /** (v2.5.1) Back from a film or show opened here: the row and item id of the card to focus again. */
+    restoreCard: Pair<HomeRow, Long>? = null,
+    /** (v2.5.1) A poster card is being opened (its row and item id), for [restoreCard] on the way back. */
+    onCardOpened: (HomeRow, Long) -> Unit = { _, _ -> },
     onRestored: () -> Unit = {},
     previewEnabled: Boolean = true,
     firstRowFocusRequester: FocusRequester? = null,
@@ -306,25 +310,35 @@ fun HomeScreen(
         if (fullBleed) runCatching { listState.scrollToItem(0) }
     }
 
-    LaunchedEffect(orderedRows, state.trendingItems, state.heroItems, state.recentLive, state.favoriteLive, state.recentGuide, state.favoriteGuide, state.continueMovies, state.continueSeries, state.favoriteMovies, state.favoriteSeries, restoreFocus, restoreTrendingSearchFocus) {
+    // (v2.5.1) Focus went back onto an opened card further down: later passes must not scroll to the top.
+    var cardKept by remember { mutableStateOf(false) }
+    LaunchedEffect(orderedRows, state.trendingItems, state.heroItems, state.recentLive, state.favoriteLive, state.recentGuide, state.favoriteGuide, state.continueMovies, state.continueSeries, state.favoriteMovies, state.favoriteSeries, state.trendingMovies, state.trendingShows, restoreFocus, restoreTrendingSearchFocus, restoreCard) {
         if (orderedRows.isEmpty()) {
-            if (restoreFocus) onRestored()
+            if (restoreFocus || restoreCard != null) onRestored()
             return@LaunchedEffect
         }
+        // (v2.5.1) The card's own row focuses it ([FavoritePosterRow]); a row that is gone falls back to
+        // the usual return from the player.
+        val cardRow = restoreCard?.first?.takeIf { it in renderRows }
+        val restoring = restoreFocus || (restoreCard != null && cardRow == null)
 
         val targetRow = when {
+            cardRow != null -> cardRow
             restoreTrendingSearchFocus && state.trendingItems.isNotEmpty() -> HomeRow.TRENDING
-            restoreFocus && heroVisible && state.heroItems.isNotEmpty() -> HomeRow.HERO
-            restoreFocus && showHeroFallback -> HomeRow.HERO
-            restoreFocus -> firstDataRow
+            restoring && heroVisible && state.heroItems.isNotEmpty() -> HomeRow.HERO
+            restoring && showHeroFallback -> HomeRow.HERO
+            restoring -> firstDataRow
             else -> null
         }
+        if (targetRow == null && cardKept) return@LaunchedEffect
+        cardKept = cardRow != null
         val targetIndex = targetRow?.let { listIndexOf(renderRows.indexOf(it), showSports) } ?: 0
         runCatching { listState.scrollToItem(targetIndex.coerceAtLeast(0)) }
+        if (cardRow != null) return@LaunchedEffect
 
         // Only pull focus INTO the Home content when returning from the player (restoreFocus). On a cold
         // start or a tab switch, leave focus on the rail's Home item so the nav is immediately navigable.
-        if (restoreFocus || restoreTrendingSearchFocus) {
+        if (restoring || restoreTrendingSearchFocus) {
             kotlinx.coroutines.delay(60)
             val focusTarget = when {
                 restoreTrendingSearchFocus && state.trendingItems.isNotEmpty() -> trendingVersionsFocus
@@ -552,7 +566,9 @@ fun HomeScreen(
                 name = { it.name },
                 poster = { it.posterUrl },
                 start = contentStart,
-                onItemClick = onOpenMovie,
+                onItemClick = { onCardOpened(row, it.id); onOpenMovie(it) },
+                restoreKey = restoreCard?.takeIf { it.first == row }?.second,
+                onRestored = onRestored,
                 onFocus = onNonHeroFocused,
                 firstItemFocusRequester = firstItemFocusRequester,
                 track = track,
@@ -566,7 +582,9 @@ fun HomeScreen(
                 name = { it.name },
                 poster = { it.posterUrl },
                 start = contentStart,
-                onItemClick = onOpenSeries,
+                onItemClick = { onCardOpened(row, it.id); onOpenSeries(it) },
+                restoreKey = restoreCard?.takeIf { it.first == row }?.second,
+                onRestored = onRestored,
                 onFocus = onNonHeroFocused,
                 firstItemFocusRequester = firstItemFocusRequester,
                 track = track,
@@ -581,7 +599,9 @@ fun HomeScreen(
                 name = { it.item.name },
                 poster = { it.posterUrl },
                 start = contentStart,
-                onItemClick = { onOpenMovie(it.item) },
+                onItemClick = { onCardOpened(row, it.item.id); onOpenMovie(it.item) },
+                restoreKey = restoreCard?.takeIf { it.first == row }?.second,
+                onRestored = onRestored,
                 onFocus = onNonHeroFocused,
                 firstItemFocusRequester = firstItemFocusRequester,
                 track = track,
@@ -595,7 +615,9 @@ fun HomeScreen(
                 name = { it.item.name },
                 poster = { it.posterUrl },
                 start = contentStart,
-                onItemClick = { onOpenSeries(it.item) },
+                onItemClick = { onCardOpened(row, it.item.id); onOpenSeries(it.item) },
+                restoreKey = restoreCard?.takeIf { it.first == row }?.second,
+                onRestored = onRestored,
                 onFocus = onNonHeroFocused,
                 firstItemFocusRequester = firstItemFocusRequester,
                 track = track,
@@ -1281,10 +1303,28 @@ private fun <T> FavoritePosterRow(
     firstItemFocusRequester: FocusRequester?,
     track: (FocusRequester) -> Unit,
     modifier: Modifier = Modifier,
+    /** (v2.5.1) The id of the card to scroll to and focus (Back from the film or show it opened). */
+    restoreKey: Long? = null,
+    onRestored: () -> Unit = {},
 ) {
+    val rowState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val restoreFocus = remember { FocusRequester() }
+    LaunchedEffect(restoreKey, items) {
+        val wanted = restoreKey ?: return@LaunchedEffect
+        val index = items.indexOfFirst { key(it) == wanted }
+        if (index >= 0) {
+            runCatching { rowState.scrollToItem(index) }
+            kotlinx.coroutines.delay(60) // the card is composed after the scroll
+            if (!runCatching { restoreFocus.requestFocus() }.isSuccess) runCatching { firstItemFocusRequester?.requestFocus() }
+        } else {
+            runCatching { firstItemFocusRequester?.requestFocus() } // no longer in the row
+        }
+        onRestored()
+    }
     Column(modifier) {
         HomeRowHeader(title, small = items.size.toString(), start = start)
         LazyRow(
+            state = rowState,
             horizontalArrangement = Arrangement.spacedBy(20.mpx),
             contentPadding = PaddingValues(start = start, end = 64.mpx),
             modifier = Modifier.focusRestorer().focusGroup(),
@@ -1297,6 +1337,7 @@ private fun <T> FavoritePosterRow(
                     height = 294.mpx,
                     modifier = Modifier
                         .then(if (index == 0 && firstItemFocusRequester != null) Modifier.focusRequester(firstItemFocusRequester) else Modifier)
+                        .then(if (restoreKey != null && key(item) == restoreKey) Modifier.focusRequester(restoreFocus) else Modifier)
                         .tracked(track = track)
                         .onFocusChanged { if (it.hasFocus) onFocus() },
                 ) {
