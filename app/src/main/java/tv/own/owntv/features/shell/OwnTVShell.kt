@@ -256,7 +256,7 @@ fun OwnTVShell(
     var homeEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The guide's entry hook: the TV Guide, or Live TV in Guide view (null while Live TV shows its list).
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
-    // The guide's categories are out beside it (◀ from what is on now).
+    // The guide's categories are docked beside it (v2.5.1: always, on a TV; the phone's sheet is not).
     var guidePanelOpen by remember { mutableStateOf(false) }
     // v2.1.2: the preview was promoted to full screen on ExoPlayer, until the collected liveOnExo says so too.
     var exoHandoff by remember { mutableStateOf(false) }
@@ -751,6 +751,7 @@ fun OwnTVShell(
     // keeps the compact room, so nothing behind it moves).
     // v2.1.0: while the guide's categories are out, the rail sits beside them as the capsule (◀ opens it,
     // ▶ closes it again) instead of hiding, and opens without the scrim: the guide moves over.
+    // v2.5.1: on a TV the categories are docked for good, so on Live TV this always holds there.
     val guideSide = guidePanelOpen && selectedSection == MainSection.LIVE_TV
     // v2.1.2: the menu, when it has focus, always shows the section names, whatever its own size.
     val guideWide = railFocused && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT
@@ -951,6 +952,10 @@ fun OwnTVShell(
             showAvatarPicker -> showAvatarPicker = false
             showPlaylistPicker -> showPlaylistPicker = false
             showExit -> showExit = false
+            // v2.3.3: Back on the menu asks to leave the app (◀ there no longer does); a second Back
+            // while the prompt is up exits. v2.5.1: ahead of Settings too (and normally answered on the
+            // key already, see [railBackAsksToExit]), so the menu over Settings asks as well.
+            railHasFocus -> showExit = true
             // Settings is reached through More now, so Back out of its root goes back there — one
             // level out, not two. `SettingsScreen` passes its own `onBack` for the same purpose, but
             // its root handler does not always win against this one, which left Back looking dead on
@@ -960,9 +965,6 @@ fun OwnTVShell(
             selectedSection == MainSection.SETTINGS -> backFromSettings()
             // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
-            // v2.3.3: Back on the menu asks to leave the app (◀ there no longer does); a second Back
-            // while the prompt is up exits. Ahead of the guide, whose Back would otherwise go full screen.
-            railHasFocus -> showExit = true
             // v2.1.3: Back in the guide is full screen on the channel in its video.
             selectedSection == MainSection.LIVE_TV -> previewChannel?.let { ch ->
                 restoreFocus = false
@@ -993,6 +995,8 @@ fun OwnTVShell(
     var shortcutKeyCode by remember { mutableStateOf(android.view.KeyEvent.KEYCODE_UNKNOWN) }
     var shortcutLongFired by remember { mutableStateOf(false) }
     var shortcutHoldJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    // v2.5.1: this Back went down on the menu, so its release asks to leave the app (see [railBackAsksToExit]).
+    var railBackDown by remember { mutableStateOf(false) }
     val longPressBackArmed = playerMode == PlayerMode.MINI && !showExit && !showAvatarPicker && !showPlaylistPicker
     // Media keys (§8 tier 3) act on the docked window wherever focus is — but only if nothing nearer
     // claimed them first, which is why this is a bubbling handler: a focused browse list still gets its
@@ -1028,6 +1032,14 @@ fun OwnTVShell(
                 if (e.key != Key.Back) return@onPreviewKeyEvent false
                 when (e.type) {
                     KeyEventType.KeyDown -> {
+                        if (e.nativeKeyEvent.repeatCount == 0) {
+                            railBackDown = railBackAsksToExit(
+                                railHasFocus = railHasFocus,
+                                fullscreen = playerMode == PlayerMode.FULLSCREEN,
+                                pickerOpen = showAvatarPicker || showPlaylistPicker,
+                                exitShown = showExit,
+                            )
+                        }
                         if (longPressBackArmed && backHoldJob == null) {
                             backLongFired = false
                             backHoldJob = scope.launch {
@@ -1036,14 +1048,18 @@ fun OwnTVShell(
                                 toggleNowPlayingFocus()
                             }
                         }
-                        false
+                        // Taken here, so no screen's Back runs for it: its release opens the prompt.
+                        railBackDown
                     }
                     KeyEventType.KeyUp -> {
                         backHoldJob?.cancel()
                         backHoldJob = null
                         val fired = backLongFired
                         backLongFired = false
-                        fired // consume ONLY when the long-press already acted, so Back isn't run twice
+                        val onRail = railBackDown
+                        railBackDown = false
+                        if (onRail && !fired && !e.nativeKeyEvent.isCanceled) showExit = true
+                        fired || onRail // consume ONLY when this handler acted, so Back isn't run twice
                     }
                     else -> false
                 }
@@ -1402,6 +1418,9 @@ fun OwnTVShell(
                             onOpenRail = focusRail,
                             onVideoBounds = { bounds, radius -> guideVideoBounds = bounds; guideVideoRadius = radius },
                             onPanelOpen = { guidePanelOpen = it },
+                            // v2.5.1: the inset at rest (no focus on the rail), which the guide is laid out for.
+                            dockRestInset = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 0.dp
+                                else tv.own.owntv.features.shell.components.railDockedReserve(tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT),
                             // How far the categories start from the edge: past the capsule, or the open rail.
                             panelInset = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) {
                                 (tv.own.owntv.features.shell.components.railDockedReserve(railSize) -
