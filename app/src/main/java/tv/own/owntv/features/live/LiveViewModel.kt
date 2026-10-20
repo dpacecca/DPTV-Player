@@ -921,6 +921,16 @@ class LiveViewModel(
         _previewChannel.value = channel
     }
 
+    /**
+     * (v2.5.1) OK in the guide on another channel: it goes into the video at once, not after the pane's
+     * focus delay, and the diagnostics log times it from this press to the first frame.
+     */
+    fun previewFromGuide(channel: ChannelEntity) {
+        onChannelFocused(channel)
+        tv.own.owntv.player.ZapTiming.shared.markPress(android.os.SystemClock.elapsedRealtime())
+        playPreview(channel)
+    }
+
     /** Search's "Go to channel": the list scrolls to [reveal] and focuses it, then calls [revealDone]. */
     private val _reveal = MutableStateFlow<tv.own.owntv.features.search.Reveal?>(null)
     val reveal: StateFlow<tv.own.owntv.features.search.Reveal?> = _reveal.asStateFlow()

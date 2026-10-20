@@ -50,6 +50,8 @@ interface LiveEngines {
     val exoContentBroken: Boolean get() = false
     /** Whether mpv holds a stream (full-screen live, a film, a catch-up). */
     val mpvHasStream: Boolean
+    /** (v2.5.1) True while the user has ExoPlayer paused; null where nothing reports it. */
+    val exoUserPaused: kotlinx.coroutines.flow.StateFlow<Boolean>? get() = null
 
     fun exoPlay(url: String, muted: Boolean, request: LiveRequest)
     fun exoSetMuted(muted: Boolean)
@@ -110,6 +112,7 @@ class EnginePair(private val exo: LivePreviewEngine, private val mpv: OwnTVPlaye
     override val exoStillReconnecting: Boolean get() = exo.stillReconnecting
     override val exoContentBroken: Boolean get() = exo.contentBroken
     override val mpvHasStream: Boolean get() = mpv.hasActiveStream
+    override val exoUserPaused: kotlinx.coroutines.flow.StateFlow<Boolean> get() = exo.userPaused
 
     override fun exoPlay(url: String, muted: Boolean, request: LiveRequest) = exo.play(url, muted, request)
 

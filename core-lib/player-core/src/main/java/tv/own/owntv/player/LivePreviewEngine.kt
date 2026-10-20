@@ -207,6 +207,10 @@ class LivePreviewEngine(
     override val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
     private val _buffering = MutableStateFlow(false)
     override val buffering: StateFlow<Boolean> = _buffering.asStateFlow()
+    // (v2.5.1) The user paused (play/pause), as opposed to "not playing because buffering". The live
+    // controller reads it to move a channel onto its saved copy when the user resumes after a pause.
+    private val _userPaused = MutableStateFlow(false)
+    val userPaused: StateFlow<Boolean> = _userPaused.asStateFlow()
     private val _error = MutableStateFlow<PlaybackFailure?>(null)
     override val error: StateFlow<PlaybackFailure?> = _error.asStateFlow()
     private val _errorInfo = MutableStateFlow<ErrorInfo?>(null)
@@ -1512,6 +1516,7 @@ class LivePreviewEngine(
         tune = TuneState(playStartedMs = android.os.SystemClock.elapsedRealtime())
         // The CH+/− press that caused this tune (if any) is claimed now, so only this tune is timed from it.
         firstFrameGate.arm(tune.playStartedMs, ZapTiming.shared.claim(tune.playStartedMs))
+        _userPaused.value = false // (v2.5.1) a new stream starts playing
         deadlineMisses.set(0); deadlineArmed = false
         cancelPrepareOnSurface() // the previous channel's held prepare
         _stalledSinceMs.value = null
@@ -1848,6 +1853,7 @@ class LivePreviewEngine(
         LiveDiagnosticsLog.event("stop() — intentional")
         tune.stoppingIntentionally = true
         currentUrl = null
+        _userPaused.value = false // (v2.5.1)
         tune.hasPlayed = false; deadlineArmed = false; tune.retryCount = 0; tune.reconnectPending = false; tune.gaveUp = false; tune.decoderRetryDone = false
         tune.failingSinceMs = 0L; _stalledSinceMs.value = null; pendingReload = null
         cancelProviderBackOff(); tune.providerBackOffs = 0
@@ -2616,6 +2622,7 @@ class LivePreviewEngine(
     override fun togglePlayPause() {
         val p = player ?: return
         if (p.isPlaying) p.pause() else p.play()
+        _userPaused.value = !p.playWhenReady // (v2.5.1)
     }
 
     override fun setZoomMode(mode: ZoomMode) { _zoomMode.value = mode } // ExoPreviewSurface observes this + videoAspect/Size and sizes the surface (see Modifier.videoZoom)

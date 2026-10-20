@@ -500,7 +500,7 @@ fun EpgScreen(
         when {
             p != null && p.startMs > now -> openDetails(ch, p)
             p != null && p.stopMs <= now -> if (vm.canCatchup(ch, p, now)) playFromStart(ch, p) else openDetails(ch, p)
-            effectivePreview && !inPreview -> liveVm.onChannelFocused(ch)
+            effectivePreview && !inPreview -> liveVm.previewFromGuide(ch) // (v2.5.1) no focus delay
             else -> watch(ch)
         }
     }
