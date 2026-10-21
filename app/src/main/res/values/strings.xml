@@ -177,4 +177,12 @@
     <string name="sport_settings_trending_services_none">No services found. TMDB may be off or unreachable.</string>
     <string name="sport_settings_trending_english">English titles only</string>
     <string name="sport_settings_trending_english_description">Show only titles originally made in English.</string>
+    <!-- More › Playback log (v2.5.2): Live TV playback diagnostics, newest first. -->
+    <string name="sport_playback_log">Playback log</string>
+    <string name="sport_playback_log_description">Live TV playback, newest first: channel changes, start-up times and reconnects. Stream addresses and logins are hidden.</string>
+    <string name="sport_playback_log_channel_changes">Channel changes</string>
+    <string name="sport_playback_log_off">Detailed playback logging is off.</string>
+    <string name="sport_playback_log_turn_on">Turn on</string>
+    <string name="sport_playback_log_empty">Nothing logged yet</string>
+    <string name="sport_playback_log_empty_body">Change channel in Live TV and the timings show up here.</string>
 </resources>

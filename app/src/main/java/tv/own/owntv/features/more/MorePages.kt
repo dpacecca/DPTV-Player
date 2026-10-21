@@ -71,6 +71,7 @@ import tv.own.owntv.features.home.timeLeftText
 import tv.own.owntv.features.shell.components.ClearHistoryDialog
 import tv.own.owntv.features.shell.components.playbackDisplayName
 import tv.own.owntv.features.update.UpdateDialog
+import tv.own.owntv.player.LiveDiagnosticsLog
 import tv.own.owntv.player.PlaybackErrorLog
 import tv.own.owntv.player.displayText
 import tv.own.owntv.ui.components.BrandMark
@@ -623,6 +624,81 @@ internal fun ErrorLogPage(setEntry: (() -> Boolean) -> Unit, onCountChanged: () 
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Playback log (v2.5.2): Live TV's diagnostics, newest first
+// ---------------------------------------------------------------------------------------------
+
+@Composable
+internal fun PlaybackLogPage(setEntry: (() -> Boolean) -> Unit, loggingOn: Boolean, onTurnOn: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var refresh by remember { mutableIntStateOf(0) }
+    var channelChanges by rememberSaveable { mutableStateOf(false) }
+    // The rolling file (earlier runs too), else this run's ring; filtered and redacted off the main thread.
+    val lines by produceState<List<String>?>(initialValue = null, refresh, channelChanges) {
+        value = withContext(Dispatchers.IO) { PlaybackLogLines.prepare(readPlaybackLog(context), channelChanges) }
+    }
+    val filterFocus = remember { FocusRequester() }
+    val firstRow = remember { FocusRequester() }
+
+    Column(Modifier.fillMaxSize().focusGroup()) {
+        PageHead(stringResource(R.string.sport_playback_log)) {
+            Text((lines?.size ?: 0).toString(), style = stageText(22, 700), color = StageColors.Muted)
+            Spacer(Modifier.weight(1f))
+            StageTool(
+                stringResource(R.string.sport_playback_log_channel_changes), boxed = true, icon = OwnTVIcon.CH_NAV,
+                value = stringResource(if (channelChanges) R.string.common_on else R.string.common_off), valueAccent = channelChanges,
+                modifier = Modifier.focusRequester(filterFocus), onClick = { channelChanges = !channelChanges },
+            )
+            StageTool(stringResource(R.string.settings_clear_log), icon = OwnTVIcon.TRASH, danger = true, onClick = {
+                scope.launch {
+                    withContext(Dispatchers.IO) { LiveDiagnosticsLog.clear() }
+                    refresh++
+                    runCatching { filterFocus.requestFocus() }
+                }
+            })
+        }
+        androidx.compose.runtime.SideEffect { setEntry { runCatching { (if (lines.isNullOrEmpty()) filterFocus else firstRow).requestFocus() }.getOrDefault(false) } }
+        Text(stringResource(R.string.sport_playback_log_description), style = stageText(17, 500), color = StageColors.Muted, modifier = Modifier.padding(top = 10.mpx))
+        if (!loggingOn) Row(Modifier.padding(top = 12.mpx), horizontalArrangement = Arrangement.spacedBy(16.mpx), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.sport_playback_log_off), style = stageText(17, 700), color = StageColors.Warn, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            StageTool(stringResource(R.string.sport_playback_log_turn_on), boxed = true, icon = OwnTVIcon.POWER, onClick = onTurnOn)
+        }
+        val list = lines
+        when {
+            list == null -> Unit
+            list.isEmpty() -> EmptyNote(stringResource(R.string.sport_playback_log_empty), stringResource(R.string.sport_playback_log_empty_body))
+            else -> LazyColumn(
+                Modifier.padding(top = 18.mpx).fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(4.mpx),
+                contentPadding = PaddingValues(bottom = 40.mpx),
+            ) {
+                itemsIndexed(list) { i, line -> PlaybackLogLine(line, if (i == 0) Modifier.focusRequester(firstRow) else Modifier) }
+            }
+        }
+    }
+}
+
+/** One line, focusable so ▲ ▼ scroll the list: its time stamp dim, the message in monospace; focused, it wraps further. */
+@Composable
+private fun PlaybackLogLine(line: String, modifier: Modifier) {
+    val (stamp, message) = remember(line) { PlaybackLogLines.split(line) }
+    val mono = stageText(15, 500).copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+    StageSurface(onClick = {}, radius = 12.mpx, focusStyle = StageFocus.FX, modifier = modifier.fillMaxWidth()) { focused ->
+        Row(Modifier.padding(horizontal = 16.mpx, vertical = 8.mpx), horizontalArrangement = Arrangement.spacedBy(16.mpx)) {
+            if (stamp != null) Text(stamp, style = mono, color = if (focused) StageColors.FxText else StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(message, style = mono, color = if (focused) StageColors.FxText else StageColors.Text, maxLines = if (focused) 8 else 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+/** The rolling file when there is one (earlier runs too), else the in-memory ring. */
+private fun readPlaybackLog(context: android.content.Context): List<String> {
+    LiveDiagnosticsLog.init(context)
+    val fromFile = LiveDiagnosticsLog.file()?.takeIf { it.exists() && it.length() > 0 }?.let { runCatching { it.readLines() }.getOrNull() }
+    return fromFile?.takeIf { it.isNotEmpty() } ?: LiveDiagnosticsLog.snapshot().lines()
 }
 
 // ---------------------------------------------------------------------------------------------
