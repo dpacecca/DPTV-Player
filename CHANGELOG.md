@@ -64,6 +64,14 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.5.2
+
+### ✨ New features
+- **🧾 Playback log page in More, with a Channel changes filter**
+
+### 🐛 Fixes
+- **Categories stay open while the menu is open**
+
 ## v2.5.1
 
 ### ✨ New features

@@ -7,13 +7,15 @@ package tv.own.owntv.features.epg
  * then changes the width, so focus never lands on a list that is going away.
  *
  *  - [GuideDockEvent.OPEN] (◀ on what is on now, a swipe right): into the categories, wide.
- *  - [GuideDockEvent.LEFT] in the categories: to the menu; the column goes slim beside it.
+ *  - [GuideDockEvent.LEFT] in the categories: to the menu; the column stays wide beside it (v2.5.2).
  *  - [GuideDockEvent.RIGHT], [GuideDockEvent.BACK], [GuideDockEvent.SWIPE_LEFT], [GuideDockEvent.PICKED]
  *    in the categories: slim again, focus back on the guide's row.
  *  - [GuideDockEvent.RAIL_RIGHT] (▶ on the menu): back into the categories when the menu was reached
  *    from them, else to the guide's row as before.
- *  - [GuideDockEvent.GRID_FOCUSED], [GuideDockEvent.FOCUS_LEFT]: focus got somewhere else on its own
- *    (a tap, a restore); the column only goes slim, nothing is moved.
+ *  - [GuideDockEvent.GRID_FOCUSED]: focus reached the guide on its own (a tap, a restore); the column
+ *    only goes slim, nothing is moved. The guide is the one place that narrows it (v2.5.2).
+ *  - [GuideDockEvent.FOCUS_LEFT]: focus left the column for somewhere other than the guide (the menu); it
+ *    stays as it is, and ▶ on the menu goes back into it while it is wide (v2.5.2).
  */
 internal data class GuideDock(
     /** The column is wide, with the full list in it (focus is in it, or about to be). */
@@ -32,11 +34,11 @@ internal data class GuideDockStep(val dock: GuideDock, val focus: GuideDockFocus
 internal fun GuideDock.on(event: GuideDockEvent): GuideDockStep = when (event) {
     GuideDockEvent.OPEN -> GuideDockStep(GuideDock(expanded = true), GuideDockFocus.CATEGORIES)
     GuideDockEvent.LEFT ->
-        if (expanded) GuideDockStep(GuideDock(railFromDock = true), GuideDockFocus.RAIL) else GuideDockStep(this, GuideDockFocus.NONE)
+        if (expanded) GuideDockStep(GuideDock(expanded = true, railFromDock = true), GuideDockFocus.RAIL) else GuideDockStep(this, GuideDockFocus.NONE)
     GuideDockEvent.RIGHT, GuideDockEvent.BACK, GuideDockEvent.SWIPE_LEFT, GuideDockEvent.PICKED ->
         if (expanded) GuideDockStep(GuideDock(), GuideDockFocus.GRID) else GuideDockStep(this, GuideDockFocus.NONE)
     GuideDockEvent.RAIL_RIGHT ->
         if (railFromDock) GuideDockStep(GuideDock(expanded = true), GuideDockFocus.CATEGORIES) else GuideDockStep(GuideDock(), GuideDockFocus.GRID)
     GuideDockEvent.GRID_FOCUSED -> GuideDockStep(GuideDock(), GuideDockFocus.NONE)
-    GuideDockEvent.FOCUS_LEFT -> GuideDockStep(copy(expanded = false), GuideDockFocus.NONE)
+    GuideDockEvent.FOCUS_LEFT -> GuideDockStep(copy(railFromDock = railFromDock || expanded), GuideDockFocus.NONE)
 }
