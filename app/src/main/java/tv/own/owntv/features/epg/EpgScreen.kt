@@ -474,6 +474,8 @@ fun EpgScreen(
     var docked by remember { mutableStateOf(true) }
     var dock by remember { mutableStateOf(GuideDock()) }
     var dockFocused by remember { mutableStateOf(false) }
+    // (v2.5.2) Focus anywhere in the guide (the rows, its tools): the one thing that narrows the column.
+    var guideHasFocus by remember { mutableStateOf(false) }
     var dockLeaveJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     // Asks the wide column to take focus (counted, so asking again while it is already wide still works).
     var dockFocusAsk by remember { mutableIntStateOf(0) }
@@ -638,8 +640,8 @@ fun EpgScreen(
     DisposableEffect(Unit) { onDispose { onPanelOpen(false) } }
 
     // Back in the wide categories (or the phone's sheet): back to the guide's row. Only while focus is in
-    // them: on the menu the column is slim, so this is off and the shell's Back (the exit prompt) runs.
-    BackHandler(enabled = sheetOpen || dock.expanded) { if (dock.expanded) dockGo(GuideDockEvent.BACK) else closeSheetToGrid() }
+    // them: on the menu the column stays wide (v2.5.2), but this is off and the shell's Back runs.
+    BackHandler(enabled = sheetOpen || (dock.expanded && dockFocused)) { if (dock.expanded) dockGo(GuideDockEvent.BACK) else closeSheetToGrid() }
     LaunchedEffect(sheetOpen) {
         if (sheetOpen) { withFrameNanos { }; runCatching { sheetFocus.requestFocus() } } else sheetHadFocus = false
     }
@@ -674,6 +676,8 @@ fun EpgScreen(
         // TV (v2.5.1): the categories are docked at the left for good, slim, and widen while focus is in them;
         // the guide is laid out beside the slim column and slides over while it is wide (or the rail is
         // open), so nothing is laid out again and nothing overlaps. A phone keeps them as a sheet.
+        // (v2.5.2) The column stays wide while the rail is open: the guide slides over by both (on 1920,
+        // the widest rail's 440 + 540 puts it at 980, past the column; its right part runs off screen).
         val dockedHere = !compact
         androidx.compose.runtime.SideEffect { if (docked != dockedHere) docked = dockedHere }
         LaunchedEffect(dockedHere) {
@@ -766,7 +770,12 @@ fun EpgScreen(
         // Beside the docked column (read at placement, so its easing moves the guide without recomposing it).
         Column(
             Modifier.fillMaxHeight().width(guideW)
-                .offset { androidx.compose.ui.unit.IntOffset(if (dockedHere) (panelStart + dockW).roundToPx() else 0, 0) },
+                .offset { androidx.compose.ui.unit.IntOffset(if (dockedHere) (panelStart + dockW).roundToPx() else 0, 0) }
+                .onFocusChanged {
+                    // (v2.5.2) Focus reaching the guide by any way (a row, a tool, a tap, a restore) narrows the column.
+                    if (it.hasFocus && !guideHasFocus && dock != GuideDock()) dockGo(GuideDockEvent.GRID_FOCUSED)
+                    guideHasFocus = it.hasFocus
+                },
         ) {
             if (compact) {
                 TopVideo(Modifier.fillMaxWidth())
@@ -892,8 +901,6 @@ fun EpgScreen(
                                         // Focus reaching the guide by any way while the phone's sheet is out closes
                                         // it, so ◀ opens it (and then the menu) again instead of doing nothing.
                                         if (it.hasFocus && !gridHasFocus && sheetOpen && sheetHadFocus) sheetOpen = false
-                                        // v2.5.1: and the docked column goes slim (a tap on a row, a restore).
-                                        if (it.hasFocus && !gridHasFocus && dock != GuideDock()) dockGo(GuideDockEvent.GRID_FOCUSED)
                                         gridHasFocus = it.hasFocus
                                     }
                                     .focusProperties { onEnter = { runCatching { rowFocus(focusedRow.coerceIn(0, state.channels.size - 1)).requestFocus() } } }
@@ -1048,9 +1055,9 @@ fun EpgScreen(
                     }
                     .onFocusChanged {
                         if (dockedHere) {
-                            // v2.5.1: focus that left the wide column without one of the moves above (a tap
-                            // elsewhere) narrows it — after a moment, so a row recycled under focus does not.
-                            // Narrowing moves no focus, so nothing can fall to the menu from it.
+                            // v2.5.1: focus that left the wide column without one of the moves above is noted
+                            // after a moment, so a row recycled under focus does not count. (v2.5.2) It stays
+                            // wide for the menu; the guide's own focus narrows it.
                             dockFocused = it.hasFocus
                             if (it.hasFocus) { dockLeaveJob?.cancel() } else if (dock.expanded) {
                                 dockLeaveJob?.cancel()

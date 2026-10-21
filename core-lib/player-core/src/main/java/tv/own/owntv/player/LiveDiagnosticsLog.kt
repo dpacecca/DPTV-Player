@@ -89,4 +89,12 @@ object LiveDiagnosticsLog {
 
     /** Path of the rolling diagnostic file on disk, once [init] has run. */
     fun file(): File? = logFile
+
+    /** Empty the ring and the file (v2.5.2, the Playback log's Clear). The file goes on the [writer]
+     *  thread, after any line already queued; this waits for it, so call it off the main thread. */
+    fun clear() {
+        synchronized(lock) { ring.clear() }
+        val f = logFile ?: return
+        runCatching { writer.submit { runCatching { f.delete() } }.get() }
+    }
 }

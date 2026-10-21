@@ -177,4 +177,12 @@
     <string name="sport_settings_trending_services_none">Keine Dienste gefunden. TMDB ist vielleicht aus oder nicht erreichbar.</string>
     <string name="sport_settings_trending_english">Nur englische Titel</string>
     <string name="sport_settings_trending_english_description">Nur Titel zeigen, die ursprünglich auf Englisch gedreht wurden.</string>
+    <!-- More › Playback log (v2.5.2): Live TV playback diagnostics, newest first. -->
+    <string name="sport_playback_log">Wiedergabeprotokoll</string>
+    <string name="sport_playback_log_description">Live-TV-Wiedergabe, neueste zuerst: Senderwechsel, Startzeiten und Wiederverbindungen. Stream-Adressen und Zugangsdaten sind ausgeblendet.</string>
+    <string name="sport_playback_log_channel_changes">Senderwechsel</string>
+    <string name="sport_playback_log_off">Detaillierte Wiedergabeprotokollierung ist aus.</string>
+    <string name="sport_playback_log_turn_on">Einschalten</string>
+    <string name="sport_playback_log_empty">Noch nichts protokolliert</string>
+    <string name="sport_playback_log_empty_body">Im Live-TV den Sender wechseln, dann erscheinen die Zeiten hier.</string>
 </resources>

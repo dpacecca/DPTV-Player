@@ -68,7 +68,7 @@ import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
 /** The sheet's items, top to bottom. [DEVELOPER] exists only in local builds (BuildConfig.DEV_TOOLS). */
-private enum class MoreItem { SETTINGS, FAVORITES, HISTORY, BACKUP, LOCAL_SYNC, ERROR_LOG, ABOUT, DEVELOPER }
+private enum class MoreItem { SETTINGS, FAVORITES, HISTORY, BACKUP, LOCAL_SYNC, ERROR_LOG, PLAYBACK_LOG, ABOUT, DEVELOPER }
 
 /**
  * More (Stage P8-01 … P8-08): the glass section sheet, topped by the profile, and one page on the right
@@ -132,6 +132,9 @@ fun MoreScreen(
     val lastBackup by vm.lastBackup.collectAsStateWithLifecycle()
     val playlists by vm.playlistCount.collectAsStateWithLifecycle()
     val pinned by settingsVm.quickPinnedKeys.collectAsStateWithLifecycle()
+    // (v2.5.2) The Playback log's note and its item's On / Off: debug builds always log.
+    val detailedLogging by settingsVm.detailedDiagnostics.collectAsStateWithLifecycle()
+    val loggingOn = detailedLogging || tv.own.owntv.core.CoreBuildInfo.debug || tv.own.owntv.core.CoreBuildInfo.diagnosticBuild
     val context = LocalContext.current
     var logVersion by remember { mutableIntStateOf(0) }
     val logCount by produceState(0, logVersion) { value = withContext(Dispatchers.IO) { PlaybackErrorLog.read(context).size } }
@@ -176,6 +179,7 @@ fun MoreScreen(
             item(MoreItem.LOCAL_SYNC, OwnTVIcon.PHONE, stringResource(R.string.local_sync_title), stringResource(if (sync.listening) R.string.common_on else R.string.common_off), false)
             GroupLabel(stringResource(R.string.settings_app_group))
             item(MoreItem.ERROR_LOG, OwnTVIcon.WARNING, stringResource(R.string.settings_playback_error_log), logCount.toString(), false)
+            item(MoreItem.PLAYBACK_LOG, OwnTVIcon.LIST, stringResource(R.string.sport_playback_log), stringResource(if (loggingOn) R.string.common_on else R.string.common_off), false)
             item(MoreItem.ABOUT, OwnTVIcon.INFO, stringResource(R.string.settings_about), BuildConfig.VERSION_NAME, false)
             // Maintainer-only; DEV_TOOLS is a compile-time constant, so R8 removes it from published APKs.
             if (BuildConfig.DEV_TOOLS) item(MoreItem.DEVELOPER, OwnTVIcon.GEAR, "Developer", "DEV", false)
@@ -217,6 +221,7 @@ fun MoreScreen(
                 MoreItem.BACKUP -> BackupScreen(entry = pageTarget, modifier = Modifier.fillMaxSize())
                 MoreItem.LOCAL_SYNC -> LocalSyncScreen(entry = pageTarget, modifier = Modifier.fillMaxSize())
                 MoreItem.ERROR_LOG -> ErrorLogPage(setEntry = setEntry, onCountChanged = { logVersion++ })
+                MoreItem.PLAYBACK_LOG -> PlaybackLogPage(setEntry = setEntry, loggingOn = loggingOn, onTurnOn = { settingsVm.setDetailedDiagnostics(true) })
                 MoreItem.ABOUT -> AboutPage(vm = vm, entry = pageTarget, onOpenLanguage = { onOpenSettings(8, false) })
                 MoreItem.DEVELOPER -> Box(Modifier.focusRequester(pageTarget).focusGroup()) { DeveloperScreen(onBack = backToSheet) }
             }
