@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">ExoPlayer\'a geçildi</string>
     <string name="player_switch_mpv">mpv\'ye geçildi</string>
+    <string name="player_smoothness_hint">Bu kanal kare kaybediyor. Oynatıcıyı mpv\'ye geçirmek daha akıcı oynatılmasını sağlayabilir.</string>
     <string name="player_error_image_subtitle_audio">Görsel tabanlı altyazılar bu videonun ses biçiminde kullanılamaz.</string>
     <string name="player_error_both_engines_exo_first">Her iki video motorunda da oynatma başarısız oldu (önce ExoPlayer, ardından mpv). Dosya bozuk olabilir veya bu TV\'nin oynatamadığı bir biçim kullanıyor olabilir.</string>
     <string name="player_error_both_engines_mpv_first">Her iki video motorunda da oynatma başarısız oldu (mpv ve ExoPlayer). Dosya bozuk olabilir veya bu TV\'nin oynatamadığı bir biçim kullanıyor olabilir. (<xliff:g id="error">%1$s</xliff:g>)</string>

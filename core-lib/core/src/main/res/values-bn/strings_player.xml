@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">ExoPlayer-এ পরিবর্তন করা হয়েছে</string>
     <string name="player_switch_mpv">mpv-তে পরিবর্তন করা হয়েছে</string>
+    <string name="player_smoothness_hint">এই চ্যানেলে ফ্রেম বাদ পড়ছে। প্লেয়ার mpv-তে পরিবর্তন করলে এটি আরও মসৃণভাবে চলতে পারে।</string>
     <string name="player_error_image_subtitle_audio">এই ভিডিওর অডিও ফরম্যাটে ছবিভিত্তিক সাবটাইটেল পাওয়া যায় না।</string>
     <string name="player_error_both_engines_exo_first">দুটি ভিডিও ইঞ্জিনেই প্লেব্যাক ব্যর্থ হয়েছে (প্রথমে ExoPlayer, তারপর mpv)। ফাইলটি নষ্ট হতে পারে অথবা এমন কোনো ফরম্যাট ব্যবহার করতে পারে যা এই টিভিতে চালানো যায় না।</string>
     <string name="player_error_both_engines_mpv_first">দুটি ভিডিও ইঞ্জিনেই প্লেব্যাক ব্যর্থ হয়েছে (mpv এবং ExoPlayer)। ফাইলটি নষ্ট হতে পারে অথবা এমন কোনো ফরম্যাট ব্যবহার করতে পারে যা এই টিভিতে চালানো যায় না। (<xliff:g id="error">%1$s</xliff:g>)</string>

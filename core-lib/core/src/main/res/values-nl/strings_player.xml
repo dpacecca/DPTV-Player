@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">Overgeschakeld naar ExoPlayer</string>
     <string name="player_switch_mpv">Overgeschakeld naar mpv</string>
+    <string name="player_smoothness_hint">Dit kanaal verliest beelden. Als je de speler overschakelt naar mpv, kan het vloeiender afspelen.</string>
     <string name="player_error_image_subtitle_audio">Beeldondertiteling is niet beschikbaar voor de audio-indeling van deze video.</string>
     <string name="player_error_both_engines_exo_first">Afspelen is met beide video-engines mislukt (eerst ExoPlayer, daarna mpv). Het bestand is mogelijk beschadigd of gebruikt een indeling die deze tv niet kan afspelen.</string>
     <string name="player_error_both_engines_mpv_first">Afspelen is met beide video-engines mislukt (mpv en ExoPlayer). Het bestand is mogelijk beschadigd of gebruikt een indeling die deze tv niet kan afspelen. (<xliff:g id="error">%1$s</xliff:g>)</string>

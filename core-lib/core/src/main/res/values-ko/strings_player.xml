@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">ExoPlayer로 전환했습니다</string>
     <string name="player_switch_mpv">mpv로 전환했습니다</string>
+    <string name="player_smoothness_hint">이 채널에서 프레임이 누락되고 있습니다. 플레이어를 mpv로 전환하면 더 부드럽게 재생될 수 있습니다.</string>
     <string name="player_error_image_subtitle_audio">이 동영상의 오디오 형식에서는 이미지 자막을 사용할 수 없습니다.</string>
     <string name="player_error_both_engines_exo_first">두 비디오 엔진 모두에서 재생하지 못했습니다(ExoPlayer, mpv 순서). 파일이 손상되었거나 이 TV에서 재생할 수 없는 형식일 수 있습니다.</string>
     <string name="player_error_both_engines_mpv_first">두 비디오 엔진 모두에서 재생하지 못했습니다(mpv, ExoPlayer 순서). 파일이 손상되었거나 이 TV에서 재생할 수 없는 형식일 수 있습니다. (<xliff:g id="error">%1$s</xliff:g>)</string>

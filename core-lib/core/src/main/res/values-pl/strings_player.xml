@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">Przełączono na ExoPlayer</string>
     <string name="player_switch_mpv">Przełączono na mpv</string>
+    <string name="player_smoothness_hint">Ten kanał gubi klatki. Przełączenie odtwarzacza na mpv może poprawić płynność.</string>
     <string name="player_error_image_subtitle_audio">Napisy graficzne nie są dostępne dla formatu dźwięku tego materiału wideo.</string>
     <string name="player_error_both_engines_exo_first">Odtwarzanie nie powiodło się w obu silnikach wideo (najpierw ExoPlayer, potem mpv). Plik może być uszkodzony lub używać formatu, którego ten telewizor nie obsługuje.</string>
     <string name="player_error_both_engines_mpv_first">Odtwarzanie nie powiodło się w obu silnikach wideo (mpv i ExoPlayer). Plik może być uszkodzony lub używać formatu, którego ten telewizor nie obsługuje. (<xliff:g id="error">%1$s</xliff:g>)</string>

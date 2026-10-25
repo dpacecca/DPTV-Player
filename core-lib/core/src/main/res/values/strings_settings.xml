@@ -331,8 +331,8 @@
     <string name="settings_quick_preview_sound">Preview sound</string>
     <!-- Translators: Quick toggle label for the channel numbers setting. -->
     <string name="settings_quick_channel_numbers">Channel numbers</string>
-    <!-- Translators: Quick toggle label for the HDR output setting. 'HDR' is High Dynamic Range. -->
-    <string name="settings_quick_hdr">HDR (mpv only)</string>
+    <!-- Translators: Setting name: an HLS stream that offers both a standard (SDR) and a high dynamic range (HDR) picture plays the SDR one. 'SDR' and 'HDR' are standard abbreviations; keep them. -->
+    <string name="settings_quick_prefer_sdr">Prefer SDR</string>
     <!-- Translators: Quick toggle label for the auto-play next episode setting. -->
     <string name="settings_quick_autoplay">Auto-play</string>
     <!-- Translators: Quick action label to check for app updates. -->
@@ -508,10 +508,8 @@
     <string name="settings_mini_player_root">Mini-player</string>
     <!-- Translators: Description of the Mini-player settings group. -->
     <string name="settings_mini_player_root_description">Size and position of the docked mini-player</string>
-    <!-- Translators: Description of the HDR output setting. 'HDR' is High Dynamic Range. -->
-    <string name="settings_hdr_description">Use HDR output when the video &amp; TV support it. mpv only: the ExoPlayer engine does not support this setting and always passes the stream’s HDR through.</string>
-    <!-- Translators: Phone/tablet wording of settings_hdr_description. 'HDR' is High Dynamic Range. -->
-    <string name="settings_hdr_description_mobile">Use HDR output when the video &amp; screen support it. mpv only: the ExoPlayer engine does not support this setting and always passes the stream’s HDR through.</string>
+    <!-- Translators: Description of the Prefer SDR setting. 'ExoPlayer' is an engine brand name. -->
+    <string name="settings_prefer_sdr_description">When a stream offers both an SDR and an HDR picture, play the SDR one: for a TV whose HDR looks washed out or too dark. A stream with HDR only stays HDR. ExoPlayer only.</string>
     <!-- Translators: Setting label for auto frame rate matching. -->
     <string name="settings_auto_frame_rate">Auto frame rate</string>
     <!-- Translators: Description of the auto frame rate setting. Explains when to turn it off. -->
@@ -550,7 +548,15 @@
     <string name="settings_audio_passthrough_description">On: Dolby and DTS go undecoded to the TV, soundbar or receiver when it says it can play them (ExoPlayer). Off: the app decodes them, still as surround where Surround sound allows. mpv always decodes. Not used while Night mode or Volume leveling is on.</string>
     <!-- Translators: Phone/tablet wording of settings_audio_passthrough_description. -->
     <string name="settings_audio_passthrough_description_mobile">On: Dolby and DTS go undecoded to a connected TV or receiver when it says it can play them (ExoPlayer). Off: the app decodes them, still as surround where Surround sound allows. mpv always decodes. Not used while Night mode or Volume leveling is on.</string>
-    <!-- Translators: Settings → Video player, Sound section. Toggle: dynamic range compression (loud scenes quieter, quiet dialogue louder). -->
+    <!-- Translators: Settings › Sound & subtitles, switch title. FFmpeg is the name of an audio/video library and ExoPlayer the name of one of the two players; do not translate either. -->
+    <string name="settings_ffmpeg_audio">FFmpeg audio for ExoPlayer</string>
+    <!-- Translators: Description of settings_ffmpeg_audio. DTS, TrueHD and MP2 are sound formats; mpv is the other player. -->
+    <string name="settings_ffmpeg_audio_description">On: ExoPlayer can also decode sound your device has no decoder for, such as DTS, TrueHD or MP2. The device\'s own decoders still come first. Off: ExoPlayer uses only the device\'s decoders. mpv always decodes with FFmpeg. Changing this restarts DPTV-Player.</string>
+    <!-- Translators: Short line under the settings_ffmpeg_audio row and in the settings help table. -->
+    <string name="settings_line_ffmpeg_audio">For sound the device can\'t decode</string>
+    <!-- Translators: Body of the restart window shown when settings_ffmpeg_audio is switched. The title reuses "Restart DPTV-Player?" and the buttons "Restart now" and "Cancel". -->
+    <string name="settings_ffmpeg_audio_restart_message">The audio decoder changes after DPTV-Player restarts.</string>
+    <!-- Translators: Settings › Sound & subtitles. Toggle: dynamic range compression (loud scenes quieter, quiet dialogue louder). -->
     <string name="settings_night_mode">Night mode</string>
     <!-- Translators: Description of settings_night_mode. -->
     <string name="settings_night_mode_description">Turns loud scenes down and quiet dialogue up, for watching at a low volume.</string>
@@ -859,8 +865,8 @@
     <string name="settings_search_keywords_channel_numbers">channel number direct tune type digits keypad numeric zap lcn</string>
     <!-- Translators: Hidden keyword bag for the Mini-player settings. 'pip' is Picture-in-Picture. Translate as individual search terms. -->
     <string name="settings_search_keywords_mini">docked pip miniplayer size position scale percent corner move</string>
-    <!-- Translators: Hidden keyword bag for the HDR settings. 'HDR' is High Dynamic Range. Translate as individual search terms. -->
-    <string name="settings_search_keywords_hdr">high dynamic range output</string>
+    <!-- Translators: Hidden keyword bag for the Prefer SDR setting. Translate as individual search terms. -->
+    <string name="settings_search_keywords_prefer_sdr">hdr sdr standard dynamic range washed out dark picture</string>
     <!-- Translators: Hidden keyword bag for the Auto frame rate settings. 'afr' is Auto Frame Rate. Translate as individual search terms. -->
     <string name="settings_search_keywords_afr">afr refresh rate hz judder 24fps 25fps 50hz 60hz display mode match</string>
     <!-- Translators: Hidden keyword bag for the Surround sound settings. 'dolby' and 'dts' are brand names. Translate as individual search terms. -->
@@ -1083,6 +1089,14 @@
     <string name="settings_audio_sync">Audio sync</string>
     <!-- Translators: Description of the audio sync setting. -->
     <string name="settings_audio_sync_description">Shift audio earlier or later to match the video. Works with both players (mpv and ExoPlayer).</string>
+    <!-- Translators: Setting row: an extra audio delay for the output the sound is going to right now (HDMI, Bluetooth, the built-in speakers...), remembered separately for each. -->
+    <string name="settings_output_audio_delay">Delay for this output</string>
+    <!-- Translators: Description of settings_output_audio_delay. The quoted name is the Audio sync setting (settings_audio_sync). -->
+    <string name="settings_output_audio_delay_description">Added on top of “Audio sync” and kept separately for each output — HDMI, a soundbar on HDMI ARC, Bluetooth, the built-in speakers, headphones. Set it while listening on the output it is for.</string>
+    <!-- Translators: Name of an audio output: the speakers built into the TV or phone. -->
+    <string name="settings_audio_output_speaker">Built-in speakers</string>
+    <!-- Translators: Name of an audio output: wired headphones, or a USB sound device. -->
+    <string name="settings_audio_output_other">Headphones or USB</string>
     <!-- Translators: Used as a Settings group title, its first sub-heading, and a Customize-screen section chip. -->
     <string name="settings_live_tv">Live TV</string>
     <!-- Translators: Description of the live latency setting. -->
@@ -1186,14 +1200,6 @@
     <string name="settings_reset_live_player_choices_confirm">Reset saved live TV player choices?</string>
     <!-- Translators: Body of the confirmation dialog for the row above. -->
     <string name="settings_reset_live_player_choices_confirm_description">Every channel goes back to the “Live TV player” setting. You can always switch an individual one again from the player.</string>
-    <!-- Translators: Settings row that makes the player forget what it has learned about providers' streams (which need mpv, another format, software decoding for catch-up). -->
-    <string name="settings_forget_stream_fixes">Forget learned stream fixes</string>
-    <!-- Translators: Description of the row above. Keep the number 14 (days). -->
-    <string name="settings_forget_stream_fixes_description">The player learns what each provider’s streams need — mpv instead of ExoPlayer, another format, software decoding for catch-up. Forget this if a provider has fixed its streams. Catch-up lessons are also forgotten on their own after 14 days.</string>
-    <!-- Translators: Title of the confirmation dialog for the row above. -->
-    <string name="settings_forget_stream_fixes_confirm">Forget learned stream fixes?</string>
-    <!-- Translators: Body of the confirmation dialog for the row above. -->
-    <string name="settings_forget_stream_fixes_confirm_description">Channels open the standard way again, and the player relearns whatever a provider still needs. The first play of an affected channel may take a few seconds longer.</string>
     <!-- Translators: Description of the external player row setting. -->
     <string name="settings_external_player_row_description">Open live streams in an external app (VLC, MX Player) instead of the built-in player. Useful for streams this app can\'t decode, or if you prefer another player. Resume position and prev/next are unavailable while playing externally; streams needing a custom User-Agent or referer may not play.</string>
     <!-- Translators: Resume playback option: always resume from saved position. -->
@@ -2752,8 +2758,6 @@
     <string name="settings_vp_cat_controls_resume">Controls &amp; resume</string>
     <!-- Translators: Line under a setting pinned to the Quick group: which Settings group it comes from, e.g. “Pinned from Player”. -->
     <string name="settings_pinned_from">Pinned from <xliff:g id="group">%1$s</xliff:g></string>
-    <!-- Translators: Action word on the settings row that forgets the stream fixes the player has learned. -->
-    <string name="settings_forget">Forget</string>
     <!-- Translators: Action word on the Check for updates settings row: checks GitHub for a new version now. -->
     <string name="settings_check_now">Check now</string>
     <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
@@ -2820,9 +2824,9 @@
     <string name="settings_line_preview_sound">Sound in the Live preview</string>
     <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
     <string name="settings_line_quick_channel_numbers">Type a number on the remote to tune</string>
-    <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
-    <string name="settings_line_hdr">High dynamic range on mpv</string>
-    <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
+    <!-- Translators: One-line description under the Prefer SDR setting's name; keep it short, it is cut to one line. -->
+    <string name="settings_line_prefer_sdr">SDR when a stream offers both</string>
+    <!-- Translators: One-line description under a setting's name on a Settings page; keep it short, it is cut to one line. -->
     <string name="settings_line_quick_autoplay">Start the next episode by itself</string>
     <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
     <string name="settings_line_live_engine">Which engine opens channels, and the fallback</string>
@@ -2832,9 +2836,7 @@
     <string name="settings_line_vod_engine">Which engine opens films and episodes</string>
     <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
     <string name="settings_line_saved_choices">Films and episodes you switched by hand</string>
-    <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
-    <string name="settings_line_learned_fixes">What the player learned about each provider</string>
-    <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
+    <!-- Translators: One-line description under a setting's name on a Settings page; keep it short, it is cut to one line. -->
     <string name="settings_line_external">VLC, MX Player… per section</string>
     <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
     <string name="settings_line_vod_buffer">How far ahead films are loaded</string>
@@ -2868,7 +2870,9 @@
     <string name="settings_line_leveling">Every channel at the same loudness</string>
     <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
     <string name="settings_line_audio_sync">Shift audio earlier or later</string>
-    <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
+    <!-- Translators: One-line description under a setting's name on a Settings page; keep it short, it is cut to one line. -->
+    <string name="settings_line_output_audio_delay">Extra delay for the output playing now</string>
+    <!-- Translators: One-line description under a setting's name on a Settings page; keep it short, it is cut to one line. -->
     <string name="settings_line_saved_audio_sync">Delays you remembered in the player</string>
     <!-- Translators: One-line description under a setting's name on a Settings page (P10); keep it short, it is cut to one line. -->
     <string name="settings_line_audio_lang">Plays this track when the stream has it</string>
@@ -2882,9 +2886,7 @@
     <string name="settings_title_saved_live_choices">Saved live TV player choices</string>
     <!-- Translators: Name of a setting on a Settings page (P10). -->
     <string name="settings_title_saved_choices">Saved player choices</string>
-    <!-- Translators: Name of a setting on a Settings page (P10). -->
-    <string name="settings_title_learned_fixes">Learned stream fixes</string>
-    <!-- Translators: Name of a setting on a Settings page (P10). -->
+    <!-- Translators: Name of a setting on a Settings page. -->
     <string name="settings_title_tunneled">Tunneled playback</string>
     <!-- Translators: Name of a setting on a Settings page (P10). -->
     <string name="settings_title_saved_zoom">Saved zoom</string>

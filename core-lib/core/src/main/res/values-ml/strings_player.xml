@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">ExoPlayer-ലേക്ക് മാറി</string>
     <string name="player_switch_mpv">MPV-ലേക്ക് മാറി</string>
+    <string name="player_smoothness_hint">ഈ ചാനലിൽ ഫ്രെയിമുകൾ നഷ്ടപ്പെടുന്നു. പ്ലെയർ MPV-ലേക്ക് മാറ്റിയാൽ ഇത് കൂടുതൽ സുഗമമായി പ്ലേ ചെയ്തേക്കാം.</string>
     <string name="player_error_image_subtitle_audio">ഈ വീഡിയോയുടെ ഓഡിയോ ഫോർമാറ്റിൽ ചിത്രാധിഷ്ഠിത സബ്‌ടൈറ്റിലുകൾ ലഭ്യമല്ല.</string>
     <string name="player_error_both_engines_exo_first">രണ്ട് വീഡിയോ എഞ്ചിനുകളിലും പ്ലേബാക്ക് പരാജയപ്പെട്ടു (ആദ്യം ExoPlayer, തുടർന്ന് mpv). ഫയൽ കേടായിരിക്കാം അല്ലെങ്കിൽ ഈ ടിവിക്ക് പ്ലേ ചെയ്യാനാകാത്ത ഫോർമാറ്റിലായിരിക്കാം.</string>
     <string name="player_error_both_engines_mpv_first">രണ്ട് വീഡിയോ എഞ്ചിനുകളിലും പ്ലേബാക്ക് പരാജയപ്പെട്ടു (mpv, ExoPlayer). ഫയൽ കേടായിരിക്കാം അല്ലെങ്കിൽ ഈ ടിവിക്ക് പ്ലേ ചെയ്യാനാകാത്ത ഫോർമാറ്റിലായിരിക്കാം. (<xliff:g id="error">%1$s</xliff:g>)</string>

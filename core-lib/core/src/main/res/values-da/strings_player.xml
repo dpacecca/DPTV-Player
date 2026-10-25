@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">Skiftede til ExoPlayer</string>
     <string name="player_switch_mpv">Skiftede til MPV</string>
+    <string name="player_smoothness_hint">Denne kanal taber billeder. Skift afspilleren til MPV, så kører den måske mere jævnt.</string>
     <string name="player_error_image_subtitle_audio">Billedbaserede undertekster er ikke tilgængelige med denne videos lydformat.</string>
     <string name="player_error_both_engines_exo_first">Afspilningen mislykkedes på begge videoafspilningsmotorer (først ExoPlayer, derefter mpv). Filen kan være beskadiget eller bruge et format, som dette tv ikke kan afspille.</string>
     <string name="player_error_both_engines_mpv_first">Afspilningen mislykkedes på begge videoafspilningsmotorer (mpv og ExoPlayer). Filen kan være beskadiget eller bruge et format, som dette tv ikke kan afspille. (<xliff:g id="error">%1$s</xliff:g>)</string>

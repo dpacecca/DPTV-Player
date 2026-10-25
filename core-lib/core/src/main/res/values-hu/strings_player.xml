@@ -89,6 +89,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">Átváltva ExoPlayerre</string>
     <string name="player_switch_mpv">Átváltva MPV-re</string>
+    <string name="player_smoothness_hint">Ez a csatorna képkockákat ejt el. Ha a lejátszót MPV-re váltod, simábban futhat.</string>
     <string name="player_error_image_subtitle_audio">A képalapú feliratok nem érhetők el ennek a videónak a hangformátumához.</string>
     <string name="player_error_both_engines_exo_first">A lejátszás mindkét videómotorral meghiúsult (előbb ExoPlayer, majd mpv). Lehet, hogy a fájl sérült, vagy olyan formátumot használ, amelyet ez a tévé nem tud lejátszani.</string>
     <string name="player_error_both_engines_mpv_first">A lejátszás mindkét videómotorral meghiúsult (mpv és ExoPlayer). Lehet, hogy a fájl sérült, vagy olyan formátumot használ, amelyet ez a tévé nem tud lejátszani. (<xliff:g id="error">%1$s</xliff:g>)</string>

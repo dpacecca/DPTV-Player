@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">Mudou para ExoPlayer</string>
     <string name="player_switch_mpv">Mudou para mpv</string>
+    <string name="player_smoothness_hint">Este canal está a perder fotogramas. Mudar o leitor para mpv pode torná-lo mais fluido.</string>
     <string name="player_error_image_subtitle_audio">As legendas de imagem não estão disponíveis para o formato de áudio deste vídeo.</string>
     <string name="player_error_both_engines_exo_first">A reprodução falhou em ambos os motores de vídeo (ExoPlayer e depois mpv). O ficheiro pode estar danificado ou utilizar um formato que este televisor não consegue reproduzir.</string>
     <string name="player_error_both_engines_mpv_first">A reprodução falhou em ambos os motores de vídeo (mpv e ExoPlayer). O ficheiro pode estar danificado ou utilizar um formato que este televisor não consegue reproduzir. (<xliff:g id="error">%1$s</xliff:g>)</string>

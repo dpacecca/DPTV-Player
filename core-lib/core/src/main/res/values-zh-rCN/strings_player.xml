@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">已切换至 ExoPlayer</string>
     <string name="player_switch_mpv">已切换至 mpv</string>
+    <string name="player_smoothness_hint">此频道正在丢帧。将播放器切换至 mpv 可能会更流畅。</string>
     <string name="player_error_image_subtitle_audio">此视频的音频格式不支持图像字幕。</string>
     <string name="player_error_both_engines_exo_first">两个视频引擎均播放失败（先尝试 ExoPlayer，再尝试 mpv）。文件可能已损坏，或使用了此电视无法播放的格式。</string>
     <string name="player_error_both_engines_mpv_first">两个视频引擎均播放失败（mpv 和 ExoPlayer）。文件可能已损坏，或使用了此电视无法播放的格式。（<xliff:g id="error">%1$s</xliff:g>）</string>

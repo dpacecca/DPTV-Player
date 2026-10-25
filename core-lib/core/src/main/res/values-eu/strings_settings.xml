@@ -176,7 +176,8 @@
     <string name="settings_quick_live_preview">Zuzeneko aurrebista</string>
     <string name="settings_quick_preview_sound">Aurrebistaren soinua</string>
     <string name="settings_quick_channel_numbers">Kanal-zenbakiak</string>
-    <string name="settings_quick_hdr">HDR (mpv soilik)</string>
+    <string name="settings_quick_prefer_sdr">Hobetsi SDR</string>
+    <string name="settings_line_prefer_sdr">SDR, jarioak biak eskaintzen dituenean</string>
     <string name="settings_quick_autoplay">Erreprodukzio automatikoa</string>
     <string name="settings_quick_check_update">Bilatu eguneraketa</string>
     <string name="settings_search_hint">Bilatu ezarpenetan…</string>
@@ -271,8 +272,7 @@
     <string name="settings_preview_audio_description">Erreproduzitu soinua Zuzeneko aurrebistan</string>
     <string name="settings_mini_player_root">Mini erreproduzigailua</string>
     <string name="settings_mini_player_root_description">Ainguratutako mini erreproduzigailuaren tamaina eta kokalekua</string>
-    <string name="settings_hdr_description">Erabili HDR irteera bideoak eta telebistak onartzen dutenean. mpv soilik: ExoPlayer motorrak ez du ezarpen hau onartzen eta jarioaren HDR beti zuzenean pasatzen du.</string>
-    <string name="settings_hdr_description_mobile">Erabili HDR irteera bideoak eta pantailak onartzen dutenean. mpv soilik: ExoPlayer motorrak ez du ezarpen hau onartzen eta jarioaren HDR beti zuzenean pasatzen du.</string>
+    <string name="settings_prefer_sdr_description">Jario batek SDR eta HDR irudiak eskaintzen dituenean, SDR irudia erreproduzitzen da: HDRa margul edo ilunegi ikusten den telebistetarako. HDR soilik duen jarioa HDR geratzen da. ExoPlayer soilik.</string>
     <string name="settings_auto_frame_rate">Fotograma-maiztasun automatikoa</string>
     <string name="settings_auto_frame_rate_description">Egokitu telebistaren freskatze-maiztasuna bideoari (24/25/50/60 fps) pantaila osoan, Zuzeneko telebistan eta VODean, eta lehengoratu irtetean. Desaktibatu zure telebistak edo hartzaileak HDMI azkar berrehunkatzen badu kanal-aldaketa bakoitzean.</string>
     <string name="settings_auto_frame_rate_description_mobile">Egokitu pantailaren freskatze-maiztasuna bideoari (24/25/50/60 fps) pantaila osoan, Zuzeneko telebistan eta VODean, eta lehengoratu irtetean. Desaktibatu pantailak keinuka egiten badu edo ilundu egiten bada bideo bat hasten denean.</string>
@@ -292,6 +292,10 @@
     <string name="settings_audio_passthrough">Dolby eta DTS passthrough</string>
     <string name="settings_audio_passthrough_description">Aktibatuta: Dolby eta DTS deskodetu gabe doaz telebistara, soinu-barrara edo hartzailera hark erreproduzitu ditzakeela esaten duenean (ExoPlayer). Desaktibatuta: aplikazioak deskodetzen ditu, Surround soinuak onartzen duen tokian surround gisa. mpvk beti deskodetzen du. Ez da erabiltzen Gau modua edo Bolumenaren berdinketa aktibatuta daudenean.</string>
     <string name="settings_audio_passthrough_description_mobile">Aktibatuta: Dolby eta DTS deskodetu gabe doaz konektatutako telebistara edo hartzailera hark erreproduzitu ditzakeela esaten duenean (ExoPlayer). Desaktibatuta: aplikazioak deskodetzen ditu, Surround soinuak onartzen duen tokian surround gisa. mpvk beti deskodetzen du. Ez da erabiltzen Gau modua edo Bolumenaren berdinketa aktibatuta daudenean.</string>
+    <string name="settings_ffmpeg_audio">FFmpeg audioa ExoPlayer-entzat</string>
+    <string name="settings_ffmpeg_audio_description">Aktibatuta: ExoPlayer-ek gailuak deskodetzailerik ez duen soinua ere deskodetu dezake, adibidez DTS, TrueHD edo MP2. Gailuaren deskodetzaileek lehentasuna dute oraindik. Desaktibatuta: ExoPlayer-ek gailuaren deskodetzaileak soilik erabiltzen ditu. mpv-k beti FFmpeg bidez deskodetzen du. Aldatzean DPTV-Player berrabiarazten da.</string>
+    <string name="settings_line_ffmpeg_audio">Gailuak deskodetu ezin duen soinurako</string>
+    <string name="settings_ffmpeg_audio_restart_message">Audio-deskodetzailea DPTV-Player berrabiarazi ondoren aldatzen da.</string>
     <string name="settings_night_mode">Gau modua</string>
     <string name="settings_night_mode_description">Eszena ozenak jaisten ditu eta elkarrizketa isilak igotzen, bolumen baxuan ikusteko.</string>
     <string name="settings_volume_leveling">Bolumenaren berdinketa</string>
@@ -444,7 +448,7 @@
     <string name="settings_search_keywords_audio">bolumena ozena isila ezpainen sinkronizazioa atzerapena audio-pista hizkuntza volume loud quiet lip sync delay audio track language</string>
     <string name="settings_search_keywords_channel_numbers">kanal-zenbakia sintonizazio zuzena idatzi digituak teklatua zenbakizkoa zap lcn channel number direct tune type digits keypad numeric</string>
     <string name="settings_search_keywords_mini">ainguratua pip miniplayer tamaina kokalekua eskala ehunekoa izkina mugitu docked size position scale percent corner move</string>
-    <string name="settings_search_keywords_hdr">dinamika-tarte handia irteera high dynamic range output</string>
+    <string name="settings_search_keywords_prefer_sdr">hdr sdr barruti dinamiko estandarra irudi margula iluna</string>
     <string name="settings_search_keywords_afr">afr freskatze-maiztasuna hz dardara 24fps 25fps 50hz 60hz pantaila modua parekatu refresh rate judder display mode match</string>
     <string name="settings_search_keywords_surround">dolby dts 5.1 7.1 hartzailea audioa receiver audio</string>
     <string name="settings_search_keywords_autoplay">erreprodukzio automatikoa telesailak denboraldia autoplay series season</string>
@@ -554,6 +558,11 @@
     <string name="settings_preferred_audio_language">Audio-hizkuntza hobetsia</string>
     <string name="settings_audio_sync">Audio-sinkronizazioa</string>
     <string name="settings_audio_sync_description">Aurreratu edo atzeratu audioa bideoarekin bat etor dadin. Bi erreproduzigailuekin funtzionatzen du (mpv eta ExoPlayer).</string>
+    <string name="settings_output_audio_delay">Irteera honen atzerapena</string>
+    <string name="settings_output_audio_delay_description">«Audio-sinkronizazioa» ezarpenari gehitzen zaio eta irteera bakoitzerako bereiz gordetzen da: HDMI, HDMI ARC bidezko soinu-barra, Bluetooth, bozgorailu integratuak, entzungailuak. Doitu irteera horretatik entzuten ari zarela.</string>
+    <string name="settings_audio_output_speaker">Bozgorailu integratuak</string>
+    <string name="settings_audio_output_other">Entzungailuak edo USB</string>
+    <string name="settings_line_output_audio_delay">Uneko irteerarako atzerapen gehigarria</string>
     <string name="settings_live_tv">Zuzeneko telebista</string>
     <string name="settings_live_latency_description">Zuzeneko emankizunetik zenbat gertu erreproduzitu. Txikiagoak zuzenekoarengandik gertuago esan nahi du baina buffer txikiagoarekin, beraz jario ahulek eten-etenka egin dezakete edo birkonektatu gehiago. Hurrengo irekiko duzun kanalari aplikatzen zaio.</string>
     <string name="settings_live_latency_bitrate_note">Bitrate oso altuko kanal batean — batez ere 4K — baliteke bufferrak eskatu baino denbora gutxiago gordetzea, memorian aldi berean gorde daitekeen bideo-kopurua mugatuta dagoelako.</string>
@@ -605,10 +614,6 @@
     <string name="settings_reset_live_player_choices_description">Kanal bat ExoPlayer eta mpv artean aldatzeak aukera hori gordetzen du kanalarentzat. Berrezartzeak kanal guztiak “Zuzeneko telebistaren erreproduzigailua” ezarpena berriro jarraitzera behartzen ditu. Filmen eta atalen gordetako aukerak mantentzen dira.</string>
     <string name="settings_reset_live_player_choices_confirm">Berrezarri gordetako zuzeneko telebistaren erreproduzigailu-aukerak?</string>
     <string name="settings_reset_live_player_choices_confirm_description">Kanal guztiak “Zuzeneko telebistaren erreproduzigailua” ezarpenera itzultzen dira. Banakako bat berriro alda dezakezu edonoiz erreproduzigailutik.</string>
-    <string name="settings_forget_stream_fixes">Ahaztu ikasitako jario-konponketak</string>
-    <string name="settings_forget_stream_fixes_description">Erreproduzigailuak hornitzaile bakoitzaren jarioek zer behar duten ikasten du — ExoPlayerren ordez mpv, beste formatu bat, berrikustearentzako software bidezko deskodetzea. Ahaztu hau hornitzaile batek bere jarioak konpondu baditu. Berrikustearen ikasgaiak 14 egunen ondoren bere kabuz ahazten dira.</string>
-    <string name="settings_forget_stream_fixes_confirm">Ahaztu ikasitako jario-konponketak?</string>
-    <string name="settings_forget_stream_fixes_confirm_description">Kanalak ohiko moduan irekitzen dira berriro, eta erreproduzigailuak hornitzaile batek oraindik behar duena berriz ikasiko du. Eragindako kanal baten lehen erreprodukzioak segundo batzuk gehiago behar ditzake.</string>
     <string name="settings_external_player_row_description">Ireki jarioak kanpoko aplikazio batean (VLC, MX Player) barneko erreproduzigailuaren ordez, atalka aukeratuta. Baliagarria aplikazio honek deskodetu ezin dituen jarioetarako, edo beste erreproduzigailu bat nahiago baduzu. Jarraitzeko posizioa eta aurrekoa/hurrengoa ez daude erabilgarri kanpoko erreprodukzioan; User-Agent pertsonalizatua edo referer behar duten jarioak baliteke ez erreproduzitzea.</string>
     <string name="settings_resume_always">Jarraitu beti</string>
     <string name="settings_resume_ask">Galdetu jarraitzeko</string>

@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">Přepnuto na ExoPlayer</string>
     <string name="player_switch_mpv">Přepnuto na mpv</string>
+    <string name="player_smoothness_hint">Tento kanál zahazuje snímky. Přepnutí přehrávače na mpv může zajistit plynulejší přehrávání.</string>
     <string name="player_error_image_subtitle_audio">Obrazové titulky nejsou pro zvukový formát tohoto videa dostupné.</string>
     <string name="player_error_both_engines_exo_first">Přehrávání selhalo v obou přehrávacích jádrech (nejprve ExoPlayer, poté mpv). Soubor může být poškozený nebo používat formát, který tento televizor nedokáže přehrát.</string>
     <string name="player_error_both_engines_mpv_first">Přehrávání selhalo v obou přehrávacích jádrech (mpv a ExoPlayer). Soubor může být poškozený nebo používat formát, který tento televizor nedokáže přehrát. (<xliff:g id="error">%1$s</xliff:g>)</string>

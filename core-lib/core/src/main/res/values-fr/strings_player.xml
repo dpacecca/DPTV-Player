@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">Passage à ExoPlayer</string>
     <string name="player_switch_mpv">Passage à mpv</string>
+    <string name="player_smoothness_hint">Cette chaîne perd des images. Passer le lecteur sur mpv peut la rendre plus fluide.</string>
     <string name="player_error_image_subtitle_audio">Les sous-titres graphiques ne sont pas disponibles avec le format audio de cette vidéo.</string>
     <string name="player_error_both_engines_exo_first">La lecture a échoué avec les deux moteurs vidéo (ExoPlayer, puis mpv). Le fichier est peut-être corrompu ou utilise un format que ce téléviseur ne peut pas lire.</string>
     <string name="player_error_both_engines_mpv_first">La lecture a échoué avec les deux moteurs vidéo (mpv et ExoPlayer). Le fichier est peut-être corrompu ou utilise un format que ce téléviseur ne peut pas lire. (<xliff:g id="error">%1$s</xliff:g>)</string>

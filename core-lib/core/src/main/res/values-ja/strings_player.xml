@@ -103,6 +103,7 @@
     <string name="player_time_remaining">−<xliff:g id="time">%1$s</xliff:g></string>
     <string name="player_switch_exo">ExoPlayerに切り替えました</string>
     <string name="player_switch_mpv">mpvに切り替えました</string>
+    <string name="player_smoothness_hint">このチャンネルではフレーム落ちが発生しています。プレーヤーをmpvに切り替えると、より滑らかに再生できる場合があります。</string>
     <string name="player_error_image_subtitle_audio">このビデオの音声形式では、画像形式の字幕を利用できません。</string>
     <string name="player_error_both_engines_exo_first">両方のビデオエンジンで再生に失敗しました（ExoPlayer、次にmpv）。ファイルが破損しているか、このテレビで再生できない形式が使用されている可能性があります。</string>
     <string name="player_error_both_engines_mpv_first">両方のビデオエンジンで再生に失敗しました（mpvとExoPlayer）。ファイルが破損しているか、このテレビで再生できない形式が使用されている可能性があります。（<xliff:g id="error">%1$s</xliff:g>）</string>

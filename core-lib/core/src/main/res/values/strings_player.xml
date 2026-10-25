@@ -177,6 +177,8 @@
     <string name="player_switch_exo">Switched to ExoPlayer</string>
     <!-- Translators: Toast message shown briefly when the user switches the video engine to mpv. "MPV" is a brand name. -->
     <string name="player_switch_mpv">Switched to MPV</string>
+    <!-- Translators: One-time hint over the live player when a channel keeps dropping frames on the ExoPlayer engine. "MPV" is the other engine's brand name; the player bar has a button that switches to it. -->
+    <string name="player_smoothness_hint">This channel is dropping frames. Switching the player to MPV may play it more smoothly.</string>
     <!-- Translators: Error message when image-based subtitles are incompatible with the video\'s audio format. -->
     <string name="player_error_image_subtitle_audio">Image subtitles aren\'t available for this video\'s audio format.</string>
     <!-- Translators: Error message when both ExoPlayer and mpv fail. "ExoPlayer" and "mpv" are engine brand names. Shown in player error overlay and toast. -->
