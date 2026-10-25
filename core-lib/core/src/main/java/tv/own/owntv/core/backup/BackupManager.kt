@@ -50,6 +50,8 @@ class BackupManager(
     private val subtitlesDir: File,
     /** Writes a restored profile picture into `filesDir/avatars`; the one thing that puts files there. */
     private val avatarStore: tv.own.owntv.core.profile.ProfileAvatarStore,
+    /** The app's own settings stores, carried with Settings (DPTV v2.6.0); resolved when used. */
+    private val extras: () -> List<BackupExtra> = { emptyList() },
 ) {
     /** What a backup can contain; the user multi-selects these for export and restore. Profiles are
      *  NOT a section: every backup is inherently profile-based — the export flow's first step picks
@@ -178,6 +180,10 @@ class BackupManager(
                     val openSubtitlesKey = settings.currentOpenSubtitlesApiKey()
                     if (seal != null && openSubtitlesKey.isNotEmpty()) s.put("opensub_api_key_enc", seal(openSubtitlesKey))
                     put("settings", s)
+                    // The app's own settings stores (DPTV v2.6.0: Sport), one block each.
+                    val extraBlocks = JSONObject()
+                    extras().forEach { e -> runCatching { extraBlocks.put(e.backupKey, e.exportBackup()) } }
+                    if (extraBlocks.length() > 0) put("appExtras", extraBlocks)
                     // Which device wrote this, so a restore can hold back the hardware settings when
                     // it lands somewhere else (see DeviceIdentity).
                     put("device", settings.deviceIdentity().toJson())
@@ -1145,6 +1151,10 @@ class BackupManager(
                 // per-channel engine pins — only come along when the user ticked them.
                 val fromHere = DeviceIdentity.sameDevice(DeviceIdentity.fromJson(root.optJSONObject("device")), settings.deviceIdentity())
                 val keepDeviceSettings = !fromHere && !deviceSettings
+                // The app's own settings stores (DPTV v2.6.0); a store the file does not carry is left alone.
+                root.optJSONObject("appExtras")?.let { blocks ->
+                    extras().forEach { e -> blocks.optJSONObject(e.backupKey)?.let { runCatching { e.importBackup(it) } } }
+                }
                 root.optJSONObject("settings")?.let { s ->
                     // non-secret keys (incl. proxy host/port/user/enabled)
                     val importedSettings = settings.importSettings(s, keepDeviceSettings)

@@ -1,6 +1,8 @@
 package tv.own.owntv.features.sport
 
 import android.content.Context
+import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -8,7 +10,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.json.JSONArray
+import org.json.JSONObject
+import tv.own.owntv.core.backup.BackupExtra
 
 private val Context.sportsDataStore by preferencesDataStore(name = SportsFileName)
 
@@ -16,9 +22,14 @@ private const val SportsFileName = "sports"
 
 /**
  * Followed leagues/teams for the Sports hub, in the app's own DataStore file (core settings stay
- * untouched, so upstream merges never conflict here).
+ * untouched, so upstream merges never conflict here). Settings › Sport edits every value here, and
+ * the whole file rides in Settings backups as an app block (v2.6.0, [BackupExtra]).
  */
-class SportsPrefs(private val context: Context) {
+class SportsPrefs(private val context: Context) : BackupExtra {
+
+    /** Followed teams' names by [teamKey] (v2.6.0), for Settings › Sport › My teams. */
+    val teamNames: Flow<Map<String, String>> =
+        context.sportsDataStore.data.map { decodeNames(it[TeamNamesKey]) }
 
     val followedLeagues: Flow<Set<String>> =
         context.sportsDataStore.data.map { it[LeaguesKey] ?: DefaultActiveLeagueIds }
@@ -111,10 +122,36 @@ class SportsPrefs(private val context: Context) {
         context.sportsDataStore.edit { prefs -> prefs[LeaguesKey] = leagueIds }
     }
 
-    suspend fun setTeamFollowed(teamKey: String, followed: Boolean) {
+    suspend fun setTeamFollowed(teamKey: String, followed: Boolean, name: String? = null) {
         context.sportsDataStore.edit { prefs ->
             val current = prefs[TeamsKey].orEmpty()
             prefs[TeamsKey] = if (followed) current + teamKey else current - teamKey
+            // The name travels with the follow (v2.6.0), so My teams can list it without a board.
+            val names = decodeNames(prefs[TeamNamesKey])
+            val next = if (followed && name != null) names + (teamKey to name) else if (followed) names else names - teamKey
+            prefs[TeamNamesKey] = encodeNames(next)
+        }
+    }
+
+    /** Store names for followed teams (v2.6.0: a board names a team stored under its code). */
+    suspend fun putTeamNames(names: Map<String, String>) {
+        context.sportsDataStore.edit { prefs -> prefs[TeamNamesKey] = encodeNames(decodeNames(prefs[TeamNamesKey]) + names) }
+    }
+
+    /** Run [migrate] once on this device's file (v2.6.0). */
+    suspend fun migrateIfNeeded() {
+        if ((context.sportsDataStore.data.first()[VersionKey] ?: 0) >= CurrentVersion) return
+        context.sportsDataStore.edit { migrate(it) }
+    }
+
+    override val backupKey: String get() = BackupBlock
+
+    override suspend fun exportBackup(): JSONObject = exportPrefs(context.sportsDataStore.data.first())
+
+    override suspend fun importBackup(block: JSONObject) {
+        context.sportsDataStore.edit { prefs ->
+            importPrefs(block, prefs)
+            migrate(prefs)
         }
     }
 
@@ -157,6 +194,61 @@ class SportsPrefs(private val context: Context) {
     }
 
     companion object {
+        /** The migrations' version (v2.6.0 = 260): the settings moved into Settings › Sport. */
+        internal const val CurrentVersion = 260
+
+        /**
+         * Bring an older file up to [CurrentVersion]. Every v2.5 key (followed leagues and teams, the
+         * orders, the languages and hidden languages, the channel options) keeps its name and meaning,
+         * so Settings › Sport reads them as they are; only the followed teams gain a name, their short
+         * code until a board or the team search supplies the real one.
+         */
+        internal fun migrate(prefs: MutablePreferences) {
+            if ((prefs[VersionKey] ?: 0) >= CurrentVersion) return
+            val names = decodeNames(prefs[TeamNamesKey])
+            val missing = prefs[TeamsKey].orEmpty().filter { it !in names }
+                .associateWith { it.substringAfter(TeamSeparator) }
+            if (missing.isNotEmpty()) prefs[TeamNamesKey] = encodeNames(names + missing)
+            prefs[VersionKey] = CurrentVersion
+        }
+
+        /** Every key this file holds, each with how it is written to a backup. */
+        internal val BackedUpStringSets get() = listOf(
+            LeaguesKey, TeamsKey, PlayersKey, LanguagesKey, HiddenLanguagesKey, PlaylistsKey, TeamNamesKey,
+        )
+        internal val BackedUpBools get() = listOf(VisibleKey, LanguageAskedKey, StrictKey)
+        internal val BackedUpStrings get() = listOf(LeagueOrderKey, SportOrderKey)
+        internal val BackedUpInts get() = listOf(LiveRefreshKey, AutoRebuildKey, VersionKey)
+
+        /** The keys a backup carries ([exportPrefs]); the coverage test holds every declared key to it. */
+        internal val BackedUpKeys: List<Preferences.Key<*>>
+            get() = BackedUpStringSets + BackedUpBools + BackedUpStrings + BackedUpInts
+
+        /** The file as one JSON object: only the keys that are set, so a restore leaves defaults alone. */
+        internal fun exportPrefs(prefs: Preferences): JSONObject = JSONObject().apply {
+            BackedUpStringSets.forEach { k -> prefs[k]?.let { put(k.name, JSONArray(it.sorted())) } }
+            BackedUpBools.forEach { k -> prefs[k]?.let { put(k.name, it) } }
+            BackedUpStrings.forEach { k -> prefs[k]?.let { put(k.name, it) } }
+            BackedUpInts.forEach { k -> prefs[k]?.let { put(k.name, it) } }
+        }
+
+        /** Write a backup's block back; keys it does not carry keep this device's value. */
+        internal fun importPrefs(block: JSONObject, into: MutablePreferences) {
+            BackedUpStringSets.forEach { k ->
+                block.optJSONArray(k.name)?.let { a -> into[k] = (0 until a.length()).map { a.optString(it) }.toSet() }
+            }
+            BackedUpBools.forEach { k -> if (block.has(k.name)) into[k] = block.optBoolean(k.name) }
+            BackedUpStrings.forEach { k -> if (block.has(k.name)) into[k] = block.optString(k.name) }
+            BackedUpInts.forEach { k -> if (block.has(k.name)) into[k] = block.optInt(k.name) }
+        }
+
+        /** "key<US>name" entries; a team key never contains the unit separator. */
+        internal fun decodeNames(raw: Set<String>?): Map<String, String> =
+            raw.orEmpty().mapNotNull { e -> e.indexOf(NameSeparator).takeIf { it > 0 }?.let { e.substring(0, it) to e.substring(it + 1) } }.toMap()
+
+        internal fun encodeNames(names: Map<String, String>): Set<String> =
+            names.map { (k, v) -> k + NameSeparator + v }.toSet()
+
         fun teamKey(leagueId: String, teamAbbrev: String): String = leagueId + TeamSeparator + teamAbbrev
 
         /** Key for a followed individual athlete (tennis player / MMA fighter): `leagueId|playerId`. */
@@ -175,6 +267,10 @@ class SportsPrefs(private val context: Context) {
         private val AutoRebuildKey = intPreferencesKey("auto_rebuild_minutes")
         private val PlaylistsKey = stringSetPreferencesKey("channel_playlists")
         private val StrictKey = booleanPreferencesKey("strict_channels")
+        private val TeamNamesKey = stringSetPreferencesKey("followed_team_names")
+        private val VersionKey = intPreferencesKey("prefs_version")
+        private const val BackupBlock = "sport"
+        private const val NameSeparator = '\u001F'
         private val DefaultLanguageNames = setOf(SportLanguage.GERMAN.name)
         private const val TeamSeparator = "|"
     }

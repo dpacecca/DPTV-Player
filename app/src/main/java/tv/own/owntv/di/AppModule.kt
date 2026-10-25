@@ -6,6 +6,7 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import tv.own.owntv.features.more.MoreCountsViewModel
 import tv.own.owntv.features.shell.RailCountsViewModel
+import org.koin.dsl.bind
 import org.koin.dsl.module
 import tv.own.owntv.features.customize.CustomizeItemsViewModel
 import tv.own.owntv.features.customize.CustomizeViewModel
@@ -196,6 +197,7 @@ val appModule = module {
     // Live playlists by name (Sport's playlist filter) and the playlist/guide sync fingerprint that
     // triggers Sport's auto rebuild.
     single<SportChannelSources> { ProfileSportChannelSources(get(), get(), get()) }
-    singleOf(::SportsPrefs)
+    // Sport's own settings file; it rides in Settings backups as an app block (v2.6.0).
+    single { SportsPrefs(androidContext()) } bind tv.own.owntv.core.backup.BackupExtra::class
     viewModelOf(::SportsViewModel)
 }
