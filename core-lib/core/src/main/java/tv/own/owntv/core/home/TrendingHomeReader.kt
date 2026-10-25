@@ -101,9 +101,11 @@ class TrendingHomeReader(
 ) {
     /** The rows for [profileId]; empty (hidden) when metadata is off, TMDB fails, or nothing matches. */
     suspend fun load(profileId: Long): TrendingHomeRows = withContext(Dispatchers.IO) {
-        val visible = settings.homeConfig(profileId).first().visibleOrder
-        val wantMovies = HomeRow.TRENDING_MOVIES in visible
-        val wantShows = HomeRow.TRENDING_SHOWS in visible
+        val config = settings.homeConfig(profileId).first()
+        val visible = config.visibleOrder
+        // (v2.6.0) The featured titles at the top of Home are drawn from both lists, rows shown or not.
+        val wantMovies = HomeRow.TRENDING_MOVIES in visible || config.featuredHero
+        val wantShows = HomeRow.TRENDING_SHOWS in visible || config.featuredHero
         if (!wantMovies && !wantShows) return@withContext TrendingHomeRows()
         coroutineScope {
             val movieTitles = async { if (wantMovies) trending.titles(MetadataType.MOVIE) else emptyList() }

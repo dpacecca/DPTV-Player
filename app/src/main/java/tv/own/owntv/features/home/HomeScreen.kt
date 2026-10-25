@@ -49,11 +49,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -136,6 +138,10 @@ private val CompactHeroHeight = 228.mpx - RowGap
 
 /** Where the rows start when there is no hero: just below the top-right cluster. */
 private val NoHeroTop = 110.mpx
+
+/** (v2.6.0) The featured titles' crossfade: the backdrop, and the text over it. */
+private const val BackdropFadeMs = 700
+private const val TextFadeMs = 450
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -226,22 +232,28 @@ fun HomeScreen(
     // A Keep watching card plays its preview only after 3 s of continuous focus (the dwell below).
     var previewIndex by remember { mutableStateOf(-1) }
     var focusedHeroIndex by remember { mutableStateOf(-1) }
+    // (v2.6.0) The featured titles: the Trending hero at the top of Home, above every row.
+    val featured = if (state.config.featuredHero) state.featured else emptyList()
+    val featuredItem = featured.getOrNull(state.activeFeaturedIndex.coerceIn(0, (featured.size - 1).coerceAtLeast(0)))
+    val featuredShown = featuredItem != null
+    var versionsFor by remember { mutableStateOf<List<FeaturedVersion>?>(null) }
     val orderedRows = state.config.visibleOrder
     val heroVisible = HomeRow.HERO in orderedRows
     val hasNonHeroContent = orderedRows.any { it != HomeRow.HERO && rowHasData(it, state) }
     val showHeroFallback = heroVisible && state.heroItems.isEmpty() && !hasNonHeroContent
     val renderRows = orderedRows.filter { rowCanRender(it, state, showHeroFallback) }
     val firstDataRow = renderRows.firstOrNull { it != HomeRow.HERO && rowHasData(it, state) }
-    val showAllHiddenState = orderedRows.isEmpty()
-    val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty()
-    val fullBleed = renderRows.firstOrNull() == HomeRow.TRENDING &&
-        state.config.trendingStyle == HomeTrendingStyle.HERO
+    val showAllHiddenState = orderedRows.isEmpty() && !featuredShown
+    val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty() && !featuredShown
+    // (v2.6.0) Full-bleed is the featured hero now; Now trending itself stays retired.
+    val fullBleed = featuredShown
     // Trending layout = Posters only (P2-04): the folded line on top follows the focused poster.
     val posterHero = renderRows.firstOrNull() == HomeRow.TRENDING &&
         state.config.trendingStyle == HomeTrendingStyle.POSTERS
     var posterIndex by remember { mutableIntStateOf(0) }
     val rowFocusRequester: (HomeRow) -> FocusRequester? = { row ->
-        if (row == renderRows.firstOrNull() && firstRowFocusRequester != null) {
+        // (v2.6.0) With the featured hero on top, the shell's way in (▼ from the playlist pill) is its Play.
+        if (!featuredShown && row == renderRows.firstOrNull() && firstRowFocusRequester != null) {
             firstRowFocusRequester
         } else when (row) {
             HomeRow.TRENDING -> trendingPrimaryFocus
@@ -253,7 +265,7 @@ fun HomeScreen(
             else -> rowFirstFocusRequesters[row]
         }
     }
-    val playFocus = rowFocusRequester(HomeRow.TRENDING) ?: trendingPrimaryFocus
+    val playFocus = if (featuredShown) firstRowFocusRequester ?: trendingPrimaryFocus else trendingPrimaryFocus
     // The control that last had focus on Home, so ▶ out of the rail comes back to exactly it (P1
     // carry-over). Compose's own restorer cannot follow a card inside a lazy row inside a lazy column.
     var lastFocus by remember { mutableStateOf<FocusRequester?>(null) }
@@ -312,15 +324,30 @@ fun HomeScreen(
 
     // (v2.5.1) Focus went back onto an opened card further down: later passes must not scroll to the top.
     var cardKept by remember { mutableStateOf(false) }
-    LaunchedEffect(orderedRows, state.trendingItems, state.heroItems, state.recentLive, state.favoriteLive, state.recentGuide, state.favoriteGuide, state.continueMovies, state.continueSeries, state.favoriteMovies, state.favoriteSeries, state.trendingMovies, state.trendingShows, restoreFocus, restoreTrendingSearchFocus, restoreCard) {
-        if (orderedRows.isEmpty()) {
+    LaunchedEffect(orderedRows, state.trendingItems, state.heroItems, state.recentLive, state.favoriteLive, state.recentGuide, state.favoriteGuide, state.continueMovies, state.continueSeries, state.favoriteMovies, state.favoriteSeries, state.trendingMovies, state.trendingShows, featuredShown, restoreFocus, restoreTrendingSearchFocus, restoreCard) {
+        if (orderedRows.isEmpty() && !featuredShown) {
             if (restoreFocus || restoreCard != null) onRestored()
             return@LaunchedEffect
         }
         // (v2.5.1) The card's own row focuses it ([FavoritePosterRow]); a row that is gone falls back to
         // the usual return from the player.
-        val cardRow = restoreCard?.first?.takeIf { it in renderRows }
+        val heroCard = restoreCard?.takeIf { it.first == FeaturedCardRow }
+        val cardRow = restoreCard?.first?.takeIf { heroCard == null && it in renderRows }
         val restoring = restoreFocus || (restoreCard != null && cardRow == null)
+
+        // (v2.6.0) Back from the player, or from a title the hero opened: the hero, on that title, at Play.
+        if (restoring && featuredShown) {
+            heroCard?.let { (_, id) ->
+                featured.indexOfFirst { FeaturedHome.entryId(it) == id }.takeIf { it >= 0 }?.let(vm::navigateFeatured)
+            }
+            cardKept = false
+            inRows = false
+            runCatching { listState.scrollToItem(0) }
+            kotlinx.coroutines.delay(60)
+            runCatching { playFocus.requestFocus() }
+            onRestored()
+            return@LaunchedEffect
+        }
 
         val targetRow = when {
             cardRow != null -> cardRow
@@ -332,7 +359,7 @@ fun HomeScreen(
         }
         if (targetRow == null && cardKept) return@LaunchedEffect
         cardKept = cardRow != null
-        val targetIndex = targetRow?.let { listIndexOf(renderRows.indexOf(it), showSports) } ?: 0
+        val targetIndex = targetRow?.let { listIndexOf(renderRows.indexOf(it), showSports, featuredShown) } ?: 0
         runCatching { listState.scrollToItem(targetIndex.coerceAtLeast(0)) }
         if (cardRow != null) return@LaunchedEffect
 
@@ -382,14 +409,13 @@ fun HomeScreen(
             }
         }
     }
-    val trendingItem = state.trendingItems.getOrNull(state.activeTrendingIndex)
-        ?.takeIf { fullBleed && state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS }
+    val trendingItem = featuredItem
     val posterItem = state.trendingItems.getOrNull(posterIndex)
         ?.takeIf { posterHero && state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS }
     // ▲ from the row right under a folded hero unfolds it and lands on Play — there is nothing focusable
     // in the one-line form for focus search to find.
     // With the Sports row on, it is the row right under the hero instead (it sits at list index 1).
-    val firstRowUnderHero = renderRows.getOrNull(1).takeIf { fullBleed && !showSports }
+    val firstRowUnderHero = renderRows.getOrNull(0).takeIf { fullBleed && !showSports }
     val unfoldOnUp = Modifier.onPreviewKeyEvent { e ->
         if (e.type == KeyEventType.KeyDown && e.key == Key.DirectionUp) {
             inRows = false
@@ -402,14 +428,87 @@ fun HomeScreen(
         } else false
     }
 
+    // (v2.6.0) Play / Open episodes on a featured title, or on one of its versions. Back from what it
+    // opened comes to the hero again, on that title (v2.5.1 homeReturn).
+    val activate: (TrendingHomeItem) -> Unit = { picked ->
+        onCardOpened(FeaturedCardRow, FeaturedHome.entryId(picked))
+        onActivateTrending(picked) {
+            trendingToast.show(trendingUnavailableMessage)
+            vm.refresh()
+        }
+    }
+
+    // (v2.6.0) The featured titles: upstream's Trending hero, fed by the Trending movies / shows picks.
+    val featuredHero: @Composable () -> Unit = {
+        val item = featuredItem
+        if (item != null) {
+            val favourite = when (item) {
+                is TrendingHomeItem.Movie -> item.movie.id in favoriteMovies
+                is TrendingHomeItem.Series -> item.series.id in favoriteSeries
+            }
+            TrendingHero(
+                item = item,
+                items = featured,
+                activeIndex = state.activeFeaturedIndex,
+                extras = state.trendingExtras[item.stableKey] ?: TrendingExtras(),
+                next = featured.takeIf { it.size > 1 }?.let { it[(state.activeFeaturedIndex + 1) % it.size] },
+                seasonCount = (item as? TrendingHomeItem.Series)?.let { state.trendingSeasonCounts[it.series.id] },
+                favourite = favourite,
+                folded = inRows,
+                paused = !previewEnabled || trailerVideoKey != null || detailsItem != null || versionsFor != null,
+                start = contentStart,
+                primaryFocusRequester = playFocus,
+                trailerFocusRequester = trendingTrailerFocus,
+                detailsFocusRequester = trendingDetailsFocus,
+                versionsFocusRequester = trendingVersionsFocus,
+                onNavigate = vm::navigateFeatured,
+                onActivate = activate,
+                onTrailer = { picked ->
+                    vm.stopPreview()
+                    trailerTitle = picked.snapshot.localizedTitle
+                    trailerVideoKey = (state.trendingExtras[picked.stableKey]?.trailerKey ?: picked.snapshot.trailerKey)
+                },
+                onDetails = { picked ->
+                    vm.stopPreview()
+                    homeScope.launch {
+                        val current = vm.revalidateTrendingItem(picked) ?: return@launch
+                        val resolved = vm.resolveTrendingDetails(current)
+                        detailsMetadata = resolved.cache
+                        detailsTmdbWins = resolved.tmdbWins
+                        detailsItem = current
+                    }
+                },
+                onAllVersions = { picked ->
+                    vm.stopPreview()
+                    homeScope.launch {
+                        val versions = vm.featuredVersions(picked)
+                        // One entry after all (a sync changed the playlist): it simply plays or opens.
+                        if (versions.size > 1) versionsFor = versions else activate(versions.firstOrNull()?.item ?: picked)
+                    }
+                },
+                onToggleFavourite = vm::toggleTrendingFavorite,
+                track = track,
+                onFocusChanged = { focused ->
+                    heroFocused.value = focused
+                    if (focused) {
+                        inRows = false
+                        vm.setHeroFocused(false)
+                        heroPreviewEngine.stop()
+                        previewIndex = -1
+                        onChildFocused()
+                    }
+                },
+            )
+        }
+    }
+
     // One configured Home row; the LazyColumn below places the Sports row between them.
     val rowItem: @Composable (HomeRow) -> Unit = { row ->
         val firstItemFocusRequester = rowFocusRequester(row)
         val rowModifier = if (row == firstRowUnderHero) unfoldOnUp else Modifier
         when (row) {
-            HomeRow.TRENDING -> if (state.trendingItems.size < TrendingDao.MIN_ELIGIBLE_ITEMS) {
-                // Too few titles to be a "trending" row at all, so the row is not drawn.
-            } else if (!fullBleed || trendingItem == null) {
+            // Now trending (retired since v2.4.0): its poster form; the full-bleed hero is the featured titles' now.
+            HomeRow.TRENDING -> if (state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS) {
                 posterItem?.let { FoldedHeroLine(it, contentStart, height = CompactHeroHeight + RowGap) }
                 TrendingPosterRow(
                     // Room for the focused poster's lift under the heading when the line sits above.
@@ -430,65 +529,8 @@ fun HomeScreen(
                     firstItemFocusRequester = firstItemFocusRequester ?: trendingPrimaryFocus,
                     track = track,
                 )
-            } else {
-                val favourite = when (trendingItem) {
-                    is TrendingHomeItem.Movie -> trendingItem.movie.id in favoriteMovies
-                    is TrendingHomeItem.Series -> trendingItem.series.id in favoriteSeries
-                }
-                TrendingHero(
-                    item = trendingItem,
-                    items = state.trendingItems,
-                    activeIndex = state.activeTrendingIndex,
-                    extras = state.trendingExtras[trendingItem.stableKey] ?: TrendingExtras(),
-                    seasonCount = (trendingItem as? TrendingHomeItem.Series)?.let { state.trendingSeasonCounts[it.series.id] },
-                    favourite = favourite,
-                    folded = inRows,
-                    start = contentStart,
-                    primaryFocusRequester = playFocus,
-                    trailerFocusRequester = trendingTrailerFocus,
-                    detailsFocusRequester = trendingDetailsFocus,
-                    versionsFocusRequester = trendingVersionsFocus,
-                    onNavigate = vm::navigateTrending,
-                    onActivate = { item ->
-                        onActivateTrending(item) {
-                            trendingToast.show(trendingUnavailableMessage)
-                            vm.refresh()
-                        }
-                    },
-                    onTrailer = { item ->
-                        vm.stopPreview()
-                        trailerTitle = item.snapshot.localizedTitle
-                        trailerVideoKey = item.snapshot.trailerKey
-                    },
-                    onDetails = { item ->
-                        vm.stopPreview()
-                        homeScope.launch {
-                            val current = vm.revalidateTrendingItem(item) ?: return@launch
-                            val resolved = vm.resolveTrendingDetails(current)
-                            detailsMetadata = resolved.cache
-                            detailsTmdbWins = resolved.tmdbWins
-                            detailsItem = current
-                        }
-                    },
-                    onAllVersions = { item ->
-                        vm.stopPreview()
-                        onOpenTrendingSearch(item.snapshot.canonicalTitle)
-                    },
-                    onToggleFavourite = vm::toggleTrendingFavorite,
-                    track = track,
-                    onFocusChanged = { focused ->
-                        heroFocused.value = focused
-                        if (focused) {
-                            inRows = false
-                            vm.setHeroFocused(false)
-                            heroPreviewEngine.stop()
-                            previewIndex = -1
-                            onChildFocused()
-                        }
-                    },
-                )
             }
-    
+
             HomeRow.HERO -> if (state.heroItems.isNotEmpty()) {
                 KeepWatchingRow(
                     title = row.displayTitle(),
@@ -665,9 +707,11 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(RowGap),
             ) {
                 // The Sports row sits right under the first row (the hero / Keep watching area), where a
-                // live game is seen without scrolling.
-                val rowsBefore = if (showSports) renderRows.take(SportsRowIndex) else renderRows
-                val rowsAfter = if (showSports) renderRows.drop(SportsRowIndex) else emptyList()
+                // live game is seen without scrolling. (v2.6.0) Under the featured hero, when it is shown.
+                val sportsAt = if (featuredShown) 0 else SportsRowIndex
+                val rowsBefore = if (showSports) renderRows.take(sportsAt) else renderRows
+                val rowsAfter = if (showSports) renderRows.drop(sportsAt) else emptyList()
+                if (featuredShown) item(key = FeaturedKey) { featuredHero() }
                 itemsIndexed(rowsBefore, key = { _, row -> row.name }) { _, row -> rowItem(row) }
                 if (showSports && sportsVm != null) {
                     item(key = SportsRowKey) {
@@ -734,7 +778,58 @@ fun HomeScreen(
             }
         })
     }
+    versionsFor?.let { versions ->
+        FeaturedVersionsPopup(
+            versions = versions,
+            onPick = { picked ->
+                versionsFor = null
+                activate(picked)
+            },
+            onDismiss = {
+                versionsFor = null
+                homeScope.launch {
+                    kotlinx.coroutines.delay(60)
+                    runCatching { trendingVersionsFocus.requestFocus() }
+                }
+            },
+        )
+    }
     InAppToast(trendingToast)
+}
+
+/**
+ * (v2.6.0) "All versions" of a featured title: each playlist entry of it, its name over the playlist and
+ * quality; OK plays it (a film) or opens its episodes (a show). The Stage popup, as every picker.
+ */
+@Composable
+private fun FeaturedVersionsPopup(versions: List<FeaturedVersion>, onPick: (TrendingHomeItem) -> Unit, onDismiss: () -> Unit) {
+    val first = versions.firstOrNull() ?: return
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(60)
+        runCatching { focus.requestFocus() }
+    }
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = first.item.snapshot.localizedTitle,
+        eyebrow = stringResource(R.string.home_trending_all_versions),
+        width = 900.mpx,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.mpx)) {
+            versions.forEachIndexed { index, version ->
+                val quality = ProviderVariantParser.displaySignals(version.item.snapshot.providerRawName).quality.label
+                tv.own.owntv.ui.stage.StagePopupOption(
+                    title = version.item.snapshot.providerRawName,
+                    subtitle = listOfNotNull(version.playlist, quality).joinToString(tv.own.owntv.features.settings.dotSeparator()).ifBlank { null },
+                    onClick = { onPick(version.item) },
+                    leading = {
+                        tv.own.owntv.ui.stage.StagePopupIcon(if (version.item is TrendingHomeItem.Movie) OwnTVIcon.PLAY else OwnTVIcon.SERIES)
+                    },
+                    modifier = if (index == 0) Modifier.focusRequester(focus) else Modifier,
+                )
+            }
+        }
+    }
 }
 
 private fun rowHasData(row: HomeRow, state: HomeUiState): Boolean = when (row) {
@@ -785,7 +880,7 @@ private fun ratingText(rating: Double): String = String.format(Locale.getDefault
  */
 @Composable
 private fun TrendingBackdrop(item: TrendingHomeItem, folded: Boolean, modifier: Modifier = Modifier) {
-    val url = trendingBackdrop(item) ?: return
+    val url = trendingBackdrop(item)
     BoxWithConstraints(modifier.fillMaxWidth(1500f / 1920f)) {
         val height = maxWidth * (if (folded) 560f else 844f) / 1500f
         Box(
@@ -795,11 +890,63 @@ private fun TrendingBackdrop(item: TrendingHomeItem, folded: Boolean, modifier: 
                 .alpha(if (folded) 0.55f else 1f)
                 .dissolveEdges(start = 0.34f, bottom = 0.38f),
         ) {
-            AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            CrossfadeBackdrop(url)
             if (!folded) {
                 Box(Modifier.fillMaxSize().backdropLeftWash(0f to 0.70f, 0.30f to 0.35f, 0.60f to 0f, 1f to 0f))
             }
         }
+    }
+}
+
+/**
+ * (v2.6.0) Two picture slots: the new backdrop loads into the free one and, once decoded, fades in over
+ * the shown one (alpha in a graphicsLayer), which is then emptied — so at most two pictures are held, and
+ * only for the fade. Without a picture the Stage page shows through (its own gradient).
+ */
+@Composable
+private fun CrossfadeBackdrop(url: String?) {
+    val slots = remember { androidx.compose.runtime.mutableStateListOf(url, null) }
+    var shown by remember { mutableIntStateOf(0) }
+    var incoming by remember { mutableIntStateOf(-1) }
+    var ready by remember { mutableStateOf(false) }
+    val fade = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(url) {
+        if (url == slots[shown] && incoming < 0) return@LaunchedEffect
+        val free = 1 - shown
+        fade.snapTo(0f)
+        slots[free] = url
+        ready = url == null
+        incoming = free
+    }
+    LaunchedEffect(incoming, ready) {
+        if (incoming < 0 || !ready) return@LaunchedEffect
+        fade.animateTo(1f, androidx.compose.animation.core.tween(BackdropFadeMs))
+        slots[shown] = null
+        shown = incoming
+        incoming = -1
+        fade.snapTo(0f)
+    }
+    for (slot in 0..1) androidx.compose.runtime.key(slot) {
+        val model = slots[slot]
+        val isIncoming = slot == incoming
+        if (model != null) AsyncImage(
+            model = model,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            onSuccess = { if (isIncoming) ready = true },
+            onError = { if (isIncoming) ready = true },
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(if (isIncoming) 1f else 0f)
+                .graphicsLayer {
+                    alpha = when {
+                        isIncoming -> fade.value
+                        // Fading to no picture at all: the shown one fades out instead.
+                        incoming >= 0 && slots[incoming] == null -> 1f - fade.value
+                        else -> 1f
+                    }
+                },
+        )
     }
 }
 
@@ -847,6 +994,10 @@ private fun TrendingHero(
     favourite: Boolean,
     folded: Boolean,
     start: Dp,
+    /** (v2.6.0) The title after this one, whose backdrop is fetched ahead. */
+    next: TrendingHomeItem? = null,
+    /** (v2.6.0) No automatic advance: a trailer, the details or a picker is over Home, or the player is up. */
+    paused: Boolean = false,
     primaryFocusRequester: FocusRequester,
     trailerFocusRequester: FocusRequester,
     detailsFocusRequester: FocusRequester,
@@ -863,7 +1014,8 @@ private fun TrendingHero(
     var heroHasFocus by remember { mutableStateOf(false) }
     var resetClock by remember { mutableIntStateOf(0) }
     var progress by remember { mutableFloatStateOf(0f) }
-    val intervalMs = 10_000L
+    // (v2.6.0) 8 s for the featured titles (upstream: 10 s).
+    val intervalMs = FeaturedHome.INTERVAL_MS
 
     fun navigate(index: Int) {
         onNavigate(index)
@@ -873,8 +1025,8 @@ private fun TrendingHero(
 
     // The automatic advance, every 10 s. It waits while the hero holds focus, so the title never changes
     // under the user's finger — and, folded, nothing of it is on screen to advance.
-    LaunchedEffect(activeIndex, heroHasFocus, folded, resetClock, items.size) {
-        if (heroHasFocus || folded || items.size < 2) return@LaunchedEffect
+    LaunchedEffect(activeIndex, heroHasFocus, folded, paused, resetClock, items.size) {
+        if (heroHasFocus || folded || paused || items.size < 2) return@LaunchedEffect
         val startProgress = progress.coerceIn(0f, 1f)
         val duration = (intervalMs * (1f - startProgress)).toLong().coerceAtLeast(1L)
         val startedAt = System.nanoTime()
@@ -888,9 +1040,24 @@ private fun TrendingHero(
         onNavigate((activeIndex + 1) % items.size)
     }
 
+    // (v2.6.0) The next title's backdrop into Coil's memory cache, so the crossfade never waits on the network.
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val nextUrl = next?.let(::trendingBackdrop)
+    LaunchedEffect(nextUrl) {
+        nextUrl ?: return@LaunchedEffect
+        coil3.SingletonImageLoader.get(context).enqueue(coil3.request.ImageRequest.Builder(context).data(nextUrl).build())
+    }
+
     if (folded) {
         FoldedHeroLine(item, start)
         return
+    }
+
+    // (v2.6.0) The text fades in with each new title, alpha in a graphicsLayer (no relayout, no blur).
+    val textFade = remember { androidx.compose.animation.core.Animatable(1f) }
+    LaunchedEffect(item.stableKey) {
+        textFade.snapTo(0f)
+        textFade.animateTo(1f, androidx.compose.animation.core.tween(TextFadeMs))
     }
 
     val snapshot = item.snapshot
@@ -922,6 +1089,7 @@ private fun TrendingHero(
             Modifier.padding(start = start, top = 170.mpx - HeroLift).width(900.mpx)
                 .wrapContentHeight(Alignment.Top, unbounded = true),
         ) {
+          Column(Modifier.graphicsLayer { alpha = textFade.value }) {
             TrendingEyebrow(item, withTag = true)
             // 18 in the mockup; Compose's trimmed 112 line box starts its glyphs 10 px lower than
             // Chrome's `line-height: 1` box (measured on the TV against P2-01).
@@ -976,11 +1144,13 @@ private fun TrendingHero(
                     // Four lines as drawn; a title that needs a second line (112 high) takes three of
                     // them, so the pager still ends above the Keep watching heading.
                     // The title art is 170 high, 58 more than one title line, so it costs two of them.
-                    maxLines = if (titleLines > 1) 1 else if (showLogo) 2 else 4,
+                    // (v2.6.0) Three lines at most, as OwnTV's featured titles show it.
+                    maxLines = if (titleLines > 1) 1 else if (showLogo) 2 else 3,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.widthIn(max = 760.mpx),
                 )
             }
+          }
             Spacer(Modifier.height(36.mpx))
             Row(horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
                 val isMovie = item is TrendingHomeItem.Movie
@@ -995,7 +1165,7 @@ private fun TrendingHero(
                         iconFilled = isMovie,
                         modifier = Modifier.focusRequester(primaryFocusRequester).tracked(primaryFocusRequester, track),
                     )
-                    if (!snapshot.trailerKey.isNullOrBlank()) {
+                    if (!(extras.trailerKey ?: snapshot.trailerKey).isNullOrBlank()) {
                         StageButton(
                             text = stringResource(R.string.home_trending_trailer),
                             onClick = { onTrailer(item) },
@@ -1003,13 +1173,16 @@ private fun TrendingHero(
                             modifier = Modifier.focusRequester(trailerFocusRequester).tracked(trailerFocusRequester, track),
                         )
                     }
-                    StageButton(
-                        text = stringResource(R.string.home_trending_all_versions),
-                        onClick = { onAllVersions(item) },
-                        icon = OwnTVIcon.LAYERS,
-                        trailing = extras.versions.takeIf { it > 1 }?.toString(),
-                        modifier = Modifier.focusRequester(versionsFocusRequester).tracked(versionsFocusRequester, track),
-                    )
+                    // (v2.6.0) Only when the playlists hold more than one entry of the title.
+                    if (extras.versions > 1) {
+                        StageButton(
+                            text = stringResource(R.string.home_trending_all_versions),
+                            onClick = { onAllVersions(item) },
+                            icon = OwnTVIcon.LAYERS,
+                            trailing = extras.versions.toString(),
+                            modifier = Modifier.focusRequester(versionsFocusRequester).tracked(versionsFocusRequester, track),
+                        )
+                    }
                 }
                 StageButton(
                     text = null,
@@ -1565,6 +1738,18 @@ private const val SportsRowIndex = 1
 /** Its LazyColumn key; the configured rows use their [HomeRow] names. */
 private const val SportsRowKey = "sport_row"
 
-/** The LazyColumn index of the configured row at [rowIndex], with the Sports row counted in. */
-private fun listIndexOf(rowIndex: Int, showSports: Boolean): Int =
-    if (showSports && rowIndex >= SportsRowIndex) rowIndex + 1 else rowIndex
+/** (v2.6.0) The featured hero's LazyColumn key. */
+private const val FeaturedKey = "featured"
+
+/**
+ * (v2.6.0) The row a title opened from the featured hero is remembered under, for [HomeScreen]'s
+ * restoreCard: Now trending's, the hero's place before it retired. It is never a row on Home itself.
+ */
+internal val FeaturedCardRow = HomeRow.TRENDING
+
+/** The LazyColumn index of the configured row at [rowIndex], with the featured hero and the Sports row counted in. */
+private fun listIndexOf(rowIndex: Int, showSports: Boolean, featured: Boolean = false): Int = when {
+    featured -> 1 + rowIndex + if (showSports) 1 else 0
+    showSports && rowIndex >= SportsRowIndex -> rowIndex + 1
+    else -> rowIndex
+}

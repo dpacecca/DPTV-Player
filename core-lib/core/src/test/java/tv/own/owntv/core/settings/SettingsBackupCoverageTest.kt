@@ -84,6 +84,15 @@ class SettingsBackupCoverageTest {
         ).forEach { assertTrue(it, it in backedUp) }
     }
 
+    /** (v2.6.0) The featured titles switch lives in the per-profile Home config, which backups carry whole (homeConfigs). */
+    @Test
+    fun `the featured titles switch is backed up with the Home config (v2_6_0)`() {
+        val off = tv.own.owntv.core.model.HomeConfig(featuredHero = false)
+        val restored = tv.own.owntv.core.model.HomeConfig.fromJson(off.toJson().toString())
+        assertFalse(restored.featuredHero)
+        assertTrue(tv.own.owntv.core.model.HomeConfig.fromJson(tv.own.owntv.core.model.HomeConfig().toJson().toString()).featuredHero)
+    }
+
     @Test
     fun `the sync times are backed up (v2_5_3)`() {
         listOf("sync_times_live", "sync_times_epg", "sync_times_vod").forEach { assertTrue(it, it in backedUp) }

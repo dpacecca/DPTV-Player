@@ -157,6 +157,10 @@
     <string name="sport_home_row_trending_shows">Serien im Trend</string>
     <string name="sport_home_row_trending_movies_description">Beliebte Filme von TMDB, soweit deine Playlists sie haben</string>
     <string name="sport_home_row_trending_shows_description">Beliebte Serien von TMDB, soweit deine Playlists sie haben</string>
+    <!-- The featured titles at the top of Home (v2.6.0) -->
+    <string name="sport_home_featured">Empfohlene Titel</string>
+    <string name="sport_home_featured_show">Empfohlene Titel auf der Startseite</string>
+    <string name="sport_home_featured_description">Filme und Serien im TMDB-Trend, die deine Playlists haben, oben auf der Startseite, mit Abspielen, Trailer und Alle Versionen</string>
     <string name="sport_settings_trending_home">Trends auf der Startseite</string>
     <string name="sport_settings_trending_source">Quelle</string>
     <string name="sport_settings_trending_source_description">Woher Filme im Trend und Serien im Trend auf der Startseite kommen. Beim Streaming: die beliebtesten Titel bei Abo-Streamingdiensten in deinem Land. Trends dieser Woche: was diese Woche weltweit auf TMDB im Trend ist. Gezeigt werden nur Titel aus deinen Playlists, und nur solange die Bibliotheksdetails TMDB nutzen.</string>

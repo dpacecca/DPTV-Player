@@ -69,6 +69,15 @@ data class TrendingExtras(
     val versions: Int = 1,
     /** TMDB title art, shown instead of the text title when there is one (as the films/series hero). */
     val logoUrl: String? = null,
+    /** (v2.6.0) TMDB's trailer keys from the cached details; the featured titles carry none of their own. */
+    val trailerKey: String? = null,
+)
+
+/** (v2.6.0) One entry in the featured title's "All versions" picker: the item, and the playlist it is in. */
+@Immutable
+data class FeaturedVersion(
+    val item: TrendingHomeItem,
+    val playlist: String?,
 )
 
 @Immutable
@@ -97,6 +106,9 @@ data class HomeUiState(
     /** TMDB's trending films and shows found in the playlists (v2.4.0); empty hides the row. */
     val trendingMovies: List<TrendingPick<MovieEntity>> = emptyList(),
     val trendingShows: List<TrendingPick<SeriesEntity>> = emptyList(),
+    /** (v2.6.0) The featured titles at the top of Home, from the two lists above ([FeaturedHome.select]). */
+    val featured: List<TrendingHomeItem> = emptyList(),
+    val activeFeaturedIndex: Int = 0,
     val config: HomeConfig = HomeConfig(),
     val recentGuide: GuideSliceState = GuideSliceState(),
     val favoriteGuide: GuideSliceState = GuideSliceState(),
@@ -254,6 +266,15 @@ class HomeViewModel(
         resolveTrendingExtras(items[index])
     }
 
+    /** (v2.6.0) The featured title on screen; its details and the next one's are read ahead. */
+    fun navigateFeatured(index: Int) {
+        val items = _uiState.value.featured
+        if (index !in items.indices) return
+        _uiState.value = _uiState.value.copy(activeFeaturedIndex = index)
+        resolveTrendingExtras(items[index])
+        if (items.size > 1) resolveTrendingExtras(items[(index + 1) % items.size])
+    }
+
     /** Favourite ids per type, for the hero's ♥ (the same favourites Movies and Series show). */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun favoriteIds(type: MediaType): StateFlow<Set<Long>> = settings.activeProfileId
@@ -295,8 +316,9 @@ class HomeViewModel(
                         .orEmpty()
                     TrendingExtras(
                         genres = genres,
-                        versions = runCatching { versionCount(item) }.getOrDefault(1),
+                        versions = runCatching { versionRows(item).size.coerceAtLeast(1) }.getOrDefault(1),
                         logoUrl = MetadataImages.logo(cache?.logoPath),
+                        trailerKey = cache?.trailerKey?.takeIf { it.isNotBlank() },
                     )
                 }
                 _uiState.value = _uiState.value.copy(trendingExtras = _uiState.value.trendingExtras + (key to extras))
@@ -308,15 +330,15 @@ class HomeViewModel(
 
     /**
      * Entries of the same title (same title signature, the year within one where both have one) across
-     * the playlists the section is showing — what "All versions" then lists.
+     * the playlists the section is showing — what "All versions" then lists ([FeaturedHome.versions]).
      */
-    private suspend fun versionCount(item: TrendingHomeItem): Int {
-        val pid = currentProfileId() ?: return 1
+    private suspend fun versionRows(item: TrendingHomeItem): List<tv.own.owntv.core.database.dao.TrendingCatalogRow> {
+        val pid = currentProfileId() ?: return emptyList()
         val (type, signature, year) = when (item) {
             is TrendingHomeItem.Movie -> Triple(MediaType.MOVIE, item.movie.titleSignature, item.movie.parsedYear)
             is TrendingHomeItem.Series -> Triple(MediaType.SERIES, item.series.titleSignature, item.series.parsedYear)
         }
-        if (signature.isBlank()) return 1
+        if (signature.isBlank()) return emptyList()
         val sources = tv.own.owntv.core.repository.activeSourceIds(settings, sourceDao, pid, type)
         val rows = sources.flatMap { sid ->
             when (type) {
@@ -324,8 +346,28 @@ class HomeViewModel(
                 else -> seriesDao.trendingExact(sid, listOf(signature))
             }
         }
-        return rows.count { row -> year == null || row.parsedYear == null || kotlin.math.abs(row.parsedYear!! - year) <= 1 }
-            .coerceAtLeast(1)
+        return FeaturedHome.versions(FeaturedHome.entryId(item), year, rows)
+    }
+
+    /** (v2.6.0) The featured title's "All versions": each entry as an item of its own, with its playlist's name. */
+    suspend fun featuredVersions(item: TrendingHomeItem): List<FeaturedVersion> = withContext(Dispatchers.IO) {
+        val pid = currentProfileId() ?: return@withContext emptyList()
+        val visibility = feed.vodVisibility(pid)
+        val rows = runCatching { versionRows(item) }.getOrDefault(emptyList())
+        val ids = rows.map { it.id }
+        val names = rows.map { it.sourceId }.distinct()
+            .associateWith { sid -> runCatching { sourceDao.getById(sid)?.name }.getOrNull() }
+        val items: List<TrendingHomeItem> = when (item) {
+            is TrendingHomeItem.Movie -> movieDao.getByIds(ids).associateBy { it.id }
+                .let { byId -> ids.mapNotNull { byId[it] } }
+                .filter { visibility.allows(it) }
+                .map { FeaturedHome.withMovie(item, it) }
+            is TrendingHomeItem.Series -> seriesDao.getSeriesByIds(ids).associateBy { it.id }
+                .let { byId -> ids.mapNotNull { byId[it] } }
+                .filter { visibility.allows(it) }
+                .map { FeaturedHome.withSeries(item, it) }
+        }
+        items.map { FeaturedVersion(it, names[it.snapshot.sourceId]) }
     }
 
     /** Re-resolve the exact saved provider row immediately before an action in case a sync replaced it. */
@@ -400,7 +442,9 @@ class HomeViewModel(
                 .coerceIn(0, (data.trendingItems.size - 1).coerceAtLeast(0)),
             trendingPreferredLanguage = data.trendingPreferredLanguage,
             trendingSeasonCounts = data.trendingSeasonCounts,
-            trendingExtras = previous.trendingExtras.filterKeys { key -> data.trendingItems.any { it.stableKey == key } },
+            trendingExtras = previous.trendingExtras.filterKeys { key ->
+                data.trendingItems.any { it.stableKey == key } || previous.featured.any { it.stableKey == key }
+            },
             heroItems = data.heroItems,
             activeHeroIndex = 0,
             continueMovies = data.continueMovies,
@@ -414,6 +458,8 @@ class HomeViewModel(
             // would make them blink out on every refresh.
             trendingMovies = previous.trendingMovies,
             trendingShows = previous.trendingShows,
+            featured = previous.featured.takeIf { data.config.featuredHero }.orEmpty(),
+            activeFeaturedIndex = previous.activeFeaturedIndex,
             config = data.config,
             recentGuide = data.recentGuide,
             favoriteGuide = data.favoriteGuide,
@@ -440,7 +486,18 @@ class HomeViewModel(
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 TrendingHomeRows()
             }
-            _uiState.value = _uiState.value.copy(trendingMovies = rows.movies, trendingShows = rows.shows)
+            // (v2.6.0) The featured titles come from the same picks; the one on screen stays on screen.
+            val state = _uiState.value
+            val featured = if (state.config.featuredHero) FeaturedHome.select(rows.movies, rows.shows) else emptyList()
+            val activeKey = state.featured.getOrNull(state.activeFeaturedIndex)?.stableKey
+            val active = featured.indexOfFirst { it.stableKey == activeKey }.coerceAtLeast(0)
+            _uiState.value = state.copy(
+                trendingMovies = rows.movies,
+                trendingShows = rows.shows,
+                featured = featured,
+                activeFeaturedIndex = active,
+            )
+            if (featured.isNotEmpty()) navigateFeatured(active)
         }
     }
 

@@ -157,6 +157,10 @@
     <string name="sport_home_row_trending_shows">Trending shows</string>
     <string name="sport_home_row_trending_movies_description">Popular movies from TMDB that your playlists have</string>
     <string name="sport_home_row_trending_shows_description">Popular shows from TMDB that your playlists have</string>
+    <!-- The featured titles at the top of Home (v2.6.0) -->
+    <string name="sport_home_featured">Featured titles</string>
+    <string name="sport_home_featured_show">Featured titles on Home</string>
+    <string name="sport_home_featured_description">Movies and shows trending on TMDB that your playlists have, at the top of Home, with Play, Trailer and All versions</string>
     <string name="sport_settings_trending_home">Trending on Home</string>
     <string name="sport_settings_trending_source">Source</string>
     <string name="sport_settings_trending_source_description">Where Trending movies and Trending shows on Home come from. On streaming: the most popular titles on subscription streaming services in your country. Trending this week: what is trending on TMDB worldwide this week. Only titles your playlists have are shown, and only while library details use TMDB.</string>
