@@ -218,9 +218,9 @@ private val SettingsCards = listOf(
     SettingsGroupCard(OwnTVIcon.PALETTE, R.string.settings_group_appearance, R.string.settings_card_appearance, 8),
     SettingsGroupCard(OwnTVIcon.GRID, R.string.settings_group_layout, R.string.settings_card_layout, 10),
     SettingsGroupCard(OwnTVIcon.MOVIES, R.string.settings_group_content_metadata, R.string.settings_card_content, 3),
-    SettingsGroupCard(OwnTVIcon.PLAY_CIRCLE, R.string.settings_vp_cat_player, R.string.settings_card_player, 11),
+    SettingsGroupCard(OwnTVIcon.PLAY_CIRCLE, R.string.settings_vp_cat_player, R.string.settings_card_player, 10),
     SettingsGroupCard(OwnTVIcon.EXPAND, R.string.settings_vp_cat_picture, R.string.settings_card_picture, 9),
-    SettingsGroupCard(OwnTVIcon.HEADPHONES, R.string.settings_group_sound_subtitles, R.string.settings_card_sound, 11),
+    SettingsGroupCard(OwnTVIcon.HEADPHONES, R.string.settings_group_sound_subtitles, R.string.settings_card_sound, 12),
     SettingsGroupCard(OwnTVIcon.LIVE_TV, R.string.settings_live_tv, R.string.settings_card_live, 12),
     SettingsGroupCard(OwnTVIcon.REC, R.string.settings_group_watching_recording, R.string.settings_card_watching, 11),
     SettingsGroupCard(OwnTVIcon.INFO, R.string.settings_group_app, R.string.settings_card_app, 8),
@@ -636,9 +636,11 @@ internal fun PlaybackLogPage(setEntry: (() -> Boolean) -> Unit, loggingOn: Boole
     val scope = rememberCoroutineScope()
     var refresh by remember { mutableIntStateOf(0) }
     var channelChanges by rememberSaveable { mutableStateOf(false) }
+    // (v2.5.3) The change check's lines, so the owner can see the server really reports its refreshes.
+    var syncChecks by rememberSaveable { mutableStateOf(false) }
     // The rolling file (earlier runs too), else this run's ring; filtered and redacted off the main thread.
-    val lines by produceState<List<String>?>(initialValue = null, refresh, channelChanges) {
-        value = withContext(Dispatchers.IO) { PlaybackLogLines.prepare(readPlaybackLog(context), channelChanges) }
+    val lines by produceState<List<String>?>(initialValue = null, refresh, channelChanges, syncChecks) {
+        value = withContext(Dispatchers.IO) { PlaybackLogLines.prepare(readPlaybackLog(context), channelChanges, syncChecksOnly = syncChecks) }
     }
     val filterFocus = remember { FocusRequester() }
     val firstRow = remember { FocusRequester() }
@@ -651,6 +653,11 @@ internal fun PlaybackLogPage(setEntry: (() -> Boolean) -> Unit, loggingOn: Boole
                 stringResource(R.string.sport_playback_log_channel_changes), boxed = true, icon = OwnTVIcon.CH_NAV,
                 value = stringResource(if (channelChanges) R.string.common_on else R.string.common_off), valueAccent = channelChanges,
                 modifier = Modifier.focusRequester(filterFocus), onClick = { channelChanges = !channelChanges },
+            )
+            StageTool(
+                stringResource(R.string.sport_playback_log_sync_checks), boxed = true, icon = OwnTVIcon.CLOCK,
+                value = stringResource(if (syncChecks) R.string.common_on else R.string.common_off), valueAccent = syncChecks,
+                onClick = { syncChecks = !syncChecks },
             )
             StageTool(stringResource(R.string.settings_clear_log), icon = OwnTVIcon.TRASH, danger = true, onClick = {
                 scope.launch {

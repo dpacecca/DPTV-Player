@@ -1,5 +1,6 @@
 package tv.own.owntv.features.shell
 
+import tv.own.owntv.core.sync.calmDuringSync
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -64,9 +65,10 @@ class RailCountsViewModel(
             // An empty id list would make the IN clause meaningless; -1 matches nothing.
             fun ids(type: MediaType) = c.sourceIdsFor(type).ifEmpty { listOf(-1L) }
             combine(
-                channelDao.countAll(ids(MediaType.LIVE)),
-                movieDao.countAll(ids(MediaType.MOVIE)),
-                seriesDao.countAll(ids(MediaType.SERIES)),
+                // (v2.5.3) Calmed while a sync commits chunks.
+                channelDao.countAll(ids(MediaType.LIVE)).calmDuringSync(),
+                movieDao.countAll(ids(MediaType.MOVIE)).calmDuringSync(),
+                seriesDao.countAll(ids(MediaType.SERIES)).calmDuringSync(),
                 downloadDao.count(c.profileId),
             ) { live, movies, series, downloads ->
                 mapOf(

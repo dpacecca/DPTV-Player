@@ -1,4 +1,4 @@
-# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-16, v2.1.3)
+# docs/LIVE-GUIDE-V2.md — Live TV + Guide (v2) (Stand: 2026-10-25, v2.6.0)
 
 > Zweck: Verhalten und Tastenbelegung des zusammengelegten Live-TV/Guide-Screens und des Player-Banners ab v2.0.0.
 
@@ -163,3 +163,21 @@ Die Vorschau folgt dem Fokus nicht mehr, nur OK.
 
 - Kategorien-Panel: `topScrollSpec` (BringIntoViewSpec) legt die fokussierte Kategorie an den oberen Rand
   und scrollt in 150 ms dorthin, wie die Kanäle im Guide. Die Spalte außerhalb des Guides behält `edgeScrollSpec`.
+
+## v2.6.0
+
+- TV: die angedockte Kategorien-Spalte (v2.5.1/v2.5.2) ist weg, wie TiviMate: GUIDE (volle Breite) →
+  ◀ auf „jetzt“ → CATEGORIES (Panel von links, Rail als Kapsel daneben) → ◀ → MENU (Rail offen, Kategorien
+  bleiben) → ▶ → CATEGORIES → ▶ → GUIDE, Fokus auf die Zeile von vorher. Back geht eine Stufe zurück; Back
+  auf der Rail fragt weiter nach dem Beenden. Zustandsautomat: `GuideNav.on(GuideNavEvent)` (`GuideDockNav.kt`).
+- Animation: ein gemeinsamer Spec `guideSlideSpec()` (240 ms, FastOutSlowIn). Guide wird einmal in voller
+  Breite gelayoutet und nur per `offset { }` verschoben (rechter Teil läuft aus dem Bild); das Panel ist auf
+  dem TV immer komponiert (außerhalb des Bildes), damit es sofort Fokus nehmen kann. Der Infoblock oben wird
+  einmal nach dem Hineinschieben schmaler gelayoutet. Die Video-Bounds gehen direkt aus `onGloballyPositioned`
+  an die Shell, die sie nur in `offset { }`/`layout { }` liest: das Bild gleitet mit, ohne Recomposition.
+- Zentriertes Scrollen: `centreScrollSpec` (200 ms) für Guide-Zeilen und das Kategorien-Sheet; `stepTo`
+  fokussiert sofort und überlässt das Scrollen dem Bring-into-View (gehaltenes ▲▼ ohne Warteschlange).
+- Kategorie-Highlight schaltet den Guide nach 220 ms Ruhe um (`CategorySettle`); OK übernimmt und geht in
+  die erste Zeile, ▶/Back behalten das Highlight. Die Vorschau wird dabei nie neu getunt.
+- OK (OwnTV v5.2.1 #300): auf „jetzt“ erst Vorschau, OK nochmal Vollbild (`guideOkAction`); Vergangenes mit
+  Catch-up und Kommendes behalten ihre Bedeutung.

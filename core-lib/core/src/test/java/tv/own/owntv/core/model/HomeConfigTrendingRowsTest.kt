@@ -41,4 +41,11 @@ class HomeConfigTrendingRowsTest {
         val order = HomeConfig.fromJson(old).visibleOrder
         assertEquals(listOf(HomeRow.RECENT_CHANNELS, HomeRow.TRENDING_MOVIES, HomeRow.TRENDING_SHOWS, HomeRow.FAVORITE_CHANNELS), order.take(4))
     }
+
+    @Test
+    fun `the featured titles are on by default, also for a config saved before v2_6_0`() {
+        assertEquals(true, HomeConfig().featuredHero)
+        assertEquals(true, HomeConfig.fromJson("""{"order":["RECENT_CHANNELS"],"hidden":[]}""").featuredHero)
+        assertEquals(false, HomeConfig.fromJson(HomeConfig(featuredHero = false).toJson().toString()).featuredHero)
+    }
 }

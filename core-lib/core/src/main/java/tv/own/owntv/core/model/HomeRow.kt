@@ -65,6 +65,8 @@ data class HomeConfig(
     val recentLiveMode: HomeLiveRowMode = HomeLiveRowMode.CARDS,
     val favoriteLiveMode: HomeLiveRowMode = HomeLiveRowMode.ON_NOW,
     val trendingStyle: HomeTrendingStyle = HomeTrendingStyle.HERO,
+    /** (v2.6.0) The featured titles at the top of Home: TMDB's trending films and shows found in the playlists. */
+    val featuredHero: Boolean = true,
 ) {
     val visibleOrder: List<HomeRow>
         get() = buildList {
@@ -89,6 +91,7 @@ data class HomeConfig(
         put("recentLiveMode", recentLiveMode.name)
         put("favoriteLiveMode", favoriteLiveMode.name)
         put("trendingStyle", trendingStyle.name)
+        put("featured", featuredHero)
     }
 
     companion object {
@@ -110,6 +113,8 @@ data class HomeConfig(
                 // taken then — those all read as the hero, which is what they were showing.
                 trendingStyle = runCatching { HomeTrendingStyle.valueOf(obj.optString("trendingStyle")) }
                     .getOrDefault(HomeTrendingStyle.HERO),
+                // (v2.6.0) Absent before the featured titles existed: on, as for everyone new.
+                featuredHero = obj.optBoolean("featured", true),
             )
         }
 

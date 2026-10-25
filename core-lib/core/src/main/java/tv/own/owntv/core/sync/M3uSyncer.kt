@@ -67,8 +67,13 @@ internal class M3uSyncer(
         // off is skipped AND its previously stored rows are cleared, so the catalogue stays in step
         // without ever paying for that section's parse and insert.
         contentTypes: SyncContentTypes = SyncContentTypes(),
+        // (v2.5.3) The source's own switches. A timed pass asks for less than they allow (live only,
+        // or films only); only a section switched off here is cleared, never one merely not asked for.
+        enabled: SyncContentTypes = contentTypes,
     ) {
         val channelsStart = System.currentTimeMillis()
+        // A films-only pass skips the live rows; a playlist with Live switched off still imports them, as before.
+        val skipLive = !contentTypes.live && enabled.live
         val elapsedStart = SystemClock.elapsedRealtime()
         val ctx = currentCoroutineContext()
         val freshSource = s.lastSyncAt == null
@@ -451,6 +456,7 @@ internal class M3uSyncer(
                         }
                     }
                     else -> {
+                        if (skipLive) return@onEntry
                         e.groupTitle?.let { queueCategory(MediaType.LIVE, it) }
                         buffer.add(PendingM3uChannel(order = order++, entry = e))
                         if (buffer.size >= chunkSize) {
@@ -500,11 +506,11 @@ internal class M3uSyncer(
             // Section switched off: a disabled type never reaches its prune above (its counter stays 0),
             // so drop whatever an earlier full sync left behind — rows, then their now-empty groups.
             // Runs only after a fully successful parse, like the prune itself.
-            if (!contentTypes.movies) {
+            if (!enabled.movies) {
                 movieDao.clearSource(s.id)
                 support.pruneCategories(s.id, MediaType.MOVIE, emptySet(), "M3U movies", stats)
             }
-            if (!contentTypes.series) {
+            if (!enabled.series) {
                 seriesDao.clearSource(s.id)
                 support.pruneCategories(s.id, MediaType.SERIES, emptySet(), "M3U series", stats)
             }

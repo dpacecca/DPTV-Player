@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
@@ -30,10 +31,8 @@ import tv.own.owntv.R
 import tv.own.owntv.ui.theme.mpx
 import androidx.compose.ui.focus.onFocusChanged
 import tv.own.owntv.core.epg.EpgSource
-import tv.own.owntv.ui.components.DayStepperDialog
 import tv.own.owntv.core.settings.EpgAutoRefresh
 import tv.own.owntv.core.settings.EpgRefresh
-import tv.own.owntv.core.settings.PlaylistRefresh
 import tv.own.owntv.ui.components.rememberDialogFocusRestore
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
@@ -53,6 +52,8 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
     val vm: EpgSourcesViewModel = koinViewModel()
     val sources by vm.sources.collectAsStateWithLifecycle()
     val autoRefreshMap by vm.autoRefresh.collectAsStateWithLifecycle()
+    val changeChecks by vm.changeChecks.collectAsStateWithLifecycle()
+    val checking by vm.checking.collectAsStateWithLifecycle()
     val useLogosIds by vm.useLogos.collectAsStateWithLifecycle()
     val deletingIds by vm.deletingIds.collectAsStateWithLifecycle()
     val colors = OwnTVTheme.colors
@@ -144,6 +145,9 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
             EpgRow(
                 source = source,
                 autoRefresh = autoRefreshMap[source.id] ?: EpgRefresh.DEFAULT,
+                // (v2.5.3) A portal's own guide has no feed to check.
+                checkLine = if (tv.own.owntv.core.repository.EpgRepository.stalkerSourceIdOf(source.url) == null) changeCheckLine(changeChecks[source.id], source.id in checking) else null,
+                onCheckNow = { contextId = source.id; contextIndex = index; vm.checkNow(source) },
                 counts = { vm.counts(source.id) },
                 syncState = syncState,
                 deleting = source.id in deletingIds,
@@ -174,33 +178,17 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
     }
 }
 
+/** Off, or "At sync times" — every older mode now means the guide's fixed times (v2.5.3). */
 @Composable
 private fun epgRefreshLabel(refresh: EpgRefresh): String =
-    if (refresh.mode == EpgAutoRefresh.MANUAL) {
-        pluralStringResource(R.plurals.settings_sources_refresh_days, refresh.manualDays, refresh.manualDays)
-    } else {
-        epgAutoRefreshLabel(refresh.mode)
-    }
-
-@Composable
-private fun epgAutoRefreshLabel(mode: EpgAutoRefresh): String = stringResource(
-    when (mode) {
-        EpgAutoRefresh.OFF -> R.string.settings_sources_refresh_off
-        EpgAutoRefresh.STARTUP -> R.string.settings_sources_refresh_startup
-        EpgAutoRefresh.HOURS_1 -> R.string.settings_epg_refresh_1h
-        EpgAutoRefresh.HOURS_3 -> R.string.settings_epg_refresh_3h
-        EpgAutoRefresh.HOURS_6 -> R.string.settings_epg_refresh_6h
-        EpgAutoRefresh.HOURS_12 -> R.string.settings_epg_refresh_12h
-        EpgAutoRefresh.HOURS_24 -> R.string.settings_epg_refresh_24h
-        EpgAutoRefresh.HOURS_48 -> R.string.settings_epg_refresh_48h
-        EpgAutoRefresh.MANUAL -> R.string.settings_sources_refresh_manual
-    },
-)
+    stringResource(if (refresh.mode == EpgAutoRefresh.OFF) R.string.settings_sources_refresh_off else R.string.sport_refresh_scheduled)
 
 @Composable
 private fun EpgRow(
     source: EpgSource,
     autoRefresh: EpgRefresh,
+    checkLine: String?,
+    onCheckNow: () -> Unit,
     counts: suspend () -> Triple<Int, Int, Int>,
     syncState: EpgSyncState,
     deleting: Boolean,
@@ -283,7 +271,7 @@ private fun EpgRow(
         ),
         StageAction(OwnTVIcon.PENCIL, stringResource(R.string.common_edit), onEdit),
         StageAction(OwnTVIcon.TRASH, stringResource(R.string.common_delete), onDelete, danger = true),
-    )
+    ).let { list -> if (checkLine == null || list.isEmpty()) list else list.take(1) + StageAction(OwnTVIcon.CLOCK, stringResource(R.string.sport_check_now), onCheckNow) + list.drop(1) }
     StageSettingRow(
         icon = OwnTVIcon.EPG,
         title = source.name,
@@ -308,6 +296,9 @@ private fun EpgRow(
             ),
             extra = {
                 Text(status, style = tv.own.owntv.ui.theme.stageText(17, 500), color = if (failed) tv.own.owntv.ui.theme.StageColors.Danger else tv.own.owntv.ui.theme.StageColors.Muted)
+                checkLine?.let {
+                    Text(it, style = tv.own.owntv.ui.theme.stageText(17, 500), color = tv.own.owntv.ui.theme.StageColors.Muted, modifier = Modifier.padding(top = 6.mpx))
+                }
                 if (actions.isNotEmpty()) StageActionColumn(actions, back, actionsFocus)
             },
         ),
@@ -335,7 +326,6 @@ internal fun EpgSourceForm(
     var useLogos by remember { mutableStateOf(initialUseLogos) }
     var showPlaylistPicker by remember { mutableStateOf(false) }
     var showAutoRefreshPicker by remember { mutableStateOf(false) }
-    var showManualDays by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
     // Both pickers open from rows further down the form; closing one returns focus to its row.
@@ -449,27 +439,17 @@ internal fun EpgSourceForm(
     if (showAutoRefreshPicker) {
         PickerDialog(
             title = stringResource(R.string.settings_epg_sources_auto_refresh_title),
-            options = EpgAutoRefresh.entries.map { it.name to epgAutoRefreshLabel(it) },
-            selected = autoRefresh.mode.name,
+            // (v2.5.3) On (at the guide's sync times) or Off; the old start/interval modes are gone.
+            options = listOf(
+                EpgAutoRefresh.STARTUP.name to stringResource(R.string.sport_refresh_scheduled),
+                EpgAutoRefresh.OFF.name to stringResource(R.string.settings_sources_refresh_off),
+            ),
+            selected = if (autoRefresh.mode == EpgAutoRefresh.OFF) EpgAutoRefresh.OFF.name else EpgAutoRefresh.STARTUP.name,
             onSelect = { value ->
-                val mode = runCatching { EpgAutoRefresh.valueOf(value) }.getOrDefault(EpgAutoRefresh.OFF)
                 showAutoRefreshPicker = false
-                // "Every N days" needs the N, so it opens the same stepper the playlist picker uses.
-                if (mode == EpgAutoRefresh.MANUAL) showManualDays = true else autoRefresh = EpgRefresh(mode)
+                autoRefresh = if (value == EpgAutoRefresh.OFF.name) EpgRefresh.OFF else EpgRefresh.STARTUP
             },
             onDismiss = { showAutoRefreshPicker = false },
-        )
-    }
-    if (showManualDays) {
-        DayStepperDialog(
-            title = stringResource(R.string.settings_sources_refresh_days_title),
-            hint = stringResource(R.string.settings_sources_refresh_days_hint),
-            initialDays = autoRefresh.manualDays,
-            minDays = PlaylistRefresh.MIN_MANUAL_DAYS,
-            maxDays = PlaylistRefresh.MAX_MANUAL_DAYS,
-            label = { days -> pluralStringResource(R.plurals.settings_sources_refresh_days, days, days) },
-            onConfirm = { autoRefresh = EpgRefresh(EpgAutoRefresh.MANUAL, it); showManualDays = false },
-            onDismiss = { showManualDays = false },
         )
     }
 }

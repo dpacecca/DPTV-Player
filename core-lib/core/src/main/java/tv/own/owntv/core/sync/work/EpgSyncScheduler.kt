@@ -13,13 +13,21 @@ import kotlinx.coroutines.flow.map
 
 class EpgSyncScheduler(private val context: Context) {
 
-    fun enqueueSync(sourceId: Long, reason: String, baseProgrammes: Int = 0, policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE) {
+    fun enqueueSync(
+        sourceId: Long,
+        reason: String,
+        baseProgrammes: Int = 0,
+        policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE,
+        /** An automatic run held back by playback gives up after this (epoch ms); 0 waits as long as it takes (v2.5.3). */
+        holdUntilMs: Long = 0L,
+    ) {
         val request = OneTimeWorkRequestBuilder<EpgSyncWorker>()
             .setInputData(
                 workDataOf(
                     EpgSyncWorker.KEY_SOURCE_ID to sourceId,
                     EpgSyncWorker.KEY_REASON to reason,
                     EpgSyncWorker.KEY_BASE_PROGRAMMES to baseProgrammes,
+                    EpgSyncWorker.KEY_HOLD_UNTIL to holdUntilMs,
                 ),
             )
             .setConstraints(

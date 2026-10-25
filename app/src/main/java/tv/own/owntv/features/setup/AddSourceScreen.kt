@@ -18,7 +18,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.type
@@ -62,7 +61,6 @@ import tv.own.owntv.core.settings.PlaylistAutoRefresh
 import tv.own.owntv.core.settings.PlaylistRefresh
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.ui.components.BrowseMode
-import tv.own.owntv.ui.components.DayStepperDialog
 import tv.own.owntv.ui.components.OwnTVPopup
 import tv.own.owntv.ui.components.dialogPanel
 import tv.own.owntv.ui.components.modalScrim
@@ -171,7 +169,6 @@ fun AddSourceScreen(
     var hasRemoteStalkerScopes by remember { mutableStateOf(false) }
     var showFileBrowser by remember { mutableStateOf(false) }
     var showAutoRefreshPicker by remember { mutableStateOf(false) }
-    var showManualDaysPicker by remember { mutableStateOf(false) }
     val firstFocus = remember { FocusRequester() }
     val startImportFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { firstFocus.requestFocus() } }
@@ -669,27 +666,17 @@ fun AddSourceScreen(
       if (showAutoRefreshPicker) {
           PickerDialog(
               title = stringResource(R.string.setup_auto_refresh_title),
-              options = PlaylistAutoRefresh.entries.map { it.name to refreshModeLabel(it) },
-              selected = autoRefresh.mode.name,
+              // (v2.5.3) On (at the sync times) or Off; the old start/interval modes are gone.
+              options = listOf(
+                  PlaylistAutoRefresh.STARTUP.name to stringResource(R.string.sport_refresh_scheduled),
+                  PlaylistAutoRefresh.OFF.name to stringResource(R.string.settings_sources_refresh_off),
+              ),
+              selected = if (autoRefresh.mode == PlaylistAutoRefresh.OFF) PlaylistAutoRefresh.OFF.name else PlaylistAutoRefresh.STARTUP.name,
               onSelect = { value ->
-                  val mode = runCatching { PlaylistAutoRefresh.valueOf(value) }.getOrDefault(PlaylistAutoRefresh.OFF)
                   showAutoRefreshPicker = false
-                  // Manual needs a day count, so it hands straight over to the stepper; cancelling
-                  // there leaves the previous selection untouched.
-                  if (mode == PlaylistAutoRefresh.MANUAL) showManualDaysPicker = true
-                  else autoRefresh = PlaylistRefresh(mode, autoRefresh.manualDays)
+                  autoRefresh = if (value == PlaylistAutoRefresh.OFF.name) PlaylistRefresh.OFF else PlaylistRefresh.STARTUP
               },
               onDismiss = { showAutoRefreshPicker = false },
-          )
-      }
-      if (showManualDaysPicker) {
-          ManualDaysDialog(
-              initialDays = autoRefresh.manualDays,
-              onConfirm = { days ->
-                  autoRefresh = PlaylistRefresh(PlaylistAutoRefresh.MANUAL, days)
-                  showManualDaysPicker = false
-              },
-              onDismiss = { showManualDaysPicker = false },
           )
       }
       if (confirmMeasure) {
@@ -713,44 +700,17 @@ fun AddSourceScreen(
     }
 }
 
-/** Picker entry for a mode. Manual reads as an ellipsis label — it opens the day stepper. */
-@Composable
-private fun refreshModeLabel(mode: PlaylistAutoRefresh): String = stringResource(
-    when (mode) {
-        PlaylistAutoRefresh.OFF -> R.string.settings_sources_refresh_off
-        PlaylistAutoRefresh.STARTUP -> R.string.settings_sources_refresh_startup
-        PlaylistAutoRefresh.HOURS_6 -> R.string.settings_sources_refresh_6h
-        PlaylistAutoRefresh.HOURS_12 -> R.string.settings_sources_refresh_12h
-        PlaylistAutoRefresh.MANUAL -> R.string.settings_sources_refresh_manual
-    },
-)
-
-/** The chosen selection as shown on a row: Manual spells out the day count it resolved to. */
-@Composable
-internal fun playlistAutoRefreshLabel(refresh: PlaylistRefresh): String =
-    if (refresh.mode == PlaylistAutoRefresh.MANUAL) {
-        pluralStringResource(R.plurals.settings_sources_refresh_days, refresh.manualDays, refresh.manualDays)
-    } else {
-        refreshModeLabel(refresh.mode)
-    }
-
 /**
- * Day stepper for the Manual auto-refresh interval — [DayStepperDialog] with the playlist's own
- * wording and bounds.
+ * The selection as shown on a row (v2.5.3): Off, or "At sync times" — every older mode (on start,
+ * every N hours or days) now means the fixed sync times, so it reads that way too.
  */
 @Composable
-private fun ManualDaysDialog(initialDays: Int, onConfirm: (Int) -> Unit, onDismiss: () -> Unit) {
-    DayStepperDialog(
-        title = stringResource(R.string.settings_sources_refresh_days_title),
-        hint = stringResource(R.string.settings_sources_refresh_days_hint),
-        initialDays = initialDays,
-        minDays = PlaylistRefresh.MIN_MANUAL_DAYS,
-        maxDays = PlaylistRefresh.MAX_MANUAL_DAYS,
-        label = { days -> pluralStringResource(R.plurals.settings_sources_refresh_days, days, days) },
-        onConfirm = onConfirm,
-        onDismiss = onDismiss,
-    )
-}
+internal fun playlistAutoRefreshLabel(refresh: PlaylistRefresh): String =
+    if (refresh.mode == PlaylistAutoRefresh.OFF) {
+        stringResource(R.string.settings_sources_refresh_off)
+    } else {
+        stringResource(R.string.sport_refresh_scheduled)
+    }
 
 /** What to sync, one row per section: ◀ ▶ (or OK) step Now / Later / Off — On / Off while editing. */
 @Composable

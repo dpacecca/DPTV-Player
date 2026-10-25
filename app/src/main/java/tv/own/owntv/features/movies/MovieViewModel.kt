@@ -2,6 +2,8 @@
 
 package tv.own.owntv.features.movies
 
+import tv.own.owntv.core.sync.calmDuringSync
+
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -426,7 +428,8 @@ class MovieViewModel(
             // Hidden items/categories are filtered on each fresh PagingData inside the pager chain —
             // a customization change re-creates the pager (same pattern as Live TV).
             Pager(PagingConfig(pageSize = 60, prefetchDistance = 30, initialLoadSize = 90, maxSize = 300)) {
-                pagingSource(args.key, args.ctx, args.query, args.sort)
+                // (v2.5.3) A sync's chunk commits refresh the list at most once per CALM_MS.
+                pagingSource(args.key, args.ctx, args.query, args.sort).calmDuringSync()
             }.flow.map { paging ->
                 val cust = cs.cust
                 val movedFrom = cust.movedFromOrigin
@@ -456,7 +459,7 @@ class MovieViewModel(
     val railCounts: StateFlow<Map<LiveKey, Int>> = combine(ctx, hiddenCategoryIds, railItems) { c, hidden, items -> Triple(c, hidden, items) }
         .flatMapLatest { (c, hidden, items) ->
             val single = items.filter { it.key !is LiveKey.Folder }.map { item -> countFlow(item.key, c, hidden).map { mapOf(item.key to it) } }
-            val folders = movieDao.observeCountsByCategory(c.sourceIds.ifEmpty { listOf(-1L) })
+            val folders = movieDao.observeCountsByCategory(c.sourceIds.ifEmpty { listOf(-1L) }).calmDuringSync()
                 .map { rows -> rows.associate { LiveKey.Folder(it.categoryId) as LiveKey to it.itemCount } }
             combine(single + folders) { parts -> parts.fold(emptyMap<LiveKey, Int>()) { acc, m -> acc + m } }.throttleLatest()
         }

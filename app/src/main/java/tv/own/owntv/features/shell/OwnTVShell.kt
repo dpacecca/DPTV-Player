@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -756,7 +757,7 @@ fun OwnTVShell(
     // keeps the compact room, so nothing behind it moves).
     // v2.1.0: while the guide's categories are out, the rail sits beside them as the capsule (◀ opens it,
     // ▶ closes it again) instead of hiding, and opens without the scrim: the guide moves over.
-    // v2.5.1: on a TV the categories are docked for good, so on Live TV this always holds there.
+    // v2.6.0: on a TV while the categories are slid out beside the guide (CATEGORIES and MENU), as TiviMate.
     val guideSide = guidePanelOpen && selectedSection == MainSection.LIVE_TV
     // v2.1.2: the menu, when it has focus, always shows the section names, whatever its own size.
     val guideWide = railFocused && navSize == tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT
@@ -1344,7 +1345,7 @@ fun OwnTVShell(
                                         is TrendingHomeItem.Series -> {
                                             seriesVm.openSeries(current.series)
                                             restoreFocus = true
-                                            homeCard = null // the hero, which Home's usual return focuses
+                                            // (v2.6.0) homeCard: Home set it to the featured title (the hero) it opened.
                                             homeReturn = MainSection.SERIES
                                             onSelectSection(MainSection.SERIES)
                                         }
@@ -1441,7 +1442,7 @@ fun OwnTVShell(
                             onOpenRail = focusRail,
                             onVideoBounds = { bounds, radius -> guideVideoBounds = bounds; guideVideoRadius = radius },
                             onPanelOpen = { guidePanelOpen = it },
-                            // v2.5.1: the inset at rest (no focus on the rail), which the guide is laid out for.
+                            // The inset at rest (no focus on the rail), which the guide is laid out for once (v2.6.0).
                             dockRestInset = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 0.dp
                                 else tv.own.owntv.features.shell.components.railDockedReserve(tv.own.owntv.core.settings.SettingsRepository.NavSize.COMPACT),
                             // How far the categories start from the edge: past the capsule, or the open rail.
@@ -1481,6 +1482,11 @@ fun OwnTVShell(
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
                             onContentScrolled = { contentScrolled = it },
+                            // Sport's ⚙ chip: Settings › Sport (v2.6.0).
+                            onOpenSettings = {
+                                settingsStart = tv.own.owntv.features.shell.components.SettingsStart(null, false, sports = true)
+                                onSelectSection(MainSection.SETTINGS)
+                            },
                             contentStart = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 64.mpx else 150.mpx,
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -1715,7 +1721,9 @@ fun OwnTVShell(
       val guideArmed by liveVm.previewArmed.collectAsStateWithLifecycle()
       val guideLivePreview by liveVm.livePreviewEnabled.collectAsStateWithLifecycle()
       val guidePreviewOn by epgVm.guidePreview.collectAsStateWithLifecycle()
-      val guideBounds = guideVideoBounds
+      // v2.6.0: only whether there is a box is read here; where it is, is read at placement below, so the
+      // picture slides with the guide frame by frame without this whole shell recomposing each frame.
+      val guideHasBounds by remember { androidx.compose.runtime.derivedStateOf { guideVideoBounds != null } }
       // Not while the floating rail is open over the content: this surface would draw over the rail.
       val railOverContent = focusedLayer == ShellLayer.SIDEBAR && navStyle != tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED
       // v2.1.1: the guide left alone for 30 s goes full screen on the channel in its video. Any key or touch
@@ -1742,7 +1750,7 @@ fun OwnTVShell(
           if (!liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
       }
       val guideDock = multiview == null && playerMode == PlayerMode.NONE && selectedSection == MainSection.LIVE_TV &&
-          guideBounds != null && guideArmed && guideLivePreview && guidePreviewOn && (!railOverContent || guideSide)
+          guideHasBounds && guideArmed && guideLivePreview && guidePreviewOn && (!railOverContent || guideSide)
       if (multiview == null && (playerMode == PlayerMode.FULLSCREEN || playerMode == PlayerMode.MINI || guideDock)) {
         val isFull = playerMode == PlayerMode.FULLSCREEN
         // v2.1.2: whether ExoPlayer's picture is the one on screen. OK in the guide sets FULLSCREEN and
@@ -1751,17 +1759,21 @@ fun OwnTVShell(
         // ExoPlayer's destroyed and built again a frame later — the pause on every OK. [exoHandoff] carries
         // the engine's answer, taken when OK was pressed, across that frame.
         val exoOnScreen = liveOnExo || (isFull && exoHandoff) || guideDock
-        val density = androidx.compose.ui.platform.LocalDensity.current
         Box(
             modifier = if (isFull) {
                 Modifier.fillMaxSize().background(Color.Black)
-            } else if (guideDock && guideBounds != null) {
-                with(density) {
-                    Modifier.align(Alignment.TopStart)
-                        .offset { androidx.compose.ui.unit.IntOffset(guideBounds.left.toInt(), guideBounds.top.toInt()) }
-                        .size(guideBounds.width.toDp(), guideBounds.height.toDp())
-                        .clip(RoundedCornerShape(guideVideoRadius)).background(Color.Black)
-                }
+            } else if (guideDock) {
+                Modifier.align(Alignment.TopStart)
+                    .offset { guideVideoBounds?.let { androidx.compose.ui.unit.IntOffset(it.left.toInt(), it.top.toInt()) } ?: androidx.compose.ui.unit.IntOffset.Zero }
+                    .layout { measurable, _ ->
+                        // The box's size, fixed while the guide slides; only a new size measures it again.
+                        val b = guideVideoBounds
+                        val w = b?.width?.toInt()?.coerceAtLeast(0) ?: 0
+                        val h = b?.height?.toInt()?.coerceAtLeast(0) ?: 0
+                        val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(w, h))
+                        layout(w, h) { placeable.place(0, 0) }
+                    }
+                    .clip(RoundedCornerShape(guideVideoRadius)).background(Color.Black)
             } else {
                 // Dynamic docked size/position: a screen-width fraction at the chosen corner/edge, so it
                 // scales with the panel + UI zoom (unlike the old fixed 340×191 dp box).

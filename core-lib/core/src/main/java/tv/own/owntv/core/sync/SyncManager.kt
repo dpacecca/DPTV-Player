@@ -70,8 +70,10 @@ class SyncManager(
     /** Which category the user is looking at, so the drain serves it first (plan N1c). */
     private val catalogPriority: CatalogPriority,
 ) {
-    private val support = SyncSupport(categoryDao, channelDao, movieDao, seriesDao, sourceDao, customize, settings)
-    private val xtreamSyncer = XtreamSyncer(xtream, bulkInsertHelper, support)
+    /** A 2 GB TV-class device (v2.5.3): phases run one at a time and chunks pause between commits. */
+    private val lowSpec = tv.own.owntv.core.player.PlayerBudget.of(context).lowSpec
+    private val support = SyncSupport(categoryDao, channelDao, movieDao, seriesDao, sourceDao, customize, settings, chunkPauseMs = if (lowSpec) SyncSupport.LOW_SPEC_CHUNK_PAUSE_MS else 0L)
+    private val xtreamSyncer = XtreamSyncer(xtream, bulkInsertHelper, support, phaseConcurrency = XtreamSyncer.phaseConcurrency(lowSpec))
     private val m3uSyncer = M3uSyncer(context, sourceDao, categoryDao, channelDao, movieDao, seriesDao, m3u, http, bulkInsertHelper, support)
     private val stalkerSyncer = StalkerSyncer(stalkerClient, stalkerAuth, bulkInsertHelper, support, sourceDao, catalogBackfillDao, catalogPriority)
 
@@ -89,7 +91,22 @@ class SyncManager(
          */
         forcePrune: Boolean = false,
     ): Pair<SyncResult, SyncRunStats> =
-        withContext(Dispatchers.IO) {
+        // (v2.5.3) Background thread priority wherever the sync runs, and the UI's observers calmed.
+        withContext(Dispatchers.IO + BackgroundThreadPriority()) {
+            SyncQuiet.begin()
+            try {
+                syncInner(source, onProgress, contentTypes, forcePrune)
+            } finally {
+                SyncQuiet.end()
+            }
+        }
+
+    private suspend fun syncInner(
+        source: SourceEntity,
+        onProgress: (ImportStage) -> Unit,
+        contentTypes: SyncContentTypes,
+        forcePrune: Boolean,
+    ): Pair<SyncResult, SyncRunStats> {
             val syncStartedAt = SystemClock.elapsedRealtime()
             val stats = SyncStatsCollector(source.id).apply { this.forcePrune = forcePrune }
             // Single derivation: request ∩ enabledScope, then type-constrained (replaces the old
@@ -134,7 +151,7 @@ class SyncManager(
                     // waits for the last writer — so sources fetch/parse/insert fully in parallel here.
                     when (source.type) {
                         SourceType.XTREAM -> xtreamSyncer.sync(source, progress, stats, effective)
-                        SourceType.M3U -> m3uSyncer.sync(source, progress, stats, effective)
+                        SourceType.M3U -> m3uSyncer.sync(source, progress, stats, effective, enabled = target)
                         SourceType.LOCAL_BACKUP -> Unit
                         SourceType.STALKER -> stalkerSyncer.sync(source, progress, stats, effective)
                     }
@@ -142,7 +159,10 @@ class SyncManager(
                     // A staged partial pass leaves it null; the background remainder worker stamps via
                     // completesInitialSync. Comparing against enabledFor (not enabledOf) keeps a local
                     // backup's live-only passes from never marking synced.
-                    if (effective.isCompleteFor(target)) {
+                    // (v2.5.3) A source that has synced in full before is stamped by any successful
+                    // pass: the timed live-only and films-only passes would otherwise never stamp it.
+                    // Only "null vs not null" steers the fresh-import path, so this cannot reopen it.
+                    if (shouldStampSynced(effective, target, source.lastSyncAt)) {
                         val markStartedAt = SystemClock.elapsedRealtime()
                         sourceDao.markSynced(source.id, System.currentTimeMillis())
                         Log.d(TAG, "markSynced sourceId=${source.id} ms=${SystemClock.elapsedRealtime() - markStartedAt}")
@@ -175,8 +195,8 @@ class SyncManager(
             lastSyncStats[source.id] = runStats
             Log.i(TAG, "sync end sourceId=${source.id} totalElapsedMs=${SystemClock.elapsedRealtime() - syncStartedAt}")
             logStats(runStats)
-            result to runStats
-        }
+            return result to runStats
+    }
 
     /**
      * Finish a Stalker catalogue whose setup deliberately stopped after the first page of every
@@ -236,5 +256,9 @@ class SyncManager(
 
     companion object {
         private const val TAG = SyncSupport.TAG
+
+        /** Whether a successful pass stamps lastSyncAt (v2.5.3): a complete pass, or any pass of a source synced before. */
+        internal fun shouldStampSynced(effective: SyncContentTypes, target: SyncContentTypes, lastSyncAt: Long?): Boolean =
+            effective.isCompleteFor(target) || (lastSyncAt != null && effective.hasAny)
     }
 }

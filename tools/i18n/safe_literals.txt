@@ -98,9 +98,11 @@
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	· $nowTitle
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	…
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	→
+1	technical	app/src/main/java/tv/own/owntv/features/home/FeaturedHome.kt	home-featured
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	%.1f
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	,
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	episode:${episode.id}
+1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	featured
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	live:${channel.id}
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	movie:${movie.id}
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	sport_row
@@ -179,6 +181,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	engine: tune '
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	first frame after
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	first position after
+1	technical	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	sync-check:
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	zap key press
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	zap:
 5	empty	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	\0
@@ -317,7 +320,9 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/DeveloperScreen.kt	Stage specimen
 6	empty	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesScreen.kt	\0
 2	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesScreen.kt	▶
+1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	EpgSourcesViewModel
 1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	add
+1	log	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	check now failed id=${source.id}
 1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	manual_resync
 1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	update
 1	technical	app/src/main/java/tv/own/owntv/features/settings/FontSettingsScreen.kt	fonts
@@ -477,7 +482,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_autoplay
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_channel_numbers
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_external
-2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_forget_fixes
+1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_ffmpeg_audio
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_hdr
 3	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_hw
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_latency_sources
@@ -493,6 +498,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_multiview
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_multiview_tiles
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_night_mode
+1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_output_audio_delay
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_passthrough
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_preroll
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	vp_preroll_sources
@@ -534,6 +540,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	OwnTVHome
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	Proxy-Authorization
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	SettingsViewModel
+1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	check now failed id=$id
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	delete sourceId=${source.id}
 1	url	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	https://www.gstatic.com/generate_204
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	manual_clean_resync
@@ -545,6 +552,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	runImport sync success sourceId=${done.source?.id} profile=$pid
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	scope_edit
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	setAndroidTvHomeEnabled enabled=$enabled
+1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	sync times re-arm failed
 1	protocol	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	timed out
 1	protocol	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	unknown host
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	12
@@ -611,6 +619,9 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	WATCH
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	Wish · 38 min left
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	X
+2	technical	app/src/main/java/tv/own/owntv/features/settings/SyncTimesSettings.kt	HHmm
+1	technical	app/src/main/java/tv/own/owntv/features/settings/SyncTimesSettings.kt	dMMM
+2	technical	app/src/main/java/tv/own/owntv/features/settings/SyncTimesSettings.kt	hmm
 1	empty	app/src/main/java/tv/own/owntv/features/settings/TrendingHomeSettings.kt	\0
 16	empty	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	$c ›
@@ -626,7 +637,7 @@
 3	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_autoplay
 3	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_channel_numbers
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_external
-4	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_forget_fixes
+3	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_ffmpeg_audio
 3	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_hdr
 3	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_hw
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_latency_sources
@@ -642,6 +653,7 @@
 3	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_multiview
 4	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_multiview_tiles
 3	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_night_mode
+4	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_output_audio_delay
 3	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_passthrough
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_preroll
 4	preference-key	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	vp_preroll_sources
@@ -781,6 +793,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	quick_preview_sound
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	reminder_lead
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	reminders
+1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	sync_times
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_${tab.name}
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_DNS
@@ -1123,6 +1136,30 @@
 1	regex	app/src/main/java/tv/own/owntv/features/sport/SportNameMatch.kt	\\s+
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportNameMatch.kt	ss
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportNameMatch.kt	ß
+2	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	:
+1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	; TheSportsDB for 6 h
+1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	; no fallback, unavailable for 6 h
+1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	SportsHub
+1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	no source for
+1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	sofascore failed
+1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	sofascore standings failed
+1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	sport:
+1	log	app/src/main/java/tv/own/owntv/features/sport/SportsApi.kt	thesportsdb failed
+1	empty	app/src/main/java/tv/own/owntv/features/sport/SportsHub.kt	\0
+1	regex	app/src/main/java/tv/own/owntv/features/sport/SportsHub.kt	\\p{M}+
+2	empty	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	+
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	,
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	-
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	chips
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	empty
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	head
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	leagues
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	live
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	none
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	results
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsHubScreen.kt	soon
+4	empty	app/src/main/java/tv/own/owntv/features/sport/SportsLeagueScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	10055
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	11623
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	1590
@@ -1154,6 +1191,10 @@
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	3
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	302
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	431
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	4415
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	5806
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	5834
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	5835
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	791
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	8039
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	afc.asian.cup
@@ -1391,6 +1432,13 @@
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	womens-college-basketball
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	womens-college-volleyball
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsLeagues.kt	wta
+2	empty	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	-
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	b-$it
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	header
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	no-broadcasts
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	table
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsMatchScreen.kt	tabs
 1	protocol	app/src/main/java/tv/own/owntv/features/sport/SportsMatcher.kt	TBD
 1	regex	app/src/main/java/tv/own/owntv/features/sport/SportsMatcher.kt	\\s*/\\s*
 1	regex	app/src/main/java/tv/own/owntv/features/sport/SportsMatcher.kt	\\s+
@@ -1411,10 +1459,27 @@
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	soccer
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	tennis
 1	uri	app/src/main/java/tv/own/owntv/features/sport/SportsModels.kt	volleyball
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	#
+1	locale	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	EEE
+1	locale	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	EEEd
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	⚽
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	⚾
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	⛳
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	🎾
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	🏀
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	🏅
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	🏈
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	🏉
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	🏎
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	🏏
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	🏐
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	🏒
+1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsParts.kt	🥊
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	auto_rebuild_minutes
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	channel_playlists
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	followed_leagues
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	followed_players
+1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	followed_team_names
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	followed_teams
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	hidden_languages
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	hub_visible
@@ -1422,27 +1487,18 @@
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	league_order
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	live_refresh_seconds
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	preferred_languages
+1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	prefs_version
+1	json	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	sport
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	sport_order
 1	file-path	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	sports
 1	preference-key	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	strict_channels
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsPrefs.kt	|
-1	empty	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	\0
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	#
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	${stringResource(R.string.sport_versus)}
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	EEE d.M.
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	FF
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	add-leagues
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	broadcast
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	broadcasts-empty
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	channels
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	detail
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	detail-tabs
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	table
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsScreen.kt	table-loading
+5	empty	app/src/main/java/tv/own/owntv/features/sport/SportsSettingsScreen.kt	\0
+4	technical	app/src/main/java/tv/own/owntv/features/sport/SportsSettingsScreen.kt	,
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsViewModel.kt	$it$TeamKeySep
 1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsViewModel.kt	-
 2	log	app/src/main/java/tv/own/owntv/features/sport/SportsViewModel.kt	SportsHub
-1	technical	app/src/main/java/tv/own/owntv/features/sport/SportsViewModel.kt	__favourites__
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsViewModel.kt	board failed
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsViewModel.kt	board ok
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsViewModel.kt	fixtures=
@@ -1454,6 +1510,112 @@
 1	json	app/src/main/java/tv/own/owntv/features/sport/SportsVocab.kt	sportWords
 1	log	app/src/main/java/tv/own/owntv/features/sport/SportsVocab.kt	sports_matching.json unavailable; alias and stop-word expansion disabled
 1	json	app/src/main/java/tv/own/owntv/features/sport/SportsVocab.kt	teamStopwords
+2	empty	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	\0
+1	url	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	&l=
+1	url	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	&s=
+1	url	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	+
+1	url	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	/
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	1H
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	2H
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	7s Rugby
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	ABD
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	AET
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	AOT
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	AP
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	AUS
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	AWD
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Abandoned
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Accept
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Australia
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	BT
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	CANC
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	COK
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Cancelled
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Cook Islands
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	ENG
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	ET
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	England
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	FIJ
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	FRA
+2	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	FT
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	FT_PEN
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Fiji
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Finished
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	France
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	GRE
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Greece
+1	technical	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	HH:mm
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	HT
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	IRL
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	ITA
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	In Progress
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Ireland
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Italy
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	JAM
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Jamaica
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	LBN
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	LIVE
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Lebanon
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Live
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Match Finished
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	NS
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	NSW
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	NZL
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	New South Wales Blues
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	New Zealand
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Not Started
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	P
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	PEN
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	PNG
+2	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	PST
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Papua New Guinea
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Postponed
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	QLD
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Queensland Maroons
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Rugby League
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	SAM
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	SCO
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Samoa
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Scotland
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	TBD
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	TGA
+1	log	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	TheSportsDB HTTP
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Tonga
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	WAL
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	WO
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	Wales
+1	mime	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	application/json
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	away
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	dateEvent
+1	url	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	events
+1	url	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	eventsday.php?d=
+1	url	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	eventsnextleague.php?id=
+1	url	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	eventspastleague.php?id=
+1	url	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	eventsseason.php?id=
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	home
+1	url	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	https://www.thesportsdb.com/api/v1/json/123/
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	idAwayTeam
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	idEvent
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	idHomeTeam
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	intAwayScore
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	intHomeScore
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	intRound
+1	log	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	no TheSportsDB id:
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	null
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	results
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strAwayTeam
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strAwayTeamBadge
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strCity
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strGroup
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strHomeTeam
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strHomeTeamBadge
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strPostponed
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strSeason
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strStatus
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strTime
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strTimestamp
+1	json	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	strVenue
+1	protocol	app/src/main/java/tv/own/owntv/features/sport/TheSportsDbApi.kt	yes
 1	json	app/src/main/java/tv/own/owntv/features/subtitles/SubtitleSearchViewModel.kt	ai_translated
 1	json	app/src/main/java/tv/own/owntv/features/subtitles/SubtitleSearchViewModel.kt	attributes
 1	json	app/src/main/java/tv/own/owntv/features/subtitles/SubtitleSearchViewModel.kt	data
@@ -1482,9 +1644,10 @@
 1	technical	app/src/main/java/tv/own/owntv/player/AudioNowPlayingBar.kt	tnum
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR apply failed: ${it.message}
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR reset failed: ${it.message}
-1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR: ${fps}fps -> mode ${target.modeId} deferred ${waitMs}ms (cooldown)
+1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR: ${fps}fps -> mode $targetId deferred ${waitMs}ms (cooldown)
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR: display mode released
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR: video ${fps}fps -> display mode ${target.modeId} (${target.physicalWidth}x${target.physicalHeight} ${target.refreshRate}Hz, seamless=${choice.seamless})
+1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR: video ${fps}fps matches no mode -> display default
 1	compiler	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	DEPRECATION
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	FrameRate
 1	empty	app/src/main/java/tv/own/owntv/player/MiniPlayer.kt	\0

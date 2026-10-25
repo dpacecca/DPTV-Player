@@ -58,6 +58,11 @@ data class SportLeague(
     @StringRes val extraChannelRes: Int? = null,
     /** The data source (v2.5.0); every league but the few ESPN lacks stays on ESPN. */
     val source: LeagueSource = LeagueSource.ESPN,
+    /**
+     * The league's id at TheSportsDB (v2.6.0), the fallback for a [LeagueSource.SOFASCORE] league
+     * while SofaScore refuses ([SportsApi]); null where TheSportsDB has no such league (the sevens).
+     */
+    val theSportsDbId: String? = null,
 ) {
     /** Derived from the ESPN sport slug, so a new league lands in its sport's group by itself. */
     val sportGroup: SportGroup
@@ -152,6 +157,10 @@ data class Fixture(
     val week: Int? = null,
     /** ESPN's headline note for this game ("NFL London Games"), when it carries one. */
     val note: String? = null,
+    /** A plain round number (TheSportsDB, v2.6.0); shown as a translated "Round N" label. */
+    val roundNumber: Int? = null,
+    /** A group letter or name (TheSportsDB, v2.6.0); shown as a translated "Group A" label. */
+    val group: String? = null,
 )
 
 data class StandingRow(

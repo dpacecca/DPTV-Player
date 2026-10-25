@@ -93,7 +93,6 @@ val dataModule = module {
     single { CustomizationStore(androidContext()) }
     single { tv.own.owntv.core.epg.EpgSourceStore(androidContext()) }
     single { tv.own.owntv.core.player.ForceMpvStore(androidContext(), get()) }
-    single { tv.own.owntv.core.player.ArchiveDecodeStore(androidContext()) }
     // Per-channel "watched without a picture" memory, for the mobile audio-only mode.
     single { tv.own.owntv.core.player.AudioOnlyStore(androidContext(), get()) }
     // Per-item zoom/volume the player remembers (playbackPrefsDao, settings).
@@ -316,6 +315,8 @@ val dataModule = module {
             java.io.File(androidContext().filesDir, "backgrounds"),
             java.io.File(androidContext().filesDir, "subtitles"),
             get(),
+            // The app's own settings stores (DPTV v2.6.0: Sport), looked up when a backup runs.
+            extras = { getAll<tv.own.owntv.core.backup.BackupExtra>() },
         )
     }
     // profileDao, sourceDao, settings, launcherIntegration, openSubtitlesAccounts — creating,
@@ -326,9 +327,16 @@ val dataModule = module {
     single { UpdateManager(androidContext(), get(), get()) }
     single { CatalogSyncScheduler(androidContext()) }
     single { EpgSyncScheduler(androidContext()) }
+    // v2.5.3: device-local sync bookkeeping, the fixed sync times and the change check.
+    single { tv.own.owntv.core.sync.schedule.SyncStateStore(androidContext()) }
+    // context, settings, sourceDao, epgSourceStore, epgDao, catalogSyncScheduler, epgSyncScheduler,
+    // importFinalizer, syncStateStore
+    single { tv.own.owntv.core.sync.schedule.SyncScheduler(androidContext(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    // http, xtream, sourceDao, epgSourceStore, syncScheduler, syncStateStore
+    single { tv.own.owntv.core.sync.schedule.ChangeChecker(get(), get(), get(), get(), get(), get()) }
     // settings, sourceRepository, profileDao, catalogSyncScheduler, epgSyncScheduler, epgSourceStore,
-    // epgDao, importFinalizer — the Auto refresh settings, run by both apps on start and resume.
-    single { tv.own.owntv.core.sync.AutoRefresh(get(), get(), get(), get(), get(), get(), get(), get()) }
+    // epgDao, importFinalizer, syncScheduler — the one-shots plus the fixed times and the change check on start.
+    single { tv.own.owntv.core.sync.AutoRefresh(androidContext(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     // profileDao, sourceDao, sourceRepository, backup, settings, connectivity, importFinalizer,
     // launcherIntegration, catalogSyncScheduler, stalkerAuth — onboarding: add a source, sync it,
     // undo it when it fails. Factory, not single: each wizard run owns its own state machine.

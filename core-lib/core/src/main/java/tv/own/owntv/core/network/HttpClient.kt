@@ -120,6 +120,68 @@ class HttpClient(private val client: OkHttpClient) {
         headers: Map<String, String> = emptyMap(),
     ): String = get(url, userAgent, headers = headers) { it.readBytes().decodeToString() }
 
+    /**
+     * One change-check request (v2.5.3): a HEAD or a GET carrying the stored validators. Never throws
+     * for an HTTP status — a 304 or a 401 is an answer here, not an error; no response at all is code 0.
+     * A GET's body is hashed as it streams and never kept, and only when it fits in [maxBodyBytes].
+     */
+    suspend fun probe(
+        url: String,
+        userAgent: String? = null,
+        head: Boolean,
+        validators: tv.own.owntv.core.sync.schedule.Validators? = null,
+        hashBody: Boolean = false,
+        maxBodyBytes: Long = Long.MAX_VALUE,
+    ): tv.own.owntv.core.sync.schedule.ProbeResult = withContext(Dispatchers.IO) {
+        val builder = Request.Builder()
+            .url(url)
+            .header("User-Agent", userAgent?.takeIf { it.isNotBlank() } ?: DEFAULT_USER_AGENT)
+        validators?.etag?.let { builder.header("If-None-Match", it) }
+        validators?.lastModified?.let { builder.header("If-Modified-Since", it) }
+        if (head) builder.head()
+        val call = client.newCall(builder.build())
+        val hook = currentCoroutineContext()[Job]?.invokeOnCompletion { cause -> if (cause is CancellationException) call.cancel() }
+        try {
+            call.execute().use { response ->
+                val length = response.header("Content-Length")?.toLongOrNull()
+                    ?: response.body.contentLength().takeIf { it >= 0 }
+                val hash = if (!head && hashBody && response.code in 200..299 && (length == null || length <= maxBodyBytes)) {
+                    hashStream(response.body.byteStream(), maxBodyBytes)
+                } else {
+                    null
+                }
+                tv.own.owntv.core.sync.schedule.ProbeResult(
+                    code = response.code,
+                    etag = response.header("ETag"),
+                    lastModified = response.header("Last-Modified"),
+                    contentLength = length,
+                    bodyHash = hash,
+                )
+            }
+        } catch (e: IOException) {
+            currentCoroutineContext().ensureActive()
+            Log.i(TAG, "probe failed url=${redactUrl(url)} message=${e.message?.let(::redactUrl)}")
+            tv.own.owntv.core.sync.schedule.ProbeResult(code = 0)
+        } finally {
+            hook?.dispose()
+        }
+    }
+
+    /** SHA-256 of a stream, read in small pieces; null when it runs past [maxBytes]. */
+    private fun hashStream(input: InputStream, maxBytes: Long): String? {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val buf = ByteArray(16 * 1024)
+        var total = 0L
+        while (true) {
+            val n = input.read(buf)
+            if (n < 0) break
+            total += n
+            if (total > maxBytes) return null
+            digest.update(buf, 0, n)
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
     companion object {
         private const val TAG = "HttpClient"
 
@@ -147,13 +209,19 @@ class HttpClient(private val client: OkHttpClient) {
         /** Mask credentials for display (info overlay / logs): query params AND Xtream `/type/user/pass/`
          *  path segments, which is where live URLs embed them. */
         fun redactUrl(url: String): String = url
-        .replace(Regex("(?i)(username|password|user|pass|token|data|auth|signature|sig|key)=[^&]*"), "$1=***")
-            // `timeshift` is the catch-up/archive form (/timeshift/user/pass/duration/start/id.ts) — it
-            // embeds the same credentials as a live URL, so it must be masked here too.
-            .replace(Regex("(?i)(://[^/]+/(?:live|movie|series|vod|timeshift)/)([^/]+)/([^/]+)/"), "$1•••/•••/")
-            // Strip userinfo credentials from a `scheme://user:pass@host` URL (e.g. a proxy URL handed
-            // to mpv, or any source URL with embedded creds) so they never reach a log line.
-            .replace(Regex("(?i)(://)([^/@:]+)(:[^/@]*)?@"), "$1***@")
+            .replace(QUERY_CREDENTIALS, "$1=***")
+            .replace(PATH_CREDENTIALS, "$1•••/•••/")
+            .replace(USERINFO, "$1***@")
+
+        // Compiled once: redactUrl runs on every logged HTTP response and every play() line, several times
+        // a second while a live channel plays with detailed logging on.
+        private val QUERY_CREDENTIALS = Regex("(?i)(username|password|user|pass|token|data|auth|signature|sig|key)=[^&]*")
+        // `timeshift` is the catch-up/archive form (/timeshift/user/pass/duration/start/id.ts) — it embeds
+        // the same credentials as a live URL, so it must be masked here too.
+        private val PATH_CREDENTIALS = Regex("(?i)(://[^/]+/(?:live|movie|series|vod|timeshift)/)([^/]+)/([^/]+)/")
+        // Userinfo credentials in a `scheme://user:pass@host` URL (e.g. a proxy URL handed to mpv, or any
+        // source URL with embedded creds).
+        private val USERINFO = Regex("(?i)(://)([^/@:]+)(:[^/@]*)?@")
 
         /** Mask a bare hostname for display (logs, errors), as [redactUrl] masks a URL's credentials: the
          *  provider's host identifies the account's panel as surely as the credentials do. */

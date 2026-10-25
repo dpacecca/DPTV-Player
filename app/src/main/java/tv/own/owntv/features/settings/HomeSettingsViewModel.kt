@@ -112,6 +112,9 @@ class HomeSettingsViewModel(
 
     enum class DevRebuildState { IDLE, STARTED }
 
+    /** (v2.6.0) The featured titles at the top of Home, on or off. */
+    fun setFeaturedHero(on: Boolean) = updateConfig { it.copy(featuredHero = on) }
+
     fun setRowHidden(row: HomeRow, hidden: Boolean) {
         updateConfig { config -> config.copy(hidden = if (hidden) config.hidden + row else config.hidden - row) }
     }

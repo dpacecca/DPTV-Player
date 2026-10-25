@@ -13,18 +13,20 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.withLock
 import tv.own.owntv.core.companion.CompanionController
 import tv.own.owntv.core.companion.CompanionSelectItem
 import tv.own.owntv.core.companion.CompanionServerState
 
 /**
  * Sports hub state: ESPN boards per league (cached 15 minutes), the active-league set, follow sets,
- * the selected league and fixture, channel matches and standings.
+ * the open match and league pages (v2.6.0, OwnTV's Sports Hub), channel matches and standings.
  *
  * Only **active** leagues (the user's selection, default = [DefaultActiveLeagueIds]) are loaded, so
  * the full [SportsLeagues] catalogue can be large without costing a request per league. Playback
@@ -54,9 +56,6 @@ class SportsViewModel(
         data class Content(val matches: List<ChannelMatch>) : MatchesState
     }
 
-    /** The second column's filter for the selected league. */
-    enum class FixtureTab { LIVE, UPCOMING, PAST }
-
     data class LeagueUi(
         val league: SportLeague,
         val liveCount: Int,
@@ -70,6 +69,10 @@ class SportsViewModel(
 
     val followedTeams: StateFlow<Set<String>> = prefs.followedTeams
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    /** Followed teams' names by key (v2.6.0), for Settings › Sport › My teams. */
+    val teamNames: StateFlow<Map<String, String>> = prefs.teamNames
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     /** Followed individual athletes (tennis/MMA duel entries) — never racing/golf field entries. */
     val followedPlayers: StateFlow<Set<String>> = prefs.followedPlayers
@@ -138,25 +141,17 @@ class SportsViewModel(
     private val standingsCache = HashMap<String, List<LeagueTable>>()
     private val matchesCache = HashMap<String, List<ChannelMatch>>()
 
-    private val _selectedLeagueId = MutableStateFlow(SportsLeagues.first().id)
-    val selectedLeagueId: StateFlow<String> = _selectedLeagueId.asStateFlow()
-
+    /** The open match page (v2.6.0); null = the hub. */
     private val _selectedFixture = MutableStateFlow<Fixture?>(null)
     val selectedFixture: StateFlow<Fixture?> = _selectedFixture.asStateFlow()
 
-    /** Which bucket of the selected league's fixtures is shown (Live / Upcoming / Past). */
-    private val _tab = MutableStateFlow(FixtureTab.UPCOMING)
-    val tab: StateFlow<FixtureTab> = _tab.asStateFlow()
+    /** The open league page (v2.6.0); null = none. */
+    private val _openLeagueId = MutableStateFlow<String?>(null)
+    val openLeagueId: StateFlow<String?> = _openLeagueId.asStateFlow()
 
-    /** True once the user picks a tab by hand; the league default then stops overriding it. */
-    private var userChoseTab = false
-
-    /** A tab [openFixture] asked for, applied when its league selection lands (instead of the default). */
-    private var pendingTab: FixtureTab? = null
-
-    /** The selected league's board (null until first load), for fixtures + error state. */
-    val selectedBoard: StateFlow<BoardState?> =
-        combine(boards, _selectedLeagueId) { current, id -> current[id] }
+    /** The open league's board: Loading, its fixtures, or Error. */
+    val openLeagueBoard: StateFlow<BoardState?> =
+        combine(boards, _openLeagueId) { current, id -> id?.let { current[it] } }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _matches = MutableStateFlow<MatchesState>(MatchesState.Idle)
@@ -189,19 +184,9 @@ class SportsViewModel(
             SportsLeagues.filter { it.defaultActive }.sortedBy { it.sportGroup.ordinal }.map { LeagueUi(it, 0, false) },
         )
 
-    /** Fixtures involving followed teams or athletes — the "My teams" chips. */
-    val myTeamFixtures: StateFlow<List<Fixture>> =
-        combine(boards, followedTeams, followedPlayers) { current, teams, players ->
-            if (teams.isEmpty() && players.isEmpty()) return@combine emptyList()
-            current.values.filterIsInstance<BoardState.Content>()
-                .flatMap { it.board.fixtures }
-                .filter { involvesFollowedTeam(it, teams) || involvesFollowedPlayer(it, players) }
-                .sortedWith(compareBy<Fixture> { it.state != FixtureState.LIVE }.thenBy { it.dateMs })
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
     /**
      * Everything the user picked: every fixture of an active league plus games of followed teams or
-     * athletes (even when that item's league is not active), live games first.
+     * athletes (even when that item's league is not active), live games first. The hub's source.
      */
     val favourites: StateFlow<List<Fixture>> =
         combine(boards, activeLeagues, followedTeams, followedPlayers) { current, active, teams, players ->
@@ -215,54 +200,43 @@ class SportsViewModel(
                 .sortedWith(compareBy<Fixture> { it.state != FixtureState.LIVE }.thenBy { it.dateMs })
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Each shown league's place in the user's order (v2.6.0): the hub sorts its rows by it. */
+    val leagueRank: StateFlow<Map<String, Int>> = leagues
+        .map { rail -> rail.withIndex().associate { it.value.league.id to it.index } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
     /**
      * Home's Sports row (v5.2 port): live games and games kicking off soon from [favourites], live
-     * first — see [SportsSchedule.homeRow]. The minute ticker moves the "soon" window while Home is
-     * on screen; it only runs while the row collects this.
+     * first and the followed teams' games first among them (v2.6.0) — see [SportsSchedule.homeRow].
+     * The minute ticker moves the "soon" window while Home is on screen; it only runs while the row
+     * collects this.
      */
     val homeRow: StateFlow<List<Fixture>> =
-        combine(favourites, leagues, minuteTicker()) { favs, rail, now ->
-            val rank = rail.withIndex().associate { it.value.league.id to it.index }
-            SportsSchedule.homeRow(favs, now) { rank[it] ?: Int.MAX_VALUE }
+        combine(favourites, leagueRank, followedTeams, followedPlayers, minuteTicker()) { favs, rank, teams, players, now ->
+            SportsSchedule.homeRow(
+                favs, now,
+                mine = { involvesFollowedTeam(it, teams) || involvesFollowedPlayer(it, players) },
+                leagueRank = { rank[it] ?: Int.MAX_VALUE },
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** The fixtures currently shown: the selected league's, or the Favourites aggregate. */
-    val currentFixtures: StateFlow<List<Fixture>> =
-        combine(_selectedLeagueId, selectedBoard, favourites) { id, board, favs ->
-            if (id == FavouritesId) favs else (board as? BoardState.Content)?.board?.fixtures.orEmpty()
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    /** True while any wanted board is still loading (the hub's first load). */
+    val hubLoading: StateFlow<Boolean> =
+        combine(loadingLeagues, boards) { want, b -> want.any { b[it] == null || b[it] is BoardState.Loading } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
-    /** True while the current view still waits for boards (league or Favourites). */
-    val currentLoading: StateFlow<Boolean> =
-        combine(_selectedLeagueId, selectedBoard, loadingLeagues, boards) { id, board, want, b ->
-            if (id == FavouritesId) want.any { b[it] == null || b[it] is BoardState.Loading }
-            else board == null || board is BoardState.Loading
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-
-    /** True when the selected league's board failed; the Favourites aggregate never errors as a whole. */
-    val currentError: StateFlow<Boolean> =
-        combine(_selectedLeagueId, selectedBoard) { id, board -> id != FavouritesId && board is BoardState.Error }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+    /** Wanted leagues whose board failed or no source could serve (the hub's "can't be reached"). */
+    val failingLeagues: StateFlow<Set<String>> =
+        combine(loadingLeagues, boards) { want, b ->
+            want.filter { id -> b[id] is BoardState.Error || (b[id] as? BoardState.Content)?.board?.unavailable == true }.toSet()
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     init {
+        // Settings moved into Settings › Sport (v2.6.0): bring an older file up to date once.
+        viewModelScope.launch { runCatching { prefs.migrateIfNeeded() } }
         // Load exactly the active leagues (+ leagues of followed teams, for Favourites); re-run when
         // the user changes the selection, so adding/removing a league fetches/drops it live.
         viewModelScope.launch { loadingLeagues.collect { applyLeagues(it) } }
-        // A new selection resets the tab to its default (Live if the view has live games, else
-        // Upcoming). The boards arrive asynchronously, so re-apply until the user picks by hand.
-        viewModelScope.launch {
-            _selectedLeagueId.collect {
-                val forced = pendingTab
-                pendingTab = null
-                if (forced != null) {
-                    setTab(forced)
-                } else {
-                    userChoseTab = false
-                    applyDefaultTab()
-                }
-            }
-        }
-        viewModelScope.launch { currentFixtures.collect { applyDefaultTab() } }
         startLiveRefresh()
         startAutoRebuild(channelSources)
     }
@@ -360,24 +334,11 @@ class SportsViewModel(
         }.getOrDefault(emptyList())
 
     /**
-     * Open [fixture] in the hub (Home's Sports row): its league when that league is in the rail, else
-     * Favourites; the tab that holds it; the fixture selected. The tab is forced because selecting a
-     * league otherwise resets it to the league's default (Live when anything is live).
+     * Open [fixture]'s match page (Home's Sports row, v2.6.0): Sport shows it at once, and Back
+     * returns to the hub.
      */
     fun openFixture(fixture: Fixture) {
-        val leagueId = if (fixture.leagueId in activeLeagues.value) fixture.leagueId else FavouritesId
-        val tab = when (fixture.state) {
-            FixtureState.LIVE -> FixtureTab.LIVE
-            FixtureState.UPCOMING -> FixtureTab.UPCOMING
-            FixtureState.FINISHED -> FixtureTab.PAST
-        }
-        if (_selectedLeagueId.value != leagueId) {
-            pendingTab = tab
-            _selectedLeagueId.value = leagueId
-            sportsLeagueById(leagueId)?.let { league -> viewModelScope.launch { loadStandings(league) } }
-        } else {
-            setTab(tab)
-        }
+        _openLeagueId.value = null
         selectFixture(fixture)
     }
 
@@ -391,15 +352,27 @@ class SportsViewModel(
         viewModelScope.launch { prefs.setSportOrder(order.map { it.name }) }
     }
 
-    fun cycleLiveRefresh() {
+    /**
+     * Store a new order for one sport's chosen leagues (Settings › Sport's Move window, v2.6.0): they
+     * take the places those leagues hold in the current order, the others stay where they are.
+     */
+    fun saveLeagueOrderWithin(ids: List<String>) {
+        val current = leagues.value.map { it.league.id }
+        val moved = ids.toSet()
+        val next = ids.iterator()
+        saveLeagueOrder(current.map { id -> if (id in moved && next.hasNext()) next.next() else id })
+    }
+
+    /** ◀ ▶ on Live refresh / Auto rebuild (Settings › Sport): the previous or next choice. */
+    fun stepLiveRefresh(step: Int) {
         viewModelScope.launch {
-            prefs.setLiveRefreshSeconds(SportsSchedule.next(SportsSchedule.LiveRefreshChoices, liveRefreshSeconds.value))
+            prefs.setLiveRefreshSeconds(SportsSchedule.step(SportsSchedule.LiveRefreshChoices, liveRefreshSeconds.value, step))
         }
     }
 
-    fun cycleAutoRebuild() {
+    fun stepAutoRebuild(step: Int) {
         viewModelScope.launch {
-            prefs.setAutoRebuildMinutes(SportsSchedule.next(SportsSchedule.AutoRebuildChoices, autoRebuildMinutes.value))
+            prefs.setAutoRebuildMinutes(SportsSchedule.step(SportsSchedule.AutoRebuildChoices, autoRebuildMinutes.value, step))
         }
     }
 
@@ -436,16 +409,9 @@ class SportsViewModel(
         }
     }
 
-    fun setTab(tab: FixtureTab) {
-        userChoseTab = true
-        _tab.value = tab
-    }
-
-    private fun applyDefaultTab() {
-        if (userChoseTab) return
-        val live = currentFixtures.value.count { it.state == FixtureState.LIVE }
-        _tab.value = if (live > 0) FixtureTab.LIVE else FixtureTab.UPCOMING
-    }
+    /** True when [fixture] involves a followed team or athlete (the hub's star and "My teams"). */
+    fun isMine(fixture: Fixture): Boolean =
+        involvesFollowedTeam(fixture, followedTeams.value) || involvesFollowedPlayer(fixture, followedPlayers.value)
 
     /** True when [fixture] involves one of the user's followed teams. */
     private fun involvesFollowedTeam(fixture: Fixture, teams: Set<String>): Boolean {
@@ -462,16 +428,11 @@ class SportsViewModel(
         }
 
     private suspend fun applyLeagues(want: Set<String>) {
-        if (boards.value.keys.any { it !in want }) {
-            boards.value = boards.value.filterKeys { it in want }
+        val open = _openLeagueId.value
+        if (boards.value.keys.any { it !in want && it != open }) {
+            boards.value = boards.value.filterKeys { it in want || it == open }
         }
         standingsCache.keys.retainAll(want)
-        val selected = _selectedLeagueId.value
-        if (selected != FavouritesId && selected !in want) {
-            _selectedLeagueId.value = SportsLeagues.firstOrNull { it.id in want }?.id ?: FavouritesId
-            _selectedFixture.value = null
-            _matches.value = MatchesState.Idle
-        }
         supervisorScope {
             SportsLeagues.filter { it.id in want }.map { league ->
                 async { loadBoard(league, force = false) }
@@ -479,50 +440,37 @@ class SportsViewModel(
         }
     }
 
-    fun refreshSelected() {
-        val id = _selectedLeagueId.value
-        if (id == FavouritesId) {
-            val want = loadingLeagues.value
-            viewModelScope.launch {
-                supervisorScope {
-                    SportsLeagues.filter { it.id in want }.map { async { loadBoard(it, force = true) } }.awaitAll()
-                }
-            }
-            return
-        }
-        val league = sportsLeagueById(id) ?: return
-        viewModelScope.launch { loadBoard(league, force = true) }
-    }
-
-    /** Show the Favourites aggregate (active leagues + followed teams) instead of a single league. */
-    fun selectFavourites() {
-        _selectedLeagueId.value = FavouritesId
-        _selectedFixture.value = null
-        _matches.value = MatchesState.Idle
-    }
-
-    fun selectLeague(id: String) {
-        _selectedLeagueId.value = id
-        _selectedFixture.value = null
-        _matches.value = MatchesState.Idle
-        val league = sportsLeagueById(id) ?: return
+    /** Fetch every wanted board again now (the hub's ⟳ chip). */
+    fun refreshAll() {
+        val want = loadingLeagues.value
         viewModelScope.launch {
-            loadBoard(league, force = false)
+            supervisorScope {
+                SportsLeagues.filter { it.id in want }.map { async { loadBoard(it, force = true) } }.awaitAll()
+            }
+        }
+    }
+
+    /**
+     * Open a league's page (v2.6.0): its board (fetched when it is not one the hub loads) and its
+     * table. Null closes it.
+     */
+    fun openLeague(id: String?) {
+        _openLeagueId.value = id
+        val league = id?.let { sportsLeagueById(it) } ?: return
+        viewModelScope.launch {
+            loadBoard(league, force = false, extra = true)
             loadStandings(league)
         }
     }
 
+    /** Open (or with null close) a match page; its channels are matched and its table loaded. */
     fun selectFixture(fixture: Fixture?) {
         _selectedFixture.value = fixture
         if (fixture == null) {
             _matches.value = MatchesState.Idle
             return
         }
-        // In Favourites the "selected league" is the aggregate, so follow the fixture's own league
-        // for the standings panel.
-        if (_selectedLeagueId.value == FavouritesId) {
-            sportsLeagueById(fixture.leagueId)?.let { league -> viewModelScope.launch { loadStandings(league) } }
-        }
+        sportsLeagueById(fixture.leagueId)?.let { league -> viewModelScope.launch { loadStandings(league) } }
         matchesCache[fixture.id]?.let {
             _matches.value = MatchesState.Content(it)
             return
@@ -541,11 +489,39 @@ class SportsViewModel(
         }
     }
 
-    fun toggleTeamFollowed(leagueId: String, abbrev: String) {
+    fun toggleTeamFollowed(leagueId: String, abbrev: String, name: String? = null) {
         viewModelScope.launch {
             val key = SportsPrefs.teamKey(leagueId, abbrev)
-            prefs.setTeamFollowed(key, followedTeams.value.contains(key).not())
+            prefs.setTeamFollowed(key, followedTeams.value.contains(key).not(), name)
         }
+    }
+
+    /** Stop following a team by its stored key (Settings › Sport › My teams). */
+    fun unfollowTeam(key: String) {
+        viewModelScope.launch { prefs.setTeamFollowed(key, false) }
+    }
+
+    /**
+     * The teams of the chosen leagues (v2.6.0, Settings › Sport › My teams): ESPN's teams endpoint
+     * per league, the SofaScore/TheSportsDB ones from their boards. Built once per [resetTeamIndex].
+     */
+    private var teamIndex: List<SportsTeamSearch.Hit>? = null
+    private val teamIndexLock = kotlinx.coroutines.sync.Mutex()
+
+    fun resetTeamIndex() {
+        teamIndex = null
+    }
+
+    suspend fun searchTeams(query: String): List<SportsTeamSearch.Hit> {
+        if (!SportsTeamSearch.searchable(query)) return emptyList()
+        val index = teamIndexLock.withLock {
+            teamIndex ?: supervisorScope {
+                SportsLeagues.filter { it.id in activeLeagues.value && it.kind == LeagueKind.TEAMS }.map { league ->
+                    async { runCatching { api.teams(league) }.getOrDefault(emptyList()).map { SportsTeamSearch.Hit(league.id, it) } }
+                }.awaitAll().flatten()
+            }.also { teamIndex = it }
+        }
+        return SportsTeamSearch.search(index, query)
     }
 
     fun togglePlayerFollowed(leagueId: String, playerId: String) {
@@ -554,12 +530,6 @@ class SportsViewModel(
             prefs.setPlayerFollowed(key, followedPlayers.value.contains(key).not())
         }
     }
-
-    fun isTeamFollowed(leagueId: String, abbrev: String): Boolean =
-        followedTeams.value.contains(SportsPrefs.teamKey(leagueId, abbrev))
-
-    fun isPlayerFollowed(leagueId: String, playerId: String): Boolean =
-        followedPlayers.value.contains(SportsPrefs.playerKey(leagueId, playerId))
 
     /** Resolve matched ids to entities for the zap context, then hand off to the player caller. */
     fun playMatch(match: ChannelMatch, matches: List<ChannelMatch>, onPlay: (Long, List<tv.own.owntv.core.database.entity.ChannelEntity>) -> Unit) {
@@ -613,15 +583,6 @@ class SportsViewModel(
         }.getOrDefault(emptyList())
         matchesCache[fixture.id] = found
         if (_selectedFixture.value?.id == fixture.id) _matches.value = MatchesState.Content(found)
-    }
-
-    /** A whole sport on or off (v2.2.0): every league of [group] follows — off when any was on. */
-    fun toggleSport(group: SportGroup) {
-        viewModelScope.launch {
-            val ids = SportsLeagues.filter { it.sportGroup == group }.map { it.id }.toSet()
-            val active = activeLeagues.value
-            prefs.setActiveLeagues(if (ids.any { it in active }) active - ids else active + ids)
-        }
     }
 
     /** Remember that the language prompt was shown, so it does not reappear on the next fixture. */
@@ -713,7 +674,7 @@ class SportsViewModel(
      * Fetch one league's board. [quiet] (the live refresh) keeps the current board on screen while
      * fetching and on failure, so the lists never blank out or flash "Loading…" every 30 seconds.
      */
-    private suspend fun loadBoard(league: SportLeague, force: Boolean, quiet: Boolean = false) {
+    private suspend fun loadBoard(league: SportLeague, force: Boolean, quiet: Boolean = false, extra: Boolean = false) {
         val now = System.currentTimeMillis()
         if (!force) {
             val at = boardAt[league.id] ?: 0L
@@ -723,17 +684,20 @@ class SportsViewModel(
         val hadContent = boards.value[league.id] is BoardState.Content
         if (!(quiet && hadContent)) boards.value = boards.value + (league.id to BoardState.Loading)
         val result = runCatching { api.scoreboard(league) }
-        // SofaScore already logged its one line (v2.5.0).
+        // The source chain already logged its line (v2.6.0).
         result.onFailure { if (league.source == LeagueSource.ESPN) android.util.Log.w("SportsHub", "board failed " + league.id, it) }
         result.onSuccess { android.util.Log.d("SportsHub", "board ok " + league.id + " fixtures=" + it.fixtures.size) }
         boardAt[league.id] = now
         if (result.isFailure && quiet && hadContent) return
-        // A SofaScore league that failed shows nothing rather than an error, and is fetched again
-        // by the next refresh once its board is stale (v2.5.0).
+        // A SofaScore league no source could serve says so rather than an error, and is fetched
+        // again by the next refresh once its board is stale (v2.5.0; "unavailable" v2.6.0).
         val board = result.getOrNull()
-            ?: if (league.source == LeagueSource.SOFASCORE) EspnApi.Scoreboard(league.id, emptyList()) else null
-        // A league dropped from the selection while fetching must not come back.
-        if (league.id !in loadingLeagues.value) return
+            ?: if (league.source == LeagueSource.SOFASCORE) EspnApi.Scoreboard(league.id, emptyList(), unavailable = true) else null
+        // A league dropped from the selection while fetching must not come back (the open league
+        // page's own board, v2.6.0, stays).
+        if (league.id !in loadingLeagues.value && !(extra || league.id == _openLeagueId.value)) return
+        // A followed team stored under its code alone gets its name from the board (v2.6.0).
+        board?.let { fillTeamNames(league, it) }
         boards.value = boards.value + (league.id to (board?.let { BoardState.Content(it) } ?: BoardState.Error))
         // The open game's score and status follow the fresh board (same id, new values); its
         // channel list stays — the cache is keyed by id.
@@ -741,6 +705,17 @@ class SportsViewModel(
         if (board != null && selected != null && selected.leagueId == league.id) {
             board.fixtures.firstOrNull { it.id == selected.id }?.takeIf { it != selected }?.let { _selectedFixture.value = it }
         }
+    }
+
+    private suspend fun fillTeamNames(league: SportLeague, board: EspnApi.Scoreboard) {
+        val followed = runCatching { prefs.followedTeams.first() }.getOrDefault(emptySet())
+        if (followed.none { it.startsWith(league.id + TeamKeySep) }) return
+        val names = runCatching { prefs.teamNames.first() }.getOrDefault(emptyMap())
+        val found = board.fixtures.flatMap { listOfNotNull(it.home, it.away) }.mapNotNull { team ->
+            val key = SportsPrefs.teamKey(league.id, team.abbreviation)
+            if (key in followed && names[key] != team.name) key to team.name else null
+        }.toMap()
+        if (found.isNotEmpty()) runCatching { prefs.putTeamNames(found) }
     }
 
     private suspend fun loadStandings(league: SportLeague) {
@@ -756,9 +731,6 @@ class SportsViewModel(
     }
 
     companion object {
-        /** Sentinel rail selection for the Favourites aggregate (no single league). */
-        const val FavouritesId = "__favourites__"
-
         /** Pick-list id prefixes, so one phone submit can carry leagues, teams and athletes. */
         const val TeamItemPrefix = "team:"
         const val PlayerItemPrefix = "player:"

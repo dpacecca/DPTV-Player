@@ -25,6 +25,7 @@ class EpgSyncWorker(
     private val recordings: tv.own.owntv.core.recording.RecordingManager,
     private val localeStore: LocaleStore,
     private val watchSession: tv.own.owntv.core.live.WatchSession,
+    private val syncState: tv.own.owntv.core.sync.schedule.SyncStateStore,
 ) : CoroutineWorker(context, params) {
 
     /**
@@ -55,7 +56,11 @@ class EpgSyncWorker(
         // (WorkManager restarts it later if the wait outlives the job's time limit).
         if (reason == tv.own.owntv.core.sync.AutoRefresh.REASON && watchSession.watching.value.isNotEmpty()) {
             Log.i(TAG, "auto refresh waiting for playback to stop sourceId=$sourceId")
-            watchSession.awaitIdle()
+            // (v2.5.3) A timed run gives up at its deadline and waits for the next slot instead.
+            if (!awaitPlaybackIdle(watchSession, inputData.getLong(KEY_HOLD_UNTIL, 0L))) {
+                Log.i(TAG, "auto refresh skipped — still playing past its window sourceId=$sourceId")
+                return Result.success()
+            }
         }
         val baseProgrammes = inputData.getInt(KEY_BASE_PROGRAMMES, 0)
         val progress = ProgressPublisher(baseProgrammes, source.id, source.name) { channels, programmes ->
@@ -76,6 +81,7 @@ class EpgSyncWorker(
             }
             progress.flush()
             store.setSynced(source.id, System.currentTimeMillis(), null)
+            syncState.markSuccess(tv.own.owntv.core.sync.schedule.ScheduledKind.EPG, System.currentTimeMillis())
             // A series rule is a standing instruction about programmes that do not exist in the
             // database until the guide mentioning them is fetched — so this is the moment "record
             // every showing" becomes actual timers (D7). Best-effort: a rule that could not be
@@ -199,6 +205,7 @@ class EpgSyncWorker(
         const val KEY_PROGRESS_CHANNELS = "channels"
         const val KEY_PROGRESS_PROGRAMMES = "programmes"
         const val KEY_BASE_PROGRAMMES = "baseProgrammes"
+        const val KEY_HOLD_UNTIL = "holdUntil"
     }
 }
 

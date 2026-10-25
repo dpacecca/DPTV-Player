@@ -37,3 +37,14 @@ val animationsOn: Boolean
 @ReadOnlyComposable
 fun <T> ownTvTween(durationMs: Int = 200, easing: Easing = FastOutSlowInEasing): TweenSpec<T> =
     tween(LocalAnimationLevel.current.scale(durationMs), easing = easing)
+
+/** (v2.6.0) How long the guide's menus take to slide: the categories, the menu beside them and the guide. */
+const val GUIDE_SLIDE_MS = 240
+
+/**
+ * (v2.6.0) The one slide the guide's categories, the menu beside them and the guide itself share, so they
+ * move together: a short ease out of [FastOutSlowInEasing] (Off → a snap, as [ownTvTween]).
+ */
+@Composable
+@ReadOnlyComposable
+fun <T> guideSlideSpec(): TweenSpec<T> = ownTvTween(GUIDE_SLIDE_MS, FastOutSlowInEasing)

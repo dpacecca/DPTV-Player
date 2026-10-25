@@ -32,13 +32,26 @@ internal object PlaybackLogLines {
 
     fun isChannelChange(line: String): Boolean = CHANNEL_CHANGE_PHRASES.any { line.contains(it, ignoreCase = true) }
 
+    /** The change check's and the sync times' lines (v2.5.3), as `SyncCheckLog` writes them. */
+    const val SYNC_CHECK_PREFIX = "sync-check:"
+
+    fun isSyncCheck(line: String): Boolean = line.contains(SYNC_CHECK_PREFIX, ignoreCase = true)
+
     /** A second guard: callers redact before logging; this drops whole URLs, then masks any credential
      *  left outside one ([HttpClient.redactUrl]). */
     fun redact(line: String): String = HttpClient.redactUrl(URL.replace(line) { "${it.groupValues[1]}://•••" })
 
     /** The newest [max] lines (after the filter), newest first, redacted. */
-    fun prepare(raw: List<String>, channelChangesOnly: Boolean, max: Int = MAX_LINES): List<String> =
-        raw.filter { it.isNotBlank() && (!channelChangesOnly || isChannelChange(it)) }
+    fun prepare(raw: List<String>, channelChangesOnly: Boolean, max: Int = MAX_LINES, syncChecksOnly: Boolean = false): List<String> =
+        raw.filter {
+            it.isNotBlank() && when {
+                // Both filters on: either kind of line.
+                channelChangesOnly && syncChecksOnly -> isChannelChange(it) || isSyncCheck(it)
+                channelChangesOnly -> isChannelChange(it)
+                syncChecksOnly -> isSyncCheck(it)
+                else -> true
+            }
+        }
             .takeLast(max)
             .asReversed()
             .map(::redact)
