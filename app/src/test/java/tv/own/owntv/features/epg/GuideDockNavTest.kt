@@ -54,10 +54,69 @@ class GuideDockNavTest {
         for (ev in listOf(GuideNavEvent.LEFT, GuideNavEvent.RIGHT, GuideNavEvent.BACK, GuideNavEvent.SWIPE_LEFT, GuideNavEvent.PICKED, GuideNavEvent.FOCUS_LEFT)) {
             assertEquals(ev.name, step(GuideNav.GUIDE, GuideNavFocus.NONE), GuideNav.GUIDE.on(ev))
         }
-        for (ev in listOf(GuideNavEvent.OPEN, GuideNavEvent.LEFT, GuideNavEvent.RIGHT, GuideNavEvent.PICKED, GuideNavEvent.FOCUS_LEFT)) {
+        for (ev in listOf(GuideNavEvent.LEFT, GuideNavEvent.RIGHT, GuideNavEvent.PICKED, GuideNavEvent.FOCUS_LEFT)) {
             assertEquals(ev.name, step(GuideNav.MENU, GuideNavFocus.NONE), GuideNav.MENU.on(ev))
         }
-        assertEquals(step(GuideNav.CATEGORIES, GuideNavFocus.NONE), GuideNav.CATEGORIES.on(GuideNavEvent.OPEN))
+    }
+
+    // --- v2.6.1: ▶ from the menu, the self-heal, and ◀ at now after odd focus routes ---------------------
+
+    @Test
+    fun leftAtNowOpensTheCategoriesWhateverStateWasLeftBehind() {
+        for (nav in GuideNav.entries) {
+            assertEquals(nav.name, step(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES), nav.on(GuideNavEvent.OPEN))
+        }
+    }
+
+    @Test
+    fun rightFromTheMenuLandsInTheCategoriesWheneverTheyAreOut() {
+        assertEquals(step(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES), GuideNav.MENU.on(GuideNavEvent.RAIL_RIGHT))
+        assertEquals(step(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES), GuideNav.CATEGORIES.on(GuideNavEvent.RAIL_RIGHT))
+    }
+
+    @Test
+    fun rightOnTheRailGoesToTheCategoriesWhileTheyAreOutOnATv() {
+        assertEquals(GuideNavFocus.CATEGORIES, GuideNav.MENU.railEntry(tv = true))
+        assertEquals(GuideNavFocus.CATEGORIES, GuideNav.CATEGORIES.railEntry(tv = true))
+        assertEquals(GuideNavFocus.GRID, GuideNav.GUIDE.railEntry(tv = true))
+        // A phone's sheet is never beside the menu.
+        assertEquals(GuideNavFocus.GRID, GuideNav.MENU.railEntry(tv = false))
+        // And the route itself: the rail's ▶ in MENU lands in the categories.
+        assertEquals(step(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES), GuideNav.MENU.on(GuideNavEvent.RAIL_RIGHT))
+    }
+
+    @Test
+    fun focusArrivingInTheGridWhileInTheMenuOrCategoriesIsTheGuide() {
+        assertEquals(step(GuideNav.GUIDE, GuideNavFocus.NONE), GuideNav.MENU.on(GuideNavEvent.GRID_FOCUSED))
+        assertEquals(step(GuideNav.GUIDE, GuideNavFocus.NONE), GuideNav.CATEGORIES.on(GuideNavEvent.GRID_FOCUSED))
+        assertFalse(GuideNav.MENU.on(GuideNavEvent.GRID_FOCUSED).nav.categoriesOpen)
+    }
+
+    @Test
+    fun theOwnersRouteRightFromTheMenuIntoTheGridThenLeftAtNowReopens() {
+        // GUIDE ◀ → CATEGORIES ◀ → MENU ▶ (turned aside into the grid) → healed → ◀ at now → CATEGORIES.
+        var nav = GuideNav.GUIDE.on(GuideNavEvent.OPEN).nav
+        nav = nav.on(GuideNavEvent.LEFT).nav
+        assertEquals(GuideNav.MENU, nav)
+        nav = nav.on(GuideNavEvent.RAIL_RIGHT).nav
+        assertEquals(GuideNav.CATEGORIES, nav)
+        nav = nav.on(GuideNavEvent.GRID_FOCUSED).nav
+        assertEquals(GuideNav.GUIDE, nav)
+        assertEquals(step(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES), nav.on(GuideNavEvent.OPEN))
+    }
+
+    @Test
+    fun focusInTheGuideHealsAtOnceUnlessTheCategoriesWereJustAskedFor() {
+        assertEquals(0L, guideHealDelayMs(GuideNav.MENU, guideHasFocus = true, sinceCategoriesAskedMs = 10_000))
+        assertEquals(0L, guideHealDelayMs(GuideNav.CATEGORIES, guideHasFocus = true, sinceCategoriesAskedMs = 10_000))
+        assertEquals(CATEGORY_ASK_GRACE_MS - 100, guideHealDelayMs(GuideNav.CATEGORIES, guideHasFocus = true, sinceCategoriesAskedMs = 100))
+    }
+
+    @Test
+    fun nothingToHealOutsideTheGuideOrInGuideState() {
+        assertNull(guideHealDelayMs(GuideNav.GUIDE, guideHasFocus = true, sinceCategoriesAskedMs = 0))
+        assertNull(guideHealDelayMs(GuideNav.MENU, guideHasFocus = false, sinceCategoriesAskedMs = 10_000))
+        assertNull(guideHealDelayMs(GuideNav.CATEGORIES, guideHasFocus = false, sinceCategoriesAskedMs = 0))
     }
 
     @Test

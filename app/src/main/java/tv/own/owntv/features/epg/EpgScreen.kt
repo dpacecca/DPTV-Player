@@ -35,6 +35,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -615,20 +616,29 @@ fun EpgScreen(
     }
     // Asks the categories to take focus (counted, so asking again while they are out still works).
     var catFocusAsk by remember { mutableIntStateOf(0) }
+    // (v2.6.1) When the categories were last asked to take focus (uptime), see [guideHealDelayMs].
+    var catAskAt by remember { mutableLongStateOf(0L) }
     fun navGo(event: GuideNavEvent) {
         val step = nav.on(event)
         catLeaveJob?.cancel()
         // Back to the guide keeps the highlighted category, even before its rest is up (as TiviMate).
         if (step.nav == GuideNav.GUIDE) settle.flush()?.let { applyCategory(it) }
+        // (v2.6.1) The state first, then focus: a focus move that lands in the guide heals it to GUIDE
+        // (the guide's focus observer), which writing the state afterwards used to undo.
+        nav = step.nav
         when (step.focus) {
             GuideNavFocus.GRID -> toGuideRows()
             GuideNavFocus.GRID_FIRST -> { focusedRow = 0; toGuideRows() }
             GuideNavFocus.RAIL -> onOpenRail()
             // The panel is always composed on a TV: it takes focus at once, before it slides in.
-            GuideNavFocus.CATEGORIES -> { nav = step.nav; if (!runCatching { sheetFocus.requestFocus() }.getOrDefault(false)) catFocusAsk++ }
+            GuideNavFocus.CATEGORIES -> {
+                catAskAt = android.os.SystemClock.uptimeMillis()
+                // (v2.6.1) Asked again on the next frames unless they have it: a request from the menu can be
+                // turned aside on its way in (a focus restorer, the guide's own entry) and land in the guide.
+                if (!runCatching { sheetFocus.requestFocus() }.getOrDefault(false) || !catFocused) catFocusAsk++
+            }
             GuideNavFocus.NONE -> Unit
         }
-        nav = step.nav
     }
     // The phone's sheet: the same order, the row first and then the sheet goes.
     fun closeSheetToGrid() {
@@ -700,7 +710,8 @@ fun EpgScreen(
         onEntryHook?.invoke {
             when {
                 // v2.6.0: ▶ on the menu beside the categories: back into them, the menu folding to its icons.
-                tvLayout && nav == GuideNav.MENU -> { navGo(GuideNavEvent.RAIL_RIGHT); true }
+                // (v2.6.1) Whenever they are out (MENU, or CATEGORIES not yet noted as left).
+                nav.railEntry(tvLayout) == GuideNavFocus.CATEGORIES -> { navGo(GuideNavEvent.RAIL_RIGHT); true }
                 !state.loading && state.channels.isEmpty() -> false
                 else -> {
                     val ok = state.channels.isNotEmpty() &&
@@ -732,11 +743,19 @@ fun EpgScreen(
         if (catFocusAsk == 0) return@LaunchedEffect
         repeat(10) {
             withFrameNanos { }
-            if (nav != GuideNav.CATEGORIES) return@LaunchedEffect
-            if (runCatching { sheetFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+            if (nav != GuideNav.CATEGORIES || catFocused) return@LaunchedEffect
+            runCatching { sheetFocus.requestFocus() }
         }
     }
     LaunchedEffect(searchOpen) { if (searchOpen) { withFrameNanos { }; runCatching { searchFocus.requestFocus() } } }
+    // (v2.6.1) Focus in the guide always means GUIDE, however it got there: the categories close, so ◀ at now
+    // opens them again. A request for the categories still under way gets its moment first.
+    LaunchedEffect(guideHasFocus, nav, tvLayout) {
+        if (!tvLayout) return@LaunchedEffect
+        val wait = guideHealDelayMs(nav, guideHasFocus, android.os.SystemClock.uptimeMillis() - catAskAt) ?: return@LaunchedEffect
+        if (wait > 0) delay(wait)
+        if (guideHasFocus && nav != GuideNav.GUIDE) navGo(GuideNavEvent.GRID_FOCUSED)
+    }
 
     BoxWithConstraints(
         modifier
@@ -746,7 +765,9 @@ fun EpgScreen(
             // outside too, and redirecting it would send focus to the grid instead.
             .focusProperties {
                 onEnter = {
-                    if (!(searchOpen && !searchHadFocus)) {
+                    // (v2.6.1) Not while the categories are out: ▶ from the menu asks them for focus from
+                    // outside, and sending that to the row left the grid focused with the categories open.
+                    if (!(searchOpen && !searchHadFocus) && !(tvLayout && nav.categoriesOpen)) {
                         val ok = state.channels.isNotEmpty() &&
                             runCatching { rowFocus(focusedRow.coerceIn(0, state.channels.size - 1)).requestFocus() }.getOrDefault(false)
                         if (!ok) pendingEntry = true
@@ -881,8 +902,10 @@ fun EpgScreen(
                 }
                 .onFocusChanged {
                     // Focus reaching the guide by any way (a row, a tool, a tap, a restore) puts the categories away.
-                    if (it.hasFocus && !guideHasFocus && nav != GuideNav.GUIDE) navGo(GuideNavEvent.GRID_FOCUSED)
                     guideHasFocus = it.hasFocus
+                    if (it.hasFocus && nav != GuideNav.GUIDE &&
+                        guideHealDelayMs(nav, true, android.os.SystemClock.uptimeMillis() - catAskAt) == 0L
+                    ) navGo(GuideNavEvent.GRID_FOCUSED)
                 },
         ) {
             if (compact) {
