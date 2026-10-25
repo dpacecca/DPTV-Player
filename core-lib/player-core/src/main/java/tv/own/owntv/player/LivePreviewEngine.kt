@@ -399,6 +399,8 @@ class LivePreviewEngine(
      * channel is up — so it adds no timer and cannot outlive the engine.
      */
     private val audioWatchdog = AudioWatchdog()
+    /** "Dropping more frames than it shows", also polled from [progressWatchdog]. */
+    private val dropWatch = FrameDropWatch()
     /** rendererIndex -> (C.TrackType, ready). Written from analytics callbacks, read by [rendererReadiness]. */
     private val rendererReady = java.util.concurrent.ConcurrentHashMap<Int, Pair<Int, Boolean>>()
     /** A one-line "video=false audio=true" summary of [rendererReady], for the stuck-open diagnostics. */
@@ -899,8 +901,20 @@ class LivePreviewEngine(
                 } else {
                     tune.frozenChecks = 0
                 }
+                // A slideshow: the decoder hands back frames ExoPlayer discards faster than it shows any.
+                // Same frame-hook guards as above; a tunneled decoder reports no frames to compare with.
+                if (!tunneledNow && !_audioOnly.value && tune.everRendered && hasVideo) {
+                    val dropped = (currentDroppedFrames(p) - dropsBaseline).coerceAtLeast(0).toLong()
+                    if (dropWatch.poll(frames.toLong(), dropped)) {
+                        LiveDiagnosticsLog.event("progressWatchdog: dropping more frames than it shows (frames=$frames dropped=$dropped) — giving up on ExoPlayer for this stream")
+                        failLoad("frames dropped faster than shown"); return
+                    }
+                } else {
+                    dropWatch.reset()
+                }
             } else {
                 tune.frozenChecks = 0; tune.lastProgressPos = -1L; tune.lastProgressWallMs = 0L
+                dropWatch.reset()
             }
             mainHandler.postDelayed(this, PROGRESS_CHECK_MS)
         }
@@ -1561,7 +1575,7 @@ class LivePreviewEngine(
         _error.value = null
         _errorInfo.value = null
         frameCounter.set(0)
-        throughputTracker.reset(); fpsSample.resetAll(); dropsBaseline = currentDroppedFrames(player)
+        throughputTracker.reset(); fpsSample.resetAll(); dropWatch.reset(); dropsBaseline = currentDroppedFrames(player)
         audioWatchdog.reset()
         _currentMeta.value = meta
         _zoomMode.value = defaultZoom // start new content at the user's default zoom, same as mpv/VOD

@@ -4720,6 +4720,7 @@
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	first frame after ${now - t.startedMs}ms${ZapTiming.pressSuffix(sincePress)}
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frame hook NOT wired — no video renderer found; picture-freeze detection falls back to the no-progress backstop
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frame hook send FAILED (${it.message}) — picture-freeze detection falls back to the no-progress backstop
+1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frames dropped faster than shown
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	frames=$frames dropped=$dropped isPlaying=${p.isPlaying}
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	ftyp
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	hardware
@@ -4788,6 +4789,7 @@
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	preroll defeated — $why of ${targetMs}ms, reopening without pre-buffer
 1	technical	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	preroll defeated — reopening without pre-buffer ($detail)
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	preview play() failed for ${HttpClient.redactUrl(url)}
+1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	progressWatchdog: dropping more frames than it shows (frames=$frames dropped=$dropped) — giving up on ExoPlayer for this stream
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	progressWatchdog: no video frame after ${now - tune.readySinceMs}ms (pos=$pos advancing, video track present)
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	progressWatchdog: no-progress detected for ${noProgressMs}ms (pos=$pos, state=READY, frameHook=${tune.everRendered})
 1	log	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	progressWatchdog: picture frozen, frames stuck at $frames for ${tune.frozenChecks} polls (pos still advancing)
