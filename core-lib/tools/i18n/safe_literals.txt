@@ -3105,6 +3105,7 @@
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	guide_width_channels
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	guide_width_epg
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	guide_width_on
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	hdr_enabled
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	hero_preview
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	hide_new_categories_
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	hide_new_categories_$pid

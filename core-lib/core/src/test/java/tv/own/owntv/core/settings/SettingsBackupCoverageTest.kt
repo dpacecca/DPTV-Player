@@ -23,6 +23,8 @@ class SettingsBackupCoverageTest {
         "vod_scope_restored",
         "restore_in_progress", "font_jakarta_migrated", "live_latency_reset_416", "auto_frame_rate_reset_416",
         "auto_frame_rate_reset_pre12", "metadata_match_heal_version", "stage_defaults_applied",
+        // The retired HDR switch, read once by migrateHdrToPreferSdr and then removed.
+        "hdr_enabled",
         // A fact about this device's decoders (tunneled playback failed here, N19), not a choice.
         "tunneling_failed",
         // The latency of this device's own outputs; another device's HDMI or Bluetooth path differs.

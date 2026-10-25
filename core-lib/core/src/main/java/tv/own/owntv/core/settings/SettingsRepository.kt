@@ -415,6 +415,8 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         // Stage (2026-10-02): the TV app's new-UI defaults written once (applyStageDefaults). Device-local.
         val STAGE_DEFAULTS_APPLIED = booleanPreferencesKey("stage_defaults_applied")
         val PREFER_SDR = booleanPreferencesKey("prefer_sdr")
+        // The HDR switch Prefer SDR replaced (core 1.0.72). Read once by migrateHdrToPreferSdr, then removed.
+        val LEGACY_HDR_ENABLED = booleanPreferencesKey("hdr_enabled")
         val AUTO_FRAME_RATE = booleanPreferencesKey("auto_frame_rate")
         val AFR_PAUSE_SECS = intPreferencesKey("afr_pause_secs")
         val AFR_MATCH_RESOLUTION = booleanPreferencesKey("afr_match_resolution")
@@ -2907,6 +2909,17 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         runCatching { migrateAutoFrameRatePre12() }
         runCatching { migrateLiveLatency416() }
         runCatching { migrateSystemSansToJakarta() }
+        runCatching { migrateHdrToPreferSdr() }
+    }
+
+    /**
+     * The HDR switch (mpv only, on by default) is gone; Prefer SDR (ExoPlayer, off by default) took its
+     * place. Someone who had turned HDR off did not want an HDR picture, so they start with Prefer SDR
+     * on; HDR left on is the new default, Prefer SDR off. A Prefer SDR already chosen is never touched.
+     * The old key is removed, so this runs once.
+     */
+    suspend fun migrateHdrToPreferSdr() {
+        context.dataStore.edit { hdrToPreferSdr(it) }
     }
 
     /**
@@ -3533,6 +3546,13 @@ class SettingsRepository(private val context: Context, private val localeStore: 
     companion object {
         /** Glass opacity when glass is on: the Stage default and Reset (owner, 2026-10-02: 50%). */
         const val GLASS_ALPHA_DEFAULT_PCT = 50
+
+        /** The writes of [migrateHdrToPreferSdr], apart so a unit test can check them. */
+        internal fun hdrToPreferSdr(prefs: MutablePreferences) {
+            val hdr = prefs[Keys.LEGACY_HDR_ENABLED] ?: return
+            if (!hdr && prefs[Keys.PREFER_SDR] == null) prefs[Keys.PREFER_SDR] = true
+            prefs.remove(Keys.LEGACY_HDR_ENABLED)
+        }
 
         /** The writes of [applyStageDefaults] (except the picture file), apart so a unit test can check them. */
         internal fun stageDefaults(prefs: MutablePreferences, allSurfacesBits: Int) {
