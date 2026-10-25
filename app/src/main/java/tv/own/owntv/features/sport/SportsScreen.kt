@@ -14,12 +14,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,6 +62,10 @@ fun SportsScreen(
     onOpenSettings: () -> Unit = {},
     contentStart: Dp = 150.mpx,
     modifier: Modifier = Modifier,
+    /** (v2.6.1) False while the player is full screen over the section: its Back is the player's. */
+    active: Boolean = true,
+    /** (v2.6.1) A match or league page is open: the shell hides its menu and keeps Back for the page. */
+    onPageOpen: (Boolean) -> Unit = {},
 ) {
     val vm: SportsViewModel = koinViewModel()
     val liveVm: LiveViewModel = koinViewModel()
@@ -70,10 +77,17 @@ fun SportsScreen(
     val livePreviewSetting by liveVm.livePreviewEnabled.collectAsStateWithLifecycle()
     val effectivePreview = previewEnabled && livePreviewSetting
     var showLanguage by remember { mutableStateOf(false) }
-    // The card a match was opened from, so Back lands on it.
-    var lastKey by remember { mutableStateOf<String?>(null) }
     // The league page's way back: to the match it was opened from, or the hub.
     var leagueFromMatch by remember { mutableStateOf<Fixture?>(null) }
+    // (v2.6.1) The match page's way back: to the league it was opened from, or the hub.
+    var matchFromLeague by remember { mutableStateOf<String?>(null) }
+    // (v2.6.1) The game a league page puts focus back on (Back from a match opened from it).
+    var leagueRestore by remember { mutableStateOf<String?>(null) }
+    // (v2.6.1) Counted asks for the hub to put focus back on [SportsViewModel.hubReturnKey] (Back from a page,
+    // or from Settings › Sport); a fresh visit from the menu leaves focus on the menu.
+    var hubFocusAsk by remember { mutableIntStateOf(if (restoreFocus && vm.hubReturnKey != null) 1 else 0) }
+    // (v2.6.1) The hub keeps its filters and scroll while a page is over it, so the card is there to go back to.
+    val hubState = rememberSaveableStateHolder()
 
     // Live scores refresh while Sport is on screen (Settings › Sport › Live refresh).
     DisposableEffect(vm) {
@@ -103,22 +117,33 @@ fun SportsScreen(
         if (!languageAsked && content.matches.isNotEmpty()) showLanguage = true
     }
 
-    val openMatch: (Fixture) -> Unit = { f -> lastKey = f.id; vm.openFixture(f) }
     val current = fixture
     val openLeague = leagueId
-    Box(modifier.fillMaxSize()) {
+    val page = sportsPage(fixtureOpen = current != null, leagueOpen = openLeague != null)
+    // (v2.6.1) The shell hides the menu over a page and leaves its Back to it (see [railBackAsksToExit]).
+    LaunchedEffect(page) { onPageOpen(page != SportsPage.HUB) }
+    DisposableEffect(Unit) { onDispose { onPageOpen(false) } }
+    val toHub = { hubFocusAsk++ }
+    val pageActive = active && !showLanguage
+    // (v2.6.1) Focus anywhere in Sport (the hub or a page) is the content's, never the menu's: a page that
+    // did not say so left the shell thinking the menu had it, so Back asked to leave the app.
+    Box(modifier.fillMaxSize().onFocusChanged { if (it.hasFocus) onChildFocused() }) {
         when {
             openLeague != null -> SportsLeagueScreen(
                 vm = vm,
                 leagueId = openLeague,
-                onOpenMatch = { f -> leagueFromMatch = null; openMatch(f) },
+                onOpenMatch = { f -> leagueFromMatch = null; leagueRestore = null; matchFromLeague = openLeague; vm.openFixture(f) },
                 onBack = {
-                    vm.openLeague(null)
-                    leagueFromMatch?.let { vm.openFixture(it) }
+                    val back = sportsBack(SportsPage.LEAGUE, matchFromLeague = false, leagueFromMatch = leagueFromMatch != null)
+                    val match = leagueFromMatch
                     leagueFromMatch = null
+                    leagueRestore = null
+                    vm.openLeague(null)
+                    if (back == SportsPage.MATCH && match != null) vm.openFixture(match) else toHub()
                 },
                 contentStart = contentStart,
-                active = !showLanguage,
+                active = pageActive,
+                restoreMatchId = leagueRestore,
             )
             current != null -> SportsMatchScreen(
                 vm = vm,
@@ -127,20 +152,35 @@ fun SportsScreen(
                 effectivePreview = effectivePreview,
                 onPlayChannel = onPlayChannel,
                 onOpenLeague = { id -> leagueFromMatch = current; vm.selectFixture(null); vm.openLeague(id) },
-                onBack = { vm.selectFixture(null) },
+                onBack = {
+                    val from = matchFromLeague
+                    matchFromLeague = null
+                    if (sportsBack(SportsPage.MATCH, matchFromLeague = from != null, leagueFromMatch = false) == SportsPage.LEAGUE && from != null) {
+                        // Back to the league, on the game's row.
+                        leagueRestore = current.id
+                        vm.selectFixture(null)
+                        vm.openLeague(from)
+                    } else {
+                        vm.selectFixture(null)
+                        toHub()
+                    }
+                },
                 contentStart = contentStart,
-                active = !showLanguage,
+                active = pageActive,
             )
-            else -> SportsHubScreen(
-                vm = vm,
-                onOpenMatch = openMatch,
-                onOpenLeague = { id -> leagueFromMatch = null; vm.openLeague(id) },
-                onOpenSettings = onOpenSettings,
-                onChildFocused = onChildFocused,
-                onEntryHook = onEntryHook,
-                contentStart = contentStart,
-                restoreKey = lastKey,
-            )
+            else -> hubState.SaveableStateProvider(HubStateKey) {
+                SportsHubScreen(
+                    vm = vm,
+                    onOpenMatch = { f -> vm.hubReturnKey = f.id; leagueFromMatch = null; matchFromLeague = null; vm.openFixture(f) },
+                    onOpenLeague = { id, fromKey -> vm.hubReturnKey = fromKey; leagueFromMatch = null; vm.openLeague(id) },
+                    onOpenSettings = { vm.hubReturnKey = HubSettingsKey; onOpenSettings() },
+                    onChildFocused = onChildFocused,
+                    onEntryHook = onEntryHook,
+                    contentStart = contentStart,
+                    restoreKey = vm.hubReturnKey,
+                    restoreAsk = hubFocusAsk,
+                )
+            }
         }
         if (showLanguage) {
             SportLanguageDialog(
@@ -154,6 +194,28 @@ fun SportsScreen(
         }
     }
 }
+
+/** (v2.6.1) Which Sport page is on screen; a league page shows over a match it was opened from. */
+internal enum class SportsPage { HUB, MATCH, LEAGUE }
+
+internal fun sportsPage(fixtureOpen: Boolean, leagueOpen: Boolean): SportsPage = when {
+    leagueOpen -> SportsPage.LEAGUE
+    fixtureOpen -> SportsPage.MATCH
+    else -> SportsPage.HUB
+}
+
+/**
+ * (v2.6.1) Where Back from [page] goes: a match opened from a league goes back to that league, a league
+ * opened from a match back to that match, anything else to the hub (on the card it was opened from).
+ */
+internal fun sportsBack(page: SportsPage, matchFromLeague: Boolean, leagueFromMatch: Boolean): SportsPage = when (page) {
+    SportsPage.MATCH -> if (matchFromLeague) SportsPage.LEAGUE else SportsPage.HUB
+    SportsPage.LEAGUE -> if (leagueFromMatch) SportsPage.MATCH else SportsPage.HUB
+    SportsPage.HUB -> SportsPage.HUB
+}
+
+/** (v2.6.1) The hub's saved state while a page is over it. */
+private const val HubStateKey = "hub"
 
 /**
  * Language selection for the matched channels: pick one or more languages (or "all"). Shown the

@@ -144,6 +144,8 @@ fun StageRail(
     /** A screen's own way in, when it has one (Home returns to the exact control left from). */
     enterContent: (() -> Boolean)? = null,
     onFocused: () -> Unit,
+    /** (v2.6.1) False: focus cannot enter the rail (hidden over a page that owns the screen). */
+    focusable: Boolean = true,
     /** The dimming behind the open rail; off where the content moves aside for it (the guide's categories). */
     scrim: Boolean = true,
     nowPlaying: NowPlayingRail?,
@@ -205,6 +207,7 @@ fun StageRail(
                     if (entered) scope.launch { runCatching { selectedItemFocusRequester.requestFocus() } }
                 }
                 .focusProperties {
+                    onEnter = { if (!focusable) cancelFocusChange() }
                     onExit = {
                         val out = if (rtl) FocusDirection.Left else FocusDirection.Right
                         if (requestedFocusDirection == out && enterContent != null) {

@@ -53,6 +53,8 @@ internal fun SportsLeagueScreen(
     contentStart: Dp,
     modifier: Modifier = Modifier,
     active: Boolean = true,
+    /** (v2.6.1) Back from a game opened here: its row takes focus again (else the tabs). */
+    restoreMatchId: String? = null,
 ) {
     androidx.activity.compose.BackHandler(enabled = active) { onBack() }
     val board by vm.openLeagueBoard.collectAsStateWithLifecycle()
@@ -61,9 +63,22 @@ internal fun SportsLeagueScreen(
     val followedTeams by vm.followedTeams.collectAsStateWithLifecycle()
     val league = sportsLeagueById(leagueId) ?: return
     val tables = standings.filter { it.leagueId == leagueId }
-    var tab by remember(leagueId) { mutableStateOf(if (tables.isEmpty()) LeagueTab.FIXTURES else LeagueTab.TABLE) }
+    // (v2.6.1) Saveable, so Back from a game lands on the tab it was opened from.
+    var tab by androidx.compose.runtime.saveable.rememberSaveable(leagueId) { mutableStateOf(if (tables.isEmpty()) LeagueTab.FIXTURES else LeagueTab.TABLE) }
     val tabFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { tabFocus.requestFocus() } }
+    val rowFocus = remember { HashMap<String, FocusRequester>() }
+    fun focusOfRow(id: String) = rowFocus.getOrPut(id) { FocusRequester() }
+    // (v2.6.1) Focus on the page from the start (the game Back came from, else the tabs), never left on nothing.
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(60)
+        for (attempt in 0 until 10) {
+            if (restoreMatchId != null && runCatching { focusOfRow(restoreMatchId).requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+            if (attempt >= 3 || restoreMatchId == null) {
+                if (runCatching { tabFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+            }
+            androidx.compose.runtime.withFrameNanos { }
+        }
+    }
     val sep = stringResource(R.string.sport_detail_separator)
     val fixtures = (board as? SportsViewModel.BoardState.Content)?.board?.fixtures.orEmpty()
     val now = System.currentTimeMillis()
@@ -136,7 +151,7 @@ internal fun SportsLeagueScreen(
                         Text(stringResource(text), style = stageText(19, 500), color = StageColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 18.mpx))
                     }
                     else -> LazyColumn(Modifier.fillMaxSize().focusGroup(), contentPadding = PaddingValues(bottom = 60.mpx)) {
-                        items(games, key = { it.id }) { f -> LeagueMatchRow(f, now) { onOpenMatch(f) } }
+                        items(games, key = { it.id }) { f -> LeagueMatchRow(f, now, Modifier.focusRequester(focusOfRow(f.id))) { onOpenMatch(f) } }
                     }
                 }
             }
@@ -146,10 +161,10 @@ internal fun SportsLeagueScreen(
 
 /** `.lrow` of a league's games: LIVE or the day, "Australia 24–22 New Zealand", then the status or kick-off. */
 @Composable
-private fun LeagueMatchRow(f: Fixture, now: Long, onClick: () -> Unit) {
+private fun LeagueMatchRow(f: Fixture, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val locale = LocalConfiguration.current.locales[0]
     val dash = stringResource(R.string.sport_pair_dash)
-    StageRow(onClick = onClick, height = 84.mpx, modifier = Modifier.fillMaxWidth(), horizontalPadding = 18.mpx) { _ ->
+    StageRow(onClick = onClick, height = 84.mpx, modifier = modifier.fillMaxWidth(), horizontalPadding = 18.mpx) { _ ->
         val live = SportsSchedule.isLiveish(f, now)
         Box(Modifier.width(96.mpx)) {
             if (live) LiveMark("") else Text(dayOf(f.dateMs, locale) ?: stringResource(R.string.content_epg_today), style = stageText(19, 700), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)

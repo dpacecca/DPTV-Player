@@ -299,11 +299,14 @@ fun SettingsScreen(
     // Opens the search field's keyboard as it appears, so one OK reaches typing (More's search box too).
     var searchAutoEdit by remember { mutableStateOf(false) }
     LaunchedEffect(searchAutoEdit) { if (searchAutoEdit) { kotlinx.coroutines.delay(1000); searchAutoEdit = false } }
+    // (v2.6.1) Settings › Sport opened straight from Sport's ⚙ chip: Back goes back to Sport, not the root.
+    var sportsDirect by remember { mutableStateOf(false) }
     LaunchedEffect(start) {
         if (start == null) return@LaunchedEffect
         tab = SettingsTab.ROOT
         start.group?.let { selectedGroup = it; displayedGroup = it }
         // Sport's ⚙ chip (v2.6.0): straight to Settings › Sport.
+        sportsDirect = start.sports
         if (start.sports) tab = SettingsTab.SPORTS
         if (start.search) {
             searchMode = true
@@ -432,7 +435,7 @@ fun SettingsScreen(
     }
     // Opening a sub-screen the ordinary way cancels any pending Quick-shortcut return, or the Back
     // from it would aim at the shortcut instead of the row just used.
-    val open: (SettingsTab) -> Unit = { lastTab = it; deepReturnKey = null; videoRowKey = null; tab = it }
+    val open: (SettingsTab) -> Unit = { lastTab = it; deepReturnKey = null; videoRowKey = null; sportsDirect = false; tab = it }
     LaunchedEffect(openEpgAdd) {
         if (openEpgAdd) { consumeEpgAdd = true; open(SettingsTab.EPG); onEpgAddConsumed() }
     }
@@ -463,7 +466,13 @@ fun SettingsScreen(
             SettingsTab.GUIDE_WIDTH -> { tv.own.owntv.features.settings.GuideWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
             SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
             SettingsTab.SUBTITLE_STYLE -> tv.own.owntv.features.settings.SubtitleStylePage(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
-            SettingsTab.SPORTS -> tv.own.owntv.features.sport.SportsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
+            SettingsTab.SPORTS -> tv.own.owntv.features.sport.SportsSettingsScreen(
+                onBack = {
+                    val back = onBack
+                    if (sportsDirect && back != null) { sportsDirect = false; back() } else tab = SettingsTab.ROOT
+                },
+                modifier = modifier,
+            )
             SettingsTab.BROWSING -> tv.own.owntv.features.settings.BrowsingListsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
             SettingsTab.FONTS -> tv.own.owntv.features.settings.FontSettingsScreen(
                 current = fontCustomization, onSet = onSetFontCustomization, familyLabel = { fontFamilyLabel(it) },

@@ -86,7 +86,8 @@ private const val SportChips = 8
 internal fun SportsHubScreen(
     vm: SportsViewModel,
     onOpenMatch: (Fixture) -> Unit,
-    onOpenLeague: (String) -> Unit,
+    /** A league page, and (v2.6.1) the key of the control it was opened from, for Back. */
+    onOpenLeague: (String, String) -> Unit,
     onOpenSettings: () -> Unit,
     onChildFocused: () -> Unit,
     onEntryHook: (((() -> Boolean)?) -> Unit)?,
@@ -94,6 +95,8 @@ internal fun SportsHubScreen(
     modifier: Modifier = Modifier,
     /** Back from a match: the card it was opened from takes focus again. */
     restoreKey: String? = null,
+    /** (v2.6.1) Counted: each new value puts focus on [restoreKey] again (or the hub's entry when it is gone). */
+    restoreAsk: Int = 0,
 ) {
     val favourites by vm.favourites.collectAsStateWithLifecycle()
     val active by vm.activeLeagues.collectAsStateWithLifecycle()
@@ -105,11 +108,22 @@ internal fun SportsHubScreen(
     val failing by vm.failingLeagues.collectAsStateWithLifecycle()
     val cardFocus = remember { HashMap<String, FocusRequester>() }
     fun focusOf(key: String) = cardFocus.getOrPut(key) { FocusRequester() }
-    LaunchedEffect(restoreKey) {
-        val key = restoreKey ?: return@LaunchedEffect
+    val featuredFocus = remember { FocusRequester() }
+    val chipFocus = remember { FocusRequester() }
+    // (v2.6.1) Back from a page (or Settings › Sport): its card or chip, else the hub's first control, so
+    // focus is never left on nothing (where the next key found the menu).
+    LaunchedEffect(restoreAsk) {
+        if (restoreAsk == 0) return@LaunchedEffect
+        val key = restoreKey
         for (attempt in 0 until 10) {
             withFrameNanos { }
-            if (runCatching { focusOf(key).requestFocus() }.getOrDefault(false)) break
+            if (key != null && runCatching { focusOf(key).requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+        }
+        for (attempt in 0 until 10) {
+            if (runCatching { featuredFocus.requestFocus() }.getOrDefault(false) ||
+                runCatching { chipFocus.requestFocus() }.getOrDefault(false)
+            ) return@LaunchedEffect
+            withFrameNanos { }
         }
     }
     // Both chip rows are multi-select: OK toggles a chip, nothing chosen = All. Kept while the hub runs.
@@ -127,8 +141,6 @@ internal fun SportsHubScreen(
         SportsLeagues.filter { it.id in active && it.sportGroup in filter.sports }.sortedBy { rank[it.id] ?: Int.MAX_VALUE }
     }
 
-    val featuredFocus = remember { FocusRequester() }
-    val chipFocus = remember { FocusRequester() }
     val entry by rememberUpdatedState(if (rows.live.isNotEmpty()) featuredFocus else chipFocus)
     DisposableEffect(onEntryHook) {
         onEntryHook?.invoke { runCatching { entry.requestFocus() }.getOrDefault(false) }
@@ -172,7 +184,7 @@ internal fun SportsHubScreen(
                     }
                     // ⟳ fetches every board again; ⚙ is Settings › Sport (the old in-Sport dialog).
                     item { SportsChip("", false, icon = OwnTVIcon.REFRESH) { vm.refreshAll() } }
-                    item { SportsChip(stringResource(R.string.sport_settings), false, icon = OwnTVIcon.SETTINGS, onClick = onOpenSettings) }
+                    item { SportsChip(stringResource(R.string.sport_settings), false, Modifier.focusRequester(focusOf(HubSettingsKey)), icon = OwnTVIcon.SETTINGS, onClick = onOpenSettings) }
                 }
             }
 
@@ -187,7 +199,8 @@ internal fun SportsHubScreen(
                         items(chosenLeagues, key = { it.id }) { l ->
                             SportsChip(
                                 stringResource(l.labelRes), l.id in filter.leagues,
-                                onLongClick = { onOpenLeague(l.id) },
+                                Modifier.focusRequester(focusOf(hubLeagueKey(l.id))),
+                                onLongClick = { onOpenLeague(l.id, hubLeagueKey(l.id)) },
                             ) { filter = filter.copy(leagues = if (l.id in filter.leagues) filter.leagues - l.id else filter.leagues + l.id) }
                         }
                     }
@@ -252,7 +265,7 @@ internal fun SportsHubScreen(
             followedPlayers = followedPlayers,
             onFollowTeam = { team -> vm.toggleTeamFollowed(f.leagueId, team.abbreviation, team.name) },
             onFollowPlayer = { id -> vm.togglePlayerFollowed(f.leagueId, id) },
-            onOpenLeague = { onOpenLeague(f.leagueId) },
+            onOpenLeague = { onOpenLeague(f.leagueId, f.id) },
             onDismiss = { menuFor = null },
         )
     }
@@ -275,7 +288,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.hubRow(
         Column {
             RowHeader(contentStart, title, null)
             val state = rememberLazyListState()
-            LaunchedEffect(fixtures.firstOrNull()?.id) { state.scrollToItem(0) }
+            // A new first card scrolls the row home; (v2.6.1) not the row coming back from a page, which keeps
+            // its place so the card it was left on is there to take focus again.
+            val firstId = fixtures.firstOrNull()?.id
+            var shownFirst by rememberSaveable { mutableStateOf(firstId) }
+            LaunchedEffect(firstId) { if (firstId != shownFirst) { shownFirst = firstId; state.scrollToItem(0) } }
             LazyRow(
                 state = state,
                 modifier = Modifier.focusRestorer().focusGroup(),
@@ -556,3 +573,9 @@ private val HubFilterSaver = androidx.compose.runtime.saveable.Saver<SportsHub.F
 )
 
 private const val ListSep = ","
+
+/** (v2.6.1) The hub's ⚙ chip, as a key for focus to come back to from Settings › Sport. */
+internal const val HubSettingsKey = "settings"
+
+/** (v2.6.1) A league chip's key, for focus to come back to from its page. */
+internal fun hubLeagueKey(id: String): String = "league:$id"

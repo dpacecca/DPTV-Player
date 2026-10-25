@@ -169,9 +169,17 @@ fun OwnTVShell(
     // When focus was last sent to the rail on purpose: ◀ / ▶ from the content, or the app itself
     // ([focusRail]). A rail visit that follows neither does not open the floating rail (#7.1).
     var railKeyAt by remember { mutableLongStateOf(0L) }
+    // Where ▶ out of the Stage rail returns to: the content, exactly as it was left.
+    val contentAreaFocus = remember { FocusRequester() }
+    // (v2.6.1) A Sport match or league page is open: the menu is hidden and out of focus's reach, and Back is
+    // the page's (as for the film and series pages, which own the whole screen).
+    var sportPage by remember { mutableStateOf(false) }
     val focusRail = {
         railKeyAt = android.os.SystemClock.uptimeMillis()
-        runCatching { sidebarFocus.requestFocus() }
+        // (v2.6.1) Over a Sport page focus stays on the page instead.
+        if (!(sportPage && runCatching { contentAreaFocus.requestFocus() }.getOrDefault(false))) {
+            runCatching { sidebarFocus.requestFocus() }
+        }
         Unit
     }
     // v2: the TV Guide merged into Live TV. A saved or deep-linked Guide section opens Live TV.
@@ -203,15 +211,28 @@ fun OwnTVShell(
     // Settings opened from Live TV (◀ from the guide, then the rail): Back goes back to the guide, on the
     // channel it was on, instead of to More.
     var settingsFromLive by remember { mutableStateOf(false) }
+    // (v2.6.1) Settings › Sport opened from the Sport hub's ⚙ chip: Back goes back to the hub, on that chip.
+    var settingsFromSport by remember { mutableStateOf(false) }
     var lastSection by remember { mutableStateOf(selectedSection) }
     LaunchedEffect(selectedSection) {
-        if (selectedSection == MainSection.SETTINGS) settingsFromLive = lastSection == MainSection.LIVE_TV
-        else if (selectedSection != MainSection.EPG) settingsFromLive = false
+        if (selectedSection == MainSection.SETTINGS) {
+            settingsFromLive = lastSection == MainSection.LIVE_TV
+            settingsFromSport = lastSection == MainSection.SPORT
+        } else if (selectedSection != MainSection.EPG) {
+            settingsFromLive = false
+            settingsFromSport = false
+        }
         lastSection = selectedSection
     }
     val backFromSettings: () -> Unit = {
         restoreFocus = true
-        onSelectSection(if (settingsFromLive) MainSection.LIVE_TV else MainSection.MORE)
+        onSelectSection(
+            when {
+                settingsFromLive -> MainSection.LIVE_TV
+                settingsFromSport -> MainSection.SPORT
+                else -> MainSection.MORE
+            },
+        )
     }
     var searchReturn by remember { mutableStateOf<MainSection?>(null) }
     // (v2.5.1) The section a Home card opened (a film in Movies, a show in TV Shows), so Back there returns
@@ -257,8 +278,6 @@ fun OwnTVShell(
     val railVm = org.koin.androidx.compose.koinViewModel<RailCountsViewModel>()
     val railCounts by railVm.counts.collectAsStateWithLifecycle()
     val railDetails by railVm.details.collectAsStateWithLifecycle()
-    // Where ▶ out of the Stage rail returns to: the content, exactly as it was left.
-    val contentAreaFocus = remember { FocusRequester() }
     var homeEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // The guide's entry hook: the TV Guide, or Live TV in Guide view (null while Live TV shows its list).
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
@@ -769,6 +788,8 @@ fun OwnTVShell(
         else -> navSize
     }
     val railState = when {
+        // (v2.6.1) A Sport page owns the screen: the menu goes (shown again only if focus is somehow on it).
+        sportPage && selectedSection == MainSection.SPORT && !railHasFocus -> tv.own.owntv.features.shell.components.RailState.HIDDEN
         widenDocked -> tv.own.owntv.features.shell.components.RailState.OPEN
         navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED -> tv.own.owntv.features.shell.components.RailState.PINNED
         railFocused -> tv.own.owntv.features.shell.components.RailState.OPEN
@@ -1055,6 +1076,7 @@ fun OwnTVShell(
                                 fullscreen = playerMode == PlayerMode.FULLSCREEN,
                                 pickerOpen = showAvatarPicker || showPlaylistPicker,
                                 exitShown = showExit,
+                                subPageOpen = sportPage && selectedSection == MainSection.SPORT,
                             )
                         }
                         if (longPressBackArmed && backHoldJob == null) {
@@ -1478,6 +1500,8 @@ fun OwnTVShell(
                         selectedSection == MainSection.SPORT -> SportsScreen(
                             onPlayChannel = { id, zap -> scope.launch { if (liveVm.ensurePlayingByIdAsync(id, zap)) openFullscreen(MainSection.LIVE_TV) } },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
+                            active = playerMode == PlayerMode.NONE,
+                            onPageOpen = { sportPage = it },
                             previewEnabled = playerMode == PlayerMode.NONE,
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
@@ -1488,7 +1512,10 @@ fun OwnTVShell(
                                 onSelectSection(MainSection.SETTINGS)
                             },
                             contentStart = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 64.mpx else 150.mpx,
-                            modifier = Modifier.fillMaxSize(),
+                            // (v2.6.1) As every other section: focus in Sport is the content's.
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT },
                         )
 
                         selectedSection == MainSection.MOVIES -> MoviesScreen(
@@ -1616,6 +1643,8 @@ fun OwnTVShell(
                     else -> null
                 },
                 onFocused = { focusedLayer = ShellLayer.SIDEBAR },
+                // (v2.6.1) Out of focus's reach while a Sport page has hidden it.
+                focusable = !(sportPage && selectedSection == MainSection.SPORT),
                 scrim = !guideSide,
                 nowPlaying = nowPlayingRail,
                 onNowPlaying = enterNowPlaying,
