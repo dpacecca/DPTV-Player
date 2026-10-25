@@ -179,6 +179,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	engine: tune '
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	first frame after
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	first position after
+1	technical	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	sync-check:
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	zap key press
 1	log	app/src/main/java/tv/own/owntv/features/more/PlaybackLogLines.kt	zap:
 5	empty	app/src/main/java/tv/own/owntv/features/movies/MovieViewModel.kt	\0
@@ -317,7 +318,9 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/DeveloperScreen.kt	Stage specimen
 6	empty	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesScreen.kt	\0
 2	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesScreen.kt	▶
+1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	EpgSourcesViewModel
 1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	add
+1	log	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	check now failed id=${source.id}
 1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	manual_resync
 1	technical	app/src/main/java/tv/own/owntv/features/settings/EpgSourcesViewModel.kt	update
 1	technical	app/src/main/java/tv/own/owntv/features/settings/FontSettingsScreen.kt	fonts
@@ -534,6 +537,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	OwnTVHome
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	Proxy-Authorization
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	SettingsViewModel
+1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	check now failed id=$id
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	delete sourceId=${source.id}
 1	url	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	https://www.gstatic.com/generate_204
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	manual_clean_resync
@@ -545,6 +549,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	runImport sync success sourceId=${done.source?.id} profile=$pid
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	scope_edit
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	setAndroidTvHomeEnabled enabled=$enabled
+1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	sync times re-arm failed
 1	protocol	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	timed out
 1	protocol	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	unknown host
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	12
@@ -611,6 +616,9 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	WATCH
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	Wish · 38 min left
 1	technical	app/src/main/java/tv/own/owntv/features/settings/StageSpecimenScreen.kt	X
+2	technical	app/src/main/java/tv/own/owntv/features/settings/SyncTimesSettings.kt	HHmm
+1	technical	app/src/main/java/tv/own/owntv/features/settings/SyncTimesSettings.kt	dMMM
+2	technical	app/src/main/java/tv/own/owntv/features/settings/SyncTimesSettings.kt	hmm
 1	empty	app/src/main/java/tv/own/owntv/features/settings/TrendingHomeSettings.kt	\0
 16	empty	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	$c ›
@@ -781,6 +789,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	quick_preview_sound
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	reminder_lead
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	reminders
+1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	sync_times
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_${tab.name}
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_DNS

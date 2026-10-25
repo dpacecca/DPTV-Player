@@ -814,6 +814,16 @@ class XtreamClient(private val http: HttpClient) {
         return "${base(s)}/xmltv.php?username=$u&password=$p"
     }
 
+    /** A `player_api.php` action URL, for the change check (v2.5.3). Carries credentials: redact before logging. */
+    fun actionUrl(s: SourceEntity, action: String): String = api(s, action)
+
+    /** The panel's `get.php` m3u_plus playlist URL, for the change check's HEAD (v2.5.3). */
+    fun m3uPlusUrl(s: SourceEntity): String {
+        val u = URLEncoder.encode(s.username.orEmpty(), "UTF-8")
+        val p = URLEncoder.encode(s.password.orEmpty(), "UTF-8")
+        return "${base(s)}/get.php?username=$u&password=$p&type=m3u_plus&output=ts"
+    }
+
     // --- helpers ---
     private fun base(s: SourceEntity) = s.url.trimEnd('/')
 

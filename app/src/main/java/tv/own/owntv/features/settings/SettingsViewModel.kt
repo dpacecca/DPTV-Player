@@ -99,6 +99,10 @@ class SettingsViewModel(
     private val importer: SourceImporter,
     // Trending on Home's streaming-service picker (v2.4.0).
     private val homeTrendingFeed: tv.own.owntv.core.metadata.HomeTrendingFeed,
+    // The fixed sync times and the change check (v2.5.3).
+    private val syncScheduler: tv.own.owntv.core.sync.schedule.SyncScheduler,
+    private val syncStateStore: tv.own.owntv.core.sync.schedule.SyncStateStore,
+    private val changeChecker: tv.own.owntv.core.sync.schedule.ChangeChecker,
 ) : ViewModel() {
     companion object {
         private const val TAG = "OwnTVHome"
@@ -1078,6 +1082,45 @@ class SettingsViewModel(
     /** Per-source EPG auto-refresh selection (Off / Startup / staleness threshold). */
     val epgAutoRefresh: StateFlow<Map<Long, EpgRefresh>> = settings.epgAutoRefresh
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    /** Every kind's fixed sync times, minutes after local midnight (v2.5.3). */
+    val syncTimes: StateFlow<Map<tv.own.owntv.core.sync.schedule.ScheduledKind, List<Int>>> = settings.allSyncTimes
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            tv.own.owntv.core.sync.schedule.ScheduledKind.entries.associateWith { tv.own.owntv.core.sync.schedule.SyncTimes.defaults(it) },
+        )
+
+    /** Stores one kind's times and re-arms its alarm at once. */
+    fun setSyncTimes(kind: tv.own.owntv.core.sync.schedule.ScheduledKind, times: List<Int>) {
+        viewModelScope.launch {
+            settings.setSyncTimes(kind, times)
+            runCatching { syncScheduler.armAll() }.onFailure { Log.w(TAG, "sync times re-arm failed", it) }
+        }
+    }
+
+    /** Each playlist's last change check, for its status line (v2.5.3). */
+    val changeChecks: StateFlow<Map<Long, tv.own.owntv.core.sync.schedule.SourceCheckState>> = syncStateStore.checks
+
+    /** Ids whose "Check now" is running, so the row can say so. */
+    private val _checking = kotlinx.coroutines.flow.MutableStateFlow<Set<Long>>(emptySet())
+    val checking: StateFlow<Set<Long>> = _checking
+
+    fun checkNow(id: Long) {
+        if (id in _checking.value) return
+        _checking.value = _checking.value + id
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                changeChecker.checkOne(id)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "check now failed id=$id", e)
+            } finally {
+                _checking.value = _checking.value - id
+            }
+        }
+    }
 
     fun setPlaylistAutoRefresh(sourceId: Long, mode: PlaylistRefresh) {
         viewModelScope.launch { settings.setPlaylistAutoRefresh(sourceId, mode) }

@@ -159,6 +159,9 @@ val appModule = module {
             enginePool = get(),
             importer = get(),
             homeTrendingFeed = get(),
+            syncScheduler = get(),
+            syncStateStore = get(),
+            changeChecker = get(),
         )
     }
     viewModelOf(::LocalSyncViewModel)

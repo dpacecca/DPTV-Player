@@ -1,5 +1,6 @@
 package tv.own.owntv.core.live
 
+import tv.own.owntv.core.sync.calmDuringSync
 import androidx.paging.PagingSource
 import kotlinx.coroutines.flow.Flow
 import tv.own.owntv.core.customize.CustomizeKeys
@@ -81,7 +82,7 @@ fun liveCountFlow(
         LiveKey.Catchup -> channelDao.observeCatchupCount(ids)
         is LiveKey.Custom -> customCategoryDao.countMembers(profileId, MediaType.LIVE, key.id, ids)
         is LiveKey.Folder -> channelDao.countByCategory(key.id)
-    }
+    }.calmDuringSync() // (v2.5.3) one count per CALM_MS while a sync commits chunks
 }
 
 /**

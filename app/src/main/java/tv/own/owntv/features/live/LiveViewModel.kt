@@ -2,6 +2,8 @@
 
 package tv.own.owntv.features.live
 
+import tv.own.owntv.core.sync.calmDuringSync
+
 import tv.own.owntv.core.epg.displayLogoUrl
 import android.content.Context
 import android.util.Log
@@ -629,7 +631,8 @@ class LiveViewModel(
             // that the UI already collected must never be re-transformed (Paging forbids re-collection,
             // which is why hiding a channel used to crash). A customization change re-creates the pager.
             Pager(PagingConfig(pageSize = 80, prefetchDistance = 40, initialLoadSize = 120, maxSize = 400)) {
-                pagingSource(key, c, query, sort)
+                // (v2.5.3) A sync's chunk commits refresh the list at most once per CALM_MS.
+                pagingSource(key, c, query, sort).calmDuringSync()
             }.flow.map { paging ->
                 val cust = cs.cust
                 val hiddenCats = cs.hiddenCats
@@ -807,7 +810,7 @@ class LiveViewModel(
             val single = items.filter { it.key !is LiveKey.Folder }.map { item ->
                 liveCountFlow(item.key, c.profileId, c.sourceIds, hidden, channelDao, customCategoryDao).map { mapOf(item.key to it) }
             }
-            val folders = channelDao.observeCountsByCategory(c.sourceIds.ifEmpty { listOf(-1L) })
+            val folders = channelDao.observeCountsByCategory(c.sourceIds.ifEmpty { listOf(-1L) }).calmDuringSync()
                 .map { rows -> rows.associate { LiveKey.Folder(it.categoryId) as LiveKey to it.itemCount } }
             combine(single + folders) { parts -> parts.fold(emptyMap<LiveKey, Int>()) { acc, m -> acc + m } }.throttleLatest()
         }

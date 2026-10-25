@@ -153,6 +153,16 @@
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
+        <!-- v2.5.3: the fixed sync times are worked out in local time, so a new time zone or a set
+             clock re-arms them. Both broadcasts are exempt from the implicit-broadcast limits. -->
+        <receiver
+            android:name="tv.own.owntv.core.sync.schedule.SyncTimeChangeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

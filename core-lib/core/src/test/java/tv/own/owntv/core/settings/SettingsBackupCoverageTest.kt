@@ -81,6 +81,11 @@ class SettingsBackupCoverageTest {
     }
 
     @Test
+    fun `the sync times are backed up (v2_5_3)`() {
+        listOf("sync_times_live", "sync_times_epg", "sync_times_vod").forEach { assertTrue(it, it in backedUp) }
+    }
+
+    @Test
     fun `pip_on_back is never exported but stays importable`() {
         assertTrue(Keys.PIP_ON_BACK.name in backedUp)
         assertFalse(BackupKeys.exports(Keys.PIP_ON_BACK, mutablePreferencesOf(Keys.PIP_ON_BACK to true)))

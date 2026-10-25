@@ -104,6 +104,8 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
         // First thing after the context exists: a crash from here on leaves a trace on disk that the
         // user can export from Settings, instead of being lost with the process.
         tv.own.owntv.core.util.CrashRecorder.diagnostics = { tv.own.owntv.player.LiveDiagnosticsLog.snapshot() }
+        // v2.5.3: the change check's "sync-check:" lines land in the Playback log too.
+        tv.own.owntv.core.sync.schedule.SyncCheckLog.sink = { tv.own.owntv.player.LiveDiagnosticsLog.event(it) }
         tv.own.owntv.core.util.CrashRecorder.install(this)
         // Core learns a panel's session limit while syncing; the engine is what acts on it. Registered
         // before Koin so the very first source flow already reaches the player (see LiveSessionLimit).

@@ -2,6 +2,8 @@ package tv.own.owntv.core.sync
 
 import android.os.SystemClock
 import android.util.Log
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -44,6 +46,8 @@ internal class SyncSupport(
     val sourceDao: SourceDao,
     private val customize: CustomizationStore,
     private val settings: SettingsRepository,
+    /** Pause after each committed chunk so readers and the UI get the CPU and the database (v2.5.3). */
+    private val chunkPauseMs: Long = 0L,
 ) {
     val channelAdapter = ContentAdapter<ChannelEntity>(
         remoteIdOf = { it.remoteId },
@@ -379,6 +383,8 @@ internal class SyncSupport(
                     )
                 }
                 progress.update(phase, total[0])
+                // (v2.5.3) Let the UI's queries in between commits; on a low-spec TV, a short breath.
+                if (chunkPauseMs > 0L) delay(chunkPauseMs) else yield()
             }
         }
         val buffer = ArrayList<T>(chunkSize)
@@ -434,6 +440,9 @@ internal class SyncSupport(
         /** Shared log tag — kept as "SyncManager" across the split so existing logcat filters still work. */
         const val TAG = "SyncManager"
         const val QUERY_CHUNK = 500
+
+        /** The pause between committed chunks on a low-spec device (v2.5.3): ~35 chunks of a 170k catalogue add ~2 s. */
+        const val LOW_SPEC_CHUNK_PAUSE_MS = 60L
 
 
         /** Below this many stored rows a prune is always allowed (fresh/small sources). */

@@ -64,6 +64,17 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.5.3
+
+### ✨ New features
+- **🕒 Playlists and guide update at set times instead of on every start**
+- **🎬 Movies and TV Shows update once a day at 3:00**
+- **📡 Playlists and guide update soon after your server refreshes them**
+- **🖥️ Works with DPTV-Server 1.0.4's refresh signal**
+
+### 🐛 Fixes
+- **Menus stay responsive while a playlist updates**
+
 ## v2.5.2
 
 ### ✨ New features

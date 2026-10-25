@@ -326,9 +326,16 @@ val dataModule = module {
     single { UpdateManager(androidContext(), get(), get()) }
     single { CatalogSyncScheduler(androidContext()) }
     single { EpgSyncScheduler(androidContext()) }
+    // v2.5.3: device-local sync bookkeeping, the fixed sync times and the change check.
+    single { tv.own.owntv.core.sync.schedule.SyncStateStore(androidContext()) }
+    // context, settings, sourceDao, epgSourceStore, epgDao, catalogSyncScheduler, epgSyncScheduler,
+    // importFinalizer, syncStateStore
+    single { tv.own.owntv.core.sync.schedule.SyncScheduler(androidContext(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    // http, xtream, sourceDao, epgSourceStore, syncScheduler, syncStateStore
+    single { tv.own.owntv.core.sync.schedule.ChangeChecker(get(), get(), get(), get(), get(), get()) }
     // settings, sourceRepository, profileDao, catalogSyncScheduler, epgSyncScheduler, epgSourceStore,
-    // epgDao, importFinalizer — the Auto refresh settings, run by both apps on start and resume.
-    single { tv.own.owntv.core.sync.AutoRefresh(get(), get(), get(), get(), get(), get(), get(), get()) }
+    // epgDao, importFinalizer, syncScheduler — the one-shots plus the fixed times and the change check on start.
+    single { tv.own.owntv.core.sync.AutoRefresh(androidContext(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     // profileDao, sourceDao, sourceRepository, backup, settings, connectivity, importFinalizer,
     // launcherIntegration, catalogSyncScheduler, stalkerAuth — onboarding: add a source, sync it,
     // undo it when it fails. Factory, not single: each wizard run owns its own state machine.

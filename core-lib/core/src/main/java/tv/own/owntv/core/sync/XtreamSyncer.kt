@@ -30,6 +30,8 @@ internal class XtreamSyncer(
     private val xtream: XtreamClient,
     private val bulkInsertHelper: BulkInsertHelper,
     private val support: SyncSupport,
+    /** (v2.5.3) One at a time on a low-spec device; see [phaseConcurrency]. */
+    private val phaseConcurrency: Int = PHASE_CONCURRENCY,
 ) {
     suspend fun sync(s: SourceEntity, progress: SyncCounters, stats: SyncStatsCollector, contentTypes: SyncContentTypes) {
         val details = runCatching { xtream.fetchAccountDetails(s) }.getOrNull()
@@ -47,8 +49,8 @@ internal class XtreamSyncer(
             // The zone its timeshift `start` is written in — catch-up's Automatic time zone (M6).
             support.sourceDao.updateServerTimeZone(s.id, details.serverTimeZone)
         }
-        val semaphore = Semaphore(PHASE_CONCURRENCY)
-        Log.i(TAG, "Xtream sync scheduling sourceId=${s.id} contentTypes=$contentTypes concurrency=$PHASE_CONCURRENCY hlsSupported=${details?.hlsSupported} maxConnections=${details?.maxConnections} serverTimeZone=${details?.serverTimeZone}")
+        val semaphore = Semaphore(phaseConcurrency)
+        Log.i(TAG, "Xtream sync scheduling sourceId=${s.id} contentTypes=$contentTypes concurrency=$phaseConcurrency hlsSupported=${details?.hlsSupported} maxConnections=${details?.maxConnections} serverTimeZone=${details?.serverTimeZone}")
         coroutineScope {
             if (contentTypes.live) async { semaphore.withPermit { syncLive(s, progress, stats) } }
             if (contentTypes.movies) async { semaphore.withPermit { syncMovies(s, progress, stats) } }
@@ -495,6 +497,13 @@ internal class XtreamSyncer(
          * this, and a panel that rate-limits answers 429.
          */
         private const val PHASE_CONCURRENCY = 3
+
+        /**
+         * (v2.5.3) A 2 GB, four-slow-core TV runs the phases one after another: three parses, three
+         * hash maps and three writers at once is what starved the UI there. Live is launched first,
+         * so it still lands first.
+         */
+        internal fun phaseConcurrency(lowSpec: Boolean): Int = if (lowSpec) 1 else PHASE_CONCURRENCY
 
         /**
          * The categories the bulk stream list never referenced. A panel can serve a complete-looking

@@ -26,6 +26,8 @@ class CatalogSyncScheduler(private val context: Context) {
          */
         forcePrune: Boolean = false,
         policy: ExistingWorkPolicy = ExistingWorkPolicy.REPLACE,
+        /** An automatic run held back by playback gives up after this (epoch ms); 0 waits as long as it takes (v2.5.3). */
+        holdUntilMs: Long = 0L,
     ) {
         val request = OneTimeWorkRequestBuilder<CatalogSyncWorker>()
             .setInputData(workDataOf(
@@ -37,6 +39,7 @@ class CatalogSyncScheduler(private val context: Context) {
                 CatalogSyncWorker.KEY_SERIES to contentTypes.series,
                 CatalogSyncWorker.KEY_COMPLETES_INITIAL_SYNC to completesInitialSync,
                 CatalogSyncWorker.KEY_FORCE_PRUNE to forcePrune,
+                CatalogSyncWorker.KEY_HOLD_UNTIL to holdUntilMs,
             ))
             .setConstraints(
                 Constraints.Builder()

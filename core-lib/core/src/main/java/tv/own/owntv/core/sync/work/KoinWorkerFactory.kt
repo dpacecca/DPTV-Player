@@ -26,6 +26,7 @@ class KoinWorkerFactory : WorkerFactory() {
                 koin.get(),
                 koin.get(),
                 koin.get(),
+                koin.get(),
             )
             TrendingRefreshWorker::class.java.name -> TrendingRefreshWorker(
                 appContext,
@@ -37,6 +38,7 @@ class KoinWorkerFactory : WorkerFactory() {
             CatalogSyncWorker::class.java.name -> CatalogSyncWorker(
                 appContext,
                 workerParameters,
+                koin.get(),
                 koin.get(),
                 koin.get(),
                 koin.get(),
@@ -65,6 +67,16 @@ class KoinWorkerFactory : WorkerFactory() {
                 koin.get(),
                 koin.get(),
                 koin.get(),
+                koin.get(),
+            )
+            tv.own.owntv.core.sync.schedule.ScheduledSyncWorker::class.java.name -> tv.own.owntv.core.sync.schedule.ScheduledSyncWorker(
+                appContext,
+                workerParameters,
+                koin.get(),
+            )
+            tv.own.owntv.core.sync.schedule.ChangeCheckWorker::class.java.name -> tv.own.owntv.core.sync.schedule.ChangeCheckWorker(
+                appContext,
+                workerParameters,
                 koin.get(),
             )
             ContentIndexWorker::class.java.name -> ContentIndexWorker(

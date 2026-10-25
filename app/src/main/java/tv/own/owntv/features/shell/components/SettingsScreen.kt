@@ -543,6 +543,11 @@ fun SettingsScreen(
             focus = rowFocus.getValue(SettingsTab.EPG),
             onClick = { open(SettingsTab.EPG) },
         ),
+        // When playlists, the guide and Movies & TV Shows update by themselves (v2.5.3).
+        syncTimesRootRow(settingsVm, stageSettings.focus.getValue(StageSettingsDialog.SYNC_TIMES)) {
+            saveScroll(); dialogReturn = stageSettings.focus.getValue(StageSettingsDialog.SYNC_TIMES)
+            stageSettings.open = StageSettingsDialog.SYNC_TIMES
+        },
         // The guide's own settings, under a divider of their own: they tune the guide, they are not
         // sources, and sitting straight under the two source lists they read as if they were.
         RootRow(
@@ -1700,7 +1705,7 @@ private fun GuideDaysDialog(settingsVm: SettingsViewModel, guideDays: Int, onClo
     )
 }
 
-private enum class StageSettingsDialog { LIVE_OPENS_IN, REMINDERS, REMINDER_LEAD }
+private enum class StageSettingsDialog { LIVE_OPENS_IN, REMINDERS, REMINDER_LEAD, SYNC_TIMES }
 
 /** Which Stage P5 picker is open, and each row's focus to come back to. */
 @androidx.compose.runtime.Stable
@@ -1734,6 +1739,7 @@ private fun StageSettingsDialogHost(settingsVm: SettingsViewModel, state: StageS
         StageSettingsDialog.LIVE_OPENS_IN -> LiveOpensInDialog(settingsVm, close)
         StageSettingsDialog.REMINDERS -> RemindersDialog(settingsVm, close)
         StageSettingsDialog.REMINDER_LEAD -> ReminderLeadDialog(settingsVm, close)
+        StageSettingsDialog.SYNC_TIMES -> tv.own.owntv.features.settings.SyncTimesDialog(settingsVm, close)
         null -> Unit
     }
 }
@@ -1779,6 +1785,19 @@ private fun remindersRootRow(settingsVm: SettingsViewModel, focus: FocusRequeste
         desc = stringResource(R.string.settings_reminders_description),
         chip = stringResource(reminderModeLabelRes(mode)),
         chipTone = TileTone.PRIMARY,
+        focus = focus,
+        onClick = onClick,
+    )
+}
+
+/** Sources › Sync times (v2.5.3): the summary line, opening the times editor. */
+@Composable
+private fun syncTimesRootRow(settingsVm: SettingsViewModel, focus: FocusRequester, onClick: () -> Unit): RootRow {
+    val times by settingsVm.syncTimes.collectAsStateWithLifecycle()
+    return RootRow(
+        "sync_times", TileTone.SECONDARY, OwnTVIcon.CLOCK,
+        title = stringResource(R.string.sport_sync_times),
+        desc = tv.own.owntv.features.settings.syncTimesSummary(times),
         focus = focus,
         onClick = onClick,
     )

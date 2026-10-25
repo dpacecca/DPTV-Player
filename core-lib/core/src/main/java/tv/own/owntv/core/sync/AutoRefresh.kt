@@ -1,6 +1,5 @@
 package tv.own.owntv.core.sync
 
-import android.os.SystemClock
 import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import kotlinx.coroutines.flow.first
@@ -17,24 +16,26 @@ import tv.own.owntv.core.settings.PlaylistRefresh
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.sync.work.CatalogSyncScheduler
 import tv.own.owntv.core.sync.work.EpgSyncScheduler
+import tv.own.owntv.core.sync.schedule.ChangeChecker
+import tv.own.owntv.core.sync.schedule.SyncScheduler
 
 /**
- * The playlist and guide "Auto refresh" settings, for both apps. It used to live in the TV app's
- * shell, so the phone stored the setting and never acted on it.
+ * What the app refreshes on its own, run once per process on a cold start (v2.5.3).
  *
- * - `includeStartup = true` (cold start): runs once per process, refreshes STARTUP sources
- *   unconditionally and interval sources whose data is at least as old as their threshold. Never
- *   time-throttled, so STARTUP always fires on a real cold start.
- * - `includeStartup = false` (app back in the foreground): skips STARTUP sources and refreshes
- *   interval sources past their threshold. Throttled to once per [RESUME_THROTTLE_MS].
+ * Playlists and guides no longer refresh on every start or resume, nor on per-source intervals. They
+ * follow fixed device-local times instead ([SyncScheduler]: live channels, the guide, and Movies &
+ * TV Shows each have their own list), plus the quarter-hourly [ChangeChecker], which syncs soon
+ * after the server refreshes. A cold start here only re-arms those, runs at most one catch-up per
+ * kind for a slot the device slept through, and runs the one-shot repairs.
  *
- * Enqueues use [ExistingWorkPolicy.KEEP], so a source already syncing or queued is left alone.
- * Manual re-syncs use REPLACE at their own call sites. A job enqueued here carries
- * [REASON], and the workers hold such a job back while something is playing ([tv.own.owntv.core.live.WatchSession]).
+ * Manual syncs, adding a playlist and the first import are untouched: they sync every enabled type
+ * at once, at their own call sites. A job enqueued by the schedule carries [REASON], and the
+ * workers hold such a job back while something is playing ([tv.own.owntv.core.live.WatchSession]).
  *
  * A singleton, so the once-per-process rule holds even when the Activity is rebuilt.
  */
 class AutoRefresh(
+    private val context: android.content.Context,
     private val settings: SettingsRepository,
     private val sourceRepository: SourceRepository,
     private val profileDao: ProfileDao,
@@ -43,61 +44,30 @@ class AutoRefresh(
     private val epgSourceStore: EpgSourceStore,
     private val epgDao: EpgDao,
     private val importFinalizer: ImportFinalizer,
+    private val syncScheduler: SyncScheduler,
 ) {
     private var coldStartCheckDone = false
-    private var lastResumeCheckAtElapsed = 0L
 
+    /**
+     * [includeStartup] true on a cold start; a resume ([includeStartup] false) no longer refreshes
+     * anything (v2.5.3) — the alarms and the change check run without the app in front.
+     */
     suspend fun check(includeStartup: Boolean) {
+        if (!includeStartup) return
         synchronized(this) {
-            if (includeStartup) {
-                if (coldStartCheckDone) return
-                coldStartCheckDone = true
-            } else {
-                val now = SystemClock.elapsedRealtime()
-                if (now - lastResumeCheckAtElapsed < RESUME_THROTTLE_MS) return
-                lastResumeCheckAtElapsed = now
-            }
+            if (coldStartCheckDone) return
+            coldStartCheckDone = true
         }
-        val nowMs = System.currentTimeMillis()
         val pid = profileDao.resolveExistingProfileId(settings.activeProfileId.first()) ?: return
-        if (includeStartup) defaultToStartupOnce(pid)
-        if (includeStartup) restoreVodScopeOnce()
-        // --- Playlist sources ---
-        val playlistModes = settings.playlistAutoRefresh.first()
-        run {
-            sourceRepository.observeSources(pid).first().forEach { source ->
-                val mode = playlistModes[source.id] ?: PlaylistRefresh.DEFAULT
-                if (shouldRefresh(mode, source.lastSyncAt, nowMs, includeStartup)) {
-                    val counts = importFinalizer.contentCounts(source.id)
-                    Log.d(TAG, "checkAutoRefresh playlist sourceId=${source.id} mode=$mode — enqueuing")
-                    catalogSyncScheduler.enqueueSync(
-                        source.id,
-                        reason = REASON,
-                        contentTypes = SyncContentTypes.enabledOf(source),
-                        baseItemCount = counts.channels + counts.movies + counts.series,
-                        policy = ExistingWorkPolicy.KEEP,
-                    )
-                }
-            }
-        }
-        // --- EPG sources ---
-        val epgModes = settings.epgAutoRefresh.first()
-        run {
-            epgSourceStore.getAll().forEach { src ->
-                val mode = epgModes[src.id] ?: EpgRefresh.DEFAULT
-                if (shouldRefreshEpg(mode, src.lastSyncAt, nowMs, includeStartup)) {
-                    val base = epgDao.countForSources(listOf(src.id))
-                    Log.d(TAG, "checkAutoRefresh epg sourceId=${src.id} mode=$mode — enqueuing")
-                    epgSyncScheduler.enqueueSync(
-                        src.id,
-                        reason = REASON,
-                        baseProgrammes = base,
-                        policy = ExistingWorkPolicy.KEEP,
-                    )
-                }
-            }
-        }
-        if (includeStartup) refillGuideEmptiedByMigration()
+        defaultToStartupOnce(pid)
+        restoreVodScopeOnce()
+        refillGuideEmptiedByMigration()
+        runCatching {
+            syncScheduler.armAll()
+            syncScheduler.catchUpAll()
+        }.onFailure { Log.w(TAG, "sync times arm/catch-up failed", it) }
+        runCatching { ChangeChecker.schedule(context) }
+            .onFailure { Log.w(TAG, "change check schedule failed", it) }
     }
 
     /**
@@ -196,41 +166,9 @@ class AutoRefresh(
         settings.markEpgRefillChecked()
     }
 
-    /**
-     * Whether a playlist source should auto-refresh now. OFF never; STARTUP only on cold start
-     * ([includeStartup]); interval modes when `now - lastSyncAt >= threshold` (a null lastSyncAt — never
-     * successfully synced — counts as infinitely stale so recovery happens).
-     */
-    private fun shouldRefresh(
-        refresh: PlaylistRefresh,
-        lastSyncAt: Long?,
-        now: Long,
-        includeStartup: Boolean,
-    ): Boolean = when (refresh.mode) {
-        PlaylistAutoRefresh.OFF -> false
-        PlaylistAutoRefresh.STARTUP -> includeStartup
-        else -> (now - (lastSyncAt ?: 0L)) >= (refresh.thresholdMs ?: Long.MAX_VALUE)
-    }
-
-    /** EPG equivalent of [shouldRefresh]. */
-    private fun shouldRefreshEpg(
-        refresh: EpgRefresh,
-        lastSyncAt: Long?,
-        now: Long,
-        includeStartup: Boolean,
-    ): Boolean = when (refresh.mode) {
-        EpgAutoRefresh.OFF -> false
-        EpgAutoRefresh.STARTUP -> includeStartup
-        // MANUAL's threshold is its day count; every other mode carries its own. Identical shape to
-        // [shouldRefresh], which is the point of the parity.
-        else -> (now - (lastSyncAt ?: 0L)) >= (refresh.thresholdMs ?: Long.MAX_VALUE)
-    }
-
     companion object {
         private const val TAG = "OwnTVHome"
         /** The work reason the sync workers recognise as automatic, and hold back during playback. */
         const val REASON = "auto_refresh"
-        /** Minimum gap between resume-triggered checks (rotation, rapid background/foreground). */
-        private const val RESUME_THROTTLE_MS = 60_000L
     }
 }

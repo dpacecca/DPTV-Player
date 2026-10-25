@@ -87,6 +87,9 @@ data class StartupChannelRef(
  * Anything longer than 12 hours is [MANUAL], where the user names the number of days — the fixed
  * 24h/48h/7-day entries it replaced are still understood on read (see [PlaylistRefresh.parse]) so an
  * existing selection or an old backup keeps working.
+ *
+ * (v2.5.3) Only Off versus everything else still matters: every other mode now means "at the fixed
+ * sync times" (see SyncScheduler). The values stay so old backups and the companion form still parse.
  */
 enum class PlaylistAutoRefresh(val thresholdMs: Long? = null) {
     OFF,
@@ -185,8 +188,9 @@ object GuideRetention {
  * fixed option — used to be the storage horizon too, so even the best setting could run dry exactly at
  * the boundary.
  *
- * **Every existing entry is kept.** A stored `HOURS_48` still parses to `HOURS_48` and behaves
- * exactly as before; nothing rewrites a selection the user already made.
+ * **Every existing entry is kept.** A stored `HOURS_48` still parses to `HOURS_48`; nothing rewrites
+ * a selection the user already made. (v2.5.3) As for playlists, only Off versus everything else
+ * still matters: every other mode now means "at the guide's sync times".
  */
 enum class EpgAutoRefresh(val thresholdMs: Long? = null) {
     OFF,
@@ -390,6 +394,11 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         // DPTV-Player: Movies/Series are back. Set once every playlist saved with them switched off has
         // had them switched on again (see AutoRefresh.restoreVodScopeOnce). Device-local, not backed up.
         val VOD_SCOPE_RESTORED = booleanPreferencesKey("vod_scope_restored")
+        // Fixed device-local sync times as "HH:mm,HH:mm" (v2.5.3): live channels, the guide, and
+        // Movies & TV Shows. Unset means the defaults in SyncTimes. Backed up.
+        val SYNC_TIMES_LIVE = stringPreferencesKey("sync_times_live")
+        val SYNC_TIMES_EPG = stringPreferencesKey("sync_times_epg")
+        val SYNC_TIMES_VOD = stringPreferencesKey("sync_times_vod")
         // Set while a backup restore is applying, cleared only when it completes (B2). A value that
         // survives to the next launch means the restore was interrupted and may be half-applied.
         val RESTORE_IN_PROGRESS = stringPreferencesKey("restore_in_progress")
@@ -2412,6 +2421,30 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         context.dataStore.edit { prefs -> prefs[Keys.STARTUP_SYNC_DEFAULTED] = true }
     }
 
+    private fun syncTimesKey(kind: tv.own.owntv.core.sync.schedule.ScheduledKind) = when (kind) {
+        tv.own.owntv.core.sync.schedule.ScheduledKind.LIVE -> Keys.SYNC_TIMES_LIVE
+        tv.own.owntv.core.sync.schedule.ScheduledKind.EPG -> Keys.SYNC_TIMES_EPG
+        tv.own.owntv.core.sync.schedule.ScheduledKind.VOD -> Keys.SYNC_TIMES_VOD
+    }
+
+    /** The fixed sync times of one kind, minutes after local midnight, sorted (v2.5.3). */
+    fun syncTimes(kind: tv.own.owntv.core.sync.schedule.ScheduledKind): Flow<List<Int>> = prefsFlow {
+        tv.own.owntv.core.sync.schedule.SyncTimes.parse(it[syncTimesKey(kind)])
+            ?: tv.own.owntv.core.sync.schedule.SyncTimes.defaults(kind)
+    }.distinctUntilChanged()
+
+    /** Every kind's times at once, for the summary line. */
+    val allSyncTimes: Flow<Map<tv.own.owntv.core.sync.schedule.ScheduledKind, List<Int>>> = prefsFlow { prefs ->
+        tv.own.owntv.core.sync.schedule.ScheduledKind.entries.associateWith { kind ->
+            tv.own.owntv.core.sync.schedule.SyncTimes.parse(prefs[syncTimesKey(kind)])
+                ?: tv.own.owntv.core.sync.schedule.SyncTimes.defaults(kind)
+        }
+    }.distinctUntilChanged()
+
+    suspend fun setSyncTimes(kind: tv.own.owntv.core.sync.schedule.ScheduledKind, times: List<Int>) {
+        context.dataStore.edit { it[syncTimesKey(kind)] = tv.own.owntv.core.sync.schedule.SyncTimes.serialize(times) }
+    }
+
     /** Whether the one-time "Movies/Series back on" switch of every playlist (VOD return) has run. */
     val vodScopeRestored: Flow<Boolean> = prefsFlow { it[Keys.VOD_SCOPE_RESTORED] == true }
 
@@ -3237,6 +3270,8 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             Keys.SORT_SERIES, Keys.RESUME_MODE, Keys.TIMESHIFT_RESUME_MODE, Keys.DOWNLOAD_WATCH_CHOICE, Keys.CATCHUP_TZ, Keys.CATCHUP_PLAYER, Keys.ANIMATION_LEVEL, Keys.VOD_VIEW_MODE, Keys.GUIDE_VIEW,
             Keys.EPISODE_VIEW_MODE, Keys.VOD_LAYOUT, Keys.LIVE_LAYOUT, Keys.LIVE_VIEW, Keys.REMINDER_MODE,
             Keys.WEATHER_LOCATION, Keys.RECENT_SEARCHES,
+            // The fixed sync times (v2.5.3).
+            Keys.SYNC_TIMES_LIVE, Keys.SYNC_TIMES_EPG, Keys.SYNC_TIMES_VOD,
             Keys.CLOCK_TIME_COLOR, Keys.CLOCK_DATE_COLOR, Keys.CLOCK_WEATHER_COLOR,
             // Global proxy — non-secret fields only. The proxy password (Keys.PROXY_PASS) is NEVER part of
             // this whitelist; it is handled separately by BackupManager (encrypted or omitted).

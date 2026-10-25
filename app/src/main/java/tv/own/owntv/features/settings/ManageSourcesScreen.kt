@@ -73,6 +73,8 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val importState by vm.importState.collectAsStateWithLifecycle()
     val progress by vm.progress.collectAsStateWithLifecycle()
     val playlistAutoRefresh by vm.playlistAutoRefresh.collectAsStateWithLifecycle()
+    val changeChecks by vm.changeChecks.collectAsStateWithLifecycle()
+    val checking by vm.checking.collectAsStateWithLifecycle()
     val defaultId by vm.defaultSourceId.collectAsStateWithLifecycle()
     val sourceExpiry by vm.sourceExpiry.collectAsStateWithLifecycle()
     val sourceTest by vm.sourceTest.collectAsStateWithLifecycle()
@@ -307,6 +309,9 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     SourceRow(
                         source = source,
                         autoRefresh = playlistAutoRefresh[source.id] ?: PlaylistRefresh.DEFAULT,
+                        // (v2.5.3) The change check is Xtream-only: which signal the server gives, and when.
+                        checkLine = if (source.type == SourceType.XTREAM) changeCheckLine(changeChecks[source.id], source.id in checking) else null,
+                        onCheckNow = if (source.type == SourceType.XTREAM) { { contextId = source.id; contextIndex = index; vm.checkNow(source.id) } } else null,
                         isDefault = isDefault,
                         expiry = sourceExpiry[source.id],
                         counts = counts,
@@ -374,6 +379,8 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 private fun SourceRow(
     source: SourceEntity,
     autoRefresh: PlaylistRefresh,
+    checkLine: String?,
+    onCheckNow: (() -> Unit)?,
     isDefault: Boolean,
     expiry: String?,
     counts: SyncCounts?,
@@ -427,7 +434,10 @@ private fun SourceRow(
             if (syncState.isActive) onCancelSync else onResync,
         ),
         StageAction(OwnTVIcon.TRASH, stringResource(R.string.settings_sources_delete), onDelete, danger = true),
-    )
+    ).let { list ->
+        if (onCheckNow == null || list.isEmpty()) list
+        else list.take(3) + StageAction(OwnTVIcon.CLOCK, stringResource(R.string.sport_check_now), onCheckNow) + list.drop(3)
+    }
     StageSettingRow(
         icon = OwnTVIcon.PLAYLIST,
         title = source.name,
@@ -438,7 +448,7 @@ private fun SourceRow(
         help = SettingHelp(
             title = source.name,
             // The address on one line, the counts on the next (owner).
-            text = listOfNotNull(typeName, visibleCounts).joinToString("\n"),
+            text = listOfNotNull(typeName, visibleCounts, checkLine).joinToString("\n"),
             hints = listOf(
                 "▶" to stringResource(R.string.settings_key_actions),
                 stringResource(R.string.common_back) to stringResource(R.string.common_nav_settings),

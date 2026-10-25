@@ -2304,15 +2304,18 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/network/ExtraTrustAnchors.kt	X.509
 1	log	core/src/main/java/tv/own/owntv/core/network/FirstRead.kt	$name setting not read after ${timeoutMs}ms; going on without it
 1	log	core/src/main/java/tv/own/owntv/core/network/FirstRead.kt	OwnTV-Network
-1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	\0
+2	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	\0
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	$1***@
 2	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	$1=***
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	$1•••/•••/
+1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	%02x
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	(?i)(://)([^/@:]+)(:[^/@]*)?@
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	(?i)(://[^/]+/(?:live|movie|series|vod|timeshift)/)([^/]+)/([^/]+)/
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	(?i)(username|password|user|pass|token)=[^&]*
 1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	(?i)(username|password|user|pass|token|data|auth|signature|sig|key)=[^&]*
 2	protocol	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	Content-Encoding
+1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	Content-Length
+1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	ETag
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	GET body done url=$safeUrl totalMs=${SystemClock.elapsedRealtime() - startedAt}
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	GET body progress url=$label bytes=$bytesRead total=${totalBytes ?: -1}
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	GET failed for $safeUrl
@@ -2321,14 +2324,19 @@
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	GET start url=$safeUrl ua=${ua.take(48)} attempt=$attempt/$attempts
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	HTTP ${response.code} for ${redact(url)}
 2	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	HttpClient
+1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	If-Modified-Since
+1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	If-None-Match
+1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	Last-Modified
+1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	SHA-256
 1	protocol	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	Transfer-Encoding
-1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	User-Agent
+2	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	User-Agent
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	VLC/3.0.20 LibVLC/3.0.20
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	contentEncoding=${response.header("Content-Encoding").orEmpty()}
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	deltaBytes=$bytesDelta deltaMs=$timeDelta kbps=$kbps
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	elapsedMs=${now - startedAt}
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	headersMs=${headersAt - startedAt}
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	message=${e.message}${if (retrying) " retrying" else ""}
+1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	probe failed url=${redactUrl(url)} message=${e.message?.let(::redactUrl)}
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	readCalls=$readCalls readBlockedMs=$readBlockedMs maxReadMs=$maxReadMs
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	retrying
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	transferEncoding=${response.header("Transfer-Encoding").orEmpty()}
@@ -2457,6 +2465,7 @@
 2	protocol	core/src/main/java/tv/own/owntv/core/parser/XmltvTime.kt	\0
 7	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	\0
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	#EXTM3U
+1	log	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	${base(s)}/get.php?username=$u&password=$p&type=m3u_plus&output=ts
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	${base(s)}/live/${s.username}/${s.password}/$streamId.m3u8
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	${base(s)}/live/${s.username}/${s.password}/$streamId.ts
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	${base(s)}/movie/${s.username}/${s.password}/$streamId.${ext ?: "mp4"}
@@ -2472,7 +2481,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	GMT$sign${(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	Stream truncated after $count items label=$label — partial list kept
 2	technical	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	UTC
-6	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	UTF-8
+8	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	UTF-8
 1	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	XtreamClient
 1	json	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	active_cons
 3	protocol	core/src/main/java/tv/own/owntv/core/parser/XtreamClient.kt	added
@@ -3254,6 +3263,9 @@
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sub_search_langs
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	surround_mode
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	surround_sound
+1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sync_times_epg
+1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sync_times_live
+1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	sync_times_vod
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	theme_mode
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	timeshift_enabled
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	timeshift_resume_mode
@@ -3600,12 +3612,12 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/subtitles/SubtitleTrackLabel.kt	…
 1	log	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	OwnTVHome
 1	technical	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	auto_refresh
-1	log	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	checkAutoRefresh epg sourceId=${src.id} mode=$mode — enqueuing
-1	log	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	checkAutoRefresh playlist sourceId=${source.id} mode=$mode — enqueuing
+1	log	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	change check schedule failed
 1	log	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	epgRefill check failed
 1	log	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	epgRefill sourceId=${src.id} — synced before but guide is empty, re-fetching
 1	technical	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	migration_refill
 1	log	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	startup sync default failed
+1	log	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	sync times arm/catch-up failed
 1	log	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	vod scope restore failed
 1	log	core/src/main/java/tv/own/owntv/core/sync/AutoRefresh.kt	vodRestore sourceId=${source.id} type=${source.type} flipped=$flipped — enqueuing
 1	log	core/src/main/java/tv/own/owntv/core/sync/CatalogPriority.kt	CatalogPriority
@@ -3804,7 +3816,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	ABORTING fallback
 1	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	HTTP
 4	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	SyncManager
-1	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	Xtream sync scheduling sourceId=${s.id} contentTypes=$contentTypes concurrency=$PHASE_CONCURRENCY hlsSupported=${details?.hlsSupported} maxConnections=${details?.maxConnections} serverTimeZone=${details?.serverTimeZone}
+1	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	Xtream sync scheduling sourceId=${s.id} contentTypes=$contentTypes concurrency=$phaseConcurrency hlsSupported=${details?.hlsSupported} maxConnections=${details?.maxConnections} serverTimeZone=${details?.serverTimeZone}
 2	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	channels
 1	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	channels_fts
 1	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	complete=$complete newUnique=$delta totalUnique=${total[0]} ms=${SystemClock.elapsedRealtime() - categoryStart}
@@ -3875,6 +3887,91 @@
 2	json	core/src/main/java/tv/own/owntv/core/sync/local/PairedDeviceStore.kt	port
 2	json	core/src/main/java/tv/own/owntv/core/sync/local/PairedDeviceStore.kt	secret
 1	json	core/src/main/java/tv/own/owntv/core/sync/local/PairedDeviceStore.kt	selfId
+4	empty	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	\0
+3	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	,
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	ChangeChecker
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	change
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	change sync throttled kind=$kind id=$id
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	changed=${triggers.joinToString(",") { it.name.lowercase() }.ifEmpty { "none" }}
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	check pass done why=$why
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	dptv_sync_status
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	failed(HTTP $lastFailure)
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	failed(HTTP ${result.code})
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	get_live_categories
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	get_live_streams
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	get_series_categories
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	get_vod_categories
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	guide check failed id=${src.id}
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	len:$it
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	live=${live.name.lowercase()} vod=${vod.name.lowercase()}
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	live_cats
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	live_streams
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	m3u
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	none
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	playlist check failed sourceId=${source.id}
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	series_cats
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	sync-change-check
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	sync-change-check-now
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	sync-check: guide ${src.id} DPTV-Server changed=$changed
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	sync-check: guide ${src.id} signal=${if (decision.verdict == Verdict.FAILED) "failed(HTTP ${result.code})" else decision.signal.name.lowercase()}
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	sync-check: playlist #${source.id} DPTV-Server ${status.version.orEmpty()}
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	sync-check: playlist #${source.id} DPTV-Server status failed (HTTP ${answer.code})
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	sync-check: playlist #${source.id} signal=${if (allFailed) "failed(HTTP $lastFailure)" else signal.name.lowercase()}
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	verdict=${decision.verdict.name.lowercase()}
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	vod_cats
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	work
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	xml
+2	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	→ sync ${started.joinToString(",") { it.name.lowercase() }}
+2	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	→ sync guide
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	DPTV-Server
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	e
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	epg
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	h
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	last_epg_refresh_at
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	last_source_sync_at
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	live
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	m
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	rev
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	series
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	server
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	updated_at
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	version
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeDecisions.kt	vod
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncCheckLog.kt	SyncCheck
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	SyncScheduler
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	alarm
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	alarm armed kind=$kind inMin=${delay / 60_000} policy=$policy
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	alarm cleared kind=$kind (no times)
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	catch-up
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	catch_up
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	kind
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	scheduled
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	slot not due kind=$kind slot=$slot handled=$handled lastOk=$ok fromAlarm=$fromAlarm
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	slot run kind=$kind slot=$slot fromAlarm=$fromAlarm syncs=$started
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	sync enqueued kind=$kind sourceId=${source.id} types=$types why=$why
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	sync-check: ${kind.name.lowercase()} ${if (fromAlarm) "scheduled" else "catch-up"} run, $started source(s)
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	sync-times-${kind.name.lowercase()}
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncScheduler.kt	sync-times-alarm
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	changeAt
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	checkAt
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	check_
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	check_$id
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	check_${state.id}
+2	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	chg_${kind.name}_$id
+3	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	dptv
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	dptvAt
+3	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	fail
+2	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	ok_${kind.name}
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	owntv_sync_state
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	revs
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	sig
+2	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	slot_${kind.name}
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncStateStore.kt	val
+2	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncTimeChangeReceiver.kt	SyncScheduler
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncTimeChangeReceiver.kt	re-arm after ${intent.action} failed
+1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncTimeChangeReceiver.kt	re-armed after ${intent.action}
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncTimes.kt	%02d:%02d
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/SyncTimes.kt	,
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/CatalogBackfillWorker.kt	CatalogBackfillWorker
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/CatalogBackfillWorker.kt	backfill complete sourceId=$sourceId — indexes analyzed, trending enqueued
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/CatalogBackfillWorker.kt	backfill failed sourceId=$sourceId — retrying later
@@ -3921,12 +4018,14 @@
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	Trending Home visibility read failed sourceId=${source.id}; skip enqueue
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	Trending refresh enqueued sourceId=${source.id}
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	Trending settings read failed sourceId=${source.id}; skip enqueue
+1	log	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	auto refresh skipped — still playing past its window sourceId=$sourceId
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	auto refresh waiting for playback to stop sourceId=$sourceId
 1	preference-key	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	baseItemCount
 1	preference-key	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	completesInitialSync
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	contentTypes=$contentTypes effective=$effective baseItemCount=$baseItemCount forcePrune=$forcePrune
 1	preference-key	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	forcePrune
 1	technical	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	fresh_sync
+1	technical	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	holdUntil
 1	preference-key	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	live
 1	preference-key	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	liveActive
 1	preference-key	core/src/main/java/tv/own/owntv/core/sync/work/CatalogSyncWorker.kt	liveProcessed
@@ -3968,9 +4067,11 @@
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	EpgSyncWorker
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	Skipping stale EPG sync sourceId=$sourceId reason=$reason
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	Starting EPG sync sourceId=${source.id} reason=$reason
+1	log	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	auto refresh skipped — still playing past its window sourceId=$sourceId
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	auto refresh waiting for playback to stop sourceId=$sourceId
 1	preference-key	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	baseProgrammes
 1	preference-key	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	channels
+1	technical	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	holdUntil
 1	preference-key	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	programmes
 1	preference-key	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	reason
 1	log	core/src/main/java/tv/own/owntv/core/sync/work/EpgSyncWorker.kt	series rules not applied after EPG sync: ${it.message}

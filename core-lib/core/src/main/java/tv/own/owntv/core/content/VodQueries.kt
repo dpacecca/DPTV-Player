@@ -1,6 +1,7 @@
 package tv.own.owntv.core.content
 
 import androidx.paging.PagingSource
+import tv.own.owntv.core.sync.calmDuringSync
 import kotlinx.coroutines.flow.Flow
 import tv.own.owntv.core.database.dao.CustomCategoryDao
 import tv.own.owntv.core.database.dao.MovieDao
@@ -148,7 +149,7 @@ fun movieCountFlow(
         LiveKey.History -> movieDao.countHistory(profileId, ids)
         is LiveKey.Custom -> customCategoryDao.countMembers(profileId, MediaType.MOVIE, key.id, ids)
         is LiveKey.Folder -> movieDao.countByCategory(key.id)
-    }
+    }.calmDuringSync() // (v2.5.3) one count per CALM_MS while a sync commits chunks
 }
 
 /** [movieCountFlow] for shows. */
@@ -169,5 +170,5 @@ fun seriesCountFlow(
         LiveKey.History -> seriesDao.countHistory(profileId, ids)
         is LiveKey.Custom -> customCategoryDao.countMembers(profileId, MediaType.SERIES, key.id, ids)
         is LiveKey.Folder -> seriesDao.countByCategory(key.id)
-    }
+    }.calmDuringSync() // (v2.5.3) one count per CALM_MS while a sync commits chunks
 }

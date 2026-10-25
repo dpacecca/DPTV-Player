@@ -185,4 +185,28 @@
     <string name="sport_playback_log_turn_on">Einschalten</string>
     <string name="sport_playback_log_empty">Noch nichts protokolliert</string>
     <string name="sport_playback_log_empty_body">Im Live-TV den Sender wechseln, dann erscheinen die Zeiten hier.</string>
+    <!-- v2.5.3: feste Sync-Zeiten und die Änderungsprüfung -->
+    <string name="sport_sync_times">Sync-Zeiten</string>
+    <string name="sport_sync_times_hint">Playlists, der TV-Guide sowie Filme &amp; Serien aktualisieren sich jeden Tag zu diesen Zeiten von selbst, in der Zeit dieses Geräts. Änderungen auf deinem Server werden außerdem innerhalb von etwa 15 Minuten übernommen.</string>
+    <string name="sport_sync_times_summary">Live %1$s · Guide %2$s · Filme &amp; Serien %3$s</string>
+    <string name="sport_sync_times_live">Live-Sender</string>
+    <string name="sport_sync_times_epg">TV-Guide</string>
+    <string name="sport_sync_times_vod">Filme &amp; Serien</string>
+    <string name="sport_sync_times_list_hint">OK ändert eine Zeit in 30-Minuten-Schritten.</string>
+    <string name="sport_sync_times_add">Zeit hinzufügen</string>
+    <string name="sport_sync_times_remove">Entfernen</string>
+    <string name="sport_sync_times_reset">Standardzeiten</string>
+    <string name="sport_refresh_scheduled">Zu den Sync-Zeiten</string>
+    <string name="sport_check_now">Jetzt prüfen</string>
+    <string name="sport_check_running">Änderungsprüfung: wird geprüft…</string>
+    <string name="sport_check_never">noch keine gesehen</string>
+    <string name="sport_check_line_pending">Änderungsprüfung: noch nicht gelaufen</string>
+    <string name="sport_check_line_dptv">Änderungsprüfung: DPTV-Server ✓ · letzte Aktualisierung %1$s</string>
+    <string name="sport_check_line_etag">Änderungsprüfung: ETag ✓ · letzte Änderung %1$s</string>
+    <string name="sport_check_line_last_modified">Änderungsprüfung: Last-Modified ✓ · letzte Änderung %1$s</string>
+    <string name="sport_check_line_hash">Änderungsprüfung: Inhaltsvergleich (Server sendet keine Änderungs-Header) · letzte Änderung %1$s</string>
+    <string name="sport_check_line_none">Änderungsprüfung: kein Änderungssignal · nur Sync-Zeiten</string>
+    <string name="sport_check_line_failed">Änderungsprüfung: fehlgeschlagen (HTTP %1$d)</string>
+    <string name="sport_check_line_failed_offline">Änderungsprüfung: fehlgeschlagen (keine Antwort)</string>
+    <string name="sport_playback_log_sync_checks">Sync-Prüfungen</string>
 </resources>

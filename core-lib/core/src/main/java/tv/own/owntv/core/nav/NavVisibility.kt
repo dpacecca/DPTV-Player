@@ -1,5 +1,6 @@
 package tv.own.owntv.core.nav
 
+import tv.own.owntv.core.sync.calmDuringSync
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -68,9 +69,10 @@ class NavVisibility(
         // Empty id lists would make countAll misbehave — use a sentinel that matches nothing.
         val empty = listOf(-1L)
         return combine(
-            channelDao.countAll(liveIds.ifEmpty { empty }),
-            movieDao.countAll(movieIds.ifEmpty { empty }),
-            seriesDao.countAll(seriesIds.ifEmpty { empty }),
+            // (v2.5.3) Calmed while a sync commits chunks.
+            channelDao.countAll(liveIds.ifEmpty { empty }).calmDuringSync(),
+            movieDao.countAll(movieIds.ifEmpty { empty }).calmDuringSync(),
+            seriesDao.countAll(seriesIds.ifEmpty { empty }).calmDuringSync(),
         ) { channels, movies, series ->
             MainSection.dynamicVisible(
                 hasLive = liveIds.isNotEmpty() && channels > 0,

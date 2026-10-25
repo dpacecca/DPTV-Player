@@ -31,7 +31,32 @@ class EpgSourcesViewModel(
     private val epgDao: tv.own.owntv.core.database.dao.EpgDao,
     private val channelDao: tv.own.owntv.core.database.dao.ChannelDao,
     private val epgSyncScheduler: EpgSyncScheduler,
+    private val syncStateStore: tv.own.owntv.core.sync.schedule.SyncStateStore,
+    private val changeChecker: tv.own.owntv.core.sync.schedule.ChangeChecker,
 ) : ViewModel() {
+
+    /** Each guide's last change check, for its status line (v2.5.3). */
+    val changeChecks: StateFlow<Map<Long, tv.own.owntv.core.sync.schedule.SourceCheckState>> = syncStateStore.checks
+
+    private val _checking = kotlinx.coroutines.flow.MutableStateFlow<Set<Long>>(emptySet())
+    val checking: StateFlow<Set<Long>> = _checking
+
+    /** "Check now": runs the change check for this guide and updates its line. */
+    fun checkNow(source: EpgSource) {
+        if (source.id in _checking.value) return
+        _checking.value = _checking.value + source.id
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                changeChecker.checkOne(source.id)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("EpgSourcesViewModel", "check now failed id=${source.id}", e)
+            } finally {
+                _checking.value = _checking.value - source.id
+            }
+        }
+    }
 
     /** An existing playlist's EPG feed, offered as a one-tap "fill from playlist" option. */
     data class PlaylistEpg(val name: String, val url: String)

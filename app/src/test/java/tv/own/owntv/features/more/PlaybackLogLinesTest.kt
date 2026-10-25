@@ -68,4 +68,14 @@ class PlaybackLogLinesTest {
         assertEquals("10-21 20:01:02.900" to "first frame after 850ms (zap key press to first frame 897ms)", PlaybackLogLines.split(frame))
         assertEquals(null to "no stamp here", PlaybackLogLines.split("no stamp here"))
     }
+
+    @Test
+    fun theSyncCheckFilterKeepsOnlyChangeCheckLines() {
+        val check = "10-25 16:31:00.000 sync-check: playlist #3 DPTV-Server 1.0.4 changed=live → sync live"
+        val raw = listOf(zap, check, noise)
+        assertTrue(PlaybackLogLines.isSyncCheck(check))
+        assertFalse(PlaybackLogLines.isSyncCheck(zap))
+        assertEquals(listOf(check), PlaybackLogLines.prepare(raw, channelChangesOnly = false, syncChecksOnly = true))
+        assertEquals(listOf(check, zap), PlaybackLogLines.prepare(raw, channelChangesOnly = true, syncChecksOnly = true))
+    }
 }

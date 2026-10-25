@@ -185,4 +185,28 @@
     <string name="sport_playback_log_turn_on">Turn on</string>
     <string name="sport_playback_log_empty">Nothing logged yet</string>
     <string name="sport_playback_log_empty_body">Change channel in Live TV and the timings show up here.</string>
+    <!-- v2.5.3: fixed sync times and the change check -->
+    <string name="sport_sync_times">Sync times</string>
+    <string name="sport_sync_times_hint">Playlists, the guide and Movies &amp; TV Shows update by themselves at these times every day, in this device\'s time. Changes on your server are also picked up within about 15 minutes.</string>
+    <string name="sport_sync_times_summary">Live %1$s · Guide %2$s · Films &amp; shows %3$s</string>
+    <string name="sport_sync_times_live">Live channels</string>
+    <string name="sport_sync_times_epg">Guide</string>
+    <string name="sport_sync_times_vod">Movies &amp; TV Shows</string>
+    <string name="sport_sync_times_list_hint">OK changes a time in 30-minute steps.</string>
+    <string name="sport_sync_times_add">Add a time</string>
+    <string name="sport_sync_times_remove">Remove</string>
+    <string name="sport_sync_times_reset">Default times</string>
+    <string name="sport_refresh_scheduled">At sync times</string>
+    <string name="sport_check_now">Check now</string>
+    <string name="sport_check_running">Change check: checking…</string>
+    <string name="sport_check_never">none seen yet</string>
+    <string name="sport_check_line_pending">Change check: not run yet</string>
+    <string name="sport_check_line_dptv">Change check: DPTV-Server ✓ · last refresh %1$s</string>
+    <string name="sport_check_line_etag">Change check: ETag ✓ · last change %1$s</string>
+    <string name="sport_check_line_last_modified">Change check: Last-Modified ✓ · last change %1$s</string>
+    <string name="sport_check_line_hash">Change check: content compare (server sends no change headers) · last change %1$s</string>
+    <string name="sport_check_line_none">Change check: no change signal · sync times only</string>
+    <string name="sport_check_line_failed">Change check: failed (HTTP %1$d)</string>
+    <string name="sport_check_line_failed_offline">Change check: failed (no response)</string>
+    <string name="sport_playback_log_sync_checks">Sync checks</string>
 </resources>
