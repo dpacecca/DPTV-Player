@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.6.0
+
+### 🐛 Fixes
+- **🏉 Rugby League World Cup, State of Origin and Super League back in Sport (TheSportsDB when SofaScore is unavailable)**
+
 ## v2.5.2
 
 ### ✨ New features

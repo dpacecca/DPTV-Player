@@ -154,6 +154,7 @@ fun SportsScreen(
     val fixtures by vm.currentFixtures.collectAsStateWithLifecycle()
     val boardError by vm.currentError.collectAsStateWithLifecycle()
     val boardLoading by vm.currentLoading.collectAsStateWithLifecycle()
+    val boardUnavailable by vm.currentUnavailable.collectAsStateWithLifecycle()
 
     // Live / Demnächst / Vergangen filter for the fixtures list.
     val tab by vm.tab.collectAsStateWithLifecycle()
@@ -462,8 +463,14 @@ fun SportsScreen(
                         }
                     }
                     fixtures.isEmpty() -> {
+                        // No source could be reached (v2.6.0): say so instead of "No games".
+                        val empty = when {
+                            !boardUnavailable -> R.string.sport_no_games
+                            sportsLeagueById(selectedLeagueId)?.theSportsDbId == null -> R.string.sport_sevens_unavailable
+                            else -> R.string.sport_source_unavailable
+                        }
                         Box(Modifier.fillMaxWidth().padding(top = 60.mpx), contentAlignment = Alignment.Center) {
-                            Text(stringResource(R.string.sport_no_games), style = stageText(22, 500), color = StageColors.Muted)
+                            Text(stringResource(empty), style = stageText(22, 500), color = StageColors.Muted, textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
                         }
                     }
                     visibleFixtures.isEmpty() -> {
@@ -578,6 +585,8 @@ private enum class DetailTab { CHANNELS, BROADCASTS }
 private fun stageLine(fixture: Fixture): String? {
     val parts = listOfNotNull(
         fixture.week?.let { stringResource(R.string.sport_round_week, it) },
+        fixture.roundNumber?.let { stringResource(R.string.sport_round_number, it) },
+        fixture.group?.let { stringResource(R.string.sport_group_name, it) },
         fixture.round,
         fixture.note,
     )
@@ -960,9 +969,9 @@ private fun FixtureDetail(
         if (detailTab == DetailTab.BROADCASTS) {
             if (fixture.broadcasts.isEmpty()) {
                 item(key = "broadcasts-empty" + fixture.id) {
-                    // SofaScore carries no broadcasters at all, so its leagues say so plainly (v2.5.0).
+                    // SofaScore and TheSportsDB carry no broadcasters, so their leagues say so plainly (v2.5.0).
                     val noBroadcasts = if (sportsLeagueById(fixture.leagueId)?.source == LeagueSource.SOFASCORE) {
-                        R.string.sport_no_broadcasts_sofascore
+                        R.string.sport_no_broadcasts_other
                     } else {
                         R.string.sport_no_broadcasts
                     }

@@ -21,7 +21,11 @@ import tv.own.owntv.R
  */
 class EspnApi(private val client: OkHttpClient, context: Context) {
 
-    data class Scoreboard(val leagueName: String, val fixtures: List<Fixture>)
+    /**
+     * One league's board. [unavailable] (v2.6.0): no source could be reached, so an empty board
+     * says so instead of "No games".
+     */
+    data class Scoreboard(val leagueName: String, val fixtures: List<Fixture>, val unavailable: Boolean = false)
 
     private val appContext = context.applicationContext
     private val venueSeparator: String by lazy { appContext.getString(R.string.sport_venue_separator) }

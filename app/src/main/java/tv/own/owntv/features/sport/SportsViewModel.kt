@@ -244,6 +244,12 @@ class SportsViewModel(
         combine(_selectedLeagueId, selectedBoard) { id, board -> id != FavouritesId && board is BoardState.Error }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    /** True when the selected league's sources are all unreachable (v2.6.0): the board says so. */
+    val currentUnavailable: StateFlow<Boolean> =
+        combine(_selectedLeagueId, selectedBoard) { id, board ->
+            id != FavouritesId && (board as? BoardState.Content)?.board?.unavailable == true
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     init {
         // Load exactly the active leagues (+ leagues of followed teams, for Favourites); re-run when
         // the user changes the selection, so adding/removing a league fetches/drops it live.
@@ -723,15 +729,15 @@ class SportsViewModel(
         val hadContent = boards.value[league.id] is BoardState.Content
         if (!(quiet && hadContent)) boards.value = boards.value + (league.id to BoardState.Loading)
         val result = runCatching { api.scoreboard(league) }
-        // SofaScore already logged its one line (v2.5.0).
+        // The source chain already logged its line (v2.6.0).
         result.onFailure { if (league.source == LeagueSource.ESPN) android.util.Log.w("SportsHub", "board failed " + league.id, it) }
         result.onSuccess { android.util.Log.d("SportsHub", "board ok " + league.id + " fixtures=" + it.fixtures.size) }
         boardAt[league.id] = now
         if (result.isFailure && quiet && hadContent) return
-        // A SofaScore league that failed shows nothing rather than an error, and is fetched again
-        // by the next refresh once its board is stale (v2.5.0).
+        // A SofaScore league no source could serve says so rather than an error, and is fetched
+        // again by the next refresh once its board is stale (v2.5.0; "unavailable" v2.6.0).
         val board = result.getOrNull()
-            ?: if (league.source == LeagueSource.SOFASCORE) EspnApi.Scoreboard(league.id, emptyList()) else null
+            ?: if (league.source == LeagueSource.SOFASCORE) EspnApi.Scoreboard(league.id, emptyList(), unavailable = true) else null
         // A league dropped from the selection while fetching must not come back.
         if (league.id !in loadingLeagues.value) return
         boards.value = boards.value + (league.id to (board?.let { BoardState.Content(it) } ?: BoardState.Error))

@@ -131,7 +131,11 @@
     <string name="sport_detail_separator">" · "</string>
     <string name="sport_broadcasts_count">Broadcasts (%1$d)</string>
     <string name="sport_no_broadcasts">ESPN lists no broadcasts for this game</string>
-    <string name="sport_no_broadcasts_sofascore">SofaScore lists no broadcasts for this game</string>
+    <string name="sport_no_broadcasts_other">No broadcasts are listed for this competition</string>
+    <string name="sport_round_number">Round %1$d</string>
+    <string name="sport_group_name">Group %1$s</string>
+    <string name="sport_sevens_unavailable">Sevens results are unavailable right now</string>
+    <string name="sport_source_unavailable">Results for this competition are unavailable right now</string>
     <string name="sport_table_played">P</string>
     <string name="sport_table_difference">+/−</string>
     <string name="sport_table_points">Pts</string>
