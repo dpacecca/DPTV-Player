@@ -170,9 +170,10 @@ internal enum class GuideOk { DETAILS, CATCHUP, PREVIEW, WATCH }
 /**
  * OK in the guide (v2.6.0, after OwnTV v5.2.1 #300): moving through the guide never tunes the preview. On
  * what is on now, OK brings the channel into the preview and OK again on the channel already there watches
- * it full screen (straight to full screen with the preview off). A programme still to come opens its
- * details (remind, record); one that has been on plays from the archive when it can, else its details.
- * A row with no programme counts as now. Unlike OwnTV, past and future programmes keep their own meaning.
+ * it full screen (straight to full screen with the preview off). As OwnTV (owner's choice), OK on any
+ * programme of a channel not in the preview brings it into the preview first; once it is there, a programme
+ * still to come opens its details (remind, record) and one that has been on plays from the archive when it
+ * can, else its details. A row with no programme counts as now.
  */
 internal fun guideOkAction(
     startMs: Long?,
@@ -182,9 +183,10 @@ internal fun guideOkAction(
     previewOn: Boolean,
     inPreview: Boolean,
 ): GuideOk = when {
+    // OwnTV's rule (owner, v2.6.0): a channel not in the preview comes into it first, whatever the programme.
+    previewOn && !inPreview -> GuideOk.PREVIEW
     startMs != null && startMs > now -> GuideOk.DETAILS
     stopMs != null && stopMs <= now -> if (canCatchup) GuideOk.CATCHUP else GuideOk.DETAILS
-    previewOn && !inPreview -> GuideOk.PREVIEW
     else -> GuideOk.WATCH
 }
 
