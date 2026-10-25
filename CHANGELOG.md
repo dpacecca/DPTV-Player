@@ -66,6 +66,10 @@
 
 ## v2.6.0
 
+### ✨ New features
+- **⚽ Sport looks and works like OwnTV's Sports Hub**
+- **⭐ Settings › Sports: choose sports, leagues and favourite teams**
+
 ### 🐛 Fixes
 - **🏉 Rugby League World Cup, State of Origin and Super League back in Sport (TheSportsDB when SofaScore is unavailable)**
 

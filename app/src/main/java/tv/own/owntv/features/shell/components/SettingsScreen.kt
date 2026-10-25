@@ -156,7 +156,7 @@ internal val LocalSettingsRowTone = staticCompositionLocalOf { TileTone.PRIMARY 
 private fun Toned(tone: TileTone, content: @Composable () -> Unit) =
     CompositionLocalProvider(LocalSettingsRowTone provides tone, content = content)
 
-private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, BACKUP, LOCAL_SYNC, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS, FONTS, BROWSING, SUBTITLE_STYLE }
+private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, BACKUP, LOCAL_SYNC, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS, FONTS, BROWSING, SUBTITLE_STYLE, SPORTS }
 
 @Composable
 internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
@@ -303,6 +303,8 @@ fun SettingsScreen(
         if (start == null) return@LaunchedEffect
         tab = SettingsTab.ROOT
         start.group?.let { selectedGroup = it; displayedGroup = it }
+        // Sport's ⚙ chip (v2.6.0): straight to Settings › Sport.
+        if (start.sports) tab = SettingsTab.SPORTS
         if (start.search) {
             searchMode = true
             searchFromMore = true
@@ -460,6 +462,7 @@ fun SettingsScreen(
             SettingsTab.GUIDE_WIDTH -> { tv.own.owntv.features.settings.GuideWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
             SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
             SettingsTab.SUBTITLE_STYLE -> tv.own.owntv.features.settings.SubtitleStylePage(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
+            SettingsTab.SPORTS -> tv.own.owntv.features.sport.SportsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
             SettingsTab.BROWSING -> tv.own.owntv.features.settings.BrowsingListsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
             SettingsTab.FONTS -> tv.own.owntv.features.settings.FontSettingsScreen(
                 current = fontCustomization, onSet = onSetFontCustomization, familyLabel = { fontFamilyLabel(it) },
@@ -755,6 +758,13 @@ fun SettingsScreen(
         // and are More rows now; Clear history moved onto the History screen it acts on; the download
         // folder moved to the Downloads screen. With all four gone the group had nothing left in it.
         RootGroup("group_app", stringResource(R.string.settings_app_group), OwnTVIcon.INFO, stringResource(R.string.settings_group_summary_app)),
+        // Sport (v2.6.0, OwnTV's Sports Hub): one row in App, opening the page with every Sport setting.
+        RootRow(
+            tabRowKey(SettingsTab.SPORTS), TileTone.PRIMARY, OwnTVIcon.SPORT,
+            title = stringResource(R.string.sport_title), desc = stringResource(R.string.sport_settings_row_description),
+            focus = rowFocus.getValue(SettingsTab.SPORTS),
+            onClick = { open(SettingsTab.SPORTS) },
+        ),
         RootRow(
             tabRowKey(SettingsTab.LANGUAGE), TileTone.PRIMARY, OwnTVIcon.LANGUAGE,
             heading = stringResource(R.string.settings_group_app),
@@ -1053,6 +1063,7 @@ fun SettingsScreen(
             SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_logging"), stringResource(R.string.settings_detailed_playback_logging), stringResource(R.string.settings_search_keywords_detailed_logging), OwnTVIcon.INFO, TileTone.SECONDARY) { jumpVideo("vp_logging", false) },
             SettingsSearchEntry(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.common_proxy), stringResource(R.string.settings_search_keywords_proxy), OwnTVIcon.NETWORK, TileTone.SECONDARY) { open(SettingsTab.NETWORK) },
             SettingsSearchEntry(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.settings_dns), stringResource(R.string.settings_search_keywords_dns), OwnTVIcon.DNS, TileTone.SECONDARY) { open(SettingsTab.DNS) },
+            SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.sport_title), stringResource(R.string.sport_settings_search_keywords), OwnTVIcon.SPORT, TileTone.PRIMARY) { open(SettingsTab.SPORTS) },
             // Settings inside a sub-screen, by their own names (kept out of line: this function is at the JVM size limit).
             *subScreenSearchEntries { t -> open(t) }.toTypedArray(),
             SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_app_startup), stringResource(R.string.settings_search_keywords_startup), OwnTVIcon.POWER, TileTone.SECONDARY,
@@ -1987,7 +1998,7 @@ private fun CatchupSourcesHost(
 }
 
 /** More's way into this screen until P10: a root group to open at, or the search field. */
-data class SettingsStart(val group: Int?, val search: Boolean)
+data class SettingsStart(val group: Int?, val search: Boolean, val sports: Boolean = false)
 
 /** One playlist's catch-up time zone, moved out of [SettingsScreen] unchanged (its body is at the JVM method limit). */
 @Composable
