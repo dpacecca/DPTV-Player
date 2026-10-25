@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.6.0
+
+### ✨ New features
+- **🎬 Featured titles on Home: trending in your playlist, with Play, Trailer and All versions**
+
 ## v2.5.2
 
 ### ✨ New features

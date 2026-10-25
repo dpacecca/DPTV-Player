@@ -69,9 +69,15 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         rowsFocus = rowsFocus,
         handleBack = moving == null,
     ) {
+        // (v2.6.0) The featured titles: the hero at the top of Home, above the rows.
+        StageSettingsHeading(stringResource(R.string.sport_home_featured), 1, first = true)
+        HomeSwitchRow(OwnTVIcon.STAR, R.string.sport_home_featured_show, R.string.sport_home_featured_description, config.featuredHero) {
+            vm.setFeaturedHero(!config.featuredHero)
+        }
+
         // Now trending and Keep watching left Home in v2.4.0 (Trending movies / Trending shows replace the first), and their
         // settings with them.
-        StageSettingsHeading(stringResource(R.string.settings_sections), config.settingsRows.size, first = true)
+        StageSettingsHeading(stringResource(R.string.settings_sections), config.settingsRows.size)
         val hiddenNote = stringResource(R.string.settings_hidden_sections)
         config.settingsRows.forEach { row ->
             key(row) {

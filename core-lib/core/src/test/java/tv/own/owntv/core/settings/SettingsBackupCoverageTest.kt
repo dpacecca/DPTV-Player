@@ -80,6 +80,15 @@ class SettingsBackupCoverageTest {
         ).forEach { assertTrue(it, it in backedUp) }
     }
 
+    /** (v2.6.0) The featured titles switch lives in the per-profile Home config, which backups carry whole (homeConfigs). */
+    @Test
+    fun `the featured titles switch is backed up with the Home config (v2_6_0)`() {
+        val off = tv.own.owntv.core.model.HomeConfig(featuredHero = false)
+        val restored = tv.own.owntv.core.model.HomeConfig.fromJson(off.toJson().toString())
+        assertFalse(restored.featuredHero)
+        assertTrue(tv.own.owntv.core.model.HomeConfig.fromJson(tv.own.owntv.core.model.HomeConfig().toJson().toString()).featuredHero)
+    }
+
     @Test
     fun `pip_on_back is never exported but stays importable`() {
         assertTrue(Keys.PIP_ON_BACK.name in backedUp)

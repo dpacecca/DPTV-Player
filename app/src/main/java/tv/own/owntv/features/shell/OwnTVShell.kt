@@ -1344,7 +1344,7 @@ fun OwnTVShell(
                                         is TrendingHomeItem.Series -> {
                                             seriesVm.openSeries(current.series)
                                             restoreFocus = true
-                                            homeCard = null // the hero, which Home's usual return focuses
+                                            // (v2.6.0) homeCard: Home set it to the featured title (the hero) it opened.
                                             homeReturn = MainSection.SERIES
                                             onSelectSection(MainSection.SERIES)
                                         }
