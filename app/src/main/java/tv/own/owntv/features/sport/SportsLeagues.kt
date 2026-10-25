@@ -930,7 +930,7 @@ val SportsLeagues: List<SportLeague> = listOf(
         defaultActive = false,
     ),
     // Rugby league beyond the NRL, from SofaScore (v2.5.0). 431 is the league World Cup; 421, the
-    // union one, stays on ESPN (rugby.164205).
+    // union one, stays on ESPN (rugby.164205). TheSportsDB stands in while SofaScore refuses (v2.6.0).
     SportLeague(
         id = "sofascore.431",
         espnSport = "rugby-league",
@@ -940,6 +940,7 @@ val SportsLeagues: List<SportLeague> = listOf(
         kind = LeagueKind.TEAMS,
         defaultActive = false,
         source = LeagueSource.SOFASCORE,
+        theSportsDbId = "5806",
     ),
     SportLeague(
         id = "sofascore.791",
@@ -950,6 +951,7 @@ val SportsLeagues: List<SportLeague> = listOf(
         kind = LeagueKind.TEAMS,
         defaultActive = false,
         source = LeagueSource.SOFASCORE,
+        theSportsDbId = "5835",
     ),
     SportLeague(
         id = "sofascore.302",
@@ -960,6 +962,7 @@ val SportsLeagues: List<SportLeague> = listOf(
         kind = LeagueKind.TEAMS,
         defaultActive = false,
         source = LeagueSource.SOFASCORE,
+        theSportsDbId = "4415",
     ),
     SportLeague(
         id = "sofascore.1590",
@@ -970,6 +973,7 @@ val SportsLeagues: List<SportLeague> = listOf(
         kind = LeagueKind.TEAMS,
         defaultActive = false,
         source = LeagueSource.SOFASCORE,
+        theSportsDbId = "5834",
     ),
     SportLeague(
         id = "volleyball.womens-college-volleyball",

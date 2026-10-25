@@ -34,6 +34,12 @@ object SportsSchedule {
         return choices[(index + 1) % choices.size]
     }
 
+    /** The choice [step] places from [current] in [choices], wrapping (Settings › Sport's ◀ ▶, v2.6.0). */
+    fun step(choices: List<Int>, current: Int, step: Int): Int {
+        val index = choices.indexOf(current).coerceAtLeast(0)
+        return choices[(index + step).mod(choices.size)]
+    }
+
     /**
      * True for a game that wants live scores now: live, or past its kick-off (within
      * [StaleUpcomingMs]) while ESPN still lists it as upcoming.
@@ -60,15 +66,22 @@ object SportsSchedule {
     /**
      * Home's Sports row: every live game and every game kicking off within [HomeSoonMs] from
      * [fixtures] (the Favourites aggregate — active leagues plus followed teams and athletes). Live
-     * first, then by kick-off, then in the user's league order ([leagueRank]); at most
+     * first, the user's favourite teams' games first within that ([mine], v2.6.0, as OwnTV's Sports
+     * Hub does), then by kick-off, then in the user's league order ([leagueRank]); at most
      * [HomeMaxCards]. Empty means the row is not drawn.
      */
-    fun homeRow(fixtures: List<Fixture>, now: Long, leagueRank: (String) -> Int): List<Fixture> =
+    fun homeRow(
+        fixtures: List<Fixture>,
+        now: Long,
+        mine: (Fixture) -> Boolean = { false },
+        leagueRank: (String) -> Int,
+    ): List<Fixture> =
         fixtures
             .filter { isLiveish(it, now) || (it.state == FixtureState.UPCOMING && it.dateMs in now..(now + HomeSoonMs)) }
             .distinctBy { it.id }
             .sortedWith(
                 compareBy<Fixture> { !isLiveish(it, now) }
+                    .thenBy { !mine(it) }
                     .thenBy { it.dateMs }
                     .thenBy { leagueRank(it.leagueId) },
             )

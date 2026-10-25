@@ -315,6 +315,8 @@ val dataModule = module {
             java.io.File(androidContext().filesDir, "backgrounds"),
             java.io.File(androidContext().filesDir, "subtitles"),
             get(),
+            // The app's own settings stores (DPTV v2.6.0: Sport), looked up when a backup runs.
+            extras = { getAll<tv.own.owntv.core.backup.BackupExtra>() },
         )
     }
     // profileDao, sourceDao, settings, launcherIntegration, openSubtitlesAccounts — creating,

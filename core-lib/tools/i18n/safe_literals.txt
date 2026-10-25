@@ -73,6 +73,7 @@
 4	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	a
 2	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	activeProfileId
 2	technical	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	al
+2	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	appExtras
 2	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	avatarColor
 2	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	avatarFile
 2	json	core/src/main/java/tv/own/owntv/core/backup/BackupManager.kt	avatarId

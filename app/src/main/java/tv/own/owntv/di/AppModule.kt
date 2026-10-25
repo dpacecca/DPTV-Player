@@ -6,6 +6,7 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import tv.own.owntv.features.more.MoreCountsViewModel
 import tv.own.owntv.features.shell.RailCountsViewModel
+import org.koin.dsl.bind
 import org.koin.dsl.module
 import tv.own.owntv.features.customize.CustomizeItemsViewModel
 import tv.own.owntv.features.customize.CustomizeViewModel
@@ -32,6 +33,7 @@ import tv.own.owntv.features.settings.HomeSettingsViewModel
 import tv.own.owntv.features.settings.LanguageSettingsViewModel
 import tv.own.owntv.features.sport.EspnApi
 import tv.own.owntv.features.sport.SofaScoreApi
+import tv.own.owntv.features.sport.TheSportsDbApi
 import tv.own.owntv.features.sport.SportsApi
 import tv.own.owntv.features.sport.LiveSourceIdsProvider
 import tv.own.owntv.features.sport.ProfileLiveSourceIdsProvider
@@ -184,6 +186,8 @@ val appModule = module {
     singleOf(::EspnApi)
     // SofaScore for the competitions ESPN lacks, and the per-league router in front of both (v2.5.0).
     singleOf(::SofaScoreApi)
+    // TheSportsDB, the stand-in for SofaScore's rugby league while it refuses (v2.6.0).
+    singleOf(::TheSportsDbApi)
     singleOf(::SportsApi)
     // Static matcher vocabulary (team aliases/exonyms + stop-words) from res/raw/sports_matching.json.
     // Takes a Context, resolved from androidContext().
@@ -195,6 +199,7 @@ val appModule = module {
     // Live playlists by name (Sport's playlist filter) and the playlist/guide sync fingerprint that
     // triggers Sport's auto rebuild.
     single<SportChannelSources> { ProfileSportChannelSources(get(), get(), get()) }
-    singleOf(::SportsPrefs)
+    // Sport's own settings file; it rides in Settings backups as an app block (v2.6.0).
+    single { SportsPrefs(androidContext()) } bind tv.own.owntv.core.backup.BackupExtra::class
     viewModelOf(::SportsViewModel)
 }

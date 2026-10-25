@@ -1482,6 +1482,11 @@ fun OwnTVShell(
                             restoreFocus = restoreFocus,
                             onRestored = { restoreFocus = false },
                             onContentScrolled = { contentScrolled = it },
+                            // Sport's ⚙ chip: Settings › Sport (v2.6.0).
+                            onOpenSettings = {
+                                settingsStart = tv.own.owntv.features.shell.components.SettingsStart(null, false, sports = true)
+                                onSelectSection(MainSection.SETTINGS)
+                            },
                             contentStart = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 64.mpx else 150.mpx,
                             modifier = Modifier.fillMaxSize(),
                         )
