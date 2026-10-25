@@ -101,6 +101,8 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
         // downloads with 404 to an app that has no login. CI therefore also publishes every release
         // APK to this public repository, which holds nothing but those releases (docs/RELEASE.md).
         tv.own.owntv.core.CoreBuildInfo.releaseRepo = "dpacecca/DPTV-Player-releases"
+        // Fixed for this process before any player exists: the setting applies only after a restart.
+        tv.own.owntv.core.player.FfmpegAudioSetting.load(this)
         // First thing after the context exists: a crash from here on leaves a trace on disk that the
         // user can export from Settings, instead of being lost with the process.
         tv.own.owntv.core.util.CrashRecorder.diagnostics = { tv.own.owntv.player.LiveDiagnosticsLog.snapshot() }
@@ -122,13 +124,12 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
         // A chosen icon colour ("Later", the first-run pick, a restore) reaches the launcher when the app
         // is next in the background, never while it is on screen.
         tv.own.owntv.core.brand.AppIconSwitcher.start(this, GlobalContext.get().get())
-        // Diagnostics switch, the persisted archive-decode quirk and the one-shot settings migrations —
-        // core's, shared with the phone, which used to run none of them.
+        // Diagnostics switch and the one-shot settings migrations — core's, shared with the phone, which
+        // used to run none of them.
         tv.own.owntv.player.PlaybackStartup.start(
             context = this,
             scope = appScope,
             settings = GlobalContext.get().get(),
-            archiveStore = GlobalContext.get().get(),
         )
         // The Stage UI's own defaults, once per install (owner, 2026-10-02): Docked · Compact rail, glass
         // on at 50%, the Stage background; Movies & Series keep an update's layout.

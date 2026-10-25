@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +70,7 @@ import tv.own.owntv.core.theme.GlassSurface
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.theme.OwnTVTheme
 import tv.own.owntv.core.theme.AppFontFamily
+import tv.own.owntv.core.ui.findActivity
 import tv.own.owntv.ui.theme.asComposeFamily
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.rememberScrollState
@@ -137,7 +139,7 @@ internal fun videoSectionCounts(vm: SettingsViewModel): List<Int> {
     val multiview by vm.multiviewEnabled.collectAsStateWithLifecycle()
     val perPlaylist = sources.isNotEmpty()
     return listOf(
-        6 + (if (perPlaylist) 2 else 0),
+        5 + (if (perPlaylist) 2 else 0),
         5 + (if (vm.tunnelingSupported) 1 else 0),
         3,
         3,
@@ -145,7 +147,7 @@ internal fun videoSectionCounts(vm: SettingsViewModel): List<Int> {
         3 + (if (perPlaylist) 3 else 0),
         2,
         2 + (if (multiview) 1 else 0),
-        8, 3, 2, 2,
+        9, 3, 2, 2,
     )
 }
 
@@ -191,10 +193,9 @@ internal val VIDEO_QUICK_ROWS: List<VideoQuickRef> = listOf(
     VideoQuickRef("vp_vod_engine", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_movies_series_player, R.string.settings_movies_player_description),
     VideoQuickRef("vp_vod_engine_sources", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_vod_engine_per_playlist, R.string.settings_vod_engine_per_playlist_description),
     VideoQuickRef("vp_reset_pins", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_reset_player_choices, R.string.settings_reset_player_choices_description),
-    VideoQuickRef("vp_forget_fixes", SECTION_PLAYER, OwnTVIcon.REFRESH, R.string.settings_forget_stream_fixes, R.string.settings_forget_stream_fixes_description),
     VideoQuickRef("vp_external", SECTION_PLAYER, OwnTVIcon.PLAY, R.string.settings_external_player, R.string.settings_external_player_row_description),
     VideoQuickRef("vp_hw", SECTION_PICTURE, OwnTVIcon.VIDEO, R.string.settings_hardware_decoding, R.string.settings_hardware_decoding_description),
-    VideoQuickRef("vp_hdr", SECTION_PICTURE, OwnTVIcon.VIDEO, R.string.settings_quick_hdr, R.string.settings_hdr_description),
+    VideoQuickRef("vp_hdr", SECTION_PICTURE, OwnTVIcon.VIDEO, R.string.settings_quick_prefer_sdr, R.string.settings_prefer_sdr_description),
     VideoQuickRef("vp_max_quality", SECTION_PICTURE, OwnTVIcon.VIDEO, R.string.settings_max_video_quality, R.string.settings_max_video_quality_description),
     VideoQuickRef("vp_tunneled", SECTION_PICTURE, OwnTVIcon.VIDEO, R.string.settings_tunneled_playback, R.string.settings_tunneled_playback_description),
     VideoQuickRef("vp_zoom", SECTION_PICTURE, OwnTVIcon.ASPECT, R.string.settings_default_zoom, R.string.settings_default_zoom_description),
@@ -227,9 +228,11 @@ internal val VIDEO_QUICK_ROWS: List<VideoQuickRef> = listOf(
     VideoQuickRef("vp_reset_volume", SECTION_SOUND, OwnTVIcon.VOLUME_HIGH, R.string.settings_reset_saved_volume, R.string.settings_reset_saved_volume_description),
     VideoQuickRef("vp_surround", SECTION_SOUND, OwnTVIcon.AUDIO, R.string.settings_surround_sound),
     VideoQuickRef("vp_passthrough", SECTION_SOUND, OwnTVIcon.AUDIO, R.string.settings_audio_passthrough, R.string.settings_audio_passthrough_description),
+    VideoQuickRef("vp_ffmpeg_audio", SECTION_SOUND, OwnTVIcon.AUDIO, R.string.settings_ffmpeg_audio, R.string.settings_ffmpeg_audio_description),
     VideoQuickRef("vp_night_mode", SECTION_SOUND, OwnTVIcon.VOLUME_HIGH, R.string.settings_night_mode, R.string.settings_night_mode_description),
     VideoQuickRef("vp_volume_leveling", SECTION_SOUND, OwnTVIcon.VOLUME_HIGH, R.string.settings_volume_leveling, R.string.settings_volume_leveling_description),
     VideoQuickRef("vp_audio_sync", SECTION_SOUND, OwnTVIcon.AUDIO, R.string.settings_audio_sync, R.string.settings_audio_sync_description),
+    VideoQuickRef("vp_output_audio_delay", SECTION_SOUND, OwnTVIcon.AUDIO, R.string.settings_output_audio_delay, R.string.settings_output_audio_delay_description),
     VideoQuickRef("vp_reset_audio_delay", SECTION_SOUND, OwnTVIcon.AUDIO, R.string.settings_reset_saved_audio_delay, R.string.settings_reset_saved_audio_delay_description),
     VideoQuickRef("vp_audio_lang", SECTION_LANGUAGES, OwnTVIcon.AUDIO, R.string.settings_preferred_audio_language, R.string.settings_preferred_audio_language_description),
     VideoQuickRef("vp_sub_lang", SECTION_LANGUAGES, OwnTVIcon.SUBTITLE, R.string.settings_preferred_subtitle_language, R.string.settings_preferred_language_description),
@@ -280,8 +283,8 @@ internal fun videoQuickBinding(key: String, vm: SettingsViewModel): VideoQuickBi
             toggle(onOff(on), on) { vm.setHwDecoding(!on) }
         }
         "vp_hdr" -> {
-            val on by vm.hdrEnabled.collectAsStateWithLifecycle()
-            toggle(onOff(on), on) { vm.setHdrEnabled(!on) }
+            val on by vm.preferSdr.collectAsStateWithLifecycle()
+            toggle(onOff(on), on) { vm.setPreferSdr(!on) }
         }
         "vp_max_quality" -> {
             val height by vm.maxVideoHeight.collectAsStateWithLifecycle()
@@ -336,7 +339,6 @@ internal fun videoQuickBinding(key: String, vm: SettingsViewModel): VideoQuickBi
             val pins by vm.livePinCount.collectAsStateWithLifecycle()
             link(saved(pins), pins > 0)
         }
-        "vp_forget_fixes" -> link(null)
         "vp_external" -> {
             val live by vm.externalPlayerLive.collectAsStateWithLifecycle()
             val movies by vm.externalPlayerMovies.collectAsStateWithLifecycle()
@@ -471,6 +473,11 @@ internal fun videoQuickBinding(key: String, vm: SettingsViewModel): VideoQuickBi
         "vp_audio_sync" -> {
             val delay by vm.audioDelayMs.collectAsStateWithLifecycle()
             link(stringResource(R.string.settings_audio_delay_value, delay))
+        }
+        "vp_output_audio_delay" -> {
+            val output by tv.own.owntv.core.player.AudioOutputWatch.current(LocalContext.current).collectAsStateWithLifecycle()
+            val delays by vm.outputAudioDelays.collectAsStateWithLifecycle()
+            link(outputAudioDelayValue(output, delays.offsetFor(output)))
         }
         "vp_reset_audio_delay" -> {
             val count by vm.savedAudioDelayCount.collectAsStateWithLifecycle()
@@ -628,6 +635,8 @@ internal fun VideoPlayerGroupRows(
     val subPosition by vm.subtitlePosition.collectAsStateWithLifecycle()
     val subBgOpacity by vm.subtitleBgOpacity.collectAsStateWithLifecycle()
     val audioDelay by vm.audioDelayMs.collectAsStateWithLifecycle()
+    val audioOutput by tv.own.owntv.core.player.AudioOutputWatch.current(LocalContext.current).collectAsStateWithLifecycle()
+    val outputAudioDelay = vm.outputAudioDelays.collectAsStateWithLifecycle().value.offsetFor(audioOutput)
     val audioLang by vm.preferredAudioLang.collectAsStateWithLifecycle()
     val subLang by vm.preferredSubLang.collectAsStateWithLifecycle()
     val resumeMode by vm.resumeMode.collectAsStateWithLifecycle()
@@ -635,9 +644,9 @@ internal fun VideoPlayerGroupRows(
     val liveCustomSecs by vm.liveLatencyCustomSecs.collectAsStateWithLifecycle()
     val livePreroll by vm.livePrerollSecs.collectAsStateWithLifecycle()
     val liveTuneTimeout by vm.liveTuneTimeoutSecs.collectAsStateWithLifecycle()
-    // The playback settings that also appear on the Settings root. They live here too so that Video
-    // player is the one complete list; the root rows are shortcuts to the same values (item 14).
-    val hdr by vm.hdrEnabled.collectAsStateWithLifecycle()
+    // The playback settings that Quick and Settings search also offer. Their rows live here, so these
+    // groups are the one complete list; a pin or a search result is a shortcut to the same value.
+    val hdr by vm.preferSdr.collectAsStateWithLifecycle()
     val autoFrameRate by vm.autoFrameRate.collectAsStateWithLifecycle()
     val multiviewEnabled by vm.multiviewEnabled.collectAsStateWithLifecycle()
     val multiviewTiles by vm.multiviewTiles.collectAsStateWithLifecycle()
@@ -867,14 +876,6 @@ internal fun VideoPlayerGroupRows(
             onClick = { savedScroll = scrollState.value; dialog = Dialog.RESET_PINS },
         )
         Row2(
-            quickKey = "vp_forget_fixes",
-            value = SettingValue.Action(stringResource(R.string.settings_forget)),
-            icon = OwnTVIcon.REFRESH, title = stringResource(R.string.settings_forget_stream_fixes),
-            desc = stringResource(R.string.settings_forget_stream_fixes_description),
-            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.FORGET_FIXES)),
-            onClick = { savedScroll = scrollState.value; dialog = Dialog.FORGET_FIXES },
-        )
-        Row2(
             quickKey = "vp_external",
             opens = true,
             icon = OwnTVIcon.PLAY, title = stringResource(R.string.settings_external_player),
@@ -895,10 +896,11 @@ internal fun VideoPlayerGroupRows(
         )
         Row2(
             quickKey = "vp_hdr",
-            icon = OwnTVIcon.VIDEO, title = stringResource(R.string.settings_quick_hdr),
-            desc = stringResource(R.string.settings_hdr_description),
-            chip = stringResource(if (hdr) R.string.common_on else R.string.common_off), primaryChip = hdr,
-            onClick = { vm.setHdrEnabled(!hdr) },
+            icon = OwnTVIcon.VIDEO,
+            title = stringResource(R.string.settings_quick_prefer_sdr),
+            desc = stringResource(R.string.settings_prefer_sdr_description),
+            value = SettingValue.Switch(hdr),
+            onClick = { vm.setPreferSdr(!hdr) },
         )
         // N11 — the Settings limit; the player's Quality button picks within a stream.
         Row2(
@@ -1254,6 +1256,16 @@ internal fun VideoPlayerGroupRows(
             chip = stringResource(if (audioPassthrough) R.string.common_on else R.string.common_off), primaryChip = audioPassthrough,
             onClick = { vm.setAudioPassthrough(!audioPassthrough) },
         )
+        // Shows what this process runs with; a change is saved only together with the restart it needs.
+        Row2(
+            quickKey = "vp_ffmpeg_audio",
+            icon = OwnTVIcon.AUDIO,
+            title = stringResource(R.string.settings_ffmpeg_audio),
+            desc = stringResource(R.string.settings_ffmpeg_audio_description),
+            value = SettingValue.Switch(tv.own.owntv.core.player.FfmpegAudioSetting.active),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.FFMPEG_AUDIO },
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.FFMPEG_AUDIO)),
+        )
         Row2(
             quickKey = "vp_night_mode",
             icon = OwnTVIcon.VOLUME_HIGH, title = stringResource(R.string.settings_night_mode),
@@ -1277,6 +1289,16 @@ internal fun VideoPlayerGroupRows(
             chip = stringResource(R.string.settings_audio_delay_value, audioDelay), chevron = true,
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.AUDIO_SYNC)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.AUDIO_SYNC },
+        )
+        Row2(
+            quickKey = "vp_output_audio_delay",
+            onStep = { vm.setOutputAudioDelay(audioOutput, (outputAudioDelay + it * 25).coerceIn(-5000, 5000)) },
+            icon = OwnTVIcon.AUDIO,
+            title = stringResource(R.string.settings_output_audio_delay),
+            desc = stringResource(R.string.settings_output_audio_delay_description),
+            value = SettingValue.Stepper(outputAudioDelayValue(audioOutput, outputAudioDelay)),
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.OUTPUT_AUDIO_DELAY)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.OUTPUT_AUDIO_DELAY },
         )
         Row2(
             quickKey = "vp_reset_audio_delay",
@@ -1414,6 +1436,24 @@ internal fun VideoPlayerGroupRows(
             onSelect = { vm.setPreferredSubLang(it); dialog = Dialog.NONE },
             onDismiss = { dialog = Dialog.NONE },
         )
+        Dialog.FFMPEG_AUDIO -> {
+            val activity = LocalContext.current.findActivity()
+            tv.own.owntv.ui.stage.StageConfirm(
+                title = stringResource(R.string.app_icon_restart_title),
+                body = stringResource(R.string.settings_ffmpeg_audio_restart_message),
+                confirm = stringResource(R.string.app_icon_restart_now),
+                onConfirm = {
+                    val setting = tv.own.owntv.core.player.FfmpegAudioSetting
+                    if (activity != null && setting.save(activity, !setting.active)) {
+                        tv.own.owntv.core.brand.AppIconSwitcher.restart(activity)
+                    } else {
+                        dialog = Dialog.NONE
+                    }
+                },
+                onCancel = { dialog = Dialog.NONE },
+                focusCancel = true,
+            )
+        }
         Dialog.SURROUND -> PickerDialog(
             title = stringResource(R.string.settings_surround_sound),
             options = SurroundMode.entries.map { it.name to surroundModeLabel(it) },
@@ -1438,6 +1478,15 @@ internal fun VideoPlayerGroupRows(
             format = { stringResource(R.string.settings_audio_delay, it) },
             onSet = { vm.setAudioDelayMs(it) },
             onReset = { vm.setAudioDelayMs(0) },
+            onDismiss = { dialog = Dialog.NONE },
+        )
+        // Same range and step as Audio sync; it is stored for whichever output is playing now.
+        Dialog.OUTPUT_AUDIO_DELAY -> StepperDialog(
+            title = stringResource(R.string.settings_output_audio_delay),
+            value = outputAudioDelay, step = 25, min = -5000, max = 5000,
+            format = { outputAudioDelayValue(audioOutput, it) },
+            onSet = { vm.setOutputAudioDelay(audioOutput, it) },
+            onReset = { vm.setOutputAudioDelay(audioOutput, 0) },
             onDismiss = { dialog = Dialog.NONE },
         )
         Dialog.LIVE_LATENCY -> PickerDialog(
@@ -1723,12 +1772,6 @@ internal fun VideoPlayerGroupRows(
             onConfirm = { vm.clearLivePins(); dialog = Dialog.NONE },
             onCancel = { dialog = Dialog.NONE },
         )
-        Dialog.FORGET_FIXES -> ConfirmResetDialog(
-            title = stringResource(R.string.settings_forget_stream_fixes_confirm),
-            description = stringResource(R.string.settings_forget_stream_fixes_confirm_description),
-            onConfirm = { vm.forgetStreamFixes(); dialog = Dialog.NONE },
-            onCancel = { dialog = Dialog.NONE },
-        )
         Dialog.VOLUME -> StepperDialog(
             title = stringResource(R.string.settings_default_volume),
             // The same 0–150 range and 5% step the player's own volume dialog uses, so a level found
@@ -1904,8 +1947,8 @@ private fun dialogForQuickKey(key: String): Dialog? = when (key) {
     "vp_vod_engine" -> Dialog.VOD_ENGINE
     "vp_vod_engine_sources" -> Dialog.VOD_ENGINE_SOURCES
     "vp_reset_pins" -> Dialog.RESET_PINS
+    "vp_ffmpeg_audio" -> Dialog.FFMPEG_AUDIO
     "vp_reset_live_pins" -> Dialog.RESET_LIVE_PINS
-    "vp_forget_fixes" -> Dialog.FORGET_FIXES
     "vp_external" -> Dialog.EXTERNAL_PLAYER
     "vp_zoom" -> Dialog.ZOOM
     "vp_reset_zoom" -> Dialog.RESET_SAVED_ZOOM
@@ -1927,6 +1970,7 @@ private fun dialogForQuickKey(key: String): Dialog? = when (key) {
     "vp_reset_volume" -> Dialog.RESET_SAVED_VOLUME
     "vp_audio_lang" -> Dialog.AUDIO_LANG
     "vp_audio_sync" -> Dialog.AUDIO_SYNC
+    "vp_output_audio_delay" -> Dialog.OUTPUT_AUDIO_DELAY
     "vp_reset_audio_delay" -> Dialog.RESET_SAVED_AUDIO_DELAY
     "vp_sub_style" -> Dialog.SUB_STYLE
     "vp_sub_lang" -> Dialog.SUB_LANG
@@ -1935,7 +1979,7 @@ private fun dialogForQuickKey(key: String): Dialog? = when (key) {
     else -> null
 }
 
-private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, VOD_ENGINE_SOURCES, VOD_ENGINE_SOURCE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, SURROUND, AUDIO_SYNC, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_TUNE_TIMEOUT_SOURCES, LIVE_TUNE_TIMEOUT_SOURCE, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, RESET_LIVE_PINS, FORGET_FIXES, AFR_WARNING, AFR_PAUSE, VOD_BUFFER, VOD_TIMEOUT, VOD_RECONNECTS, TIMESHIFT_WINDOW, TIMESHIFT_RESUME, MAX_QUALITY, LIVE_PREVIEW_PANEL, MINI_PLAYER, MULTIVIEW_TILES, MULTIVIEW_WARNING }
+private enum class Dialog { NONE, LIVE_ENGINE, LIVE_ENGINE_SOURCES, LIVE_ENGINE_SOURCE, LIVE_LATENCY_SOURCES, LIVE_LATENCY_SOURCE, LIVE_LATENCY_CUSTOM_SOURCE, VOD_ENGINE, VOD_ENGINE_SOURCES, VOD_ENGINE_SOURCE, ZOOM, VOLUME, RESET_SAVED_ZOOM, RESET_SAVED_VOLUME, RESET_SAVED_AUDIO_DELAY, SEEK_STEP, LIVE_REWIND_STEP, SUB_STYLE, SUB_LANG, AUDIO_LANG, SURROUND, FFMPEG_AUDIO, AUDIO_SYNC, OUTPUT_AUDIO_DELAY, RESUME, LIVE_LATENCY, LIVE_CUSTOM, LIVE_PREROLL, LIVE_TUNE_TIMEOUT, LIVE_TUNE_TIMEOUT_SOURCES, LIVE_TUNE_TIMEOUT_SOURCE, LIVE_PREROLL_SOURCES, LIVE_PREROLL_SOURCE, EXTERNAL_PLAYER, RESET_PINS, RESET_LIVE_PINS, AFR_WARNING, AFR_PAUSE, VOD_BUFFER, VOD_TIMEOUT, VOD_RECONNECTS, TIMESHIFT_WINDOW, TIMESHIFT_RESUME, MAX_QUALITY, LIVE_PREVIEW_PANEL, MINI_PLAYER, MULTIVIEW_TILES, MULTIVIEW_WARNING }
 
 /** "Auto" for 0, else seconds ("60s") — the film buffer and network timeout choices (N18). */
 @Composable
@@ -2619,3 +2663,16 @@ private fun SubtitlePreview(
     }
 }
 
+
+/** "Bluetooth · 150 ms": the output playing now and its extra delay. */
+@Composable
+private fun outputAudioDelayValue(output: tv.own.owntv.core.player.AudioOutputKind, ms: Int): String =
+    stringResource(R.string.settings_output_audio_delay_value, stringResource(audioOutputName(output)), stringResource(R.string.settings_audio_delay_value, ms))
+
+private fun audioOutputName(output: tv.own.owntv.core.player.AudioOutputKind): Int = when (output) {
+    tv.own.owntv.core.player.AudioOutputKind.HDMI -> R.string.settings_audio_output_hdmi
+    tv.own.owntv.core.player.AudioOutputKind.ARC -> R.string.settings_audio_output_arc
+    tv.own.owntv.core.player.AudioOutputKind.BLUETOOTH -> R.string.settings_audio_output_bluetooth
+    tv.own.owntv.core.player.AudioOutputKind.SPEAKER -> R.string.settings_audio_output_speaker
+    tv.own.owntv.core.player.AudioOutputKind.OTHER -> R.string.settings_audio_output_other
+}
