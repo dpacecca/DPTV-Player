@@ -122,9 +122,15 @@ internal fun SportsMatchScreen(
     val firstRow = remember { FocusRequester() }
     val tabFocus = remember { FocusRequester() }
     // Focus follows the search: the tabs while there is no list, the first channel once there is one.
+    // (v2.6.1) Asked again for a few frames: the page's first control may not be laid out yet, and focus left
+    // on nothing went to the menu on the next key.
     LaunchedEffect(fixture.id, matches.isNotEmpty()) {
         delay(60)
-        runCatching { if (matches.isNotEmpty()) firstRow.requestFocus() else tabFocus.requestFocus() }
+        for (attempt in 0 until 10) {
+            if (matches.isNotEmpty() && runCatching { firstRow.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+            if ((matches.isEmpty() || attempt >= 3) && runCatching { tabFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+            androidx.compose.runtime.withFrameNanos { }
+        }
     }
 
     Box(modifier.fillMaxSize()) {

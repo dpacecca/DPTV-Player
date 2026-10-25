@@ -145,6 +145,12 @@ class SportsViewModel(
     private val _selectedFixture = MutableStateFlow<Fixture?>(null)
     val selectedFixture: StateFlow<Fixture?> = _selectedFixture.asStateFlow()
 
+    /**
+     * (v2.6.1) The hub card or chip a page (or Settings › Sport) was opened from, so focus goes back to it.
+     * Kept here, not in the screen: Settings is another section, and Sport is composed anew after it.
+     */
+    var hubReturnKey: String? = null
+
     /** The open league page (v2.6.0); null = none. */
     private val _openLeagueId = MutableStateFlow<String?>(null)
     val openLeagueId: StateFlow<String?> = _openLeagueId.asStateFlow()

@@ -22,4 +22,11 @@ class ShellBackTest {
         assertFalse(railBackAsksToExit(railHasFocus = true, fullscreen = false, pickerOpen = true, exitShown = false))
         assertFalse(railBackAsksToExit(railHasFocus = true, fullscreen = false, pickerOpen = false, exitShown = true))
     }
+
+    @Test
+    fun notWhileASportPageIsOpen() {
+        // (v2.6.1) A match or league page hides the menu; Back there is the page's (back to the Sport hub).
+        assertFalse(railBackAsksToExit(railHasFocus = true, fullscreen = false, pickerOpen = false, exitShown = false, subPageOpen = true))
+        assertTrue(railBackAsksToExit(railHasFocus = true, fullscreen = false, pickerOpen = false, exitShown = false, subPageOpen = false))
+    }
 }

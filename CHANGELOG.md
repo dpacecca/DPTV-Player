@@ -64,6 +64,12 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.6.1
+
+### 🐛 Fixes
+- **Guide: ▶ from the menu goes back to the categories; ◀ always reopens them**
+- **Sport: a game or league page hides the menu, and Back returns to the Sport page**
+
 ## v2.6.0
 
 ### ✨ New features

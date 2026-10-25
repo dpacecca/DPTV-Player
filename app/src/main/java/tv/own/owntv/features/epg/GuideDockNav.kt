@@ -7,14 +7,16 @@ package tv.own.owntv.features.epg
  * state comes next and where focus goes. The screen moves focus first and then starts the slide, so focus
  * never lands on a panel that is going away (the lesson of v2.5.1).
  *
- *  - [GuideNavEvent.OPEN] (◀ on what is on now, a swipe right): GUIDE → CATEGORIES.
+ *  - [GuideNavEvent.OPEN] (◀ on what is on now, a swipe right): GUIDE → CATEGORIES. (v2.6.1) From any state:
+ *    it only comes from the guide, so a state left behind by an odd focus route never swallows it.
  *  - [GuideNavEvent.LEFT] in the categories: CATEGORIES → MENU.
- *  - [GuideNavEvent.RAIL_RIGHT] (▶ on the menu): MENU → CATEGORIES; from the menu over the guide alone, the
- *    guide's row.
+ *  - [GuideNavEvent.RAIL_RIGHT] (▶ on the menu): MENU → CATEGORIES (v2.6.1: CATEGORIES too, while they are
+ *    out beside it); from the menu over the guide alone, the guide's row.
  *  - [GuideNavEvent.RIGHT], [GuideNavEvent.BACK], [GuideNavEvent.SWIPE_LEFT] in the categories: CATEGORIES →
  *    GUIDE, focus back on the row it came from. [GuideNavEvent.PICKED] (OK): the same, on the first row.
  *  - Back on the menu is not here: the shell answers it with the exit prompt ([railBackAsksToExit]).
- *  - [GuideNavEvent.GRID_FOCUSED]: focus reached the guide on its own (a tap, a restore): GUIDE, nothing moved.
+ *  - [GuideNavEvent.GRID_FOCUSED]: focus is in the guide (a tap, a restore, any route): GUIDE, nothing moved.
+ *    (v2.6.1) Authoritative, see [guideHealDelayMs].
  *  - [GuideNavEvent.FOCUS_LEFT]: focus left the categories for somewhere else (the menu, by touch): MENU.
  */
 internal enum class GuideNav { GUIDE, CATEGORIES, MENU }
@@ -32,8 +34,7 @@ internal val GuideNav.categoriesOpen: Boolean get() = this != GuideNav.GUIDE
 internal fun GuideNav.on(event: GuideNavEvent): GuideNavStep {
     val stay = GuideNavStep(this, GuideNavFocus.NONE)
     return when (event) {
-        GuideNavEvent.OPEN ->
-            if (this == GuideNav.GUIDE) GuideNavStep(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES) else stay
+        GuideNavEvent.OPEN -> GuideNavStep(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES)
         GuideNavEvent.LEFT ->
             if (this == GuideNav.CATEGORIES) GuideNavStep(GuideNav.MENU, GuideNavFocus.RAIL) else stay
         GuideNavEvent.RIGHT, GuideNavEvent.BACK, GuideNavEvent.SWIPE_LEFT ->
@@ -41,12 +42,33 @@ internal fun GuideNav.on(event: GuideNavEvent): GuideNavStep {
         GuideNavEvent.PICKED ->
             if (this == GuideNav.CATEGORIES) GuideNavStep(GuideNav.GUIDE, GuideNavFocus.GRID_FIRST) else stay
         GuideNavEvent.RAIL_RIGHT ->
-            if (this == GuideNav.MENU) GuideNavStep(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES)
+            if (categoriesOpen) GuideNavStep(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES)
             else GuideNavStep(GuideNav.GUIDE, GuideNavFocus.GRID)
         GuideNavEvent.GRID_FOCUSED -> GuideNavStep(GuideNav.GUIDE, GuideNavFocus.NONE)
         GuideNavEvent.FOCUS_LEFT -> if (this == GuideNav.CATEGORIES) GuideNavStep(GuideNav.MENU, GuideNavFocus.NONE) else stay
     }
 }
+
+/**
+ * (v2.6.1) Focus in the guide always means GUIDE: whatever route put it there (the rail's ▶, a redirect, a
+ * restore), the categories close. Returns how long to wait before healing, or null for nothing to heal. The
+ * one wait is a request for the categories still under way ([sinceCategoriesAskedMs] since it was made),
+ * while focus has not left the guide yet.
+ */
+internal fun guideHealDelayMs(nav: GuideNav, guideHasFocus: Boolean, sinceCategoriesAskedMs: Long): Long? = when {
+    !guideHasFocus || nav == GuideNav.GUIDE -> null
+    else -> (CATEGORY_ASK_GRACE_MS - sinceCategoriesAskedMs).coerceAtLeast(0L)
+}
+
+/**
+ * (v2.6.1) Where ▶ from the rail goes (the guide's entry hook): back into the categories while they are out
+ * beside the menu on a TV, else the guide's row.
+ */
+internal fun GuideNav.railEntry(tv: Boolean): GuideNavFocus =
+    if (tv && categoriesOpen) GuideNavFocus.CATEGORIES else GuideNavFocus.GRID
+
+/** (v2.6.1) How long a request for the categories may take before focus left in the guide wins. */
+internal const val CATEGORY_ASK_GRACE_MS = 400L
 
 /**
  * Highlighting a category switches the guide to it (v2.6.0, as TiviMate) once the highlight has rested for
