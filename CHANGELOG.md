@@ -64,6 +64,14 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.6.0
+
+### ✨ New features
+- **🎞️ Guide menus slide in and out smoothly: ◀ categories, ◀ menu, ▶ ▶ back**
+- **Lists keep the highlighted item in the middle and scroll smoothly**
+- **Highlighting a category switches the guide straight away**
+- **📺 Guide: OK previews a channel, OK again watches it; scrolling keeps the preview**
+
 ## v2.5.2
 
 ### ✨ New features

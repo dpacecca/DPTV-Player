@@ -168,7 +168,8 @@ fun StageRail(
     // Slide in from the edge (320 ms, or a snap with animations off): the capsule when it leaves
     // HIDDEN, the open rail each time it opens.
     val slide = remember { Animatable(0f) }
-    val slideSpec: androidx.compose.animation.core.AnimationSpec<Float> = ownTvTween(320)
+    // v2.6.0: beside the guide's categories (no scrim) it opens on the guide's own slide, so they move as one.
+    val slideSpec: androidx.compose.animation.core.AnimationSpec<Float> = if (scrim) ownTvTween(320) else tv.own.owntv.ui.theme.guideSlideSpec()
     LaunchedEffect(open, state == RailState.HIDDEN) {
         val target = if (state == RailState.HIDDEN) -1f else 0f
         if (open) slide.snapTo(-1f)
