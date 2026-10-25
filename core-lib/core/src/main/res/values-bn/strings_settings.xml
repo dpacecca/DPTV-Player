@@ -617,7 +617,7 @@
     <string name="settings_delete_all_series">সব সিরিজের সাবটাইটেল মুছুন</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">এখনই টিভি নির্দেশিকা সিঙ্ক করবেন?</string>
-    <string name="settings_sync_guide_description">“<xliff:g id="source">%1$s</xliff:g>”-এর অনুষ্ঠান নির্দেশিকা (EPG) ডাউনলোড করুন। সেটিংস → EPG থেকেও পরে এটি করতে পারবেন।</string>
+    <string name="settings_sync_guide_description">“<xliff:g id="source">%1$s</xliff:g>”-এর অনুষ্ঠান নির্দেশিকা (EPG) ডাউনলোড করুন। সেটিংস → উৎস ও গাইড → EPG উৎসগুলো থেকেও পরে এটি করতে পারবেন।</string>
     <string name="settings_not_now">এখন নয়</string>
     <string name="settings_sync_now">এখনই সিঙ্ক করুন</string>
     <string name="settings_syncing_guide">টিভি নির্দেশিকা সিঙ্ক হচ্ছে…</string>
@@ -1335,7 +1335,7 @@
     <string name="local_sync_received_items">পাওয়া আইটেম: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">আপনার ডেটা পাঠানো হয়েছে</string>
     <string name="local_sync_failed">সিঙ্ক ব্যর্থ</string>
-    <string name="local_sync_error_unreachable">এই ডিভাইসে পৌঁছানো যায়নি। সেটিতে DPTV-Player → সেটিংস → ডেটা → লোকাল সিঙ্ক খুলে সিঙ্ক মোড চালু করুন। দুটি ডিভাইসই একই ওয়াই-ফাইতে থাকতে হবে।</string>
+    <string name="local_sync_error_unreachable">এই ডিভাইসে পৌঁছানো যায়নি। সেটিতে DPTV-Player → আরও → লোকাল সিঙ্ক খুলে সিঙ্ক মোড চালু করুন। দুটি ডিভাইসই একই ওয়াই-ফাইতে থাকতে হবে।</string>
     <string name="local_sync_error_unauthorized">অন্য ডিভাইসটি প্রত্যাখ্যান করেছে। পিন ভুল হতে পারে, বা সেটি এই ডিভাইসটি ভুলে গেছে।</string>
     <string name="local_sync_error_bad_payload">যা এসেছে তা পড়া যায়নি। পাসওয়ার্ড ব্যবহার করে থাকলে দেখুন সেটি দুটি ডিভাইসেই এক কিনা।</string>
     <string name="local_sync_error_unknown">কিছু ভুল হয়েছে। আবার চেষ্টা করুন।</string>

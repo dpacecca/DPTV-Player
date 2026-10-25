@@ -617,7 +617,7 @@
     <string name="settings_delete_all_series">എല്ലാ സീരീസുകളുടെയും സബ്‌ടൈറ്റിലുകൾ ഇല്ലാതാക്കുക</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">ടിവി ഗൈഡ് ഇപ്പോൾ സമന്വയിപ്പിക്കണോ?</string>
-    <string name="settings_sync_guide_description">“<xliff:g id="source">%1$s</xliff:g>” എന്നതിനുള്ള പരിപാടികളുടെ ഗൈഡ് (EPG) ഡൗൺലോഡ് ചെയ്യുക. ക്രമീകരണങ്ങൾ → EPG എന്നതിൽ പിന്നീട് ഇത് ചെയ്യാനും കഴിയും.</string>
+    <string name="settings_sync_guide_description">“<xliff:g id="source">%1$s</xliff:g>” എന്നതിനുള്ള പരിപാടികളുടെ ഗൈഡ് (EPG) ഡൗൺലോഡ് ചെയ്യുക. ക്രമീകരണങ്ങൾ → ഉറവിടങ്ങളും ഗൈഡും → EPG ഉറവിടങ്ങൾ എന്നതിൽ പിന്നീട് ഇത് ചെയ്യാനും കഴിയും.</string>
     <string name="settings_not_now">ഇപ്പോൾ വേണ്ട</string>
     <string name="settings_sync_now">ഇപ്പോൾ സമന്വയിപ്പിക്കുക</string>
     <string name="settings_syncing_guide">ടിവി ഗൈഡ് സമന്വയിപ്പിക്കുന്നു…</string>
@@ -1335,7 +1335,7 @@
     <string name="local_sync_received_items">ലഭിച്ച ഇനങ്ങൾ: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">നിങ്ങളുടെ ഡാറ്റ അയച്ചു</string>
     <string name="local_sync_failed">സമന്വയം പരാജയപ്പെട്ടു</string>
-    <string name="local_sync_error_unreachable">ഈ ഉപകരണത്തിലേക്ക് എത്താനായില്ല. അതിൽ DPTV-Player → ക്രമീകരണങ്ങൾ → ഡാറ്റ → ലോക്കൽ സമന്വയം തുറന്ന് സമന്വയ മോഡ് ഓണാക്കുക. രണ്ട് ഉപകരണങ്ങളും ഒരേ വൈ-ഫൈയിൽ ആയിരിക്കണം.</string>
+    <string name="local_sync_error_unreachable">ഈ ഉപകരണത്തിലേക്ക് എത്താനായില്ല. അതിൽ DPTV-Player → കൂടുതൽ → ലോക്കൽ സമന്വയം തുറന്ന് സമന്വയ മോഡ് ഓണാക്കുക. രണ്ട് ഉപകരണങ്ങളും ഒരേ വൈ-ഫൈയിൽ ആയിരിക്കണം.</string>
     <string name="local_sync_error_unauthorized">മറ്റേ ഉപകരണം നിരസിച്ചു. പിൻ തെറ്റായിരിക്കാം, അല്ലെങ്കിൽ അത് ഈ ഉപകരണം മറന്നിരിക്കാം.</string>
     <string name="local_sync_error_bad_payload">വന്നത് വായിക്കാൻ കഴിഞ്ഞില്ല. പാസ്‌വേഡ് ഉപയോഗിച്ചെങ്കിൽ, രണ്ട് ഉപകരണങ്ങളിലും ഒന്നുതന്നെയാണോ എന്ന് പരിശോധിക്കുക.</string>
     <string name="local_sync_error_unknown">എന്തോ കുഴപ്പം സംഭവിച്ചു. വീണ്ടും ശ്രമിക്കുക.</string>

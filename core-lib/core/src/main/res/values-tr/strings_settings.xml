@@ -617,7 +617,7 @@
     <string name="settings_delete_all_series">Tüm dizi altyazılarını sil</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Program rehberi şimdi eşitlensin mi?</string>
-    <string name="settings_sync_guide_description">“<xliff:g id="source">%1$s</xliff:g>” için program rehberini (EPG) indirin. Bunu daha sonra Ayarlar → EPG bölümünden de yapabilirsiniz.</string>
+    <string name="settings_sync_guide_description">“<xliff:g id="source">%1$s</xliff:g>” için program rehberini (EPG) indirin. Bunu daha sonra Ayarlar → Kaynaklar ve rehber → EPG Kaynakları bölümünden de yapabilirsiniz.</string>
     <string name="settings_not_now">Şimdi değil</string>
     <string name="settings_sync_now">Şimdi eşitle</string>
     <string name="settings_syncing_guide">Program rehberi eşitleniyor…</string>
@@ -1335,7 +1335,7 @@
     <string name="local_sync_received_items">Alınan öğeler: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Verileriniz gönderildi</string>
     <string name="local_sync_failed">Eşitleme başarısız oldu</string>
-    <string name="local_sync_error_unreachable">Bu cihaza ulaşılamadı. O cihazda DPTV-Player → Ayarlar → Veriler → Yerel eşitleme yolunu açıp Eşitleme modunu açın. Her iki cihaz da aynı Wi-Fi ağında olmalıdır.</string>
+    <string name="local_sync_error_unreachable">Bu cihaza ulaşılamadı. O cihazda DPTV-Player → Daha fazla → Yerel eşitleme yolunu açıp Eşitleme modunu açın. Her iki cihaz da aynı Wi-Fi ağında olmalıdır.</string>
     <string name="local_sync_error_unauthorized">Diğer cihaz reddetti. PIN yanlış olabilir ya da bu cihazı unutmuş olabilir.</string>
     <string name="local_sync_error_bad_payload">Gelen veri okunamadı. Parola kullandıysanız her iki cihazda da aynı olduğunu kontrol edin.</string>
     <string name="local_sync_error_unknown">Bir şeyler ters gitti. Tekrar deneyin.</string>

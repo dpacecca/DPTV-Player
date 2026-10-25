@@ -614,7 +614,7 @@
     <string name="settings_delete_all_series">シリーズの字幕をすべて削除</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g>（<xliff:g id="count">%2$d</xliff:g>）</string>
     <string name="settings_sync_guide_question">今すぐ番組表を同期しますか？</string>
-    <string name="settings_sync_guide_description">「<xliff:g id="source">%1$s</xliff:g>」の番組表（EPG）をダウンロードします。後で「設定」→「EPG」から実行することもできます。</string>
+    <string name="settings_sync_guide_description">「<xliff:g id="source">%1$s</xliff:g>」の番組表（EPG）をダウンロードします。後で「設定」→「ソースと番組表」→「EPGソース」から実行することもできます。</string>
     <string name="settings_not_now">今はしない</string>
     <string name="settings_sync_now">今すぐ同期</string>
     <string name="settings_syncing_guide">番組表を同期中…</string>
@@ -1313,7 +1313,7 @@
     <string name="local_sync_received_items">受け取った項目: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">データを送信しました</string>
     <string name="local_sync_failed">同期に失敗しました</string>
-    <string name="local_sync_error_unreachable">その端末に接続できませんでした。その端末で DPTV-Player → 設定 → データ → ローカル同期 を開き、同期モードをオンにしてください。両方が同じ Wi-Fi に接続している必要があります。</string>
+    <string name="local_sync_error_unreachable">その端末に接続できませんでした。その端末で DPTV-Player → その他 → ローカル同期 を開き、同期モードをオンにしてください。両方が同じ Wi-Fi に接続している必要があります。</string>
     <string name="local_sync_error_unauthorized">もう一方の端末に拒否されました。PIN が違うか、この端末を削除した可能性があります。</string>
     <string name="local_sync_error_bad_payload">受け取った内容を読み取れませんでした。パスワードを使った場合は、両方の端末で同じか確認してください。</string>
     <string name="local_sync_error_unknown">問題が発生しました。もう一度お試しください。</string>

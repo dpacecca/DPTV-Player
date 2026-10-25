@@ -618,7 +618,7 @@
     <string name="settings_delete_all_series">Alle Serienuntertitel löschen</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Programmübersicht jetzt synchronisieren?</string>
-    <string name="settings_sync_guide_description">Die Programmübersicht (EPG) für „<xliff:g id="source">%1$s</xliff:g>“ herunterladen. Du kannst dies auch später unter Einstellungen → EPG tun.</string>
+    <string name="settings_sync_guide_description">Die Programmübersicht (EPG) für „<xliff:g id="source">%1$s</xliff:g>“ herunterladen. Du kannst dies auch später unter Einstellungen → Quellen und Programm → EPG-Quellen tun.</string>
     <string name="settings_not_now">Nicht jetzt</string>
     <string name="settings_sync_now">Jetzt synchronisieren</string>
     <string name="settings_syncing_guide">Programmübersicht wird synchronisiert…</string>
@@ -1336,7 +1336,7 @@
     <string name="local_sync_received_items">Empfangene Einträge: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Deine Daten wurden gesendet</string>
     <string name="local_sync_failed">Synchronisierung fehlgeschlagen</string>
-    <string name="local_sync_error_unreachable">Dieses Gerät war nicht erreichbar. Öffne dort DPTV-Player → Einstellungen → Daten → Lokale Synchronisierung und schalte den Synchronisierungsmodus ein. Beide Geräte müssen im selben WLAN sein.</string>
+    <string name="local_sync_error_unreachable">Dieses Gerät war nicht erreichbar. Öffne dort DPTV-Player → Mehr → Lokale Synchronisierung und schalte den Synchronisierungsmodus ein. Beide Geräte müssen im selben WLAN sein.</string>
     <string name="local_sync_error_unauthorized">Das andere Gerät hat abgelehnt. Vielleicht ist die PIN falsch, oder es hat dieses Gerät vergessen.</string>
     <string name="local_sync_error_bad_payload">Das Empfangene konnte nicht gelesen werden. Falls du ein Passwort verwendet hast, prüfe, ob es auf beiden Geräten gleich ist.</string>
     <string name="local_sync_error_unknown">Etwas ist schiefgelaufen. Versuche es erneut.</string>

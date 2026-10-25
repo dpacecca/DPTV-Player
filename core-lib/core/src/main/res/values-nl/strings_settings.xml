@@ -617,7 +617,7 @@
     <string name="settings_delete_all_series">Alle series verwijderen</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">De programmagids nu synchroniseren?</string>
-    <string name="settings_sync_guide_description">Download de programmagids (EPG) voor “<xliff:g id="source">%1$s</xliff:g>”. U kunt dit later ook doen via Instellingen → EPG.</string>
+    <string name="settings_sync_guide_description">Download de programmagids (EPG) voor “<xliff:g id="source">%1$s</xliff:g>”. U kunt dit later ook doen via Instellingen → Bronnen en gids → EPG-bronnen.</string>
     <string name="settings_not_now">Niet nu</string>
     <string name="settings_sync_now">Nu synchroniseren</string>
     <string name="settings_syncing_guide">Programmagids synchroniseren…</string>
@@ -1335,7 +1335,7 @@
     <string name="local_sync_received_items">Ontvangen items: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Je gegevens zijn verstuurd</string>
     <string name="local_sync_failed">Synchroniseren mislukt</string>
-    <string name="local_sync_error_unreachable">Dit apparaat was niet bereikbaar. Open daarop DPTV-Player → Instellingen → Gegevens → Lokaal synchroniseren en zet Synchronisatiemodus aan. Beide apparaten moeten op hetzelfde wifinetwerk zitten.</string>
+    <string name="local_sync_error_unreachable">Dit apparaat was niet bereikbaar. Open daarop DPTV-Player → Meer → Lokaal synchroniseren en zet Synchronisatiemodus aan. Beide apparaten moeten op hetzelfde wifinetwerk zitten.</string>
     <string name="local_sync_error_unauthorized">Het andere apparaat weigerde. De pincode klopt mogelijk niet, of het is dit apparaat vergeten.</string>
     <string name="local_sync_error_bad_payload">Wat binnenkwam kon niet worden gelezen. Als je een wachtwoord gebruikte, controleer of het op beide apparaten hetzelfde is.</string>
     <string name="local_sync_error_unknown">Er is iets misgegaan. Probeer het opnieuw.</string>

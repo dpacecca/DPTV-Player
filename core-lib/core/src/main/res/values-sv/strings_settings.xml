@@ -617,7 +617,7 @@
     <string name="settings_delete_all_series">Ta bort alla för serier</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Synkronisera programguiden nu?</string>
-    <string name="settings_sync_guide_description">Ladda ned programguiden (EPG) för ”<xliff:g id="source">%1$s</xliff:g>”. Du kan även göra detta senare under Inställningar → EPG.</string>
+    <string name="settings_sync_guide_description">Ladda ned programguiden (EPG) för ”<xliff:g id="source">%1$s</xliff:g>”. Du kan även göra detta senare under Inställningar → Källor och guide → EPG-källor.</string>
     <string name="settings_not_now">Inte nu</string>
     <string name="settings_sync_now">Synkronisera nu</string>
     <string name="settings_syncing_guide">Synkroniserar programguiden…</string>
@@ -1335,7 +1335,7 @@
     <string name="local_sync_received_items">Mottagna objekt: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Dina data skickades</string>
     <string name="local_sync_failed">Synkroniseringen misslyckades</string>
-    <string name="local_sync_error_unreachable">Enheten gick inte att nå. Öppna DPTV-Player → Inställningar → Data → Lokal synkronisering på den och slå på Synkroniseringsläge. Båda enheterna måste vara på samma Wi-Fi.</string>
+    <string name="local_sync_error_unreachable">Enheten gick inte att nå. Öppna DPTV-Player → Mer → Lokal synkronisering på den och slå på Synkroniseringsläge. Båda enheterna måste vara på samma Wi-Fi.</string>
     <string name="local_sync_error_unauthorized">Den andra enheten nekade. PIN-koden kan vara fel, eller så har den glömt den här enheten.</string>
     <string name="local_sync_error_bad_payload">Det som kom fram gick inte att läsa. Om du använde ett lösenord, kontrollera att det är samma på båda enheterna.</string>
     <string name="local_sync_error_unknown">Något gick fel. Försök igen.</string>

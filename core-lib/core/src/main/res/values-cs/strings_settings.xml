@@ -623,7 +623,7 @@
     <string name="settings_delete_all_series">Odstranit všechny titulky k seriálům</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Synchronizovat TV program nyní?</string>
-    <string name="settings_sync_guide_description">Stáhnout TV program (EPG) pro „<xliff:g id="source">%1$s</xliff:g>“. Můžete to provést také později v části Nastavení → EPG.</string>
+    <string name="settings_sync_guide_description">Stáhnout TV program (EPG) pro „<xliff:g id="source">%1$s</xliff:g>“. Můžete to provést také později v části Nastavení → Zdroje a program → Zdroje EPG.</string>
     <string name="settings_not_now">Teď ne</string>
     <string name="settings_sync_now">Synchronizovat nyní</string>
     <string name="settings_syncing_guide">Synchronizace TV programu…</string>
@@ -1379,7 +1379,7 @@
     <string name="local_sync_received_items">Přijaté položky: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Vaše data byla odeslána</string>
     <string name="local_sync_failed">Synchronizace selhala</string>
-    <string name="local_sync_error_unreachable">Toto zařízení se nepodařilo kontaktovat. Otevřete na něm DPTV-Player → Nastavení → Data → Místní synchronizace a zapněte Režim synchronizace. Obě zařízení musí být na stejné Wi-Fi.</string>
+    <string name="local_sync_error_unreachable">Toto zařízení se nepodařilo kontaktovat. Otevřete na něm DPTV-Player → Více → Místní synchronizace a zapněte Režim synchronizace. Obě zařízení musí být na stejné Wi-Fi.</string>
     <string name="local_sync_error_unauthorized">Druhé zařízení odmítlo spojení. PIN může být špatný, nebo si toto zařízení už nepamatuje.</string>
     <string name="local_sync_error_bad_payload">Přijatá data se nepodařilo přečíst. Pokud jste použili heslo, ověřte, že je na obou zařízeních stejné.</string>
     <string name="local_sync_error_unknown">Něco se pokazilo. Zkuste to znovu.</string>

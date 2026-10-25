@@ -623,7 +623,7 @@
     <string name="settings_delete_all_series">Удалить все субтитры к сериалам</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Синхронизировать программу передач сейчас?</string>
-    <string name="settings_sync_guide_description">Загрузить программу передач (EPG) для «<xliff:g id="source">%1$s</xliff:g>». Это также можно сделать позже в разделе «Настройки» → EPG.</string>
+    <string name="settings_sync_guide_description">Загрузить программу передач (EPG) для «<xliff:g id="source">%1$s</xliff:g>». Это также можно сделать позже в разделе «Настройки» → «Источники и телепрограмма» → «Источники EPG».</string>
     <string name="settings_not_now">Не сейчас</string>
     <string name="settings_sync_now">Синхронизировать сейчас</string>
     <string name="settings_syncing_guide">Синхронизация программы передач…</string>
@@ -1379,7 +1379,7 @@
     <string name="local_sync_received_items">Полученные элементы: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Ваши данные отправлены</string>
     <string name="local_sync_failed">Синхронизация не удалась</string>
-    <string name="local_sync_error_unreachable">Не удалось связаться с этим устройством. Откройте на нём DPTV-Player → Настройки → Данные → Локальная синхронизация и включите режим синхронизации. Оба устройства должны быть в одной сети Wi-Fi.</string>
+    <string name="local_sync_error_unreachable">Не удалось связаться с этим устройством. Откройте на нём DPTV-Player → Ещё → Локальная синхронизация и включите режим синхронизации. Оба устройства должны быть в одной сети Wi-Fi.</string>
     <string name="local_sync_error_unauthorized">Другое устройство отказало. Возможно, PIN-код неверен или это устройство было забыто.</string>
     <string name="local_sync_error_bad_payload">Не удалось прочитать полученные данные. Если вы использовали пароль, проверьте, что он одинаков на обоих устройствах.</string>
     <string name="local_sync_error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>

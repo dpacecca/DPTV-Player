@@ -1013,7 +1013,7 @@ class OwnTVPlayer(
     // Video Player Settings — cached so ensureInit can apply them as mpv options, and the observers
     // below apply changes live to a running player.
     private var hwDecoding = true
-    // Settings → Video player: software decoding allowed above 1080p. Off keeps the ≤1080p ceiling
+    // Settings → Picture: software decoding allowed above 1080p. Off keeps the ≤1080p ceiling
     // that [enforceDecodeGuard], the software rescue rung and the CC override all apply.
     @Volatile private var softwareAbove1080p = false
 
@@ -1091,7 +1091,7 @@ class OwnTVPlayer(
     )
     val seekStepMs: StateFlow<Long> = _seekStepMs.asStateFlow()
 
-    /** Settings → Video player → Auto frame rate. mpv doesn't act on it (the Compose surface does), but
+    /** Settings → Picture → Auto frame rate. mpv doesn't act on it (the Compose surface does), but
      *  the ExoPlayer handoff engine has its own frame-rate mechanism that must follow the same switch. */
     private var autoFrameRate = false
 
@@ -2756,7 +2756,7 @@ class OwnTVPlayer(
                     _errorInfo.value = if (it != null) {
                         val raw = diagnostics.recentError() ?: load.lastMpvError
                         val info = ErrorInfo(reason = raw?.let(PlayerErrors::reasonFor), spec = mediaSpec(), raw = raw)
-                        // Persist for Settings → "Playback error log" (users can't pull logcat after the fact).
+                        // Persist for More → "Error log" (users can't pull logcat after the fact).
                         PlaybackErrorLog.log(context, if (exoActive) "exoplayer" else "mpv", isLiveContent, info)
                         info
                     } else null
@@ -3094,8 +3094,8 @@ class OwnTVPlayer(
         _videoSize.value = null
         _streamChips.value = emptyList()
         _subText.value = null
-        // ExoPlayer-preferred mode (Settings → Video Player): Movies & Series start on ExoPlayer, with
-        // mpv as the automatic fallback (the reverse of the default chain). A per-item gear-toggle pin
+        // ExoPlayer-preferred mode (Settings → Player → Movies & Series player): Movies & Series start
+        // on ExoPlayer, with mpv as the automatic fallback (the reverse of the default chain). A per-item gear-toggle pin
         // overrides the setting in either direction. Catch-up stays on mpv (an archive needs mpv's
         // mid-GOP handling and its software rescue rung — timeshift recordings are damaged often enough
         // that starting them on ExoPlayer trades a fast start for a support queue), and same-item mpv

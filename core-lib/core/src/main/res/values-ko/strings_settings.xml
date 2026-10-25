@@ -614,7 +614,7 @@
     <string name="settings_delete_all_series">모든 시리즈 자막 삭제</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g>(<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">지금 TV 편성표를 동기화하시겠습니까?</string>
-    <string name="settings_sync_guide_description">“<xliff:g id="source">%1$s</xliff:g>”의 편성표(EPG)를 다운로드합니다. 나중에 설정 → EPG에서도 실행할 수 있습니다.</string>
+    <string name="settings_sync_guide_description">“<xliff:g id="source">%1$s</xliff:g>”의 편성표(EPG)를 다운로드합니다. 나중에 설정 → 소스 및 편성표 → EPG 소스에서도 실행할 수 있습니다.</string>
     <string name="settings_not_now">나중에</string>
     <string name="settings_sync_now">지금 동기화</string>
     <string name="settings_syncing_guide">TV 편성표 동기화 중…</string>
@@ -1313,7 +1313,7 @@
     <string name="local_sync_received_items">받은 항목: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">데이터를 보냈습니다</string>
     <string name="local_sync_failed">동기화 실패</string>
-    <string name="local_sync_error_unreachable">이 기기에 연결할 수 없습니다. 그 기기에서 DPTV-Player → 설정 → 데이터 → 로컬 동기화를 열고 동기화 모드를 켜세요. 두 기기가 같은 Wi‑Fi에 있어야 합니다.</string>
+    <string name="local_sync_error_unreachable">이 기기에 연결할 수 없습니다. 그 기기에서 DPTV-Player → 더보기 → 로컬 동기화를 열고 동기화 모드를 켜세요. 두 기기가 같은 Wi‑Fi에 있어야 합니다.</string>
     <string name="local_sync_error_unauthorized">다른 기기가 거부했습니다. PIN이 틀렸거나 이 기기를 삭제했을 수 있습니다.</string>
     <string name="local_sync_error_bad_payload">받은 내용을 읽을 수 없습니다. 비밀번호를 사용했다면 두 기기에서 같은지 확인하세요.</string>
     <string name="local_sync_error_unknown">문제가 발생했습니다. 다시 시도하세요.</string>

@@ -625,7 +625,7 @@
     <string name="settings_delete_all_series">Ezabatu telesail guztiak</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Telebista-gida orain sinkronizatu?</string>
-    <string name="settings_sync_guide_description">Deskargatu “<xliff:g id="source">%1$s</xliff:g>” iturburuaren programa-gida (EPG). Geroago ere egin dezakezu Ezarpenak → EPG atalean.</string>
+    <string name="settings_sync_guide_description">Deskargatu “<xliff:g id="source">%1$s</xliff:g>” iturburuaren programa-gida (EPG). Geroago ere egin dezakezu Ezarpenak → Iturburuak eta gida → EPG iturburuak atalean.</string>
     <string name="settings_not_now">Orain ez</string>
     <string name="settings_sync_now">Sinkronizatu orain</string>
     <string name="settings_syncing_guide">Telebista-gida sinkronizatzen…</string>
@@ -1290,7 +1290,7 @@
     <string name="local_sync_received_items">Jasotako elementuak: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Zure datuak bidali dira</string>
     <string name="local_sync_failed">Sinkronizazioak huts egin du</string>
-    <string name="local_sync_error_unreachable">Gailu hori ezin izan da atzitu. Bertan, ireki DPTV-Player → Ezarpenak → Datuak → Tokiko sinkronizazioa eta aktibatu Sinkronizazio modua. Bi gailuak Wi-Fi sare berean egon behar dute.</string>
+    <string name="local_sync_error_unreachable">Gailu hori ezin izan da atzitu. Bertan, ireki DPTV-Player → Gehiago → Tokiko sinkronizazioa eta aktibatu Sinkronizazio modua. Bi gailuak Wi-Fi sare berean egon behar dute.</string>
     <string name="local_sync_error_unauthorized">Beste gailuak ukatu egin du. Baliteke PINa okerra izatea, edo gailu hau ahaztu izana.</string>
     <string name="local_sync_error_bad_payload">Iritsi dena ezin izan da irakurri. Pasahitz bat erabili baduzu, egiaztatu bi gailuetan berdina dela.</string>
     <string name="local_sync_error_unknown">Zerbait gaizki atera da. Saiatu berriro.</string>

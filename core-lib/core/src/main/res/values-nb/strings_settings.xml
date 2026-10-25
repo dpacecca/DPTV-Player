@@ -617,7 +617,7 @@
     <string name="settings_delete_all_series">Slett alle for serier</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Synkronisere programoversikten nå?</string>
-    <string name="settings_sync_guide_description">Last ned programoversikten (EPG) for «<xliff:g id="source">%1$s</xliff:g>». Du kan også gjøre dette senere under Innstillinger → EPG.</string>
+    <string name="settings_sync_guide_description">Last ned programoversikten (EPG) for «<xliff:g id="source">%1$s</xliff:g>». Du kan også gjøre dette senere under Innstillinger → Kilder og guide → EPG-kilder.</string>
     <string name="settings_not_now">Ikke nå</string>
     <string name="settings_sync_now">Synkroniser nå</string>
     <string name="settings_syncing_guide">Synkroniserer programoversikten…</string>
@@ -1335,7 +1335,7 @@
     <string name="local_sync_received_items">Mottatte elementer: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Dataene dine ble sendt</string>
     <string name="local_sync_failed">Synkroniseringen mislyktes</string>
-    <string name="local_sync_error_unreachable">Enheten kunne ikke nås. Åpne DPTV-Player → Innstillinger → Data → Lokal synkronisering på den og slå på Synkroniseringsmodus. Begge enhetene må være på samme Wi-Fi.</string>
+    <string name="local_sync_error_unreachable">Enheten kunne ikke nås. Åpne DPTV-Player → Mer → Lokal synkronisering på den og slå på Synkroniseringsmodus. Begge enhetene må være på samme Wi-Fi.</string>
     <string name="local_sync_error_unauthorized">Den andre enheten avviste. PIN-koden kan være feil, eller den kan ha glemt denne enheten.</string>
     <string name="local_sync_error_bad_payload">Det som kom, kunne ikke leses. Hvis du brukte et passord, sjekk at det er likt på begge enhetene.</string>
     <string name="local_sync_error_unknown">Noe gikk galt. Prøv igjen.</string>

@@ -74,7 +74,7 @@ class LivePreviewEngine(
     private val playbackPrefs: tv.own.owntv.core.player.PlaybackPrefsStore,
 ) : PlaybackEngine {
 
-    // Escape-hatch toggle (Settings → Video player → Diagnostics). When off, no live fps/bitrate
+    // Escape-hatch toggle (Settings → App → Diagnostics). When off, no live fps/bitrate
     // measuring runs on this engine — declared values only. Never affects the playback pipeline.
     @Volatile private var measuredStatsEnabled = settings.measuredStreamStatsDefault
     /** Every setting this engine reads, as one process-wide snapshot (S15) — see [PlaybackSettings]. */
@@ -267,17 +267,17 @@ class LivePreviewEngine(
     // during construction (the snapshot is hot), and an initializer placed after it would then reset the
     // stored value to its default.
 
-    /** Mirrors Settings → Video player → Hardware decoding. Read at [build] time. */
+    /** Mirrors Settings → Picture → Hardware decoding. Read at [build] time. */
     @Volatile private var hwDecodingEnabled = true
 
-    /** Settings → Video player → Preferred audio / subtitle language (ISO code, blank = no preference). */
+    /** Settings → Sound & subtitles → Preferred audio / subtitle language (ISO code, blank = no preference). */
     @Volatile private var prefAudioLang: String = ""
     @Volatile private var prefSubLang: String = ""
 
-    /** Settings → Video player → Default zoom, applied to every new tune. */
+    /** Settings → Picture → Default zoom, applied to every new tune. */
     @Volatile private var defaultZoom: ZoomMode = ZoomMode.FIT
 
-    /** Settings → Video player → Default volume, the level a newly tuned channel starts at. */
+    /** Settings → Sound & subtitles → Default volume, the level a newly tuned channel starts at. */
     @Volatile private var defaultVolume: Int = 100
 
     /** The user's Auto / Stereo only / Surround choice. Read at [build] time. */

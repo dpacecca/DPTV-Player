@@ -620,7 +620,7 @@
     <string name="settings_delete_all_series">Eliminar todas as legendas de séries</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Sincronizar agora o guia de programação?</string>
-    <string name="settings_sync_guide_description">Transferir o guia de programação (EPG) de “<xliff:g id="source">%1$s</xliff:g>”. Também poderá fazê-lo mais tarde em Definições → EPG.</string>
+    <string name="settings_sync_guide_description">Transferir o guia de programação (EPG) de “<xliff:g id="source">%1$s</xliff:g>”. Também poderá fazê-lo mais tarde em Definições → Origens e guia → Origens de EPG.</string>
     <string name="settings_not_now">Agora não</string>
     <string name="settings_sync_now">Sincronizar agora</string>
     <string name="settings_syncing_guide">A sincronizar o guia de programação…</string>
@@ -1357,7 +1357,7 @@
     <string name="local_sync_received_items">Itens recebidos: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Os seus dados foram enviados</string>
     <string name="local_sync_failed">A sincronização falhou</string>
-    <string name="local_sync_error_unreachable">Não foi possível contactar este dispositivo. Nele, abra DPTV-Player → Definições → Dados → Sincronização local e ligue o Modo de sincronização. Ambos têm de estar na mesma rede Wi-Fi.</string>
+    <string name="local_sync_error_unreachable">Não foi possível contactar este dispositivo. Nele, abra DPTV-Player → Mais → Sincronização local e ligue o Modo de sincronização. Ambos têm de estar na mesma rede Wi-Fi.</string>
     <string name="local_sync_error_unauthorized">O outro dispositivo recusou. O PIN pode estar errado ou pode ter esquecido este dispositivo.</string>
     <string name="local_sync_error_bad_payload">Não foi possível ler o que chegou. Se usou uma palavra-passe, verifique se é a mesma nos dois dispositivos.</string>
     <string name="local_sync_error_unknown">Algo correu mal. Tente novamente.</string>

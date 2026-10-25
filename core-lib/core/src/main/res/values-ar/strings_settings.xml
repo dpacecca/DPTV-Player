@@ -629,7 +629,7 @@
     <string name="settings_delete_all_series">حذف جميع المسلسلات</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">هل تريد مزامنة دليل البرامج التلفزيونية الآن؟</string>
-    <string name="settings_sync_guide_description">نزّل دليل البرامج (دليل البرامج الإلكتروني) لـ «<xliff:g id="source">%1$s</xliff:g>». يمكنك أيضًا إجراء ذلك لاحقًا من الإعدادات ← دليل البرامج الإلكتروني.</string>
+    <string name="settings_sync_guide_description">نزّل دليل البرامج (دليل البرامج الإلكتروني) لـ «<xliff:g id="source">%1$s</xliff:g>». يمكنك أيضًا إجراء ذلك لاحقًا من الإعدادات ← المصادر ودليل البرامج ← مصادر دليل البرامج الإلكتروني.</string>
     <string name="settings_not_now">ليس الآن</string>
     <string name="settings_sync_now">المزامنة الآن</string>
     <string name="settings_syncing_guide">جارٍ مزامنة دليل البرامج التلفزيونية…</string>
@@ -1423,7 +1423,7 @@
     <string name="local_sync_received_items">عناصر مستلمة: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">تم إرسال بياناتك</string>
     <string name="local_sync_failed">فشلت المزامنة</string>
-    <string name="local_sync_error_unreachable">تعذّر الوصول إلى هذا الجهاز. افتح عليه DPTV-Player ← الإعدادات ← البيانات ← المزامنة المحلية وفعّل وضع المزامنة. يجب أن يكون الجهازان على نفس شبكة الواي فاي.</string>
+    <string name="local_sync_error_unreachable">تعذّر الوصول إلى هذا الجهاز. افتح عليه DPTV-Player ← المزيد ← المزامنة المحلية وفعّل وضع المزامنة. يجب أن يكون الجهازان على نفس شبكة الواي فاي.</string>
     <string name="local_sync_error_unauthorized">رفض الجهاز الآخر الاتصال. قد يكون رمز PIN خاطئًا أو ربما نسي هذا الجهاز.</string>
     <string name="local_sync_error_bad_payload">تعذّرت قراءة ما وصل. إذا استخدمت كلمة مرور، فتأكد من أنها نفسها على الجهازين.</string>
     <string name="local_sync_error_unknown">حدث خطأ ما. حاول مرة أخرى.</string>

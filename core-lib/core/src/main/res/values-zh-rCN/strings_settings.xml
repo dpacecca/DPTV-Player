@@ -614,7 +614,7 @@
     <string name="settings_delete_all_series">删除所有剧集字幕</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g>（<xliff:g id="count">%2$d</xliff:g>）</string>
     <string name="settings_sync_guide_question">立即同步电视节目指南吗？</string>
-    <string name="settings_sync_guide_description">下载“<xliff:g id="source">%1$s</xliff:g>”的电子节目指南（EPG）。您也可以稍后前往“设置 → 电子节目指南（EPG）”执行此操作。</string>
+    <string name="settings_sync_guide_description">下载“<xliff:g id="source">%1$s</xliff:g>”的电子节目指南（EPG）。您也可以稍后前往“设置 → 来源与节目指南 → 电子节目指南（EPG）源”执行此操作。</string>
     <string name="settings_not_now">暂不</string>
     <string name="settings_sync_now">立即同步</string>
     <string name="settings_syncing_guide">正在同步电视节目指南…</string>
@@ -1313,7 +1313,7 @@
     <string name="local_sync_received_items">已接收的项目: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">你的数据已发送</string>
     <string name="local_sync_failed">同步失败</string>
-    <string name="local_sync_error_unreachable">无法连接到该设备。请在那台设备上打开 DPTV-Player → 设置 → 数据 → 本地同步，并开启同步模式。两台设备必须连接同一个 Wi-Fi。</string>
+    <string name="local_sync_error_unreachable">无法连接到该设备。请在那台设备上打开 DPTV-Player → 更多 → 本地同步，并开启同步模式。两台设备必须连接同一个 Wi-Fi。</string>
     <string name="local_sync_error_unauthorized">另一台设备拒绝了连接。可能是 PIN 码不对，或者它已忘记本机。</string>
     <string name="local_sync_error_bad_payload">无法读取收到的内容。如果使用了密码，请确认两台设备上的密码相同。</string>
     <string name="local_sync_error_unknown">出了点问题，请重试。</string>

@@ -620,7 +620,7 @@
     <string name="settings_delete_all_series">Supprimer tous les sous-titres de séries</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Synchroniser le guide des programmes maintenant ?</string>
-    <string name="settings_sync_guide_description">Télécharger le guide des programmes (EPG) pour « <xliff:g id="source">%1$s</xliff:g> ». Vous pourrez également le faire plus tard dans Paramètres → EPG.</string>
+    <string name="settings_sync_guide_description">Télécharger le guide des programmes (EPG) pour « <xliff:g id="source">%1$s</xliff:g> ». Vous pourrez également le faire plus tard dans Paramètres → Sources et guide → Sources EPG.</string>
     <string name="settings_not_now">Pas maintenant</string>
     <string name="settings_sync_now">Synchroniser maintenant</string>
     <string name="settings_syncing_guide">Synchronisation du guide des programmes…</string>
@@ -1357,7 +1357,7 @@
     <string name="local_sync_received_items">Éléments reçus: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Vos données ont été envoyées</string>
     <string name="local_sync_failed">Échec de la synchronisation</string>
-    <string name="local_sync_error_unreachable">Impossible de joindre cet appareil. Sur celui-ci, ouvrez DPTV-Player → Paramètres → Données → Synchronisation locale et activez le mode synchronisation. Les deux appareils doivent être sur le même Wi-Fi.</string>
+    <string name="local_sync_error_unreachable">Impossible de joindre cet appareil. Sur celui-ci, ouvrez DPTV-Player → Plus → Synchronisation locale et activez le mode synchronisation. Les deux appareils doivent être sur le même Wi-Fi.</string>
     <string name="local_sync_error_unauthorized">L\'autre appareil a refusé. Le code PIN est peut-être erroné, ou il a oublié cet appareil.</string>
     <string name="local_sync_error_bad_payload">Impossible de lire ce qui est arrivé. Si vous avez utilisé un mot de passe, vérifiez qu\'il est identique sur les deux appareils.</string>
     <string name="local_sync_error_unknown">Une erreur s\'est produite. Réessayez.</string>

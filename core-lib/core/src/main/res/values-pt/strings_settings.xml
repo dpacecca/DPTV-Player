@@ -620,7 +620,7 @@
     <string name="settings_delete_all_series">Excluir todas de séries</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Sincronizar o guia de TV agora?</string>
-    <string name="settings_sync_guide_description">Baixe o guia de programação (EPG) de “<xliff:g id="source">%1$s</xliff:g>”. Você também pode fazer isso mais tarde em Configurações → EPG.</string>
+    <string name="settings_sync_guide_description">Baixe o guia de programação (EPG) de “<xliff:g id="source">%1$s</xliff:g>”. Você também pode fazer isso mais tarde em Configurações → Fontes e guia → Fontes de EPG.</string>
     <string name="settings_not_now">Agora não</string>
     <string name="settings_sync_now">Sincronizar agora</string>
     <string name="settings_syncing_guide">Sincronizando o guia de TV…</string>
@@ -1357,7 +1357,7 @@
     <string name="local_sync_received_items">Itens recebidos: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">Seus dados foram enviados</string>
     <string name="local_sync_failed">Falha na sincronização</string>
-    <string name="local_sync_error_unreachable">Não foi possível alcançar este dispositivo. Nele, abra DPTV-Player → Configurações → Dados → Sincronização local e ligue o Modo de sincronização. Os dois precisam estar no mesmo Wi-Fi.</string>
+    <string name="local_sync_error_unreachable">Não foi possível alcançar este dispositivo. Nele, abra DPTV-Player → Mais → Sincronização local e ligue o Modo de sincronização. Os dois precisam estar no mesmo Wi-Fi.</string>
     <string name="local_sync_error_unauthorized">O outro dispositivo recusou. O PIN pode estar errado, ou ele pode ter esquecido este dispositivo.</string>
     <string name="local_sync_error_bad_payload">Não foi possível ler o que chegou. Se você usou uma senha, verifique se ela é a mesma nos dois dispositivos.</string>
     <string name="local_sync_error_unknown">Algo deu errado. Tente novamente.</string>

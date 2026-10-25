@@ -617,7 +617,7 @@
     <string name="settings_delete_all_series">सभी सीरीज़ के हटाएँ</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">टीवी गाइड अभी सिंक करें?</string>
-    <string name="settings_sync_guide_description">“<xliff:g id="source">%1$s</xliff:g>” के लिए कार्यक्रम गाइड (EPG) डाउनलोड करें। आप इसे बाद में सेटिंग → EPG में भी कर सकते हैं।</string>
+    <string name="settings_sync_guide_description">“<xliff:g id="source">%1$s</xliff:g>” के लिए कार्यक्रम गाइड (EPG) डाउनलोड करें। आप इसे बाद में सेटिंग → स्रोत और गाइड → EPG स्रोत में भी कर सकते हैं।</string>
     <string name="settings_not_now">अभी नहीं</string>
     <string name="settings_sync_now">अभी सिंक करें</string>
     <string name="settings_syncing_guide">टीवी गाइड सिंक किया जा रहा है…</string>
@@ -1335,7 +1335,7 @@
     <string name="local_sync_received_items">प्राप्त आइटम: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">आपका डेटा भेज दिया गया</string>
     <string name="local_sync_failed">सिंक विफल</string>
-    <string name="local_sync_error_unreachable">इस डिवाइस तक नहीं पहुँचा जा सका। उस पर DPTV-Player → सेटिंग्स → डेटा → लोकल सिंक खोलें और सिंक मोड चालू करें। दोनों डिवाइस एक ही वाई-फ़ाई पर होने चाहिए।</string>
+    <string name="local_sync_error_unreachable">इस डिवाइस तक नहीं पहुँचा जा सका। उस पर DPTV-Player → अधिक → लोकल सिंक खोलें और सिंक मोड चालू करें। दोनों डिवाइस एक ही वाई-फ़ाई पर होने चाहिए।</string>
     <string name="local_sync_error_unauthorized">दूसरे डिवाइस ने मना कर दिया। पिन ग़लत हो सकता है, या उसने इस डिवाइस को भुला दिया है।</string>
     <string name="local_sync_error_bad_payload">जो आया उसे पढ़ा नहीं जा सका। अगर आपने पासवर्ड लगाया है, तो देखें कि वह दोनों डिवाइस पर एक जैसा है।</string>
     <string name="local_sync_error_unknown">कुछ ग़लत हो गया। दोबारा कोशिश करें।</string>

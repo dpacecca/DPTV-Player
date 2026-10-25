@@ -551,9 +551,9 @@ class ExoSubtitleEngine(
      *  the renderer factory is fixed at construction, so a change forces a rebuild in [start]. */
     private var softwarePreferred = false
     private var isArchiveItem = false
-    /** Mirrors Settings → Video player → Hardware decoding, pushed in by [OwnTVPlayer]. */
+    /** Mirrors Settings → Picture → Hardware decoding, pushed in by [OwnTVPlayer]. */
     @Volatile var hwDecodingEnabled = true
-    /** Mirrors Settings → Video player → Software decoding above 1080p, pushed in by [OwnTVPlayer]. */
+    /** Mirrors Settings → Picture → Software decoding above 1080p, pushed in by [OwnTVPlayer]. */
     @Volatile var softwareAbove1080p = false
     private var builtForSoftware = false
 
@@ -677,7 +677,7 @@ class ExoSubtitleEngine(
             .setTargetBufferBytes(builtTargetBytes)
             .build()
         val trackSelector = DefaultTrackSelector(context).apply {
-            // Settings → Video player → Preferred audio / subtitle language. These reached mpv only
+            // Settings → Sound & subtitles → Preferred audio / subtitle language. These reached mpv only
             // (alang/slang), so an image-subtitle handoff or an ExoPlayer-preferred VOD silently ignored
             // them. An explicit subtitle pick still wins: applyPendingSubtitle sets an override.
             parameters = buildUponParameters()
@@ -854,7 +854,7 @@ class ExoSubtitleEngine(
      *  keeps the CPU and Wi-Fi awake while playing, so a phone with its screen off can still reconnect. */
     @Volatile var backgroundPlayback = true
 
-    /** Settings → Video player → Auto frame rate, pushed in by [OwnTVPlayer]; read at build time. */
+    /** Settings → Picture → Auto frame rate, pushed in by [OwnTVPlayer]; read at build time. */
     @Volatile var autoFrameRateEnabled = false
 
     /** N18 — films' buffer and network timeout (0 = Auto), pushed in by [OwnTVPlayer]. Both are baked
@@ -869,7 +869,7 @@ class ExoSubtitleEngine(
     private var reconnectsUsed = 0
     private var reconnectAtMs = 0L
 
-    /** Settings → Video player → Preferred audio / subtitle language (ISO code, blank = no preference).
+    /** Settings → Sound & subtitles → Preferred audio / subtitle language (ISO code, blank = no preference).
      *  Pushed in by [OwnTVPlayer]; applied at build time and in place from [start]. */
     @Volatile var prefAudioLang: String = ""
 

@@ -620,7 +620,7 @@
     <string name="settings_delete_all_series">Elimina tutti quelli delle serie</string>
     <string name="settings_section_count"><xliff:g id="section">%1$s</xliff:g> (<xliff:g id="count">%2$d</xliff:g>)</string>
     <string name="settings_sync_guide_question">Sincronizzare ora la guida ai programmi?</string>
-    <string name="settings_sync_guide_description">Scarica la guida ai programmi (EPG) per “<xliff:g id="source">%1$s</xliff:g>”. Puoi farlo anche in seguito da Impostazioni → EPG.</string>
+    <string name="settings_sync_guide_description">Scarica la guida ai programmi (EPG) per “<xliff:g id="source">%1$s</xliff:g>”. Puoi farlo anche in seguito da Impostazioni → Sorgenti e guida → Fonti EPG.</string>
     <string name="settings_not_now">Non ora</string>
     <string name="settings_sync_now">Sincronizza ora</string>
     <string name="settings_syncing_guide">Sincronizzazione della guida ai programmi…</string>
@@ -1357,7 +1357,7 @@
     <string name="local_sync_received_items">Elementi ricevuti: <xliff:g id="count">%1$d</xliff:g></string>
     <string name="local_sync_sent">I tuoi dati sono stati inviati</string>
     <string name="local_sync_failed">Sincronizzazione non riuscita</string>
-    <string name="local_sync_error_unreachable">Impossibile raggiungere questo dispositivo. Su di esso apri DPTV-Player → Impostazioni → Dati → Sincronizzazione locale e attiva la Modalità sincronizzazione. Entrambi devono essere sulla stessa rete Wi-Fi.</string>
+    <string name="local_sync_error_unreachable">Impossibile raggiungere questo dispositivo. Su di esso apri DPTV-Player → Altro → Sincronizzazione locale e attiva la Modalità sincronizzazione. Entrambi devono essere sulla stessa rete Wi-Fi.</string>
     <string name="local_sync_error_unauthorized">L\'altro dispositivo ha rifiutato. Il PIN potrebbe essere errato, oppure ha dimenticato questo dispositivo.</string>
     <string name="local_sync_error_bad_payload">Non è stato possibile leggere ciò che è arrivato. Se hai usato una password, verifica che sia la stessa su entrambi i dispositivi.</string>
     <string name="local_sync_error_unknown">Qualcosa è andato storto. Riprova.</string>
