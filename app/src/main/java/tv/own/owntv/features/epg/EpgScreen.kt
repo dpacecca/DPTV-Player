@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.background
 import androidx.compose.ui.geometry.Size
@@ -26,8 +25,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.rememberUpdatedState
@@ -69,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
@@ -79,20 +77,20 @@ import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.features.live.LiveCategories
 import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.core.live.ProviderTags
-import tv.own.owntv.features.live.edgeScrollSpec
+import tv.own.owntv.features.live.centreScrollSpec
 import tv.own.owntv.features.live.liveCategoryEntries
 import tv.own.owntv.features.live.liveEpgShiftLabel
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVSpinner
 import tv.own.owntv.ui.stage.StageButton
-import tv.own.owntv.ui.stage.stageGlass
-import tv.own.owntv.ui.stage.stageSelectedBar
 import tv.own.owntv.ui.stage.shownColor
 import tv.own.owntv.ui.stage.StageSearchField
 import tv.own.owntv.ui.stage.StageTool
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.mpxSp
+import tv.own.owntv.ui.theme.GUIDE_SLIDE_MS
+import tv.own.owntv.ui.theme.guideSlideSpec
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
@@ -131,8 +129,8 @@ private fun programmeAt(progs: List<EpgProgrammeEntity>?, time: Long): EpgProgra
 /** Across a gap the cursor moves by half an hour, rather than leaping hours to the next programme. */
 private const val GAP_STEP_MS = 30L * 60 * 1000
 
-/** How the guide's rows and timeline move (v2.1.8): short enough to keep up with a held key. */
-private val GuideScrollSpec = androidx.compose.animation.core.tween<Float>(150, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+/** How the guide's timeline moves (v2.1.8): short enough to keep up with a held key. The rows centre
+ *  through [tv.own.owntv.features.live.centreScrollSpec] (v2.6.0). */
 private val GuideScrollIntSpec = androidx.compose.animation.core.tween<Int>(180, easing = androidx.compose.animation.core.FastOutSlowInEasing)
 
 /** The guide starts on the half hour (v2.1.8). */
@@ -166,6 +164,32 @@ private fun cursorStep(progs: List<EpgProgrammeEntity>, cursor: Long, dir: Int, 
     return target.coerceIn(windowStart, windowEnd - 1)
 }
 
+/** What OK on a programme does (v2.6.0, OwnTV v5.2.1 #300): see [guideOkAction]. */
+internal enum class GuideOk { DETAILS, CATCHUP, PREVIEW, WATCH }
+
+/**
+ * OK in the guide (v2.6.0, after OwnTV v5.2.1 #300): moving through the guide never tunes the preview. On
+ * what is on now, OK brings the channel into the preview and OK again on the channel already there watches
+ * it full screen (straight to full screen with the preview off). As OwnTV (owner's choice), OK on any
+ * programme of a channel not in the preview brings it into the preview first; once it is there, a programme
+ * still to come opens its details (remind, record) and one that has been on plays from the archive when it
+ * can, else its details. A row with no programme counts as now.
+ */
+internal fun guideOkAction(
+    startMs: Long?,
+    stopMs: Long?,
+    now: Long,
+    canCatchup: Boolean,
+    previewOn: Boolean,
+    inPreview: Boolean,
+): GuideOk = when {
+    // OwnTV's rule (owner, v2.6.0): a channel not in the preview comes into it first, whatever the programme.
+    previewOn && !inPreview -> GuideOk.PREVIEW
+    startMs != null && startMs > now -> GuideOk.DETAILS
+    stopMs != null && stopMs <= now -> if (canCatchup) GuideOk.CATCHUP else GuideOk.DETAILS
+    else -> GuideOk.WATCH
+}
+
 /** Where "now" starts in a row: the start of the programme on air, or now itself in a gap. */
 private fun nowAnchor(progs: List<EpgProgrammeEntity>, now: Long): Long = programmeAt(progs, now)?.startMs ?: now
 
@@ -190,8 +214,10 @@ internal fun guideStreamChips(chips: List<String>): List<String> = chips.filter 
  * is on now, and ◀ on what is on now goes into the categories (◀ again: the menu with Settings). Holding ◀
  * jumps back to now, or — already at now — steps into the programmes that have been on.
  *
- * v2.5.1: on a TV the categories are docked for good, a slim column between the menu and the guide that
- * widens while focus is in it ([GuideDock] has the moves). A phone keeps them as a sheet over the guide.
+ * v2.6.0 (as TiviMate): on a TV ◀ on what is on now slides the categories in from the left beside the menu's
+ * icons, ◀ again opens the menu with its names, ▶ ▶ goes back; the guide slides aside with them, kept at its
+ * width ([GuideNav] has the moves). Highlighting a category switches the guide to it after a short rest. A
+ * phone keeps them as a sheet over the guide.
  *
  * OK on what is on now puts the channel in the video; OK again on that channel goes full screen. OK on
  * a programme that has been on plays it from the archive; on one still to come it opens its details.
@@ -223,12 +249,12 @@ fun EpgScreen(
      *  corner radius. Given, the shell draws the video there with its one player surface — the same one
      *  full screen uses — and this screen leaves that box to it. */
     onVideoBounds: ((androidx.compose.ui.geometry.Rect?, Dp) -> Unit)? = null,
-    /** Whether the categories are docked beside the guide, so the shell keeps the rail's capsule beside them. */
+    /** Whether the categories are out beside the guide, so the shell keeps the rail's capsule beside them. */
     onPanelOpen: (Boolean) -> Unit = {},
     /** Where the categories start from the screen edge: past the rail's capsule, or the open rail. */
     panelInset: Dp = 0.dp,
-    /** v2.5.1: [panelInset] while the rail rests (no focus), which the guide is laid out for; more than it
-     *  (the rail open) slides the docked categories and the guide over rather than laying them out again. */
+    /** Where the guide starts while the categories are in (past a floating rail's capsule), which it is laid
+     *  out for once; the categories and the open rail slide it over rather than laying it out again (v2.6.0). */
     dockRestInset: Dp = 0.dp,
 ) {
     val vm: EpgViewModel = koinViewModel()
@@ -267,7 +293,8 @@ fun EpgScreen(
     LaunchedEffect(liveMode, liveSelected) { if (liveMode) vm.setCategoryFilter(liveSelected) }
     LaunchedEffect(Unit) { vm.load() } // reload from DB each time the guide is opened
 
-    // The video plays the channel the user picked with OK — moving through the grid no longer retunes it.
+    // The video plays the channel the user picked with OK — moving through the grid, or browsing the
+    // categories (v2.6.0), never retunes it ([guideOkAction], OwnTV v5.2.1 #300).
     val effectivePreview = previewEnabled && livePreviewSetting && guidePreview
     // Switching the Guide's own preview off stops what is already playing, not only the next channel.
     LaunchedEffect(guidePreview) { if (!guidePreview && previewEnabled) liveVm.stopPreview() }
@@ -313,6 +340,9 @@ fun EpgScreen(
     var pastMode by remember { mutableStateOf(false) }
     // The programme the block on top shows and the buttons act on: the one under the cursor.
     var selected by remember { mutableStateOf<Pair<ChannelEntity, EpgProgrammeEntity?>?>(null) }
+    // v2.6.0: the TV's guide, categories and menu ([GuideNav]); the phone's sheet over the guide instead.
+    var nav by remember { mutableStateOf(GuideNav.GUIDE) }
+    var sheetOpen by remember { mutableStateOf(false) }
 
     fun backToNow() {
         val now = System.currentTimeMillis()
@@ -323,29 +353,32 @@ fun EpgScreen(
     // Back while looking at what has been on: back to now first.
     BackHandler(enabled = pastMode && gridHasFocus) { backToNow() }
 
-    // ▲ ▼ by row number (playbook 2): scroll just enough, wait a frame, focus. A held key keeps counting
-    // from the target, and the newest press cancels the step still in flight.
+    // ▲ ▼ by row number (playbook 2). v2.6.0: focus moves to the row at once and the list's centring
+    // bring-into-view ([centreScrollSpec]) glides it to the middle, so a held key retargets one running
+    // scroll instead of queueing a scroll per press. A row not composed yet (the wrap round, a jump) is
+    // scrolled near the middle first; a held key keeps counting from that target.
     var stepTarget by remember { mutableStateOf<Int?>(null) }
     var stepJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    // The first row to scroll to so row [i] lands about the middle (rows are all one height).
+    fun centredFirst(i: Int): Int {
+        val info = rowListState.layoutInfo
+        val pitch = info.visibleItemsInfo.firstOrNull()?.size?.plus(info.mainAxisItemSpacing) ?: 0
+        val half = if (pitch > 0) (info.viewportEndOffset - info.viewportStartOffset) / pitch / 2 else 3
+        return (i - half).coerceAtLeast(0)
+    }
     fun stepTo(i: Int) {
-        stepTarget = i
         stepJob?.cancel()
+        if (rowListState.layoutInfo.visibleItemsInfo.any { it.index == i } &&
+            runCatching { rowFocus(i).requestFocus() }.getOrDefault(false)
+        ) {
+            stepTarget = null
+            return
+        }
+        stepTarget = i
         stepJob = scope.launch {
-            // v2.1.6: the selected channel stays at the top, so what is below it — not what has been passed —
-            // is on screen (the list's end cannot scroll further, and the last rows are then selected in place).
-            // v2.1.8: the highlight moves at once and the rows glide up under it, instead of the whole list
-            // jumping a row on every press.
-            val info = rowListState.layoutInfo
-            val row = info.visibleItemsInfo.firstOrNull { it.index == i }
-            if (row != null) {
-                runCatching { rowFocus(i).requestFocus() }
-                val delta = (row.offset - info.viewportStartOffset).toFloat()
-                if (delta != 0f) runCatching { rowListState.animateScrollBy(delta, GuideScrollSpec) }
-            } else {
-                runCatching { rowListState.scrollToItem(i) }
-                withFrameNanos { }
-                runCatching { rowFocus(i).requestFocus() }
-            }
+            runCatching { rowListState.scrollToItem(centredFirst(i)) }
+            withFrameNanos { }
+            runCatching { rowFocus(i).requestFocus() }
             stepTarget = null
         }
     }
@@ -360,7 +393,7 @@ fun EpgScreen(
                 val i = row.coerceIn(0, (state.channels.size - 1).coerceAtLeast(0))
                 if (state.channels.isNotEmpty() && !state.loading) {
                     val visible = rowListState.layoutInfo.visibleItemsInfo.any { it.index == i }
-                    if (!visible) runCatching { rowListState.scrollToItem(i) }
+                    if (!visible) runCatching { rowListState.scrollToItem(centredFirst(i)) }
                     withFrameNanos { }
                     if (runCatching { rowFocus(i).requestFocus() }.getOrDefault(false)) return@launch
                 }
@@ -430,7 +463,7 @@ fun EpgScreen(
         val id = vm.lastFocusedChannelId ?: previewChannel?.id ?: return@LaunchedEffect
         val idx = state.channels.indexOfFirst { it.id == id }.takeIf { it > 0 } ?: return@LaunchedEffect
         focusedRow = idx
-        runCatching { rowListState.scrollToItem((idx - 2).coerceAtLeast(0)) }
+        runCatching { rowListState.scrollToItem(centredFirst(idx)) }
     }
     // A reload (a playlist or guide refresh) can add, drop or reorder rows: the cursor follows its channel,
     // not its old row number, and focus goes back to it when the refresh took it away from the grid.
@@ -440,7 +473,8 @@ fun EpgScreen(
         if (state.loading || state.channels.isEmpty()) return@LaunchedEffect
         val id = vm.lastFocusedChannelId ?: return@LaunchedEffect
         val idx = state.channels.indexOfFirst { it.id == id }.takeIf { it >= 0 } ?: return@LaunchedEffect
-        val refocus = gridHasFocus || android.os.SystemClock.uptimeMillis() - gridLostAt < 1_500L
+        // (v2.6.0) Not while the categories are out: browsing them switches the list under them.
+        val refocus = (gridHasFocus || android.os.SystemClock.uptimeMillis() - gridLostAt < 1_500L) && nav == GuideNav.GUIDE && !sheetOpen
         if (idx == focusedRow && gridHasFocus) return@LaunchedEffect
         focusedRow = idx
         if (refocus) focusGrid(idx)
@@ -465,20 +499,15 @@ fun EpgScreen(
     var offsetChannel by remember { mutableStateOf<ChannelEntity?>(null) }
     var orderOpen by remember { mutableStateOf(false) }
     var dayOpen by remember { mutableStateOf(false) }
-    // The phone's category sheet; a TV docks them instead ([dock]).
-    var sheetOpen by remember { mutableStateOf(false) }
+    // The phone's category sheet ([sheetOpen]); a TV slides them in instead ([nav]).
     var sheetHadFocus by remember { mutableStateOf(false) }
     var sheetEditing by remember { mutableStateOf(false) }
-    // v2.5.1: the docked categories (TV): whether they are wide, and whether the menu was reached from them.
-    // Set from the layout below (a phone is too narrow for the column).
-    var docked by remember { mutableStateOf(true) }
-    var dock by remember { mutableStateOf(GuideDock()) }
-    var dockFocused by remember { mutableStateOf(false) }
-    // (v2.5.2) Focus anywhere in the guide (the rows, its tools): the one thing that narrows the column.
+    // Set from the layout below: a TV slides the categories in beside the guide, a phone opens the sheet.
+    var tvLayout by remember { mutableStateOf(true) }
+    var catFocused by remember { mutableStateOf(false) }
+    // Focus anywhere in the guide (the rows, its tools): back to GUIDE when it got there on its own.
     var guideHasFocus by remember { mutableStateOf(false) }
-    var dockLeaveJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
-    // Asks the wide column to take focus (counted, so asking again while it is already wide still works).
-    var dockFocusAsk by remember { mutableIntStateOf(0) }
+    var catLeaveJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     var searchOpen by remember { mutableStateOf(false) }
     // The field reports "not focused" when it first attaches; it only closes after it has had focus (playbook 10).
     var searchHadFocus by remember { mutableStateOf(false) }
@@ -517,11 +546,12 @@ fun EpgScreen(
     val onOk: (ChannelEntity, EpgProgrammeEntity?) -> Unit = { ch, p ->
         val now = System.currentTimeMillis()
         val inPreview = previewArmed && previewChannel?.id == ch.id
-        when {
-            p != null && p.startMs > now -> openDetails(ch, p)
-            p != null && p.stopMs <= now -> if (vm.canCatchup(ch, p, now)) playFromStart(ch, p) else openDetails(ch, p)
-            effectivePreview && !inPreview -> liveVm.previewFromGuide(ch) // (v2.5.1) no focus delay
-            else -> watch(ch)
+        val catchup = p != null && p.stopMs <= now && vm.canCatchup(ch, p, now)
+        when (guideOkAction(p?.startMs, p?.stopMs, now, catchup, effectivePreview, inPreview)) {
+            GuideOk.DETAILS -> openDetails(ch, p)
+            GuideOk.CATCHUP -> playFromStart(ch, p!!)
+            GuideOk.PREVIEW -> liveVm.previewFromGuide(ch) // (v2.5.1) no focus delay
+            GuideOk.WATCH -> watch(ch)
         }
     }
 
@@ -532,9 +562,9 @@ fun EpgScreen(
     val sheetFocus = remember { FocusRequester() }
     val catListState = rememberLazyListState()
 
-    // v2.5.1: focus goes to its new place BEFORE the categories narrow or close, so it never drops to the
-    // menu on its own. The row first; a row not composed yet waits on the day chips (or the search) inside
-    // the guide while [focusGrid] brings it in.
+    // v2.5.1: focus goes to its new place BEFORE the categories slide away (v2.6.0), so it never drops to
+    // the menu on its own. The row first; a row not composed yet waits on the day chips (or the search)
+    // inside the guide while [focusGrid] brings it in.
     fun holdFocusInGuide(): Boolean = runCatching { dayTool.requestFocus() }.getOrDefault(false) ||
         runCatching { searchTool.requestFocus() }.getOrDefault(false)
     fun focusRowNow(): Boolean {
@@ -543,22 +573,72 @@ fun EpgScreen(
         return runCatching { rowFocus(i).requestFocus() }.getOrDefault(false)
     }
     fun gridNow() { if (!focusRowNow()) { holdFocusInGuide(); focusGrid() } }
-    fun dockGo(event: GuideDockEvent) {
-        val step = dock.on(event)
-        dockLeaveJob?.cancel()
+
+    // v2.6.0: highlighting a category switches the guide to it once the highlight has rested
+    // ([CategorySettle]), so a held ▲/▼ does not filter on every row. The rows on screen stay until the new
+    // list is in (refilter swaps it, no spinner), and the video is not retuned: it plays what OK picked.
+    val settle = remember { CategorySettle<LiveKey>(CATEGORY_SETTLE_MS) }
+    var settleTick by remember { mutableIntStateOf(0) }
+    val currentCategory by rememberUpdatedState(categoryKey ?: LiveKey.All)
+    // The list a category switch replaces, until the new one is in.
+    var switchFrom by remember { mutableStateOf<List<ChannelEntity>?>(null) }
+    fun applyCategory(key: LiveKey) {
+        if (key == currentCategory) return
+        if (switchFrom == null) switchFrom = state.channels
+        if (liveMode) liveVm.select(key) else vm.setCategoryFilter(key)
+        focusedRow = 0
+        vm.lastFocusedChannelId = null
+    }
+    fun highlightCategory(idx: Int) {
+        val key = railItems.getOrNull(idx)?.key ?: return
+        settle.highlight(key, currentCategory, android.os.SystemClock.uptimeMillis())
+        settleTick++
+    }
+    LaunchedEffect(settleTick) {
+        if (settleTick == 0) return@LaunchedEffect
+        delay(CATEGORY_SETTLE_MS)
+        settle.due(android.os.SystemClock.uptimeMillis())?.let { applyCategory(it) }
+    }
+    // A new category's rows start at the top, once they are in (one with the same channels posts no new list).
+    LaunchedEffect(switchFrom, state.channels, state.loading) {
+        val from = switchFrom ?: return@LaunchedEffect
+        if (state.loading) return@LaunchedEffect
+        if (state.channels === from) delay(1_500)
+        switchFrom = null
+        runCatching { rowListState.scrollToItem(0) }
+    }
+    // Back to the rows: the row focus was on, or — after a switch whose list is still coming — its first row
+    // once it is in (v2.1.5: focusing the old list's row lost focus when that list was replaced).
+    fun toGuideRows() {
+        val from = switchFrom
+        if (from != null) { holdFocusInGuide(); categoryFocusFrom = from } else gridNow()
+    }
+    // Asks the categories to take focus (counted, so asking again while they are out still works).
+    var catFocusAsk by remember { mutableIntStateOf(0) }
+    fun navGo(event: GuideNavEvent) {
+        val step = nav.on(event)
+        catLeaveJob?.cancel()
+        // Back to the guide keeps the highlighted category, even before its rest is up (as TiviMate).
+        if (step.nav == GuideNav.GUIDE) settle.flush()?.let { applyCategory(it) }
         when (step.focus) {
-            GuideDockFocus.GRID -> gridNow()
-            GuideDockFocus.RAIL -> onOpenRail()
-            GuideDockFocus.CATEGORIES -> dockFocusAsk++
-            GuideDockFocus.NONE -> Unit
+            GuideNavFocus.GRID -> toGuideRows()
+            GuideNavFocus.GRID_FIRST -> { focusedRow = 0; toGuideRows() }
+            GuideNavFocus.RAIL -> onOpenRail()
+            // The panel is always composed on a TV: it takes focus at once, before it slides in.
+            GuideNavFocus.CATEGORIES -> { nav = step.nav; if (!runCatching { sheetFocus.requestFocus() }.getOrDefault(false)) catFocusAsk++ }
+            GuideNavFocus.NONE -> Unit
         }
-        dock = step.dock
+        nav = step.nav
     }
     // The phone's sheet: the same order, the row first and then the sheet goes.
-    fun closeSheetToGrid() { gridNow(); sheetOpen = false }
+    fun closeSheetToGrid() {
+        settle.flush()?.let { applyCategory(it) }
+        toGuideRows()
+        sheetOpen = false
+    }
 
     // ◀ / hold ◀ / ▶ in a row. [progs] is that row's guide.
-    val openSheet: () -> Unit = { returnTo = null; if (docked) dockGo(GuideDockEvent.OPEN) else sheetOpen = true }
+    val openSheet: () -> Unit = { returnTo = null; if (tvLayout) navGo(GuideNavEvent.OPEN) else sheetOpen = true }
     fun moveCursor(progs: List<EpgProgrammeEntity>, t: Long) {
         val now = System.currentTimeMillis()
         if (t >= nowAnchor(progs, now)) { pastMode = false; cursorTime = maxOf(t, now) } else cursorTime = t
@@ -612,15 +692,15 @@ fun EpgScreen(
             .groupBy({ it.channelId }, { it.programmeStartMs }).mapValues { it.value.toSet() }
     }
 
-    // ▶ from the rail (or opening Live TV from it): the categories when the menu was reached from them, else
-    // the channel row.
+    // ▶ from the rail (or opening Live TV from it): the categories when the menu was opened from them (MENU),
+    // else the channel row.
     // Rows that are not there yet (still loading, not laid out) are focused once they are — never "Today".
     var pendingEntry by remember { mutableStateOf(false) }
     DisposableEffect(onEntryHook) {
         onEntryHook?.invoke {
             when {
-                // v2.5.1: ▶ from the menu reached with ◀ from the categories: back into them, wide again.
-                docked && dock.railFromDock -> { dockGo(GuideDockEvent.RAIL_RIGHT); true }
+                // v2.6.0: ▶ on the menu beside the categories: back into them, the menu folding to its icons.
+                tvLayout && nav == GuideNav.MENU -> { navGo(GuideNavEvent.RAIL_RIGHT); true }
                 !state.loading && state.channels.isEmpty() -> false
                 else -> {
                     val ok = state.channels.isNotEmpty() &&
@@ -639,18 +719,20 @@ fun EpgScreen(
     }
     DisposableEffect(Unit) { onDispose { onPanelOpen(false) } }
 
-    // Back in the wide categories (or the phone's sheet): back to the guide's row. Only while focus is in
-    // them: on the menu the column stays wide (v2.5.2), but this is off and the shell's Back runs.
-    BackHandler(enabled = sheetOpen || (dock.expanded && dockFocused)) { if (dock.expanded) dockGo(GuideDockEvent.BACK) else closeSheetToGrid() }
+    // Back in the categories (or the phone's sheet): back to the guide's row. Only while focus is in them: on
+    // the menu this is off and the shell's Back asks to leave the app.
+    BackHandler(enabled = sheetOpen || (nav == GuideNav.CATEGORIES && catFocused)) {
+        if (tvLayout) navGo(GuideNavEvent.BACK) else closeSheetToGrid()
+    }
     LaunchedEffect(sheetOpen) {
         if (sheetOpen) { withFrameNanos { }; runCatching { sheetFocus.requestFocus() } } else sheetHadFocus = false
     }
-    // The wide column is composed a frame after it is asked for: focus its list then (a few frames, at most).
-    LaunchedEffect(dockFocusAsk) {
-        if (dockFocusAsk == 0) return@LaunchedEffect
+    // The categories' rows can be a frame late (a first open): focus them then (a few frames, at most).
+    LaunchedEffect(catFocusAsk) {
+        if (catFocusAsk == 0) return@LaunchedEffect
         repeat(10) {
             withFrameNanos { }
-            if (!dock.expanded) return@LaunchedEffect
+            if (nav != GuideNav.CATEGORIES) return@LaunchedEffect
             if (runCatching { sheetFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
         }
     }
@@ -677,28 +759,36 @@ fun EpgScreen(
         // Phones (and anything this narrow): the video full width on top, the guide below it.
         val compact = maxWidth < 600.dp
         fun fx(px: Int) = screenW * (px / 1920f)
-        // TV (v2.5.1): the categories are docked at the left for good, slim, and widen while focus is in them;
-        // the guide is laid out beside the slim column and slides over while it is wide (or the rail is
-        // open), so nothing is laid out again and nothing overlaps. A phone keeps them as a sheet.
-        // (v2.5.2) The column stays wide while the rail is open: the guide slides over by both (on 1920,
-        // the widest rail's 440 + 540 puts it at 980, past the column; its right part runs off screen).
-        val dockedHere = !compact
-        androidx.compose.runtime.SideEffect { if (docked != dockedHere) docked = dockedHere }
-        LaunchedEffect(dockedHere) {
-            onPanelOpen(dockedHere)
-            if (!dockedHere) dock = GuideDock() else sheetOpen = false
-        }
+        // TV (v2.6.0, as TiviMate): the guide is laid out once at its full width; the categories slide in from
+        // the left beside the menu's icons and push it over, its right part running off screen. Everything
+        // moves by placement offsets read inside `offset { }` (no recomposition or relayout per frame), on the
+        // one shared [guideSlideSpec]. A phone keeps them as a sheet over the guide.
+        val tvHere = !compact
+        androidx.compose.runtime.SideEffect { if (tvLayout != tvHere) tvLayout = tvHere }
+        val catsOut = tvHere && nav.categoriesOpen
+        LaunchedEffect(tvHere) { if (!tvHere) nav = GuideNav.GUIDE else sheetOpen = false }
+        LaunchedEffect(catsOut) { onPanelOpen(catsOut) }
         // Wide enough for long category names on two or three lines (v2.1.7).
-        val panelW = fx(540)
-        // The slim column: the category names on one line each, the current one marked.
-        val slimW = fx(232)
-        val panelStart by androidx.compose.animation.core.animateDpAsState(
-            if (dockedHere) panelInset else fx(24), androidx.compose.animation.core.tween(160),
-        )
-        val dockW by androidx.compose.animation.core.animateDpAsState(
-            if (!dockedHere) 0.dp else if (dock.expanded) panelW else slimW, androidx.compose.animation.core.tween(160),
-        )
-        val guideW: Dp = if (dockedHere) (screenW - dockRestInset - slimW).coerceAtLeast(0.dp) else screenW
+        val panelW = fx(500)
+        val panelGap = fx(16)
+        val slide = guideSlideSpec<Float>()
+        // 0 = the guide alone, 1 = the categories out. Read only at placement.
+        val catsShown = remember { androidx.compose.animation.core.Animatable(0f) }
+        LaunchedEffect(catsOut) { catsShown.animateTo(if (catsOut) 1f else 0f, slide) }
+        // Past the capsule, or past the open menu: the categories and the guide move over with it.
+        val panelStart by androidx.compose.animation.core.animateDpAsState(if (tvHere) panelInset else 0.dp, guideSlideSpec())
+        val guideRest: Dp = if (tvHere) dockRestInset else 0.dp
+        val guideW: Dp = (screenW - guideRest).coerceAtLeast(0.dp)
+        // How far the guide is pushed over while the categories are out (the menu's own width aside).
+        val pushAtRest = (panelInset + panelW + panelGap - guideRest).coerceAtLeast(0.dp)
+        // The programme text beside the video wraps short of the screen edge while the guide is pushed over:
+        // one relayout of that block alone, after the slide out and before the slide back.
+        var infoEnd by remember { mutableStateOf(0.dp) }
+        val infoTarget = if (catsOut) pushAtRest else 0.dp
+        LaunchedEffect(infoTarget) {
+            if (infoTarget > infoEnd) delay(GUIDE_SLIDE_MS + 40L)
+            infoEnd = infoTarget
+        }
         val rowStart: Dp = if (compact) 4.dp else fx(48)
         val rowEnd: Dp = if (compact) 4.dp else fx(64)
         val labelW: Dp = when {
@@ -723,17 +813,22 @@ fun EpgScreen(
         // "No video here" only when the preview is switched off — never while full screen has the player:
         // the shell keeps its surface at this box across that, which is the whole point.
         val previewWanted = livePreviewSetting && guidePreview
-        // The shell's surface draws over everything, so it steps back while the categories are open over
-        // the video. Nothing is reported until the box has been measured: an early "none" right after Back
-        // would drop the very surface this is meant to keep.
-        var videoRect by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+        // The shell's surface draws over everything, so it steps back while the phone's sheet is over the
+        // video. Nothing is reported until the box has been measured: an early "none" right after Back would
+        // drop the very surface this is meant to keep.
+        // v2.6.0: the box's place goes to the shell straight from its positioning, so the picture slides with
+        // the guide frame by frame — no state here, so the guide does not recompose while it moves.
+        val lastVideoRect = remember { arrayOfNulls<androidx.compose.ui.geometry.Rect>(1) }
+        var videoMeasured by remember { mutableStateOf(false) }
         val videoRadius = if (compact) 0.dp else 20.mpx
-        LaunchedEffect(videoRect, previewWanted, sheetOpen, sharedSurface) {
+        val reportVideo by rememberUpdatedState(sharedSurface && previewWanted && !sheetOpen)
+        val videoBoundsTo by rememberUpdatedState(onVideoBounds)
+        val videoRadiusNow by rememberUpdatedState(videoRadius)
+        LaunchedEffect(videoMeasured, previewWanted, sheetOpen, sharedSurface) {
             if (!sharedSurface) return@LaunchedEffect
             when {
-                // Only the phone's sheet lies over the video; the docked column is beside it.
                 !previewWanted || sheetOpen -> onVideoBounds?.invoke(null, 0.dp)
-                videoRect != null -> onVideoBounds?.invoke(videoRect, videoRadius)
+                videoMeasured -> lastVideoRect[0]?.let { onVideoBounds?.invoke(it, videoRadius) }
             }
         }
         @Composable
@@ -746,7 +841,12 @@ fun EpgScreen(
             showVideo = showVideo && !sharedSurface,
             compact = compact,
             modifier = if (sharedSurface && previewWanted) {
-                mod.onGloballyPositioned { videoRect = it.boundsInRoot() }
+                mod.onGloballyPositioned {
+                    val r = it.boundsInRoot()
+                    lastVideoRect[0] = r
+                    if (!videoMeasured) videoMeasured = true
+                    if (reportVideo) videoBoundsTo?.invoke(r, videoRadiusNow)
+                }
             } else mod,
         )
 
@@ -771,13 +871,17 @@ fun EpgScreen(
             )
         }
 
-        // Beside the docked column (read at placement, so its easing moves the guide without recomposing it).
+        // Pushed over by the categories (read at placement, so the slide moves the guide without recomposing
+        // or measuring it again). At rest it starts past a floating rail's capsule.
         Column(
             Modifier.fillMaxHeight().width(guideW)
-                .offset { androidx.compose.ui.unit.IntOffset(if (dockedHere) (panelStart + dockW).roundToPx() else 0, 0) }
+                .offset {
+                    val push = (panelStart + panelW + panelGap - guideRest).coerceAtLeast(0.dp).toPx() * catsShown.value
+                    androidx.compose.ui.unit.IntOffset((guideRest.toPx() + push).roundToInt(), 0)
+                }
                 .onFocusChanged {
-                    // (v2.5.2) Focus reaching the guide by any way (a row, a tool, a tap, a restore) narrows the column.
-                    if (it.hasFocus && !guideHasFocus && dock != GuideDock()) dockGo(GuideDockEvent.GRID_FOCUSED)
+                    // Focus reaching the guide by any way (a row, a tool, a tap, a restore) puts the categories away.
+                    if (it.hasFocus && !guideHasFocus && nav != GuideNav.GUIDE) navGo(GuideNavEvent.GRID_FOCUSED)
                     guideHasFocus = it.hasFocus
                 },
         ) {
@@ -786,7 +890,7 @@ fun EpgScreen(
                 TopInfo(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 8.dp))
             } else {
                 // Top (32 → 329): the video (528 wide), and the programme beside it.
-                Row(Modifier.padding(start = fx(64), end = fx(64), top = 32.mpx).fillMaxWidth().height(297.mpx)) {
+                Row(Modifier.padding(start = fx(64), end = fx(64) + infoEnd, top = 32.mpx).fillMaxWidth().height(297.mpx)) {
                     TopVideo(Modifier.width(528.mpx))
                     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
                         // The clock (and its date and weather line) sits over this box's top-right corner: a long
@@ -895,7 +999,8 @@ fun EpgScreen(
                         val gx = rowStart + labelW
                         // The number column fits the longest channel number (38 = three digits).
                         val numberWidth = maxOf(38f, (state.channels.maxOfOrNull { it.number?.toString()?.length ?: 0 } ?: 0) * 12f).mpx
-                        CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides edgeScrollSpec) {
+                        // v2.6.0: the focused row stays in the middle and the rows glide under it.
+                        CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides centreScrollSpec) {
                             LazyColumn(
                                 state = rowListState,
                                 modifier = Modifier
@@ -977,107 +1082,110 @@ fun EpgScreen(
             }
         }
 
-        // ◀ on what is on now: the categories (◀ again: the app's menu, with Settings). A TV docks them at
-        // the left for good, slim until focus goes in (v2.5.1); a phone opens them as a sheet over the guide.
+        // ◀ on what is on now: the categories (◀ again: the app's menu, with Settings). A TV slides them in from
+        // the left (v2.6.0); a phone opens them as a sheet over the guide.
         val sheetSwipeMin = with(LocalDensity.current) { GUIDE_SWIPE_MIN.toPx() }
         val catSelected = railItems.indexOfFirst { it.key == (categoryKey ?: LiveKey.All) }.coerceAtLeast(0)
-        if (dockedHere && !dock.expanded) {
-            GuideDockSlim(
-                entries = entries,
-                selectedIndex = catSelected,
-                title = stringResource(R.string.sport_guide_categories),
-                onOpen = openSheet,
-                modifier = Modifier
-                    .offset { androidx.compose.ui.unit.IntOffset(panelStart.roundToPx(), 0) }
-                    .padding(top = 24.mpx, bottom = 24.mpx)
-                    .width(slimW)
-                    .fillMaxHeight(),
-            )
-        }
-        if ((dockedHere && dock.expanded) || (!dockedHere && sheetOpen)) {
+        // On a TV the panel stays composed, off screen while the guide is alone, so it slides in without
+        // composing its list on the first frame and takes focus before it moves. Focus cannot wander into it
+        // while it is away.
+        if (tvHere || sheetOpen) {
             val railCounts by liveVm.railCounts.collectAsStateWithLifecycle()
             val (sheetEntries, _) = liveCategoryEntries(railItems, railCounts)
-            // ◀ / ▶ / a swipe left out of the categories, each the one way it goes (see [GuideDock]).
-            val toRail: () -> Unit = { if (dockedHere) dockGo(GuideDockEvent.LEFT) else { onOpenRail(); sheetOpen = false } }
-            val toGrid: (GuideDockEvent) -> Unit = { ev -> if (dockedHere) dockGo(ev) else closeSheetToGrid() }
-            LiveCategories(
-                searchQuery = vm.categoryQuery.collectAsStateWithLifecycle().value,
-                onSearchQueryChange = vm::setCategoryQuery,
-                onSearchEditingChange = { sheetEditing = it },
-                entries = sheetEntries,
-                selectedIndex = catSelected,
-                groupsHeading = groupsHeading,
-                sheet = true,
-                listState = catListState,
-                onSelect = { idx ->
-                    val key = railItems.getOrNull(idx)?.key
-                    val changed = key != null && key != (categoryKey ?: LiveKey.All)
-                    key?.let { if (liveMode) liveVm.select(it) else vm.setCategoryFilter(it) }
-                    focusedRow = 0
-                    vm.lastFocusedChannelId = null
-                    // Focus moves to the guide before the categories narrow or go, so it never drops to the menu.
-                    holdFocusInGuide()
-                    if (dockedHere) { dockLeaveJob?.cancel(); dock = dock.on(GuideDockEvent.PICKED).dock } else sheetOpen = false
-                    // v2.1.5: the first row takes focus once the NEW category's list is in. Focusing the old
-                    // list's first row lost focus when that list was replaced, and ▼ then moved in the menu.
-                    if (changed) categoryFocusFrom = state.channels else {
-                        scope.launch { runCatching { rowListState.scrollToItem(0) } }
-                        focusGrid(0)
-                    }
-                },
-                onLongSelect = {},
-                onNavigateRight = { toGrid(GuideDockEvent.RIGHT) },
-                focusRequester = sheetFocus,
-                sheetTitle = stringResource(R.string.sport_guide_categories),
-                sheetHint = stringResource(R.string.common_nav_live_tv),
-                modifier = Modifier
+            // ◀ / ▶ / a swipe left out of the categories, each the one way it goes (see [GuideNav]).
+            val toRail: () -> Unit = { if (tvHere) navGo(GuideNavEvent.LEFT) else { onOpenRail(); sheetOpen = false } }
+            val toGrid: (GuideNavEvent) -> Unit = { ev -> if (tvHere) navGo(ev) else closeSheetToGrid() }
+            Box(
+                Modifier
                     .then(
-                        if (dockedHere) Modifier.offset { androidx.compose.ui.unit.IntOffset(panelStart.roundToPx(), 0) }
-                        else Modifier.padding(start = 8.dp),
+                        if (tvHere) Modifier.offset {
+                            // In from off screen at the left to past the capsule (or the open menu).
+                            val away = (panelW + panelGap).toPx()
+                            androidx.compose.ui.unit.IntOffset(((panelStart.toPx() + away) * catsShown.value - away).roundToInt(), 0)
+                        } else Modifier.padding(start = 8.dp),
                     )
                     .padding(top = 24.mpx, bottom = 24.mpx)
-                    .width(if (dockedHere) panelW else screenW * 0.86f)
+                    .width(if (tvHere) panelW else screenW * 0.86f)
                     .fillMaxHeight()
-                    .onPreviewKeyEvent { e ->
-                        // ◀ out of the categories: the app's menu (Settings), unless the search is being typed in.
-                        // ▶ goes back to the guide's row. Both on the press, before anything below sees it.
-                        if (e.key == Key.DirectionLeft && e.type == KeyEventType.KeyDown && !sheetEditing) {
-                            toRail()
-                            true
-                        } else if (e.key == Key.DirectionRight && e.type == KeyEventType.KeyDown && !sheetEditing) {
-                            toGrid(GuideDockEvent.RIGHT)
-                            true
-                        } else false
-                    }
-                    .pointerInput(dockedHere) {
-                        // Touch (v2.3.2): a swipe left closes the categories, as ▶ does.
-                        var dragged = 0f
-                        detectHorizontalDragGestures(
-                            onDragStart = { dragged = 0f },
-                            onDragEnd = { if (dragged < -sheetSwipeMin) toGrid(GuideDockEvent.SWIPE_LEFT) },
-                        ) { change, dx -> change.consume(); dragged += dx }
-                    }
-                    .onFocusChanged {
-                        if (dockedHere) {
-                            // v2.5.1: focus that left the wide column without one of the moves above is noted
-                            // after a moment, so a row recycled under focus does not count. (v2.5.2) It stays
-                            // wide for the menu; the guide's own focus narrows it.
-                            dockFocused = it.hasFocus
-                            if (it.hasFocus) { dockLeaveJob?.cancel() } else if (dock.expanded) {
-                                dockLeaveJob?.cancel()
-                                dockLeaveJob = scope.launch {
-                                    delay(250)
-                                    if (!dockFocused && dock.expanded) dock = dock.on(GuideDockEvent.FOCUS_LEFT).dock
-                                }
+                    .focusProperties {
+                        // A key search that would land in the panel while it is away (◀ from the guide's
+                        // search) goes to the menu instead, as it did before the panel was there.
+                        onEnter = {
+                            if (tvHere && !nav.categoriesOpen) {
+                                cancelFocusChange()
+                                scope.launch { onOpenRail() }
                             }
-                        } else {
-                            // The phone's sheet closes when focus leaves it — not on the "unfocused" report
-                            // every node gets when it attaches.
-                            if (it.hasFocus) sheetHadFocus = true
-                            else if (sheetHadFocus && sheetOpen) sheetOpen = false
                         }
+                    }
+                    .focusGroup(),
+            ) {
+                LiveCategories(
+                    searchQuery = vm.categoryQuery.collectAsStateWithLifecycle().value,
+                    onSearchQueryChange = vm::setCategoryQuery,
+                    onSearchEditingChange = { sheetEditing = it },
+                    entries = sheetEntries,
+                    selectedIndex = catSelected,
+                    groupsHeading = groupsHeading,
+                    sheet = true,
+                    flat = tvHere,
+                    followSelection = false,
+                    listState = catListState,
+                    // v2.6.0: the highlight switches the guide after a short rest; OK picks it and goes to its first row.
+                    onRowFocus = { idx -> highlightCategory(idx) },
+                    onSelect = { idx ->
+                        settle.cancel()
+                        railItems.getOrNull(idx)?.key?.let { applyCategory(it) }
+                        focusedRow = 0
+                        vm.lastFocusedChannelId = null
+                        if (tvHere) navGo(GuideNavEvent.PICKED) else { toGuideRows(); sheetOpen = false }
                     },
-            )
+                    onLongSelect = {},
+                    onNavigateRight = { toGrid(GuideNavEvent.RIGHT) },
+                    focusRequester = sheetFocus,
+                    sheetTitle = stringResource(R.string.sport_guide_categories),
+                    sheetHint = stringResource(R.string.common_nav_live_tv),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .onPreviewKeyEvent { e ->
+                            // ◀ out of the categories: the app's menu (Settings), unless the search is being typed in.
+                            // ▶ goes back to the guide's row. Both on the press, before anything below sees it.
+                            if (e.key == Key.DirectionLeft && e.type == KeyEventType.KeyDown && !sheetEditing) {
+                                toRail()
+                                true
+                            } else if (e.key == Key.DirectionRight && e.type == KeyEventType.KeyDown && !sheetEditing) {
+                                toGrid(GuideNavEvent.RIGHT)
+                                true
+                            } else false
+                        }
+                        .pointerInput(tvHere) {
+                            // Touch (v2.3.2): a swipe left closes the categories, as ▶ does.
+                            var dragged = 0f
+                            detectHorizontalDragGestures(
+                                onDragStart = { dragged = 0f },
+                                onDragEnd = { if (dragged < -sheetSwipeMin) toGrid(GuideNavEvent.SWIPE_LEFT) },
+                            ) { change, dx -> change.consume(); dragged += dx }
+                        }
+                        .onFocusChanged {
+                            if (tvHere) {
+                                // Focus that left the categories without one of the moves above (a tap on the menu)
+                                // is noted after a moment, so a row recycled under focus does not count.
+                                catFocused = it.hasFocus
+                                if (it.hasFocus) { catLeaveJob?.cancel() } else if (nav == GuideNav.CATEGORIES) {
+                                    catLeaveJob?.cancel()
+                                    catLeaveJob = scope.launch {
+                                        delay(250)
+                                        if (!catFocused && !guideHasFocus && nav == GuideNav.CATEGORIES) nav = nav.on(GuideNavEvent.FOCUS_LEFT).nav
+                                    }
+                                }
+                            } else {
+                                // The phone's sheet closes when focus leaves it — not on the "unfocused" report
+                                // every node gets when it attaches.
+                                if (it.hasFocus) sheetHadFocus = true
+                                else if (sheetHadFocus && sheetOpen) { settle.flush()?.let { k -> applyCategory(k) }; sheetOpen = false }
+                            }
+                        },
+                )
+            }
         }
     }
 
@@ -1378,65 +1486,6 @@ private fun GuideRow(
                     reminderStarts = reminderStarts,
                     scrollPx = scrollPx,
                 )
-            }
-        }
-    }
-}
-
-/**
- * The docked categories while focus is elsewhere (v2.5.1): the same glass as the wide list, its heading and
- * the category names one line each, the current one in the accent with its bar, scrolled so it is in view.
- * Not focusable — ◀ on what is on now (or a tap, or a swipe right on it) goes in and widens it ([onOpen]).
- */
-@Composable
-private fun GuideDockSlim(
-    entries: List<tv.own.owntv.features.live.LiveCategoryEntry>,
-    selectedIndex: Int,
-    title: String,
-    onOpen: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val listState = rememberLazyListState()
-    LaunchedEffect(selectedIndex, entries.size) {
-        if (entries.isNotEmpty()) runCatching { listState.animateScrollToItem((selectedIndex - 3).coerceIn(0, entries.size - 1)) }
-    }
-    val open by rememberUpdatedState(onOpen)
-    val swipeMin = with(LocalDensity.current) { GUIDE_SWIPE_MIN.toPx() }
-    val a = stageAccent
-    Column(
-        modifier
-            .stageGlass(tv.own.owntv.ui.theme.StageRadii.Sheet, overContent = true)
-            .pointerInput(Unit) { detectTapGestures(onTap = { open() }) }
-            .pointerInput(Unit) {
-                var dragged = 0f
-                detectHorizontalDragGestures(
-                    onDragStart = { dragged = 0f },
-                    onDragEnd = { if (dragged > swipeMin) open() },
-                ) { change, dx -> change.consume(); dragged += dx }
-            }
-            .padding(horizontal = 10.mpx, vertical = 26.mpx),
-    ) {
-        Text(
-            title, style = stageText(18, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 12.mpx, end = 8.mpx, bottom = 14.mpx),
-        )
-        LazyColumn(state = listState, userScrollEnabled = false, modifier = Modifier.fillMaxWidth().weight(1f)) {
-            itemsIndexed(entries, key = { _, e -> e.item.key.toString() }) { index, entry ->
-                val selected = index == selectedIndex
-                Row(
-                    Modifier.fillMaxWidth().height(44.mpx)
-                        .then(if (selected) Modifier.stageSelectedBar(a.accent, 10.mpx) else Modifier)
-                        .padding(start = 14.mpx, end = 6.mpx),
-                    horizontalArrangement = Arrangement.spacedBy(8.mpx),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    entry.icon?.let { OwnTVIcon(it, if (selected) a.accent else StageColors.Dim, Modifier.size(16.mpx)) }
-                    Text(
-                        entry.label, style = stageText(16, if (selected) 700 else 500),
-                        color = if (selected) a.accent else StageColors.Muted,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
         }
     }

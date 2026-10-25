@@ -397,13 +397,37 @@ internal val edgeScrollSpec = object : androidx.compose.foundation.gestures.Brin
 }
 
 /**
- * The guide's categories (v2.1.9), scrolled like the guide's channels: the highlighted category goes to the
- * top, so the ones still to come are on screen, and the list eases there rather than jumping.
+ * (v2.6.0) How far a list scrolls so the focused item sits in the middle of it, as TiviMate's lists do:
+ * the item's centre at the viewport's centre. [before] and [after] are how far the list can still scroll
+ * back and on, so at its ends the item stays where it is rather than the list running past its first or
+ * last row (a lazy list clamps to these itself; the bounds are here for the tests and for callers that
+ * know them). An item taller than the viewport goes to its start.
  */
-internal val topScrollSpec = object : androidx.compose.foundation.gestures.BringIntoViewSpec {
+internal fun centredScrollDistance(
+    offset: Float,
+    size: Float,
+    containerSize: Float,
+    before: Float = Float.POSITIVE_INFINITY,
+    after: Float = Float.POSITIVE_INFINITY,
+): Float {
+    val want = if (size >= containerSize) offset else offset + size / 2f - containerSize / 2f
+    return want.coerceIn(-before, after)
+}
+
+/** (v2.6.0) How a centring list moves: a short ease, the same for a press and a held key. */
+internal const val CENTRE_SCROLL_MS = 200
+
+/**
+ * The guide's categories and channel rows (v2.6.0): the focused item stays in the middle and the list glides
+ * under it, so what is above and below are both on screen. A held ▲/▼ retargets the one running scroll
+ * (focus-driven bring-into-view) instead of queueing a scroll per press. Replaces v2.1.9's pin to the top.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+internal val centreScrollSpec = object : androidx.compose.foundation.gestures.BringIntoViewSpec {
     override val scrollAnimationSpec: androidx.compose.animation.core.AnimationSpec<Float> =
-        androidx.compose.animation.core.tween(150, easing = androidx.compose.animation.core.FastOutSlowInEasing)
-    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = offset
+        androidx.compose.animation.core.tween(CENTRE_SCROLL_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float =
+        centredScrollDistance(offset, size, containerSize)
 }
 
 /** A category as the Stage sheet / column shows it: the rail item, its parsed name and its count. */
@@ -485,6 +509,11 @@ internal fun LiveCategories(
     onSearchQueryChange: ((String) -> Unit)? = null,
     /** The category search is being typed in (the player's sheet then leaves ◀ to the text cursor). */
     onSearchEditingChange: (Boolean) -> Unit = {},
+    /** (v2.6.0) False: a new [selectedIndex] does not pull focus to it — the guide's categories switch the
+     *  guide as the highlight moves, so the selection trails the focus and must not pull it back. */
+    followSelection: Boolean = true,
+    /** (v2.6.0) The sheet drawn flat, without the glass's shadow and backdrop: a panel that slides. */
+    flat: Boolean = false,
 ) {
     var localQuery by remember { mutableStateOf("") }
     val query = searchQuery ?: localQuery
@@ -500,7 +529,7 @@ internal fun LiveCategories(
     var hasFocus by remember { mutableStateOf(false) }
     LaunchedEffect(selectedIndex) {
         val pos = visible.indexOf(selectedIndex)
-        if (!hasFocus || pos < 0) return@LaunchedEffect
+        if (!followSelection || !hasFocus || pos < 0) return@LaunchedEffect
         runCatching { listState.scrollToItem(pos + 1) } // +1: the search field is item 0
         withFrameNanos { }
         runCatching { rowFocusers[pos].requestFocus() }
@@ -535,7 +564,13 @@ internal fun LiveCategories(
     val a = stageAccent
     Column(
         modifier
-            .then(if (sheet) Modifier.stageGlass(StageRadii.Sheet, overContent = true).padding(horizontal = 16.mpx, vertical = 26.mpx) else Modifier),
+            .then(
+                when {
+                    !sheet -> Modifier
+                    flat -> Modifier.background(tv.own.owntv.ui.theme.LocalStagePalette.current.glassOff, RoundedCornerShape(StageRadii.Sheet)).padding(horizontal = 16.mpx, vertical = 26.mpx)
+                    else -> Modifier.stageGlass(StageRadii.Sheet, overContent = true).padding(horizontal = 16.mpx, vertical = 26.mpx)
+                },
+            ),
     ) {
         if (sheet) {
             Row(
@@ -547,8 +582,8 @@ internal fun LiveCategories(
                 Text(sheetHint, style = stageText(17, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 16.mpx))
             }
         }
-        // Edge-only scrolling, as the channel list (no double step on ▼).
-        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides if (sheet) topScrollSpec else edgeScrollSpec) {
+        // The sheet keeps the highlight in the middle (v2.6.0); the column scrolls only at its edges.
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides if (sheet) centreScrollSpec else edgeScrollSpec) {
         LazyColumn(
             state = listState,
             modifier = Modifier
