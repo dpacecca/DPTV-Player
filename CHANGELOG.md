@@ -64,6 +64,30 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.6.0
+
+### ✨ New features
+- **🎧 Audio delay for each output: HDMI, soundbar, Bluetooth, speakers, headphones**
+- **🎚️ FFmpeg audio for ExoPlayer, as a switch (off by default)**
+- **🌗 Prefer SDR when a stream offers both (replaces the HDR switch)**
+- **💡 A hint to try MPV when a live channel keeps dropping frames**
+
+### 🐛 Fixes
+- **Live H.264 channels no longer freeze or drop frames on some TVs (#284)**
+- **Auto frame rate tells 59.94, 29.97 and 23.976 from 60, 30 and 24 (#292)**
+- **Auto frame rate goes back to the normal mode when a channel has no matching one**
+- **Each playlist keeps its own category order (#297)**
+- **A re-sync with many custom-category items finishes instead of locking the database (#288)**
+- **Full frame rate on mpv for H.264 above 30 fps, and after zapping from a 25 fps channel**
+- **H.264 catch-up stays on hardware decoding on mpv**
+- **A saved channel plays again after the TV wakes from standby**
+- **TV Guide search: typing goes into the search field**
+- **"Learned stream fixes" removed: catch-up no longer stays on software decoding for two weeks**
+- **No sound or picture left playing under a live error screen**
+- **Switching channels on mpv no longer holds up the screen**
+- **A live channel ExoPlayer can only show as a slideshow moves to mpv by itself**
+- **mpv engine 2026.10.4**
+
 ## v2.5.2
 
 ### ✨ New features
