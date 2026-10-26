@@ -12,8 +12,13 @@
 ## core-1.0.72 — 2026-10-25
 
 **Database v49 (unchanged) · Breaking (PlaybackStartup.start takes no archive store; ArchiveDecodeStore removed; HDR setting replaced by Prefer SDR)**
-
 Ports upstream OwnTV Core 1.0.69, without the Sports Hub.
+## core-1.0.70 — unreleased
+**Database v50**
+### 🐛 Fixes
+- **TV guide sync up to 14× faster: adding a guide takes minutes, not a quarter of an hour**
+- **Guide re-sync looks up what it already has in one read**
+## core-1.0.69 — 2026-10-21
 
 ### ✨ New features
 

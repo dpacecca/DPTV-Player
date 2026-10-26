@@ -658,8 +658,8 @@
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_epg_channels_normName` ON `epg_channels` (`normName`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_epg_channels_sourceId` ON `epg_channels` (`sourceId`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_epg_programmes_epgChannelId_startMs` ON `epg_programmes` (`epgChannelId`, `startMs`)
-3	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_epg_programmes_sourceId_epgChannelId` ON `epg_programmes` (`sourceId`, `epgChannelId`)
-2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_epg_programmes_sourceId` ON `epg_programmes` (`sourceId`)
+2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_epg_programmes_sourceId_epgChannelId` ON `epg_programmes` (`sourceId`, `epgChannelId`)
+1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_epg_programmes_sourceId` ON `epg_programmes` (`sourceId`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_epg_programmes_startMs_stopMs` ON `epg_programmes` (`startMs`, `stopMs`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_epg_programmes_stopMs` ON `epg_programmes` (`stopMs`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_metadata_cache_tmdbId` ON `metadata_cache` (`tmdbId`)
@@ -750,6 +750,8 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE VIRTUAL TABLE IF NOT EXISTS `movies_fts` USING FTS4(`name` TEXT NOT NULL, content=`movies`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE VIRTUAL TABLE IF NOT EXISTS `series_fts` USING FTS4(`name` TEXT NOT NULL, content=`series`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	DELETE FROM `epg_programmes`
+1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	DROP INDEX IF EXISTS `index_epg_programmes_sourceId_epgChannelId`
+1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	DROP INDEX IF EXISTS `index_epg_programmes_sourceId`
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	DROP TABLE IF EXISTS `epg_channels`
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	DROP TABLE IF EXISTS `epg_programmes`
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	FOREIGN KEY(`cacheId`) REFERENCES `subtitle_cache`(`id`) ON DELETE CASCADE
@@ -1629,12 +1631,12 @@
 26	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	sourceId
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	titleSignature
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	0
-4	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	epgChannelId
+3	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	epgChannelId
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	epg_channels
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	epg_programmes
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	index_epg_programmes_natural_key
 1	log	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	normName
-5	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	sourceId
+3	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	sourceId
 3	log	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	startMs
 2	log	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	stopMs
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/FtsEntities.kt	channels_fts
@@ -3129,6 +3131,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	EPG channel filter sourceId=$storeId ids=${needed?.size ?: 0} active=${needed != null}
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	EPG channel prune sourceId=$sourceId stale=${staleIds.size} ms=${SystemClock.elapsedRealtime() - startedAt}
 2	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	EPG channels store sourceId=$storeId rows=${channels.size} ms=$channelsMs
+1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	EPG hash preload sourceId=$storeId ms=${SystemClock.elapsedRealtime() - preloadStartedAt}
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	EPG hash tracker cap ($maxEntries) reached for sourceId=$sourceId — further channels sync write-through
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	EPG incremental sync sourceId=$storeId inserted=$inserted updated=$updated skipped=$skipped removedProgrammes=$removedProgrammes removedChannels=$removedChannels
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	EPG portal sync storeId=$storeId portalSourceId=$portalSourceId method=${outcome.method}
@@ -3138,9 +3141,12 @@
 28	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	EpgRepository
 31	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	EpgRepository
 1	protocol	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	Guide channels match no playlist channel
+29	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	EpgRepository
 1	protocol	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	Guide has no programmes in the guide window
 1	room-schema	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	INSERT OR IGNORE INTO `epg_keep_history` VALUES (?)
+1	sql	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	INSERT OR REPLACE INTO `epg_programmes` (`id`,`sourceId`,`epgChannelId`,`startMs`,`stopMs`,`title`,`description`,
 1	protocol	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	Portal guide source $portalSourceId no longer exists
+1	sql	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	SELECT epgChannelId, startMs, id, contentHash FROM epg_programmes WHERE sourceId = ? ORDER BY epgChannelId, startMs
 2	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	Unable to analyze EPG tables
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	Unable to create EPG guide index
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	Unable to prune beyond the guide horizon
@@ -3148,6 +3154,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	Unable to read catch-up channels — keeping all history this run
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	Unable to read channel EPG ids — using unfiltered guide sync
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	Unable to read custom EPG matches — using unfiltered guide sync
+1	sql	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	`contentHash`,`categories`,`year`,`rating`,`lengthMin`,`episode`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?)
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	accepted=$processedCount written=$writtenCount ms=${SystemClock.elapsedRealtime() - startedAt}
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	analyzeMs=${totalMs - (parsedAt - startedAt) - pruneMs} totalMs=$totalMs
 1	log	core/src/main/java/tv/own/owntv/core/repository/EpgRepository.kt	archive guide channelId=${channel.id} listed=${listings.size} kept=${keep.size} changed=$changed
