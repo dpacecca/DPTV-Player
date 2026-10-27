@@ -549,6 +549,7 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/BulkInsertHelper.kt	SELECT name, sql FROM sqlite_master WHERE type='index' AND tbl_name='$table' AND sql IS NOT NULL
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/BulkInsertHelper.kt	SELECT sql FROM sqlite_master WHERE type='trigger' AND name='$triggerName'
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/BulkInsertHelper.kt	UNIQUE
+1	sql	core/src/main/java/tv/own/owntv/core/database/BulkInsertHelper.kt	UPDATE `channels` SET `streamUrl` = ? WHERE `sourceId` = ? AND `remoteId` = ? AND `streamUrl` != ?
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/BulkInsertHelper.kt	Unknown FTS table: $ftsTable
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/BulkInsertHelper.kt	Unknown table: $table
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/BulkInsertHelper.kt	categories
@@ -3325,7 +3326,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/stalker/StalkerAuthManager.kt	status
 1	log	core/src/main/java/tv/own/owntv/core/stalker/StalkerAuthManager.kt	watchdog=${profile["watchdog_timeout"] ?: "?"} ms=${SystemClock.elapsedRealtime() - startedAt}
 2	technical	core/src/main/java/tv/own/owntv/core/stalker/StalkerAuthManager.kt	watchdog_timeout
-5	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	\0
+6	empty	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	\0
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	$1=***
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	$apiBase?type=${enc(type)}&action=create_link&cmd=${enc(cmd)}$seriesParam&forced_storage=0&disable_ad=0&JsHttpRequest=1-xml
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	$apiBase?type=account_info&action=get_main_info&JsHttpRequest=1-xml
@@ -3353,6 +3354,7 @@
 1	url	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	&sn=${URLEncoder.encode(it, "UTF-8")}
 1	url	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	&stb_type=${URLEncoder.encode(it, "UTF-8")}
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	(?i)(token|password|pass)=[^&]*
+1	regex	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	(?i)[?&]play_token=[^&\\s]*(?=&|\\s|$)
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	(\\d+)\\s*$
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	(\\d{4})-(\\d{2})-(\\d{2})(?:[ T](\\d{2}):(\\d{2})(?::(\\d{2}))?)?
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	*
@@ -3702,7 +3704,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	$label categories sourceId=${s.id} count=${cats.size}
 1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	$label delta-skip sourceId=${s.id} unchangedCategories=${skippedCatDbIds.size}
 1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	$label fetch done sourceId=${s.id} pages=${pagesFetched.get()} failures=${pageFailures.get()} emitted=$emitted fetchMs=${SystemClock.elapsedRealtime() - fetchStart}
-1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	$label fieldDiff sourceId=$sourceId remoteId=${c.remoteId} hash=${c.computeContentHash()}
+1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	$label fieldDiff sourceId=$sourceId remoteId=${c.remoteId} hash=${stalkerChannelHash(c)}
 1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	$label genre ${gi + 1}/${list.size} id=${genre.id} '${genre.title}' total=${first.totalItems} maxPer=$maxPer pages=$pages
 1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	$label genre=${genre.id} page1 failed (${e.message})
 1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	$label genre=${genre.id} page=$p failed (${e.message})
@@ -3744,7 +3746,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	portal XMLTV probe failed sourceId=${s.id}: ${it.message}
 4	room-schema	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	series
 2	room-schema	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	series_fts
-1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	streamUrl=${c.streamUrl.hashCode()} epgChannelId=${c.epgChannelId.hashCode()}
+1	log	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	streamUrl=${StalkerClient.withoutPlayToken(c.streamUrl).hashCode()} epgChannelId=${c.epgChannelId.hashCode()}
 1	technical	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	tv_guide_url
 1	technical	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	unknown
 1	technical	core/src/main/java/tv/own/owntv/core/sync/StalkerSyncer.kt	xmltv_url

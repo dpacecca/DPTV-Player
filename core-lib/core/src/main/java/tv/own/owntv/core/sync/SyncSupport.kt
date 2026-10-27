@@ -593,7 +593,7 @@ internal class SyncSupport(
  * implementation serves channels, movies and series (C5) — any fix to the hash-diff/prune logic now
  * lands once.
  */
-internal class ContentAdapter<T>(
+internal data class ContentAdapter<T>(
     val remoteIdOf: (T) -> String?,
     val hashOf: (T) -> Int,
     /** Provider position, compared against the stored one outside the hash — see [SyncSupport.upsertStable]. */
