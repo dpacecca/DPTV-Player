@@ -30,7 +30,8 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
     private val appContext = context.applicationContext
     private val venueSeparator: String by lazy { appContext.getString(R.string.sport_venue_separator) }
 
-    suspend fun scoreboard(league: SportLeague, date: LocalDate? = null): Scoreboard =
+    /** [month] (v2.6.2, the calendar): the whole month in one answer, ESPN's own `dates=YYYYMM`. */
+    suspend fun scoreboard(league: SportLeague, date: LocalDate? = null, month: java.time.YearMonth? = null): Scoreboard =
         withContext(Dispatchers.IO) {
             // Cricket has no scoreboard on the site API (404 for every league): see CricketHeader.
             if (league.espnSport == CricketSport) return@withContext cricketBoard(league)
@@ -44,6 +45,10 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
                     append(DatesQuery)
                     append(date.format(DateFormat))
                     append(LimitQuery)
+                } else if (month != null) {
+                    append(DatesQuery)
+                    append(month.format(MonthFormat))
+                    append(MonthLimitQuery)
                 }
             }
             val root = get(url)
@@ -474,6 +479,7 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
         private const val TeamsPath = "/teams"
         private const val DatesQuery = "?dates="
         private const val LimitQuery = "&limit=100"
+        private const val MonthLimitQuery = "&limit=1000"
         private const val UserAgentHeader = "User-Agent"
         private const val UserAgentValue = "Mozilla/5.0 (Linux; Android 11; AFTTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
         private const val AcceptHeader = "Accept"
@@ -482,6 +488,7 @@ class EspnApi(private val client: OkHttpClient, context: Context) {
         private const val EspnReferer = "https://www.espn.com/"
         private const val TimePattern = "HH:mm"
         private val DateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ZoneOffset.UTC)
+        private val MonthFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMM")
 
         private const val EventsKey = "events"
         private const val SportsKey = "sports"

@@ -191,6 +191,21 @@
     <string name="sport_latest_results">Latest results</string>
     <string name="sport_hint_match_page">Match page</string>
     <string name="sport_hint_preview_play">Preview · again: full screen</string>
+    <!-- v2.6.2: the Sport calendar and recording a game. -->
+    <string name="sport_calendar">Calendar</string>
+    <string name="sport_calendar_subtitle">Your followed leagues, a month at a time</string>
+    <string name="sport_calendar_previous_month">Previous month</string>
+    <string name="sport_calendar_next_month">Next month</string>
+    <string name="sport_calendar_no_games">No games in your leagues on this day</string>
+    <string name="sport_calendar_unreachable">Not reachable right now: %1$s</string>
+    <string name="sport_calendar_choose_day">Day\'s games</string>
+    <string name="sport_calendar_back_to_dates">Back to the dates</string>
+    <string name="sport_record">Record</string>
+    <string name="sport_record_stop">Don\'t record</string>
+    <string name="sport_record_waiting">Will record once the guide has it</string>
+    <string name="sport_record_scheduled">Recording set · %1$s</string>
+    <string name="sport_record_no_channel">No channel found to record</string>
+    <string name="sport_record_try_again">Try again</string>
     <string name="sport_scores_credit">Scores: ESPN, SofaScore, TheSportsDB</string>
     <string name="sport_empty_nothing_followed">No sports or leagues chosen yet</string>
     <string name="sport_empty_choose_in">Choose them in Settings → App → Sport → Sports and leagues.</string>

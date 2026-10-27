@@ -91,6 +91,7 @@ internal fun SportsMatchScreen(
     // Back ends the preview and returns to the hub; off while the player is full screen over the page.
     androidx.activity.compose.BackHandler(enabled = active) { liveVm.stopPreview(); onBack() }
     val matchesState by vm.matches.collectAsStateWithLifecycle()
+    val recordPlans by vm.recordPlans.collectAsStateWithLifecycle()
     val standings by vm.standings.collectAsStateWithLifecycle()
     val followedTeams by vm.followedTeams.collectAsStateWithLifecycle()
     val followedPlayers by vm.followedPlayers.collectAsStateWithLifecycle()
@@ -165,6 +166,17 @@ internal fun SportsMatchScreen(
                                 )
                             }
                             Spacer(Modifier.weight(1f))
+                            // (v2.6.2) Record: now when its channel is known, else once the guide carries it.
+                            if (fixture.state != FixtureState.FINISHED) {
+                                val plan = recordPlans[fixture.id]
+                                val label = when (plan?.status) {
+                                    null -> stringResource(R.string.sport_record)
+                                    RecordPlan.Status.WAITING -> stringResource(R.string.sport_record_waiting)
+                                    RecordPlan.Status.SCHEDULED -> stringResource(R.string.sport_record_scheduled, plan.channelName.orEmpty())
+                                    RecordPlan.Status.NO_CHANNEL -> stringResource(R.string.sport_record_try_again)
+                                }
+                                SportsChip(label, on = plan != null && plan.status != RecordPlan.Status.NO_CHANNEL, icon = OwnTVIcon.LIVE_DOT) { vm.toggleRecord(fixture) }
+                            }
                             FollowChips(fixture, followedTeams, followedPlayers, vm)
                         }
                     }

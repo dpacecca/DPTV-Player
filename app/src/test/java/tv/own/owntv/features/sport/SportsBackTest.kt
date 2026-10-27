@@ -35,4 +35,13 @@ class SportsBackTest {
         assertEquals("league:nfl", hubLeagueKey("nfl"))
         assertNotEquals(HubSettingsKey, hubLeagueKey(HubSettingsKey))
     }
+
+    @Test
+    fun theCalendarShowsUnderAMatchOpenedFromIt() {
+        assertEquals(SportsPage.CALENDAR, sportsPage(fixtureOpen = false, leagueOpen = false, calendarOpen = true))
+        assertEquals(SportsPage.MATCH, sportsPage(fixtureOpen = true, leagueOpen = false, calendarOpen = true))
+        assertEquals(SportsPage.CALENDAR, sportsBack(SportsPage.MATCH, matchFromLeague = false, leagueFromMatch = false, matchFromCalendar = true))
+        assertEquals(SportsPage.HUB, sportsBack(SportsPage.CALENDAR, matchFromLeague = false, leagueFromMatch = false))
+        assertNotEquals(HubCalendarKey, HubSettingsKey)
+    }
 }

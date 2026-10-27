@@ -39,6 +39,8 @@ class SportsViewModel(
     private val matcher: SportsMatcher,
     private val companion: CompanionController,
     channelSources: SportChannelSources,
+    private val calendarRepo: SportsCalendarRepository,
+    private val app: android.app.Application,
 ) : ViewModel() {
 
     /** Who is showing live Sport data right now; the live refresh runs only while someone is. */
@@ -446,8 +448,119 @@ class SportsViewModel(
         }
     }
 
+    // --- The calendar (v2.6.2) ---------------------------------------------------------------------------
+
+    sealed interface CalendarState {
+        data object Loading : CalendarState
+        /** The month's games ([fixtures]); [failed] leagues could not be reached (what was saved shows). */
+        data class Content(val month: java.time.YearMonth, val fixtures: List<Fixture>, val failed: Set<String>) : CalendarState
+    }
+
+    private val _calendarOpen = MutableStateFlow(false)
+    val calendarOpen: StateFlow<Boolean> = _calendarOpen.asStateFlow()
+
+    private val _calendarMonth = MutableStateFlow(java.time.YearMonth.now())
+    val calendarMonth: StateFlow<java.time.YearMonth> = _calendarMonth.asStateFlow()
+
+    /** The day the calendar is on: its games show on the right. Kept here so a match page round trip keeps it. */
+    private val _calendarDay = MutableStateFlow(java.time.LocalDate.now())
+    val calendarDay: StateFlow<java.time.LocalDate> = _calendarDay.asStateFlow()
+
+    /** True while focus is in the day's games (OK on a day), false while browsing the dates. */
+    var calendarInList: Boolean = false
+
+    /** The game a match page was opened from in the calendar, for focus to come back to. */
+    var calendarReturnId: String? = null
+
+    private val _calendar = MutableStateFlow<CalendarState>(CalendarState.Loading)
+
+    /** The month's games, with today's and tomorrow's laid over from the live boards (fresher scores). */
+    val calendar: StateFlow<CalendarState> = combine(_calendar, favourites) { state, live ->
+        if (state !is CalendarState.Content) return@combine state
+        val zone = java.time.ZoneId.systemDefault()
+        val inMonth = live.filter { java.time.YearMonth.from(java.time.Instant.ofEpochMilli(it.dateMs).atZone(zone)) == state.month }
+        val fresh = inMonth.associateBy { it.id }
+        state.copy(fixtures = state.fixtures.map { fresh[it.id] ?: it } + inMonth.filter { f -> state.fixtures.none { it.id == f.id } && f.leagueId in activeLeagues.value })
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CalendarState.Loading)
+
+    private var calendarJob: kotlinx.coroutines.Job? = null
+
+    fun openCalendar(open: Boolean) {
+        _calendarOpen.value = open
+        if (open) {
+            calendarInList = false
+            calendarReturnId = null
+            val today = java.time.LocalDate.now()
+            _calendarMonth.value = java.time.YearMonth.from(today)
+            _calendarDay.value = today
+            loadCalendar()
+        } else {
+            calendarJob?.cancel()
+        }
+    }
+
+    /** Show [month] (◀ ▶, or moving past its first or last day), focus on [day] or its entry day. */
+    fun showCalendarMonth(month: java.time.YearMonth, day: java.time.LocalDate? = null) {
+        _calendarMonth.value = month
+        _calendarDay.value = day ?: SportsCalendar.entryDay(month, java.time.LocalDate.now())
+        loadCalendar()
+    }
+
+    fun setCalendarDay(day: java.time.LocalDate) {
+        _calendarDay.value = day
+    }
+
+    private fun loadCalendar(force: Boolean = false) {
+        val month = _calendarMonth.value
+        calendarJob?.cancel()
+        _calendar.value = CalendarState.Loading
+        calendarJob = viewModelScope.launch {
+            val leagues = SportsLeagues.filter { it.id in activeLeagues.value }
+            val result = calendarRepo.month(leagues, month, force)
+            if (_calendarMonth.value == month) _calendar.value = CalendarState.Content(month, result.fixtures, result.failed)
+        }
+    }
+
+    // --- Recording a game (v2.6.2) ------------------------------------------------------------------------
+
+    /** The games to record, by fixture id: waiting for their channel, scheduled, or not found. */
+    val recordPlans: StateFlow<Map<String, RecordPlan>> = prefs.recordPlans
+        .map { plans -> plans.associateBy { it.fixtureId } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    /**
+     * Record [fixture] (its channel found now or once the guide has it), drop a wish still waiting, or try
+     * a not-found one again. A scheduled one is an ordinary recording by then: Recordings changes it.
+     */
+    fun toggleRecord(fixture: Fixture) {
+        viewModelScope.launch {
+            val plan = recordPlans.value[fixture.id]
+            if (plan?.status == RecordPlan.Status.SCHEDULED) return@launch
+            if (plan?.status == RecordPlan.Status.WAITING) {
+                prefs.removeRecordPlan(fixture.id)
+                return@launch
+            }
+            val dash = app.getString(tv.own.owntv.R.string.sport_pair_dash)
+            prefs.putRecordPlan(RecordPlan(fixture.id, fixture.leagueId, fixture.dateMs, recordTitle(fixture, dash)))
+            runCatching { SportRecordingWorker.runNow(app) }
+        }
+    }
+
+    private fun recordTitle(f: Fixture, dash: String): String {
+        val home = f.home
+        val away = f.away
+        return when {
+            home != null && away != null -> home.name.ifBlank { home.abbreviation } + dash + away.name.ifBlank { away.abbreviation }
+            f.title != null -> f.title
+            f.entries.size >= 2 -> f.entries.take(2).joinToString(dash) { it.name }
+            else -> app.getString(sportsLeagueById(f.leagueId)?.labelRes ?: tv.own.owntv.R.string.sport_title)
+        }
+    }
+
     /** Fetch every wanted board again now (the hub's ⟳ chip). */
     fun refreshAll() {
+        calendarRepo.markStale()
+        if (_calendarOpen.value) loadCalendar(force = true)
         val want = loadingLeagues.value
         viewModelScope.launch {
             supervisorScope {

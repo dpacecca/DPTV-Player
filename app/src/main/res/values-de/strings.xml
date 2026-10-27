@@ -191,6 +191,21 @@
     <string name="sport_latest_results">Letzte Ergebnisse</string>
     <string name="sport_hint_match_page">Spielseite</string>
     <string name="sport_hint_preview_play">Vorschau · nochmal: Vollbild</string>
+    <!-- v2.6.2: the Sport calendar and recording a game. -->
+    <string name="sport_calendar">Kalender</string>
+    <string name="sport_calendar_subtitle">Deine Ligen, Monat für Monat</string>
+    <string name="sport_calendar_previous_month">Voriger Monat</string>
+    <string name="sport_calendar_next_month">Nächster Monat</string>
+    <string name="sport_calendar_no_games">An diesem Tag keine Spiele in deinen Ligen</string>
+    <string name="sport_calendar_unreachable">Gerade nicht erreichbar: %1$s</string>
+    <string name="sport_calendar_choose_day">Spiele des Tages</string>
+    <string name="sport_calendar_back_to_dates">Zurück zu den Tagen</string>
+    <string name="sport_record">Aufnehmen</string>
+    <string name="sport_record_stop">Nicht aufnehmen</string>
+    <string name="sport_record_waiting">Wird aufgenommen, sobald der Guide es hat</string>
+    <string name="sport_record_scheduled">Aufnahme geplant · %1$s</string>
+    <string name="sport_record_no_channel">Kein Sender zum Aufnehmen gefunden</string>
+    <string name="sport_record_try_again">Erneut versuchen</string>
     <string name="sport_scores_credit">Ergebnisse: ESPN, SofaScore, TheSportsDB</string>
     <string name="sport_empty_nothing_followed">Noch keine Sportarten oder Ligen ausgewählt</string>
     <string name="sport_empty_choose_in">Wähle sie unter Einstellungen → App → Sport → Sportarten und Ligen aus.</string>

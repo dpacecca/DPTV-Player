@@ -30,6 +30,15 @@ class SportsApi(
         )
     }
 
+    /**
+     * One month of a league's games (v2.6.2, the calendar). ESPN answers a month at once; cricket (no
+     * month feed) and the SofaScore leagues give what their board holds, which the calendar files by day.
+     */
+    suspend fun month(league: SportLeague, month: java.time.YearMonth): EspnApi.Scoreboard = when {
+        league.source == LeagueSource.ESPN && league.espnSport != CricketSport -> espn.scoreboard(league, month = month)
+        else -> scoreboard(league)
+    }
+
     /** Tables come from SofaScore only (TheSportsDB's free key has none): none while it rests. */
     suspend fun standings(league: SportLeague): List<LeagueTable> = when (league.source) {
         LeagueSource.ESPN -> espn.standings(league)
@@ -57,6 +66,7 @@ class SportsApi(
     }
 
     private companion object {
+        const val CricketSport = "cricket"
         const val SofaScoreFailed = "sofascore standings failed "
         const val Colon = ": "
 
