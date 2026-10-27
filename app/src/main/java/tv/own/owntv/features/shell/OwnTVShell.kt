@@ -865,7 +865,7 @@ fun OwnTVShell(
             }
             RemoteShortcutAction.OPEN_PLAYLIST_SWITCHER -> {
                 if (playerMode == PlayerMode.FULLSCREEN) dockPlayer()
-                if (playlists.isNotEmpty()) showPlaylistPicker = true
+                if (playlists.size > 1) showPlaylistPicker = true
             }
             RemoteShortcutAction.CONTINUE_LAST_WATCHED -> continueLastWatched()
             RemoteShortcutAction.FOCUS_NOW_PLAYING -> enterNowPlaying()
@@ -1603,8 +1603,7 @@ fun OwnTVShell(
                 },
                 audioBar = audioBarContent,
                 playlistLabel = playlistLabel,
-                // One playlist too: the menu also holds Resync now.
-                playlistInteractive = playlists.isNotEmpty(),
+                playlistInteractive = playlists.size > 1,
                 onPlaylistClick = { showPlaylistPicker = true },
                 // Out of reach from deep in a list, as the old top bar was: from the rail or on Home only.
                 pillsFocusable = focusedLayer == ShellLayer.SIDEBAR || clusterFocused || selectedSection == MainSection.HOME,

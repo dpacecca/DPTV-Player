@@ -3135,6 +3135,8 @@ private fun stageRowExtras(
     onSetFont: (FontCustomization) -> Unit,
     playlists: List<tv.own.owntv.core.database.entity.SourceEntity>,
 ): Map<String, RowExtra> {
+    // (OwnTV) Null until the playlists have loaded, so the row does not say "0 playlists" meanwhile.
+    val playlistsKnown by vm.loadedSources.collectAsStateWithLifecycle()
     val glass by vm.glassConfig.collectAsStateWithLifecycle()
     val animation by vm.animationLevel.collectAsStateWithLifecycle()
     val weatherOn by vm.weatherEnabled.collectAsStateWithLifecycle()
@@ -3167,7 +3169,7 @@ private fun stageRowExtras(
     val languages = tv.own.owntv.core.i18n.SupportedLocales.all.count { it.packaged }
     return mapOf(
         "tab_SOURCES" to RowExtra(
-            SettingValue.Opens(pluralStringResource(R.plurals.more_playlist_count, playlists.size, playlists.size)),
+            SettingValue.Opens(playlistsKnown?.let { pluralStringResource(R.plurals.more_playlist_count, it.size, it.size) }),
             extra = { tv.own.owntv.features.settings.PlaylistSyncList(playlists) },
         ),
         "theme" to RowExtra(
