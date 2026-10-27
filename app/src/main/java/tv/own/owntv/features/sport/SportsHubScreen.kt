@@ -89,6 +89,8 @@ internal fun SportsHubScreen(
     /** A league page, and (v2.6.1) the key of the control it was opened from, for Back. */
     onOpenLeague: (String, String) -> Unit,
     onOpenSettings: () -> Unit,
+    /** (v2.6.2) The calendar page. */
+    onOpenCalendar: () -> Unit,
     onChildFocused: () -> Unit,
     onEntryHook: (((() -> Boolean)?) -> Unit)?,
     contentStart: Dp,
@@ -182,6 +184,8 @@ internal fun SportsHubScreen(
                     if (!showAllSports && chipSports.size > SportChips) {
                         item { SportsChip("+" + (chipSports.size - SportChips), false, dim = true) { showAllSports = true } }
                     }
+                    // (v2.6.2) The month ahead, a day at a time.
+                    item { SportsChip(stringResource(R.string.sport_calendar), false, Modifier.focusRequester(focusOf(HubCalendarKey)), icon = OwnTVIcon.EPG, onClick = onOpenCalendar) }
                     // ⟳ fetches every board again; ⚙ is Settings › Sport (the old in-Sport dialog).
                     item { SportsChip("", false, icon = OwnTVIcon.REFRESH) { vm.refreshAll() } }
                     item { SportsChip(stringResource(R.string.sport_settings), false, Modifier.focusRequester(focusOf(HubSettingsKey)), icon = OwnTVIcon.SETTINGS, onClick = onOpenSettings) }
@@ -576,6 +580,9 @@ private const val ListSep = ","
 
 /** (v2.6.1) The hub's ⚙ chip, as a key for focus to come back to from Settings › Sport. */
 internal const val HubSettingsKey = "settings"
+
+/** (v2.6.2) The hub's calendar chip, as a key for focus to come back to from the calendar. */
+internal const val HubCalendarKey = "calendar"
 
 /** (v2.6.1) A league chip's key, for focus to come back to from its page. */
 internal fun hubLeagueKey(id: String): String = "league:$id"

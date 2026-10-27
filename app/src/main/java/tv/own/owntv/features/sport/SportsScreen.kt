@@ -71,6 +71,7 @@ fun SportsScreen(
     val liveVm: LiveViewModel = koinViewModel()
     val fixture by vm.selectedFixture.collectAsStateWithLifecycle()
     val leagueId by vm.openLeagueId.collectAsStateWithLifecycle()
+    val calendarOpen by vm.calendarOpen.collectAsStateWithLifecycle()
     val matchesState by vm.matches.collectAsStateWithLifecycle()
     val preferredLanguages by vm.preferredLanguages.collectAsStateWithLifecycle()
     val languageAsked by vm.languageAsked.collectAsStateWithLifecycle()
@@ -119,7 +120,7 @@ fun SportsScreen(
 
     val current = fixture
     val openLeague = leagueId
-    val page = sportsPage(fixtureOpen = current != null, leagueOpen = openLeague != null)
+    val page = sportsPage(fixtureOpen = current != null, leagueOpen = openLeague != null, calendarOpen = calendarOpen)
     // (v2.6.1) The shell hides the menu over a page and leaves its Back to it (see [railBackAsksToExit]).
     LaunchedEffect(page) { onPageOpen(page != SportsPage.HUB) }
     DisposableEffect(Unit) { onDispose { onPageOpen(false) } }
@@ -155,15 +156,30 @@ fun SportsScreen(
                 onBack = {
                     val from = matchFromLeague
                     matchFromLeague = null
-                    if (sportsBack(SportsPage.MATCH, matchFromLeague = from != null, leagueFromMatch = false) == SportsPage.LEAGUE && from != null) {
+                    val back = sportsBack(SportsPage.MATCH, matchFromLeague = from != null, leagueFromMatch = false, matchFromCalendar = calendarOpen)
+                    if (back == SportsPage.LEAGUE && from != null) {
                         // Back to the league, on the game's row.
                         leagueRestore = current.id
                         vm.selectFixture(null)
                         vm.openLeague(from)
+                    } else if (back == SportsPage.CALENDAR) {
+                        // (v2.6.2) Back to the calendar, on the game's row (the calendar is still open under it).
+                        vm.calendarInList = true
+                        vm.selectFixture(null)
                     } else {
                         vm.selectFixture(null)
                         toHub()
                     }
+                },
+                contentStart = contentStart,
+                active = pageActive,
+            )
+            calendarOpen -> SportsCalendarScreen(
+                vm = vm,
+                onOpenMatch = { f -> leagueFromMatch = null; matchFromLeague = null; vm.openFixture(f) },
+                onBack = {
+                    vm.openCalendar(false)
+                    toHub()
                 },
                 contentStart = contentStart,
                 active = pageActive,
@@ -174,6 +190,7 @@ fun SportsScreen(
                     onOpenMatch = { f -> vm.hubReturnKey = f.id; leagueFromMatch = null; matchFromLeague = null; vm.openFixture(f) },
                     onOpenLeague = { id, fromKey -> vm.hubReturnKey = fromKey; leagueFromMatch = null; vm.openLeague(id) },
                     onOpenSettings = { vm.hubReturnKey = HubSettingsKey; onOpenSettings() },
+                    onOpenCalendar = { vm.hubReturnKey = HubCalendarKey; leagueFromMatch = null; matchFromLeague = null; vm.openCalendar(true) },
                     onChildFocused = onChildFocused,
                     onEntryHook = onEntryHook,
                     contentStart = contentStart,
@@ -195,12 +212,16 @@ fun SportsScreen(
     }
 }
 
-/** (v2.6.1) Which Sport page is on screen; a league page shows over a match it was opened from. */
-internal enum class SportsPage { HUB, MATCH, LEAGUE }
+/**
+ * (v2.6.1) Which Sport page is on screen; a league page shows over a match it was opened from, and
+ * (v2.6.2) a match over the calendar it was opened from.
+ */
+internal enum class SportsPage { HUB, MATCH, LEAGUE, CALENDAR }
 
-internal fun sportsPage(fixtureOpen: Boolean, leagueOpen: Boolean): SportsPage = when {
+internal fun sportsPage(fixtureOpen: Boolean, leagueOpen: Boolean, calendarOpen: Boolean = false): SportsPage = when {
     leagueOpen -> SportsPage.LEAGUE
     fixtureOpen -> SportsPage.MATCH
+    calendarOpen -> SportsPage.CALENDAR
     else -> SportsPage.HUB
 }
 
@@ -208,10 +229,14 @@ internal fun sportsPage(fixtureOpen: Boolean, leagueOpen: Boolean): SportsPage =
  * (v2.6.1) Where Back from [page] goes: a match opened from a league goes back to that league, a league
  * opened from a match back to that match, anything else to the hub (on the card it was opened from).
  */
-internal fun sportsBack(page: SportsPage, matchFromLeague: Boolean, leagueFromMatch: Boolean): SportsPage = when (page) {
-    SportsPage.MATCH -> if (matchFromLeague) SportsPage.LEAGUE else SportsPage.HUB
+internal fun sportsBack(page: SportsPage, matchFromLeague: Boolean, leagueFromMatch: Boolean, matchFromCalendar: Boolean = false): SportsPage = when (page) {
+    SportsPage.MATCH -> when {
+        matchFromLeague -> SportsPage.LEAGUE
+        matchFromCalendar -> SportsPage.CALENDAR
+        else -> SportsPage.HUB
+    }
     SportsPage.LEAGUE -> if (leagueFromMatch) SportsPage.MATCH else SportsPage.HUB
-    SportsPage.HUB -> SportsPage.HUB
+    SportsPage.CALENDAR, SportsPage.HUB -> SportsPage.HUB
 }
 
 /** (v2.6.1) The hub's saved state while a page is over it. */

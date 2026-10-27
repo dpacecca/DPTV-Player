@@ -43,6 +43,8 @@ import tv.own.owntv.features.sport.SportsMatcher
 import tv.own.owntv.features.sport.SportsPrefs
 import tv.own.owntv.features.sport.SportsViewModel
 import tv.own.owntv.features.sport.SportsVocab
+import tv.own.owntv.features.sport.SportsCalendarRepository
+import tv.own.owntv.features.sport.SportRecordingPlanner
 import tv.own.owntv.features.settings.OpenSubtitlesViewModel
 import tv.own.owntv.features.settings.SettingsViewModel
 import tv.own.owntv.features.setup.DisplaySizeViewModel
@@ -201,5 +203,8 @@ val appModule = module {
     single<SportChannelSources> { ProfileSportChannelSources(get(), get(), get()) }
     // Sport's own settings file; it rides in Settings backups as an app block (v2.6.0).
     single { SportsPrefs(androidContext()) } bind tv.own.owntv.core.backup.BackupExtra::class
+    // The calendar's months and the "record this game" planner (v2.6.2).
+    singleOf(::SportsCalendarRepository)
+    singleOf(::SportRecordingPlanner)
     viewModelOf(::SportsViewModel)
 }

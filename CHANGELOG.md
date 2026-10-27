@@ -64,6 +64,13 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.6.2
+
+### ✨ New features
+- **📅 Sport calendar: a month of your leagues' games, day by day**
+- **⏺️ Record a game from the calendar or its match page, now or once the guide has it**
+- **⚽ New leagues: World Cup qualifying (UEFA, CONMEBOL, Concacaf, AFC, CAF), Club World Cup, International Friendlies, Women's EURO, League One, Community Shield**
+
 ## v2.6.1
 
 ### 🐛 Fixes

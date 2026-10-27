@@ -59,6 +59,16 @@
     <string name="sport_league_soccer_ita_super_cup" translatable="false">Supercoppa Italiana</string>
     <string name="sport_league_soccer_fifa_world" translatable="false">FIFA World Cup</string>
     <string name="sport_league_soccer_fifa_wwc" translatable="false">FIFA Women\'s World Cup</string>
+    <string name="sport_league_soccer_fifa_cwc" translatable="false">FIFA Club World Cup</string>
+    <string name="sport_league_soccer_fifa_worldq_uefa" translatable="false">World Cup Qualifying – UEFA</string>
+    <string name="sport_league_soccer_fifa_worldq_conmebol" translatable="false">World Cup Qualifying – CONMEBOL</string>
+    <string name="sport_league_soccer_fifa_worldq_concacaf" translatable="false">World Cup Qualifying – Concacaf</string>
+    <string name="sport_league_soccer_fifa_worldq_afc" translatable="false">World Cup Qualifying – AFC</string>
+    <string name="sport_league_soccer_fifa_worldq_caf" translatable="false">World Cup Qualifying – CAF</string>
+    <string name="sport_league_soccer_fifa_friendly" translatable="false">International Friendlies</string>
+    <string name="sport_league_soccer_uefa_weuro" translatable="false">UEFA Women\'s EURO</string>
+    <string name="sport_league_soccer_eng_3" translatable="false">EFL League One</string>
+    <string name="sport_league_soccer_eng_charity" translatable="false">FA Community Shield</string>
     <string name="sport_league_soccer_afc_champions" translatable="false">AFC Champions League Elite</string>
     <string name="sport_league_soccer_caf_champions" translatable="false">CAF Champions League</string>
     <string name="sport_league_soccer_afc_asian_cup" translatable="false">AFC Asian Cup</string>

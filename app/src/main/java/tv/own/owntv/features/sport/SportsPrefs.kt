@@ -86,6 +86,34 @@ class SportsPrefs(private val context: Context) : BackupExtra {
     val strictChannels: Flow<Boolean> =
         context.sportsDataStore.data.map { it[StrictKey] ?: false }
 
+    /** (v2.6.2) The games to record once their channel is known ([SportRecordingPlanner]). */
+    val recordPlans: Flow<List<RecordPlan>> =
+        context.sportsDataStore.data.map { prefs -> prefs[RecordPlansKey].orEmpty().mapNotNull(RecordPlan::decode).sortedBy { it.kickoffMs } }
+
+    /** Add (or reset to waiting) the plan for [plan]'s game. */
+    suspend fun putRecordPlan(plan: RecordPlan) {
+        context.sportsDataStore.edit { prefs ->
+            val rest = prefs[RecordPlansKey].orEmpty().filter { RecordPlan.decode(it)?.fixtureId != plan.fixtureId }
+            prefs[RecordPlansKey] = (rest + plan.encode()).toSet()
+        }
+    }
+
+    suspend fun removeRecordPlan(fixtureId: String) {
+        context.sportsDataStore.edit { prefs ->
+            prefs[RecordPlansKey] = prefs[RecordPlansKey].orEmpty().filter { RecordPlan.decode(it)?.fixtureId != fixtureId }.toSet()
+        }
+    }
+
+    /**
+     * The planner's results: each plan it looked at ([before]) becomes its outcome in [after] (or goes),
+     * unless the user changed or removed it meanwhile; plans added meanwhile stay.
+     */
+    suspend fun replaceRecordPlans(before: List<RecordPlan>, after: List<RecordPlan>) {
+        context.sportsDataStore.edit { prefs ->
+            prefs[RecordPlansKey] = mergeRecordPlans(prefs[RecordPlansKey].orEmpty(), before, after)
+        }
+    }
+
     suspend fun setLeagueOrder(ids: List<String>) {
         context.sportsDataStore.edit { prefs -> prefs[LeagueOrderKey] = SportsOrder.encode(ids) }
     }
@@ -215,6 +243,7 @@ class SportsPrefs(private val context: Context) : BackupExtra {
         /** Every key this file holds, each with how it is written to a backup. */
         internal val BackedUpStringSets get() = listOf(
             LeaguesKey, TeamsKey, PlayersKey, LanguagesKey, HiddenLanguagesKey, PlaylistsKey, TeamNamesKey,
+            RecordPlansKey,
         )
         internal val BackedUpBools get() = listOf(VisibleKey, LanguageAskedKey, StrictKey)
         internal val BackedUpStrings get() = listOf(LeagueOrderKey, SportOrderKey)
@@ -240,6 +269,16 @@ class SportsPrefs(private val context: Context) : BackupExtra {
             BackedUpBools.forEach { k -> if (block.has(k.name)) into[k] = block.optBoolean(k.name) }
             BackedUpStrings.forEach { k -> if (block.has(k.name)) into[k] = block.optString(k.name) }
             BackedUpInts.forEach { k -> if (block.has(k.name)) into[k] = block.optInt(k.name) }
+        }
+
+        /** See [replaceRecordPlans]. */
+        internal fun mergeRecordPlans(current: Set<String>, before: List<RecordPlan>, after: List<RecordPlan>): Set<String> {
+            val seen = before.associate { it.fixtureId to it.encode() }
+            val outcome = after.associateBy { it.fixtureId }
+            return current.mapNotNull { raw ->
+                val id = RecordPlan.decode(raw)?.fixtureId ?: return@mapNotNull null
+                if (seen[id] == raw) outcome[id]?.encode() else raw
+            }.toSet()
         }
 
         /** "key<US>name" entries; a team key never contains the unit separator. */
@@ -269,6 +308,7 @@ class SportsPrefs(private val context: Context) : BackupExtra {
         private val StrictKey = booleanPreferencesKey("strict_channels")
         private val TeamNamesKey = stringSetPreferencesKey("followed_team_names")
         private val VersionKey = intPreferencesKey("prefs_version")
+        private val RecordPlansKey = stringSetPreferencesKey("record_plans")
         private const val BackupBlock = "sport"
         private const val NameSeparator = '\u001F'
         private val DefaultLanguageNames = setOf(SportLanguage.GERMAN.name)
