@@ -378,6 +378,8 @@ internal fun GuideChannelLabel(channel: ChannelEntity, name: String, dot: Color?
                         maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
                     )
                 }
+                // (OwnTV #305) The Rewind mark when the channel has catch-up, as in the channel lists.
+                if (channel.catchup) OwnTVIcon(OwnTVIcon.REWIND, if (selected) a.accent else StageColors.Dim, Modifier.size(18.mpx))
             }
         }
     }

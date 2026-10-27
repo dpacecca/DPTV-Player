@@ -726,6 +726,8 @@
 8	technical	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	\0
 1	log	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	OwnTVHome
 1	log	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	activeProfileChanged profile=$pid androidTvHomeEnabled=${settings.androidTvHomeEnabled.first()}
+1	technical	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	manual_resync
+1	log	app/src/main/java/tv/own/owntv/features/shell/ShellViewModel.kt	resync enqueue sourceId=${source.id} from=playlist_menu
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/AvatarPickerDialog.kt	\0
 2	empty	app/src/main/java/tv/own/owntv/features/shell/components/CategoryRail.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/CategoryRail.kt	__rail_search__
