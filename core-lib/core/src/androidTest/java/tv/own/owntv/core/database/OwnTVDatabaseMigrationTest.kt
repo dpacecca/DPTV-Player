@@ -121,6 +121,13 @@ class OwnTVDatabaseMigrationTest {
             assertIndexExists(sqlite, "index_epg_programmes_natural_key")
             // v50 dropped it again: the natural key serves its reads.
             assertIndexMissing(sqlite, "index_epg_programmes_sourceId_epgChannelId")
+            // v52: the catalogue's single-column (sourceId) / (categoryId) indexes, and channels (name).
+            for (table in listOf("channels", "movies", "series")) {
+                assertIndexMissing(sqlite, "index_${table}_sourceId")
+                assertIndexMissing(sqlite, "index_${table}_categoryId")
+            }
+            assertIndexMissing(sqlite, "index_channels_name")
+            assertIndexExists(sqlite, "index_movies_name")
             assertTableExists(sqlite, "metadata_cache")
             assertColumnExists(sqlite, "metadata_cache", "logoPath")
             assertColumnExists(sqlite, "sources", "mac")
@@ -354,7 +361,7 @@ class OwnTVDatabaseMigrationTest {
             // Simulate the interrupted-import drift.
             db12.execSQL("DROP INDEX IF EXISTS `index_movies_sourceId_rating_name`")
             db12.execSQL("DROP INDEX IF EXISTS `index_series_categoryId_rating_name`")
-            db12.execSQL("DROP INDEX IF EXISTS `index_channels_sourceId`")
+            db12.execSQL("DROP INDEX IF EXISTS `index_channels_sourceId_sortOrder_name`")
             db12.execSQL("DROP INDEX IF EXISTS `index_epg_programmes_stopMs`")
             db12.version = 12
         } finally {
@@ -367,7 +374,7 @@ class OwnTVDatabaseMigrationTest {
             val sqlite = openForAssertions(db)
             assertIndexExists(sqlite, "index_movies_sourceId_rating_name")
             assertIndexExists(sqlite, "index_series_categoryId_rating_name")
-            assertIndexExists(sqlite, "index_channels_sourceId")
+            assertIndexExists(sqlite, "index_channels_sourceId_sortOrder_name")
             assertIndexExists(sqlite, "index_epg_programmes_stopMs")
             assertColumnExists(sqlite, "metadata_cache", "logoPath")
             assertColumnExists(sqlite, "sources", "mac")

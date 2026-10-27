@@ -5,7 +5,7 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 
 /**
- * v49 → v50: the per-playlist "Clean channel names" option — `sources.cleanChannelNames` (off for
+ * v50 → v51: the per-playlist "Clean channel names" option — `sources.cleanChannelNames` (off for
  * every existing playlist, so nothing changes until the user asks) and `sources.channelNameStrip`
  * (the user's own words to remove) — plus `channels.providerName`, the provider's name kept beside
  * a cleaned one for guide matching. Additive only: every existing row reads as "not cleaned".
@@ -13,7 +13,7 @@ import androidx.sqlite.execSQL
  * Lives outside [OwnTVDatabase] because that file is over its size budget; it is wired into
  * [OwnTVDatabase.ALL_MIGRATIONS] like every other step.
  */
-val MIGRATION_49_50 = object : Migration(49, 50) {
+val MIGRATION_50_51 = object : Migration(50, 51) {
     override fun migrate(connection: SQLiteConnection) {
         if (!OwnTVDatabase.hasColumn(connection, "sources", "cleanChannelNames")) {
             connection.execSQL("ALTER TABLE `sources` ADD COLUMN `cleanChannelNames` INTEGER NOT NULL DEFAULT 0")

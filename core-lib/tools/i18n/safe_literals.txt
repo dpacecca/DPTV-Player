@@ -594,6 +594,20 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration49To50.kt	cleanChannelNames
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration49To50.kt	providerName
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration49To50.kt	sources
+1	sql	core/src/main/java/tv/own/owntv/core/database/Migration50To51.kt	ALTER TABLE `channels` ADD COLUMN `providerName` TEXT
+1	sql	core/src/main/java/tv/own/owntv/core/database/Migration50To51.kt	ALTER TABLE `sources` ADD COLUMN `channelNameStrip` TEXT
+1	sql	core/src/main/java/tv/own/owntv/core/database/Migration50To51.kt	ALTER TABLE `sources` ADD COLUMN `cleanChannelNames` INTEGER NOT NULL DEFAULT 0
+1	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration50To51.kt	channelNameStrip
+1	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration50To51.kt	channels
+1	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration50To51.kt	cleanChannelNames
+1	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration50To51.kt	providerName
+2	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration50To51.kt	sources
+1	sql	core/src/main/java/tv/own/owntv/core/database/Migration51To52.kt	DROP INDEX IF EXISTS `index_${table}_categoryId`
+1	sql	core/src/main/java/tv/own/owntv/core/database/Migration51To52.kt	DROP INDEX IF EXISTS `index_${table}_sourceId`
+1	sql	core/src/main/java/tv/own/owntv/core/database/Migration51To52.kt	DROP INDEX IF EXISTS `index_channels_name`
+1	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration51To52.kt	channels
+1	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration51To52.kt	movies
+1	room-schema	core/src/main/java/tv/own/owntv/core/database/Migration51To52.kt	series
 18	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	,
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	?
@@ -663,13 +677,10 @@
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_catalog_backfill_sourceId` ON `catalog_backfill` (`sourceId`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_channels_categoryId_name` ON `channels` (`categoryId`, `name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_channels_categoryId_sortOrder_name` ON `channels` (`categoryId`, `sortOrder`, `name`)
-1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_channels_categoryId` ON `channels` (`categoryId`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_channels_epgChannelId` ON `channels` (`epgChannelId`)
-1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_channels_name` ON `channels` (`name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_channels_sourceId_name` ON `channels` (`sourceId`, `name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_channels_sourceId_number` ON `channels` (`sourceId`, `number`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_channels_sourceId_sortOrder_name` ON `channels` (`sourceId`, `sortOrder`, `name`)
-1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_channels_sourceId` ON `channels` (`sourceId`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_content_order_profileId_mediaType_contextKey` ON `content_order` (`profileId`, `mediaType`, `contextKey`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_content_order_profileId` ON `content_order` (`profileId`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_epg_channels_normName` ON `epg_channels` (`normName`)
@@ -686,14 +697,12 @@
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_categoryId_name` ON `movies` (`categoryId`, `name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_categoryId_rating_name` ON `movies` (`categoryId`, `rating`, `name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_categoryId_sortOrder_name` ON `movies` (`categoryId`, `sortOrder`, `name`)
-1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_categoryId` ON `movies` (`categoryId`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_name` ON `movies` (`name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_sourceId_addedAt_sortOrder` ON `movies` (`sourceId`, `addedAt`, `sortOrder`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_sourceId_name` ON `movies` (`sourceId`, `name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_sourceId_rating_name` ON `movies` (`sourceId`, `rating`, `name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_sourceId_sortOrder_name` ON `movies` (`sourceId`, `sortOrder`, `name`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_sourceId_titleSignature_parsedYear` ON `movies` (`sourceId`, `titleSignature`, `parsedYear`)
-1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_movies_sourceId` ON `movies` (`sourceId`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_playback_prefs_profileId` ON `playback_prefs` (`profileId`)
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_playback_prefs_sourceId` ON `playback_prefs` (`sourceId`)
 1	sql	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_playback_quirks_sourceId` ON `playback_quirks` (`sourceId`)
@@ -709,7 +718,6 @@
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_categoryId_name` ON `series` (`categoryId`, `name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_categoryId_rating_name` ON `series` (`categoryId`, `rating`, `name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_categoryId_sortOrder_name` ON `series` (`categoryId`, `sortOrder`, `name`)
-1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_categoryId` ON `series` (`categoryId`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_name` ON `series` (`name`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_sort_order_profileId` ON `series_sort_order` (`profileId`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_sourceId_addedAt_sortOrder` ON `series` (`sourceId`, `addedAt`, `sortOrder`)
@@ -717,7 +725,6 @@
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_sourceId_rating_name` ON `series` (`sourceId`, `rating`, `name`)
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_sourceId_sortOrder_name` ON `series` (`sourceId`, `sortOrder`, `name`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_sourceId_titleSignature_parsedYear` ON `series` (`sourceId`, `titleSignature`, `parsedYear`)
-1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_series_sourceId` ON `series` (`sourceId`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_subtitle_cache_lastUsedAt` ON `subtitle_cache` (`lastUsedAt`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_subtitle_link_cacheId` ON `subtitle_link` (`cacheId`)
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	CREATE INDEX IF NOT EXISTS `index_subtitle_link_profileId_mediaType` ON `subtitle_link` (`profileId`, `mediaType`)
@@ -1629,14 +1636,14 @@
 7	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	0
 4	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	addedAt
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	categories
-16	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	categoryId
+13	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	categoryId
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	channels
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	epgChannelId
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	episodes
 10	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	id
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	mediaType
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	movies
-20	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	name
+19	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	name
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	number
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	parsedYear
 4	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	rating
@@ -1646,7 +1653,7 @@
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	series
 5	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	seriesId
 10	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	sortOrder
-26	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	sourceId
+23	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	sourceId
 2	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/ContentEntities.kt	titleSignature
 1	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	0
 3	room-schema	core/src/main/java/tv/own/owntv/core/database/entity/EpgEntities.kt	epgChannelId

@@ -44,10 +44,9 @@ data class CategoryEntity(
         ForeignKey(entity = SourceEntity::class, parentColumns = ["id"], childColumns = ["sourceId"], onDelete = ForeignKey.CASCADE),
         ForeignKey(entity = CategoryEntity::class, parentColumns = ["id"], childColumns = ["categoryId"], onDelete = ForeignKey.SET_NULL),
     ],
+    // No single-column (sourceId) or (categoryId) index (v52): the composites below start with the
+    // same column and serve every query, and each extra index is one more B-tree every write updates.
     indices = [
-        Index("sourceId"),
-        Index("categoryId"),
-        Index("name"),
         Index("epgChannelId"),
         Index(value = ["sourceId", "remoteId"], unique = true),
         // Composite grid read-indices (v6): A–Z order (ORDER BY name) and playlist/provider order
@@ -152,9 +151,9 @@ fun resolveStreamUrl(url: String, source: SourceEntity?): String {
         ForeignKey(entity = SourceEntity::class, parentColumns = ["id"], childColumns = ["sourceId"], onDelete = ForeignKey.CASCADE),
         ForeignKey(entity = CategoryEntity::class, parentColumns = ["id"], childColumns = ["categoryId"], onDelete = ForeignKey.SET_NULL),
     ],
+    // No single-column (sourceId) or (categoryId) index (v52) — see ChannelEntity. (name) stays: the
+    // A–Z list across several playlists would otherwise sort the whole table.
     indices = [
-        Index("sourceId"),
-        Index("categoryId"),
         Index("name"),
         // Composite (filter + order) indices so the grid's "WHERE sourceId/categoryId ORDER BY name" never
         // falls back to a full temp-B-tree sort of the whole table (100k+ rows → 2–3s) — it seeks + scans.
@@ -215,9 +214,8 @@ data class MovieEntity(
         ForeignKey(entity = SourceEntity::class, parentColumns = ["id"], childColumns = ["sourceId"], onDelete = ForeignKey.CASCADE),
         ForeignKey(entity = CategoryEntity::class, parentColumns = ["id"], childColumns = ["categoryId"], onDelete = ForeignKey.SET_NULL),
     ],
+    // No single-column (sourceId) or (categoryId) index (v52) — see MovieEntity.
     indices = [
-        Index("sourceId"),
-        Index("categoryId"),
         Index("name"),
         // Composite (filter + order) indices — see MovieEntity: avoids a full table sort on the Series grid.
         // A–Z (ORDER BY name) → first pair; playlist/provider (ORDER BY sortOrder, name) → second pair.
