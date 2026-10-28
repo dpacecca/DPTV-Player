@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -894,6 +895,15 @@ class LiveViewModel(
                 if (ok && _selected.value == LiveKey.All) _selected.value = saved
             } else if (_selected.value == LiveKey.All) {
                 _selected.value = saved
+            }
+        }
+        // Another playlist or profile can leave the selection on a folder the new playlists do not have:
+        // its channels stayed listed under a wrong name. Such a folder falls back to All channels.
+        viewModelScope.launch {
+            ctx.filter { it.profileId >= 0 }.map { it.sourceIds }.distinctUntilChanged().drop(1).collect { ids ->
+                suspend fun gone(key: LiveKey?) = key is LiveKey.Folder && categoryDao.getById(key.id)?.sourceId !in ids
+                if (gone(previousKey)) previousKey = LiveKey.All
+                if (lockedKey == null && gone(_selected.value)) _selected.value = LiveKey.All
             }
         }
         // Persist the last focused/interacted channel (debounced), and restore it once at startup so opening
