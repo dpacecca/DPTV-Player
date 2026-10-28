@@ -357,6 +357,7 @@ fun OwnTVShell(
     val afrPrompted by settingsRepo.autoFrameRatePrompted.collectAsStateWithLifecycle(initialValue = true)
     // Direct tune (type a channel number on the remote). Settings → Video Player → Live TV; default on.
     val directTuneEnabled by settingsRepo.directTune.collectAsStateWithLifecycle(initialValue = true)
+    val playerRemoteOptions by settingsRepo.playerRemoteOptions.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.PlayerRemoteOptions())
     // "Prefer EPG logos": start following the setting once, here rather than in Application.onCreate —
     // the store queries nothing at all while the toggle is off, so cold start stays free of EPG reads.
     val epgDaoForLogos = koinInject<tv.own.owntv.core.database.dao.EpgDao>()
@@ -1162,8 +1163,8 @@ fun OwnTVShell(
                 if (e.type != KeyEventType.KeyDown || playerMode != PlayerMode.MINI) return@onKeyEvent false
                 when (e.key) {
                     Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> { dockedEngine.togglePlayPause(); true }
-                    Key.ChannelUp -> dockedZap?.let { it(1); true } ?: false
-                    Key.ChannelDown -> dockedZap?.let { it(-1); true } ?: false
+                    Key.ChannelUp -> dockedZap?.let { it(tv.own.owntv.player.zapDirection(up = true, playerRemoteOptions)); true } ?: false
+                    Key.ChannelDown -> dockedZap?.let { it(tv.own.owntv.player.zapDirection(up = false, playerRemoteOptions)); true } ?: false
                     else -> false
                 }
             },
@@ -1944,8 +1945,9 @@ fun OwnTVShell(
                     sleepProgrammeEndMs = if (isTunedLive && !timeshifted) { { liveVm.nowNext.value?.now?.stopMs } } else null,
                     liveLeftRightRewinds = liveLeftRightRewinds,
                     timeshiftOffsetSec = if (isTunedLive) { { timeshiftOffsetState.value } } else null,
-                    onTuneToNumber = if (directTuneEnabled && isTunedLive && isLiveStream && !timeshifted && previewChannel != null) liveVm::tuneByNumber else null,
+                    onTuneToNumber = if (tv.own.owntv.player.numberKeysTune(directTuneEnabled, playerRemoteOptions) && isTunedLive && isLiveStream && !timeshifted && previewChannel != null) liveVm::tuneByNumber else null,
                     directTuneContextKey = previewChannel?.id ?: 0L,
+                    remoteOptions = playerRemoteOptions,
                     // Show the ACTUAL running engine (mpv when pinned OR auto-fallen-back), not just the pin —
                     // otherwise an auto-fallback to mpv still read "EXO". true = on mpv (pill shows MPV, teal).
                     compatMode = if (isTunedLive) !liveOnExo else null,

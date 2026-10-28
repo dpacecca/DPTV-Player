@@ -46,6 +46,7 @@ import tv.own.owntv.features.sport.SportsVocab
 import tv.own.owntv.features.sport.SportsCalendarRepository
 import tv.own.owntv.features.sport.SportRecordingPlanner
 import tv.own.owntv.features.settings.OpenSubtitlesViewModel
+import tv.own.owntv.features.settings.PlayerButtonsSettingsViewModel
 import tv.own.owntv.features.settings.SettingsViewModel
 import tv.own.owntv.features.setup.DisplaySizeViewModel
 import tv.own.owntv.features.setup.SetupViewModel
@@ -207,4 +208,6 @@ val appModule = module {
     singleOf(::SportsCalendarRepository)
     singleOf(::SportRecordingPlanner)
     viewModelOf(::SportsViewModel)
+    // Settings › Remote shortcuts › Player buttons (OwnTV #287).
+    viewModelOf(::PlayerButtonsSettingsViewModel)
 }
