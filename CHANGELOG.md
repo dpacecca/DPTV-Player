@@ -68,6 +68,7 @@
 
 ### 🐛 Fixes
 - **Channel names: no stray "&" or "-" left behind where provider tags were taken off**
+- **Channel names: 4K, UHD, FHD and HD at the end of a name are taken off like the superscript tags**
 
 ## v2.6.2
 

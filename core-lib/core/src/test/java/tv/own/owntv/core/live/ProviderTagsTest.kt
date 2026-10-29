@@ -87,4 +87,20 @@ class ProviderTagsTest {
         assertEquals("Sky Sports Racing & More", ProviderTags.parse("Sky Sports Racing & More").name)
         assertEquals("E4 +1", ProviderTags.parse("E4 +1 ᴴᴰ").name)
     }
+
+    @Test
+    fun plainTextQualityAtTheEndIsATag() {
+        assertEquals(ProviderName("Sky Sports 1", listOf("HD"), "UK"), ProviderTags.parse("UK: Sky Sports 1 HD"))
+        assertEquals(listOf("4K"), ProviderTags.parse("BBC One [4K]").tags)
+        assertEquals("BBC One", ProviderTags.parse("BBC One (UHD)").name)
+        assertEquals("Sky Sports Main Event", ProviderTags.parse("Sky Sports Main Event 4K & FHD").name)
+        assertEquals("SKY SPORTS F1", ProviderTags.parse("UK: SKY SPORTS F1 ᴿᴬᵂ HD").name)
+    }
+
+    @Test
+    fun qualityWordsInsideOrAloneStay() {
+        assertEquals("HD Plus Info", ProviderTags.parse("HD Plus Info").name)
+        assertEquals("SKYHD", ProviderTags.parse("SKYHD").name)
+        assertEquals("HD", ProviderTags.parse("HD").name)
+    }
 }
