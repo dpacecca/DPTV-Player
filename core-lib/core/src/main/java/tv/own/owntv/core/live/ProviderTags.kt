@@ -20,6 +20,14 @@ object ProviderTags {
     private val colonCountries: Set<String> =
         java.util.Locale.getISOCountries().toSet() + "UK" - "TV"
 
+    // A joiner left standing at either end once the prefix and tags are off, on its own after (or
+    // before) a space: "Sky Sports+" keeps its plus, "Sky Sports +" does not.
+    private val danglingEnd = Regex("""(?:\s+[&+/|·,:\-–—]+)+$""")
+    private val danglingStart = Regex("""^(?:[&+/|·,:\-–—]+\s+)+""")
+
+    // 4K, UHD, FHD or HD as the last word, bare or in brackets; never a whole name ("HD" alone stays).
+    private val trailingQuality = Regex("""\s+[\[(]?(4K|UHD|FHD|HD)[\])]?$""", RegexOption.IGNORE_CASE)
+
     private fun prefixOf(raw: String): MatchResult? =
         countryPrefix.find(raw) ?: colonPrefix.find(raw)?.takeIf { it.groupValues[1] in colonCountries }
 
@@ -40,6 +48,15 @@ object ProviderTags {
         }
         endRun()
         rest = name.toString().replace(Regex("""\s+"""), " ").trim()
+            // A joiner the tags were standing on goes with them: "MAIN EVENT ⁴ᵏ & ³⁸⁴⁰ᴾ" is "MAIN EVENT", not "MAIN EVENT &".
+            .replace(danglingEnd, "").replace(danglingStart, "")
+        // Quality written as plain text at the end ("Sky Sports 1 HD", "BBC One [4K]") is a tag too.
+        while (true) {
+            val quality = trailingQuality.find(rest) ?: break
+            val tag = quality.groupValues[1].uppercase()
+            if (tag !in tags) tags += tag
+            rest = rest.substring(0, quality.range.first).replace(danglingEnd, "").trim()
+        }
         // A name that was nothing but a prefix and tags keeps the provider's own spelling.
         if (rest.isEmpty()) return ProviderName(raw.trim(), emptyList(), null)
         return ProviderName(rest, tags, prefix?.groupValues?.get(1))

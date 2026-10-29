@@ -71,4 +71,36 @@ class ProviderTagsTest {
         assertNull(ProviderTags.parse("PRIME: 3SAT").country)
         assertEquals("TV: DAZN LALIGA 2", ProviderTags.parse("TV: DAZN LALIGA 2").name)
     }
+
+    @Test
+    fun aJoinerLeftBetweenTagsGoesWithThem() {
+        val parsed = ProviderTags.parse("UK: SKY SPORTS MAIN EVENT ⁴ᵏ & ³⁸⁴⁰ᴾ")
+        assertEquals("SKY SPORTS MAIN EVENT", parsed.name)
+        assertEquals("UK", parsed.country)
+        assertEquals("BBC One", ProviderTags.parse("ᴴᴰ / BBC One").name)
+        assertEquals("Sky Max", ProviderTags.parse("DE| Sky Max ᴴᴰ - ʳᵃʷ").name)
+    }
+
+    @Test
+    fun aJoinerThatIsPartOfTheNameStays() {
+        assertEquals("Sky Sports+", ProviderTags.parse("Sky Sports+ ᴴᴰ").name)
+        assertEquals("Sky Sports Racing & More", ProviderTags.parse("Sky Sports Racing & More").name)
+        assertEquals("E4 +1", ProviderTags.parse("E4 +1 ᴴᴰ").name)
+    }
+
+    @Test
+    fun plainTextQualityAtTheEndIsATag() {
+        assertEquals(ProviderName("Sky Sports 1", listOf("HD"), "UK"), ProviderTags.parse("UK: Sky Sports 1 HD"))
+        assertEquals(listOf("4K"), ProviderTags.parse("BBC One [4K]").tags)
+        assertEquals("BBC One", ProviderTags.parse("BBC One (UHD)").name)
+        assertEquals("Sky Sports Main Event", ProviderTags.parse("Sky Sports Main Event 4K & FHD").name)
+        assertEquals("SKY SPORTS F1", ProviderTags.parse("UK: SKY SPORTS F1 ᴿᴬᵂ HD").name)
+    }
+
+    @Test
+    fun qualityWordsInsideOrAloneStay() {
+        assertEquals("HD Plus Info", ProviderTags.parse("HD Plus Info").name)
+        assertEquals("SKYHD", ProviderTags.parse("SKYHD").name)
+        assertEquals("HD", ProviderTags.parse("HD").name)
+    }
 }
