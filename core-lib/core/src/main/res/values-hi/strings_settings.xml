@@ -285,6 +285,7 @@
     <string name="settings_about_description">संस्करण, लाइसेंस और प्रोजेक्ट की जानकारी</string>
     <string name="settings_live_latency">लाइव विलंबता</string>
     <string name="settings_no_settings_match">“<xliff:g id="query">%1$s</xliff:g>” से मेल खाने वाली कोई सेटिंग नहीं है</string>
+    <string name="settings_search_empty_hint">किसी सेटिंग का नाम लिखें</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">होम</string>
     <string name="settings_startup_last_channel">पिछला चैनल</string>

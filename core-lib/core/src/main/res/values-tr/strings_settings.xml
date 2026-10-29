@@ -285,6 +285,7 @@
     <string name="settings_about_description">Sürüm, lisans ve proje bilgileri</string>
     <string name="settings_live_latency">Canlı yayın gecikmesi</string>
     <string name="settings_no_settings_match">“<xliff:g id="query">%1$s</xliff:g>” ile eşleşen ayar yok</string>
+    <string name="settings_search_empty_hint">Bir ayarın adını yazın</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Ana ekran</string>
     <string name="settings_startup_last_channel">Son kanal</string>

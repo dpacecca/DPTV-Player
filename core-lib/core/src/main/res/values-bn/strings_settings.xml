@@ -285,6 +285,7 @@
     <string name="settings_about_description">সংস্করণ, লাইসেন্স ও প্রকল্পের তথ্য</string>
     <string name="settings_live_latency">লাইভ বিলম্ব</string>
     <string name="settings_no_settings_match">“<xliff:g id="query">%1$s</xliff:g>”-এর সঙ্গে কোনো সেটিংস মেলেনি</string>
+    <string name="settings_search_empty_hint">একটি সেটিংয়ের নাম লিখুন</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">হোম</string>
     <string name="settings_startup_last_channel">সর্বশেষ চ্যানেল</string>

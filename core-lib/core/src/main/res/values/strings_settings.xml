@@ -665,6 +665,8 @@
     <string name="settings_live_latency">Live latency</string>
     <!-- Translators: Empty-state message when a settings search returns no results. 'query' is the search text. -->
     <string name="settings_no_settings_match">No settings match “<xliff:g id="query">%1$s</xliff:g>”</string>
+    <!-- Translators: Shown on the Settings search page while the search field is still empty. -->
+    <string name="settings_search_empty_hint">Type the name of a setting</string>
     <!-- Translators: Settings breadcrumb navigation display. 'group' is the group name, 'title' is the section title. -->
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <!-- Translators: App startup option: open to the Home screen. -->

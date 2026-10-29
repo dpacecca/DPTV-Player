@@ -289,6 +289,7 @@
     <string name="settings_about_description">Verze, licence a informace o projektu</string>
     <string name="settings_live_latency">Zpoždění živého vysílání</string>
     <string name="settings_no_settings_match">Výrazu „<xliff:g id="query">%1$s</xliff:g>“ neodpovídá žádné nastavení</string>
+    <string name="settings_search_empty_hint">Napište název nastavení</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Domů</string>
     <string name="settings_startup_last_channel">Poslední kanál</string>

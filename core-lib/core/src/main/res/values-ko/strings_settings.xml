@@ -283,6 +283,7 @@
     <string name="settings_about_description">버전, 라이선스 및 프로젝트 정보</string>
     <string name="settings_live_latency">실시간 지연 시간</string>
     <string name="settings_no_settings_match">“<xliff:g id="query">%1$s</xliff:g>”과 일치하는 설정이 없습니다</string>
+    <string name="settings_search_empty_hint">설정 이름을 입력하세요</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">홈</string>
     <string name="settings_startup_last_channel">마지막 채널</string>

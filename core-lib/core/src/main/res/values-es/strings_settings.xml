@@ -287,6 +287,7 @@
     <string name="settings_about_description">Versión, licencia e información del proyecto</string>
     <string name="settings_live_latency">Latencia de la emisión en directo</string>
     <string name="settings_no_settings_match">Ningún ajuste coincide con «<xliff:g id="query">%1$s</xliff:g>»</string>
+    <string name="settings_search_empty_hint">Escribe el nombre de un ajuste</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Inicio</string>
     <string name="settings_startup_last_channel">Último canal</string>

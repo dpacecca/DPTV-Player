@@ -285,6 +285,7 @@
     <string name="settings_about_description">Versjon, lisens og prosjektinformasjon</string>
     <string name="settings_live_latency">Direkteforsinkelse</string>
     <string name="settings_no_settings_match">Ingen innstillinger samsvarer med «<xliff:g id="query">%1$s</xliff:g>»</string>
+    <string name="settings_search_empty_hint">Skriv navnet på en innstilling</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Startskjerm</string>
     <string name="settings_startup_last_channel">Siste kanal</string>

@@ -285,6 +285,7 @@
     <string name="settings_about_description">Versie, licentie en projectinformatie</string>
     <string name="settings_live_latency">Livevertraging</string>
     <string name="settings_no_settings_match">Geen instellingen gevonden voor ‘<xliff:g id="query">%1$s</xliff:g>’</string>
+    <string name="settings_search_empty_hint">Typ de naam van een instelling</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Startscherm</string>
     <string name="settings_startup_last_channel">Laatste zender</string>

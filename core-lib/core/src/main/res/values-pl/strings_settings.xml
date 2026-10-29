@@ -289,6 +289,7 @@
     <string name="settings_about_description">Wersja, licencja i informacje o projekcie</string>
     <string name="settings_live_latency">Opóźnienie transmisji na żywo</string>
     <string name="settings_no_settings_match">Brak ustawień pasujących do „<xliff:g id="query">%1$s</xliff:g>”</string>
+    <string name="settings_search_empty_hint">Wpisz nazwę ustawienia</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Ekran główny</string>
     <string name="settings_startup_last_channel">Ostatni kanał</string>

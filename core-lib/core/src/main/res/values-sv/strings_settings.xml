@@ -285,6 +285,7 @@
     <string name="settings_about_description">Version, licens och projektinformation</string>
     <string name="settings_live_latency">Livefördröjning</string>
     <string name="settings_no_settings_match">Inga inställningar matchar ”<xliff:g id="query">%1$s</xliff:g>”</string>
+    <string name="settings_search_empty_hint">Skriv namnet på en inställning</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Start</string>
     <string name="settings_startup_last_channel">Senaste kanalen</string>

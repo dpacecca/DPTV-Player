@@ -283,6 +283,7 @@
     <string name="settings_about_description">版本、授權條款和專案資訊</string>
     <string name="settings_live_latency">直播延遲</string>
     <string name="settings_no_settings_match">沒有符合「<xliff:g id="query">%1$s</xliff:g>」的設定</string>
+    <string name="settings_search_empty_hint">輸入設定的名稱</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">主畫面</string>
     <string name="settings_startup_last_channel">上一個頻道</string>
