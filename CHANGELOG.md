@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.6.3
+
+### 🐛 Fixes
+- **Channel names: no stray "&" or "-" left behind where provider tags were taken off**
+
 ## v2.6.2
 
 ### ✨ New features

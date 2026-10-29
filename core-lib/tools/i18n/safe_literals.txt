@@ -2062,11 +2062,13 @@
 1	log	core/src/main/java/tv/own/owntv/core/live/ProbeChannelSource.kt	portal offered ${genres.size} genre(s) for source ${source.id}
 1	log	core/src/main/java/tv/own/owntv/core/live/ProbeChannelSource.kt	probe could not resolve '${channel.name}': ${it.message}
 1	json	core/src/main/java/tv/own/owntv/core/live/ProbeChannelSource.kt	vod
-1	technical	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	\0
+3	empty	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	\0
 1	technical	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	${name.country}| ${name.name}
+1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	(?:\\s+[&+/|·,:\\-–—]+)+$
 1	technical	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	TV
 1	technical	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	UK
 1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	\\s+
+1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	^(?:[&+/|·,:\\-–—]+\\s+)+
 1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	^([A-Z]{2,3})\\s*\\|\\s*
 1	regex	core/src/main/java/tv/own/owntv/core/live/ProviderTags.kt	^([A-Z]{2}):\\s*
 1	log	core/src/main/java/tv/own/owntv/core/live/WatchSession.kt	WatchSession
