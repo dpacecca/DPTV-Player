@@ -199,6 +199,9 @@ fun PlayerHud(
     infoBanner: (@Composable (chips: List<String>, showKey: Int, durationMs: Long) -> Unit)? = null,
     // N3 — now/next lines for the channel-change banner (the playing channel's guide). Null = name only.
     zapGuide: (@Composable () -> Unit)? = null,
+    // The channel a CH+/- step moved to. The banner names it at once; the engine's metadata still
+    // names the previous channel until the new stream opens, next to [zapGuide]'s new programme.
+    zapChannel: DirectTuneChannelInfo? = null,
     // The archive's own wall-clock instant while catch-up/rewind is playing; null means the picture is
     // the present, and only the real clock shows. Drives the second, framed clock at top centre.
     // Lambda for the same reason as [timeshiftOffsetSec]: this instant advances every second too.
@@ -761,8 +764,9 @@ fun PlayerHud(
             if (isLive && (tuned != null || (showFlash && !controlsVisible))) {
                 // A fresh tune drives the card from the lookup result, not player metadata: the Stalker and
                 // mpv paths publish their metadata after an async resolve, which would show the old channel.
-                if (tuned != null) {
-                    ChannelOsdCard(title = tuned.name, subtitle = tuned.number?.let { stringResource(R.string.player_channel_number, it) }, logoUrl = tuned.logoUrl, guide = zapGuide)
+                val named = tuned ?: zapChannel
+                if (named != null) {
+                    ChannelOsdCard(title = named.name, subtitle = named.number?.let { stringResource(R.string.player_channel_number, it) }, logoUrl = named.logoUrl, guide = zapGuide)
                 } else {
                     ChannelCard(player, guide = zapGuide)
                 }

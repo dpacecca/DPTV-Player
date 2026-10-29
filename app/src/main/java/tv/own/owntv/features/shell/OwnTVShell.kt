@@ -440,6 +440,31 @@ fun OwnTVShell(
     val browserRailItems by liveVm.railItems.collectAsStateWithLifecycle()
     val browserRailCounts by liveVm.railCounts.collectAsStateWithLifecycle()
     val previewChannel by liveVm.previewChannel.collectAsStateWithLifecycle()
+    // Home / screensaver with a live channel on mpv: mpv frees the stream and keeps no restore for live
+    // (ExoPlayer's live engine does), so the return found a black, paused player. Tune the same channel
+    // again; the tune reopens its saved copy and offers Resume / Go live.
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    val currentPlayerMode by rememberUpdatedState(playerMode)
+    DisposableEffect(lifecycle, liveVm, player) {
+        var mpvLiveChannel: tv.own.owntv.core.database.entity.ChannelEntity? = null
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_STOP -> mpvLiveChannel = liveVm.previewChannel.value?.takeIf {
+                    currentPlayerMode != PlayerMode.NONE && !liveVm.liveOnExo.value && player.isLiveContent
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_START -> mpvLiveChannel?.let { channel ->
+                    mpvLiveChannel = null
+                    // A stream already back needs nothing. (DPTV has no category locks, so no relock check first.)
+                    if (liveVm.previewChannel.value?.id == channel.id && player.currentMediaUrl == null) {
+                        liveVm.ensurePlaying(channel)
+                    }
+                }
+                else -> Unit
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     val playerRecording by liveVm.playerRecording.collectAsStateWithLifecycle()
     val overlayProgrammes by liveVm.nowProgrammes.collectAsStateWithLifecycle()
     val overlayFavoriteIds by liveVm.favoriteIds.collectAsStateWithLifecycle()
@@ -1999,6 +2024,10 @@ fun OwnTVShell(
                                 durationMs = durationMs,
                             )
                         }
+                    } else null,
+                    // (OwnTV) The channel a CH+/CH− step moved to, so the zap banner names it at once.
+                    zapChannel = if (isLiveChannel) {
+                        previewChannel?.let { tv.own.owntv.player.DirectTuneChannelInfo(it.number, it.name, it.logoUrl) }
                     } else null,
                     // Guide card for the playing channel (nowNext follows previewChannel = what's playing).
                     liveEpgCard = if (isLiveChannel) {
