@@ -828,7 +828,7 @@ class EpgRepository(
 
     private val _archiveGuideAdded = MutableSharedFlow<Long>(extraBufferCapacity = 8)
 
-    /** Ids of channels [fillArchiveGuide] just added past programmes to, so an open guide can reload. */
+    /** Ids of channels whose past programmes [fillArchiveGuide] just changed, so an open guide can re-read them. */
     val archiveGuideAdded: SharedFlow<Long> = _archiveGuideAdded.asSharedFlow()
 
     /**
@@ -837,39 +837,48 @@ class EpgRepository(
      *
      * Many `xmltv.php` feeds stop about a day back while the archive keeps up to a week, so most of
      * what catch-up could replay never shows in the guide. One API call for one channel, at most once
-     * every few hours per channel ([ArchiveGuidePlan]). The rows are stored under the playlist's id,
-     * which ranks below every EPG source ([tv.own.owntv.core.epg.GuidePriority]) and is not touched by
-     * a feed's re-sync, and they only ever end where the feed's own rows begin. Retention keeps them,
-     * as the past of every catch-up channel is kept. Returns how many programmes were added.
+     * every few hours per channel ([ArchiveGuidePlan]). The rows only ever end where the feeds' own
+     * rows begin, and are stored under a guide store of their own ([ArchiveGuidePlan.storeId]): not
+     * the playlist's id, whose guide sync would delete them as missing from its feed. Being no EPG
+     * source, that store ranks below all of them ([tv.own.owntv.core.epg.GuidePriority]). Each fill
+     * replaces the channel's rows there as a whole. Retention keeps them, as the past of every
+     * catch-up channel is kept.
+     *
+     * Returns how many programmes the channel now has from its archive when they changed, 0 when
+     * they did not (or the request failed), and null when the provider was not asked at all (not a
+     * catch-up Xtream channel, or asked too recently), so a caller pacing its requests can skip ahead.
      */
-    suspend fun fillArchiveGuide(channel: ChannelEntity, cust: SectionCustomizations): Int = withContext(Dispatchers.IO) {
-        if (!channel.catchup) return@withContext 0
-        val streamId = channel.remoteId?.takeIf { it.isNotBlank() } ?: return@withContext 0
-        val key = epgKeyOf(channel, cust) ?: return@withContext 0
+    suspend fun fillArchiveGuide(channel: ChannelEntity, cust: SectionCustomizations): Int? = withContext(Dispatchers.IO) {
+        if (!channel.catchup) return@withContext null
+        val streamId = channel.remoteId?.takeIf { it.isNotBlank() } ?: return@withContext null
+        // Trimmed and lower-cased, the way the guide stores and reads its ids.
+        val key = epgKeyOf(channel, cust) ?: return@withContext null
         val now = System.currentTimeMillis()
         synchronized(archiveTries) {
-            if (!ArchiveGuidePlan.due(archiveTries[channel.id], now)) return@withContext 0
+            if (!ArchiveGuidePlan.due(archiveTries[channel.id], now)) return@withContext null
             archiveTries[channel.id] = now
         }
-        val added = try {
+        val stored = try {
             val source = sourceDao.getById(channel.sourceId)?.takeIf { it.type == SourceType.XTREAM }
-                ?: return@withContext 0
+                ?: return@withContext null
             val listings = xtream.getArchiveSchedule(source, streamId)
             val from = ArchiveGuidePlan.windowStart(now, channel.catchupDays, WINDOW_BACK_MS)
+            val store = ArchiveGuidePlan.storeId(channel.sourceId)
             val (own, feeds) = epgDao.programmeSummariesForChannel(key, from, Long.MAX_VALUE)
-                .partition { it.sourceId == channel.sourceId }
+                .partition { it.sourceId == store }
             val keep = ArchiveGuidePlan.toStore(
                 listings,
                 guideStartMs = feeds.minOfOrNull { it.startMs },
-                storedStarts = own.mapTo(HashSet()) { it.startMs },
                 windowStartMs = from,
                 nowMs = now,
             )
-            if (keep.isNotEmpty()) {
+            val changed = ArchiveGuidePlan.changed(keep, own.map { it.startMs })
+            if (changed) {
+                own.map { it.id }.chunked(QUERY_CHUNK).forEach { epgDao.deleteProgrammesByIds(it) }
                 writeProgrammes(
                     keep.map {
                         EpgProgrammeEntity(
-                            sourceId = channel.sourceId,
+                            sourceId = store,
                             epgChannelId = key,
                             startMs = it.startMs,
                             stopMs = it.stopMs,
@@ -879,8 +888,9 @@ class EpgRepository(
                     },
                 )
             }
-            Log.i("EpgRepository", "archive guide channelId=${channel.id} listed=${listings.size} added=${keep.size}")
-            keep.size
+            Log.i("EpgRepository", "archive guide channelId=${channel.id} listed=${listings.size} kept=${keep.size} changed=$changed")
+            if (changed) _archiveGuideAdded.tryEmit(channel.id)
+            if (changed) keep.size else 0
         } catch (c: CancellationException) {
             throw c
         } catch (e: Exception) {
@@ -889,8 +899,7 @@ class EpgRepository(
             Log.w("EpgRepository", "archive guide failed channelId=${channel.id}: ${e.javaClass.simpleName}")
             0
         }
-        if (added > 0) _archiveGuideAdded.tryEmit(channel.id)
-        added
+        stored
     }
 
     /** Identifies the current set of usable cache files, so a new/refreshed guide invalidates a skip. */

@@ -10,7 +10,8 @@ import tv.own.owntv.core.parser.XtEpgEntry
  * Many Xtream providers put about a day of past programmes in `xmltv.php` while their archive keeps
  * up to a week: the recordings exist, the guide cannot reach them. The per-channel schedule lists the
  * whole archive. What it adds only ever extends the guide backwards — the feed's rows are never
- * replaced or overlapped.
+ * replaced or overlapped. The rows live in a guide store of their own ([storeId]) and are replaced as
+ * a whole at each fill ([changed]).
  */
 internal object ArchiveGuidePlan {
     private const val DAY_MS = 24L * 60 * 60 * 1000
@@ -20,6 +21,18 @@ internal object ArchiveGuidePlan {
 
     /** …or after this long when the last attempt failed. */
     const val RETRY_MS = 30L * 60 * 1000
+
+    private const val STORE_BASE = 1_000_000_000L
+
+    /**
+     * The guide store a playlist's archive rows are written under, apart from the playlist's own id.
+     * A guide sync deletes every row of the store it syncs that the feed no longer lists, and a
+     * playlist's own guide is synced under the playlist's id (the guide screen's refresh), so rows kept
+     * there were gone after the next refresh. EPG sources take small negative ids (-1, -2, …) and
+     * playlists positive ones; this range is clear of both. Not an EPG source, it ranks below all of
+     * them in [GuidePriority], as the playlist's own guide does.
+     */
+    fun storeId(playlistSourceId: Long): Long = -(STORE_BASE + playlistSourceId)
 
     fun due(lastTryMs: Long?, nowMs: Long): Boolean = lastTryMs == null || nowMs - lastTryMs >= REFETCH_MS
 
@@ -36,24 +49,32 @@ internal object ArchiveGuidePlan {
     }
 
     /**
-     * What to add: finished programmes inside the window that end by [guideStartMs], the oldest
-     * programme the guide feeds hold for the channel, and are not already stored from an earlier
-     * fill ([storedStarts]). Nothing when the feeds hold nothing for the channel: its row then comes
-     * from the provider's short EPG, which stored past rows would hide. Duplicates are dropped.
+     * What to store: finished programmes inside the window that end by [guideStartMs], the oldest
+     * programme the guide feeds hold for the channel. Nothing when the feeds hold nothing for the
+     * channel: its row then comes from the provider's short EPG, which stored past rows would hide.
+     * Duplicates are dropped; sorted by start.
      */
     fun toStore(
         listings: List<XtEpgEntry>,
         guideStartMs: Long?,
-        storedStarts: Set<Long>,
         windowStartMs: Long,
         nowMs: Long,
     ): List<XtEpgEntry> {
         if (guideStartMs == null) return emptyList()
         return listings.asSequence()
             .filter { it.startMs in windowStartMs until it.stopMs && it.stopMs <= nowMs && it.stopMs <= guideStartMs }
-            .filter { it.title.isNotBlank() && it.startMs !in storedStarts }
+            .filter { it.title.isNotBlank() }
             .distinctBy { it.startMs }
             .sortedBy { it.startMs }
             .toList()
     }
+
+    /**
+     * Whether the rows an earlier fill stored ([storedStarts]) are to be replaced by [keep]. They are
+     * replaced as a whole rather than added to: the feed's oldest programme moves between two fills,
+     * so rows stored last time may now overlap it or stop short of it, and the provider's schedule
+     * itself moves on.
+     */
+    fun changed(keep: List<XtEpgEntry>, storedStarts: List<Long>): Boolean =
+        keep.map { it.startMs } != storedStarts.sorted()
 }

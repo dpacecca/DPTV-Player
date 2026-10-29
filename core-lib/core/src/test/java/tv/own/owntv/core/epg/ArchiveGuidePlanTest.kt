@@ -4,6 +4,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import tv.own.owntv.core.customize.SectionCustomizations
+import tv.own.owntv.core.database.entity.ChannelEntity
+import tv.own.owntv.core.live.epgKeyOf
 import tv.own.owntv.core.parser.XtEpgEntry
 
 class ArchiveGuidePlanTest {
@@ -46,24 +49,48 @@ class ArchiveGuidePlanTest {
             p(1, -1),                     // still on
             p(10, 11),                    // stop before start
         )
-        val keep = ArchiveGuidePlan.toStore(listings, now - 24 * h, emptySet(), now - 4 * day, now)
+        val keep = ArchiveGuidePlan.toStore(listings, now - 24 * h, now - 4 * day, now)
         assertEquals(listOf(now - (4 * 24 - 2) * h, now - 30 * h, now - 25 * h), keep.map { it.startMs })
     }
 
-    @Test fun `programmes an earlier fill stored are not added again`() {
+    @Test fun `an earlier fill's rows are kept while the schedule says the same`() {
+        val keep = ArchiveGuidePlan.toStore(listOf(p(30, 29), p(29, 28)), now - 24 * h, now - day * 2, now)
+        assertFalse(ArchiveGuidePlan.changed(keep, listOf(now - 29 * h, now - 30 * h)))
+    }
+
+    @Test fun `an earlier fill's rows are replaced once the feed's own past moved`() {
         val listings = listOf(p(30, 29), p(29, 28), p(28, 27))
-        val keep = ArchiveGuidePlan.toStore(listings, now - 24 * h, setOf(now - 30 * h, now - 29 * h), now - day * 2, now)
-        assertEquals(listOf(now - 28 * h), keep.map { it.startMs })
+        val before = ArchiveGuidePlan.toStore(listings, now - 27 * h, now - day * 2, now)
+        // The feed now starts an hour earlier: the last stored programme would overlap it.
+        val after = ArchiveGuidePlan.toStore(listings, now - 28 * h, now - day * 2, now)
+        assertEquals(listOf(now - 30 * h, now - 29 * h), after.map { it.startMs })
+        assertTrue(ArchiveGuidePlan.changed(after, before.map { it.startMs }))
+        // Nothing left to store: the stored rows go.
+        assertTrue(ArchiveGuidePlan.changed(emptyList(), before.map { it.startMs }))
+        assertFalse(ArchiveGuidePlan.changed(emptyList(), emptyList()))
+    }
+
+    @Test fun `the rows have a store of their own, clear of playlists and EPG sources`() {
+        val store = ArchiveGuidePlan.storeId(3)
+        assertTrue(store < -1_000_000)
+        assertTrue(store != ArchiveGuidePlan.storeId(4))
+        assertTrue(ArchiveGuidePlan.storeId(1) < 0)
+    }
+
+    @Test fun `the rows are keyed the way the guide reads them`() {
+        // Providers send mixed-case ids; the guide stores and reads them trimmed and lower-cased.
+        val channel = ChannelEntity(sourceId = 3, name = "One", streamUrl = "http://x/1", epgChannelId = " BBC.One.UK ")
+        assertEquals("bbc.one.uk", epgKeyOf(channel, SectionCustomizations()))
     }
 
     @Test fun `untitled and duplicate entries are dropped, the rest sorted`() {
         val listings = listOf(p(28, 27), p(30, 29, " "), p(28, 27, "Repeat"), p(29, 28))
-        val keep = ArchiveGuidePlan.toStore(listings, now - 24 * h, emptySet(), now - day * 2, now)
+        val keep = ArchiveGuidePlan.toStore(listings, now - 24 * h, now - day * 2, now)
         assertEquals(listOf(now - 29 * h, now - 28 * h), keep.map { it.startMs })
         assertEquals("News", keep.last().title)
     }
 
     @Test fun `nothing is added to a channel the feeds have no guide for`() {
-        assertTrue(ArchiveGuidePlan.toStore(listOf(p(3, 2)), null, emptySet(), now - day, now).isEmpty())
+        assertTrue(ArchiveGuidePlan.toStore(listOf(p(3, 2)), null, now - day, now).isEmpty())
     }
 }
