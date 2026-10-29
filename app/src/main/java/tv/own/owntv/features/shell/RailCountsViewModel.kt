@@ -84,20 +84,27 @@ class RailCountsViewModel(
     val details: StateFlow<RailDetails> = settings.activeProfileId
         .flatMapLatest { pid ->
             if (pid < 0) return@flatMapLatest flowOf(RailDetails())
-            suspend fun allowed(categoryId: Long?) = AdultCategoryClassifier.allows(pid, categoryId, profileDao, categoryDao)
-            val live = historyDao.observeMostRecentOfType(pid, MediaType.LIVE).map { h ->
-                h?.let { channelDao.getById(it.itemId) }?.takeIf { allowed(it.categoryId) }?.name
+            suspend fun allowed(categoryId: Long?) =
+                AdultCategoryClassifier.allows(pid, categoryId, profileDao, categoryDao)
+            // Each with its section's customizations, so a rename in Customize shows here too.
+            fun lastOf(type: MediaType, section: MediaType) =
+                combine(
+                    historyDao.observeMostRecentOfType(pid, type),
+                    customize.observe(pid, section),
+                ) { h, cust -> h to cust }
+            val live = lastOf(MediaType.LIVE, MediaType.LIVE).map { (h, cust) ->
+                h?.let { channelDao.getById(it.itemId) }?.takeIf { allowed(it.categoryId) }?.let { cust.displayName(it) }
             }
-            val movie = historyDao.observeMostRecentOfType(pid, MediaType.MOVIE).map { h ->
+            val movie = lastOf(MediaType.MOVIE, MediaType.MOVIE).map { (h, cust) ->
                 h?.let { movieDao.getById(it.itemId) }
                     ?.takeIf { allowed(it.categoryId) && (progressDao.get(pid, MediaType.MOVIE, it.id)?.positionMs ?: 0L) > 0 }
-                    ?.name
+                    ?.let { cust.displayName(it) }
             }
-            val episode = historyDao.observeMostRecentOfType(pid, MediaType.EPISODE).map { h ->
+            val episode = lastOf(MediaType.EPISODE, MediaType.SERIES).map { (h, cust) ->
                 val ep = h?.let { seriesDao.getEpisodeById(it.itemId) } ?: return@map null
                 val s = seriesDao.getSeriesById(ep.seriesId)?.takeIf { allowed(it.categoryId) } ?: return@map null
                 val pos = progressDao.get(pid, MediaType.EPISODE, ep.id)?.positionMs ?: 0L
-                RailEpisode(s.name, ep.seasonNumber, ep.episodeNumber, resume = pos > 0)
+                RailEpisode(cust.displayName(s), ep.seasonNumber, ep.episodeNumber, resume = pos > 0)
             }
             val downloads = downloadDao.observeForProfile(pid).map { all -> all.filter { it.status == DownloadStatus.RUNNING } }
             combine(live, movie, episode, downloads) { l, m, e, running ->

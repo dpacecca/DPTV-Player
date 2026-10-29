@@ -166,6 +166,7 @@ val appModule = module {
             syncScheduler = get(),
             syncStateStore = get(),
             changeChecker = get(),
+            sourceEditor = get(),
         )
     }
     viewModelOf(::LocalSyncViewModel)

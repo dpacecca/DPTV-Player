@@ -558,7 +558,6 @@
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	resync enqueue sourceId=${source.id} clean=$clean
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	runImport profile=$pid
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	runImport sync success sourceId=${done.source?.id} profile=$pid
-1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	scope_edit
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	setAndroidTvHomeEnabled enabled=$enabled
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	sync times re-arm failed
 1	protocol	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	timed out
