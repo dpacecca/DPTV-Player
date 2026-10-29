@@ -148,6 +148,11 @@ data class SectionCustomizations(
      */
     val epgMatchResolver: EpgMatchResolver by lazy { EpgMatchResolver(epgMatches) }
 
+    /** The name the user gave this item in Customize, else the provider's. */
+    fun displayName(ch: ChannelEntity): String = itemNames[CustomizeKeys.channel(ch)] ?: ch.name
+    fun displayName(m: MovieEntity): String = itemNames[CustomizeKeys.movie(m)] ?: m.name
+    fun displayName(s: SeriesEntity): String = itemNames[CustomizeKeys.series(s)] ?: s.name
+
     val isEmpty: Boolean
         get() = hiddenCategories.isEmpty() && hiddenItems.isEmpty() && categoryNames.isEmpty() &&
             itemNames.isEmpty() && categoryOrder.isEmpty() && epgMatches.isEmpty() &&

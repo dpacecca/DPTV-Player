@@ -2989,6 +2989,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	episodes seriesId=$seriesId fetched=${fetched.size} new=${plan.inserts.size}
 1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	stalker episodes seriesId=${series.id} remoteId=$remoteId seasons=${seasons.size} episodes=${episodes.size}
 1	log	core/src/main/java/tv/own/owntv/core/repository/SeriesRepository.kt	updated=${plan.updates.size} removed=${plan.deleteIds.size}
+1	log	core/src/main/java/tv/own/owntv/core/repository/SourceEditor.kt	playlist_edit
 1	technical	core/src/main/java/tv/own/owntv/core/repository/SourceRepository.kt	Cancelled
 1	technical	core/src/main/java/tv/own/owntv/core/repository/SourceRepository.kt	Failed
 1	log	core/src/main/java/tv/own/owntv/core/repository/SourceRepository.kt	SourceRepository
@@ -3332,7 +3333,7 @@
 1	technical	core/src/main/java/tv/own/owntv/core/stalker/StalkerAuthManager.kt	status
 1	log	core/src/main/java/tv/own/owntv/core/stalker/StalkerAuthManager.kt	watchdog=${profile["watchdog_timeout"] ?: "?"} ms=${SystemClock.elapsedRealtime() - startedAt}
 2	technical	core/src/main/java/tv/own/owntv/core/stalker/StalkerAuthManager.kt	watchdog_timeout
-6	empty	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	\0
+7	empty	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	\0
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	$1=***
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	$apiBase?type=${enc(type)}&action=create_link&cmd=${enc(cmd)}$seriesParam&forced_storage=0&disable_ad=0&JsHttpRequest=1-xml
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	$apiBase?type=account_info&action=get_main_info&JsHttpRequest=1-xml
@@ -3366,6 +3367,7 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	*
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	.
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	.php
+1	uri	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	/
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	/c
 2	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	0
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	127.0.0.1
@@ -3437,7 +3439,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	get_profile device conflict — retrying once with stb_type=$model
 1	log	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	guide download url=$safeUrl bytes=$written ms=${SystemClock.elapsedRealtime() - startedAt}
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	handshake candidate failed apiBase=$apiBase message=${e.message}
-1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	handshake ok apiBase=$apiBase
+1	log	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	handshake ok apiBase=$landed
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	http://
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	https://
 6	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	id
@@ -3455,6 +3457,7 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	poster
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	rating
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	rating_imdb
+1	log	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	redirectedFrom=$apiBase
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	screenshot_uri
 1	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	series
 2	protocol	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	start_timestamp
@@ -3834,6 +3837,7 @@
 1	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	$phase import failed — keeping the rest of the import
 1	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	ABORTING fallback
 1	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	HTTP
+1	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	HTTP 401: panel rejected the username or password
 4	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	SyncManager
 1	log	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	Xtream sync scheduling sourceId=${s.id} contentTypes=$contentTypes concurrency=$phaseConcurrency hlsSupported=${details?.hlsSupported} maxConnections=${details?.maxConnections} serverTimeZone=${details?.serverTimeZone}
 2	technical	core/src/main/java/tv/own/owntv/core/sync/XtreamSyncer.kt	channels
@@ -4441,6 +4445,7 @@
 2	protocol	core/src/main/java/tv/own/owntv/core/util/ErrorMessages.kt	HTTP 502
 2	protocol	core/src/main/java/tv/own/owntv/core/util/ErrorMessages.kt	HTTP 503
 2	protocol	core/src/main/java/tv/own/owntv/core/util/ErrorMessages.kt	HTTP 504
+1	protocol	core/src/main/java/tv/own/owntv/core/util/ErrorMessages.kt	HTTP 513
 1	protocol	core/src/main/java/tv/own/owntv/core/util/ErrorMessages.kt	MAC may not be authorized
 1	protocol	core/src/main/java/tv/own/owntv/core/util/ErrorMessages.kt	MAC not authorized
 2	protocol	core/src/main/java/tv/own/owntv/core/util/ErrorMessages.kt	No address associated
