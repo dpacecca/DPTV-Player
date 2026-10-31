@@ -325,40 +325,9 @@ class CustomizationStore(private val context: Context) {
 
     // --- JSON (org.json, matching BackupManager's style) ---
 
-    private fun parse(raw: String?): SectionCustomizations {
-        if (raw.isNullOrBlank()) return SectionCustomizations()
-        return runCatching {
-            val o = JSONObject(raw)
-            SectionCustomizations(
-                hiddenCategories = o.optJSONArray("hiddenCats").toStringSet(),
-                hiddenItems = o.optJSONObject("hiddenItems").toStringMap(),
-                categoryNames = o.optJSONObject("catNames").toStringMap(),
-                itemNames = o.optJSONObject("itemNames").toStringMap(),
-                categoryOrder = o.optJSONArray("catOrder").toStringList(),
-                epgMatches = o.optJSONObject("epgMatch").toStringMap(),
-                epgShifts = o.optJSONObject("epgShift").toStringMap(),
-                customCategories = o.optJSONArray("customCats").toCustomCategories(),
-                movedFromOrigin = o.optJSONObject("movedFrom").toStringMap(),
-            )
-        }.getOrDefault(SectionCustomizations())
-    }
+    private fun parse(raw: String?): SectionCustomizations = CustomizationJson.parse(raw)
 
-    private fun serialize(c: SectionCustomizations): String = JSONObject().apply {
-        put("hiddenCats", JSONArray(c.hiddenCategories.toList()))
-        put("hiddenItems", JSONObject(c.hiddenItems as Map<*, *>))
-        put("catNames", JSONObject(c.categoryNames as Map<*, *>))
-        put("itemNames", JSONObject(c.itemNames as Map<*, *>))
-        put("catOrder", JSONArray(c.categoryOrder))
-        put("epgMatch", JSONObject(c.epgMatches as Map<*, *>))
-        put("epgShift", JSONObject(c.epgShifts as Map<*, *>))
-        put("movedFrom", JSONObject(c.movedFromOrigin as Map<*, *>))
-        put(
-            "customCats",
-            JSONArray(c.customCategories.map {
-                JSONObject().put("id", it.id).put("name", it.name).put("icon", it.icon)
-            }),
-        )
-    }.toString()
+    private fun serialize(c: SectionCustomizations): String = CustomizationJson.serialize(c)
 
     private fun JSONArray?.toStringList(): List<String> =
         if (this == null) emptyList() else (0 until length()).map { getString(it) }

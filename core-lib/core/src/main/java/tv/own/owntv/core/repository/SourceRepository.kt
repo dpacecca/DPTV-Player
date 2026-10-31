@@ -33,6 +33,12 @@ class SourceRepository(
 
     suspend fun getById(id: Long): SourceEntity? = sourceDao.getById(id)
 
+    /**
+     * (DPTV) A plain row update with no re-sync: for internal one-off fixes such as the VOD scope
+     * restore in AutoRefresh. A playlist the user edits goes through core's edit path instead.
+     */
+    suspend fun updateSource(source: SourceEntity) = sourceDao.update(source)
+
     suspend fun addXtreamSource(
         profileId: Long, name: String, serverUrl: String, username: String, password: String,
         userAgent: String? = null, epgUrl: String? = null,
