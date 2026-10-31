@@ -323,6 +323,8 @@ class ChangeCheckWorker(
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         checker.checkAll("work")
+        // (DPTV v2.8.0) The same quarter hour picks up a profile another TV synced, and sends this one's.
+        tv.own.owntv.core.sync.profile.ServerProfileSync.enqueue(applicationContext, "check")
         return Result.success()
     }
 }

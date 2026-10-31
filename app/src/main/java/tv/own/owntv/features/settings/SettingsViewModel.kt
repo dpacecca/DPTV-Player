@@ -1099,6 +1099,26 @@ class SettingsViewModel(
         )
 
     /** Stores one kind's times and re-arms its alarm at once. */
+    /** (v2.8.0) Share this TV's profile through DPTV-Server; and where that sync stands. */
+    val profileServerSync: StateFlow<Boolean> = settings.profileServerSync
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val profileSyncState: StateFlow<tv.own.owntv.core.sync.profile.ProfileSyncState?> = settings.profileSyncState
+        .map { tv.own.owntv.core.sync.profile.ProfileSyncState.decode(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun setProfileServerSync(on: Boolean) {
+        viewModelScope.launch {
+            settings.setProfileServerSync(on)
+            if (on) {
+                runCatching {
+                    tv.own.owntv.core.sync.profile.ServerProfileSync.enqueue(
+                        org.koin.core.context.GlobalContext.get().get<android.content.Context>(), "settings",
+                    )
+                }
+            }
+        }
+    }
+
     fun setSyncTimes(kind: tv.own.owntv.core.sync.schedule.ScheduledKind, times: List<Int>) {
         viewModelScope.launch {
             settings.setSyncTimes(kind, times)

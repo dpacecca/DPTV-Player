@@ -22,6 +22,7 @@
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	BgImage
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	OwnTVHome
 1	compiler	app/src/main/java/tv/own/owntv/MainActivity.kt	RememberReturnType
+1	technical	app/src/main/java/tv/own/owntv/MainActivity.kt	background
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	blur: bounds decode failed for $path
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	blur: crop/scale/blur threw ${t.javaClass.simpleName}: ${t.message}
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	blur: decodeFile returned null for $path
@@ -35,6 +36,7 @@
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	onNewIntent deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}
 1	performance	app/src/main/java/tv/own/owntv/MainActivity.kt	profile-id-loaded
 1	performance	app/src/main/java/tv/own/owntv/MainActivity.kt	profiles-loaded
+1	technical	app/src/main/java/tv/own/owntv/MainActivity.kt	start
 1	compiler	app/src/main/java/tv/own/owntv/OwnTVApp.kt	DEPRECATION
 1	technical	app/src/main/java/tv/own/owntv/OwnTVApp.kt	dpacecca/DPTV-Player-releases
 1	file-path	app/src/main/java/tv/own/owntv/OwnTVApp.kt	image_cache
@@ -559,6 +561,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	runImport profile=$pid
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	runImport sync success sourceId=${done.source?.id} profile=$pid
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	setAndroidTvHomeEnabled enabled=$enabled
+1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	settings
 1	log	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	sync times re-arm failed
 1	protocol	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	timed out
 1	protocol	app/src/main/java/tv/own/owntv/features/settings/SettingsViewModel.kt	unknown host

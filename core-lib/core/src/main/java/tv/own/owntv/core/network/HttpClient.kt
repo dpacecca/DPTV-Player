@@ -9,7 +9,9 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Request
 import java.io.FilterInputStream
 import java.io.IOException
@@ -109,6 +111,49 @@ class HttpClient(private val client: OkHttpClient) {
         throw IOException("GET failed for $safeUrl")
     }
 
+    /**
+     * (DPTV v2.8.0) One small JSON POST — the profile DPTV-Server keeps for this login. Never throws for
+     * an HTTP status (a 409 is an answer); code 0 when no response came. The answer is read up to
+     * [maxAnswerBytes]: these replies are a few hundred bytes.
+     */
+    suspend fun postJson(
+        url: String,
+        json: String,
+        userAgent: String? = null,
+        maxAnswerBytes: Int = 64 * 1024,
+    ): Pair<Int, String> = withContext(Dispatchers.IO) {
+        val ua = userAgent?.takeIf { it.isNotBlank() } ?: DEFAULT_USER_AGENT
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", ua)
+            .post(json.toRequestBody(JSON_MEDIA))
+            .build()
+        val call = client.newCall(request)
+        val hook = currentCoroutineContext()[Job]?.invokeOnCompletion { cause -> if (cause is CancellationException) call.cancel() }
+        try {
+            call.execute().use { response ->
+                val answer = response.body.byteStream().use { input ->
+                    val buf = ByteArray(maxAnswerBytes)
+                    var n = 0
+                    while (n < buf.size) {
+                        val r = input.read(buf, n, buf.size - n)
+                        if (r < 0) break
+                        n += r
+                    }
+                    String(buf, 0, n, Charsets.UTF_8)
+                }
+                Log.i(TAG, "POST url=${redact(url)} code=${response.code} bytes=${json.length}")
+                response.code to answer
+            }
+        } catch (e: IOException) {
+            currentCoroutineContext().ensureActive()
+            Log.w(TAG, "POST failed url=${redact(url)} message=${e.message}")
+            0 to ""
+        } finally {
+            hook?.dispose()
+        }
+    }
+
     /** Mask credentials in a URL before it appears in an error/log — Xtream embeds user/pass in the query. */
     private fun redact(url: String): String =
         url.replace(Regex("(?i)(username|password|user|pass|token)=[^&]*"), "$1=***")
@@ -184,6 +229,8 @@ class HttpClient(private val client: OkHttpClient) {
 
     companion object {
         private const val TAG = "HttpClient"
+
+        private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
 
         /** Player-style UA that IPTV panels broadly accept. Overridable per-source in Phase 12. */
         const val DEFAULT_USER_AGENT = "VLC/3.0.20 LibVLC/3.0.20"

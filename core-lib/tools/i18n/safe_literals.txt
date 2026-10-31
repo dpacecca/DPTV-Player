@@ -2339,7 +2339,7 @@
 1	protocol	core/src/main/java/tv/own/owntv/core/network/ExtraTrustAnchors.kt	X.509
 1	log	core/src/main/java/tv/own/owntv/core/network/FirstRead.kt	$name setting not read after ${timeoutMs}ms; going on without it
 1	log	core/src/main/java/tv/own/owntv/core/network/FirstRead.kt	OwnTV-Network
-2	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	\0
+3	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	\0
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	$1***@
 2	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	$1=***
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	$1•••/•••/
@@ -2362,10 +2362,13 @@
 1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	If-Modified-Since
 1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	If-None-Match
 1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	Last-Modified
+1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	POST failed url=${redact(url)} message=${e.message}
+1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	POST url=${redact(url)} code=${response.code} bytes=${json.length}
 1	technical	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	SHA-256
 1	protocol	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	Transfer-Encoding
-2	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	User-Agent
+3	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	User-Agent
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	VLC/3.0.20 LibVLC/3.0.20
+1	mime	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	application/json; charset=utf-8
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	contentEncoding=${response.header("Content-Encoding").orEmpty()}
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	deltaBytes=$bytesDelta deltaMs=$timeDelta kbps=$kbps
 1	log	core/src/main/java/tv/own/owntv/core/network/HttpClient.kt	elapsedMs=${now - startedAt}
@@ -3248,6 +3251,8 @@
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	pref_sub_lang
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	pref_sub_lang_
 1	technical	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	prefer_sdr
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	profile_server_sync
+1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	profile_sync_state
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	proxy_enabled
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	proxy_host
 1	preference-key	core/src/main/java/tv/own/owntv/core/settings/SettingsRepository.kt	proxy_pass
@@ -3939,12 +3944,42 @@
 2	json	core/src/main/java/tv/own/owntv/core/sync/local/PairedDeviceStore.kt	port
 2	json	core/src/main/java/tv/own/owntv/core/sync/local/PairedDeviceStore.kt	secret
 1	json	core/src/main/java/tv/own/owntv/core/sync/local/PairedDeviceStore.kt	selfId
+4	empty	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	\0
+2	technical	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	%02x
+2	technical	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	SHA-256
+1	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	activeProfileId
+2	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	at
+1	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	base_revision
+2	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	cfp
+1	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	customizations
+2	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	data
+1	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	detail
+1	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	device
+2	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	fp
+1	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	hideNewCategories
+1	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	homeConfigs
+2	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	id
+1	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	name
+1	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	profiles
+2	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	rev
+5	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	revision
+2	json	core/src/main/java/tv/own/owntv/core/sync/profile/ProfileSyncRules.kt	src
+1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	ProfileSync
+1	protocol	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	dptv_profile
+1	protocol	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	dptv_profile_put
+1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	profile sync failed why=$why: ${e.javaClass.simpleName}
+1	log	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	profile sync why=$why outcome=$outcome
+2	file-path	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	profile-sync
+1	file-path	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	profile.json
+1	technical	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	why
+1	technical	core/src/main/java/tv/own/owntv/core/sync/profile/ServerProfileSync.kt	work
 4	empty	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	\0
 3	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	,
 1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	ChangeChecker
 1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	change
 1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	change sync throttled kind=$kind id=$id
 1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	changed=${triggers.joinToString(",") { it.name.lowercase() }.ifEmpty { "none" }}
+1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	check
 1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	check pass done why=$why
 1	technical	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	dptv_sync_status
 1	log	core/src/main/java/tv/own/owntv/core/sync/schedule/ChangeChecker.kt	failed(HTTP $lastFailure)

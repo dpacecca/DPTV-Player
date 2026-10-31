@@ -129,6 +129,8 @@ open class MainActivity : ComponentActivity() {
         // Every engine: mpv, the Live engine (its audio must stop too), each Multiview tile and the hero.
         if (!isChangingConfigurations) engines.onAppBackgrounded()
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // (v2.8.0) Leaving this TV: hand its history, progress and last channel to DPTV-Server for the others.
+        if (!isChangingConfigurations) tv.own.owntv.core.sync.profile.ServerProfileSync.enqueue(applicationContext, "background")
     }
 
     override fun onStart() {
@@ -140,6 +142,8 @@ open class MainActivity : ComponentActivity() {
         // Staleness-based auto refresh on resume (interval modes only — STARTUP is cold-start only). The
         // ViewModel throttles this internally so a quick toggle doesn't re-run the check.
         shellViewModel.checkAutoRefresh(includeStartup = false)
+        // (v2.8.0) Back on this TV: pick up what was watched on the others since.
+        tv.own.owntv.core.sync.profile.ServerProfileSync.enqueue(applicationContext, "start")
     }
 
     /**

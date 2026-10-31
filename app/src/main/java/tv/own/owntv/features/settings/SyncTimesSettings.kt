@@ -98,6 +98,14 @@ fun changeCheckLine(state: SourceCheckState?, checking: Boolean): String {
  * Settings › Sync times (v2.5.3): the three kinds, each opening its list of times; a time opens a
  * ◀ ▶ stepper in 30-minute steps, with Remove; the list also offers Add a time and the defaults.
  */
+/** (v2.8.0) "On · synced 14:05", "On · waits for DPTV-Server" or "Off". */
+@Composable
+private fun profileSyncLine(on: Boolean, lastSyncAt: Long?): String = when {
+    !on -> stringResource(R.string.common_off)
+    lastSyncAt == null || lastSyncAt <= 0L -> stringResource(R.string.sport_profile_sync_waiting)
+    else -> stringResource(R.string.sport_profile_sync_at, checkWhen(lastSyncAt))
+}
+
 @Composable
 fun SyncTimesDialog(vm: SettingsViewModel, onClose: () -> Unit) {
     val all by vm.syncTimes.collectAsStateWithLifecycle()
@@ -123,6 +131,14 @@ fun SyncTimesDialog(vm: SettingsViewModel, onClose: () -> Unit) {
                         modifier = if (i == 0) Modifier.focusRequester(first) else Modifier,
                     )
                 }
+                // (v2.8.0) The profile shared with the other TVs on this DPTV-Server login.
+                val profileSync by vm.profileServerSync.collectAsStateWithLifecycle()
+                val profileState by vm.profileSyncState.collectAsStateWithLifecycle()
+                tv.own.owntv.ui.stage.StagePopupOption(
+                    title = stringResource(R.string.sport_profile_sync),
+                    subtitle = profileSyncLine(profileSync, profileState?.lastSyncAt),
+                    onClick = { vm.setProfileServerSync(!profileSync) },
+                )
             }
         }
         editing == null -> {
