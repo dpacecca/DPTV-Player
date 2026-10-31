@@ -892,6 +892,9 @@ class EpgViewModel(
         val cust: tv.own.owntv.core.customize.SectionCustomizations,
         val profileId: Long,
         val query: String,
+        /** (v2.7.1) What [inLiveTvOrder] needs to order a category as Live TV does, on a category change too. */
+        val sortMode: SettingsRepository.GuideSort,
+        val playlistIds: List<Long>,
     )
 
     private var lastSorted: SortedGuide? = null
@@ -913,10 +916,13 @@ class EpgViewModel(
                     return@withLock
                 }
                 val filter = _categoryFilter.value
-                val channels = filterCategory(cached, filter, categoryMembers(
-                    filter, cached.profileId,
-                    favoriteDao.observeFavoriteIds(cached.profileId, MediaType.LIVE).first().toSet(),
-                ))
+                val channels = inLiveTvOrder(
+                    filterCategory(cached, filter, categoryMembers(
+                        filter, cached.profileId,
+                        favoriteDao.observeFavoriteIds(cached.profileId, MediaType.LIVE).first().toSet(),
+                    )),
+                    filter, cached,
+                )
                 val message = when {
                     lastStored == 0 -> null
                     channels.isEmpty() && cached.query.isNotBlank() -> EpgMessage.NoChannelsForQuery(cached.query)
@@ -957,6 +963,35 @@ class EpgViewModel(
                 else -> sorted.filter { it.id in memberIds.orEmpty() }
             }
         }
+    }
+
+    /**
+     * Provider and A–Z are Live TV's own lists: in a folder, a custom category or Favourites the guide
+     * takes the order the Live TV queries give, moved channels in their place (OwnTV, v2.7.0); elsewhere,
+     * All included, the playlist's order or plain A–Z as sorted. Only the category on screen is read.
+     */
+    private suspend fun inLiveTvOrder(
+        channels: List<ChannelEntity>,
+        filter: tv.own.owntv.core.live.LiveKey?,
+        guide: SortedGuide,
+    ): List<ChannelEntity> {
+        val alphaSort = guide.sortMode == SettingsRepository.GuideSort.ALPHA
+        val liveTvSort = alphaSort || guide.sortMode == SettingsRepository.GuideSort.PROVIDER ||
+            guide.sortMode == SettingsRepository.GuideSort.LIVE_TV
+        if (!liveTvSort || channels.isEmpty()) return channels
+        val pid = guide.profileId
+        val order: Map<Long, Int> = when (filter) {
+            is tv.own.owntv.core.live.LiveKey.Folder -> categoryDao.getById(filter.id)?.let(CustomizeKeys::category)
+                ?.let { channelDao.snapshotByCategoryManual(filter.id, pid, it, alphaSort, MAX_CHANNELS) }
+            is tv.own.owntv.core.live.LiveKey.Custom ->
+                customCategoryDao.snapshotChannels(pid, filter.id, guide.playlistIds, alphaSort, MAX_CHANNELS)
+            tv.own.owntv.core.live.LiveKey.Favorites -> channelDao.snapshotFavoritesManual(
+                pid, tv.own.owntv.core.database.entity.ContentOrderEntity.FAV_CONTEXT, guide.playlistIds, MAX_CHANNELS,
+            )
+            else -> null
+        }?.withIndex()?.associate { (i, ch) -> ch.id to i } ?: return channels
+        // A stable sort keeps the cached order (A–Z or the playlist's) among channels the query left out.
+        return withContext(Dispatchers.Default) { channels.sortedBy { order[it.id] ?: Int.MAX_VALUE } }
     }
 
     fun load(background: Boolean = false) {
@@ -1027,28 +1062,7 @@ class EpgViewModel(
         )
     }
         val filter = _categoryFilter.value
-        // A provider folder keeps out the channels the user moved from it into a custom category.
-        val folderKey = (filter as? tv.own.owntv.core.live.LiveKey.Folder)
-            ?.let { categoryDao.getById(it.id) }?.let(CustomizeKeys::category)
-        val memberIds: Set<Long>? = when (filter) {
-            is tv.own.owntv.core.live.LiveKey.Custom -> customCategoryDao.itemIds(pid, MediaType.LIVE, filter.id).toSet()
-            tv.own.owntv.core.live.LiveKey.Favorites -> favoriteIds
-            tv.own.owntv.core.live.LiveKey.History ->
-                historyDao.getForProfileType(pid, MediaType.LIVE).mapTo(HashSet()) { it.itemId }
-            else -> null
-        }
-        // Provider and A–Z are Live TV's own lists: in a folder, a custom category or Favourites the guide
-        // takes the order the Live TV queries give, moved channels in their place; elsewhere, All included,
-        // the playlist's order or plain A–Z.
-        val alphaSort = sortGuideMode == SettingsRepository.GuideSort.ALPHA
-        val liveTvSort = alphaSort || sortGuideMode == SettingsRepository.GuideSort.PROVIDER || sortGuideMode == SettingsRepository.GuideSort.LIVE_TV
-        val liveOrder: Map<Long, Int>? = if (!liveTvSort) null else when (filter) {
-            is tv.own.owntv.core.live.LiveKey.Folder -> folderKey?.let { channelDao.snapshotByCategoryManual(filter.id, pid, it, alphaSort, MAX_CHANNELS) }
-            is tv.own.owntv.core.live.LiveKey.Custom -> customCategoryDao.snapshotChannels(pid, filter.id, playlistIds, alphaSort, MAX_CHANNELS)
-            tv.own.owntv.core.live.LiveKey.Favorites ->
-                channelDao.snapshotFavoritesManual(pid, tv.own.owntv.core.database.entity.ContentOrderEntity.FAV_CONTEXT, playlistIds, MAX_CHANNELS)
-            else -> null
-        }?.withIndex()?.associate { (i, ch) -> ch.id to i }
+        val memberIds = categoryMembers(filter, pid, favoriteIds)
         // Heavy work — filter hidden, apply renames + manual EPG matches, sort, category-filter — runs off
         // the main thread (#3/#5) so a 50k-channel playlist never freezes the UI building the guide list.
         val sorted = withContext(Dispatchers.Default) {
@@ -1063,27 +1077,20 @@ class EpgViewModel(
             // Catch-up first, Favourites first. The last two only float those channels to the top.
             val byAlpha = compareBy<ChannelEntity> { it.name.lowercase() }
             val byProvider = compareBy<ChannelEntity>({ it.sourceId }, { it.sortOrder }, { it.name.lowercase() })
-            val byLiveTv = liveOrder?.let { order -> compareBy<ChannelEntity> { order[it.id] ?: Int.MAX_VALUE }.then(if (alphaSort) byAlpha else byProvider) }
             when (sortGuideMode) {
-                SettingsRepository.GuideSort.ALPHA -> matched.sortedWith(byLiveTv ?: byAlpha)
-                SettingsRepository.GuideSort.PROVIDER -> matched.sortedWith(byLiveTv ?: byProvider)
+                SettingsRepository.GuideSort.ALPHA -> matched.sortedWith(byAlpha)
+                SettingsRepository.GuideSort.PROVIDER -> matched.sortedWith(byProvider)
                 SettingsRepository.GuideSort.CATCHUP -> matched.sortedWith(compareByDescending<ChannelEntity> { it.catchup }.then(byProvider))
                 SettingsRepository.GuideSort.FAVORITES -> matched.sortedWith(compareByDescending<ChannelEntity> { it.id in favoriteIds }.then(byProvider))
                 // LIVE_TV, the old default, is the provider's order too (Channel number was the same thing).
-                SettingsRepository.GuideSort.LIVE_TV -> matched.sortedWith(byLiveTv ?: byProvider)
-            }.let { sorted ->
-                when (filter) {
-                    null, tv.own.owntv.core.live.LiveKey.All -> sorted
-                    tv.own.owntv.core.live.LiveKey.Catchup -> sorted.filter { it.catchup }
-                    is tv.own.owntv.core.live.LiveKey.Folder -> sorted.filter { ch ->
-                        ch.categoryId == filter.id && (folderKey == null || cust.movedFromOrigin[CustomizeKeys.channel(ch)] != folderKey)
-                    }
-                    else -> sorted.filter { it.id in memberIds.orEmpty() }
-                }
+                SettingsRepository.GuideSort.LIVE_TV -> matched.sortedWith(byProvider)
             }
         }
-        lastSorted = SortedGuide(sorted, cust, pid, q)
-        val channels = filterCategory(lastSorted!!, filter, memberIds)
+        // (v2.7.1) The cache holds every channel, sorted: a category change filters it again ([refilter]).
+        // Filtering it here too left one category's channels in it, and the next category found none
+        // ("channel ids don't match"). Live TV's order for the category on screen is laid on after.
+        lastSorted = SortedGuide(sorted, cust, pid, q, sortGuideMode, playlistIds)
+        val channels = inLiveTvOrder(filterCategory(lastSorted!!, filter, memberIds), filter, lastSorted!!)
         val stored = epgDao.countForSources(ids)
 
 

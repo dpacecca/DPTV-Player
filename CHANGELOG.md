@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.7.1
+
+### 🐛 Fixes
+- **TV Guide: changing category no longer shows an empty guide ("channel ids don't match")**
+
 ## v2.7.0
 
 ### ✨ New features
