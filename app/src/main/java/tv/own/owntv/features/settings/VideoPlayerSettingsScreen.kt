@@ -2676,3 +2676,43 @@ private fun audioOutputName(output: tv.own.owntv.core.player.AudioOutputKind): I
     tv.own.owntv.core.player.AudioOutputKind.SPEAKER -> R.string.settings_audio_output_speaker
     tv.own.owntv.core.player.AudioOutputKind.OTHER -> R.string.settings_audio_output_other
 }
+
+/**
+ * (OwnTV #287) A [StageSettingRow] whose words and help come from its key in [SETTING_TITLE] /
+ * [SETTING_LINE] / [SETTING_HELP] — [helpKey], else [quickKey]. With a [quickKey] on a page that provides
+ * [LocalQuickPin], a held OK offers to pin the row to Quick.
+ */
+@Composable
+internal fun KeyedSettingRow(
+    icon: OwnTVIcon,
+    title: String,
+    value: SettingValue?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    desc: String? = null,
+    /** Its key in [VIDEO_QUICK_ROWS]. Present = a held OK offers to pin this row to Quick. */
+    quickKey: String? = null,
+    /** Help-text key when it is not [quickKey] (rows that cannot be pinned). */
+    helpKey: String? = null,
+    /** The panel's choices for a row picked from a list, and the current / recommended one. */
+    choices: List<String> = emptyList(),
+    chosen: Int = -1,
+    recommended: Int = -1,
+    onStep: ((Int) -> Unit)? = null,
+) {
+    val pin = if (quickKey != null) LocalQuickPin.current else null
+    val key = helpKey ?: quickKey
+    val words = settingWords(key, title, desc)
+    StageSettingRow(
+        icon = icon,
+        title = words.title,
+        desc = words.line,
+        value = value,
+        onClick = onClick,
+        onLongClick = pin?.let { p -> { p.onHold(quickKey!!) } },
+        onStep = onStep,
+        help = settingHelp(key, words.title, desc, value, choices, chosen, recommended, pinnable = pin != null),
+        pinned = pin != null && quickKey in pin.pinned,
+        modifier = modifier.then(if (pin != null && pin.focusKey == quickKey) Modifier.focusRequester(pin.focusRequester) else Modifier),
+    )
+}

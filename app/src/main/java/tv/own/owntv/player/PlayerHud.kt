@@ -668,9 +668,10 @@ fun PlayerHud(
                     }
                 }
                 return@onPreviewKeyEvent true
-            // Player buttons: OK with the controls hidden. No plan (the default) leaves OK to the code below.
+            }
+            // Player buttons (OwnTV #287): OK with the controls hidden. No plan (the default) leaves OK to the code below.
             if (isPlayerOkKey(e.key) && e.type != KeyEventType.Unknown) {
-                val okPlan = if (controlsVisible || showNextCard || inert || dialog != HudDialog.NONE || digitsActive || onToastOk != null) null
+                val okPlan = if (controlsVisible || showNextCard || inert || dialog != HudDialog.NONE || digitsActive) null
                     else playerOkPlan(remoteOptions, PlayerOkTargets(channelList = onOpenChannelList != null, guide = isLive, programmeInfo = isLive))
                 val ok = okPress.onKey(e.type == KeyEventType.KeyDown, e.nativeKeyEvent.repeatCount, e.nativeKeyEvent.eventTime, okPlan)
                 if (ok is PlayerOkResult.Fire) when (ok.outcome) {

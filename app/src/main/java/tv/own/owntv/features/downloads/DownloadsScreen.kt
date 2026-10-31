@@ -353,17 +353,16 @@ fun DownloadsScreen(
                                 onCancel = { r -> acted(r.id); recVm.cancel(r) },
                                 onRetry = { r -> recVm.retry(r) },
                                 onDelete = { r -> confirmDelete = PendingDelete(r.id, r.title, recording = true) { recVm.delete(r) } },
-                                missing = recMissing,
                             )
                         } else {
                             val askDelete: (DownloadEntity) -> Unit = { d ->
                                 confirmDelete = PendingDelete(d.id, details[d.id]?.title ?: d.title, recording = false) { vm.delete(d) }
                             }
                             downloadGroup(R.string.content_downloads_group_downloading, downloading, first = true) { d ->
-                                DownloadItem(d, details[d.id], active?.takeIf { it.id == d.id }, downloading, vm, onFullscreen, externalPlayerOn, focusOf(d.id), askDelete, rowFocused, wentExternal, gone = d.filePath in missing)
+                                DownloadItem(d, details[d.id], active?.takeIf { it.id == d.id }, downloading, vm, onFullscreen, externalPlayerOn, focusOf(d.id), askDelete, rowFocused, wentExternal)
                             }
                             downloadGroup(R.string.content_downloads_group_on_tv, onTv, first = downloading.isEmpty()) { d ->
-                                DownloadItem(d, details[d.id], null, downloading, vm, onFullscreen, externalPlayerOn, focusOf(d.id), askDelete, rowFocused, wentExternal, gone = d.filePath in missing)
+                                DownloadItem(d, details[d.id], null, downloading, vm, onFullscreen, externalPlayerOn, focusOf(d.id), askDelete, rowFocused, wentExternal)
                             }
                         }
                     }
@@ -450,7 +449,7 @@ private fun DownloadItem(
     wentExternal: () -> Unit,
 ) {
     val delete = StageAction(stringResource(R.string.common_delete), OwnTVIcon.TRASH) { onDelete(d) }
-    val actions = if (gone && d.status == DownloadStatus.COMPLETED) listOf(delete) else when (d.status) {
+    val actions = when (d.status) {
         DownloadStatus.COMPLETED -> listOf(StageAction(stringResource(R.string.content_downloads_external), OwnTVIcon.EXTERNAL) { wentExternal(); vm.playExternal(d) }, delete)
         DownloadStatus.FAILED -> listOf(StageAction(stringResource(R.string.common_retry), OwnTVIcon.REFRESH) { vm.retry(d) }, delete)
         DownloadStatus.PAUSED -> listOf(StageAction(stringResource(R.string.common_resume), OwnTVIcon.PLAY) { vm.resume(d) }, delete)

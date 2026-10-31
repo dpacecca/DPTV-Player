@@ -161,6 +161,8 @@ class HomeViewModel(
     private val favoriteDao: tv.own.owntv.core.database.dao.FavoriteDao,
     private val userDataWriter: tv.own.owntv.core.backup.UserDataWriter,
     private val trendingRows: TrendingHomeReader,
+    // (OwnTV) A rename in Customize retitles Continue.
+    private val customize: CustomizationStore,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()

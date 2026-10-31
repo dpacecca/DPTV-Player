@@ -57,6 +57,8 @@ class RailCountsViewModel(
     progressDao: ProgressDao,
     profileDao: ProfileDao,
     categoryDao: CategoryDao,
+    // (OwnTV) A rename in Customize shows on the rail's last-watched lines too.
+    customize: tv.own.owntv.core.customize.CustomizationStore,
 ) : ViewModel() {
 
     val counts: StateFlow<Map<MainSection, Int>> = activeProfileSources(settings, sourceDao)

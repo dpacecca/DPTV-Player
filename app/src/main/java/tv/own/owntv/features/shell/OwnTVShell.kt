@@ -2314,25 +2314,6 @@ fun OwnTVShell(
 /** Long enough to read "Auto-matched 12 channels. 40 channels need review." from the sofa. */
 private const val EPG_MATCH_TOAST_MS = 6_000L
 
-/** A thin bar shown above the browse UI when the device loses internet. */
-@Composable
-private fun OfflineBanner() {
-    val colors = OwnTVTheme.colors
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.tertiaryContainer)
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            stringResource(R.string.content_offline_banner),
-            style = MaterialTheme.typography.labelLarge,
-            color = colors.onTertiaryContainer,
-        ) }
-    }
-
 /** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
 private val StageSections = setOf(MainSection.SEARCH, MainSection.HOME, MainSection.LIVE_TV, MainSection.DVR, MainSection.EPG, MainSection.SPORT, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS, MainSection.MORE, MainSection.SETTINGS)
 
