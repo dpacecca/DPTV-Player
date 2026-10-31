@@ -502,191 +502,214 @@ fun HomeScreen(
         }
     }
 
+    // (OwnTV #314) The rows inside read the spec above too, and flush to the row's own edge the last card
+    // (scaled up, with its ring) ran off the screen. Across a row, keep the card inside the row's padding
+    // instead: [contentStart] before it, the 64 every row ends with after it.
+    val rowDensity = LocalDensity.current
+    val rowBringIntoViewSpec = remember(contentStart, rowDensity) {
+        val before = with(rowDensity) { contentStart.toPx() }
+        val after = with(rowDensity) { 64.mpx.toPx() }
+        object : BringIntoViewSpec {
+            override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+                val leading = offset - before
+                val trailing = offset + size - (containerSize - after)
+                return when {
+                    leading >= 0f && trailing <= 0f -> 0f
+                    leading < 0f || size > containerSize - before - after -> leading
+                    else -> trailing
+                }
+            }
+        }
+    }
+
     // One configured Home row; the LazyColumn below places the Sports row between them.
     val rowItem: @Composable (HomeRow) -> Unit = { row ->
         val firstItemFocusRequester = rowFocusRequester(row)
         val rowModifier = if (row == firstRowUnderHero) unfoldOnUp else Modifier
-        when (row) {
-            // Now trending (retired since v2.4.0): its poster form; the full-bleed hero is the featured titles' now.
-            HomeRow.TRENDING -> if (state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS) {
-                posterItem?.let { FoldedHeroLine(it, contentStart, height = CompactHeroHeight + RowGap) }
-                TrendingPosterRow(
-                    // Room for the focused poster's lift under the heading when the line sits above.
-                    headerGap = if (posterItem != null) 16.mpx else 0.dp,
-                    // Compose's one-line poster title is 10 px shorter than Chrome's (P2-04, measured).
-                    bottomGap = if (posterItem != null) 10.mpx else 0.dp,
-                    onItemFocused = { posterIndex = it },
-                    title = row.displayTitle(),
-                    items = state.trendingItems,
-                    start = contentStart,
-                    onItemClick = { item ->
-                        onActivateTrending(item) {
-                            trendingToast.show(trendingUnavailableMessage)
-                            vm.refresh()
-                        }
-                    },
-                    onFocus = onNonHeroFocused,
-                    firstItemFocusRequester = firstItemFocusRequester ?: trendingPrimaryFocus,
-                    track = track,
-                )
-            }
-
-            HomeRow.HERO -> if (state.heroItems.isNotEmpty()) {
-                KeepWatchingRow(
-                    title = row.displayTitle(),
-                    items = state.heroItems,
-                    big = fullBleed && !inRows,
-                    start = contentStart,
-                    metadata = state.heroMetadata,
-                    previewIndex = previewIndex,
-                    engine = heroPreviewEngine,
-                    engineState = engineState,
-                    firstFocusRequester = firstItemFocusRequester ?: heroFocus,
-                    onCardFocusChanged = { index, hasFocus ->
-                        if (hasFocus) {
-                            if (previewIndex != index) {
-                                heroPreviewEngine.stop() // stop the previous card's video first
-                                previewIndex = -1 // the dwell timer starts it again after 3 s
+        // (OwnTV #314) Across a row, keep the focused card inside the row's padding, not flush to its edge.
+        CompositionLocalProvider(LocalBringIntoViewSpec provides rowBringIntoViewSpec) {
+            when (row) {
+                // Now trending (retired since v2.4.0): its poster form; the full-bleed hero is the featured titles' now.
+                HomeRow.TRENDING -> if (state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS) {
+                    posterItem?.let { FoldedHeroLine(it, contentStart, height = CompactHeroHeight + RowGap) }
+                    TrendingPosterRow(
+                        // Room for the focused poster's lift under the heading when the line sits above.
+                        headerGap = if (posterItem != null) 16.mpx else 0.dp,
+                        // Compose's one-line poster title is 10 px shorter than Chrome's (P2-04, measured).
+                        bottomGap = if (posterItem != null) 10.mpx else 0.dp,
+                        onItemFocused = { posterIndex = it },
+                        title = row.displayTitle(),
+                        items = state.trendingItems,
+                        start = contentStart,
+                        onItemClick = { item ->
+                            onActivateTrending(item) {
+                                trendingToast.show(trendingUnavailableMessage)
+                                vm.refresh()
                             }
-                            inRows = true
-                            focusedHeroIndex = index
-                            vm.onHeroUserNavigate(index)
-                            vm.setHeroFocused(true)
-                            onChildFocused()
-                        } else if (focusedHeroIndex == index) {
-                            focusedHeroIndex = -1
-                        }
-                    },
-                    onPlay = { item ->
-                        when (item) {
-                            is HeroItem.MovieHero -> onPlayMovie(item.movie.id, item.positionMs)
-                            is HeroItem.SeriesHero -> onPlayEpisode(item.series.id, item.episode.id, item.positionMs)
-                            is HeroItem.LiveHero -> onPlayChannel(item.channel.id, state.recentLive)
-                        }
-                    },
+                        },
+                        onFocus = onNonHeroFocused,
+                        firstItemFocusRequester = firstItemFocusRequester ?: trendingPrimaryFocus,
+                        track = track,
+                    )
+                }
+
+                HomeRow.HERO -> if (state.heroItems.isNotEmpty()) {
+                    KeepWatchingRow(
+                        title = row.displayTitle(),
+                        items = state.heroItems,
+                        big = fullBleed && !inRows,
+                        start = contentStart,
+                        metadata = state.heroMetadata,
+                        previewIndex = previewIndex,
+                        engine = heroPreviewEngine,
+                        engineState = engineState,
+                        firstFocusRequester = firstItemFocusRequester ?: heroFocus,
+                        onCardFocusChanged = { index, hasFocus ->
+                            if (hasFocus) {
+                                if (previewIndex != index) {
+                                    heroPreviewEngine.stop() // stop the previous card's video first
+                                    previewIndex = -1 // the dwell timer starts it again after 3 s
+                                }
+                                inRows = true
+                                focusedHeroIndex = index
+                                vm.onHeroUserNavigate(index)
+                                vm.setHeroFocused(true)
+                                onChildFocused()
+                            } else if (focusedHeroIndex == index) {
+                                focusedHeroIndex = -1
+                            }
+                        },
+                        onPlay = { item ->
+                            when (item) {
+                                is HeroItem.MovieHero -> onPlayMovie(item.movie.id, item.positionMs)
+                                is HeroItem.SeriesHero -> onPlayEpisode(item.series.id, item.episode.id, item.positionMs)
+                                is HeroItem.LiveHero -> onPlayChannel(item.channel.id, state.recentLive)
+                            }
+                        },
+                        track = track,
+                        modifier = rowModifier,
+                    )
+                } else {
+                    HeroFallbackPane(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = contentStart).then(rowModifier),
+                        focusRequester = firstItemFocusRequester ?: fallbackFocus,
+                        onChildFocused = onNonHeroFocused,
+                    )
+                }
+        
+                HomeRow.RECENT_CHANNELS -> HomeLiveRow(
+                    title = row.displayTitle(),
+                    mode = state.config.recentLiveMode,
+                    channels = state.recentLive,
+                    guide = state.recentGuide,
+                    onChannelClick = onPlayChannel,
+                    onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester,
+                    start = contentStart,
                     track = track,
                     modifier = rowModifier,
                 )
-            } else {
-                HeroFallbackPane(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = contentStart).then(rowModifier),
-                    focusRequester = firstItemFocusRequester ?: fallbackFocus,
-                    onChildFocused = onNonHeroFocused,
+        
+                HomeRow.FAVORITE_CHANNELS -> HomeLiveRow(
+                    title = row.displayTitle(),
+                    mode = state.config.favoriteLiveMode,
+                    channels = state.favoriteLive,
+                    guide = state.favoriteGuide,
+                    onChannelClick = onPlayChannel,
+                    onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester,
+                    start = contentStart,
+                    track = track,
+                    modifier = rowModifier,
+                )
+        
+                HomeRow.FAVORITE_MOVIES -> FavoritePosterRow(
+                    title = row.displayTitle(),
+                    items = state.favoriteMovies,
+                    key = { it.id },
+                    name = { it.name },
+                    poster = { it.posterUrl },
+                    start = contentStart,
+                    onItemClick = { onCardOpened(row, it.id); onOpenMovie(it) },
+                    restoreKey = restoreCard?.takeIf { it.first == row }?.second,
+                    onRestored = onRestored,
+                    onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester,
+                    track = track,
+                    modifier = rowModifier,
+                )
+        
+                HomeRow.FAVORITE_SERIES -> FavoritePosterRow(
+                    title = row.displayTitle(),
+                    items = state.favoriteSeries,
+                    key = { it.id },
+                    name = { it.name },
+                    poster = { it.posterUrl },
+                    start = contentStart,
+                    onItemClick = { onCardOpened(row, it.id); onOpenSeries(it) },
+                    restoreKey = restoreCard?.takeIf { it.first == row }?.second,
+                    onRestored = onRestored,
+                    onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester,
+                    track = track,
+                    modifier = rowModifier,
+                )
+        
+                // Trending movies / Trending shows (v2.4.0): the favourites' poster row, so they look and open the same way.
+                HomeRow.TRENDING_MOVIES -> FavoritePosterRow(
+                    title = row.displayTitle(),
+                    items = state.trendingMovies,
+                    key = { it.item.id },
+                    name = { it.item.name },
+                    poster = { it.posterUrl },
+                    start = contentStart,
+                    onItemClick = { onCardOpened(row, it.item.id); onOpenMovie(it.item) },
+                    restoreKey = restoreCard?.takeIf { it.first == row }?.second,
+                    onRestored = onRestored,
+                    onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester,
+                    track = track,
+                    modifier = rowModifier,
+                )
+
+                HomeRow.TRENDING_SHOWS -> FavoritePosterRow(
+                    title = row.displayTitle(),
+                    items = state.trendingShows,
+                    key = { it.item.id },
+                    name = { it.item.name },
+                    poster = { it.posterUrl },
+                    start = contentStart,
+                    onItemClick = { onCardOpened(row, it.item.id); onOpenSeries(it.item) },
+                    restoreKey = restoreCard?.takeIf { it.first == row }?.second,
+                    onRestored = onRestored,
+                    onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester,
+                    track = track,
+                    modifier = rowModifier,
+                )
+
+                HomeRow.CONTINUE_MOVIES -> ContinuePosterRow(
+                    title = row.displayTitle(),
+                    items = state.continueMovies,
+                    start = contentStart,
+                    onItemClick = { onPlayMovie(it.sourceItemId, it.positionMs) },
+                    onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester,
+                    track = track,
+                    modifier = rowModifier,
+                )
+        
+                HomeRow.CONTINUE_SERIES -> ContinuePosterRow(
+                    title = row.displayTitle(),
+                    items = state.continueSeries,
+                    start = contentStart,
+                    onItemClick = { onPlayEpisode(0L, it.targetItemId, it.positionMs) },
+                    onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester,
+                    track = track,
+                    modifier = rowModifier,
                 )
             }
-    
-            HomeRow.RECENT_CHANNELS -> HomeLiveRow(
-                title = row.displayTitle(),
-                mode = state.config.recentLiveMode,
-                channels = state.recentLive,
-                guide = state.recentGuide,
-                onChannelClick = onPlayChannel,
-                onFocus = onNonHeroFocused,
-                firstItemFocusRequester = firstItemFocusRequester,
-                start = contentStart,
-                track = track,
-                modifier = rowModifier,
-            )
-    
-            HomeRow.FAVORITE_CHANNELS -> HomeLiveRow(
-                title = row.displayTitle(),
-                mode = state.config.favoriteLiveMode,
-                channels = state.favoriteLive,
-                guide = state.favoriteGuide,
-                onChannelClick = onPlayChannel,
-                onFocus = onNonHeroFocused,
-                firstItemFocusRequester = firstItemFocusRequester,
-                start = contentStart,
-                track = track,
-                modifier = rowModifier,
-            )
-    
-            HomeRow.FAVORITE_MOVIES -> FavoritePosterRow(
-                title = row.displayTitle(),
-                items = state.favoriteMovies,
-                key = { it.id },
-                name = { it.name },
-                poster = { it.posterUrl },
-                start = contentStart,
-                onItemClick = { onCardOpened(row, it.id); onOpenMovie(it) },
-                restoreKey = restoreCard?.takeIf { it.first == row }?.second,
-                onRestored = onRestored,
-                onFocus = onNonHeroFocused,
-                firstItemFocusRequester = firstItemFocusRequester,
-                track = track,
-                modifier = rowModifier,
-            )
-    
-            HomeRow.FAVORITE_SERIES -> FavoritePosterRow(
-                title = row.displayTitle(),
-                items = state.favoriteSeries,
-                key = { it.id },
-                name = { it.name },
-                poster = { it.posterUrl },
-                start = contentStart,
-                onItemClick = { onCardOpened(row, it.id); onOpenSeries(it) },
-                restoreKey = restoreCard?.takeIf { it.first == row }?.second,
-                onRestored = onRestored,
-                onFocus = onNonHeroFocused,
-                firstItemFocusRequester = firstItemFocusRequester,
-                track = track,
-                modifier = rowModifier,
-            )
-    
-            // Trending movies / Trending shows (v2.4.0): the favourites' poster row, so they look and open the same way.
-            HomeRow.TRENDING_MOVIES -> FavoritePosterRow(
-                title = row.displayTitle(),
-                items = state.trendingMovies,
-                key = { it.item.id },
-                name = { it.item.name },
-                poster = { it.posterUrl },
-                start = contentStart,
-                onItemClick = { onCardOpened(row, it.item.id); onOpenMovie(it.item) },
-                restoreKey = restoreCard?.takeIf { it.first == row }?.second,
-                onRestored = onRestored,
-                onFocus = onNonHeroFocused,
-                firstItemFocusRequester = firstItemFocusRequester,
-                track = track,
-                modifier = rowModifier,
-            )
-
-            HomeRow.TRENDING_SHOWS -> FavoritePosterRow(
-                title = row.displayTitle(),
-                items = state.trendingShows,
-                key = { it.item.id },
-                name = { it.item.name },
-                poster = { it.posterUrl },
-                start = contentStart,
-                onItemClick = { onCardOpened(row, it.item.id); onOpenSeries(it.item) },
-                restoreKey = restoreCard?.takeIf { it.first == row }?.second,
-                onRestored = onRestored,
-                onFocus = onNonHeroFocused,
-                firstItemFocusRequester = firstItemFocusRequester,
-                track = track,
-                modifier = rowModifier,
-            )
-
-            HomeRow.CONTINUE_MOVIES -> ContinuePosterRow(
-                title = row.displayTitle(),
-                items = state.continueMovies,
-                start = contentStart,
-                onItemClick = { onPlayMovie(it.sourceItemId, it.positionMs) },
-                onFocus = onNonHeroFocused,
-                firstItemFocusRequester = firstItemFocusRequester,
-                track = track,
-                modifier = rowModifier,
-            )
-    
-            HomeRow.CONTINUE_SERIES -> ContinuePosterRow(
-                title = row.displayTitle(),
-                items = state.continueSeries,
-                start = contentStart,
-                onItemClick = { onPlayEpisode(0L, it.targetItemId, it.positionMs) },
-                onFocus = onNonHeroFocused,
-                firstItemFocusRequester = firstItemFocusRequester,
-                track = track,
-                modifier = rowModifier,
-            )
         }
     }
 
@@ -715,18 +738,20 @@ fun HomeScreen(
                 itemsIndexed(rowsBefore, key = { _, row -> row.name }) { _, row -> rowItem(row) }
                 if (showSports && sportsVm != null) {
                     item(key = SportsRowKey) {
-                        HomeSportsRow(
-                            fixtures = sportsFixtures,
-                            onOpen = { fixture ->
-                                sportsVm.openFixture(fixture)
-                                onOpenSport()
-                            },
-                            onFocus = onNonHeroFocused,
-                            start = contentStart,
-                            track = track,
-                            firstItemFocusRequester = sportsFocus,
-                            modifier = if (fullBleed) unfoldOnUp else Modifier,
-                        )
+                        CompositionLocalProvider(LocalBringIntoViewSpec provides rowBringIntoViewSpec) {
+                            HomeSportsRow(
+                                fixtures = sportsFixtures,
+                                onOpen = { fixture ->
+                                    sportsVm.openFixture(fixture)
+                                    onOpenSport()
+                                },
+                                onFocus = onNonHeroFocused,
+                                start = contentStart,
+                                track = track,
+                                firstItemFocusRequester = sportsFocus,
+                                modifier = if (fullBleed) unfoldOnUp else Modifier,
+                            )
+                        }
                     }
                 }
                 itemsIndexed(rowsAfter, key = { _, row -> row.name }) { _, row -> rowItem(row) }

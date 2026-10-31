@@ -316,6 +316,8 @@
     <string name="content_downloads_ready_short">Prest</string>
     <string name="content_downloads_ready">Ikusteko prest</string>
     <string name="content_downloads_paused">Pausatuta</string>
+    <string name="content_downloads_delete_title">Ezabatu “<xliff:g id="name">%1$s</xliff:g>”?</string>
+    <string name="content_downloads_delete_message">Fitxategia gailu honetatik kentzen du. Geroago berriro deskarga daiteke.</string>
     <string name="content_downloads_starts_after">Ilaran · <xliff:g id="title">%1$s</xliff:g> amaitu ondoren hasiko da</string>
     <string name="content_downloads_speed"><xliff:g id="size">%1$s</xliff:g> MB/s</string>
     <string name="content_playlist_picker_subtitle">Leku guztietan aplikatzen da eta gogoratu egiten da</string>

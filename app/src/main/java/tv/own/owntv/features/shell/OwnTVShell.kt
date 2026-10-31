@@ -357,6 +357,7 @@ fun OwnTVShell(
     val afrPrompted by settingsRepo.autoFrameRatePrompted.collectAsStateWithLifecycle(initialValue = true)
     // Direct tune (type a channel number on the remote). Settings → Video Player → Live TV; default on.
     val directTuneEnabled by settingsRepo.directTune.collectAsStateWithLifecycle(initialValue = true)
+    val playerRemoteOptions by settingsRepo.playerRemoteOptions.collectAsStateWithLifecycle(initialValue = tv.own.owntv.core.settings.PlayerRemoteOptions())
     // "Prefer EPG logos": start following the setting once, here rather than in Application.onCreate —
     // the store queries nothing at all while the toggle is off, so cold start stays free of EPG reads.
     val epgDaoForLogos = koinInject<tv.own.owntv.core.database.dao.EpgDao>()
@@ -439,6 +440,31 @@ fun OwnTVShell(
     val browserRailItems by liveVm.railItems.collectAsStateWithLifecycle()
     val browserRailCounts by liveVm.railCounts.collectAsStateWithLifecycle()
     val previewChannel by liveVm.previewChannel.collectAsStateWithLifecycle()
+    // Home / screensaver with a live channel on mpv: mpv frees the stream and keeps no restore for live
+    // (ExoPlayer's live engine does), so the return found a black, paused player. Tune the same channel
+    // again; the tune reopens its saved copy and offers Resume / Go live.
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    val currentPlayerMode by rememberUpdatedState(playerMode)
+    DisposableEffect(lifecycle, liveVm, player) {
+        var mpvLiveChannel: tv.own.owntv.core.database.entity.ChannelEntity? = null
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            when (event) {
+                androidx.lifecycle.Lifecycle.Event.ON_STOP -> mpvLiveChannel = liveVm.previewChannel.value?.takeIf {
+                    currentPlayerMode != PlayerMode.NONE && !liveVm.liveOnExo.value && player.isLiveContent
+                }
+                androidx.lifecycle.Lifecycle.Event.ON_START -> mpvLiveChannel?.let { channel ->
+                    mpvLiveChannel = null
+                    // A stream already back needs nothing. (DPTV has no category locks, so no relock check first.)
+                    if (liveVm.previewChannel.value?.id == channel.id && player.currentMediaUrl == null) {
+                        liveVm.ensurePlaying(channel)
+                    }
+                }
+                else -> Unit
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
     val playerRecording by liveVm.playerRecording.collectAsStateWithLifecycle()
     val overlayProgrammes by liveVm.nowProgrammes.collectAsStateWithLifecycle()
     val overlayFavoriteIds by liveVm.favoriteIds.collectAsStateWithLifecycle()
@@ -1162,8 +1188,8 @@ fun OwnTVShell(
                 if (e.type != KeyEventType.KeyDown || playerMode != PlayerMode.MINI) return@onKeyEvent false
                 when (e.key) {
                     Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> { dockedEngine.togglePlayPause(); true }
-                    Key.ChannelUp -> dockedZap?.let { it(1); true } ?: false
-                    Key.ChannelDown -> dockedZap?.let { it(-1); true } ?: false
+                    Key.ChannelUp -> dockedZap?.let { it(tv.own.owntv.player.zapDirection(up = true, playerRemoteOptions)); true } ?: false
+                    Key.ChannelDown -> dockedZap?.let { it(tv.own.owntv.player.zapDirection(up = false, playerRemoteOptions)); true } ?: false
                     else -> false
                 }
             },
@@ -1944,8 +1970,9 @@ fun OwnTVShell(
                     sleepProgrammeEndMs = if (isTunedLive && !timeshifted) { { liveVm.nowNext.value?.now?.stopMs } } else null,
                     liveLeftRightRewinds = liveLeftRightRewinds,
                     timeshiftOffsetSec = if (isTunedLive) { { timeshiftOffsetState.value } } else null,
-                    onTuneToNumber = if (directTuneEnabled && isTunedLive && isLiveStream && !timeshifted && previewChannel != null) liveVm::tuneByNumber else null,
+                    onTuneToNumber = if (tv.own.owntv.player.numberKeysTune(directTuneEnabled, playerRemoteOptions) && isTunedLive && isLiveStream && !timeshifted && previewChannel != null) liveVm::tuneByNumber else null,
                     directTuneContextKey = previewChannel?.id ?: 0L,
+                    remoteOptions = playerRemoteOptions,
                     // Show the ACTUAL running engine (mpv when pinned OR auto-fallen-back), not just the pin —
                     // otherwise an auto-fallback to mpv still read "EXO". true = on mpv (pill shows MPV, teal).
                     compatMode = if (isTunedLive) !liveOnExo else null,
@@ -1997,6 +2024,10 @@ fun OwnTVShell(
                                 durationMs = durationMs,
                             )
                         }
+                    } else null,
+                    // (OwnTV) The channel a CH+/CH− step moved to, so the zap banner names it at once.
+                    zapChannel = if (isLiveChannel) {
+                        previewChannel?.let { tv.own.owntv.player.DirectTuneChannelInfo(it.number, it.name, it.logoUrl) }
                     } else null,
                     // Guide card for the playing channel (nowNext follows previewChannel = what's playing).
                     liveEpgCard = if (isLiveChannel) {
@@ -2197,6 +2228,7 @@ fun OwnTVShell(
                 pillLabel = playlistLabel,
                 pillBounds = playlistPillBounds,
                 onSelect = onSelectPlaylist,
+                onResync = { shellVm.resync(playlists.filter { it.id == activePlaylistId }.ifEmpty { playlists }) },
                 onDismiss = { showPlaylistPicker = false },
             )
         }
@@ -2281,25 +2313,6 @@ fun OwnTVShell(
 
 /** Long enough to read "Auto-matched 12 channels. 40 channels need review." from the sofa. */
 private const val EPG_MATCH_TOAST_MS = 6_000L
-
-/** A thin bar shown above the browse UI when the device loses internet. */
-@Composable
-private fun OfflineBanner() {
-    val colors = OwnTVTheme.colors
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.tertiaryContainer)
-            .padding(horizontal = 24.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            stringResource(R.string.content_offline_banner),
-            style = MaterialTheme.typography.labelLarge,
-            color = colors.onTertiaryContainer,
-        ) }
-    }
 
 /** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
 private val StageSections = setOf(MainSection.SEARCH, MainSection.HOME, MainSection.LIVE_TV, MainSection.DVR, MainSection.EPG, MainSection.SPORT, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS, MainSection.MORE, MainSection.SETTINGS)

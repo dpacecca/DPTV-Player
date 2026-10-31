@@ -283,6 +283,7 @@
     <string name="settings_about_description">版本、许可证和项目信息</string>
     <string name="settings_live_latency">直播延迟</string>
     <string name="settings_no_settings_match">没有与“<xliff:g id="query">%1$s</xliff:g>”匹配的设置</string>
+    <string name="settings_search_empty_hint">输入设置的名称</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">主屏幕</string>
     <string name="settings_startup_last_channel">上次观看的频道</string>

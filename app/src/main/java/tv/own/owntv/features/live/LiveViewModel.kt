@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -261,7 +262,7 @@ class LiveViewModel(
     }
 
 
-    data class ChannelMoveState(val items: List<ChannelEntity>, val activeIndex: Int, val contextKey: String)
+    data class ChannelMoveState(val items: List<ChannelEntity>, val activeIndex: Int, val contextKey: String, val carried: Set<Long> = emptySet())
     private val _moveState = MutableStateFlow<ChannelMoveState?>(null)
     val moveState: StateFlow<ChannelMoveState?> = _moveState.asStateFlow()
 
@@ -592,13 +593,13 @@ class LiveViewModel(
                 channelDao.observeCatchupCount(c.sourceIds.ifEmpty { listOf(-1L) }).distinctUntilChanged(),
                 profileDao.observeById(c.profileId),
             ) { cats, cust, sort, catchupCount, profile ->
-                // A–Z also sorts the category folders (custom categories included); manually moved
-                // categories stay pinned first. Custom categories ride the SAME customization keys,
-                // so renames/hides/reorders apply to them with no extra code (#87).
+                // The categories follow the sort chip too (A–Z by shown name, custom categories
+                // included); a category the user moved keeps its place in either sort. Custom categories
+                // ride the SAME customization keys, so renames/hides/reorders apply to them too.
                 val folders = cats.railCategories(
                     cust,
                     kids = profile?.isKids == true,
-                    alphaRest = sort == SettingsRepository.SortMode.ALPHA,
+                    alphabetical = sort == SettingsRepository.SortMode.ALPHA,
                 )
                 val multiSourceNames = c.sourceNames.takeIf { it.size > 1 }.orEmpty()
                 val categoriesById = cats.associateBy { it.id }
@@ -705,7 +706,7 @@ class LiveViewModel(
         val pid = currentProfileId() ?: return CategoryRestorePlan()
         return planCategoryRestore(customize, contentOrderDao, pid, MediaType.LIVE, contextKey, customCategoryDao) {
             when (key) {
-                is LiveKey.Folder -> channelDao.snapshotByCategoryManual(key.id, pid, contextKey, Int.MAX_VALUE)
+                is LiveKey.Folder -> channelDao.snapshotByCategoryManual(key.id, pid, contextKey, false, Int.MAX_VALUE)
                     .mapTo(HashSet()) { CustomizeKeys.channel(it) }
                 else -> customCategoryDao.stableItemKeys(pid, contextKey).toSet()
             }
@@ -729,7 +730,7 @@ class LiveViewModel(
                 profileId = c.profileId,
                 sourceIds = c.sourceIds,
                 type = MediaType.LIVE,
-                alphaRest = sortMode.value == SettingsRepository.SortMode.ALPHA,
+                alphabetical = sortMode.value == SettingsRepository.SortMode.ALPHA,
                 key = key,
             )
         }
@@ -739,7 +740,7 @@ class LiveViewModel(
         val s = _categoryMoveState.value ?: return
         if (from !in s.rows.indices || to !in s.rows.indices || from == to) return
         val rows = s.rows.toMutableList().apply { add(to, removeAt(from)) }
-        _categoryMoveState.value = s.copy(rows = rows, activeIndex = to, targetKey = rows[to].key)
+        _categoryMoveState.value = s.copy(rows = rows, activeIndex = to, targetKey = rows[to].key, carried = s.carried + s.rows[from].key)
     }
 
     fun commitCategoryMove() {
@@ -747,7 +748,7 @@ class LiveViewModel(
         _categoryMoveState.value = null
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
-            customize.setCategoryOrder(pid, MediaType.LIVE, s.keys)
+            customize.saveCategoryMove(pid, MediaType.LIVE, s.keys, s.carried)
         }
     }
 
@@ -894,6 +895,15 @@ class LiveViewModel(
                 if (ok && _selected.value == LiveKey.All) _selected.value = saved
             } else if (_selected.value == LiveKey.All) {
                 _selected.value = saved
+            }
+        }
+        // Another playlist or profile can leave the selection on a folder the new playlists do not have:
+        // its channels stayed listed under a wrong name. Such a folder falls back to All channels.
+        viewModelScope.launch {
+            ctx.filter { it.profileId >= 0 }.map { it.sourceIds }.distinctUntilChanged().drop(1).collect { ids ->
+                suspend fun gone(key: LiveKey?) = key is LiveKey.Folder && categoryDao.getById(key.id)?.sourceId !in ids
+                if (gone(previousKey)) previousKey = LiveKey.All
+                if (lockedKey == null && gone(_selected.value)) _selected.value = LiveKey.All
             }
         }
         // Persist the last focused/interacted channel (debounced), and restore it once at startup so opening
@@ -1123,7 +1133,7 @@ class LiveViewModel(
         if (c.profileId < 0) return emptyList()
         val cs = custResolved.value
         return withContext(Dispatchers.IO) {
-            customCategoryDao.snapshotChannels(c.profileId, key.id, c.sourceIds.ifEmpty { listOf(-1L) }, ZAP_LIST_LIMIT)
+            customCategoryDao.snapshotChannels(c.profileId, key.id, c.sourceIds.ifEmpty { listOf(-1L) }, sortMode.value == SettingsRepository.SortMode.ALPHA, ZAP_LIST_LIMIT)
         }
             .filter { isChannelVisible(it, cs.cust, cs.hiddenCats, key) }
             .map { ch -> cs.cust.itemNames[CustomizeKeys.channel(ch)]?.let { ch.copy(name = it) } ?: ch }
@@ -1133,7 +1143,7 @@ class LiveViewModel(
     private suspend fun channelsInCategory(categoryId: Long): List<ChannelEntity> {
         val pid = currentProfileId() ?: return emptyList()
         val ctxKey = folderContextKeys.value[categoryId] ?: ""
-        return channelDao.snapshotByCategoryManual(categoryId, pid, ctxKey, ZAP_LIST_LIMIT)
+        return channelDao.snapshotByCategoryManual(categoryId, pid, ctxKey, sortMode.value == SettingsRepository.SortMode.ALPHA, ZAP_LIST_LIMIT)
     }
 
     /** [channel]'s own provider category, with the same hide/rename treatment the browsing lists get,
@@ -1143,7 +1153,7 @@ class LiveViewModel(
         val pid = currentProfileId()
         val raw = withContext(Dispatchers.IO) {
             if (catId != null && pid != null) {
-                channelDao.snapshotByCategoryManual(catId, pid, folderContextKeys.value[catId] ?: "", ZAP_LIST_LIMIT)
+                channelDao.snapshotByCategoryManual(catId, pid, folderContextKeys.value[catId] ?: "", sortMode.value == SettingsRepository.SortMode.ALPHA, ZAP_LIST_LIMIT)
             } else {
                 // No category on this row (hand-made M3U entries) — fall back to All Channels.
                 channelDao.snapshotAll(ctx.value.sourceIds.ifEmpty { listOf(-1L) }, ZAP_LIST_LIMIT)
@@ -2061,9 +2071,10 @@ class LiveViewModel(
                 LiveKey.Favorites -> ContentOrderEntity.FAV_CONTEXT
                 else -> return@launch
             }
+            val alpha = sortMode.value == SettingsRepository.SortMode.ALPHA
             val items = when (key) {
-                is LiveKey.Folder -> channelDao.snapshotByCategoryManual(key.id, pid, contextKey, 5000)
-                is LiveKey.Custom -> customCategoryDao.snapshotChannels(pid, key.id, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
+                is LiveKey.Folder -> channelDao.snapshotByCategoryManual(key.id, pid, contextKey, alpha, 5000)
+                is LiveKey.Custom -> customCategoryDao.snapshotChannels(pid, key.id, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, alpha, 5000)
                 LiveKey.Favorites -> channelDao.snapshotFavoritesManual(pid, contextKey, ctx.value.sourceIds.ifEmpty { listOf(-1L) }, 5000)
                 // Catch-up joins History/All as a computed view: it has no stored order to move within.
                 LiveKey.History, LiveKey.All, LiveKey.Catchup -> return@launch
@@ -2071,15 +2082,8 @@ class LiveViewModel(
             val idx = items.indexOfFirst { it.id == channel.id }
             if (idx < 0) return@launch
             _moveState.value = ChannelMoveState(items, idx, contextKey)
-            // Manual order is only visible in playlist order, so Move switches the list to it — but that
-            // is a means, not a choice the user made. Remember what they had so Cancel can put it back.
-            sortBeforeMove = sortMode.value
-            settings.setSortLive(SettingsRepository.SortMode.PLAYLIST)
         }
     }
-
-    /** The sort the user was on before [enterMoveMode] switched the list to playlist order. */
-    private var sortBeforeMove: SettingsRepository.SortMode? = null
 
     /** Takes the item being moved out and puts it back at [target]; the rest close up around it. */
     /** Takes the item at [from] out and puts it back at [to]; the rest close up around it. */
@@ -2087,34 +2091,20 @@ class LiveViewModel(
         val s = _moveState.value ?: return
         if (from !in s.items.indices || to !in s.items.indices || from == to) return
         val list = s.items.toMutableList().apply { add(to, removeAt(from)) }
-        _moveState.value = s.copy(items = list, activeIndex = to)
+        _moveState.value = s.copy(items = list, activeIndex = to, carried = s.carried + s.items[from].id)
     }
 
     fun commitMove() {
         val s = _moveState.value ?: return
         _moveState.value = null
-        sortBeforeMove = null // the new order IS playlist order — staying on it is the point
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
-            contentOrderDao.replaceContext(
-                profileId = pid,
-                type = MediaType.LIVE,
-                contextKey = s.contextKey,
-                rows = s.items.mapIndexed { i, ch ->
-                    ContentOrderEntity(profileId = pid, mediaType = MediaType.LIVE, contextKey = s.contextKey, itemId = ch.id, position = i)
-                },
-            )
+            contentOrderDao.saveMove(pid, MediaType.LIVE, s.contextKey, s.items.map { it.id }, s.carried)
         }
     }
 
     fun cancelMove() {
         _moveState.value = null
-        // Cancel means nothing changed — including the sort Move switched away from.
-        val previous = sortBeforeMove ?: return
-        sortBeforeMove = null
-        if (previous != SettingsRepository.SortMode.PLAYLIST) {
-            viewModelScope.launch { settings.setSortLive(previous) }
-        }
     }
 
     /** Take [channel] out of the custom category [key] only. If it had been moved out of its provider

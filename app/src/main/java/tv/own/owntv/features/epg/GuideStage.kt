@@ -293,7 +293,8 @@ internal fun GuideRuler(
     windowStart: Long,
     windowEnd: Long,
     now: Long,
-    scrollPx: Int,
+    /** Read while placing the labels (OwnTV #266), so a scroll moves them without recomposing. */
+    scrollPx: () -> Int,
     modifier: Modifier = Modifier,
 ) {
     val formatTime = rememberSystemTimeFormatter()
@@ -321,6 +322,7 @@ internal fun GuideRuler(
         val chipShift = 34.mpx.toPx()
         val placeables = measurables.map { it.measure(Constraints()) }
         layout(constraints.maxWidth, constraints.maxHeight) {
+            val scrollPx = scrollPx()
             placeables.forEachIndexed { i, pl ->
                 val isChip = nowIn && i == placeables.lastIndex
                 val t = if (isChip) now else times[i]
@@ -376,6 +378,8 @@ internal fun GuideChannelLabel(channel: ChannelEntity, name: String, dot: Color?
                         maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
                     )
                 }
+                // (OwnTV #305) The Rewind mark when the channel has catch-up, as in the channel lists.
+                if (channel.catchup) OwnTVIcon(OwnTVIcon.REWIND, if (selected) a.accent else StageColors.Dim, Modifier.size(18.mpx))
             }
         }
     }

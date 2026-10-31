@@ -335,6 +335,7 @@
     <string name="settings_about_description">Bertsioa, lizentzia eta proiektuaren informazioa</string>
     <string name="settings_live_latency">Zuzeneko latentzia</string>
     <string name="settings_no_settings_match">Ez dago <xliff:g id="query">%1$s</xliff:g> bilaketarekin bat datorren ezarpenik</string>
+    <string name="settings_search_empty_hint">Idatzi ezarpen baten izena</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Hasiera</string>
     <string name="settings_startup_last_channel">Azken kanala</string>

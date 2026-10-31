@@ -64,6 +64,34 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.7.0
+
+### ✨ New features
+- **📺 Live TV: the preview keeps playing while you browse the categories** (OwnTV community PR #270 by @Kevsosmooth)
+- **🎛️ Player buttons: choose what OK does, swap channel up/down, number keys on or off** (OwnTV community PR #287 by @Kevsosmooth)
+- **⏪ Rewind mark on catch-up channels in the TV Guide; Resync now in the playlist menu** (OwnTV community PR #305 by @sarmadsoomro)
+- **⚡ Smoother TV Guide scrolling, more posters kept in memory, faster Search backdrop** (OwnTV community PRs #266, #267, #268 by @sarmadsoomro)
+
+### 🐛 Fixes
+- **↕️ Moved categories, channels, films and series keep their place in A–Z and Provider; the rest follow the sort**
+- **📋 TV Guide order follows Live TV, moved channels included**
+- **🗑️ Deleting a download or recording asks first**
+- **Loading spinners use far less of the TV's processor; imports finish sooner**
+- **The channel banner names the new channel at once on CH+/CH−**
+- **An mpv channel comes back after Home, with Resume / Go live, instead of a black screen**
+- **An Xtream playlist with a refused password says so instead of loading empty**
+- **A changed password, server, username or MAC re-syncs the playlist on save**
+- **Restoring a backup without passwords names the playlists that need one**
+- **A new playlist with a name already in use is numbered: "My IPTV 2"**
+- **Renamed channels, films and series keep their name on Home and in Continue**
+- **Stalker portals behind a redirect stay signed in; their posters load**
+- **Live TV no longer keeps showing a category from the playlist you just switched away from**
+- **Settings no longer shows "0 playlists" while loading; Settings search says what to type**
+- **TV Guide: the now-line reaches the bottom** (OwnTV community PR #303 by @spotandjake)
+- **Home: the last card of a row stays on screen when it has focus** (OwnTV community PR #314 by @arch-fan)
+- **Setup: the choice cards line up when one has a shorter line** (OwnTV community PR #315 by @arch-fan)
+- **The update popup's What's new scrolls with Up and Down** (OwnTV community PR #291 by @camchis)
+
 ## v2.6.3
 
 ### 🐛 Fixes

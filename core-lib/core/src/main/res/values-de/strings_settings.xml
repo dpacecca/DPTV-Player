@@ -285,6 +285,7 @@
     <string name="settings_about_description">Version, Lizenz und Projektinformationen</string>
     <string name="settings_live_latency">Live-Latenz</string>
     <string name="settings_no_settings_match">Keine Einstellungen entsprechen „<xliff:g id="query">%1$s</xliff:g>“</string>
+    <string name="settings_search_empty_hint">Geben Sie den Namen einer Einstellung ein</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Startseite</string>
     <string name="settings_startup_last_channel">Letzter Sender</string>

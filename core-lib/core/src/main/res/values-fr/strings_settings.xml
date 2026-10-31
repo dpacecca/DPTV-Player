@@ -287,6 +287,7 @@
     <string name="settings_about_description">Version, licence et informations sur le projet</string>
     <string name="settings_live_latency">Latence du direct</string>
     <string name="settings_no_settings_match">Aucun paramètre ne correspond à « <xliff:g id="query">%1$s</xliff:g> »</string>
+    <string name="settings_search_empty_hint">Saisissez le nom d’un réglage</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Accueil</string>
     <string name="settings_startup_last_channel">Dernière chaîne</string>

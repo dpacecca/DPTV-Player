@@ -289,6 +289,7 @@
     <string name="settings_about_description">Версия, лицензия и сведения о проекте</string>
     <string name="settings_live_latency">Задержка прямого эфира</string>
     <string name="settings_no_settings_match">Нет настроек, соответствующих запросу «<xliff:g id="query">%1$s</xliff:g>»</string>
+    <string name="settings_search_empty_hint">Введите название настройки</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">Главный экран</string>
     <string name="settings_startup_last_channel">Последний канал</string>

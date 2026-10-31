@@ -293,6 +293,7 @@
     <string name="settings_about_description">الإصدار والترخيص ومعلومات المشروع</string>
     <string name="settings_live_latency">زمن استجابة البث المباشر</string>
     <string name="settings_no_settings_match">لا توجد إعدادات تطابق “<xliff:g id="query">%1$s</xliff:g>”</string>
+    <string name="settings_search_empty_hint">اكتب اسم الإعداد</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">الشاشة الرئيسية</string>
     <string name="settings_startup_last_channel">آخر قناة</string>

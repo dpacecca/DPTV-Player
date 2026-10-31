@@ -159,15 +159,6 @@ private fun Toned(tone: TileTone, content: @Composable () -> Unit) =
 private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, BACKUP, LOCAL_SYNC, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS, FONTS, BROWSING, SUBTITLE_STYLE, SPORTS }
 
 @Composable
-internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
-    when (mode) {
-        SurroundMode.AUTO -> R.string.settings_auto
-        SurroundMode.STEREO -> R.string.settings_surround_stereo
-        SurroundMode.SURROUND -> R.string.settings_surround_sound
-    },
-)
-
-@Composable
 private fun epgShiftLabel(minutes: Int): String {
     if (minutes == 0) return stringResource(R.string.common_off)
     val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0] ?: java.util.Locale.US
@@ -1141,6 +1132,8 @@ fun SettingsScreen(
                 tv.own.owntv.features.settings.PROXY_SEARCH_ROWS, R.string.settings_search_keywords_proxy, OwnTVIcon.NETWORK) { open(SettingsTab.NETWORK) } +
             rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.settings_dns)),
                 tv.own.owntv.features.settings.DNS_SEARCH_ROWS, R.string.settings_search_keywords_dns, OwnTVIcon.DNS) { open(SettingsTab.DNS) } +
+            rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_layout), stringResource(R.string.settings_remote_shortcuts)),
+                tv.own.owntv.features.settings.PLAYER_BUTTONS_SEARCH_ROWS, R.string.settings_search_keywords_ch, OwnTVIcon.CH_NAV) { open(SettingsTab.CH_NAV) } +
             // The Catch-up popup's second row; its first (the time zone) is the Catch-up entry above.
             rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_sources), stringResource(R.string.settings_catchup)),
                 listOf(R.string.settings_catchup_player), R.string.settings_search_keywords_catchup, OwnTVIcon.CATCHUP) { saveScroll(); dialogReturn = searchFieldFocus; showCatchupTime = true }
@@ -1200,7 +1193,8 @@ fun SettingsScreen(
             panelTop = if (group == SettingsGroup.APPEARANCE && !searching) ({ tv.own.owntv.features.settings.SettingsLivePreview() }) else null,
         ) {
             when {
-                searching && searchQuery.isBlank() -> Unit
+                // A search page with nothing typed yet (or the text cleared) says what to do, not a blank page.
+                searching && searchQuery.isBlank() -> StageSettingsNote(stringResource(R.string.settings_search_empty_hint), null)
                 searching && searchResults.isEmpty() -> StageSettingsNote(stringResource(R.string.settings_no_settings_match, searchQuery.trim()), null)
                 searching -> searchResults.forEach { e ->
                     StageSearchResultRow(e.icon, e.group, e.title, e.chip, onClick = e.onClick)
@@ -3135,6 +3129,8 @@ private fun stageRowExtras(
     onSetFont: (FontCustomization) -> Unit,
     playlists: List<tv.own.owntv.core.database.entity.SourceEntity>,
 ): Map<String, RowExtra> {
+    // (OwnTV) Null until the playlists have loaded, so the row does not say "0 playlists" meanwhile.
+    val playlistsKnown by vm.loadedSources.collectAsStateWithLifecycle()
     val glass by vm.glassConfig.collectAsStateWithLifecycle()
     val animation by vm.animationLevel.collectAsStateWithLifecycle()
     val weatherOn by vm.weatherEnabled.collectAsStateWithLifecycle()
@@ -3167,7 +3163,7 @@ private fun stageRowExtras(
     val languages = tv.own.owntv.core.i18n.SupportedLocales.all.count { it.packaged }
     return mapOf(
         "tab_SOURCES" to RowExtra(
-            SettingValue.Opens(pluralStringResource(R.plurals.more_playlist_count, playlists.size, playlists.size)),
+            SettingValue.Opens(playlistsKnown?.let { pluralStringResource(R.plurals.more_playlist_count, it.size, it.size) }),
             extra = { tv.own.owntv.features.settings.PlaylistSyncList(playlists) },
         ),
         "theme" to RowExtra(

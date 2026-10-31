@@ -285,6 +285,7 @@
     <string name="settings_about_description">പതിപ്പ്, ലൈസൻസ്, പ്രോജക്റ്റ് വിവരങ്ങൾ</string>
     <string name="settings_live_latency">തത്സമയ കാലതാമസം</string>
     <string name="settings_no_settings_match">“<xliff:g id="query">%1$s</xliff:g>” എന്നതിനോട് പൊരുത്തപ്പെടുന്ന ക്രമീകരണങ്ങളില്ല</string>
+    <string name="settings_search_empty_hint">ഒരു ക്രമീകരണത്തിന്റെ പേര് ടൈപ്പ് ചെയ്യുക</string>
     <string name="settings_breadcrumb"><xliff:g id="group">%1$s</xliff:g> › <xliff:g id="title">%2$s</xliff:g></string>
     <string name="settings_startup_home">ഹോം</string>
     <string name="settings_startup_last_channel">അവസാന ചാനൽ</string>
