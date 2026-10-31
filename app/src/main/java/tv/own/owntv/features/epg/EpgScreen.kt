@@ -1102,7 +1102,7 @@ fun EpgScreen(
                         if (liveNow in state.windowStart..state.windowEnd && nowX >= 0.mpx && nowX <= timelineW) {
                             Box(
                                 Modifier
-                                    .padding(start = gx + nowX - 1.5.mpx, bottom = 24.mpx)
+                                    .padding(start = gx + nowX - 1.5.mpx)
                                     .width(3.mpx)
                                     .fillMaxHeight()
                                     .guideNowLine(stageAccent.accent),
