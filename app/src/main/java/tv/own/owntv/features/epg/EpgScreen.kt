@@ -134,6 +134,9 @@ private const val GAP_STEP_MS = 30L * 60 * 1000
  *  through [tv.own.owntv.features.live.centreScrollSpec] (v2.6.0). */
 private val GuideScrollIntSpec = androidx.compose.animation.core.tween<Int>(180, easing = androidx.compose.animation.core.FastOutSlowInEasing)
 
+/** (OwnTV #266) The cursor a row that is not focused gets, so a cursor move does not recompose it. */
+internal const val NO_CURSOR = -1L
+
 /** The guide starts on the half hour (v2.1.8). */
 private const val HALF_HOUR_MS = 30L * 60 * 1000
 
@@ -318,6 +321,9 @@ fun EpgScreen(
     // What the ruler and the rows draw: the scroll position eased into place (v2.1.8), so a move along the
     // timeline slides rather than jumps. Positions are worked out on [scrollPx], the target.
     val shownScrollPx by androidx.compose.animation.core.animateIntAsState(scrollPx, GuideScrollIntSpec)
+    // (OwnTV #266) The rows and the ruler get a reader and use it while drawing: an eased scroll then moves
+    // the timeline frame by frame without recomposing a single row.
+    val readShownScrollPx: () -> Int = remember { { shownScrollPx } }
     fun pxAt(t: Long): Float = (t - state.windowStart) / 60_000f * ppm
     fun maxScroll(): Int = (pxAt(state.windowEnd) - timelinePx).toInt().coerceAtLeast(0)
     fun timeAt(px: Float): Long = state.windowStart + (px / ppm * 60_000f).toLong()
@@ -1001,7 +1007,7 @@ fun EpgScreen(
                 }
                 if (state.channels.isNotEmpty()) {
                     GuideRuler(
-                        windowStart = state.windowStart, windowEnd = state.windowEnd, now = liveNow, scrollPx = shownScrollPx,
+                        windowStart = state.windowStart, windowEnd = state.windowEnd, now = liveNow, scrollPx = readShownScrollPx,
                         modifier = Modifier.width(timelineW).height(40.mpx),
                     )
                 }
@@ -1051,10 +1057,12 @@ fun EpgScreen(
                                         windowStart = state.windowStart,
                                         windowEnd = state.windowEnd,
                                         now = liveNow,
-                                        scrollPx = shownScrollPx,
+                                        scrollPx = readShownScrollPx,
                                         focusRequester = rowFocus(index),
                                         selectedRow = gridHasFocus && index == focusedRow,
-                                        cursorTime = cursorTime,
+                                        // (OwnTV #266) Only the focused row follows the cursor; the rest keep
+                                        // one value, so moving along the timeline recomposes just that row.
+                                        cursorTime = if (index == focusedRow) cursorTime else NO_CURSOR,
                                         recordingStarts = recordingsByChannel[channel.id].orEmpty(),
                                         reminderStarts = remindersByChannel[channel.id].orEmpty(),
                                         onFocused = {
@@ -1334,7 +1342,7 @@ private fun GuideRow(
     windowStart: Long,
     windowEnd: Long,
     now: Long,
-    scrollPx: Int,
+    scrollPx: () -> Int,
     focusRequester: FocusRequester,
     selectedRow: Boolean,
     cursorTime: Long,
@@ -1381,7 +1389,7 @@ private fun GuideRow(
     // press opens its details, and a sideways drag scrolls the timeline. On the channel name: a tap is OK
     // on what is on now, a long press opens the channel menu. Up and down stay the list's own scroll.
     val pxPerMin = with(LocalDensity.current) { GuideGridDefaults.PxPerMin.toPx() }
-    val timeAtX: (Float) -> Long = { x -> windowStart + ((x + scrollPx) / pxPerMin * 60_000f).toLong() }
+    val timeAtX: (Float) -> Long = { x -> windowStart + ((x + scrollPx()) / pxPerMin * 60_000f).toLong() }
     val onStripTap by rememberUpdatedState { x: Float ->
         val progs = programmes.orEmpty()
         val time = timeAtX(x)
@@ -1428,7 +1436,7 @@ private fun GuideRow(
                 // Recorder's faint line at each half hour, behind the cells.
                 .drawBehind {
                     val first = ((windowStart + GuideGridDefaults.SlotMin * 60_000L - 1) / (GuideGridDefaults.SlotMin * 60_000L)) * GuideGridDefaults.SlotMin * 60_000L
-                    var lx = (first - windowStart) / 60_000f * pxPerMin - scrollPx
+                    var lx = (first - windowStart) / 60_000f * pxPerMin - scrollPx()
                     while (lx < size.width) {
                         if (lx >= 0f) drawRect(divider.copy(alpha = divider.alpha * 0.6f), topLeft = Offset(lx, 0f), size = Size(1.dp.toPx(), size.height))
                         lx += slotPx
@@ -1447,7 +1455,7 @@ private fun GuideRow(
                     var fromStart = false
                     var dragged = 0f
                     detectHorizontalDragGestures(
-                        onDragStart = { fromStart = currentScrollPx == 0; dragged = 0f },
+                        onDragStart = { fromStart = currentScrollPx() == 0; dragged = 0f },
                         onDragEnd = { if (fromStart && dragged > swipeMin) swipeRight() },
                     ) { change, dx ->
                         change.consume()

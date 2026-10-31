@@ -293,7 +293,8 @@ internal fun GuideRuler(
     windowStart: Long,
     windowEnd: Long,
     now: Long,
-    scrollPx: Int,
+    /** Read while placing the labels (OwnTV #266), so a scroll moves them without recomposing. */
+    scrollPx: () -> Int,
     modifier: Modifier = Modifier,
 ) {
     val formatTime = rememberSystemTimeFormatter()
@@ -321,6 +322,7 @@ internal fun GuideRuler(
         val chipShift = 34.mpx.toPx()
         val placeables = measurables.map { it.measure(Constraints()) }
         layout(constraints.maxWidth, constraints.maxHeight) {
+            val scrollPx = scrollPx()
             placeables.forEachIndexed { i, pl ->
                 val isChip = nowIn && i == placeables.lastIndex
                 val t = if (isChip) now else times[i]

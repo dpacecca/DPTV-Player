@@ -103,8 +103,11 @@ internal fun ProgrammeStripCanvas(
     catchupIds: Set<Long>,
     recordingStarts: Set<Long>,
     reminderStarts: Set<Long>,
-    /** How far the timeline is scrolled, shared by every row and the ruler. */
-    scrollPx: Int,
+    /**
+     * How far the timeline is scrolled, shared by every row and the ruler. A reader, not a value (OwnTV
+     * #266): it is read while drawing, so a scroll redraws the strip without recomposing the row.
+     */
+    scrollPx: () -> Int,
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val measurer = rememberTextMeasurer(cacheSize = 64)
@@ -130,7 +133,7 @@ internal fun ProgrammeStripCanvas(
     // A channel with no guide at all (v2.1.7) says so plainly; it is still listed and can be watched.
     val emptyText = stringResource(if (programmes.isEmpty()) R.string.sport_guide_no_info else R.string.content_epg_no_programme)
     // Clipped at the timeline's left edge only, so a focused cell's glow still spills up and down.
-    Canvas(Modifier.fillMaxSize()) { clipRect(left = 0f, top = -size.height, right = size.width + 40 * px, bottom = size.height * 2) {
+    Canvas(Modifier.fillMaxSize()) { val sx = scrollPx(); clipRect(left = 0f, top = -size.height, right = size.width + 40 * px, bottom = size.height * 2) {
         val viewW = size.width
         val h = size.height
         val r = CornerRadius(10 * px)
@@ -142,8 +145,8 @@ internal fun ProgrammeStripCanvas(
         if (focusTime != null && programmes.none { focusTime in it.startMs until it.stopMs }) {
             val gapStart = (programmes.lastOrNull { it.stopMs <= focusTime }?.stopMs ?: windowStart).coerceAtLeast(windowStart)
             val gapEnd = (programmes.firstOrNull { it.startMs > focusTime }?.startMs ?: windowEnd).coerceAtMost(windowEnd)
-            val gx0 = (((gapStart - windowStart) / 60_000f) * pxPerMin - scrollPx + 3 * px).coerceAtLeast(0f)
-            val gx1 = (((gapEnd - windowStart) / 60_000f) * pxPerMin - scrollPx - 3 * px).coerceAtMost(viewW)
+            val gx0 = (((gapStart - windowStart) / 60_000f) * pxPerMin - sx + 3 * px).coerceAtLeast(0f)
+            val gx1 = (((gapEnd - windowStart) / 60_000f) * pxPerMin - sx - 3 * px).coerceAtMost(viewW)
             if (gx1 > gx0) {
                 drawRoundRect(ink.copy(alpha = 0.10f), Offset(gx0, 0f), Size(gx1 - gx0, h), r)
                 val ring = 3.5f * px
@@ -158,7 +161,7 @@ internal fun ProgrammeStripCanvas(
             val e0 = p.stopMs.coerceIn(windowStart, windowEnd)
             if (e0 <= s0) return@forEachIndexed
             shownUntil = e0
-            val x = ((s0 - windowStart) / 60_000f) * pxPerMin - scrollPx.toFloat() + 3 * px
+            val x = ((s0 - windowStart) / 60_000f) * pxPerMin - sx.toFloat() + 3 * px
             val w = ((e0 - s0) / 60_000f) * pxPerMin - 6 * px
             if (w <= 0f || x + w <= 0f || x >= viewW) return@forEachIndexed
             drawnAny = true
