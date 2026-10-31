@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.8.0
+
+### ✨ New features
+- **🔄 Watch history, progress, favourites, last channel and Customize shared between the TVs on one DPTV-Server login**
+
 ## v2.7.1
 
 ### 🐛 Fixes

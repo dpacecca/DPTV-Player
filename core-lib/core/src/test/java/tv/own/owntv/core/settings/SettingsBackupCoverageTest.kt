@@ -21,7 +21,7 @@ class SettingsBackupCoverageTest {
         // Internal state and one-shot migration flags.
         "avatar_id", "active_profile_id", "default_source_id", "refresh_migration_done", "epg_refill_checked", "startup_sync_defaulted", "startup_guide_defaulted",
         "vod_scope_restored",
-        "restore_in_progress", "font_jakarta_migrated", "list_orders_reset", "live_latency_reset_416", "auto_frame_rate_reset_416",
+        "restore_in_progress", "font_jakarta_migrated", "list_orders_reset", "profile_sync_state", "live_latency_reset_416", "auto_frame_rate_reset_416",
         "auto_frame_rate_reset_pre12", "metadata_match_heal_version", "stage_defaults_applied",
         // The retired HDR switch, read once by migrateHdrToPreferSdr and then removed.
         "hdr_enabled",

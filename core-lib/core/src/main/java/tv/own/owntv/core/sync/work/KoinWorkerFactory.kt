@@ -79,6 +79,11 @@ class KoinWorkerFactory : WorkerFactory() {
                 workerParameters,
                 koin.get(),
             )
+            tv.own.owntv.core.sync.profile.ProfileSyncWorker::class.java.name -> tv.own.owntv.core.sync.profile.ProfileSyncWorker(
+                appContext,
+                workerParameters,
+                koin.get(),
+            )
             ContentIndexWorker::class.java.name -> ContentIndexWorker(
                 appContext,
                 workerParameters,

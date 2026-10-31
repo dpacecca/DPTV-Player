@@ -336,6 +336,8 @@ val dataModule = module {
     single { tv.own.owntv.core.sync.schedule.SyncScheduler(androidContext(), get(), get(), get(), get(), get(), get(), get(), get()) }
     // http, xtream, sourceDao, epgSourceStore, syncScheduler, syncStateStore
     single { tv.own.owntv.core.sync.schedule.ChangeChecker(get(), get(), get(), get(), get(), get()) }
+    // The profile shared through DPTV-Server (DPTV v2.8.0).
+    single { tv.own.owntv.core.sync.profile.ServerProfileSync(androidContext(), get(), get(), get(), get(), get(), get(), get()) }
     // settings, sourceRepository, profileDao, catalogSyncScheduler, epgSyncScheduler, epgSourceStore,
     // epgDao, importFinalizer, syncScheduler — the one-shots plus the fixed times and the change check on start.
     single { tv.own.owntv.core.sync.AutoRefresh(androidContext(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }

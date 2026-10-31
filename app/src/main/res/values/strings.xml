@@ -163,6 +163,10 @@
     <string name="sport_playback_log_empty_body">Change channel in Live TV and the timings show up here.</string>
     <!-- v2.5.3: fixed sync times and the change check -->
     <string name="sport_sync_times">Sync times</string>
+    <!-- v2.8.0: the profile shared through DPTV-Server. -->
+    <string name="sport_profile_sync">Share watch history with other TVs</string>
+    <string name="sport_profile_sync_waiting">On · waits for a DPTV-Server playlist</string>
+    <string name="sport_profile_sync_at">On · synced %1$s</string>
     <string name="sport_sync_times_hint">Playlists, the guide and Movies &amp; TV Shows update by themselves at these times every day, in this device\'s time. Changes on your server are also picked up within about 15 minutes.</string>
     <string name="sport_sync_times_summary">Live %1$s · Guide %2$s · Films &amp; shows %3$s</string>
     <string name="sport_sync_times_live">Live channels</string>

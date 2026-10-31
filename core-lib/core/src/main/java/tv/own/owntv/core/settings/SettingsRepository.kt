@@ -404,6 +404,10 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         // Stage (2026-09-30): moved a saved System Sans to Plus Jakarta Sans once. Device-local, never backed up.
         val FONT_JAKARTA_MIGRATED = booleanPreferencesKey("font_jakarta_migrated")
         val LIST_ORDERS_RESET = booleanPreferencesKey("list_orders_reset")
+        /** (DPTV v2.8.0) Share this TV's profile with the other TVs on the same DPTV-Server login. */
+        val PROFILE_SERVER_SYNC = booleanPreferencesKey("profile_server_sync")
+        /** (DPTV v2.8.0) Where that sync stands: device state, never backed up (see ProfileSyncState). */
+        val PROFILE_SYNC_STATE = stringPreferencesKey("profile_sync_state")
         // Stage (2026-10-02): the TV app's new-UI defaults written once (applyStageDefaults). Device-local.
         val STAGE_DEFAULTS_APPLIED = booleanPreferencesKey("stage_defaults_applied")
         val PREFER_SDR = booleanPreferencesKey("prefer_sdr")
@@ -1634,6 +1638,18 @@ class SettingsRepository(private val context: Context, private val localeStore: 
 
     /** The TV Guide also lists channels with no guide data (Order ▾ › Show), so they can be matched from there. */
     // On by default (DPTV-Player v2.1.7): a channel without a guide is still a channel to watch.
+    /** (DPTV v2.8.0) Sync the profile through DPTV-Server; on by default, used only where the server has it. */
+    val profileServerSync: Flow<Boolean> = prefsFlow { it[Keys.PROFILE_SERVER_SYNC] ?: true }
+    suspend fun setProfileServerSync(on: Boolean) {
+        context.dataStore.edit { it[Keys.PROFILE_SERVER_SYNC] = on }
+    }
+
+    /** (DPTV v2.8.0) The profile sync's state, as [tv.own.owntv.core.sync.profile.ProfileSyncState.encode] wrote it. */
+    val profileSyncState: Flow<String?> = prefsFlow { it[Keys.PROFILE_SYNC_STATE] }
+    suspend fun setProfileSyncState(encoded: String?) {
+        context.dataStore.edit { if (encoded == null) it.remove(Keys.PROFILE_SYNC_STATE) else it[Keys.PROFILE_SYNC_STATE] = encoded }
+    }
+
     val guideShowEmpty: Flow<Boolean> = prefsFlow { it[Keys.GUIDE_SHOW_EMPTY] ?: true }
     suspend fun setGuideShowEmpty(show: Boolean) {
         context.dataStore.edit { it[Keys.GUIDE_SHOW_EMPTY] = show }
@@ -3382,7 +3398,7 @@ class SettingsRepository(private val context: Context, private val localeStore: 
             // N4's saved-copy length; the reader accepts only its own choices.
             Keys.TIMESHIFT_WINDOW_MINUTES)
         val bools = listOf(
-            Keys.GUIDE_SHOW_EMPTY, Keys.GUIDE_PREVIEW,
+            Keys.GUIDE_SHOW_EMPTY, Keys.GUIDE_PREVIEW, Keys.PROFILE_SERVER_SYNC,
             Keys.LIVE_PREVIEW, Keys.LIVE_PREVIEW_AUDIO, Keys.HERO_PREVIEW, Keys.PREFER_SDR, Keys.AUTO_FRAME_RATE, Keys.AFR_MATCH_RESOLUTION, Keys.AUTO_FRAME_RATE_PROMPTED, Keys.ANDROID_TV_HOME, Keys.HW_DECODING, Keys.SOFTWARE_DECODE_ABOVE_1080P,
             Keys.VOD_PREFER_EXO, Keys.MEASURED_STREAM_STATS, Keys.DETAILED_DIAGNOSTICS, Keys.DIRECT_TUNE, Keys.LIVE_LEFT_RIGHT_REWINDS, Keys.EXTERNAL_PLAYER,
             Keys.EXTERNAL_PLAYER_LIVE, Keys.EXTERNAL_PLAYER_MOVIES, Keys.EXTERNAL_PLAYER_SERIES, Keys.UPDATE_CHECK_ON_START, Keys.SURROUND_SOUND, Keys.AUTO_PLAY_NEXT, Keys.PROXY_ENABLED,

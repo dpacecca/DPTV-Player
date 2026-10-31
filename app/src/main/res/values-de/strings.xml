@@ -163,6 +163,10 @@
     <string name="sport_playback_log_empty_body">Im Live-TV den Sender wechseln, dann erscheinen die Zeiten hier.</string>
     <!-- v2.5.3: feste Sync-Zeiten und die Änderungsprüfung -->
     <string name="sport_sync_times">Sync-Zeiten</string>
+    <!-- v2.8.0: the profile shared through DPTV-Server. -->
+    <string name="sport_profile_sync">Verlauf mit anderen TVs teilen</string>
+    <string name="sport_profile_sync_waiting">An · wartet auf eine DPTV-Server-Playlist</string>
+    <string name="sport_profile_sync_at">An · synchronisiert %1$s</string>
     <string name="sport_sync_times_hint">Playlists, der TV-Guide sowie Filme &amp; Serien aktualisieren sich jeden Tag zu diesen Zeiten von selbst, in der Zeit dieses Geräts. Änderungen auf deinem Server werden außerdem innerhalb von etwa 15 Minuten übernommen.</string>
     <string name="sport_sync_times_summary">Live %1$s · Guide %2$s · Filme &amp; Serien %3$s</string>
     <string name="sport_sync_times_live">Live-Sender</string>
