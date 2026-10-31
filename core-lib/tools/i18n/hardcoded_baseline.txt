@@ -15,11 +15,9 @@
 1	core/src/main/java/tv/own/owntv/core/catalog/ProviderCatalogMetadata.kt	7.1 Audio
 1	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	${CustomizeKeys.CUSTOM_PREFIX}${UUID.randomUUID()}
 1	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	custom:
-2	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	customCats
-2	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	icon
-2	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	id
-2	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	movedFrom
-2	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	name
+1	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	icon
+1	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	id
+1	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	name
 6	core/src/main/java/tv/own/owntv/core/customize/RenameRules.kt	\0
 1	core/src/main/java/tv/own/owntv/core/customize/RenameRules.kt	${EDGE_SEPARATORS}\\z
 1	core/src/main/java/tv/own/owntv/core/customize/RenameRules.kt	(?:[\\x{2190}-\\x{21FF}\\x{2300}-\\x{23FF}\\x{25A0}-\\x{25FF}\\x{2600}-\\x{27BF}

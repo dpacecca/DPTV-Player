@@ -2210,8 +2210,6 @@
 1	technical	app/src/main/java/tv/own/owntv/ui/components/StageGlyphs.kt	M8 8a4 4 0 1 0 8 0a4 4 0 1 0 -8 0zM4 21a8 8 0 0 1 16 0
 1	technical	app/src/main/java/tv/own/owntv/ui/components/StageGlyphs.kt	M9 18l6-6-6-6
 1	technical	app/src/main/java/tv/own/owntv/ui/components/StageGlyphs.kt	M9.5 2.5H14.5A2.5 2.5 0 0 1 17 5V19A2.5 2.5 0 0 1 14.5 21.5H9.5A2.5 2.5 0 0 1 7 19V5A2.5 2.5 0 0 1 9.5 2.5zM11 18.5h2
-1	performance	app/src/main/java/tv/own/owntv/ui/components/StateViews.kt	spinner
-1	performance	app/src/main/java/tv/own/owntv/ui/components/StateViews.kt	spinnerAngle
 1	empty	app/src/main/java/tv/own/owntv/ui/components/StorageBrowser.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/ui/components/TimeWheel.kt	▲
 1	technical	app/src/main/java/tv/own/owntv/ui/components/TimeWheel.kt	▼
