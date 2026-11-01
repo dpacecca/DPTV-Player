@@ -139,6 +139,13 @@ class LiveTuneController(
      * stream, and moves onto the copy only when the user rewinds, or resumes after a pause.
      */
     private var tsStandby = false
+    /**
+     * (DPTV v2.9.2) A one-stream playlist whose channel is kept on the provider's stream in full screen: the
+     * recording server's copy is started only when the user pauses, since it cannot connect beside the
+     * picture. Null when that does not apply.
+     */
+    private var copyOnPause: Pair<ChannelEntity, SourceEntity?>? = null
+    private var copyOnPauseJob: Job? = null
     /** (v2.5.1) The channel whose recording server copy is being made in the background ([scheduleCopy]). */
     private var copyKey: String? = null
     private var copyJob: Job? = null
@@ -159,7 +166,10 @@ class LiveTuneController(
             scope.launch {
                 var pausedAt: Long? = null
                 paused.collect { now ->
-                    if (now) {
+                    if (now && copyOnPause != null && copyOnPause?.first?.id == current?.id && _liveOnExo.value) {
+                        pausedAt = null
+                        startCopyOnPause()
+                    } else if (now) {
                         pausedAt = host.wallNowMs().takeIf { tsStandby && current != null }
                     } else {
                         val at = pausedAt ?: return@collect
@@ -245,7 +255,14 @@ class LiveTuneController(
             panelRefusesSegments = panelRefusesSegments(channel, source),
         )
         engineLog("tune '${channel.name}' -> ${route.why} [${route.preference.name}]")
-        if (route.onMpv || !keepCopyBeside(channel, source)) {
+        copyOnPause = null
+        copyOnPauseJob?.cancel()
+        if (!route.onMpv && waitForPauseToCopy(channel, source)) {
+            // (DPTV v2.9.2) One stream: the picture stays on the provider's stream (the preview is promoted,
+            // nothing reloads) and the recording server's copy starts only if the user pauses.
+            copyOnPause = channel to source
+            engineLog("timeshift: '${channel.name}' — one stream allowed; its copy on the recording server starts on a pause")
+        } else if (route.onMpv || !keepCopyBeside(channel, source)) {
             cancelBackgroundCopy()
             openTimeshift(channel, source, resolved)
         }
@@ -441,6 +458,7 @@ class LiveTuneController(
      */
     fun detach() {
         tuneJob?.cancel()
+        copyOnPause = null
         cancelLadderJobs()
         current = null
         _liveOnExo.value = false
@@ -473,6 +491,8 @@ class LiveTuneController(
      * outside [launch] uses [cancelTune] first.
      */
     fun releaseForArchive() {
+        copyOnPause = null
+        copyOnPauseJob?.cancel()
         cancelBackgroundCopy()
         parkTimeshift()
         cancelLadderJobs()
@@ -679,6 +699,51 @@ class LiveTuneController(
         (source?.maxConnections ?: 0) >= 2 &&
             !LiveStreamQuirks.isSingleSession(channel.streamUrl) &&
             !host.downloadHoldsOnlyStream(channel.sourceId)
+
+    /**
+     * (DPTV v2.9.2) The recording server would keep [channel]'s copy, but the playlist allows only one
+     * stream, so the copy could not run beside the picture: opening it now would replace the stream that
+     * is already playing (seconds of black on every OK in the guide). Not when a copy of this channel is
+     * already running (a Back and an OK after a pause), which keeps being read as before.
+     */
+    private suspend fun waitForPauseToCopy(channel: ChannelEntity, source: SourceEntity?): Boolean {
+        if (copyWindow(channel) == null || parallelCopyAllowed(channel, source)) return false
+        if (!host.serverTimeshiftAvailable(channel, source)) return false
+        val running = ts
+        if (running != null && running.channelKey == timeshiftKey(channel) && !running.isClosed) return false
+        cancelBackgroundCopy()
+        if (running != null) parkTimeshift()
+        host.timeshift?.watching(timeshiftKey(channel))
+        return true
+    }
+
+    /**
+     * (DPTV v2.9.2) The user paused a one-stream channel: let go of the provider's stream, have the recording
+     * server start its copy, and put the copy on screen still paused at its first moment — the pause.
+     * Play then continues from where it was paused, and rewind works from there on. When the server
+     * cannot keep the channel, the provider's stream is opened again, paused.
+     */
+    private fun startCopyOnPause() {
+        val (channel, source) = copyOnPause ?: return
+        copyOnPause = null
+        copyOnPauseJob?.cancel()
+        copyOnPauseJob = scope.launch {
+            exoWatchJob?.cancel() // stopping the stream on purpose is not a failure to hand over
+            val opened = openTimeshift(channel, source, null)
+            if (!isCurrent(channel)) return@launch
+            val url = if (opened) localUrl() else null
+            if (url == null) {
+                engineLog("timeshift: '${channel.name}' — the recording server could not keep it; back on the provider's stream")
+                startOnExo(channel, source)
+                engines.exoPause()
+                return@launch
+            }
+            engines.exoPlay(url, muted = false, tsRequest ?: request(channel, source))
+            exoChannelId = channel.id
+            engines.exoPause()
+            engineLog("timeshift: '${channel.name}' paused on the recording server's copy")
+        }
+    }
 
     /**
      * (v2.5.1) A full-screen tune that keeps the picture on the provider's stream, with the recording

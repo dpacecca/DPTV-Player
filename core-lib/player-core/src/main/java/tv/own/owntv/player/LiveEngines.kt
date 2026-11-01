@@ -55,6 +55,8 @@ interface LiveEngines {
 
     fun exoPlay(url: String, muted: Boolean, request: LiveRequest)
     fun exoSetMuted(muted: Boolean)
+    /** (DPTV v2.9.2) Hold ExoPlayer's stream paused, as the user's own pause would. */
+    fun exoPause() {}
     fun exoStop()
     fun exoReleaseUhdDecoder()
     fun exoAbandon(reason: String)
@@ -117,6 +119,7 @@ class EnginePair(private val exo: LivePreviewEngine, private val mpv: OwnTVPlaye
     override fun exoPlay(url: String, muted: Boolean, request: LiveRequest) = exo.play(url, muted, request)
 
     override fun exoSetMuted(muted: Boolean) = exo.setMuted(muted)
+    override fun exoPause() = exo.pauseByUser()
     override fun exoStop() = exo.stop()
     override fun exoReleaseUhdDecoder() = exo.releaseDecoderForUhd()
     override fun exoAbandon(reason: String) { exo.abandon(reason) }
