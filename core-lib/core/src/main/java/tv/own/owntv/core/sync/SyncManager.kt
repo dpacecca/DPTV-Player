@@ -75,7 +75,7 @@ class SyncManager(
     private val support = SyncSupport(categoryDao, channelDao, movieDao, seriesDao, sourceDao, customize, settings, chunkPauseMs = if (lowSpec) SyncSupport.LOW_SPEC_CHUNK_PAUSE_MS else 0L)
     private val xtreamSyncer = XtreamSyncer(xtream, bulkInsertHelper, support, phaseConcurrency = XtreamSyncer.phaseConcurrency(lowSpec))
     private val m3uSyncer = M3uSyncer(context, sourceDao, categoryDao, channelDao, movieDao, seriesDao, m3u, http, bulkInsertHelper, support)
-    private val stalkerSyncer = StalkerSyncer(stalkerClient, stalkerAuth, bulkInsertHelper, support, sourceDao, catalogBackfillDao, catalogPriority)
+    private val stalkerSyncer = StalkerSyncer(stalkerClient, stalkerAuth, bulkInsertHelper, support, sourceDao, catalogBackfillDao, catalogPriority, PortalCeilingStore(context))
 
     private val lastSyncStats = java.util.concurrent.ConcurrentHashMap<Long, SyncRunStats>()
 
