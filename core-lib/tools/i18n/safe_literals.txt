@@ -5332,9 +5332,12 @@
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	starting mpv for '${channel.name}' — reason=$reason
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	the ExoPlayer preview had already failed
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' cannot be saved — playing it directly
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' paused on the recording server's copy
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' plays from its saved copy
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' plays from the recording server's copy
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' previews directly; one stream, so the recording server's copy waits for full screen
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' — one stream allowed; its copy on the recording server starts on a pause
+1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' — the recording server could not keep it; back on the provider's stream
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${channel.name}' — the recording server's copy is ready after ${host.nowMs() - askedAt}ms; the picture stays on the provider's stream until a pause or a rewind
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: '${current?.name}' moves from the provider's stream onto its saved copy
 1	log	player-core/src/main/java/tv/own/owntv/player/LiveTuneController.kt	timeshift: one stream — waited ${host.nowMs() - from}ms for the recording server to let go (answered=$released)

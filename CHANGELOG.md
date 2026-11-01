@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.9.2
+
+### 🐛 Fixes
+- **Live TV: opening a channel full screen from the guide no longer reloads it on a one-stream playlist with the recording server's rewind on**
+
 ## v2.9.1
 
 ### ✨ New features

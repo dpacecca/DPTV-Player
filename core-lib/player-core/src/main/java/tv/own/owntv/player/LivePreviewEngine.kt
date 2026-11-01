@@ -2741,6 +2741,13 @@ class LivePreviewEngine(
     }
 
     // --- PlaybackEngine controls (full-screen HUD) ---
+    /** (DPTV v2.9.2) Paused as if the user had pressed pause: a stream just put on screen waits for Play. */
+    fun pauseByUser() {
+        val p = player ?: return
+        p.pause()
+        _userPaused.value = true
+    }
+
     override fun togglePlayPause() {
         val p = player ?: return
         if (p.isPlaying) p.pause() else p.play()

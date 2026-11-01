@@ -44,7 +44,8 @@ class LiveTuneControllerServerCopyTest {
 
         override fun exoPlay(url: String, muted: Boolean, request: LiveRequest) { exoUrl = url; log += "exo:$url" }
         override fun exoSetMuted(muted: Boolean) { log += if (muted) "exo-mute" else "exo-unmute" }
-        override fun exoStop() { exoUrl = null; log += "exo-stop" }
+        override fun exoPause() { log += "exo-pause"; exoUserPaused.value = true }
+        override fun exoStop() { exoUrl = null; log += "exo-stop"; exoUserPaused.value = false }
         override fun exoReleaseUhdDecoder() {}
         override fun exoAbandon(reason: String) { log += "exo-abandon" }
         override suspend fun watchExo(
@@ -101,11 +102,14 @@ class LiveTuneControllerServerCopyTest {
         override fun wallNowMs(): Long = WALL_BASE + scope.testScheduler.currentTime
         override suspend fun timeshiftWindowMinutes(): Int = 15
         override suspend fun serverTimeshiftAvailable(channel: ChannelEntity, source: SourceEntity?) = true
-        override suspend fun openServerTimeshift(channel: ChannelEntity, source: SourceEntity?, windowMinutes: Int, channelKey: String): TimeshiftBuffer {
+        /** The server answers that it cannot keep the channel. */
+        var refuse = false
+        override suspend fun openServerTimeshift(channel: ChannelEntity, source: SourceEntity?, windowMinutes: Int, channelKey: String): TimeshiftBuffer? {
             asked += channel.id
             engineLogAtAsk = engines?.log?.toList()
             val startedAt = wallNowMs()
             kotlinx.coroutines.delay(firstPieceMs)
+            if (refuse) return null
             return FakeCopy(channelKey, startedAt).also { TimeshiftServer.register(it) }
         }
     }
@@ -211,7 +215,7 @@ class LiveTuneControllerServerCopyTest {
     }
 
     @Test
-    fun `a one-stream playlist previews directly and keeps the copy for full screen`() = runTest {
+    fun `a one-stream playlist goes full screen without reloading and copies only from a pause`() = runTest {
         val (c, engines, host) = setUp(maxConnections = 1)
         c.preview(channel(30), muted = true)
         runCurrent()
@@ -220,15 +224,47 @@ class LiveTuneControllerServerCopyTest {
         assertTrue("never a second stream beside the preview", host.asked.isEmpty())
         assertNull(c.localTimeshift.value)
 
-        // Full screen: the provider's stream stops before the server connects, then the copy plays.
+        // (DPTV v2.9.2) Full screen promotes the preview: no stop, no server copy, nothing reloads.
         c.tune(channel(30))
         runCurrent()
+        advanceTimeBy(LiveTuneController.COPY_SETTLE_MS + host.firstPieceMs + 1)
+        assertEquals(listOf("exo:${channel(30).streamUrl}", "exo-unmute"), engines.log)
+        assertTrue(host.asked.isEmpty())
+        assertNull(c.localTimeshift.value)
+
+        // A pause: the provider's stream stops before the server connects, and the copy waits paused.
+        val pausedAt = host.wallNowMs()
+        engines.exoUserPaused.value = true
+        runCurrent()
         assertEquals(listOf(30L), host.asked)
-        assertEquals(listOf("exo:${channel(30).streamUrl}", "exo-stop"), host.engineLogAtAsk)
+        assertEquals(listOf("exo:${channel(30).streamUrl}", "exo-unmute", "exo-stop"), host.engineLogAtAsk)
         advanceTimeBy(host.firstPieceMs + 1)
-        val last = engines.log.last()
-        assertTrue("plays the copy: $last", TimeshiftServer.isLocal(last.removePrefix("exo:")))
-        assertNotNull(c.localTimeshift.value)
+        val copy = c.localTimeshift.value!!.session
+        assertEquals(pausedAt, copy.oldestWallMs())
+        val loaded = engines.log[engines.log.size - 2]
+        assertTrue("the copy, from the pause: $loaded", TimeshiftServer.isLocal(loaded.removePrefix("exo:")))
+        assertEquals("exo-pause", engines.log.last())
+        assertTrue(engines.exoUserPaused.value)
+
+        // Play continues from the copy as it is: nothing else is opened.
+        val before = engines.log.toList()
+        engines.exoUserPaused.value = false
+        runCurrent()
+        assertEquals(before, engines.log)
+    }
+
+    @Test
+    fun `a one-stream channel the server cannot keep goes back to the provider, still paused`() = runTest {
+        val (c, engines, host) = setUp(maxConnections = 1)
+        host.refuse = true
+        c.tune(channel(31))
+        runCurrent()
+        engines.exoUserPaused.value = true
+        runCurrent()
+        advanceTimeBy(host.firstPieceMs + 1)
+        assertEquals("exo:${channel(31).streamUrl}", engines.log[engines.log.size - 2])
+        assertEquals("exo-pause", engines.log.last())
+        assertNull(c.localTimeshift.value)
     }
 
     @Test
