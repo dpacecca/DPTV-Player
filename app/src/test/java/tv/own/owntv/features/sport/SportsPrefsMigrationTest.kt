@@ -104,4 +104,11 @@ class SportsPrefsMigrationTest {
         assertTrue("reflection found too few keys: $declared", declared.size >= 15)
         assertEquals(declared, SportsPrefs.BackedUpKeys.map { it.name }.toSet())
     }
+
+    @Test
+    fun theSharedProfileLeavesThisTvsPlaylistsAndRecordPlansOut() {
+        // (v2.8.1) Playlist ids are each TV's own numbers; record plans would make every TV record the game.
+        assertEquals(setOf("channel_playlists", "record_plans"), SportsPrefs.NotSynced.map { it.name }.toSet())
+        assertTrue(SportsPrefs.NotSynced.all { it in SportsPrefs.BackedUpKeys })
+    }
 }

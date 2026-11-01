@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.8.1
+
+### ✨ New features
+- **🔄 Sport's followed leagues, teams and choices shared between the TVs too**
+
 ## v2.8.0
 
 ### ✨ New features
