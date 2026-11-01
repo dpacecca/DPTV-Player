@@ -2,9 +2,13 @@ package tv.own.owntv.core.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Home's rows since v2.4.0: no Keep watching or Now trending, and the Trending movies / shows rows under Recent channels. */
+/**
+ * Home's rows since v2.4.0: no Keep watching or Now trending. The Trending movies / shows rows start under Recent
+ * channels; since DPTV v2.9.1 they can be moved and hidden like any other row.
+ */
 class HomeConfigTrendingRowsTest {
 
     @Test
@@ -17,22 +21,23 @@ class HomeConfigTrendingRowsTest {
     }
 
     @Test
-    fun `they keep Recent channels' place while it is hidden, and follow it when moved`() {
+    fun `they start where Recent channels is, and stay where they are moved (v2_9_1)`() {
         // The default hides Recent channels.
         val defaults = HomeConfig().visibleOrder
         assertEquals(listOf(HomeRow.TRENDING_MOVIES, HomeRow.TRENDING_SHOWS, HomeRow.FAVORITE_CHANNELS), defaults.take(3))
 
         val moved = HomeConfig(
-            order = listOf(HomeRow.FAVORITE_MOVIES, HomeRow.RECENT_CHANNELS, HomeRow.FAVORITE_CHANNELS),
-            hidden = emptySet(),
+            order = listOf(HomeRow.TRENDING_SHOWS, HomeRow.FAVORITE_MOVIES, HomeRow.RECENT_CHANNELS, HomeRow.FAVORITE_CHANNELS),
+            hidden = setOf(HomeRow.TRENDING_MOVIES),
         ).visibleOrder
-        assertEquals(listOf(HomeRow.FAVORITE_MOVIES, HomeRow.RECENT_CHANNELS, HomeRow.TRENDING_MOVIES, HomeRow.TRENDING_SHOWS), moved.take(4))
+        assertEquals(listOf(HomeRow.TRENDING_SHOWS, HomeRow.FAVORITE_MOVIES, HomeRow.RECENT_CHANNELS, HomeRow.FAVORITE_CHANNELS), moved.take(4))
     }
 
     @Test
-    fun `settings list neither the retired nor the Trending rows`() {
+    fun `settings list the Trending rows but not the retired ones`() {
         val rows = HomeConfig().settingsRows
-        listOf(HomeRow.TRENDING, HomeRow.HERO, HomeRow.TRENDING_MOVIES, HomeRow.TRENDING_SHOWS).forEach { assertFalse(it.name, it in rows) }
+        listOf(HomeRow.TRENDING, HomeRow.HERO).forEach { assertFalse(it.name, it in rows) }
+        listOf(HomeRow.TRENDING_MOVIES, HomeRow.TRENDING_SHOWS).forEach { assertTrue(it.name, it in rows) }
     }
 
     @Test

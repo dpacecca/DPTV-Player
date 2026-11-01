@@ -106,6 +106,43 @@ class JellyfinClient(
         return JellyfinParse.page(get(a, "/Shows/$seriesId/Episodes", q)).items
     }
 
+    /**
+     * (v2.9.1) The whole movie or show library with only what matching needs (ids, names, years, provider
+     * ids and the watched mark), for Trakt and for finding a recommended title on this server.
+     */
+    suspend fun everything(shelf: Shelf, played: Boolean? = null): List<JellyfinItem> {
+        val a = account()
+        val q = buildMap {
+            put("IncludeItemTypes", typeOf(shelf)); put("Recursive", "true")
+            put("Fields", "ProviderIds,ProductionYear"); put("EnableImageTypes", "Primary")
+            if (played != null) put("IsPlayed", played.toString())
+        }
+        return JellyfinParse.page(get(a, "/Users/${a.userId}/Items", q)).items
+    }
+
+    /** (v2.9.1) Every episode with its season and episode numbers and watched mark, for Trakt. */
+    suspend fun allEpisodes(played: Boolean? = null): List<JellyfinItem> {
+        val a = account()
+        val q = buildMap {
+            put("IncludeItemTypes", "Episode"); put("Recursive", "true")
+            put("Fields", "ProviderIds"); put("EnableImages", "false")
+            if (played != null) put("IsPlayed", played.toString())
+        }
+        return JellyfinParse.page(get(a, "/Users/${a.userId}/Items", q)).items
+    }
+
+    /** (v2.9.1) Films or episodes last watched, newest first: what recommendations start from. */
+    suspend fun recentlyPlayed(shelf: Shelf, limit: Int = 10): List<JellyfinItem> {
+        val a = account()
+        return JellyfinParse.page(
+            get(a, "/Users/${a.userId}/Items", mapOf(
+                "IncludeItemTypes" to (if (shelf == Shelf.MOVIES) "Movie" else "Episode"), "Recursive" to "true",
+                "IsPlayed" to "true", "SortBy" to "DatePlayed", "SortOrder" to "Descending",
+                "Limit" to limit.toString(), "Fields" to "ProviderIds,SeriesId",
+            )),
+        ).items
+    }
+
     /** Searches movies and shows by name. */
     suspend fun search(term: String, limit: Int = 40): List<JellyfinItem> {
         val a = account()
@@ -206,7 +243,7 @@ class JellyfinClient(
         const val TAG = "Jellyfin"
         const val AUTH_HEADER = "Authorization"
         const val TOKEN_HEADER = "X-Emby-Token"
-        const val FIELDS = "Overview,Genres,ProductionYear,PremiereDate,DateCreated,ParentId"
+        const val FIELDS = "Overview,Genres,ProductionYear,PremiereDate,DateCreated,ParentId,ProviderIds"
         const val IMAGES = "Primary,Backdrop"
         val JSON = "application/json; charset=utf-8".toMediaType()
     }

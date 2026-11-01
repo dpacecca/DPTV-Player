@@ -302,7 +302,7 @@ private fun titleOf(item: JellyfinItem): String =
     } else item.name
 
 /** [format] is content_season_episode ("S%1$d · E%2$d"), [separator] the " · " between the parts. */
-private fun episodeTitle(item: JellyfinItem, format: String, separator: String): String = listOfNotNull(
+internal fun episodeTitle(item: JellyfinItem, format: String, separator: String): String = listOfNotNull(
     item.seriesName,
     if (item.seasonNumber != null && item.episodeNumber != null) String.format(java.util.Locale.getDefault(), format, item.seasonNumber, item.episodeNumber) else null,
     item.name.ifBlank { null },
@@ -478,6 +478,18 @@ private fun JellyfinDetailPage(
                             icon = OwnTVIcon.CHECK,
                             onClick = { onSetPlayed(item, !item.played) },
                         )
+                        // (v2.9.1) The Trakt watchlist, once signed in to Trakt and Jellyfin knows the title's TMDB id.
+                        val trakt: tv.own.owntv.features.trakt.TraktViewModel = koinViewModel()
+                        val traktOn by trakt.signedIn.collectAsStateWithLifecycle()
+                        val list by trakt.watchlist.collectAsStateWithLifecycle()
+                        if (traktOn && item.tmdbId != null) {
+                            val listed = remember(list, item.id) { trakt.onWatchlist(item) }
+                            StageButton(
+                                text = stringResource(if (listed) R.string.sport_trakt_watchlist_remove else R.string.sport_trakt_watchlist_add),
+                                icon = OwnTVIcon.LIST,
+                                onClick = { trakt.toggleWatchlist(item) },
+                            )
+                        }
                     }
                 }
             }

@@ -221,6 +221,12 @@ interface MetadataProvider {
     suspend fun watchProviders(type: MetadataType, region: String): List<WatchProvider>?
 
     /**
+     * (DPTV v2.9.1) TMDB's "if you liked this" list for one film or show (`/3/{type}/{id}/recommendations`),
+     * in the trending page's shape. Null when it fails or this provider has none.
+     */
+    suspend fun recommendations(type: MetadataType, tmdbId: Int): TrendingFeedPage? = null
+
+    /**
      * Search movies by cleaned [title] (+ optional [year]). Best matches first.
      * **Empty list = TMDB answered "no results"** (callers may negative-cache);
      * **null = transport failure** (network down, rate-limited, proxy error) — callers must NOT

@@ -51,6 +51,12 @@ data class JellyfinItem(
     val premiereDateMs: Long? = null,
     /** When it was added to Jellyfin, for "latest". */
     val dateCreatedMs: Long? = null,
+    /** (v2.9.1) TMDB's id from Jellyfin's ProviderIds: how Trakt, TMDB recommendations and the playlists find it. */
+    val tmdbId: Int? = null,
+    val imdbId: String? = null,
+    val tvdbId: Int? = null,
+    /** (v2.9.1) When it was last watched, for Continue watching's order. */
+    val lastPlayedMs: Long? = null,
 ) {
     val resumable: Boolean get() = positionMs > 0 && !played
 }
@@ -135,7 +141,18 @@ object JellyfinParse {
             seriesPrimaryTag = o.optString("SeriesPrimaryImageTag").ifBlank { null },
             premiereDateMs = isoMs(o.optString("PremiereDate")),
             dateCreatedMs = isoMs(o.optString("DateCreated")),
+            tmdbId = providerId(o, "Tmdb")?.toIntOrNull(),
+            imdbId = providerId(o, "Imdb"),
+            tvdbId = providerId(o, "Tvdb")?.toIntOrNull(),
+            lastPlayedMs = isoMs(user?.optString("LastPlayedDate")),
         )
+    }
+
+    /** Jellyfin writes provider keys as "Tmdb" but some plugins as "tmdb": either is read. */
+    private fun providerId(o: JSONObject, key: String): String? {
+        val ids = o.optJSONObject("ProviderIds") ?: return null
+        val name = ids.keys().asSequence().firstOrNull { it.equals(key, ignoreCase = true) } ?: return null
+        return ids.optString(name).trim().ifBlank { null }
     }
 
     /** "http://host:8096/" and "host:8096" both become "http://host:8096". */

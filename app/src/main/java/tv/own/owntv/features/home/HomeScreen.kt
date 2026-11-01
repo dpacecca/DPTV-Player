@@ -179,9 +179,27 @@ fun HomeScreen(
     sportsRow: Boolean = false,
     /** A Sports row card was opened: the shared [SportsViewModel] holds the game; show Sport. */
     onOpenSport: () -> Unit = {},
+    /** (DPTV v2.9.1) Play a Jellyfin film or episode from [startMs] (Continue watching). */
+    onPlayJellyfin: (tv.own.owntv.core.jellyfin.JellyfinItem, Long) -> Unit = { _, _ -> },
+    /** (DPTV v2.9.1) Open a Jellyfin title's page in the Jellyfin section. */
+    onOpenJellyfin: (tv.own.owntv.core.jellyfin.JellyfinItem) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by vm.uiState.collectAsStateWithLifecycle()
+    // (DPTV v2.9.1) The Jellyfin, Recommended and Watchlist rows, and Jellyfin's half of Continue watching.
+    val extrasVm: HomeExtrasViewModel = koinViewModel()
+    val extras by extrasVm.extras.collectAsStateWithLifecycle()
+    LaunchedEffect(state.config, restoreFocus) { extrasVm.refresh(state.config) }
+    val openCard: (HomeCard) -> Unit = { card ->
+        when (val t = card.target) {
+            is HomeCardTarget.VodMovie -> onPlayMovie(t.movieId, t.positionMs)
+            is HomeCardTarget.VodEpisode -> onPlayEpisode(0L, t.episodeId, t.positionMs)
+            is HomeCardTarget.OpenMovie -> onOpenMovie(t.movie)
+            is HomeCardTarget.OpenSeries -> onOpenSeries(t.series)
+            is HomeCardTarget.JellyfinPlay -> onPlayJellyfin(t.item, t.startMs)
+            is HomeCardTarget.JellyfinOpen -> onOpenJellyfin(t.item)
+        }
+    }
     // The same activity-scoped instance the Sport section uses, so opening a card lands on that game.
     val sportsVm: SportsViewModel? = if (sportsRow) koinViewModel() else null
     val sportsFixtures = sportsVm?.homeRow?.collectAsStateWithLifecycle()?.value.orEmpty()
@@ -239,10 +257,10 @@ fun HomeScreen(
     var versionsFor by remember { mutableStateOf<List<FeaturedVersion>?>(null) }
     val orderedRows = state.config.visibleOrder
     val heroVisible = HomeRow.HERO in orderedRows
-    val hasNonHeroContent = orderedRows.any { it != HomeRow.HERO && rowHasData(it, state) }
+    val hasNonHeroContent = orderedRows.any { it != HomeRow.HERO && rowHasData(it, state, extras) }
     val showHeroFallback = heroVisible && state.heroItems.isEmpty() && !hasNonHeroContent
-    val renderRows = orderedRows.filter { rowCanRender(it, state, showHeroFallback) }
-    val firstDataRow = renderRows.firstOrNull { it != HomeRow.HERO && rowHasData(it, state) }
+    val renderRows = orderedRows.filter { rowCanRender(it, state, extras, showHeroFallback) }
+    val firstDataRow = renderRows.firstOrNull { it != HomeRow.HERO && rowHasData(it, state, extras) }
     val showAllHiddenState = orderedRows.isEmpty() && !featuredShown
     val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty() && !featuredShown
     // (v2.6.0) Full-bleed is the featured hero now; Now trending itself stays retired.
@@ -688,7 +706,13 @@ fun HomeScreen(
                     modifier = rowModifier,
                 )
 
-                HomeRow.CONTINUE_MOVIES -> ContinuePosterRow(
+                // (DPTV v2.9.1) With Jellyfin films in progress, one row of both, the most recent first.
+                HomeRow.CONTINUE_MOVIES -> if (extras.jellyfinContinueMovies.isNotEmpty()) HomeCardRow(
+                    title = row.displayTitle(),
+                    cards = HomeExtrasRules.continueCards(state.continueMovies, episodes = false, jellyfin = extras.jellyfinContinueMovies),
+                    start = contentStart, onClick = openCard, onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester, track = track, modifier = rowModifier,
+                ) else ContinuePosterRow(
                     title = row.displayTitle(),
                     items = state.continueMovies,
                     start = contentStart,
@@ -699,7 +723,12 @@ fun HomeScreen(
                     modifier = rowModifier,
                 )
         
-                HomeRow.CONTINUE_SERIES -> ContinuePosterRow(
+                HomeRow.CONTINUE_SERIES -> if (extras.jellyfinContinueShows.isNotEmpty()) HomeCardRow(
+                    title = row.displayTitle(),
+                    cards = HomeExtrasRules.continueCards(state.continueSeries, episodes = true, jellyfin = extras.jellyfinContinueShows),
+                    start = contentStart, onClick = openCard, onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester, track = track, modifier = rowModifier,
+                ) else ContinuePosterRow(
                     title = row.displayTitle(),
                     items = state.continueSeries,
                     start = contentStart,
@@ -708,6 +737,21 @@ fun HomeScreen(
                     firstItemFocusRequester = firstItemFocusRequester,
                     track = track,
                     modifier = rowModifier,
+                )
+
+                // (DPTV v2.9.1) Recommended, the latest on Jellyfin, and the Trakt watchlist.
+                HomeRow.RECOMMENDED_MOVIES, HomeRow.RECOMMENDED_SHOWS, HomeRow.JELLYFIN_MOVIES,
+                HomeRow.JELLYFIN_SHOWS, HomeRow.TRAKT_WATCHLIST -> HomeCardRow(
+                    title = row.displayTitle(),
+                    cards = when (row) {
+                        HomeRow.RECOMMENDED_MOVIES -> extras.recommendedMovies
+                        HomeRow.RECOMMENDED_SHOWS -> extras.recommendedShows
+                        HomeRow.JELLYFIN_MOVIES -> extras.jellyfinLatestMovies
+                        HomeRow.JELLYFIN_SHOWS -> extras.jellyfinLatestShows
+                        else -> extras.watchlist
+                    },
+                    start = contentStart, onClick = openCard, onFocus = onNonHeroFocused,
+                    firstItemFocusRequester = firstItemFocusRequester, track = track, modifier = rowModifier,
                 )
             }
         }
@@ -857,7 +901,7 @@ private fun FeaturedVersionsPopup(versions: List<FeaturedVersion>, onPick: (Tren
     }
 }
 
-private fun rowHasData(row: HomeRow, state: HomeUiState): Boolean = when (row) {
+private fun rowHasData(row: HomeRow, state: HomeUiState, extras: HomeExtras): Boolean = when (row) {
     HomeRow.TRENDING -> state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS
     HomeRow.HERO -> state.heroItems.isNotEmpty()
     HomeRow.RECENT_CHANNELS -> when (state.config.recentLiveMode) {
@@ -870,16 +914,21 @@ private fun rowHasData(row: HomeRow, state: HomeUiState): Boolean = when (row) {
     }
     HomeRow.FAVORITE_MOVIES -> state.favoriteMovies.isNotEmpty()
     HomeRow.FAVORITE_SERIES -> state.favoriteSeries.isNotEmpty()
-    HomeRow.CONTINUE_MOVIES -> state.continueMovies.isNotEmpty()
-    HomeRow.CONTINUE_SERIES -> state.continueSeries.isNotEmpty()
+    HomeRow.CONTINUE_MOVIES -> state.continueMovies.isNotEmpty() || extras.jellyfinContinueMovies.isNotEmpty()
+    HomeRow.CONTINUE_SERIES -> state.continueSeries.isNotEmpty() || extras.jellyfinContinueShows.isNotEmpty()
     HomeRow.TRENDING_MOVIES -> state.trendingMovies.isNotEmpty()
     HomeRow.TRENDING_SHOWS -> state.trendingShows.isNotEmpty()
+    HomeRow.RECOMMENDED_MOVIES -> extras.recommendedMovies.isNotEmpty()
+    HomeRow.RECOMMENDED_SHOWS -> extras.recommendedShows.isNotEmpty()
+    HomeRow.JELLYFIN_MOVIES -> extras.jellyfinLatestMovies.isNotEmpty()
+    HomeRow.JELLYFIN_SHOWS -> extras.jellyfinLatestShows.isNotEmpty()
+    HomeRow.TRAKT_WATCHLIST -> extras.watchlist.isNotEmpty()
 }
 
-private fun rowCanRender(row: HomeRow, state: HomeUiState, showHeroFallback: Boolean): Boolean =
+private fun rowCanRender(row: HomeRow, state: HomeUiState, extras: HomeExtras, showHeroFallback: Boolean): Boolean =
     when (row) {
         HomeRow.HERO -> state.heroItems.isNotEmpty() || showHeroFallback
-        else -> rowHasData(row, state)
+        else -> rowHasData(row, state, extras)
     }
 
 private fun HeroItem.heroKey(): String = when (this) {
@@ -1481,6 +1530,44 @@ private fun ContinuePosterRow(
                         .onFocusChanged { if (it.hasFocus) onFocus() },
                 ) {
                     AsyncImage(model = item.posterUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                }
+            }
+        }
+    }
+}
+
+/** (DPTV v2.9.1) A row of [HomeCard]s: VOD and Jellyfin together, recommendations, the watchlist. */
+@Composable
+private fun HomeCardRow(
+    title: String,
+    cards: List<HomeCard>,
+    start: Dp,
+    onClick: (HomeCard) -> Unit,
+    onFocus: () -> Unit,
+    firstItemFocusRequester: FocusRequester?,
+    track: (FocusRequester) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier) {
+        HomeRowHeader(title, small = cards.size.toString(), start = start)
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(20.mpx),
+            contentPadding = PaddingValues(start = start, end = 64.mpx),
+            modifier = Modifier.focusRestorer().focusGroup(),
+        ) {
+            itemsIndexed(cards, key = { _, c -> c.key }) { index, card ->
+                StagePoster(
+                    title = card.title,
+                    onClick = { onClick(card) },
+                    width = 196.mpx,
+                    height = 294.mpx,
+                    progress = card.progress,
+                    modifier = Modifier
+                        .then(if (index == 0 && firstItemFocusRequester != null) Modifier.focusRequester(firstItemFocusRequester) else Modifier)
+                        .tracked(track = track)
+                        .onFocusChanged { if (it.hasFocus) onFocus() },
+                ) {
+                    AsyncImage(model = card.posterUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 }
             }
         }

@@ -149,6 +149,39 @@ class TrendingHomeReader(
         }
     }
 
+    /**
+     * (DPTV v2.9.1) Any TMDB films — recommendations, a Trakt watchlist — found in [profileId]'s active
+     * playlists, in the order given, each with a poster. The same matching as the Trending rows.
+     */
+    suspend fun findMovies(profileId: Long, titles: List<TrendingCandidate>): List<TrendingPick<MovieEntity>> = withContext(Dispatchers.IO) {
+        if (titles.isEmpty()) return@withContext emptyList()
+        val visibility = feed.vodVisibility(profileId)
+        val found = match(
+            titles = titles, mediaType = MediaType.MOVIE, type = MetadataRepository.TYPE_MOVIE,
+            sourceIds = visibility.movieSourceIds.toList(), language = settings.metadataConfig().resolvedLanguage,
+            byRemoteIds = movieDao::findByRemoteIds, byIds = movieDao::getByIds,
+            exact = movieDao::trendingExact, fts = movieDao::trendingFts,
+            allowed = { visibility.allows(it) }, id = { it.id }, remoteId = { it.remoteId },
+        )
+        val posters = runCatching { metadata.cachedMoviePosters(found.map { it.second }) }.getOrDefault(emptyMap())
+        found.map { (t, m) -> TrendingPick(m, t, MetadataImages.poster(t.posterPath) ?: posters[m.id] ?: m.posterUrl) }
+    }
+
+    /** (DPTV v2.9.1) [findMovies] for shows. */
+    suspend fun findShows(profileId: Long, titles: List<TrendingCandidate>): List<TrendingPick<SeriesEntity>> = withContext(Dispatchers.IO) {
+        if (titles.isEmpty()) return@withContext emptyList()
+        val visibility = feed.vodVisibility(profileId)
+        val found = match(
+            titles = titles, mediaType = MediaType.SERIES, type = MetadataRepository.TYPE_TV,
+            sourceIds = visibility.seriesSourceIds.toList(), language = settings.metadataConfig().resolvedLanguage,
+            byRemoteIds = seriesDao::findSeriesByRemoteIds, byIds = seriesDao::getSeriesByIds,
+            exact = seriesDao::trendingExact, fts = seriesDao::trendingFts,
+            allowed = { visibility.allows(it) }, id = { it.id }, remoteId = { it.remoteId },
+        )
+        val posters = runCatching { metadata.cachedSeriesPosters(found.map { it.second }) }.getOrDefault(emptyMap())
+        found.map { (t, sr) -> TrendingPick(sr, t, MetadataImages.poster(t.posterPath) ?: posters[sr.id] ?: sr.posterUrl) }
+    }
+
     /** Matches [titles] to entries of [sourceIds]: by TMDB id first, then by normalised title and year. */
     private suspend fun <T> match(
         titles: List<TrendingCandidate>,

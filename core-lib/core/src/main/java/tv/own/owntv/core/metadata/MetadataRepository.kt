@@ -741,6 +741,9 @@ class MetadataRepository(
             if (lang.isBlank()) "$TYPE_TV:$tvId:s$season:fetched"
             else "$TYPE_TV:$lang:$tvId:s$season:fetched"
 
+        /** (DPTV v2.9.1) The kids-profile variant of a match key, for readers outside this class. */
+        fun maturityKey(localKey: String): String = maturityMatchKey(localKey, includeAdult = false)
+
         internal fun maturityMatchKey(localKey: String, includeAdult: Boolean): String =
             if (includeAdult) localKey else "$localKey:kids"
     }
