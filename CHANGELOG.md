@@ -64,6 +64,16 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.9.1
+
+### ✨ New features
+- **🏠 Home: Recommended movies and Recommended shows, picked from what you watched, only what you have on Jellyfin or in your playlists**
+- **🏠 Home: New movies and New episodes on Jellyfin**
+- **🏠 Home: Continue watching shows VOD and Jellyfin together**
+- **🏠 Home: every row, Trending included, can be shown, hidden and moved**
+- **📺 Trakt: watched history kept in step both ways with Jellyfin and your playlists**
+- **📺 Trakt: your watchlist on Home, and Add to watchlist on a Jellyfin title**
+
 ## v2.9.0
 
 ### ✨ New features

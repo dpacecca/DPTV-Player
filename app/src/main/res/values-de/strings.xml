@@ -301,4 +301,33 @@
     <string name="sport_jf_error_server">Dieser Server ist nicht erreichbar.</string>
     <string name="sport_jf_error_other">Anmeldung fehlgeschlagen (Fehler %1$d).</string>
     <string name="sport_jf_search_keywords">jellyfin, medienserver, filme, serien, anmelden</string>
+    <!-- DPTV v2.9.1: Home rows and Trakt. -->
+    <string name="sport_home_row_recommended_movies">Empfohlene Filme</string>
+    <string name="sport_home_row_recommended_movies_description">Ausgewählt nach den Filmen, die du gesehen hast – nur solche, die du auf Jellyfin oder in deinen Playlists hast</string>
+    <string name="sport_home_row_recommended_shows">Empfohlene Serien</string>
+    <string name="sport_home_row_recommended_shows_description">Ausgewählt nach den Serien, die du gesehen hast – nur solche, die du auf Jellyfin oder in deinen Playlists hast</string>
+    <string name="sport_home_row_jellyfin_movies">Neue Filme auf Jellyfin</string>
+    <string name="sport_home_row_jellyfin_movies_description">Die zuletzt hinzugefügten Filme auf deinem Jellyfin-Server</string>
+    <string name="sport_home_row_jellyfin_shows">Neue Folgen auf Jellyfin</string>
+    <string name="sport_home_row_jellyfin_shows_description">Die Serien mit neuen Folgen auf deinem Jellyfin-Server</string>
+    <string name="sport_home_row_watchlist">Trakt-Merkliste</string>
+    <string name="sport_home_row_watchlist_description">Deine Trakt-Merkliste – nur Titel, die du auf Jellyfin oder in deinen Playlists hast</string>
+    <string name="sport_trakt_settings_desc">Gesehenes und Merkliste mit Trakt abgleichen</string>
+    <string name="sport_trakt_signed_in">Angemeldet</string>
+    <string name="sport_trakt_signed_in_body">Was du hier, auf Jellyfin und auf Trakt siehst, wird abgeglichen, und deine Merkliste erscheint auf der Startseite.</string>
+    <string name="sport_trakt_syncing">Wird abgeglichen…</string>
+    <string name="sport_trakt_sync_now">Jetzt abgleichen</string>
+    <string name="sport_trakt_last_sync">Zuletzt abgeglichen %1$s, %2$s</string>
+    <string name="sport_trakt_code_hint">Öffne auf dem Handy oder Computer %1$s und gib diesen Code ein:</string>
+    <string name="sport_trakt_waiting">Warte auf deine Freigabe für DPTV bei Trakt…</string>
+    <string name="sport_trakt_app_hint">Lege unter trakt.tv/oauth/applications eine App mit der Redirect-URI urn:ietf:wg:oauth:2.0:oob an und gib dann ihre Client-ID und ihr Client-Secret ein.</string>
+    <string name="sport_trakt_client_id">Client-ID</string>
+    <string name="sport_trakt_client_secret">Client-Secret</string>
+    <string name="sport_trakt_error_reach">Trakt ist nicht erreichbar.</string>
+    <string name="sport_trakt_error_app">Trakt hat die App abgelehnt (Fehler %1$d). Prüfe die Client-ID.</string>
+    <string name="sport_trakt_error_expired">Der Code ist abgelaufen. Versuche es erneut.</string>
+    <string name="sport_trakt_error_denied">DPTV wurde bei Trakt nicht freigegeben.</string>
+    <string name="sport_trakt_watchlist_add">Zur Merkliste</string>
+    <string name="sport_trakt_watchlist_remove">Von der Merkliste</string>
+    <string name="sport_trakt_search_keywords">trakt, merkliste, gesehen, abgleich, verlauf</string>
 </resources>

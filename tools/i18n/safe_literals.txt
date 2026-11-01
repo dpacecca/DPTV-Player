@@ -22,7 +22,7 @@
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	BgImage
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	OwnTVHome
 1	compiler	app/src/main/java/tv/own/owntv/MainActivity.kt	RememberReturnType
-1	technical	app/src/main/java/tv/own/owntv/MainActivity.kt	background
+2	technical	app/src/main/java/tv/own/owntv/MainActivity.kt	background
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	blur: bounds decode failed for $path
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	blur: crop/scale/blur threw ${t.javaClass.simpleName}: ${t.message}
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	blur: decodeFile returned null for $path
@@ -36,7 +36,7 @@
 1	log	app/src/main/java/tv/own/owntv/MainActivity.kt	onNewIntent deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}
 1	performance	app/src/main/java/tv/own/owntv/MainActivity.kt	profile-id-loaded
 1	performance	app/src/main/java/tv/own/owntv/MainActivity.kt	profiles-loaded
-1	technical	app/src/main/java/tv/own/owntv/MainActivity.kt	start
+2	technical	app/src/main/java/tv/own/owntv/MainActivity.kt	start
 1	compiler	app/src/main/java/tv/own/owntv/OwnTVApp.kt	DEPRECATION
 1	technical	app/src/main/java/tv/own/owntv/OwnTVApp.kt	dpacecca/DPTV-Player-releases
 1	file-path	app/src/main/java/tv/own/owntv/OwnTVApp.kt	image_cache
@@ -101,6 +101,9 @@
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	…
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	→
 1	technical	app/src/main/java/tv/own/owntv/features/home/FeaturedHome.kt	home-featured
+1	technical	app/src/main/java/tv/own/owntv/features/home/HomeExtras.kt	Primary
+1	technical	app/src/main/java/tv/own/owntv/features/home/HomeExtras.kt	jf:
+1	technical	app/src/main/java/tv/own/owntv/features/home/HomeExtras.kt	vod:$stableKey
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	%.1f
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	,
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	episode:${episode.id}
@@ -839,6 +842,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_SOURCES
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	tab_WEATHER
 2	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	theme
+1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	trakt
 2	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	ui_zoom
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	update_startup
 2	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	v${tv.own.owntv.BuildConfig.VERSION_NAME}
@@ -1698,6 +1702,10 @@
 1	json	app/src/main/java/tv/own/owntv/features/subtitles/SubtitleSearchViewModel.kt	machine_translated
 1	json	app/src/main/java/tv/own/owntv/features/subtitles/SubtitleSearchViewModel.kt	movie_name
 1	json	app/src/main/java/tv/own/owntv/features/subtitles/SubtitleSearchViewModel.kt	release
+1	empty	app/src/main/java/tv/own/owntv/features/trakt/TraktSettings.kt	\0
+1	locale	app/src/main/java/tv/own/owntv/features/trakt/TraktSettings.kt	EEEdMMM
+1	technical	app/src/main/java/tv/own/owntv/features/trakt/TraktViewModel.kt	settings
+1	technical	app/src/main/java/tv/own/owntv/features/trakt/TraktViewModel.kt	signed-in
 4	empty	app/src/main/java/tv/own/owntv/features/update/UpdateDialog.kt	\0
 2	technical	app/src/main/java/tv/own/owntv/features/update/UpdateDialog.kt	##
 2	technical	app/src/main/java/tv/own/owntv/features/update/UpdateDialog.kt	###

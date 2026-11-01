@@ -1,5 +1,7 @@
 package tv.own.owntv.di
 
+import tv.own.owntv.features.trakt.TraktViewModel
+import tv.own.owntv.features.home.HomeExtrasViewModel
 import tv.own.owntv.features.jellyfin.JellyfinViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -77,6 +79,15 @@ val appModule = module {
     singleOf(::HomeFeedReader)
     // Home's Trending movies / Trending shows (v2.4.0): TMDB's titles matched to the playlists, on the same visibility rules.
     singleOf(::TrendingHomeReader)
+    // (v2.9.1) Home's Recommended movies / shows and Trakt Watchlist rows.
+    single {
+        val settings = get<tv.own.owntv.core.settings.SettingsRepository>()
+        tv.own.owntv.core.home.HomeRecommendations(
+            provider = get(), metadataConfig = { settings.metadataConfig() },
+            jellyfinStore = get(), jellyfin = get(), traktStore = get(), trending = get(),
+            progressDao = get(), movieDao = get(), seriesDao = get(), metadataDao = get(),
+        )
+    }
     // Process-long scope for work that must outlive the screen that started it (a first-run restore).
     single<kotlinx.coroutines.CoroutineScope> {
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default)
@@ -179,6 +190,8 @@ val appModule = module {
     viewModelOf(::DownloadsViewModel)
     viewModelOf(::RecordingsViewModel)
     viewModelOf(::JellyfinViewModel)
+    viewModelOf(::HomeExtrasViewModel)
+    viewModelOf(::TraktViewModel)
     viewModelOf(::EpgViewModel)
     viewModelOf(::CustomizeViewModel)
     viewModelOf(::CustomizeItemsViewModel)

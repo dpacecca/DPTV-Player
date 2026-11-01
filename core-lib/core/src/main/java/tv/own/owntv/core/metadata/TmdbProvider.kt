@@ -149,6 +149,13 @@ class TmdbProvider(
         }
     }
 
+    override suspend fun recommendations(type: MetadataType, tmdbId: Int): TrendingFeedPage? {
+        val endpoint = resolveEndpoint()
+        val url = buildRecommendationsUrl(endpoint.baseUrl, endpoint.apiKey, endpoint.language, type, tmdbId)
+        val body = fetch(endpoint, url, "recommendations type=$type") ?: return null
+        return TmdbTrendingParser.parsePage(type, 1, body)
+    }
+
     override suspend fun searchMovie(title: String, year: Int?, includeAdult: Boolean): List<MetadataSearchResult>? =
         search(MetadataType.MOVIE, title, year, includeAdult)
 
@@ -503,6 +510,13 @@ class TmdbProvider(
         ): String = buildString {
             append(baseUrl.trimEnd('/')).append("/3/watch/providers/").append(mediaPath(type))
             append("?watch_region=").append(encode(region))
+            appendLanguageAndKey(language, apiKey)
+        }
+
+        /** (DPTV v2.9.1) `/3/{type}/{id}/recommendations`, first page. */
+        internal fun buildRecommendationsUrl(baseUrl: String, apiKey: String?, language: String, type: MetadataType, tmdbId: Int): String = buildString {
+            append(baseUrl.trimEnd('/')).append("/3/").append(mediaPath(type)).append('/').append(tmdbId).append("/recommendations")
+            append("?page=1")
             appendLanguageAndKey(language, apiKey)
         }
 

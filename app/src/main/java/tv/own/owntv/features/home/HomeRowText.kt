@@ -30,6 +30,11 @@ fun HomeRow.displayTitle(): String = stringResource(
         HomeRow.CONTINUE_SERIES -> R.string.home_row_continue_series
         HomeRow.TRENDING_MOVIES -> R.string.sport_home_row_trending_movies
         HomeRow.TRENDING_SHOWS -> R.string.sport_home_row_trending_shows
+        HomeRow.RECOMMENDED_MOVIES -> R.string.sport_home_row_recommended_movies
+        HomeRow.RECOMMENDED_SHOWS -> R.string.sport_home_row_recommended_shows
+        HomeRow.JELLYFIN_MOVIES -> R.string.sport_home_row_jellyfin_movies
+        HomeRow.JELLYFIN_SHOWS -> R.string.sport_home_row_jellyfin_shows
+        HomeRow.TRAKT_WATCHLIST -> R.string.sport_home_row_watchlist
     },
 )
 
@@ -46,6 +51,11 @@ fun HomeRow.settingsDescription(): String = stringResource(
         HomeRow.CONTINUE_SERIES -> R.string.home_row_continue_series_description
         HomeRow.TRENDING_MOVIES -> R.string.sport_home_row_trending_movies_description
         HomeRow.TRENDING_SHOWS -> R.string.sport_home_row_trending_shows_description
+        HomeRow.RECOMMENDED_MOVIES -> R.string.sport_home_row_recommended_movies_description
+        HomeRow.RECOMMENDED_SHOWS -> R.string.sport_home_row_recommended_shows_description
+        HomeRow.JELLYFIN_MOVIES -> R.string.sport_home_row_jellyfin_movies_description
+        HomeRow.JELLYFIN_SHOWS -> R.string.sport_home_row_jellyfin_shows_description
+        HomeRow.TRAKT_WATCHLIST -> R.string.sport_home_row_watchlist_description
     },
 )
 

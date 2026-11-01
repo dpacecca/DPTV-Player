@@ -563,6 +563,17 @@ fun SettingsScreen(
                 stageSettings.open = StageSettingsDialog.JELLYFIN
             },
         ),
+        // (v2.9.1) Trakt: watched history both ways, and the watchlist on Home.
+        RootRow(
+            "trakt", TileTone.SECONDARY, OwnTVIcon.LIST,
+            title = stringResource(R.string.sport_trakt),
+            desc = tv.own.owntv.features.trakt.traktSettingsLine(),
+            focus = stageSettings.focus.getValue(StageSettingsDialog.TRAKT),
+            onClick = {
+                saveScroll(); dialogReturn = stageSettings.focus.getValue(StageSettingsDialog.TRAKT)
+                stageSettings.open = StageSettingsDialog.TRAKT
+            },
+        ),
         // The guide's own settings, under a divider of their own: they tune the guide, they are not
         // sources, and sitting straight under the two source lists they read as if they were.
         RootRow(
@@ -990,6 +1001,7 @@ fun SettingsScreen(
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_playlists), stringResource(R.string.settings_search_keywords_playlists), OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { open(SettingsTab.SOURCES) },
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_epg_sources), stringResource(R.string.settings_search_keywords_epg), OwnTVIcon.EPG, TileTone.PRIMARY) { open(SettingsTab.EPG) },
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.common_nav_jellyfin), stringResource(R.string.sport_jf_search_keywords), OwnTVIcon.LAYERS, TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; stageSettings.open = StageSettingsDialog.JELLYFIN },
+            SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.sport_trakt), stringResource(R.string.sport_trakt_search_keywords), OwnTVIcon.LIST, TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; stageSettings.open = StageSettingsDialog.TRAKT },
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.content_epg_time_offset), stringResource(R.string.settings_search_keywords_epg_offset), OwnTVIcon.EPG, TileTone.SECONDARY,
                 chip = epgShiftLabel(epgOffset), chipTone = if (epgOffset == 0) TileTone.SECONDARY else TileTone.PRIMARY) { saveScroll(); dialogReturn = searchFieldFocus; showEpgOffset = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_sources), stringResource(R.string.settings_epg_guide_days), stringResource(R.string.settings_search_keywords_epg), OwnTVIcon.EPG, TileTone.SECONDARY,
@@ -1732,7 +1744,7 @@ private fun GuideDaysDialog(settingsVm: SettingsViewModel, guideDays: Int, onClo
     )
 }
 
-private enum class StageSettingsDialog { LIVE_OPENS_IN, REMINDERS, REMINDER_LEAD, SYNC_TIMES, JELLYFIN }
+private enum class StageSettingsDialog { LIVE_OPENS_IN, REMINDERS, REMINDER_LEAD, SYNC_TIMES, JELLYFIN, TRAKT }
 
 /** Which Stage P5 picker is open, and each row's focus to come back to. */
 @androidx.compose.runtime.Stable
@@ -1768,6 +1780,7 @@ private fun StageSettingsDialogHost(settingsVm: SettingsViewModel, state: StageS
         StageSettingsDialog.REMINDER_LEAD -> ReminderLeadDialog(settingsVm, close)
         StageSettingsDialog.SYNC_TIMES -> tv.own.owntv.features.settings.SyncTimesDialog(settingsVm, close)
         StageSettingsDialog.JELLYFIN -> tv.own.owntv.features.jellyfin.JellyfinSignInDialog(close)
+        StageSettingsDialog.TRAKT -> tv.own.owntv.features.trakt.TraktDialog(close)
         null -> Unit
     }
 }

@@ -16,7 +16,15 @@ enum class HomeRow {
     CONTINUE_SERIES,
     /** TMDB's trending films / shows (on streaming in the user's country, or this week), matched to the playlists (v2.4.0). */
     TRENDING_MOVIES,
-    TRENDING_SHOWS;
+    TRENDING_SHOWS,
+    /** (DPTV v2.9.1) TMDB's picks from what was watched, only what Jellyfin or the playlists have. */
+    RECOMMENDED_MOVIES,
+    RECOMMENDED_SHOWS,
+    /** (DPTV v2.9.1) What was added last on the user's Jellyfin server. */
+    JELLYFIN_MOVIES,
+    JELLYFIN_SHOWS,
+    /** (DPTV v2.9.1) The Trakt watchlist, only what Jellyfin or the playlists have. */
+    TRAKT_WATCHLIST;
 
     val implemented: Boolean get() = true
 
@@ -27,8 +35,11 @@ enum class HomeRow {
          */
         val RETIRED: Set<HomeRow> = setOf(TRENDING, HERO)
 
-        /** Trending movies / Trending shows: not reordered on their own, they always follow Recent channels (v2.4.0). */
-        val TRENDING_ROWS: List<HomeRow> = listOf(TRENDING_MOVIES, TRENDING_SHOWS)
+        /**
+         * Rows that follow Recent channels instead of having a place of their own. Trending movies / Trending
+         * shows were (v2.4.0); since DPTV v2.9.1 every row is placed on its own, so none is.
+         */
+        val TRENDING_ROWS: List<HomeRow> = emptyList()
     }
 }
 
@@ -57,7 +68,7 @@ enum class HeroKind {
 
 @Immutable
 data class HomeConfig(
-    val order: List<HomeRow> = HomeRow.entries.toList(),
+    val order: List<HomeRow> = HomeConfig.trendingUnderRecent(HomeRow.entries.toList()),
     val hidden: Set<HomeRow> = setOf(HomeRow.RECENT_CHANNELS),
     val heroIncludeLive: Boolean = true,
     val heroIncludeMovies: Boolean = true,
@@ -92,6 +103,7 @@ data class HomeConfig(
         put("favoriteLiveMode", favoriteLiveMode.name)
         put("trendingStyle", trendingStyle.name)
         put("featured", featuredHero)
+        put("orderVersion", ORDER_VERSION)
     }
 
     companion object {
@@ -101,8 +113,12 @@ data class HomeConfig(
             val storedOrder = obj.optJSONArray("order").toHomeRows()
             val hidden = if (obj.has("hidden")) obj.optJSONArray("hidden").toHomeRows().toSet()
                 else HomeConfig().hidden
+            // (DPTV v2.9.1) Trending rows used to sit under Recent channels whatever their stored place;
+            // a config from before then has them moved there once, so Home looks the same.
+            val merged = mergeOrder(storedOrder)
+            val placed = if (obj.optInt("orderVersion", 1) >= ORDER_VERSION) merged else trendingUnderRecent(merged)
             return HomeConfig(
-                order = mergeOrder(storedOrder),
+                order = placed,
                 hidden = hidden,
                 heroIncludeLive = readBool(obj, "heroLive", "heroIncludeLive", default = true),
                 heroIncludeMovies = readBool(obj, "heroMovies", "heroIncludeMovies", default = true),
@@ -116,6 +132,18 @@ data class HomeConfig(
                 // (v2.6.0) Absent before the featured titles existed: on, as for everyone new.
                 featuredHero = obj.optBoolean("featured", true),
             )
+        }
+
+        /** The order's format: 2 since DPTV v2.9.1 (each row has its own place). */
+        const val ORDER_VERSION = 2
+
+        internal fun trendingUnderRecent(order: List<HomeRow>): List<HomeRow> {
+            val trending = listOf(HomeRow.TRENDING_MOVIES, HomeRow.TRENDING_SHOWS)
+            if (HomeRow.RECENT_CHANNELS !in order) return order
+            // Rows a config from before v2.4.0 never listed go there too.
+            val rest = order.filter { it !in trending }.toMutableList()
+            rest.addAll(rest.indexOf(HomeRow.RECENT_CHANNELS) + 1, trending)
+            return rest
         }
 
         private fun readBool(obj: JSONObject, primary: String, fallback: String, default: Boolean): Boolean =

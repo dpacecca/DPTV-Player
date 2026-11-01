@@ -198,6 +198,10 @@ val dataModule = module {
     // Jellyfin (DPTV v2.9.0): the sign-in (kept on this TV only) and the server's API.
     single { tv.own.owntv.core.jellyfin.JellyfinStore(androidContext()) }
     single { tv.own.owntv.core.jellyfin.JellyfinClient(get<okhttp3.OkHttpClient>(), get()) { tv.own.owntv.core.CoreBuildInfo.versionName } }
+    // Trakt (DPTV v2.9.1): the user's own Trakt app and session (this TV only), and the watched/watchlist sync.
+    single { tv.own.owntv.core.trakt.TraktStore(androidContext()) }
+    single { tv.own.owntv.core.trakt.TraktClient(get<okhttp3.OkHttpClient>(), get()) }
+    single { tv.own.owntv.core.trakt.TraktSync(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     single {
         SyncManager(
             context = androidContext(),

@@ -341,6 +341,8 @@ fun OwnTVShell(
     val epgVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.epg.EpgViewModel>()
     val recordingsVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.recordings.RecordingsViewModel>()
     val jellyfinVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.jellyfin.JellyfinViewModel>()
+    val jfEpisodeFormat = androidx.compose.ui.res.stringResource(R.string.content_season_episode)
+    val jfSeparator = androidx.compose.ui.res.stringResource(R.string.content_epg_bits_separator)
     val liveCanZap by liveVm.canZap.collectAsStateWithLifecycle()
     // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
     val liveOnExo by liveVm.liveOnExo.collectAsStateWithLifecycle()
@@ -1429,6 +1431,17 @@ fun OwnTVShell(
                             onOpenSport = {
                                 restoreFocus = true
                                 onSelectSection(MainSection.SPORT)
+                            },
+                            // (v2.9.1) Jellyfin cards on Home: Continue watching plays, the rest open the title's page.
+                            onPlayJellyfin = { item, at ->
+                                val title = if (item.kind == tv.own.owntv.core.jellyfin.JellyfinKind.EPISODE) {
+                                    tv.own.owntv.features.jellyfin.episodeTitle(item, jfEpisodeFormat, jfSeparator)
+                                } else item.name
+                                if (jellyfinVm.play(item, at, title)) openFullscreen()
+                            },
+                            onOpenJellyfin = { item ->
+                                jellyfinVm.open(item)
+                                onSelectSection(MainSection.JELLYFIN)
                             },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
                             restoreFocus = restoreFocus,

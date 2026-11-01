@@ -131,6 +131,8 @@ open class MainActivity : ComponentActivity() {
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // (v2.8.0) Leaving this TV: hand its history, progress and last channel to DPTV-Server for the others.
         if (!isChangingConfigurations) tv.own.owntv.core.sync.profile.ServerProfileSync.enqueue(applicationContext, "background")
+        // (v2.9.1) Trakt: what was watched goes up when the app goes to the background (no-op unless signed in).
+        if (!isChangingConfigurations) tv.own.owntv.core.trakt.TraktSync.enqueue(applicationContext, "background")
     }
 
     override fun onStart() {
@@ -144,6 +146,7 @@ open class MainActivity : ComponentActivity() {
         shellViewModel.checkAutoRefresh(includeStartup = false)
         // (v2.8.0) Back on this TV: pick up what was watched on the others since.
         tv.own.owntv.core.sync.profile.ServerProfileSync.enqueue(applicationContext, "start")
+        tv.own.owntv.core.trakt.TraktSync.enqueue(applicationContext, "start")
     }
 
     /**
