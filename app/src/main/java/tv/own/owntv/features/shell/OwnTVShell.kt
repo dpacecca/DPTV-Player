@@ -290,6 +290,7 @@ fun OwnTVShell(
     var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var downloadsEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var dvrEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    var jellyfinEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     // Where the guide's video box is on screen (null: no video there), for the shared player surface.
     var guideVideoBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var guideVideoRadius by remember { mutableStateOf(0.dp) }
@@ -339,6 +340,7 @@ fun OwnTVShell(
     }
     val epgVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.epg.EpgViewModel>()
     val recordingsVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.recordings.RecordingsViewModel>()
+    val jellyfinVm = org.koin.androidx.compose.koinViewModel<tv.own.owntv.features.jellyfin.JellyfinViewModel>()
     val liveCanZap by liveVm.canZap.collectAsStateWithLifecycle()
     // Full-screen is running on the ExoPlayer engine (a promoted Live preview) rather than mpv.
     val liveOnExo by liveVm.liveOnExo.collectAsStateWithLifecycle()
@@ -664,6 +666,7 @@ fun OwnTVShell(
         movieVm.saveProgressNow()
         seriesVm.saveEpisodeProgressNow()
         recordingsVm.saveProgressNow() // DVR: resume where it was left
+        jellyfinVm.saveProgressNow() // (v2.9.0) Jellyfin keeps where it was left, and decides "watched"
         resumeVideo() // restore mpv `vid=auto` before stop so the next played item isn't left video-less
         playerMode = PlayerMode.NONE
         showChannelList = false
@@ -1523,6 +1526,19 @@ fun OwnTVShell(
                                 .focusGroup(),
                         )
 
+                        // (v2.9.0) The user's Jellyfin server: movies and shows played in DPTV's player.
+                        selectedSection == MainSection.JELLYFIN -> tv.own.owntv.features.jellyfin.JellyfinScreen(
+                            onFullscreen = { openFullscreen() },
+                            restoreFocus = restoreFocus,
+                            onRestored = { restoreFocus = false },
+                            onEntryHook = { jellyfinEntry = it },
+                            contentStart = if (navStyle == tv.own.owntv.core.settings.SettingsRepository.NavStyle.DOCKED) 64.mpx else 150.mpx,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .onFocusChanged { if (it.hasFocus) focusedLayer = ShellLayer.CONTENT }
+                                .focusGroup(),
+                        )
+
                         selectedSection == MainSection.SPORT -> SportsScreen(
                             onPlayChannel = { id, zap -> scope.launch { if (liveVm.ensurePlayingByIdAsync(id, zap)) openFullscreen(MainSection.LIVE_TV) } },
                             onChildFocused = { focusedLayer = ShellLayer.CONTENT },
@@ -1665,6 +1681,7 @@ fun OwnTVShell(
                     MainSection.MOVIES, MainSection.SERIES -> vodEntry
                     MainSection.DOWNLOADS -> downloadsEntry
                     MainSection.DVR -> dvrEntry
+                    MainSection.JELLYFIN -> jellyfinEntry
                     MainSection.MORE -> moreEntry
                     else -> null
                 },
@@ -2315,7 +2332,7 @@ fun OwnTVShell(
 private const val EPG_MATCH_TOAST_MS = 6_000L
 
 /** Sections already redrawn for Stage: they own the whole canvas and paint the Stage page. */
-private val StageSections = setOf(MainSection.SEARCH, MainSection.HOME, MainSection.LIVE_TV, MainSection.DVR, MainSection.EPG, MainSection.SPORT, MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS, MainSection.MORE, MainSection.SETTINGS)
+private val StageSections = setOf(MainSection.SEARCH, MainSection.HOME, MainSection.LIVE_TV, MainSection.DVR, MainSection.EPG, MainSection.SPORT, MainSection.MOVIES, MainSection.SERIES, MainSection.JELLYFIN, MainSection.DOWNLOADS, MainSection.MORE, MainSection.SETTINGS)
 
 private val MainSection.emptyIcon: OwnTVIcon
     get() = when (this) {
@@ -2324,6 +2341,7 @@ private val MainSection.emptyIcon: OwnTVIcon
         MainSection.LIVE_TV -> OwnTVIcon.LIVE_TV
         MainSection.MOVIES -> OwnTVIcon.MOVIES
         MainSection.SERIES -> OwnTVIcon.SERIES
+        MainSection.JELLYFIN -> OwnTVIcon.LAYERS
         MainSection.DOWNLOADS -> OwnTVIcon.DOWNLOADS
         MainSection.EPG -> OwnTVIcon.EPG
         MainSection.DVR -> OwnTVIcon.REC
@@ -2368,12 +2386,12 @@ private fun railCategoriesFor(section: MainSection): List<RailCategory> = when (
         RailCategory("Movies", labelRes = tv.own.owntv.R.string.content_category_movies),
         RailCategory("Series", labelRes = tv.own.owntv.R.string.content_category_series),
     )
-    MainSection.SETTINGS, MainSection.MORE, MainSection.SPORT, MainSection.DVR -> emptyList()
+    MainSection.SETTINGS, MainSection.MORE, MainSection.SPORT, MainSection.DVR, MainSection.JELLYFIN -> emptyList()
 }
 
 @Composable
 private fun placeholderCount(section: MainSection): String = when (section) {
-    MainSection.SEARCH, MainSection.HOME, MainSection.EPG, MainSection.DVR, MainSection.SPORT, MainSection.SETTINGS, MainSection.MORE -> ""
+    MainSection.SEARCH, MainSection.HOME, MainSection.EPG, MainSection.DVR, MainSection.SPORT, MainSection.JELLYFIN, MainSection.SETTINGS, MainSection.MORE -> ""
     MainSection.LIVE_TV -> stringResource(R.string.content_zero_channels)
     MainSection.MOVIES -> stringResource(R.string.content_zero_movies)
     MainSection.SERIES -> stringResource(R.string.content_zero_series)

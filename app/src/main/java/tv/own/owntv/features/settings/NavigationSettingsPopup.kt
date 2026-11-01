@@ -156,6 +156,7 @@ private val MenuSections = listOf(
     MainSection.LIVE_TV to OwnTVIcon.LIVE_TV,
     MainSection.MOVIES to OwnTVIcon.MOVIES,
     MainSection.SERIES to OwnTVIcon.SERIES,
+    MainSection.JELLYFIN to OwnTVIcon.LAYERS,
     MainSection.DVR to OwnTVIcon.REC,
     MainSection.EPG to OwnTVIcon.EPG,
     MainSection.SPORT to OwnTVIcon.SPORT,

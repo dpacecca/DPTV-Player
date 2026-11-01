@@ -194,7 +194,10 @@ val dataModule = module {
     // sourceDao, stalkerAuthManager, catalogSyncScheduler, importFinalizer
     single { tv.own.owntv.core.repository.SourceEditor(get(), get(), get(), get()) }
     // settings, sourceRepository, channelDao, movieDao, seriesDao
-    single { tv.own.owntv.core.nav.NavVisibility(get(), get(), get(), get(), get()) }
+    single { tv.own.owntv.core.nav.NavVisibility(get(), get(), get(), get(), get(), get()) }
+    // Jellyfin (DPTV v2.9.0): the sign-in (kept on this TV only) and the server's API.
+    single { tv.own.owntv.core.jellyfin.JellyfinStore(androidContext()) }
+    single { tv.own.owntv.core.jellyfin.JellyfinClient(get<okhttp3.OkHttpClient>(), get()) { tv.own.owntv.core.CoreBuildInfo.versionName } }
     single {
         SyncManager(
             context = androidContext(),

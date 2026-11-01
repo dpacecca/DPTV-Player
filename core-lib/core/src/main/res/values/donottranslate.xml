@@ -6,6 +6,8 @@
 -->
 <resources>
     <string name="app_name" translatable="false">DPTV-Player</string>
+    <!-- DPTV v2.9.0: the Jellyfin section in the nav, a product name. -->
+    <string name="common_nav_jellyfin" translatable="false">Jellyfin</string>
     <string name="brand_own" translatable="false">Sport</string>
     <string name="brand_tv" translatable="false">io</string>
     <string name="settings_player_exoplayer" translatable="false">ExoPlayer</string>

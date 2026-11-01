@@ -158,6 +158,12 @@ fun NavDuotoneIcon(
                 dot(50f, 34f, 4f, soft)
             }
 
+            // ---- Jellyfin — a triangle within a triangle (DPTV v2.9.0) -----------
+            MainSection.JELLYFIN -> {
+                drawPath(polyC(50f,16f, 84f,78f, 16f,78f), fill, style = stroke)
+                drawPath(polyC(50f,44f, 62f,66f, 38f,66f), soft, style = thin)
+            }
+
             // ---- More — three stacked bars, the shortest last, with a dot accent -----
             MainSection.MORE -> {
                 drawPath(poly(20f,33f, 80f,33f), fill, style = stroke)

@@ -26,6 +26,8 @@ enum class MainSection(@param:StringRes val labelRes: Int) {
      * live channels via EPG, so one tap starts playback. Shown whenever live TV exists.
      */
     SPORT(R.string.common_nav_sport),
+    /** The user's Jellyfin server (DPTV v2.9.0): shown while signed in, whatever the playlist holds. */
+    JELLYFIN(R.string.common_nav_jellyfin),
     SETTINGS(R.string.common_nav_settings), // pinned, not part of the browse set
 
     /**
@@ -43,7 +45,7 @@ enum class MainSection(@param:StringRes val labelRes: Int) {
 
     companion object {
         /** Fixed order of the browse items (Settings is pinned separately). */
-        val browseOrder: List<MainSection> = listOf(HOME, LIVE_TV, DVR, MOVIES, SERIES, DOWNLOADS, EPG, SPORT)
+        val browseOrder: List<MainSection> = listOf(HOME, LIVE_TV, DVR, MOVIES, SERIES, JELLYFIN, DOWNLOADS, EPG, SPORT)
 
         /** All six browse items — the default value, so a cold start shows a full nav rather than
          *  flickering through an empty one before the first real emission lands. */

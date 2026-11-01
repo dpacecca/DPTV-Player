@@ -64,6 +64,12 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.9.0
+
+### ✨ New features
+- **🎬 Jellyfin: your server's movies and shows in their own section, played in DPTV's player**
+- **⏯️ Jellyfin: continue watching, next up and latest added, with progress and watched marks kept on your server**
+
 ## v2.8.0
 
 ### ✨ New features

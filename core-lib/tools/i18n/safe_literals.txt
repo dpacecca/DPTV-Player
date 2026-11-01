@@ -2020,6 +2020,119 @@
 1	compiler	core/src/main/java/tv/own/owntv/core/i18n/LocaleStore.kt	UseKtx
 1	technical	core/src/main/java/tv/own/owntv/core/i18n/LocaleStore.kt	owntv_locale
 1	preference-key	core/src/main/java/tv/own/owntv/core/i18n/LocaleStore.kt	ui_language
+1	empty	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	\0
+1	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	"
+1	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	", DeviceId="
+1	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	", Version="
+1	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	$TOKEN_HEADER: ${a.token}
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	$base/Users/AuthenticateByName
+3	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	${a.server}$path
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	${a.server}/Items/$itemId/Images/$type?tag=$it&maxHeight=$maxHeight&quality=90
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	${a.server}/Videos/${item.id}/stream?static=true&MediaSourceId=${item.id}&DeviceId=${a.deviceId}
+1	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	'
+1	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	, Token="
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Sessions/Logout
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Sessions/Playing
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Sessions/Playing/Progress
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Sessions/Playing/Stopped
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Shows/$seriesId/Episodes
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Shows/$seriesId/Seasons
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Shows/NextUp
+2	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Users/${a.userId}/Items
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Users/${a.userId}/Items/$id
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Users/${a.userId}/Items/Latest
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Users/${a.userId}/Items/Resume
+2	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	/Users/${a.userId}/PlayedItems/$itemId
+1	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	1
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Ascending
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Authorization
+2	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Backdrop
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	CanSeek
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	DirectPlay
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	EnableImageTypes
+2	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Episode
+8	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Fields
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	GroupItems
+3	log	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	HTTP ${r.code} for $path
+4	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	IncludeItemTypes
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	IsPaused
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	ItemId
+1	log	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Jellyfin
+5	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Limit
+1	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	MediaBrowser Client="DPTV-Player", Device="
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	MediaSourceId
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	MediaTypes
+3	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Movie
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Movie,Series
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Overview,Genres,ProductionYear,PremiereDate,DateCreated,ParentId
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	PlayMethod
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	PositionTicks
+2	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Primary
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Primary,Backdrop
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Pw
+2	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Recursive
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	SearchTerm
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	SeasonId
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Series
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	SortBy
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	SortName
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	SortOrder
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	StartIndex
+3	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	UserId
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Username
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	Video
+1	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	X-Emby-Token
+1	mime	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	application/json; charset=utf-8
+1	log	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	bad server address
+1	log	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	not signed in
+1	log	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	report failed: ${it.javaClass.simpleName}
+1	log	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	sign-in answer not understood
+1	log	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	sign-in refused (HTTP ${r.code})
+3	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	true
+1	protocol	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinClient.kt	{}
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	AccessToken
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	BackdropImageTags
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	CommunityRating
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	DateCreated
+2	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Episode
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Genres
+2	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Id
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	ImageTags
+4	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	IndexNumber
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Items
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Movie
+2	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Name
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Overview
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	ParentBackdropImageTags
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	ParentBackdropItemId
+2	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	ParentIndexNumber
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	PlaybackPositionTicks
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Played
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	PremiereDate
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Primary
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	ProductionYear
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	RunTimeTicks
+2	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Season
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	SeasonId
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Series
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	SeriesId
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	SeriesName
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	SeriesPrimaryImageTag
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	TotalRecordCount
+3	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	Type
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	UnplayedItemCount
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	User
+1	json	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	UserData
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	http://
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	http://$trimmed
+1	url	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinModels.kt	https://
+1	preference-key	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinStore.kt	device_id
+1	preference-key	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinStore.kt	dptv-
+1	preference-key	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinStore.kt	dptv_jellyfin
+1	preference-key	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinStore.kt	server
+1	preference-key	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinStore.kt	token
+1	preference-key	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinStore.kt	user_id
+1	preference-key	core/src/main/java/tv/own/owntv/core/jellyfin/JellyfinStore.kt	user_name
 1	protocol	core/src/main/java/tv/own/owntv/core/launcher/LauncherDeepLink.kt	dptv
 1	protocol	core/src/main/java/tv/own/owntv/core/launcher/LauncherDeepLink.kt	dptv://open/live
 1	protocol	core/src/main/java/tv/own/owntv/core/launcher/LauncherDeepLink.kt	dptv://play/episode

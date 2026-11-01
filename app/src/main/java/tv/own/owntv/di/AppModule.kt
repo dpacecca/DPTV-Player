@@ -1,5 +1,6 @@
 package tv.own.owntv.di
 
+import tv.own.owntv.features.jellyfin.JellyfinViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.singleOf
@@ -177,6 +178,7 @@ val appModule = module {
     viewModelOf(::SubtitleSearchViewModel)
     viewModelOf(::DownloadsViewModel)
     viewModelOf(::RecordingsViewModel)
+    viewModelOf(::JellyfinViewModel)
     viewModelOf(::EpgViewModel)
     viewModelOf(::CustomizeViewModel)
     viewModelOf(::CustomizeItemsViewModel)

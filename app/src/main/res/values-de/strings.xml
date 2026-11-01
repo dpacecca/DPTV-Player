@@ -270,4 +270,35 @@
         <item quantity="one">Live ansehen · %1$d Sender</item>
         <item quantity="other">Live ansehen · %1$d Sender</item>
     </plurals>
+    <!-- DPTV v2.9.0: Jellyfin. -->
+    <string name="sport_jf_movies">Filme</string>
+    <string name="sport_jf_shows">Serien</string>
+    <string name="sport_jf_continue">Weiterschauen</string>
+    <string name="sport_jf_next_up">Als Nächstes</string>
+    <string name="sport_jf_latest_movies">Neueste Filme</string>
+    <string name="sport_jf_latest_shows">Neueste Folgen</string>
+    <string name="sport_jf_all_movies">Alle Filme</string>
+    <string name="sport_jf_all_shows">Alle Serien</string>
+    <string name="sport_jf_loading">Bibliothek wird geladen…</string>
+    <string name="sport_jf_failed">Jellyfin ist nicht erreichbar. Prüfe, ob der Server läuft.</string>
+    <string name="sport_jf_empty">Hier ist noch nichts.</string>
+    <string name="sport_jf_signed_out">Melde dich unter Einstellungen › Playlists bei Jellyfin an.</string>
+    <string name="sport_jf_mark_watched">Als gesehen markieren</string>
+    <string name="sport_jf_mark_unwatched">Als ungesehen markieren</string>
+    <string name="sport_jf_play_episode">%1$s abspielen</string>
+    <string name="sport_jf_settings_desc">Bei deinem Jellyfin-Server anmelden, für dessen Filme und Serien</string>
+    <string name="sport_jf_signed_in_as">Angemeldet als %1$s</string>
+    <string name="sport_jf_signed_in_body">Angemeldet als %1$s auf %2$s.</string>
+    <string name="sport_jf_sign_in_hint">Adresse, Benutzername und Passwort deines Servers. Das Passwort wird auf diesem Fernseher nicht gespeichert.</string>
+    <string name="sport_jf_server">Serveradresse</string>
+    <string name="sport_jf_user">Benutzername</string>
+    <string name="sport_jf_password">Passwort</string>
+    <string name="sport_jf_sign_in">Anmelden</string>
+    <string name="sport_jf_signing_in">Anmeldung läuft…</string>
+    <string name="sport_jf_sign_out">Abmelden</string>
+    <string name="sport_jf_done">Fertig</string>
+    <string name="sport_jf_error_login">Benutzername oder Passwort ist falsch.</string>
+    <string name="sport_jf_error_server">Dieser Server ist nicht erreichbar.</string>
+    <string name="sport_jf_error_other">Anmeldung fehlgeschlagen (Fehler %1$d).</string>
+    <string name="sport_jf_search_keywords">jellyfin, medienserver, filme, serien, anmelden</string>
 </resources>
