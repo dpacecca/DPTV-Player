@@ -53,6 +53,16 @@ class BackupManager(
     /** The app's own settings stores, carried with Settings (DPTV v2.6.0); resolved when used. */
     private val extras: () -> List<BackupExtra> = { emptyList() },
 ) {
+    /** (DPTV v2.8.1) The app's own stores as the shared profile carries them ([BackupExtra.exportForSync]). */
+    suspend fun exportExtrasForSync(): JSONObject = JSONObject().apply {
+        extras().forEach { e -> runCatching { e.exportForSync() }.getOrNull()?.let { put(e.backupKey, it) } }
+    }
+
+    /** (DPTV v2.8.1) Another TV's [exportExtrasForSync]; a store the block does not name is left alone. */
+    suspend fun importExtrasFromSync(blocks: JSONObject) {
+        extras().forEach { e -> blocks.optJSONObject(e.backupKey)?.let { runCatching { e.importFromSync(it) } } }
+    }
+
     /** What a backup can contain; the user multi-selects these for export and restore. Profiles are
      *  NOT a section: every backup is inherently profile-based — the export flow's first step picks
      *  which profiles to include (PIN-verified for locked non-active ones), and the ticked profiles'

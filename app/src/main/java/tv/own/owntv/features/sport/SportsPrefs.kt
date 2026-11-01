@@ -176,6 +176,14 @@ class SportsPrefs(private val context: Context) : BackupExtra {
 
     override suspend fun exportBackup(): JSONObject = exportPrefs(context.sportsDataStore.data.first())
 
+    /**
+     * (v2.8.1) The profile shared with the other TVs carries Sport's follows and choices, but not what is
+     * this TV's own: its playlists' ids (each TV numbers its playlists itself) and its record plans (each
+     * TV would otherwise record the same game).
+     */
+    override suspend fun exportForSync(): JSONObject =
+        exportPrefs(context.sportsDataStore.data.first()).apply { NotSynced.forEach { remove(it.name) } }
+
     override suspend fun importBackup(block: JSONObject) {
         context.sportsDataStore.edit { prefs ->
             importPrefs(block, prefs)
@@ -248,6 +256,9 @@ class SportsPrefs(private val context: Context) : BackupExtra {
         internal val BackedUpBools get() = listOf(VisibleKey, LanguageAskedKey, StrictKey)
         internal val BackedUpStrings get() = listOf(LeagueOrderKey, SportOrderKey)
         internal val BackedUpInts get() = listOf(LiveRefreshKey, AutoRebuildKey, VersionKey)
+
+        /** (v2.8.1) Kept to this TV by the shared profile ([exportForSync]). */
+        internal val NotSynced get() = listOf(PlaylistsKey, RecordPlansKey)
 
         /** The keys a backup carries ([exportPrefs]); the coverage test holds every declared key to it. */
         internal val BackedUpKeys: List<Preferences.Key<*>>

@@ -105,16 +105,21 @@ class ServerProfileSync(
                     // This TV's own unsent Customize stays and goes up; otherwise the other TVs' comes in.
                     val mine = export(pid) ?: return Outcome.FAILED
                     merge(theirs, ProfileSyncRules.sectionsToMerge(ProfileSyncRules.customizeFingerprint(mine), state.customizeFingerprint))
+                    // (v2.8.1) Sport's settings the same way: the other TV's, unless this TV changed its own.
+                    if (ProfileSyncRules.mergeExtras(ProfileSyncRules.extrasFingerprint(mine), state.extrasFingerprint)) {
+                        theirs.optJSONObject(ProfileSyncRules.ExtrasKey)?.let { backups.importExtrasFromSync(it) }
+                    }
                 }
                 received = true
             }
             val local = export(pid) ?: return Outcome.FAILED
             val fingerprint = ProfileSyncRules.fingerprint(local)
             val customize = ProfileSyncRules.customizeFingerprint(local)
+            val extras = ProfileSyncRules.extrasFingerprint(local)
             val now = System.currentTimeMillis()
             if (fingerprint == state.fingerprint && remote.data != null) {
                 // Nothing here the server lacks: note the revision merged and stop.
-                state = state.copy(revision = remote.revision, lastSyncAt = now, customizeFingerprint = customize)
+                state = state.copy(revision = remote.revision, lastSyncAt = now, customizeFingerprint = customize, extrasFingerprint = extras)
                 settings.setProfileSyncState(state.encode())
                 return if (received) Outcome.RECEIVED else Outcome.UP_TO_DATE
             }
@@ -125,7 +130,7 @@ class ServerProfileSync(
             )
             when (code) {
                 200 -> {
-                    state = ProfileSyncState(source.id, ProfileSyncRules.newRevision(answer) ?: (remote.revision + 1), fingerprint, now, customize)
+                    state = ProfileSyncState(source.id, ProfileSyncRules.newRevision(answer) ?: (remote.revision + 1), fingerprint, now, customize, extras)
                     settings.setProfileSyncState(state.encode())
                     return Outcome.SENT
                 }
@@ -144,7 +149,10 @@ class ServerProfileSync(
             ?: return null
         val file = File(path)
         return try {
-            JSONObject(BackupContainer.open(file).json)
+            JSONObject(BackupContainer.open(file).json).apply {
+                // (v2.8.1) The app's own settings (Sport) ride along; a backup carries them only with Settings.
+                backups.exportExtrasForSync().takeIf { it.length() > 0 }?.let { put(ProfileSyncRules.ExtrasKey, it) }
+            }
         } finally {
             file.delete()
         }
