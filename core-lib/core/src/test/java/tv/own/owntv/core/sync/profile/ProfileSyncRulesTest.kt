@@ -93,4 +93,22 @@ class ProfileSyncRulesTest {
         // History alone does not move the Customize fingerprint.
         assertEquals(synced, ProfileSyncRules.customizeFingerprint(JSONObject(withCustomize.toString()).put("userData", JSONArray())))
     }
+
+    @Test
+    fun sportSettingsTravelLikeCustomize() {
+        val withSport = backup(3, "TV", listOf("x")).put("appExtras", JSONObject().put("sport", JSONObject().put("followed_leagues", JSONArray().put("soccer.eng.1"))))
+        val synced = ProfileSyncRules.extrasFingerprint(withSport)
+        val changed = ProfileSyncRules.extrasFingerprint(
+            backup(3, "TV", listOf("x")).put("appExtras", JSONObject().put("sport", JSONObject().put("followed_leagues", JSONArray().put("nfl")))),
+        )
+        assertNotEquals(synced, changed)
+        // Unchanged here: the other TV's Sport settings come in; changed here: this TV's go up instead.
+        assertEquals(true, ProfileSyncRules.mergeExtras(synced, synced))
+        assertEquals(false, ProfileSyncRules.mergeExtras(changed, synced))
+        assertEquals(true, ProfileSyncRules.mergeExtras(changed, null))
+        assertNull(ProfileSyncRules.extrasFingerprint(backup(3, "TV", emptyList())))
+        assertNull(ProfileSyncRules.extrasFingerprint(backup(3, "TV", emptyList()).put("appExtras", JSONObject())))
+        val state = ProfileSyncState(1, 2, "f", 3, "c", "e")
+        assertEquals(state, ProfileSyncState.decode(state.encode()))
+    }
 }

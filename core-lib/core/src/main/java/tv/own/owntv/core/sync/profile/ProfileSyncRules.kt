@@ -37,6 +37,23 @@ object ProfileSyncRules {
         return digest.joinToString("") { "%02x".format(it) }.take(32)
     }
 
+    /**
+     * (v2.8.1) The app's own settings stores the profile carries (Sport's follows and choices), written
+     * back whole like Customize, so kept the same way: this TV's unsent change wins ([mergeExtras]).
+     */
+    fun extrasFingerprint(root: JSONObject): String? {
+        val block = root.optJSONObject(ExtrasKey)?.takeIf { it.length() > 0 } ?: return null
+        val digest = MessageDigest.getInstance("SHA-256").digest(block.toString().toByteArray(Charsets.UTF_8))
+        return digest.joinToString("") { "%02x".format(it) }.take(32)
+    }
+
+    /** Take another TV's app settings unless this TV changed its own since it last synced. */
+    fun mergeExtras(localExtras: String?, lastSyncedExtras: String?): Boolean =
+        lastSyncedExtras == null || localExtras == lastSyncedExtras
+
+    /** The block the app's stores ride in, in the synced profile. */
+    const val ExtrasKey = "appExtras"
+
     /** What to merge from another TV: everything, but Customize only when this TV has none of its own unsent. */
     fun sectionsToMerge(localCustomize: String?, lastSyncedCustomize: String?): Set<BackupManager.Section> =
         if (lastSyncedCustomize != null && localCustomize != lastSyncedCustomize) Sections - BackupManager.Section.CUSTOMIZE
@@ -107,10 +124,13 @@ data class ProfileSyncState(
     val lastSyncAt: Long,
     /** [ProfileSyncRules.customizeFingerprint] of what this TV had when it last synced. */
     val customizeFingerprint: String? = null,
+    /** (v2.8.1) [ProfileSyncRules.extrasFingerprint] of what this TV had when it last synced. */
+    val extrasFingerprint: String? = null,
 ) {
     fun encode(): String = JSONObject()
         .put("src", sourceId).put("rev", revision).put("fp", fingerprint ?: "").put("at", lastSyncAt)
         .put("cfp", customizeFingerprint ?: "")
+        .put("efp", extrasFingerprint ?: "")
         .toString()
 
     companion object {
@@ -120,6 +140,7 @@ data class ProfileSyncState(
                 ProfileSyncState(
                     o.getLong("src"), o.getLong("rev"), o.optString("fp").ifEmpty { null }, o.optLong("at"),
                     o.optString("cfp").ifEmpty { null },
+                    o.optString("efp").ifEmpty { null },
                 )
             }.getOrNull()
         }

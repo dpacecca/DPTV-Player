@@ -70,6 +70,11 @@
 - **🎬 Jellyfin: your server's movies and shows in their own section, played in DPTV's player**
 - **⏯️ Jellyfin: continue watching, next up and latest added, with progress and watched marks kept on your server**
 
+## v2.8.1
+
+### ✨ New features
+- **🔄 Sport's followed leagues, teams and choices shared between the TVs too**
+
 ## v2.8.0
 
 ### ✨ New features
