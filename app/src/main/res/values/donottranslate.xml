@@ -140,4 +140,6 @@
     <string name="sport_league_cricket_cpl" translatable="false">Caribbean Premier League</string>
     <string name="sport_channel_sky_main_event" translatable="false">Sky Sports Main Event</string>
     <string name="sport_channel_tennis" translatable="false">Tennis</string>
+    <!-- DPTV v2.9.0: the example in the Jellyfin server field, an address. -->
+    <string name="sport_jf_server_example" translatable="false">http://192.168.1.10:8096</string>
 </resources>

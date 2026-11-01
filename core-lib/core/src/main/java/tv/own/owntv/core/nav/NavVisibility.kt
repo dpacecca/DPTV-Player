@@ -7,10 +7,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import tv.own.owntv.core.database.dao.ChannelDao
 import tv.own.owntv.core.database.dao.MovieDao
 import tv.own.owntv.core.database.dao.SeriesDao
 import tv.own.owntv.core.database.entity.SourceEntity
+import tv.own.owntv.core.jellyfin.JellyfinStore
 import tv.own.owntv.core.repository.SourceRepository
 import tv.own.owntv.core.settings.SettingsRepository
 
@@ -33,19 +35,22 @@ class NavVisibility(
     private val channelDao: ChannelDao,
     private val movieDao: MovieDao,
     private val seriesDao: SeriesDao,
+    private val jellyfin: JellyfinStore,
 ) {
 
     /** What the nav shows right now, honouring the user's mode and hidden set. */
     fun visibleSections(): Flow<Set<MainSection>> = settings.navMenuMode
         .flatMapLatest { mode ->
-            combine(dynamicCaps(), settings.navMenuHidden) { contentBased, hidden ->
-                when (mode) {
+            combine(dynamicCaps(), settings.navMenuHidden, jellyfinSignedIn()) { contentBased, hidden, signedIn ->
+                val shown = when (mode) {
                     SettingsRepository.NavMenuMode.STATIC ->
                         MainSection.allBrowse - hidden.mapNotNull { name ->
                             runCatching { MainSection.valueOf(name) }.getOrNull()
                         }.toSet()
-                    SettingsRepository.NavMenuMode.DYNAMIC -> contentBased
+                    SettingsRepository.NavMenuMode.DYNAMIC -> contentBased + MainSection.JELLYFIN
                 }
+                // Jellyfin is there while signed in to a server (and not hidden), in either mode.
+                if (signedIn) shown else shown - MainSection.JELLYFIN
             }
         }
         .distinctUntilChanged()
@@ -59,6 +64,8 @@ class NavVisibility(
                 settings.defaultSourceId.flatMapLatest { defaultId -> capsFlow(sources, defaultId) }
             }
         }
+
+    private fun jellyfinSignedIn(): Flow<Boolean> = jellyfin.account.map { it != null }.distinctUntilChanged()
 
     private fun capsFlow(sources: List<SourceEntity>, defaultId: Long): Flow<Set<MainSection>> {
         val scoped = if (defaultId > 0) sources.filter { it.id == defaultId } else sources
