@@ -736,10 +736,15 @@ fun EpgScreen(
     }
     DisposableEffect(Unit) { onDispose { onPanelOpen(false) } }
 
-    // Back in the categories (or the phone's sheet): back to the guide's row. Only while focus is in them: on
-    // the menu this is off and the shell's Back asks to leave the app.
+    // Back in the categories (or the phone's sheet): (v2.9.4) on a TV out to the menu, on a phone back to the
+    // guide's row. Only while focus is in them: on the menu this is off and the shell's Back asks to leave.
     BackHandler(enabled = sheetOpen || (nav == GuideNav.CATEGORIES && catFocused)) {
         if (tvLayout) navGo(GuideNavEvent.BACK) else closeSheetToGrid()
+    }
+    // (v2.9.4) Back in the guide's rows on a TV opens the categories (holding Back plays full screen instead,
+    // the shell's long press). Scrolled into the past, the Back above returns to now first.
+    BackHandler(enabled = tvLayout && !sheetOpen && nav == GuideNav.GUIDE && gridHasFocus && !pastMode) {
+        navGo(GuideNavEvent.BACK)
     }
     LaunchedEffect(sheetOpen) {
         if (sheetOpen) { withFrameNanos { }; runCatching { sheetFocus.requestFocus() } } else sheetHadFocus = false

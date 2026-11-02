@@ -33,8 +33,8 @@ class GuideDockNavTest {
     }
 
     @Test
-    fun rightBackAndSwipeInTheCategoriesReturnToTheRowTheyCameFrom() {
-        for (ev in listOf(GuideNavEvent.RIGHT, GuideNavEvent.BACK, GuideNavEvent.SWIPE_LEFT)) {
+    fun rightAndSwipeInTheCategoriesReturnToTheRowTheyCameFrom() {
+        for (ev in listOf(GuideNavEvent.RIGHT, GuideNavEvent.SWIPE_LEFT)) {
             assertEquals(ev.name, step(GuideNav.GUIDE, GuideNavFocus.GRID), GuideNav.CATEGORIES.on(ev))
         }
     }
@@ -51,7 +51,7 @@ class GuideDockNavTest {
 
     @Test
     fun movesThatDoNotApplyLeaveTheStateAndFocusAlone() {
-        for (ev in listOf(GuideNavEvent.LEFT, GuideNavEvent.RIGHT, GuideNavEvent.BACK, GuideNavEvent.SWIPE_LEFT, GuideNavEvent.PICKED, GuideNavEvent.FOCUS_LEFT)) {
+        for (ev in listOf(GuideNavEvent.LEFT, GuideNavEvent.RIGHT, GuideNavEvent.SWIPE_LEFT, GuideNavEvent.PICKED, GuideNavEvent.FOCUS_LEFT)) {
             assertEquals(ev.name, step(GuideNav.GUIDE, GuideNavFocus.NONE), GuideNav.GUIDE.on(ev))
         }
         for (ev in listOf(GuideNavEvent.LEFT, GuideNavEvent.RIGHT, GuideNavEvent.PICKED, GuideNavEvent.FOCUS_LEFT)) {
@@ -154,8 +154,11 @@ class GuideDockNavTest {
     }
 
     @Test
-    fun backStepsBackOneLevel() {
-        assertEquals(GuideNav.GUIDE, GuideNav.CATEGORIES.on(GuideNavEvent.BACK).nav)
+    fun backStepsOutwardsGuideCategoriesMenu() {
+        // (v2.9.4) Guide → categories → menu; the menu's Back is the shell's exit prompt.
+        assertEquals(step(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES), GuideNav.GUIDE.on(GuideNavEvent.BACK))
+        assertEquals(step(GuideNav.MENU, GuideNavFocus.RAIL), GuideNav.CATEGORIES.on(GuideNavEvent.BACK))
+        assertEquals(step(GuideNav.MENU, GuideNavFocus.NONE), GuideNav.MENU.on(GuideNavEvent.BACK))
     }
 }
 

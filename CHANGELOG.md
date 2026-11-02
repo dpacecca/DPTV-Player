@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.9.4
+
+### ✨ New features
+- **📺 TV Guide: Back steps out — categories, then the menu, then Exit; hold Back to watch the channel full screen**
+
 ## v2.9.3
 
 ### ✨ New features
