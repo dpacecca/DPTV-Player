@@ -50,6 +50,9 @@ object LiveStreamQuirks {
      */
     const val REFUSALS_BEFORE_HANDOFF = 2
 
+    /** Distinct channels that must refuse their segments before the whole panel is moved to mpv. */
+    const val CHANNELS_BEFORE_PANEL_REFUSAL = 2
+
     /** HTTP statuses a panel uses to refuse a segment outright. Never worth hammering the same URL for. */
     fun isEdgeRefusal(responseCode: Int): Boolean =
         responseCode == 403 || responseCode == 404 || responseCode == 410
@@ -125,6 +128,8 @@ object LiveStreamQuirks {
     private val mixedHlsHosts = ConcurrentHashMap.newKeySet<String>()
     private val dashRedirectHosts = ConcurrentHashMap.newKeySet<String>()
     private val segmentRefusingHosts = ConcurrentHashMap.newKeySet<String>()
+    private val segmentRefusingStreams = urlLessonSet()
+    private val segmentRefusalsByHost = ConcurrentHashMap<String, MutableSet<String>>()
     private val singleSessionHosts = ConcurrentHashMap.newKeySet<String>()
     private val brokenTimestampStreams = urlLessonSet()
     private val noHlsVariantStreams = urlLessonSet()
@@ -230,13 +235,24 @@ object LiveStreamQuirks {
             responseCode == 503 || responseCode == 509 || isSessionLimit(responseCode)
 
     /**
-     * Record that this panel refuses its own signed segment URLs, so the *next* channel on it opens
-     * straight on mpv instead of repeating ExoPlayer's dead spinner. Panel-wide because the signing
-     * scheme is a property of the panel, not of one channel.
+     * Record that this channel refused its own signed segment URLs, so it reopens straight on mpv
+     * instead of repeating ExoPlayer's dead spinner.
+     *
+     * The lesson only becomes panel-wide once [CHANNELS_BEFORE_PANEL_REFUSAL] *different* channels on
+     * the host have shown it. One channel's refusal used to condemn the whole host for the session, and
+     * a single bad moment — a connection-limit 403 while another device held the line, a segment that
+     * rolled out of the window after a stall — then moved every channel of the playlist to mpv. On a
+     * playlist behind one host (a DPTV Server, a reseller panel) that meant the guide preview and full
+     * screen stopped sharing one ExoPlayer, and every switch between them reloaded the stream.
      */
-    fun rememberSegmentRefusal(url: String) { segmentRefusingHosts += hostKey(url) }
+    fun rememberSegmentRefusal(url: String) {
+        segmentRefusingStreams += url
+        val channels = segmentRefusalsByHost.computeIfAbsent(hostKey(url)) { ConcurrentHashMap.newKeySet() }
+        channels += url
+        if (channels.size >= CHANNELS_BEFORE_PANEL_REFUSAL) segmentRefusingHosts += hostKey(url)
+    }
 
-    fun refusesSegments(url: String): Boolean = hostKey(url) in segmentRefusingHosts
+    fun refusesSegments(url: String): Boolean = url in segmentRefusingStreams || hostKey(url) in segmentRefusingHosts
 
     /**
      * Record that this panel allows only one session at a time (it answered [isSessionLimit]).
@@ -395,6 +411,7 @@ object LiveStreamQuirks {
     /** Test hook — clears everything. */
     internal fun clearForTest() {
         hlsRedirectHosts.clear(); mixedHlsHosts.clear(); segmentRefusingHosts.clear(); singleSessionHosts.clear()
+        segmentRefusingStreams.clear(); segmentRefusalsByHost.clear()
         brokenTimestampStreams.clear(); softwareArchiveHosts.clear()
         noHlsVariantStreams.clear(); noHlsVariantMpvStreams.clear(); prerollDefeatedStreams.clear()
         tolerantDemuxStreams.clear()
