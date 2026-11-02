@@ -11,7 +11,9 @@
   "scripts": {
     "start": "node server/index.js",
     "build": "npm --prefix web run build",
-    "test": "node --test server/*.test.js"
+    "test": "node --test server/*.test.js",
+    "docker:build": "docker build -t dptv-web:local --build-arg VERSION=local .",
+    "docker:run": "docker run --rm -p 3040:3000 -v \"$PWD/data:/data\" -e DPTV_SERVER_URL=${DPTV_SERVER_URL:-} dptv-web:local"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

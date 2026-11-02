@@ -86,6 +86,14 @@ Docker Hub. It needs two repository secrets on DPTV-Player (Settings → Secrets
 DPTV-Recorder uses. Without them the release still happens and the image step is skipped with a
 warning. Pull requests that touch `web-player/` run its tests (Web player workflow).
 
+### Making an image on demand
+
+- **On GitHub:** Actions → **Web player** → **Run workflow**. Give a tag (`dev`, `test`, `2.9.5`…), tick
+  *Also tag it latest* if Unraid should pick it up as `latest`, or untick *publish* to only check that the
+  image builds. It runs the tests first.
+- **On a machine with Docker:** from `web-player/`, `npm run docker:build` (image `dptv-web:local`), then
+  `DPTV_SERVER_URL=http://192.168.1.10:8000 npm run docker:run` (port 3040).
+
 ## Development
 
 ```sh
