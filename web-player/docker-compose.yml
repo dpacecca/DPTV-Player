@@ -1,0 +1,22 @@
+services:
+  dptv-web:
+    image: dpacecca/dptv-web:latest
+    # build: .   # or build it here instead of pulling from Docker Hub
+    container_name: dptv-web
+    ports:
+      - "3040:3000"
+    environment:
+      # Your DPTV-Server; leave empty to type the address on the sign-in page instead.
+      DPTV_SERVER_URL: "http://192.168.1.10:8000"
+      TZ: "Pacific/Auckland"
+      # Set to "true" when the page is only reached over HTTPS (e.g. a Cloudflare Tunnel).
+      COOKIE_SECURE: "false"
+      # Single sign-on through Authentik (optional) - see README.
+      # PUBLIC_URL: "https://dptvweb.example.com"
+      # OIDC_ISSUER: "https://auth.example.com/application/o/dptv-web/"
+      # OIDC_CLIENT_ID: "..."
+      # OIDC_CLIENT_SECRET: "..."
+      # OIDC_ONLY: "true"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

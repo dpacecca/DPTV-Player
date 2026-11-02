@@ -1,0 +1,86 @@
+name: Web player
+
+# DPTV Web (web-player/).
+# - Pull requests and pushes that touch it: its tests and a build of its page.
+# - Run workflow (Actions → Web player → Run workflow): test, then build the Docker image and, unless
+#   "publish" is off, push it to Docker Hub with the tag given (e.g. dev, test, or a version).
+# Every DPTV-Player release also publishes it as :latest and :<version> (Android CI → web-image).
+on:
+  pull_request:
+    paths: [ "web-player/**", ".github/workflows/web-player.yml" ]
+  push:
+    branches: [ master ]
+    paths: [ "web-player/**", ".github/workflows/web-player.yml" ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to push (e.g. dev, test, 2.9.5)"
+        required: true
+        default: "dev"
+      also_latest:
+        description: "Also tag it latest"
+        type: boolean
+        default: false
+      publish:
+        description: "Push to Docker Hub (off = build only, to check the image builds)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-player
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npm --prefix web ci --no-audit --no-fund
+      - run: npm --prefix web run build
+      - run: npm test
+
+  image:
+    needs: test
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the Docker Hub secrets
+        id: hub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          PUBLISH: ${{ inputs.publish }}
+        run: |
+          if [ "$PUBLISH" = "true" ] && { [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_TOKEN" ]; }; then
+            echo "::error::Add the DOCKERHUB_USERNAME and DOCKERHUB_TOKEN repository secrets to publish (or turn publish off)."
+            exit 1
+          fi
+          echo "user=${DOCKERHUB_USERNAME:-local}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to Docker Hub
+        if: inputs.publish
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build (and push)
+        uses: docker/build-push-action@v6
+        with:
+          context: web-player
+          platforms: linux/amd64,linux/arm64
+          push: ${{ inputs.publish }}
+          build-args: |
+            VERSION=${{ inputs.tag }}
+          tags: |
+            ${{ steps.hub.outputs.user }}/dptv-web:${{ inputs.tag }}
+            ${{ inputs.also_latest && format('{0}/dptv-web:latest', steps.hub.outputs.user) || '' }}
+          cache-from: type=gha,scope=dptv-web
+          cache-to: type=gha,mode=max,scope=dptv-web
