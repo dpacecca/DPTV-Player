@@ -169,18 +169,40 @@ class SportRecordingPlanner(
             ?: matches.firstOrNull().takeIf { fixture.dateMs - now < LastHoursMs }
             ?: return RecordPlanRules.afterMiss(fresh, now)
         val channel = channelDao.getById(pick.channelId) ?: return RecordPlanRules.afterMiss(fresh, now)
+        if (scheduleOn(fixture, league, channel, pick.epgTitle, fresh.title) == null) return fresh
+        return fresh.copy(status = RecordPlan.Status.SCHEDULED, channelName = channel.name)
+    }
+
+    /**
+     * (v2.9.3) Record [fixture] on the channel the user picked on its match page: the guide's programme for
+     * the game on that channel (paddings included) or, without one, kick-off to the sport's usual length.
+     * Starts at once when the game is already on. The game's plan is marked scheduled, so its Record chip
+     * says so. Null when the channel is gone or no profile is active.
+     */
+    suspend fun recordOn(fixture: Fixture, channelId: Long, epgTitle: String?, title: String): RecordingEntity? = lock.withLock {
+        val league = sportsLeagueById(fixture.leagueId)
+        val channel = channelDao.getById(channelId) ?: return@withLock null
+        val saved = scheduleOn(fixture, league, channel, epgTitle, title) ?: return@withLock null
+        val plans = prefs.recordPlans.first()
+        val plan = RecordPlan(fixture.id, fixture.leagueId, fixture.dateMs, title, RecordPlan.Status.SCHEDULED, channel.name)
+        prefs.replaceRecordPlans(plans, plans.filter { it.fixtureId != fixture.id } + plan)
+        saved
+    }
+
+    /** One recording of [fixture] on [channel]; see [recordOn]. */
+    private suspend fun scheduleOn(fixture: Fixture, league: SportLeague?, channel: tv.own.owntv.core.database.entity.ChannelEntity, epgTitle: String?, title: String): RecordingEntity? {
         val profile = settings.activeProfileId.first().takeIf { it >= 0 }?.let { profileDao.resolveExistingProfileId(it) }
-            ?: return fresh
+            ?: return null
         val programme = channel.epgChannelId?.let { key ->
             runCatching { epgDao.programmesForChannel(key, fixture.dateMs - ProgrammeSlackMs, fixture.dateMs + ProgrammeSlackMs) }
                 .getOrDefault(emptyList())
                 .filter { it.startMs <= fixture.dateMs + ProgrammeSlackMs && it.stopMs > fixture.dateMs }
-                .let { found -> found.firstOrNull { it.title == pick.epgTitle } ?: found.firstOrNull { it.startMs <= fixture.dateMs } }
+                .let { found -> found.firstOrNull { it.title == epgTitle } ?: found.firstOrNull { it.startMs <= fixture.dateMs } }
         }
         val start = programme?.startMs ?: (fixture.dateMs - RecordPlanRules.LeadMs)
-        val stop = programme?.stopMs ?: (fixture.dateMs + RecordPlanRules.durationMs(league.sportGroup))
+        val stop = programme?.stopMs ?: (fixture.dateMs + RecordPlanRules.durationMs(league?.sportGroup))
         val window = recordings.windowFor(start, stop)
-        recordings.schedule(
+        return recordings.schedule(
             RecordingEntity(
                 profileId = profile,
                 sourceId = channel.sourceId,
@@ -190,7 +212,7 @@ class SportRecordingPlanner(
                 epgChannelId = channel.epgChannelId,
                 streamUrl = channel.streamUrl,
                 httpHeaders = channel.httpHeaders,
-                title = fresh.title,
+                title = title,
                 description = programme?.title,
                 programmeStartMs = start,
                 programmeStopMs = stop,
@@ -198,7 +220,6 @@ class SportRecordingPlanner(
                 stopMs = window.last,
             ),
         )
-        return fresh.copy(status = RecordPlan.Status.SCHEDULED, channelName = channel.name)
     }
 
     private companion object {

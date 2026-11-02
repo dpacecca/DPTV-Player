@@ -98,6 +98,9 @@ internal fun SportsMatchScreen(
     val preferred by vm.preferredLanguages.collectAsStateWithLifecycle()
     val strict by vm.strictChannels.collectAsStateWithLifecycle()
     val previewArmed by liveVm.previewArmed.collectAsStateWithLifecycle()
+    // (v2.9.3) What holding OK on a channel did.
+    val recordToast = tv.own.owntv.ui.components.rememberInAppToast()
+    val resources = androidx.compose.ui.platform.LocalResources.current
     val sep = stringResource(R.string.sport_detail_separator)
 
     val table = remember(standings, fixture.id) {
@@ -249,6 +252,18 @@ internal fun SportsMatchScreen(
                                             vm.playMatch(m, matches, onPlayChannel)
                                         }
                                     },
+                                    // (v2.9.3) Hold OK: record the game on this channel, now or when it starts.
+                                    onHold = {
+                                        vm.recordOnChannel(fixture, m) { result ->
+                                            recordToast.show(
+                                                when (result) {
+                                                    SportsViewModel.ChannelRecord.RECORDING -> resources.getString(R.string.sport_record_channel_now, m.channelName)
+                                                    SportsViewModel.ChannelRecord.SCHEDULED -> resources.getString(R.string.sport_record_channel_scheduled, m.channelName)
+                                                    SportsViewModel.ChannelRecord.FAILED -> resources.getString(R.string.sport_record_channel_failed)
+                                                },
+                                            )
+                                        }
+                                    },
                                     modifier = Modifier
                                         .then(if (m === matches.first()) Modifier.focusRequester(firstRow) else Modifier)
                                         .onFocusChanged { if (it.isFocused) focusedId = m.channelId },
@@ -263,12 +278,14 @@ internal fun SportsMatchScreen(
             StageKeyHints(
                 listOf(
                     stringResource(R.string.common_ok) to stringResource(R.string.sport_hint_preview_play),
+                    stringResource(R.string.content_key_hold_ok) to stringResource(R.string.sport_hint_record),
                     stringResource(R.string.common_back) to stringResource(R.string.sport_title),
                 ),
                 Modifier.align(Alignment.BottomEnd).padding(end = 60.mpx, bottom = 27.mpx),
                 textSize = 18,
             )
         }
+        tv.own.owntv.ui.components.InAppToast(recordToast)
     }
 }
 
@@ -387,8 +404,8 @@ private fun TablePreview(table: LeagueTable?, f: Fixture, onOpenLeague: () -> Un
  * programme (green), the event's own channel (blue) or a likely one (muted).
  */
 @Composable
-private fun MatchChannelRow(m: ChannelMatch, playing: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    StageRow(onClick = onClick, height = 90.mpx, modifier = modifier.fillMaxWidth(), horizontalPadding = 18.mpx) { _ ->
+private fun MatchChannelRow(m: ChannelMatch, playing: Boolean, onClick: () -> Unit, onHold: () -> Unit, modifier: Modifier = Modifier) {
+    StageRow(onClick = onClick, onLongClick = onHold, height = 90.mpx, modifier = modifier.fillMaxWidth(), horizontalPadding = 18.mpx) { _ ->
         ChannelLogoTile(
             logoUrl = m.logoUrl,
             modifier = Modifier.size(69.mpx, 42.mpx).background(stageStillBack, RoundedCornerShape(10.mpx)),
