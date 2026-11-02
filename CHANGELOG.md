@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.9.3
+
+### ✨ New features
+- **⚽ Sport: hold OK on a match's channel to record it, now or when it starts**
+
 ## v2.9.2
 
 ### 🐛 Fixes

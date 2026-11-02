@@ -41,6 +41,7 @@ class SportsViewModel(
     channelSources: SportChannelSources,
     private val calendarRepo: SportsCalendarRepository,
     private val app: android.app.Application,
+    private val planner: SportRecordingPlanner,
 ) : ViewModel() {
 
     /** Who is showing live Sport data right now; the live refresh runs only while someone is. */
@@ -543,6 +544,27 @@ class SportsViewModel(
             val dash = app.getString(tv.own.owntv.R.string.sport_pair_dash)
             prefs.putRecordPlan(RecordPlan(fixture.id, fixture.leagueId, fixture.dateMs, recordTitle(fixture, dash)))
             runCatching { SportRecordingWorker.runNow(app) }
+        }
+    }
+
+    /** (v2.9.3) What holding OK on a match's channel did. */
+    enum class ChannelRecord { RECORDING, SCHEDULED, FAILED }
+
+    /**
+     * (v2.9.3) Hold OK on a channel under Watch live: record the game on that channel — now, when it is on,
+     * else when it starts. [done] says which, on the main thread.
+     */
+    fun recordOnChannel(fixture: Fixture, match: ChannelMatch, done: (ChannelRecord) -> Unit) {
+        viewModelScope.launch {
+            val dash = app.getString(tv.own.owntv.R.string.sport_pair_dash)
+            val saved = runCatching { planner.recordOn(fixture, match.channelId, match.epgTitle, recordTitle(fixture, dash)) }.getOrNull()
+            done(
+                when {
+                    saved == null -> ChannelRecord.FAILED
+                    saved.startMs <= System.currentTimeMillis() -> ChannelRecord.RECORDING
+                    else -> ChannelRecord.SCHEDULED
+                },
+            )
         }
     }
 

@@ -330,4 +330,9 @@
     <string name="sport_trakt_watchlist_add">Add to watchlist</string>
     <string name="sport_trakt_watchlist_remove">Remove from watchlist</string>
     <string name="sport_trakt_search_keywords">trakt, watchlist, watched, sync, history</string>
+    <!-- DPTV v2.9.3: hold OK on a match's channel to record it. -->
+    <string name="sport_record_channel_now">Recording on %1$s</string>
+    <string name="sport_record_channel_scheduled">Recording scheduled on %1$s</string>
+    <string name="sport_record_channel_failed">Couldn\'t record this channel</string>
+    <string name="sport_hint_record">Record</string>
 </resources>

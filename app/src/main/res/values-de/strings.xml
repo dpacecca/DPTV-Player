@@ -330,4 +330,9 @@
     <string name="sport_trakt_watchlist_add">Zur Merkliste</string>
     <string name="sport_trakt_watchlist_remove">Von der Merkliste</string>
     <string name="sport_trakt_search_keywords">trakt, merkliste, gesehen, abgleich, verlauf</string>
+    <!-- DPTV v2.9.3: hold OK on a match's channel to record it. -->
+    <string name="sport_record_channel_now">Aufnahme auf %1$s läuft</string>
+    <string name="sport_record_channel_scheduled">Aufnahme auf %1$s geplant</string>
+    <string name="sport_record_channel_failed">Dieser Sender konnte nicht aufgenommen werden</string>
+    <string name="sport_hint_record">Aufnehmen</string>
 </resources>
