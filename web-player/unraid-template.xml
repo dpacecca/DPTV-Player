@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>dptv-web</Name>
+  <Repository>dpacecca/dptv-web:latest</Repository>
+  <Registry>https://hub.docker.com/r/dpacecca/dptv-web</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/dpacecca/DPTV-Player</Support>
+  <Project>https://github.com/dpacecca/DPTV-Player</Project>
+  <Overview>DPTV Web - watch Live TV and browse the TV guide in a browser, signed in to DPTV-Server with an XC login. Streams are relayed as MPEG-TS and played with mpegts.js (Chrome, Edge, Firefox).</Overview>
+  <Category>MediaApp:Video</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL/>
+  <ExtraParams/>
+  <PostArgs/>
+  <Config Name="WebUI Port" Target="3000" Default="3040" Mode="tcp" Description="Port the web player is served on" Type="Port" Display="always" Required="true" Mask="false">3040</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/dptv-web" Mode="rw" Description="Keeps the key that seals sign-in cookies, so a restart does not sign everyone out." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/dptv-web</Config>
+  <Config Name="DPTV-Server URL" Target="DPTV_SERVER_URL" Default="" Mode="" Description="Your DPTV-Server, e.g. http://192.168.1.10:8000. Leave empty to type it on the sign-in page." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="Secure cookie (HTTPS only)" Target="COOKIE_SECURE" Default="false" Mode="" Description="true when the page is only reached over HTTPS, e.g. through a Cloudflare Tunnel." Type="Variable" Display="always" Required="false" Mask="false">false</Config>
+  <Config Name="TZ" Target="TZ" Default="UTC" Mode="" Description="Your timezone, e.g. Pacific/Auckland." Type="Variable" Display="always" Required="false" Mask="false">UTC</Config>
+  <Config Name="Public URL" Target="PUBLIC_URL" Default="" Mode="" Description="The address people open DPTV Web at, e.g. https://dptvweb.example.com. Needed for single sign-on (the provider sends people back to PUBLIC_URL/api/auth/callback)." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="SSO issuer (Authentik)" Target="OIDC_ISSUER" Default="" Mode="" Description="Authentik's OpenID Configuration Issuer for this application, e.g. https://auth.example.com/application/o/dptv-web/. Leave empty for no single sign-on." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="SSO client ID" Target="OIDC_CLIENT_ID" Default="" Mode="" Description="The provider's Client ID." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="SSO client secret" Target="OIDC_CLIENT_SECRET" Default="" Mode="" Description="The provider's Client Secret." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="SSO only" Target="OIDC_ONLY" Default="false" Mode="" Description="true: no password form, everyone signs in through single sign-on." Type="Variable" Display="always" Required="false" Mask="false">false</Config>
+  <Config Name="SSO button label" Target="OIDC_BUTTON_LABEL" Default="Sign in with Authentik" Mode="" Description="The single sign-on button's text." Type="Variable" Display="advanced" Required="false" Mask="false">Sign in with Authentik</Config>
+  <Config Name="Shared DPTV-Server user (SSO)" Target="SSO_XC_USERNAME" Default="" Mode="" Description="Optional: an XC login every single-sign-on user uses until they link their own. Leave empty to ask each person for theirs once." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Shared DPTV-Server password (SSO)" Target="SSO_XC_PASSWORD" Default="" Mode="" Description="That login's password." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="User-Agent" Target="USER_AGENT" Default="VLC/3.0.20 LibVLC/3.0.20" Mode="" Description="Sent to DPTV-Server and the provider, as DPTV-Player does by default." Type="Variable" Display="advanced" Required="false" Mask="false">VLC/3.0.20 LibVLC/3.0.20</Config>
+</Container>

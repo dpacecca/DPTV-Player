@@ -64,6 +64,11 @@
 <!-- DPTV-Player release history, newest first. "## v5.1.0" downwards is the inherited OwnTV
      upstream history, not DPTV-Player releases. -->
 
+## v2.9.5
+
+### ✨ New features
+- **🌐 DPTV Web: Live TV and the TV guide in a browser, with Authentik single sign-on, published as a Docker image with each release**
+
 ## v2.9.4
 
 ### ✨ New features

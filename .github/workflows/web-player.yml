@@ -1,0 +1,29 @@
+name: Web player
+
+# DPTV Web (web-player/): its tests and a build of its page, on pull requests and pushes that touch it.
+# Publishing the Docker image happens with each DPTV-Player release (Android CI → web-image).
+on:
+  pull_request:
+    paths: [ "web-player/**", ".github/workflows/web-player.yml" ]
+  push:
+    branches: [ master ]
+    paths: [ "web-player/**", ".github/workflows/web-player.yml" ]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web-player
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npm --prefix web ci --no-audit --no-fund
+      - run: npm --prefix web run build
+      - run: npm test
