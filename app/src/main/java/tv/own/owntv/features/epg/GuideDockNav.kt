@@ -12,9 +12,11 @@ package tv.own.owntv.features.epg
  *  - [GuideNavEvent.LEFT] in the categories: CATEGORIES → MENU.
  *  - [GuideNavEvent.RAIL_RIGHT] (▶ on the menu): MENU → CATEGORIES (v2.6.1: CATEGORIES too, while they are
  *    out beside it); from the menu over the guide alone, the guide's row.
- *  - [GuideNavEvent.RIGHT], [GuideNavEvent.BACK], [GuideNavEvent.SWIPE_LEFT] in the categories: CATEGORIES →
- *    GUIDE, focus back on the row it came from. [GuideNavEvent.PICKED] (OK): the same, on the first row.
- *  - Back on the menu is not here: the shell answers it with the exit prompt ([railBackAsksToExit]).
+ *  - [GuideNavEvent.RIGHT], [GuideNavEvent.SWIPE_LEFT] in the categories: CATEGORIES → GUIDE, focus back on
+ *    the row it came from. [GuideNavEvent.PICKED] (OK): the same, on the first row.
+ *  - (v2.9.4) [GuideNavEvent.BACK] steps outwards: GUIDE → CATEGORIES, CATEGORIES → MENU. Back on the menu is
+ *    not here: the shell answers it with the exit prompt ([railBackAsksToExit]), and a second Back exits.
+ *    Holding Back (guide, categories or menu) plays the guide's channel full screen: the shell's long press.
  *  - [GuideNavEvent.GRID_FOCUSED]: focus is in the guide (a tap, a restore, any route): GUIDE, nothing moved.
  *    (v2.6.1) Authoritative, see [guideHealDelayMs].
  *  - [GuideNavEvent.FOCUS_LEFT]: focus left the categories for somewhere else (the menu, by touch): MENU.
@@ -37,8 +39,13 @@ internal fun GuideNav.on(event: GuideNavEvent): GuideNavStep {
         GuideNavEvent.OPEN -> GuideNavStep(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES)
         GuideNavEvent.LEFT ->
             if (this == GuideNav.CATEGORIES) GuideNavStep(GuideNav.MENU, GuideNavFocus.RAIL) else stay
-        GuideNavEvent.RIGHT, GuideNavEvent.BACK, GuideNavEvent.SWIPE_LEFT ->
+        GuideNavEvent.RIGHT, GuideNavEvent.SWIPE_LEFT ->
             if (this == GuideNav.CATEGORIES) GuideNavStep(GuideNav.GUIDE, GuideNavFocus.GRID) else stay
+        GuideNavEvent.BACK -> when (this) {
+            GuideNav.GUIDE -> GuideNavStep(GuideNav.CATEGORIES, GuideNavFocus.CATEGORIES)
+            GuideNav.CATEGORIES -> GuideNavStep(GuideNav.MENU, GuideNavFocus.RAIL)
+            GuideNav.MENU -> stay
+        }
         GuideNavEvent.PICKED ->
             if (this == GuideNav.CATEGORIES) GuideNavStep(GuideNav.GUIDE, GuideNavFocus.GRID_FIRST) else stay
         GuideNavEvent.RAIL_RIGHT ->

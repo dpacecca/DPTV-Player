@@ -1013,6 +1013,17 @@ fun OwnTVShell(
         if (openedSeries == null && homeReturn == MainSection.SERIES && selectedSection == MainSection.SERIES) returnToHome()
     }
 
+    // (v2.9.4) The guide's channel full screen: what Back used to do in the guide, now a long press.
+    fun guideToFullscreen() {
+        val ch = liveVm.previewChannel.value ?: return
+        restoreFocus = false
+        liveVm.watchFromGuide(ch)
+        exoHandoff = liveVm.liveOnExo.value
+        zapSource = MainSection.LIVE_TV
+        homeVm.stopPreview()
+        if (!liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
+    }
+
     BackHandler {
         when {
             playerMode == PlayerMode.FULLSCREEN -> exitPlayer()
@@ -1034,15 +1045,8 @@ fun OwnTVShell(
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
             // (v2.5.1) Reached from a Home card: Back returns to Home, on that card.
             homeReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToHome()
-            // v2.1.3: Back in the guide is full screen on the channel in its video.
-            selectedSection == MainSection.LIVE_TV -> previewChannel?.let { ch ->
-                restoreFocus = false
-                liveVm.watchFromGuide(ch)
-                exoHandoff = liveVm.liveOnExo.value
-                zapSource = MainSection.LIVE_TV
-                homeVm.stopPreview()
-                if (!liveVm.externalPlayerOn.value) playerMode = PlayerMode.FULLSCREEN
-            } ?: Unit
+            // (v2.9.4) Back in the guide steps outwards (its rows → categories → menu, handled by the guide);
+            // whatever reaches here goes to the menu. Holding Back plays full screen ([guideLongBack]).
             focusedLayer == ShellLayer.SIDEBAR -> showExit = true
             else -> focusRail()
         }
@@ -1066,7 +1070,10 @@ fun OwnTVShell(
     var shortcutHoldJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     // v2.5.1: this Back went down on the menu, so its release asks to leave the app (see [railBackAsksToExit]).
     var railBackDown by remember { mutableStateOf(false) }
-    val longPressBackArmed = playerMode == PlayerMode.MINI && !showExit && !showAvatarPicker && !showPlaylistPicker
+    // (v2.9.4) Holding Back in the guide (its rows, categories or the menu over it) plays its channel full screen.
+    val guideLongBack = selectedSection == MainSection.LIVE_TV && playerMode == PlayerMode.NONE &&
+        previewChannel != null && !showExit && !showAvatarPicker && !showPlaylistPicker
+    val longPressBackArmed = (playerMode == PlayerMode.MINI || guideLongBack) && !showExit && !showAvatarPicker && !showPlaylistPicker
     // Media keys (§8 tier 3) act on the docked window wherever focus is — but only if nothing nearer
     // claimed them first, which is why this is a bubbling handler: a focused browse list still gets its
     // CH+/CH− paging, and the full-screen HUD still owns zapping.
@@ -1112,10 +1119,11 @@ fun OwnTVShell(
                         }
                         if (longPressBackArmed && backHoldJob == null) {
                             backLongFired = false
+                            val fromGuide = guideLongBack
                             backHoldJob = scope.launch {
                                 kotlinx.coroutines.delay(600)
                                 backLongFired = true
-                                toggleNowPlayingFocus()
+                                if (fromGuide) guideToFullscreen() else toggleNowPlayingFocus()
                             }
                         }
                         // Taken here, so no screen's Back runs for it: its release opens the prompt.
