@@ -58,6 +58,11 @@ Ports upstream OwnTV Core 1.0.69, without the Sports Hub.
 - **Stalker series listed among the films go to Series when the portal has no series section**
 - **Playlist rows show the full catalogue once the background download finishes**
 - **Stalker sync slows down on portals that refuse parallel requests, remembers it per playlist, and loses no page; fast portals keep full speed**
+- **📞 Phone: a notification sound only turns the sound down; calls, WhatsApp included, pause and resume**
+- **🔁 Live TV: a decoder that fails to start is rebuilt up to three times within "Give up after" (TV #321)**
+- **🍎 FairPlay entries: inline keys play as ClearKey; real FairPlay says it cannot play on Android**
+- **🎨 Dolby Vision profile 5 on mpv opens the device's Dolby Vision decoder (libmpv 2026.11.0, TV #313)**
+
 ## core-1.0.69 — 2026-10-21
 ### ✨ New features
 - **🏆 Sports: 54 more leagues, with Volleyball and Lacrosse**
