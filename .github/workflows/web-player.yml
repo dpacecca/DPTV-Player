@@ -80,7 +80,7 @@ jobs:
           build-args: |
             VERSION=${{ inputs.tag }}
           tags: |
-            ${{ steps.hub.outputs.user }}/dptv-web:${{ inputs.tag }}
-            ${{ inputs.also_latest && format('{0}/dptv-web:latest', steps.hub.outputs.user) || '' }}
+            ${{ steps.hub.outputs.user }}/dptv-player:${{ inputs.tag }}
+            ${{ inputs.also_latest && format('{0}/dptv-player:latest', steps.hub.outputs.user) || '' }}
           cache-from: type=gha,scope=dptv-web
           cache-to: type=gha,mode=max,scope=dptv-web

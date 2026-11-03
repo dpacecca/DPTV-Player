@@ -80,7 +80,7 @@ See `docker-compose.yml`.
 
 DPTV Web lives in the DPTV-Player repository (`web-player/`). Every DPTV-Player release (the Android CI
 workflow's release button, or a `v*` tag) also tests and builds this image for `linux/amd64` +
-`linux/arm64` and pushes `<DOCKERHUB_USERNAME>/dptv-web:latest` and `:<version>` (e.g. `:2.9.5`) to
+`linux/arm64` and pushes `<DOCKERHUB_USERNAME>/dptv-player:latest` and `:<version>` (e.g. `:2.9.5`) to
 Docker Hub. It needs two repository secrets on DPTV-Player (Settings → Secrets and variables → Actions):
 `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (a Docker Hub access token with Read & Write) - the same two
 DPTV-Recorder uses. Without them the release still happens and the image step is skipped with a

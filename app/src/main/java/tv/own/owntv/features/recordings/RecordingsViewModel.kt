@@ -233,10 +233,24 @@ class RecordingsViewModel(
     /** Drops a scheduled recording. Nothing on disk is touched, because nothing is there yet. */
     fun cancel(recording: RecordingEntity) = recordings.cancel(recording)
 
-    /** Removes the row **and** the file. The only thing here that deletes anything (D2). */
-    fun delete(recording: RecordingEntity) {
-        forgetProgress(recording.id)
-        recordings.delete(recording)
+    private val _deleteFailed = MutableStateFlow<RecordingEntity?>(null)
+    /** A recording the recording server would not delete (offline or refused), until the notice is closed. */
+    val deleteFailed: StateFlow<RecordingEntity?> = _deleteFailed.asStateFlow()
+    fun clearDeleteFailed() { _deleteFailed.value = null }
+
+    /**
+     * Removes the row **and** the file. The only thing here that deletes anything (D2). [onDeleted]
+     * runs once it is gone; when the server could not be told, [deleteFailed] names it instead.
+     */
+    fun delete(recording: RecordingEntity, onDeleted: () -> Unit = {}) {
+        viewModelScope.launch {
+            if (recordings.deleteNow(recording)) {
+                forgetProgress(recording.id)
+                onDeleted()
+            } else {
+                _deleteFailed.value = recording
+            }
+        }
     }
 
     /**
