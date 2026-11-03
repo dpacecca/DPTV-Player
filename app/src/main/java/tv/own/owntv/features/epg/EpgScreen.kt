@@ -1285,6 +1285,17 @@ fun EpgScreen(
             onDismiss = { dayOpen = false },
         )
     }
+    val recordingOverlap by vm.recordingOverlap.collectAsStateWithLifecycle()
+    recordingOverlap?.let { o ->
+        tv.own.owntv.ui.stage.StageNotice(
+            title = stringResource(R.string.sport_record_overlap_title),
+            body = stringResource(
+                if (o.fits) R.string.sport_record_overlap_message else R.string.sport_record_overlap_no_stream,
+                o.title, o.otherTitle, o.otherChannel,
+            ),
+            onDismiss = { vm.clearRecordingOverlap() },
+        )
+    }
     offsetChannel?.let { channel ->
         tv.own.owntv.features.live.EpgOffsetDialog(
             channelName = channel.name,
