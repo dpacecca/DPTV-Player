@@ -234,6 +234,10 @@
     <string name="settings_auto_frame_rate">Automatische beeldfrequentie</string>
     <string name="settings_auto_frame_rate_description">Stem in volledig scherm de vernieuwingsfrequentie van de tv af op de video (24/25/50/60 fps), voor live-tv en VOD, en herstel deze bij afsluiten. Schakel dit uit als je tv of ontvanger bij elke zenderwissel de HDMI-verbinding hoorbaar opnieuw opbouwt.</string>
     <string name="settings_auto_frame_rate_description_mobile">Stem in volledig scherm de vernieuwingsfrequentie van het scherm af op de video (24/25/50/60 fps), voor live-tv en VOD, en herstel deze bij afsluiten. Schakel dit uit als het scherm flikkert of zwart wordt wanneer een video start.</string>
+    <string name="settings_auto_frame_rate_films">Automatische beeldfrequentie voor films en series</string>
+    <string name="settings_auto_frame_rate_films_description">Stem in volledig scherm de vernieuwingsfrequentie van de tv af op de film of aflevering (24/25/50/60 fps), en herstel deze bij afsluiten.</string>
+    <string name="settings_auto_frame_rate_live">Automatische beeldfrequentie voor live-tv</string>
+    <string name="settings_auto_frame_rate_live_description">Stem in volledig scherm de vernieuwingsfrequentie van de tv af op de zender (25/50/60 fps), en herstel deze bij afsluiten. Schakel dit uit als je tv of ontvanger bij elke zenderwissel de HDMI-verbinding hoorbaar opnieuw opbouwt.</string>
     <string name="settings_afr_pause">Pauzeren tijdens de beeldwissel</string>
     <string name="settings_afr_pause_description">Alleen films. Als de tv opnieuw moet synchroniseren op een nieuwe beeldmodus, wacht de film zo lang, zodat het begin niet in het zwarte beeld verloren gaat. Een naadloze wissel pauzeert nooit.</string>
     <string name="settings_afr_resolution">Resolutie aanpassen</string>

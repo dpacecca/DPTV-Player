@@ -234,6 +234,10 @@
     <string name="settings_auto_frame_rate">Otomatik kare hızı</string>
     <string name="settings_auto_frame_rate_description">Canlı TV ve VOD içeriklerinde tam ekrandayken TV\'nin yenileme hızını videoyla (24/25/50/60 fps) eşleştirin ve çıkışta eski hâline getirin. TV\'niz veya alıcınız her kanal değişikliğinde HDMI el sıkışmasını gürültülü biçimde tekrarlıyorsa bu seçeneği kapatın.</string>
     <string name="settings_auto_frame_rate_description_mobile">Canlı TV ve VOD içeriklerinde tam ekrandayken ekranın yenileme hızını videoyla (24/25/50/60 fps) eşleştirin ve çıkışta eski hâline getirin. Bir video başladığında ekran titriyor veya kararıyorsa bu seçeneği kapatın.</string>
+    <string name="settings_auto_frame_rate_films">Filmler ve diziler için otomatik kare hızı</string>
+    <string name="settings_auto_frame_rate_films_description">Tam ekrandayken TV\'nin yenileme hızını filme veya bölüme (24/25/50/60 fps) eşleştirin ve çıkışta eski hâline getirin.</string>
+    <string name="settings_auto_frame_rate_live">Canlı TV için otomatik kare hızı</string>
+    <string name="settings_auto_frame_rate_live_description">Tam ekrandayken TV\'nin yenileme hızını kanala (25/50/60 fps) eşleştirin ve çıkışta eski hâline getirin. TV\'niz veya alıcınız her kanal değişikliğinde HDMI el sıkışmasını gürültülü biçimde tekrarlıyorsa bu seçeneği kapatın.</string>
     <string name="settings_afr_pause">Ekran geçişinde duraklat</string>
     <string name="settings_afr_pause_description">Yalnızca filmler. Televizyonun yeni bir ekran moduna yeniden eşitlenmesi gerektiğinde, film bu süre kadar bekler; böylece başlangıcı siyah ekranda kaybolmaz. Kesintisiz bir geçiş hiç duraklatmaz.</string>
     <string name="settings_afr_resolution">Çözünürlüğü eşleştir</string>

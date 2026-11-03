@@ -235,6 +235,10 @@
     <string name="settings_auto_frame_rate">Fréquence d’images automatique</string>
     <string name="settings_auto_frame_rate_description">Adapter la fréquence de rafraîchissement du téléviseur à la vidéo (24/25/50/60 ips) en plein écran, pour la TV en direct et la VOD, puis la rétablir en quittant la lecture. Désactivez cette option si votre téléviseur ou récepteur relance bruyamment la négociation HDMI à chaque changement de chaîne.</string>
     <string name="settings_auto_frame_rate_description_mobile">Adapter la fréquence de rafraîchissement de l’écran à la vidéo (24/25/50/60 ips) en plein écran, pour la TV en direct et la VOD, puis la rétablir en quittant la lecture. Désactivez cette option si l’écran scintille ou devient noir au démarrage d’une vidéo.</string>
+    <string name="settings_auto_frame_rate_films">Fréquence d’images automatique pour les films et séries</string>
+    <string name="settings_auto_frame_rate_films_description">Adapter la fréquence de rafraîchissement du téléviseur au film ou à l’épisode (24/25/50/60 ips) en plein écran, puis la rétablir en quittant la lecture.</string>
+    <string name="settings_auto_frame_rate_live">Fréquence d’images automatique pour la TV en direct</string>
+    <string name="settings_auto_frame_rate_live_description">Adapter la fréquence de rafraîchissement du téléviseur à la chaîne (25/50/60 ips) en plein écran, puis la rétablir en quittant la lecture. Désactivez cette option si votre téléviseur ou récepteur relance bruyamment la négociation HDMI à chaque changement de chaîne.</string>
     <string name="settings_afr_pause">Pause pendant le changement d’affichage</string>
     <string name="settings_afr_pause_description">Films uniquement. Quand le téléviseur doit se resynchroniser sur un nouveau mode d’affichage, le film attend ce délai pour que son début ne se perde pas dans l’écran noir. Un changement sans coupure ne met jamais en pause.</string>
     <string name="settings_afr_resolution">Adapter la résolution</string>

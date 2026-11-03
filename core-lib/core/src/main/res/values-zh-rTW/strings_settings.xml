@@ -233,6 +233,10 @@
     <string name="settings_auto_frame_rate">自動影格率</string>
     <string name="settings_auto_frame_rate_description">在全螢幕播放電視直播和隨選影片時，將電視更新率配合影片調整為 24/25/50/60 fps，並在結束時還原。如果您的電視或接收器每次切換頻道時都會重新進行 HDMI 交握並產生明顯干擾，請關閉此功能。</string>
     <string name="settings_auto_frame_rate_description_mobile">在全螢幕播放電視直播和隨選影片時，將螢幕更新率配合影片調整為 24/25/50/60 fps，並在結束時還原。如果影片開始播放時螢幕閃爍或變黑，請關閉此功能。</string>
+    <string name="settings_auto_frame_rate_films">電影和影集自動影格率</string>
+    <string name="settings_auto_frame_rate_films_description">在全螢幕播放電影或影集時，將電視更新率配合影片調整為 24/25/50/60 fps，並在結束時還原。</string>
+    <string name="settings_auto_frame_rate_live">電視直播自動影格率</string>
+    <string name="settings_auto_frame_rate_live_description">在全螢幕播放電視直播時，將電視更新率配合頻道調整為 25/50/60 fps，並在結束時還原。如果您的電視或接收器每次切換頻道時都會重新進行 HDMI 交握並產生明顯干擾，請關閉此功能。</string>
     <string name="settings_afr_pause">切換顯示時暫停</string>
     <string name="settings_afr_pause_description">僅限電影。電視需要重新同步到新的顯示模式時，電影會等待這段時間，以免開頭在黑畫面中錯過。無縫切換不會暫停。</string>
     <string name="settings_afr_resolution">配合解析度</string>

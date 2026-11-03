@@ -233,6 +233,10 @@
     <string name="settings_auto_frame_rate">自動フレームレート</string>
     <string name="settings_auto_frame_rate_description">全画面表示でライブTVとVODの再生時にTVのリフレッシュレートを動画（24/25/50/60 fps）に合わせ、終了時に元に戻します。チャンネルを切り替えるたびにTVやレシーバーが大きな音を伴ってHDMIを再ハンドシェイクする場合はオフにしてください。</string>
     <string name="settings_auto_frame_rate_description_mobile">全画面表示でライブTVとVODの再生時に画面のリフレッシュレートを動画（24/25/50/60 fps）に合わせ、終了時に元に戻します。動画の開始時に画面がちらついたり暗くなったりする場合はオフにしてください。</string>
+    <string name="settings_auto_frame_rate_films">映画・シリーズの自動フレームレート</string>
+    <string name="settings_auto_frame_rate_films_description">全画面表示で映画やエピソードの再生時にTVのリフレッシュレートを動画（24/25/50/60 fps）に合わせ、終了時に元に戻します。</string>
+    <string name="settings_auto_frame_rate_live">ライブTVの自動フレームレート</string>
+    <string name="settings_auto_frame_rate_live_description">全画面表示でチャンネルの再生時にTVのリフレッシュレートを映像（25/50/60 fps）に合わせ、終了時に元に戻します。チャンネルを切り替えるたびにTVやレシーバーが大きな音を伴ってHDMIを再ハンドシェイクする場合はオフにしてください。</string>
     <string name="settings_afr_pause">表示切り替え中は一時停止</string>
     <string name="settings_afr_pause_description">映画のみ。テレビが新しい表示モードへ再同期する必要があるとき、冒頭が黒い画面で失われないよう、映画はこの時間だけ待ちます。シームレスな切り替えでは一時停止しません。</string>
     <string name="settings_afr_resolution">解像度を合わせる</string>

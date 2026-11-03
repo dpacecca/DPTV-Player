@@ -236,6 +236,10 @@
     <string name="settings_auto_frame_rate">Automatická snímková frekvence</string>
     <string name="settings_auto_frame_rate_description">Při zobrazení na celé obrazovce přizpůsobit obnovovací frekvenci televizoru videu (24/25/50/60 sn./s) pro živé vysílání i VOD a při ukončení ji obnovit. Vypněte, pokud televizor nebo přijímač při každé změně kanálu rušivě znovu navazuje spojení HDMI.</string>
     <string name="settings_auto_frame_rate_description_mobile">Při zobrazení na celé obrazovce přizpůsobit obnovovací frekvenci obrazovky videu (24/25/50/60 sn./s) pro živé vysílání i VOD a při ukončení ji obnovit. Vypněte, pokud obrazovka při spuštění videa bliká nebo ztmavne.</string>
+    <string name="settings_auto_frame_rate_films">Automatická snímková frekvence pro filmy a seriály</string>
+    <string name="settings_auto_frame_rate_films_description">Při zobrazení na celé obrazovce přizpůsobit obnovovací frekvenci televizoru filmu nebo epizodě (24/25/50/60 sn./s) a při ukončení ji obnovit.</string>
+    <string name="settings_auto_frame_rate_live">Automatická snímková frekvence pro živé vysílání</string>
+    <string name="settings_auto_frame_rate_live_description">Při zobrazení na celé obrazovce přizpůsobit obnovovací frekvenci televizoru kanálu (25/50/60 sn./s) a při ukončení ji obnovit. Vypněte, pokud televizor nebo přijímač při každé změně kanálu rušivě znovu navazuje spojení HDMI.</string>
     <string name="settings_afr_pause">Pozastavit při přepnutí obrazu</string>
     <string name="settings_afr_pause_description">Jen filmy. Když se televizor musí znovu synchronizovat na nový režim obrazu, film tak dlouho počká, aby se jeho začátek neztratil v černé obrazovce. Plynulé přepnutí nikdy nepozastaví.</string>
     <string name="settings_afr_resolution">Přizpůsobit rozlišení</string>

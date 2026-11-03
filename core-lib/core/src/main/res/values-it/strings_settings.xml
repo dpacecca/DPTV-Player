@@ -235,6 +235,10 @@
     <string name="settings_auto_frame_rate">Frequenza fotogrammi automatica</string>
     <string name="settings_auto_frame_rate_description">Adatta la frequenza di aggiornamento della TV al video (24/25/50/60 fps) a schermo intero, per TV in diretta e VOD, e ripristinala all\'uscita. Disattiva questa opzione se la TV o il ricevitore ripete l\'handshake HDMI in modo fastidioso a ogni cambio di canale.</string>
     <string name="settings_auto_frame_rate_description_mobile">Adatta la frequenza di aggiornamento dello schermo al video (24/25/50/60 fps) a schermo intero, per TV in diretta e VOD, e ripristinala all\'uscita. Disattiva questa opzione se lo schermo sfarfalla o diventa nero quando si avvia un video.</string>
+    <string name="settings_auto_frame_rate_films">Frequenza fotogrammi automatica per film e serie</string>
+    <string name="settings_auto_frame_rate_films_description">Adatta la frequenza di aggiornamento della TV al film o all\'episodio (24/25/50/60 fps) a schermo intero, e ripristinala all\'uscita.</string>
+    <string name="settings_auto_frame_rate_live">Frequenza fotogrammi automatica per la TV in diretta</string>
+    <string name="settings_auto_frame_rate_live_description">Adatta la frequenza di aggiornamento della TV al canale (25/50/60 fps) a schermo intero, e ripristinala all\'uscita. Disattiva questa opzione se la TV o il ricevitore ripete l\'handshake HDMI in modo fastidioso a ogni cambio di canale.</string>
     <string name="settings_afr_pause">Pausa durante il cambio di schermo</string>
     <string name="settings_afr_pause_description">Solo film. Quando il televisore deve risincronizzarsi su una nuova modalità dello schermo, il film attende questo tempo perché l’inizio non vada perso nello schermo nero. Un cambio senza interruzioni non mette mai in pausa.</string>
     <string name="settings_afr_resolution">Adatta la risoluzione</string>

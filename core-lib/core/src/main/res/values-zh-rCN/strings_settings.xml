@@ -233,6 +233,10 @@
     <string name="settings_auto_frame_rate">自动匹配帧率</string>
     <string name="settings_auto_frame_rate_description">在全屏播放直播电视和点播内容时，使电视刷新率与视频匹配（24/25/50/60 fps），并在退出时恢复。如果电视或接收器在每次切换频道时都会重新进行 HDMI 握手并产生明显干扰，请关闭此功能。</string>
     <string name="settings_auto_frame_rate_description_mobile">在全屏播放直播电视和点播内容时，使屏幕刷新率与视频匹配（24/25/50/60 fps），并在退出时恢复。如果视频开始播放时屏幕闪烁或变黑，请关闭此功能。</string>
+    <string name="settings_auto_frame_rate_films">电影和剧集自动匹配帧率</string>
+    <string name="settings_auto_frame_rate_films_description">在全屏播放电影或剧集时，使电视刷新率与视频匹配（24/25/50/60 fps），并在退出时恢复。</string>
+    <string name="settings_auto_frame_rate_live">直播电视自动匹配帧率</string>
+    <string name="settings_auto_frame_rate_live_description">在全屏播放直播频道时，使电视刷新率与频道匹配（25/50/60 fps），并在退出时恢复。如果电视或接收器在每次切换频道时都会重新进行 HDMI 握手并产生明显干扰，请关闭此功能。</string>
     <string name="settings_afr_pause">切换显示时暂停</string>
     <string name="settings_afr_pause_description">仅限电影。电视需要重新同步到新的显示模式时，电影会等待这段时间，以免开头在黑屏中错过。无缝切换不会暂停。</string>
     <string name="settings_afr_resolution">匹配分辨率</string>

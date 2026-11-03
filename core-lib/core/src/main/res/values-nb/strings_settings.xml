@@ -234,6 +234,10 @@
     <string name="settings_auto_frame_rate">Automatisk bildefrekvens</string>
     <string name="settings_auto_frame_rate_description">Tilpass TV-ens oppdateringsfrekvens til videoen (24/25/50/60 bilder/s) i fullskjerm for Direkte-TV og VOD, og gjenopprett den når du avslutter. Slå av hvis TV-en eller mottakeren utfører et støyende HDMI-håndtrykk ved hvert kanalbytte.</string>
     <string name="settings_auto_frame_rate_description_mobile">Tilpass skjermens oppdateringsfrekvens til videoen (24/25/50/60 bilder/s) i fullskjerm for Direkte-TV og VOD, og gjenopprett den når du avslutter. Slå av hvis skjermen flimrer eller blir mørk når en video starter.</string>
+    <string name="settings_auto_frame_rate_films">Automatisk bildefrekvens for filmer og serier</string>
+    <string name="settings_auto_frame_rate_films_description">Tilpass TV-ens oppdateringsfrekvens til filmen eller episoden (24/25/50/60 bilder/s) i fullskjerm, og gjenopprett den når du avslutter.</string>
+    <string name="settings_auto_frame_rate_live">Automatisk bildefrekvens for Direkte-TV</string>
+    <string name="settings_auto_frame_rate_live_description">Tilpass TV-ens oppdateringsfrekvens til kanalen (25/50/60 bilder/s) i fullskjerm, og gjenopprett den når du avslutter. Slå av hvis TV-en eller mottakeren utfører et støyende HDMI-håndtrykk ved hvert kanalbytte.</string>
     <string name="settings_afr_pause">Pause under skjermbytte</string>
     <string name="settings_afr_pause_description">Bare filmer. Når TV-en må synkronisere på nytt til en ny skjermmodus, venter filmen så lenge, slik at begynnelsen ikke går tapt i det svarte bildet. Et sømløst bytte pauser aldri.</string>
     <string name="settings_afr_resolution">Tilpass oppløsning</string>
