@@ -197,20 +197,37 @@ class EpgViewModel(
                     stopMs = window.last,
                 ),
             )
-            // (v2.9.8) Recorded either way; the user is told what it overlaps.
-            recordings.overlapsFor(pid, saved.startMs, saved.stopMs, excludeId = saved.id).firstOrNull()?.let { other ->
-                _recordingOverlap.value = RecordingOverlap(programme.title, other.title, other.channelName)
+            // (v2.9.8) Scheduled either way; the user is told what it overlaps, and whether this TV's
+            // stream limit for the playlist leaves room for both.
+            val others = recordings.overlapsFor(pid, saved.startMs, saved.stopMs, excludeId = saved.id)
+            val other = others.firstOrNull() ?: return@launch
+            val onServer = tv.own.owntv.core.recording.RemoteRecordings.remoteIdOf(saved.filePath) != null
+            val sharingHere = others.count {
+                it.sourceId == channel.sourceId && tv.own.owntv.core.recording.RemoteRecordings.remoteIdOf(it.filePath) == null
             }
+            val fits = onServer || sharingHere < recordingCap(source.maxConnections, settings.recordingReserveConnection.first())
+            _recordingOverlap.value = RecordingOverlap(programme.title, other.title, other.channelName, fits)
         }
     }
 
-    /** A recording just scheduled from the guide, and one already set that overlaps it. */
-    data class RecordingOverlap(val title: String, val otherTitle: String, val otherChannel: String)
+    /**
+     * A recording just scheduled from the guide, and one already set that overlaps it. [fits] is false
+     * when this TV records them and the playlist's stream limit leaves no stream for the new one.
+     */
+    data class RecordingOverlap(val title: String, val otherTitle: String, val otherChannel: String, val fits: Boolean)
 
     private val _recordingOverlap = MutableStateFlow<RecordingOverlap?>(null)
     /** Set after Record when the new recording overlaps another; the guide shows it until closed. */
     val recordingOverlap: StateFlow<RecordingOverlap?> = _recordingOverlap.asStateFlow()
     fun clearRecordingOverlap() { _recordingOverlap.value = null }
+
+    /** How many recordings this TV runs at once on a playlist: the same rule as core's connection budget. */
+    private fun recordingCap(maxConnections: Int, reserveOneForWatching: Boolean): Int = when {
+        maxConnections <= 0 -> Int.MAX_VALUE
+        maxConnections == 1 -> 1
+        reserveOneForWatching -> maxConnections - 1
+        else -> maxConnections
+    }
 
     /**
      * Whether Record can be offered for this programme at all: still to come, or already been on and
