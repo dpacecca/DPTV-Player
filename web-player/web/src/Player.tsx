@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import mpegts from 'mpegts.js';
 import { absolute } from './api';
+import { formatProblem } from './codecs';
 
 export type Source =
   | { kind: 'live'; url: string; title?: string }
@@ -61,7 +62,7 @@ export function Player({ source, onDoubleClick, autoFocus }: { source: Source | 
       setLoading(false);
       if (info?.code === 511 || info?.code === 458) setError('The provider refused another stream: the line\'s connections are all in use.');
       else if (info?.code === 401) setError('Signed out. Reload the page and sign in again.');
-      else if (type === mpegts.ErrorTypes.MEDIA_ERROR) setError('This channel\'s format can\'t be played in a browser (often HEVC / 4K).');
+      else if (type === mpegts.ErrorTypes.MEDIA_ERROR) setError(formatProblem());
       else if (info?.code && info.code >= 400) setError(`The stream was refused (${info.code}).`);
       else setError(`The ${live ? 'channel' : 'recording'} can't be played (${detail}${info?.msg ? `: ${info.msg}` : ''}).`);
     });

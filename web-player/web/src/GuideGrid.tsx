@@ -11,7 +11,9 @@ export type Selection = { channelId: string; start: number } | null;
 
 /**
  * The TV guide, as on DPTV-Player for Android: the CHANNEL column (logo tile, name, "CH n"), programmes along
- * a timeline with the now-line, the running programme lighter, a red dot on recordings. Only the rows in view
+ * a timeline with the now-line, the running programme lighter, a red dot on recordings. One click on a channel or
+ * programme starts that channel in the preview (and shows the programme's details); a double click goes full
+ * screen. Only the rows in view
  * are drawn, so a list of thousands of channels scrolls smoothly; [onVisible] says which rows those are so
  * the page can load their guide.
  */
@@ -91,7 +93,7 @@ export function GuideGrid({ channels, programmesOf, from, to, now, playingId, se
         <div className="g-strip" style={{ width }}>
           {progs === undefined && <div className="g-cell loading" style={{ left: 0, width: width - 4 }} />}
           {progs !== undefined && progs.length === 0 && (
-            <button className="g-cell empty" style={{ left: 0, width: width - 4 }} onClick={() => onSelect(c, null)} onDoubleClick={() => onPlay(c, true)}>
+            <button className="g-cell empty" style={{ left: 0, width: width - 4 }} onClick={() => { onPlay(c); onSelect(c, null); }} onDoubleClick={() => onPlay(c, true)}>
               <span className="g-title">No information available</span>
             </button>
           )}
@@ -108,8 +110,8 @@ export function GuideGrid({ channels, programmesOf, from, to, now, playingId, se
                 key={p.start}
                 className={cls}
                 style={{ left, width: w - 4 }}
-                onClick={() => onSelect(c, p)}
-                onDoubleClick={() => (live ? onPlay(c, true) : undefined)}
+                onClick={() => { onPlay(c); onSelect(c, p); }}
+                onDoubleClick={() => onPlay(c, true)}
                 title={`${p.title}\n${clock(p.start)} – ${clock(p.stop)}`}
               >
                 <span className="g-title">

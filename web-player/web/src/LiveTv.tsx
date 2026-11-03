@@ -19,8 +19,8 @@ export type RecordActions = {
 
 /**
  * Live TV, laid out like DPTV-Player's Live TV on Android (v2): the video and what's on at the top, the
- * day chips, then the categories and the guide. Click a programme for its details (and Record); click a
- * channel, or double-click what's on now, to watch; double-click the video for full screen.
+ * day chips, then the categories and the guide. Click a channel or programme to preview the channel (and see the programme, with Record);
+ * double-click it, or the video, for full screen.
  */
 export function LiveTv({ categories, channels, query, favourites, toggleFavourite, rec }: {
   categories: Category[];
@@ -114,12 +114,21 @@ export function LiveTv({ categories, channels, query, favourites, toggleFavourit
     return () => clearInterval(t);
   }, []);
 
+  /** Preview [c] (already playing: left as is, never re-tuned); [full]: also go full screen. */
   function play(c: Channel, full = false) {
-    setPlaying(c);
-    localSet('dptv.lastChannel', c.id);
-    const nowProg = (programmesFor(c, today) || programmesFor(c, from) || []).find((p) => p.start <= Date.now() && p.stop > Date.now());
-    setSelection(nowProg ? { channelId: c.id, start: nowProg.start } : { channelId: c.id, start: 0 });
-    if (full) setTimeout(() => fullscreen(), 50);
+    if (playing?.id !== c.id) {
+      setPlaying(c);
+      localSet('dptv.lastChannel', c.id);
+      const nowProg = (programmesFor(c, today) || programmesFor(c, from) || []).find((p) => p.start <= Date.now() && p.stop > Date.now());
+      setSelection(nowProg ? { channelId: c.id, start: nowProg.start } : { channelId: c.id, start: 0 });
+    }
+    // Straight away, while the double click still counts as the user's gesture the browser asks for.
+    if (full) enterFullscreen();
+  }
+
+  function enterFullscreen() {
+    const el = playerBox.current?.querySelector('.player') as HTMLElement | null;
+    if (el && !document.fullscreenElement) el.requestFullscreen?.().catch(() => undefined);
   }
 
   function fullscreen() {

@@ -214,6 +214,8 @@ nav { display: flex; gap: 4px; flex: none; }
 .note { background: var(--panel2); border-radius: 8px; padding: 8px 10px; font-size: 13px; overflow-wrap: anywhere; }
 .form { display: grid; gap: 10px; }
 .form label { display: grid; gap: 5px; font-size: 13px; color: var(--muted); }
+.codecs { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.codecs span { display: inline-block; width: 16px; font-weight: 700; }
 .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ---------- narrow screens (phone layout, like the app under 600 dp) ---------- */

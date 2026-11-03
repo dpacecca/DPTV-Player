@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { api, RecorderConfig } from './api';
+import { browserCodecs } from './codecs';
 
 /** Settings: the DPTV-Recorder that makes recordings for this login, and the account. */
 export function Settings({ recorder, onRecorder, user, sso, version, onClose, onSignOut, onChangeLogin }: {
@@ -76,6 +77,11 @@ export function Settings({ recorder, onRecorder, user, sso, version, onClose, on
         </section>
 
         <section>
+          <h3>Playback in this browser</h3>
+          <Codecs />
+        </section>
+
+        <section>
           <h3>Account</h3>
           <p className="muted">Signed in as <b>{user}</b>.</p>
           <div className="row-actions">
@@ -86,5 +92,34 @@ export function Settings({ recorder, onRecorder, user, sso, version, onClose, on
         <p className="muted version">DPTV Web {version}</p>
       </div>
     </div>
+  );
+}
+
+/** Which formats this browser decodes, and how to get HEVC / 4K and Dolby audio when it can't. */
+function Codecs() {
+  const c = browserCodecs();
+  const row = (name: string, ok: boolean) => (
+    <li key={name}><span className={ok ? 'ok' : 'error'}>{ok ? '✓' : '✕'}</span> {name}</li>
+  );
+  return (
+    <>
+      <ul className="codecs">
+        {row('H.264 (most HD channels)', c.h264)}
+        {row('HEVC / H.265 (most 4K)', c.hevc)}
+        {row('10-bit HEVC (4K HDR)', c.hevc10)}
+        {row('AC-3 audio (Dolby Digital)', c.ac3)}
+        {row('E-AC-3 audio (Dolby Digital Plus)', c.eac3)}
+      </ul>
+      {(!c.hevc || !c.hevc10) && (
+        <p className="muted">
+          HEVC needs hardware decoding: Chrome or Edge on a PC whose graphics can decode HEVC (most since 2016,
+          with up-to-date drivers; on Windows also install Microsoft's free <i>HEVC Video Extensions</i> for Edge),
+          or Safari on a Mac. Check chrome://gpu → "Video Acceleration" lists HEVC.
+        </p>
+      )}
+      {(!c.ac3 || !c.eac3) && (
+        <p className="muted">Dolby audio (AC-3 / E-AC-3) depends on the browser: Edge on Windows and Safari usually have it, Chrome and Firefox usually do not. The list above is what this browser reports.</p>
+      )}
+    </>
   );
 }
