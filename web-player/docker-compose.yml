@@ -11,6 +11,9 @@ services:
       TZ: "Pacific/Auckland"
       # Set to "true" when the page is only reached over HTTPS (e.g. a Cloudflare Tunnel).
       COOKIE_SECURE: "false"
+      # Recordings (the DVR) through DPTV-Recorder (optional; each person can also set one in Settings).
+      # RECORDER_URL: "http://192.168.1.10:3000"
+      # RECORDER_API_KEY: "dptv_..."
       # Single sign-on through Authentik (optional) - see README.
       # PUBLIC_URL: "https://dptvweb.example.com"
       # OIDC_ISSUER: "https://auth.example.com/application/o/dptv-web/"

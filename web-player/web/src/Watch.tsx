@@ -1,51 +1,88 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api, Category, Channel, Guide, Programme } from './api';
-import { GuideGrid } from './GuideGrid';
-import { Player } from './Player';
-import { clock, floorHalfHour, HALF_HOUR, MIN } from './time';
+import { api, ApiError, Category, Channel, Programme, Recording, RecorderConfig } from './api';
+import { Dvr } from './Dvr';
+import { LiveTv, localGet, localSet, RecordActions } from './LiveTv';
+import { Settings } from './Settings';
 
-type View = 'live' | 'guide';
-const ALL = '__all__';
+type View = 'live' | 'dvr';
 
-/** Live TV (categories, channels, the player and what's on) and the TV guide, one page. */
+/** The signed-in page: Live TV (guide + player) and the DVR, like DPTV-Player's rail on Android. */
 export function Watch({ user, sso, onSignedOut }: { user: string; sso: boolean; onSignedOut: () => void }) {
-  const [view, setView] = useState<View>(() => (sessionGet('dptv.view') as View) || 'guide');
+  const [view, setView] = useState<View>(() => (window.location.hash === '#dvr' ? 'dvr' : 'live'));
   const [categories, setCategories] = useState<Category[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
-  const [category, setCategory] = useState<string>(() => sessionGet('dptv.category') || ALL);
-  const [playing, setPlaying] = useState<Channel | null>(null);
-  const [query, setQuery] = useState('');
-  const [guide, setGuide] = useState<Guide | null>(null);
-  const [now, setNow] = useState(Date.now());
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [version, setVersion] = useState('');
+  const [recorder, setRecorder] = useState<RecorderConfig | null>(null);
+  const [recordings, setRecordings] = useState<Recording[] | null>(null);
+  const [recError, setRecError] = useState<string | null>(null);
+  const favKey = `dptv.favourites.${user}`;
+  const [favourites, setFavourites] = useState<Set<string>>(() => new Set(JSON.parse(localGet(favKey) || '[]') as string[]));
+
+  const signedOutOn401 = useCallback((e: unknown) => {
+    if (e instanceof ApiError && e.status === 401) { onSignedOut(); return true; }
+    return false;
+  }, [onSignedOut]);
 
   useEffect(() => {
     Promise.all([api.categories(), api.channels()])
       .then(([c, ch]) => { setCategories(c); setChannels(ch); })
-      .catch((e) => (e.status === 401 ? onSignedOut() : setError(e.message)));
-  }, [onSignedOut]);
+      .catch((e) => { if (!signedOutOn401(e)) setError(e.message); })
+      .finally(() => setLoading(false));
+    api.dvrConfig().then(setRecorder).catch(() => setRecorder({ configured: false, source: null, url: '' }));
+    api.config().then((c) => setVersion(c.version)).catch(() => undefined);
+  }, [signedOutOn401]);
 
-  const windowStart = floorHalfHour(now) - HALF_HOUR;
-  const windowEnd = windowStart + 8 * 60 * MIN;
-  const loadGuide = useCallback(() => {
-    api.guide(windowStart, windowEnd).then(setGuide).catch(() => setGuide({ from: windowStart, to: windowEnd, channels: {} }));
-  }, [windowStart, windowEnd]);
-  useEffect(() => { loadGuide(); }, [loadGuide]);
+  useEffect(() => { window.history.replaceState(null, '', view === 'dvr' ? '#dvr' : window.location.pathname); }, [view]);
+
+  const refreshRecordings = useCallback(() => {
+    if (!recorder?.configured) { setRecordings(null); return; }
+    api.recordings()
+      .then((r) => { setRecordings(r); setRecError(null); })
+      .catch((e) => { if (!signedOutOn401(e)) setRecError(e.message); });
+  }, [recorder, signedOutOn401]);
+
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000);
+    refreshRecordings();
+    if (!recorder?.configured) return;
+    const t = setInterval(refreshRecordings, 30_000);
     return () => clearInterval(t);
-  }, []);
-  useEffect(() => { sessionSet('dptv.view', view); }, [view]);
-  useEffect(() => { sessionSet('dptv.category', category); }, [category]);
+  }, [recorder, refreshRecordings]);
 
-  const shown = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return channels.filter((c) => (category === ALL || c.categoryId === category) && (!q || c.name.toLowerCase().includes(q)));
-  }, [channels, category, query]);
+  const byProgramme = useMemo(() => {
+    const m = new Map<string, Recording>();
+    // Oldest first, so the newest attempt at a programme wins.
+    for (const r of [...(recordings || [])].reverse()) if (r.status !== 'cancelled') m.set(`${r.channelId}|${r.start}|${r.stop}`, r);
+    return m;
+  }, [recordings]);
 
-  const programmesOf = (c: Channel | null): Programme[] => (c?.epgId && guide?.channels[c.epgId]) || [];
-  const onNow = (c: Channel | null) => programmesOf(c).find((p) => p.start <= now && p.stop > now);
-  const nowNext = programmesOf(playing).filter((p) => p.stop > now).slice(0, 2);
+  const rec: RecordActions = {
+    configured: Boolean(recorder?.configured),
+    recordingOf: useCallback((c: Channel, p: Programme) => byProgramme.get(`${c.id}|${p.start}|${p.stop}`), [byProgramme]),
+    record: async (c, p) => {
+      const r = await api.record(c, p);
+      setRecordings((list) => [r, ...(list || []).filter((x) => x.id !== r.id)]);
+      setTimeout(refreshRecordings, 2000);
+    },
+    remove: async (r) => {
+      await api.removeRecording(r);
+      setRecordings((list) => (list || []).filter((x) => x.id !== r.id));
+      setTimeout(refreshRecordings, 1000);
+    },
+    openSettings: () => setSettingsOpen(true),
+  };
+
+  function toggleFavourite(id: string) {
+    setFavourites((f) => {
+      const next = new Set(f);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      localSet(favKey, JSON.stringify([...next]));
+      return next;
+    });
+  }
 
   async function signOut() {
     await api.logout().catch(() => undefined);
@@ -59,85 +96,71 @@ export function Watch({ user, sso, onSignedOut }: { user: string; sso: boolean; 
     onSignedOut();
   }
 
+  const active = (recordings || []).filter((r) => r.status === 'recording').length;
+  const scheduled = (recordings || []).filter((r) => r.status === 'scheduled').length;
+
   return (
     <div className="watch">
       <header>
-        <span className="brand">DPTV</span>
+        <Brand />
         <nav>
-          <button className={view === 'guide' ? 'tab on' : 'tab'} onClick={() => setView('guide')}>TV Guide</button>
           <button className={view === 'live' ? 'tab on' : 'tab'} onClick={() => setView('live')}>Live TV</button>
+          <button className={view === 'dvr' ? 'tab on' : 'tab'} onClick={() => setView('dvr')}>
+            DVR
+            {active > 0 && <span className="badge red" title={`${active} recording now`}>{active}</span>}
+            {active === 0 && scheduled > 0 && <span className="badge" title={`${scheduled} scheduled`}>{scheduled}</span>}
+          </button>
         </nav>
-        <input className="search" placeholder="Search channels" value={query} onChange={(e) => setQuery(e.target.value)} />
-        <span className="muted user">{user}</span>
-        {sso && <button className="link muted" onClick={changeLogin}>Change login</button>}
-        <button className="link" onClick={signOut}>Sign out</button>
+        {view === 'live' && (
+          <input className="search" type="search" placeholder="Search channels" value={query} onChange={(e) => setQuery(e.target.value)} />
+        )}
+        <div className="header-end">
+          <span className="muted user">{user}</span>
+          <button className="icon-btn" onClick={() => setSettingsOpen(true)} title="Settings" aria-label="Settings">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z" /></svg>
+          </button>
+        </div>
       </header>
       {error && <div className="banner error">{error}</div>}
-      <div className="body">
-        <aside className="categories">
-          <button className={category === ALL ? 'cat on' : 'cat'} onClick={() => setCategory(ALL)}>All channels <span className="muted">{channels.length}</span></button>
-          {categories.map((c) => (
-            <button key={c.id} className={category === c.id ? 'cat on' : 'cat'} onClick={() => setCategory(c.id)}>{c.name}</button>
-          ))}
-        </aside>
-        <main>
-          <section className="top">
-            <Player channelId={playing?.id ?? null} title={playing?.name} />
-            <div className="info">
-              {playing ? (
-                <>
-                  <div className="info-channel">
-                    {playing.logo && <img src={playing.logo} alt="" />}
-                    <span>{playing.num != null && <b>{playing.num} </b>}{playing.name}</span>
-                  </div>
-                  {nowNext.length === 0 && <p className="muted">No guide for this channel</p>}
-                  {nowNext.map((p, i) => (
-                    <div key={p.start} className="info-prog">
-                      <div className="muted">{i === 0 ? 'Now' : 'Next'} · {clock(p.start)}–{clock(p.stop)}</div>
-                      <div className="info-title">{p.title}</div>
-                      {i === 0 && p.desc && <p className="desc">{p.desc}</p>}
-                    </div>
-                  ))}
-                </>
-              ) : <p className="muted">Pick a channel from the {view === 'guide' ? 'guide' : 'list'}.</p>}
-            </div>
-          </section>
-          {view === 'guide' ? (
-            <GuideGrid
-              channels={shown}
-              guide={guide}
-              from={windowStart}
-              to={windowEnd}
-              now={now}
-              playingId={playing?.id ?? null}
-              onPlay={setPlaying}
-            />
-          ) : (
-            <ul className="channel-list">
-              {shown.map((c) => {
-                const p = onNow(c);
-                return (
-                  <li key={c.id}>
-                    <button className={playing?.id === c.id ? 'channel on' : 'channel'} onClick={() => setPlaying(c)}>
-                      <span className="num">{c.num ?? ''}</span>
-                      {c.logo ? <img src={c.logo} alt="" loading="lazy" /> : <span className="logo-blank" />}
-                      <span className="name">{c.name}</span>
-                      <span className="now muted">{p ? `${p.title} · until ${clock(p.stop)}` : ''}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </main>
-      </div>
+      {loading && <div className="loading-bar" />}
+      {view === 'live' ? (
+        <LiveTv categories={categories} channels={channels} query={query} favourites={favourites} toggleFavourite={toggleFavourite} rec={rec} />
+      ) : (
+        <Dvr
+          recordings={recordings}
+          error={recError}
+          configured={rec.configured}
+          channels={channels}
+          onRemove={rec.remove}
+          onRefresh={refreshRecordings}
+          openSettings={() => setSettingsOpen(true)}
+        />
+      )}
+      {settingsOpen && (
+        <Settings
+          recorder={recorder}
+          onRecorder={setRecorder}
+          user={user}
+          sso={sso}
+          version={version}
+          onClose={() => setSettingsOpen(false)}
+          onSignOut={signOut}
+          onChangeLogin={changeLogin}
+        />
+      )}
     </div>
   );
 }
 
-function sessionGet(key: string): string | null {
-  try { return sessionStorage.getItem(key); } catch { return null; }
-}
-function sessionSet(key: string, value: string) {
-  try { sessionStorage.setItem(key, value); } catch { /* private window */ }
+/** DPTV-Player's wordmark: the green play glyph and DPTV PLAYER in Barlow Condensed. */
+export function Brand() {
+  return (
+    <span className="brand">
+      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+        <rect x="1" y="1" width="30" height="30" rx="8" fill="#141c17" stroke="#2a3a30" />
+        <path d="M12 9.5v13l11-6.5z" fill="var(--accent)" />
+      </svg>
+      <span className="brand-word">DPTV <span>PLAYER</span></span>
+    </span>
+  );
 }

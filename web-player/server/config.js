@@ -15,6 +15,14 @@ export const config = {
   /** How long the guide and channel list are kept before asking DPTV-Server again. */
   guideCacheMs: Number(process.env.GUIDE_CACHE_MINUTES || 30) * 60_000,
   channelsCacheMs: Number(process.env.CHANNELS_CACHE_MINUTES || 5) * 60_000,
+  /**
+   * DPTV-Recorder for recordings (the DVR), for everyone. Each login can also set its own in the page's
+   * Settings. The API key is made in the recorder's Settings → Account → API keys.
+   */
+  recorder: {
+    url: (process.env.RECORDER_URL || '').trim(),
+    apiKey: (process.env.RECORDER_API_KEY || '').trim(),
+  },
   /** The release this image was built from (set by the release workflow). */
   version: process.env.DPTV_WEB_VERSION || 'dev',
   /**
