@@ -168,6 +168,9 @@
     <string name="content_catchup_jump_exact">Scegli l’orario esatto…</string>
     <!-- Translators: TV remote instructions in the exact-time picker. "OK" is the select/enter button on the remote; keep whatever name that button is given elsewhere in this app. -->
     <string name="content_catchup_jump_hint">Premi OK su giorno, ora o minuto, modificalo con su e giù, poi premi di nuovo OK.</string>
+    <string name="content_catchup_jump_programme_start">Inizio di “<xliff:g id="title">%1$s</xliff:g>”</string>
+    <string name="content_catchup_jump_programme_start_untitled">Inizio del programma</string>
+    <string name="content_catchup_jump_programme_start_at">Iniziato alle <xliff:g id="time">%1$s</xliff:g></string>
     <string name="content_epg_match_prompt">Scegli il canale della guida per “<xliff:g id="channel">%1$s</xliff:g>”.</string>
     <string name="content_epg_match_prompt_current">Scegli il canale della guida per “<xliff:g id="channel">%1$s</xliff:g>”. Attuale: <xliff:g id="match">%2$s</xliff:g></string>
     <string name="content_search_guide_channels">Cerca canali della guida…</string>
