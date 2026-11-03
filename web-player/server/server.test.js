@@ -115,6 +115,11 @@ test('signed in: channels, guide and the stream relayed through the redirect', a
 
   const guide = await (await get('/api/guide')).json();
   assert.equal(guide.channels.sky1[0].title, 'Rugby');
+  const batch = await (await fetch(`${base}/api/guide`, {
+    method: 'POST', headers: { cookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: Date.now() - 3_600_000, to: Date.now() + 3_600_000, ids: ['sky1', 'none'] }),
+  })).json();
+  assert.deepEqual(Object.keys(batch.channels), ['sky1']);
 
   const stream = await get('/api/live/7/stream');
   assert.equal(stream.status, 200);

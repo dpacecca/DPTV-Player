@@ -2,16 +2,38 @@
 
 Part of [DPTV-Player](../README.md): released with it, as a Docker image.
 
-Watch **Live TV** and browse the **TV guide** in a browser, signed in to **DPTV-Server** with an XC login,
+Watch **Live TV**, browse the **TV guide** and **record** (through DPTV-Recorder) in a browser, signed in to **DPTV-Server** with an XC login,
 the same login the TVs use. Runs as one small Docker container (Unraid template included).
 
-- **Live TV**: categories, a channel list with what's on now, search.
-- **TV Guide**: a timeline of programmes with the now-line; click a channel or programme to watch.
+Laid out like DPTV-Player's Live TV on Android (v2): the video and what's on at the top, day chips, then
+the categories panel and the guide (the CHANNEL column with logo tiles and "CH n", programmes on a timeline,
+the now-line, LIVE / RECORDING / CATCH-UP tags), in the app's green look (Barlow Condensed, IBM Plex Mono).
+
+- **Live TV + guide**: one screen. Click a channel to watch it; click a programme for its details and
+  **Record**; double-click what's on now, or the video, for full screen. Seven days ahead, search,
+  favourites (kept in the browser). Only the rows in view are drawn and their guide loaded, so a playlist of
+  thousands of channels stays fast.
+- **DVR**: the recordings on DPTV-Recorder - recorded, scheduled, recording now, failed - by date or A-Z.
+  Play one in the page (seekable), cancel, stop or delete it.
 - **The player**: the container relays each channel as one continuous MPEG-TS stream and the page plays it
   with [mpegts.js](https://github.com/xqq/mpegts.js). No transcoding, so very little CPU.
 
 Your login never reaches the browser: it is sealed (AES-GCM) into an HttpOnly cookie that only the
 container can read, and every request to DPTV-Server and the provider is made by the container.
+
+## Recording (DVR)
+
+Recordings are made by [DPTV-Recorder](https://github.com/dpacecca/dptv-recorder), the same server DPTV-Player
+on the TV records to, so they happen whether the page is open or not. In DPTV-Recorder make an API key
+(**Settings → Account → API keys**), then either:
+
+- set `RECORDER_URL` and `RECORDER_API_KEY` on the container (one recorder for everyone), or
+- open **Settings** (the gear) in DPTV Web and enter the recorder's address and key (per login; kept
+  sealed in `/data/recorder-settings.json`, it wins over the container's).
+
+The key never reaches the browser: DPTV Web makes every call, and relays a recording's file (with seeking).
+Recording a programme that already aired uses the provider's archive (catch-up), as on the TV.
+`.ts` recordings play through mpegts.js; `.mkv` ones play in the browser's own player (Chrome and Edge).
 
 ## Single sign-on with Authentik
 
@@ -40,9 +62,12 @@ login they all use.
 - **Codecs**: H.264 channels. **HEVC channels (most 4K) don't play** in browsers.
 - **Connections**: a channel playing in the browser uses one connection of the playlist's line, like a
   TV. If the line is busy, the provider refuses it and the player says so.
-- Live TV and the guide only: no Movies / TV Shows, recordings or shared profile yet.
+- No Movies / TV Shows, live pause/rewind or shared profile yet.
 
 ## Install on Unraid
+
+The template's icon is `web-player/icon.png` (source `icon.svg`): DPTV-Player's green play tile with a
+browser badge.
 
 1. Copy `unraid-template.xml` to the flash drive as
    `/boot/config/plugins/dockerMan/templates-user/my-dptv-web.xml` (the repository is private, so
@@ -73,6 +98,8 @@ See `docker-compose.yml`.
 | `OIDC_SCOPES` | `openid profile email` | |
 | `OIDC_BUTTON_LABEL` | `Sign in with Authentik` | |
 | `SSO_XC_USERNAME` / `SSO_XC_PASSWORD` | | One XC login every SSO user uses until they link their own. |
+| `RECORDER_URL` | | DPTV-Recorder for the DVR, e.g. `http://192.168.1.10:3000`. Each login can also set its own. |
+| `RECORDER_API_KEY` | | An API key from DPTV-Recorder (Settings → Account → API keys). |
 | `GUIDE_CACHE_MINUTES` | `30` | How long the guide is kept before fetching it again. |
 | `CHANNELS_CACHE_MINUTES` | `5` | How long the channel list is kept. |
 

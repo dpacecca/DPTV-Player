@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config, sessionKey } from './config.js';
 import { createLinkStore } from './links.js';
+import { recorderRouter } from './recorder.js';
 import { apiRouter } from './routes.js';
 import { createSessions } from './session.js';
 import { ssoRouter } from './sso.js';
@@ -18,6 +19,7 @@ export function createApp() {
   const sessions = createSessions(sessionKey(), { secure: config.cookieSecure });
   app.get('/healthz', (req, res) => res.json({ ok: true }));
   app.use('/api/auth', ssoRouter(sessions, createLinkStore(config.dataDir, sessions)));
+  app.use('/api/dvr', recorderRouter(sessions));
   app.use('/api', apiRouter(sessions));
   app.use(express.static(webDir, { index: false, maxAge: '1h' }));
   // The single-page app answers every other path.
