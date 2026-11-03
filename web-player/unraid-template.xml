@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>dptv-web</Name>
-  <Repository>dpacecca/dptv-web:latest</Repository>
-  <Registry>https://hub.docker.com/r/dpacecca/dptv-web</Registry>
+  <Repository>dpacecca/dptv-player:latest</Repository>
+  <Registry>https://hub.docker.com/r/dpacecca/dptv-player</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>sh</Shell>

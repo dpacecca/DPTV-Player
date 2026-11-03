@@ -462,7 +462,7 @@ jobs:
           build-args: |
             VERSION=${{ steps.hub.outputs.version }}
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/dptv-web:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/dptv-web:${{ steps.hub.outputs.version }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/dptv-player:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/dptv-player:${{ steps.hub.outputs.version }}
           cache-from: type=gha,scope=dptv-web
           cache-to: type=gha,mode=max,scope=dptv-web

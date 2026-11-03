@@ -1,6 +1,6 @@
 services:
   dptv-web:
-    image: dpacecca/dptv-web:latest
+    image: dpacecca/dptv-player:latest
     # build: .   # or build it here instead of pulling from Docker Hub
     container_name: dptv-web
     ports:
