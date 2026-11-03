@@ -105,7 +105,18 @@ private const val TRACK_POLL_TRIES = 20
  *  Counted from the stall, which itself only starts once the buffer (~10s) has run dry. */
 private const val RECONNECT_NOTICE_AFTER_MS = 10_000L
 
-internal enum class HudDialog { NONE, AUDIO, SUBS, SPEED, ZOOM, QUALITY, VOLUME, JUMP_BACK, SLEEP_TIMER }
+internal enum class HudDialog { NONE, AUDIO, SUBS, SPEED, ZOOM, QUALITY, VOLUME, JUMP_BACK, SLEEP_TIMER, SOURCES }
+
+/**
+ * "Sources": the other versions of the live channel playing ([tv.own.owntv.core.live.ChannelVersions]).
+ * [load] is read as the list opens, never on a zap; [playingId] marks the one on screen; [onPick]
+ * tunes the pick through Live TV's normal tune.
+ */
+class HudSources(
+    val load: suspend () -> List<tv.own.owntv.core.live.ChannelVersion>,
+    val playingId: Long,
+    val onPick: (tv.own.owntv.core.database.entity.ChannelEntity) -> Unit,
+)
 
 /** What the top-left channel OSD shows for direct tune: the digits being typed, the channel a number
  *  resolved to, or a failure message. All three render as the same card as the channel OSD. */
@@ -211,6 +222,17 @@ fun PlayerHud(
     // N6 — Settings → "Left and right rewind live TV": with the controls hidden, Left/Right on a
     // catch-up channel scrub instead of opening the lists. Films always seek.
     liveLeftRightRewinds: Boolean = false,
+    // Sports Hub — only for a channel started from a match; all null means the plain Live player.
+    // The match's score line under the channel name, drawn only while the controls are up.
+    matchLine: (@Composable () -> Unit)? = null,
+    // The other channels showing the match, and their count for the tool's label.
+    onOtherChannels: (() -> Unit)? = null,
+    otherChannelsCount: Int = 0,
+    // The match page.
+    // A goal toast for another followed match is up: OK switches to it instead of showing the controls.
+    onToastOk: (() -> Unit)? = null,
+    // Live only: the Sources button and its list. Null hides the button.
+    sources: HudSources? = null,
     modifier: Modifier = Modifier,
 ) {
     // T14 — nothing that ticks is read in this root scope: with the controls hidden it used to recompose
@@ -845,6 +867,8 @@ fun PlayerHud(
                     liveGaps = liveGaps,
                     onOpenJumpBack = if (onJumpBack != null) { { dialog = HudDialog.JUMP_BACK } } else null,
                     onPreviousChannel = onPreviousChannel,
+                    onOtherChannels = onOtherChannels, otherChannelsCount = otherChannelsCount,
+                    hasSources = sources != null,
                     compatMode = compatMode, onToggleCompatMode = toggleCompat,
                     vodOnExo = vodOnExo, onToggleVodEngine = toggleVod,
                     onInfo = { showInfo = !showInfo }, infoOn = showInfo,
@@ -1076,6 +1100,9 @@ fun PlayerHud(
             QualityDialog(heights, pick, onSelect = { player.selectVideoQuality(it); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
         }
         HudDialog.VOLUME -> VolumeDialog(player, onDismiss = { dialog = HudDialog.NONE })
+        HudDialog.SOURCES -> sources?.let { s ->
+            SourcesDialog(s, onDismiss = { dialog = HudDialog.NONE })
+        } ?: run { dialog = HudDialog.NONE }
         HudDialog.SLEEP_TIMER -> SleepTimerDialog(
             timer = org.koin.compose.koinInject(),
             programmeEndMs = remember { sleepProgrammeEndMs?.invoke() },
