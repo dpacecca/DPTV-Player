@@ -122,6 +122,20 @@ class RecordingManager(
         recordingDao.overlapping(sourceId, startMs, stopMs, excludeId)
 
     /**
+     * This profile's other scheduled or running recordings whose windows overlap [startMs]..[stopMs],
+     * on any playlist, earliest first. What the guide names after Record (DPTV v2.9.8): both are
+     * recorded, but while they overlap they take two streams at once.
+     */
+    suspend fun overlapsFor(profileId: Long, startMs: Long, stopMs: Long, excludeId: Long = 0): List<RecordingEntity> =
+        recordingDao.observeForProfile(profileId).first()
+            .filter { other ->
+                other.id != excludeId &&
+                    (other.status == RecordingStatus.SCHEDULED || other.status == RecordingStatus.RECORDING) &&
+                    RecordingSchedule.overlaps(startMs, stopMs, other.startMs, other.stopMs)
+            }
+            .sortedBy { it.startMs }
+
+    /**
      * Schedule (or start, if its window is already open) one recording, and return the row.
      *
      * Pressing Record twice on the same programme finds the first row instead of making a second —

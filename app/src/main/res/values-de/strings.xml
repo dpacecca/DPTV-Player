@@ -81,6 +81,8 @@
     <string name="sport_dvr_sort_date">Datum</string>
     <string name="sport_dvr_sort_az">A–Z</string>
     <string name="sport_dvr_empty">Noch keine Aufnahmen. Im Guide OK auf einer Sendung gedrückt halten und Aufnehmen wählen.</string>
+    <string name="sport_record_overlap_title">Aufnahmen überschneiden sich</string>
+    <string name="sport_record_overlap_message">„%1$s“ überschneidet sich mit „%2$s“ auf %3$s. Beide werden aufgenommen. Während der Überschneidung nutzen sie zwei Streams deines Anbieters gleichzeitig – prüfe dein Verbindungslimit.</string>
     <string name="sport_dvr_hint">OK auf einer Aufnahme gedrückt halten, um sie abzuspielen oder zu löschen</string>
     <string name="sport_dvr_delete_server_message">Löscht die Aufnahme und ihre Datei vom Aufnahmeserver. Das kann nicht rückgängig gemacht werden.</string>
     <string name="sport_dvr_delete_failed_title">Aufnahme konnte nicht gelöscht werden</string>

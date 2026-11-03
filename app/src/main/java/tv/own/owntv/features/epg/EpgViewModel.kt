@@ -179,7 +179,7 @@ class EpgViewModel(
                 return@launch
             }
             val window = recordings.windowFor(programme.startMs, programme.stopMs)
-            recordings.schedule(
+            val saved = recordings.schedule(
                 tv.own.owntv.core.database.entity.RecordingEntity(
                     profileId = pid,
                     sourceId = channel.sourceId,
@@ -197,8 +197,20 @@ class EpgViewModel(
                     stopMs = window.last,
                 ),
             )
+            // (v2.9.8) Recorded either way; the user is told what it overlaps.
+            recordings.overlapsFor(pid, saved.startMs, saved.stopMs, excludeId = saved.id).firstOrNull()?.let { other ->
+                _recordingOverlap.value = RecordingOverlap(programme.title, other.title, other.channelName)
+            }
         }
     }
+
+    /** A recording just scheduled from the guide, and one already set that overlaps it. */
+    data class RecordingOverlap(val title: String, val otherTitle: String, val otherChannel: String)
+
+    private val _recordingOverlap = MutableStateFlow<RecordingOverlap?>(null)
+    /** Set after Record when the new recording overlaps another; the guide shows it until closed. */
+    val recordingOverlap: StateFlow<RecordingOverlap?> = _recordingOverlap.asStateFlow()
+    fun clearRecordingOverlap() { _recordingOverlap.value = null }
 
     /**
      * Whether Record can be offered for this programme at all: still to come, or already been on and
