@@ -247,6 +247,12 @@ fun DvrScreen(
                 text = stringResource(R.string.sport_dvr_start_over), icon = OwnTVIcon.REWIND,
                 onClick = { resumeFor = null; start(r, false) },
             )
+            // (v2.9.8) Delete here too: a press on a part-watched recording lands on this prompt, and
+            // a remote whose hold is not seen as one would otherwise never reach Delete.
+            StageMenuItem(
+                text = stringResource(R.string.common_delete), icon = OwnTVIcon.TRASH,
+                onClick = { resumeFor = null; confirmDeleteFor = r },
+            )
         }
     }
 
@@ -347,7 +353,9 @@ private fun DvrRow(
                         else if (down && okDown) okHeld = true
                         else if (!down && okDown) {
                             okDown = false
-                            if (okHeld) { okHeld = false; onMenu() } else onPlay()
+                            // (v2.9.8) Also a hold by how long OK was down, for remotes that send no repeats.
+                            val heldMs = e.nativeKeyEvent.eventTime - e.nativeKeyEvent.downTime
+                            if (okHeld || heldMs >= HOLD_MS) { okHeld = false; onMenu() } else onPlay()
                         }
                         true
                     }
@@ -380,6 +388,9 @@ private fun DvrRow(
         }
     }
 }
+
+/** How long OK must be down to count as a hold on a DVR row. */
+private const val HOLD_MS = 500L
 
 /** "1:05:09" or "42:17": where a recording was left. */
 internal fun dvrClock(ms: Long): String {
