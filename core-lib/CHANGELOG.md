@@ -30,6 +30,8 @@ Ports upstream OwnTV Core 1.0.69, without the Sports Hub.
 - **🔐 Ask for the PIN to open Settings** (community PR #47 by @Kevsosmooth)
 - **🪟 Picture-in-picture when leaving the app** (community PR #39 by @Kevsosmooth)
 - **🔑 Stalker portals: an optional username and password**
+- **⌨️ Key hints for the Sports Calendar and Leagues tabs**
+- **📚 Home says the library is still loading while a large playlist fills in** (community PR #72 by @DevenP)
 
 ### 🐛 Fixes
 - **🗑️ Delete confirmation strings for downloads and recordings**
@@ -62,6 +64,13 @@ Ports upstream OwnTV Core 1.0.69, without the Sports Hub.
 - **🔁 Live TV: a decoder that fails to start is rebuilt up to three times within "Give up after" (TV #321)**
 - **🍎 FairPlay entries: inline keys play as ClearKey; real FairPlay says it cannot play on Android**
 - **🎨 Dolby Vision profile 5 on mpv opens the device's Dolby Vision decoder (libmpv 2026.11.0, TV #313)**
+- **🏀 League cards in basketball, NFL and baseball lead with the best record**
+- **Background catalogue download keeps going after a pause; an unfinished category loads when opened** (community PR #68 by @DevenP)
+- **Background catalogue download resumes a minute after playback stops (#70)**
+- **Films tagged " - CAM" find their poster** (community PR #69 by @DevenP)
+- **Stalker series filed under films get their episodes** (community PR #67 by @DevenP)
+- **The loading note counts only the playlist Home shows**
+- **A phone with no app to save a backup file is told so**
 
 ## core-1.0.69 — 2026-10-21
 ### ✨ New features
