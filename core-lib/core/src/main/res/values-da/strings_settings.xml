@@ -792,6 +792,8 @@
     <string name="settings_sources_test_expiry_none">Ingen udløbsdato oplyst</string>
     <string name="settings_sources_info">Info</string>
     <string name="settings_sources_retest">Test igen</string>
+    <string name="settings_sources_ignore_limit">Ignorer forbindelsesgrænse</string>
+    <string name="settings_sources_ignore_limit_on">Forbindelsesgrænsen ignoreres: Multivisning og optagelser kan åbne flere streams, end denne playliste angiver. En stream, som udbyderen afviser, siger det stadig.</string>
     <string name="settings_sources_probe_title">Vil du teste denne playliste?</string>
     <string name="settings_sources_probe_warning">Mange udbydere oplyser aldrig, hvor mange kanaler du må se samtidig, så DPTV-Player finder ud af det ved at åbne nogle stykker og se, hvilke der overlever. Alt, der afspilles nu, stopper, og det kan tage op til to minutter.</string>
     <string name="settings_sources_probe_running">Kontrollerer, hvor mange kanaler denne udbyder tillader… (<xliff:g id="current">%1$d</xliff:g> af <xliff:g id="total">%2$d</xliff:g>)</string>
