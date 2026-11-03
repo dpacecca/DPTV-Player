@@ -91,32 +91,56 @@ export function apiRouter(sessions) {
     res.json((data?.epg_listings || []).map(decodeShortEpg));
   }));
 
-  /**
-   * The guide for [from, to) (epoch ms), keyed by the channels' EPG ids. The whole XMLTV is read once per
-   * GUIDE_CACHE_MINUTES and windows are cut from it.
-   */
-  router.get('/guide', wrap(async (req, res) => {
-    const now = Date.now();
-    const from = Number(req.query.from) || now - 60 * 60_000;
-    const to = Number(req.query.to) || now + 6 * 60 * 60_000;
-    const ids = req.query.ids ? new Set(String(req.query.ids).split(',')) : null;
-    const guide = await guideCache(loginKey(req.login), async () => {
-      let upstream;
-      try {
-        upstream = await fetch(xmltvUrl(req.login), { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(120_000) });
-      } catch (err) {
-        throw new XcError(502, `The guide can't be fetched (${err.name})`);
-      }
-      if (!upstream.ok || !upstream.body) throw new XcError(502, `The guide answered ${upstream.status}`);
-      return parseXmltv(Readable.fromWeb(upstream.body), { fromMs: Date.now() - 3 * 60 * 60_000 });
-    });
+  /** The whole XMLTV, read once per GUIDE_CACHE_MINUTES; windows are cut from it. */
+  const loadGuide = (login) => guideCache(loginKey(login), async () => {
+    let upstream;
+    try {
+      upstream = await fetch(xmltvUrl(login), { headers: { 'User-Agent': config.userAgent }, signal: AbortSignal.timeout(120_000) });
+    } catch (err) {
+      throw new XcError(502, `The guide can't be fetched (${err.name})`);
+    }
+    if (!upstream.ok || !upstream.body) throw new XcError(502, `The guide answered ${upstream.status}`);
+    return parseXmltv(Readable.fromWeb(upstream.body), { fromMs: Date.now() - 3 * 60 * 60_000 });
+  });
+
+  function cut(guide, from, to, ids) {
     const out = {};
+    if (ids) {
+      for (const id of ids) {
+        const shown = inWindow(guide.get(id), from, to);
+        if (shown.length) out[id] = shown;
+      }
+      return out;
+    }
     for (const [id, list] of guide) {
-      if (ids && !ids.has(id)) continue;
       const shown = inWindow(list, from, to);
       if (shown.length) out[id] = shown;
     }
-    res.json({ from, to, channels: out });
+    return out;
+  }
+
+  const windowOf = (q) => {
+    const now = Date.now();
+    const from = Number(q.from) || now - 60 * 60_000;
+    const to = Number(q.to) || now + 6 * 60 * 60_000;
+    return { from, to };
+  };
+
+  /** The guide for [from, to) (epoch ms), keyed by the channels' EPG ids; ?ids=a,b limits it. */
+  router.get('/guide', wrap(async (req, res) => {
+    const { from, to } = windowOf(req.query);
+    const ids = req.query.ids ? new Set(String(req.query.ids).split(',')) : null;
+    res.json({ from, to, channels: cut(await loadGuide(req.login), from, to, ids) });
+  }));
+
+  /**
+   * The same for a batch of EPG ids in the body ({ from, to, ids }), so the page loads the guide for the
+   * rows it shows instead of every channel at once.
+   */
+  router.post('/guide', express.json({ limit: '1mb' }), wrap(async (req, res) => {
+    const { from, to } = windowOf(req.body || {});
+    const ids = Array.isArray(req.body?.ids) ? new Set(req.body.ids.map(String).slice(0, 2000)) : null;
+    res.json({ from, to, channels: cut(await loadGuide(req.login), from, to, ids) });
   }));
 
   /**
