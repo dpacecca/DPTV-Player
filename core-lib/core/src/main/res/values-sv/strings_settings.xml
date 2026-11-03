@@ -192,6 +192,7 @@
     <string name="settings_content_menus_description">Ändra ordningen på åtgärderna i menyerna för kanaler, filmer, serier och avsnitt</string>
     <!-- Translators: Hint shown above the list when arranging a long-press menu. -->
     <string name="settings_content_menus_hint">Håll in OK på en åtgärd för att plocka upp den och flytta den sedan upp och ner. Tryck på OK igen för att släppa den.</string>
+    <string name="settings_content_menus_note">Vissa åtgärder visas bara där de passar.</string>
     <string name="settings_browsing_lists">Bläddring och listor</string>
     <string name="settings_browsing_description">Kom ihåg den senaste kategorin och det senaste objektet i live-tv, filmer och serier</string>
     <string name="settings_home_root">Startskärm</string>
@@ -688,6 +689,8 @@
     <string name="settings_browsing_last_category_description">Öppna avsnittet igen i den kategori du lämnade i stället för Alla.</string>
     <string name="settings_browsing_last_item">Kom ihåg senaste objektet</string>
     <string name="settings_browsing_last_item_description">Varje kategori behåller sin egen rullningsposition i stället för att börja högst upp. Live-tv återställer även den senast fokuserade kanalen.</string>
+    <string name="settings_browsing_live_categories">Live-tv-kategorier</string>
+    <string name="settings_browsing_live_categories_description">Visas i Live-tv, programguiden, spelaren och Multivy. Med Alla kanaler avstängt öppnas Live-tv i din första kategori, eller i Favoriter om du inte har någon.</string>
     <string name="settings_catchup_player">Spela upp tv-arkiv i</string>
     <string name="settings_customize_title">Anpassa kategorier och objekt</string>
     <string name="settings_customize_pin_locked">Den här skärmen är låst med PIN.</string>

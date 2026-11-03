@@ -84,6 +84,12 @@
     <string name="content_remove_from_category">Remover desta categoria</string>
     <string name="content_download">Baixar</string>
     <string name="content_download_all_episodes">Baixar todos os episódios</string>
+    <plurals name="content_download_episodes_confirm">
+        <item quantity="one">Baixar <xliff:g id="count">%1$d</xliff:g> episódio?</item>
+        <item quantity="many">Baixar <xliff:g id="count">%1$d</xliff:g> de episódios?</item>
+        <item quantity="other">Baixar <xliff:g id="count">%1$d</xliff:g> episódios?</item>
+    </plurals>
+    <string name="content_download_episodes_confirm_message">Eles são salvos neste dispositivo e ocupam espaço de armazenamento.</string>
     <string name="content_play">Reproduzir</string>
     <string name="content_next_up">A seguir</string>
     <string name="content_favorited">Adicionado aos favoritos</string>
@@ -99,7 +105,6 @@
     <string name="content_last_watched">Assistido por último</string>
     <string name="content_play_external">Reproduzir com reprodutor externo</string>
     <string name="content_delete_subtitles">Excluir legendas do OpenSub</string>
-    <string name="content_tmdb_details">Detalhes do TMDB</string>
     <string name="content_play_trailer">Reproduzir trailer</string>
     <string name="content_refetch_tmdb">Buscar novamente os detalhes do TMDB</string>
     <string name="content_set_tmdb_name">Definir nome no TMDB</string>

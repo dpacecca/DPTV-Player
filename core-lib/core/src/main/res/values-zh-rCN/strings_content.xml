@@ -72,6 +72,10 @@
     <string name="content_remove_from_category">从此分类中移除</string>
     <string name="content_download">下载</string>
     <string name="content_download_all_episodes">下载所有集</string>
+    <plurals name="content_download_episodes_confirm">
+        <item quantity="other">要下载 <xliff:g id="count">%1$d</xliff:g> 集吗？</item>
+    </plurals>
+    <string name="content_download_episodes_confirm_message">它们会保存在此设备上并占用存储空间。</string>
     <string name="content_play">播放</string>
     <string name="content_next_up">接下来播放</string>
     <string name="content_favorited">已收藏</string>
@@ -87,7 +91,6 @@
     <string name="content_last_watched">上次观看</string>
     <string name="content_play_external">使用外部播放器播放</string>
     <string name="content_delete_subtitles">删除 OpenSub 字幕</string>
-    <string name="content_tmdb_details">TMDB 详情</string>
     <string name="content_play_trailer">播放预告片</string>
     <string name="content_refetch_tmdb">重新获取 TMDB 详情</string>
     <string name="content_set_tmdb_name">设置 TMDB 名称</string>

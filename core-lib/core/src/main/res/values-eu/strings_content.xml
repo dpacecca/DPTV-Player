@@ -60,6 +60,11 @@
     <string name="content_move_to_category">Mugitu kategoriara…</string>
     <string name="content_download">Deskargatu</string>
     <string name="content_download_all_episodes">Deskargatu atal guztiak</string>
+    <plurals name="content_download_episodes_confirm">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> atal deskargatu?</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> atal deskargatu?</item>
+    </plurals>
+    <string name="content_download_episodes_confirm_message">Gailu honetan gordetzen dira eta biltegiratze-lekua hartzen dute.</string>
     <string name="content_play">Erreproduzitu</string>
     <string name="content_next_up">Hurrengoa</string>
     <string name="content_favorited">Gogokoetan</string>
@@ -75,7 +80,6 @@
     <string name="content_last_watched">Azkena ikusia</string>
     <string name="content_play_external">Erreproduzitu kanpoko erreproduzigailuarekin</string>
     <string name="content_delete_subtitles">Ezabatu OpenSub azpitituluak</string>
-    <string name="content_tmdb_details">TMDB xehetasunak</string>
     <string name="content_play_trailer">Erreproduzitu trailerra</string>
     <string name="content_refetch_tmdb">Berreskuratu TMDB xehetasunak</string>
     <string name="content_set_tmdb_name">Ezarri TMDB izena</string>

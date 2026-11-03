@@ -78,6 +78,11 @@
     <string name="content_remove_from_category">এই বিভাগ থেকে সরান</string>
     <string name="content_download">ডাউনলোড করুন</string>
     <string name="content_download_all_episodes">সব পর্ব ডাউনলোড করুন</string>
+    <plurals name="content_download_episodes_confirm">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g>টি পর্ব ডাউনলোড করবেন?</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g>টি পর্ব ডাউনলোড করবেন?</item>
+    </plurals>
+    <string name="content_download_episodes_confirm_message">এগুলি এই ডিভাইসে সংরক্ষিত হয় এবং স্টোরেজের জায়গা নেয়।</string>
     <string name="content_play">চালান</string>
     <string name="content_next_up">এরপর</string>
     <string name="content_favorited">পছন্দের হিসেবে যোগ করা হয়েছে</string>
@@ -93,7 +98,6 @@
     <string name="content_last_watched">সর্বশেষ দেখা</string>
     <string name="content_play_external">বাহ্যিক প্লেয়ার দিয়ে চালান</string>
     <string name="content_delete_subtitles">OpenSub সাবটাইটেল মুছুন</string>
-    <string name="content_tmdb_details">TMDB-এর বিস্তারিত</string>
     <string name="content_play_trailer">ট্রেলার চালান</string>
     <string name="content_refetch_tmdb">TMDB-এর বিস্তারিত আবার আনুন</string>
     <string name="content_set_tmdb_name">TMDB নাম সেট করুন</string>

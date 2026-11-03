@@ -192,6 +192,7 @@
     <string name="settings_content_menus_description">Omarrangér handlingerne i menuerne for kanaler, film, serier og afsnit</string>
     <!-- Translators: Hint shown above the list when arranging a long-press menu. -->
     <string name="settings_content_menus_hint">Hold OK nede på en handling for at tage den op, og flyt den så op og ned. Tryk på OK igen for at slippe den.</string>
+    <string name="settings_content_menus_note">Nogle handlinger vises kun, hvor de giver mening.</string>
     <string name="settings_browsing_lists">Navigation og lister</string>
     <string name="settings_browsing_description">Husk den seneste kategori og det seneste element i Live-tv, film og serier</string>
     <string name="settings_home_root">Startskærm</string>
@@ -688,6 +689,8 @@
     <string name="settings_browsing_last_category_description">Åbn sektionen igen i den kategori, du forlod, og ikke i Alle.</string>
     <string name="settings_browsing_last_item">Husk seneste element</string>
     <string name="settings_browsing_last_item_description">Hver kategori beholder sin egen rulleposition i stedet for at starte øverst. Live-tv gendanner også den senest fokuserede kanal.</string>
+    <string name="settings_browsing_live_categories">Live-tv-kategorier</string>
+    <string name="settings_browsing_live_categories_description">Vises i Live-tv, programguiden, afspilleren og Multivisning. Med Alle kanaler slået fra åbner Live-tv i din første kategori eller i Favoritter, hvis du ingen har.</string>
     <string name="settings_catchup_player">Afspil arkiv med</string>
     <string name="settings_customize_title">Tilpas kategorier og elementer</string>
     <string name="settings_customize_pin_locked">Denne skærm er PIN-låst.</string>
