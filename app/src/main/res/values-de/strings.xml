@@ -81,6 +81,10 @@
     <string name="sport_dvr_sort_date">Datum</string>
     <string name="sport_dvr_sort_az">A–Z</string>
     <string name="sport_dvr_empty">Noch keine Aufnahmen. Im Guide OK auf einer Sendung gedrückt halten und Aufnehmen wählen.</string>
+    <string name="sport_dvr_hint">OK auf einer Aufnahme gedrückt halten, um sie abzuspielen oder zu löschen</string>
+    <string name="sport_dvr_delete_server_message">Löscht die Aufnahme und ihre Datei vom Aufnahmeserver. Das kann nicht rückgängig gemacht werden.</string>
+    <string name="sport_dvr_delete_failed_title">Aufnahme konnte nicht gelöscht werden</string>
+    <string name="sport_dvr_delete_failed_message">Der Aufnahmeserver hat „%1$s“ nicht gelöscht. Prüfe, ob er erreichbar ist, und versuche es erneut.</string>
     <string name="sport_dvr_resume">Fortsetzen ab %1$s</string>
     <string name="sport_dvr_start_over">Von vorn</string>
     <string name="sport_guide_no_info">Keine Informationen verfügbar</string>

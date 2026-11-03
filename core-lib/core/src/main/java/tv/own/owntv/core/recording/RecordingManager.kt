@@ -426,17 +426,25 @@ class RecordingManager(
 
     /** Remove the row **and** the file. The only thing in the app that deletes a recording (D2). */
     fun delete(recording: RecordingEntity) {
-        scope.launch {
-            if (!removeOnServer(recording)) return@launch
-            scheduler.cancel(recording.id)
-            engine.stop(recording.id)
-            try {
-                MediaTarget.of(context, recording.filePath)?.delete()
-                recordingDao.delete(recording)
-            } finally {
-                engine.release(recording.id)
-            }
+        scope.launch { deleteNow(recording) }
+    }
+
+    /**
+     * [delete], waited for: false when the recording server could not be told (not set up, offline, or
+     * it refused), in which case nothing is removed here either — the server still has the file, and
+     * the next sync would only bring the row back.
+     */
+    suspend fun deleteNow(recording: RecordingEntity): Boolean = withContext(Dispatchers.IO) {
+        if (!removeOnServer(recording)) return@withContext false
+        scheduler.cancel(recording.id)
+        engine.stop(recording.id)
+        try {
+            MediaTarget.of(context, recording.filePath)?.delete()
+            recordingDao.delete(recording)
+        } finally {
+            engine.release(recording.id)
         }
+        true
     }
 
     /**

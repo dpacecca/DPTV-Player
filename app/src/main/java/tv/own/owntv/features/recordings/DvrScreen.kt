@@ -57,6 +57,8 @@ import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.RecordingEntity
 import tv.own.owntv.core.model.RecordingStatus
+import tv.own.owntv.core.recording.RemoteRecordings
+import kotlinx.coroutines.launch
 import tv.own.owntv.features.epg.GuideMenuHost
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.format.rememberBestDateFormatter
@@ -91,7 +93,8 @@ internal fun dvrRows(recordings: List<RecordingEntity>, sort: DvrSort): List<Rec
 /**
  * DVR (v2.1): the recordings that are finished and can be watched, each with a still from the
  * recording, its title, when and where it was on, and the guide's synopsis. Sorted newest first or
- * A–Z. OK plays it; holding OK (or ☰) offers Play and Delete. What is recording now or scheduled is
+ * A–Z. OK plays it; holding OK (or ☰) offers Play and Delete (v2.9.7: a hint under the header says
+ * so, Delete asks first, and a server that will not delete it says so). What is recording now or scheduled is
  * counted in the header; managing those stays in the guide (Record) and Downloads › Recordings.
  */
 @Composable
@@ -122,7 +125,11 @@ fun DvrScreen(
     fun focusOf(id: Long) = rowFocus.getOrPut(id) { FocusRequester() }
     val sortFocus = remember { FocusRequester() }
     val listState = rememberLazyListState()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     var menuFor by remember { mutableStateOf<RecordingEntity?>(null) }
+    // Delete asks first, with Cancel focused: a recording is gone for good once the server deletes it.
+    var confirmDeleteFor by remember { mutableStateOf<RecordingEntity?>(null) }
+    val deleteFailed by vm.deleteFailed.collectAsStateWithLifecycle()
     // A recording that was left part-way: Resume (the default) or Start over.
     var resumeFor by remember { mutableStateOf<RecordingEntity?>(null) }
     val progressRevision by vm.progressRevision.collectAsStateWithLifecycle()
@@ -180,6 +187,12 @@ fun DvrScreen(
                 valueAccent = true,
                 onClick = { sortName = (if (sort == DvrSort.DATE) DvrSort.TITLE else DvrSort.DATE).name },
                 modifier = Modifier.focusRequester(sortFocus),
+            )
+        }
+        if (rows.isNotEmpty()) {
+            Text(
+                stringResource(R.string.sport_dvr_hint), style = stageText(17, 600), color = StageColors.Muted,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.mpx),
             )
         }
 
@@ -250,13 +263,47 @@ fun DvrScreen(
             )
             StageMenuItem(
                 text = stringResource(R.string.common_delete), icon = OwnTVIcon.TRASH,
-                onClick = {
-                    menuFor = null
-                    DvrThumbnails.delete(context, r.id)
-                    vm.delete(r)
-                },
+                onClick = { menuFor = null; confirmDeleteFor = r },
             )
         }
+    }
+
+    confirmDeleteFor?.let { r ->
+        val onServer = RemoteRecordings.remoteIdOf(r.filePath) != null
+        tv.own.owntv.ui.stage.StageConfirm(
+            title = stringResource(R.string.content_downloads_delete_title, r.title),
+            body = stringResource(if (onServer) R.string.sport_dvr_delete_server_message else R.string.recording_delete_message),
+            confirm = stringResource(R.string.common_delete),
+            focusCancel = true,
+            onConfirm = {
+                confirmDeleteFor = null
+                // Focus moves to the next recording (or the one before), as the row is about to go.
+                val index = rows.indexOfFirst { it.id == r.id }
+                val next = (rows.getOrNull(index + 1) ?: rows.getOrNull(index - 1))?.id
+                vm.delete(r) {
+                    DvrThumbnails.delete(context, r.id)
+                    scope.launch {
+                        withFrameNanos { }
+                        if (next != null) focusRow(next) else runCatching { sortFocus.requestFocus() }
+                    }
+                }
+            },
+            onCancel = {
+                confirmDeleteFor = null
+                scope.launch { withFrameNanos { }; focusRow(r.id) }
+            },
+        )
+    }
+
+    deleteFailed?.let { r ->
+        tv.own.owntv.ui.stage.StageNotice(
+            title = stringResource(R.string.sport_dvr_delete_failed_title),
+            body = stringResource(R.string.sport_dvr_delete_failed_message, r.title),
+            onDismiss = {
+                vm.clearDeleteFailed()
+                scope.launch { withFrameNanos { }; focusRow(r.id) }
+            },
+        )
     }
 }
 

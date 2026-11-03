@@ -81,6 +81,10 @@
     <string name="sport_dvr_sort_date">Date</string>
     <string name="sport_dvr_sort_az">A–Z</string>
     <string name="sport_dvr_empty">No recordings yet. In the guide, hold OK on a programme and choose Record.</string>
+    <string name="sport_dvr_hint">Hold OK on a recording to play or delete it</string>
+    <string name="sport_dvr_delete_server_message">Deletes the recording and its file from the recording server. This can\'t be undone.</string>
+    <string name="sport_dvr_delete_failed_title">Couldn\'t delete the recording</string>
+    <string name="sport_dvr_delete_failed_message">The recording server didn\'t delete “%1$s”. Check that it can be reached, then try again.</string>
     <string name="sport_dvr_resume">Resume from %1$s</string>
     <string name="sport_dvr_start_over">Start over</string>
     <string name="sport_guide_no_info">No information available</string>
