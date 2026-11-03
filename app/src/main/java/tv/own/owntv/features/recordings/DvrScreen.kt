@@ -319,6 +319,7 @@ private fun DvrRow(
 ) {
     var focused by remember { mutableStateOf(false) }
     var okDown by remember { mutableStateOf(false) }
+    var okHeld by remember { mutableStateOf(false) }
     val formatDate = rememberBestDateFormatter("EEEdMMMyyyy")
     val formatTime = rememberSystemTimeFormatter()
     val minutes = ((recording.programmeStopMs - recording.programmeStartMs) / 60_000L).toInt().coerceAtLeast(1)
@@ -333,16 +334,21 @@ private fun DvrRow(
             .fillMaxWidth()
             .heightIn(min = 196.mpx)
             .focusRequester(focus)
-            .onFocusChanged { focused = it.isFocused; if (!it.isFocused) okDown = false }
-            // Hold OK (or ☰) for Play / Delete; a press plays. Acting on release is what lets a hold differ.
+            .onFocusChanged { focused = it.isFocused; if (!it.isFocused) { okDown = false; okHeld = false } }
+            // Hold OK (or ☰) for Play / Delete; a press plays. Acting on release is what lets a hold differ,
+            // and a hold opens the menu on its release too (v2.9.7): opened while OK was still down, the
+            // release landed on the menu's Play, which went straight to Resume / Start over.
             .onPreviewKeyEvent { e ->
                 val down = e.type == KeyEventType.KeyDown
                 when (e.key) {
                     Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> {
                         val repeat = e.nativeKeyEvent.repeatCount
-                        if (down && repeat == 0) okDown = true
-                        else if (down && okDown) { okDown = false; onMenu() }
-                        else if (!down && okDown) { okDown = false; onPlay() }
+                        if (down && repeat == 0) { okDown = true; okHeld = false }
+                        else if (down && okDown) okHeld = true
+                        else if (!down && okDown) {
+                            okDown = false
+                            if (okHeld) { okHeld = false; onMenu() } else onPlay()
+                        }
                         true
                     }
                     Key.Menu -> { if (down) onMenu(); true }
