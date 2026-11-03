@@ -125,11 +125,20 @@ class LiveStreamQuirksTest {
     }
 
     @Test
-    fun `a panel caught refusing segments is remembered for every one of its channels`() {
+    fun `one channel refusing segments sends only that channel to mpv`() {
         val taught = "http://off20.example:2086/live/u/p/136875.m3u8"
         val sibling = "http://off20.example:2086/live/u/p/999.m3u8"
-        assertFalse(LiveStreamQuirks.refusesSegments(sibling))
         LiveStreamQuirks.rememberSegmentRefusal(taught)
+        LiveStreamQuirks.rememberSegmentRefusal(taught) // the same channel again is not new evidence
+        assertTrue(LiveStreamQuirks.refusesSegments(taught))
+        assertFalse(LiveStreamQuirks.refusesSegments(sibling))
+    }
+
+    @Test
+    fun `a panel caught refusing segments on two channels is remembered for every one of its channels`() {
+        val sibling = "http://off20.example:2086/live/u/p/999.m3u8"
+        LiveStreamQuirks.rememberSegmentRefusal("http://off20.example:2086/live/u/p/136875.m3u8")
+        LiveStreamQuirks.rememberSegmentRefusal("http://off20.example:2086/live/u/p/42.m3u8")
         assertTrue(LiveStreamQuirks.refusesSegments(sibling))
     }
 
