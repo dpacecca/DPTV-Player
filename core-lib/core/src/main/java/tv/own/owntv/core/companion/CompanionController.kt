@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withTimeoutOrNull
 import tv.own.owntv.core.R
+import tv.own.owntv.core.database.entity.SourceEntity
 import tv.own.owntv.core.i18n.LocaleStore
 
 /**
@@ -76,6 +77,8 @@ class CompanionController(context: Context, localeStore: LocaleStore) {
     /** Chosen ids from a [CompanionMode.SELECT_ITEMS] pick list (last selection wins). */
     private val _selections = MutableSharedFlow<Set<String>>(extraBufferCapacity = 4)
     val selections: SharedFlow<Set<String>> = _selections.asSharedFlow()
+    /** The playlist [startForSourceEdit] is editing; a submission's empty fields are filled from it. */
+    @Volatile private var editing: SourceEntity? = null
 
     /** A fresh 6-digit PIN per [start], so a leaked code is short-lived. */
     @Volatile private var currentPin: String = ""
@@ -151,6 +154,14 @@ class CompanionController(context: Context, localeStore: LocaleStore) {
 
     /** Starts the add-source companion server (the original Remote add-source flow). */
     fun start(port: Int) = startInternal(port, CompanionMode.ADD_SOURCE)
+
+    /**
+     * Starts the companion server to edit [source] from a browser. The page shows only what
+     * [CompanionSourceEdit.prefill] allows; a submission arrives on [payloads] / [lastPayload] already
+     * merged with [source], ready to pre-fill the TV's edit form.
+     */
+    fun startForSourceEdit(port: Int, source: SourceEntity) =
+        startInternal(port, CompanionMode.EDIT_SOURCE, editSource = source)
 
     /** Starts the companion server in backup-restore mode: the remote device uploads a backup JSON, emitted on [backups]. */
     fun startForBackupRestore(port: Int) = startInternal(port, CompanionMode.BACKUP_RESTORE)
@@ -235,7 +246,9 @@ class CompanionController(context: Context, localeStore: LocaleStore) {
         onAutoSyncAsk: suspend (deviceId: String) -> Boolean = { false },
         autoSyncAllowed: suspend (deviceId: String) -> Boolean = { false },
         onAutoSyncRevoke: suspend (deviceId: String) -> Unit = {},
+        editSource: SourceEntity? = null,
     ) {
+        editing = editSource
         if (port !in 1..65535) {
             _state.value = CompanionServerState.Failed(CompanionFailure.InvalidPort)
             return
@@ -249,10 +262,12 @@ class CompanionController(context: Context, localeStore: LocaleStore) {
                 pin = currentPin,
                 fontBytes = loraBytes,
                 mode = mode,
+                editPrefill = editSource?.let(CompanionSourceEdit::prefill),
                 onPayload = { raw ->
                     // An uploaded playlist becomes a real file on the TV before the payload goes any
                     // further, so what the Add Source form receives is an ordinary local path.
-                    val payload = savePlaylistUpload(raw)
+                    val saved = savePlaylistUpload(raw)
+                    val payload = editing?.let { CompanionSourceEdit.merge(it, saved) } ?: saved
                     Log.d(TAG, "Received ${payload.type} payload '${payload.name.ifBlank { "(unnamed)" }}' — forwarding to UI")
                     _lastPayload.value = payload
                     _payloads.tryEmit(payload)
@@ -383,6 +398,7 @@ class CompanionController(context: Context, localeStore: LocaleStore) {
         server.stop()
         cancelAutoSyncRequests()
         currentPin = ""
+        editing = null
         _state.value = CompanionServerState.Idle
     }
 
