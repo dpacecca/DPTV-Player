@@ -80,6 +80,27 @@ class ShellViewModel(
         }
     }
 
+    /**
+     * Set by the shell while it is up: leaves the player and Multiview and stops the preview. The profile
+     * gate calls it before it takes the screen, because the player's state lives here and outlives the
+     * shell — the profile would otherwise come back to a player whose stream the gate already freed.
+     */
+    internal var leavePlayback: (() -> Unit)? = null
+
+    /** Set by the shell while it is up: stops what plays from a category a relock seals. */
+    internal var sealedPlayback: SealedPlaybackGuard?
+        get() = relock.guard
+        set(value) { relock.guard = value }
+
+    /**
+     * Closes every category the PIN opened; the app does this whenever it leaves the screen. Call it
+     * before the engines free their streams: what is playing is read first, then stopped if now sealed.
+     */
+    fun relockCategories() = relock.leftApp()
+
+    /** Back in front: [resume] what was freed only once the relock check has stopped what it sealed. */
+    fun afterSealCheck(resume: () -> Unit) = relock.afterSealCheck(resume)
+
     /** Whether the device currently has internet (drives the offline banner). */
     val isOnline: StateFlow<Boolean> = connectivity.isOnline
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), connectivity.isOnlineNow())

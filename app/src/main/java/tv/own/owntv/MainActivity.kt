@@ -466,7 +466,7 @@ open class MainActivity : ComponentActivity() {
                                 onExitApp = { finish() },
                                 onSwitchProfile = {
                                     // Stop playback and return to the "Who's watching?" gate — no app restart.
-                                    tv.own.owntv.features.profiles.stopPlaybackForProfileGate(engines)
+                                    tv.own.owntv.features.profiles.stopPlaybackForProfileGate(shellViewModel, engines)
                                     // Force the gate open even with a single unpinned profile (cold-start gate would
                                     // skip it). requestSwitchProfile() clears the active profile
                                     // authentication and raises the request.
