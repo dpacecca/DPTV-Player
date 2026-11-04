@@ -336,6 +336,11 @@
     <string name="settings_check_updates_description">Lortu azken bertsioa GitHub Releases-etik</string>
     <string name="settings_update_startup">Bilatu eguneraketak abiatzean</string>
     <string name="settings_update_startup_description">Bilatu bertsio berri bat aplikazioa irekitzean</string>
+    <string name="settings_auto_start_boot">Abiarazi automatikoki piztean</string>
+    <string name="settings_auto_start_boot_description">Ireki OwnTV telebista pizten denean</string>
+    <string name="settings_auto_start_wake">Abiarazi automatikoki esnatzean</string>
+    <string name="settings_auto_start_wake_description">Ireki OwnTV telebista lo-egoeratik esnatzen denean</string>
+    <string name="settings_auto_start_needs_overlay">“Bistaratu beste aplikazioen gainean” behar da</string>
     <string name="settings_about">Honi buruz</string>
     <string name="settings_about_description">Bertsioa, lizentzia eta proiektuaren informazioa</string>
     <string name="settings_live_latency">Zuzeneko latentzia</string>
@@ -468,6 +473,7 @@
     <string name="settings_search_keywords_startup">abiarazi ireki hasierako orria launch open landing</string>
     <string name="settings_search_keywords_updates">github bertsioa release version</string>
     <string name="settings_search_keywords_update_auto">eguneraketa automatikoa bertsio berria auto update new version</string>
+    <string name="settings_search_keywords_auto_start">abioa piztu esnatu lo egonean automatikoki ireki</string>
     <string name="settings_language_default">Lehenetsia (ingelesa)</string>
     <string name="settings_language_device">Gailuaren hizkuntza</string>
     <string name="settings_language_arabic">Arabiera</string>
@@ -1538,4 +1544,141 @@
     <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · telefono honetatik</string>
     <string name="settings_line_glass_switch_mobile">Barrak, panelak, menuak eta leiho gainerakorrak izoztuta daude</string>
     <string name="settings_help_catchup_timezone">Berrikusteak zure hornitzailearen artxiboko saioak erreproduzitzen ditu. Automatikoak hornitzaileak adierazten duen ordu-zona erabiltzen du, edo telebistaren erlojua, ez badu bat ere adierazten; aukeratu UTC desplazamendu finko bat berrikustea oraindik ordu okerrean hasten bada. Hemen aukeratzen duzu berrikusteak zein erreproduzitzaile erabiltzen duen ere.</string>
+    <string name="settings_help_theme">Iluna da OwnTV diseinatuta dagoen gaia. Sistemak telebistaren ezarpen propioa jarraitzen du dagoen tokian; Argiak gela argitsu batentzat balio du.</string>
+    <string name="settings_help_accent">Botoiak, fokuaren distira, aurrerapen-barrak eta nabarmentzeak tindatzen ditu leku guztietan. Aukeratu aurrezarpen bat, edo sakatu Ados paletarako eta edozein hex koderako.</string>
+    <string name="settings_help_focus">Fokua duen edozeinen inguruan marrazten den eraztuna. Aukeratu bere kolorea eta lodiera, sofatik jarraitzeko erraza izan dadin.</string>
+    <string name="settings_help_fonts">OwnTV osoan erabiltzen den letra-tipoa, eta testua zein handi marrazten den. Leiho gainerakorrek letra-tipo bera erabiltzen dute.</string>
+    <string name="settings_help_popup_size">Leiho gainerakorrak, menuak eta elkarrizketa-koadroak osotasunean handiago edo txikiago egiten ditu. Erabili leiho gainerakorrak estuak sentitzen direnean edo pantaila gehiegi estaltzen dutenean.</string>
+    <string name="settings_help_zoom">Pantailako dena eskalatzen du. Handiagoa errazagoa da urrunetik irakurtzeko; txikiagoak elementu gehiago sartzen ditu pantailan. 85%% azpitik, memoria gutxiko telebista-kutxek memoria agor dezakete.</string>
+    <string name="settings_help_animations">Orriak, menuak eta fokua leunki mugitzen dira hau aktibatuta dagoen bitartean. Desaktibatuta, aldaketa guztiak berehalakoak dira.</string>
+    <string name="settings_help_weather">Tenperatura eta zure herria erakusten ditu erlojuaren ondoan. Ezarri kokalekua eskuz automatikoak huts egiten duenean — VPN baten atzean, adibidez — eta aukeratu Celsius edo Fahrenheit.</string>
+    <string name="settings_help_navigation">Flotatzailea: menua kapsula txiki gisa geratzen da edukiaren gainean eta irekitzen da ezkerrera mugitzean. Ainguratua: bere lekua hartzen du beti. Tamainak zenbat erakusten duen ezartzen du, ikonoetatik kopuru eta xehetasunetara.</string>
+    <string name="settings_help_live_layout">Eszenak kategoriak ◀ botoiarekin irristatzen den orri gisa erakusten ditu, kanal-zerrendak eta aurrebistak lekua izan dezaten. Bereiziak kategoriak pantailan mantentzen ditu zerrendaren ondoan.</string>
+    <string name="settings_help_vod_layout">Zinematografikoak fokuan dagoen izenburuaren azala erakusten du poster-sareta baten atzean. Bereiziak kategoriak, izenburuak eta xehetasunak alboz albo erakusten ditu.</string>
+    <string name="settings_help_home">Aukeratu Hasierak zein errenkada erakusten dituen eta zer ordenatan, eta Orain joeran errenkadak nolako itxura duen.</string>
+    <string name="settings_help_customize">Ezkutatu inoiz ikusten ez dituzun kategoriak eta elementuak, eman kategoriei zure izenak eta jarri zure ordenan. Ezkutatutakoak hemen itzultzen dira, inoiz ez galduta.</string>
+    <string name="settings_help_app_icon">Zure telebistaren hasierako pantailako OwnTV ikonoa. Baliteke abiarazleak une bat behar izatea aldaketa erakusteko.</string>
+    <string name="settings_help_brand_accent">Menuko, Honi buruz ataleko eta konfigurazioko OwnTV logotipoak bere play triangelua zure azentu-koloreaz erakusten du. Hasierako pantailako ikonoak bere koloreak mantentzen ditu.</string>
+    <string name="settings_help_startup">OwnTVk abiatzean zer erakusten duen: Hasiera, azkenekoz ikusi duzun kanala, zure gogokoak, edo zuk aukeratutako kanal bat.</string>
+    <string name="settings_help_check_updates">GitHuben OwnTV berriago bat bilatzen du orain eta instalatzea eskaintzen du. Zure erreprodukzio-zerrendak, gogokoak eta ezarpenak berdin geratzen dira.</string>
+    <string name="settings_help_update_startup">Bertsio berri bat bilatzen du OwnTV abiatzen den bakoitzean eta jakinarazten dizu dagoenean. Ez da ezer instalatzen galdetu gabe.</string>
+    <string name="settings_help_auto_start_boot">OwnTV bere kabuz irekitzen du telebista abiarazi ondoren, Aplikazioaren abioa ezarpenean aukeratutako pantailan. Android-ek aplikazio bati bere kabuz irekitzen uzten dio beste aplikazioen gainean bistara badaiteke soilik; beraz, hau aktibatzean baimen horren pantaila irekitzen da. Telebista batzuek ez dute eskaintzen, eta haietan abiarazte automatikoak ezin du funtzionatu.</string>
+    <string name="settings_help_auto_start_wake">OwnTV irekitzen du telebista lo-egoeratik esnatzen den bakoitzean, beste aplikazio baterako esnatu baduzu ere. Aplikazioaren abioak kanal bat irekitzen badu, esnatze bakoitzak jario hori abiarazten du. Aktibatuta dagoen bitartean, OwnTV-k atzeko planoko zerbitzu txiki bat mantentzen du jakinarazpen isil batekin. Piztean abiaraztea bezala, beste aplikazioen gainean bistaratzeko baimena behar du.</string>
+    <string name="settings_help_dns">Zure hornitzailearen helbideak zuk aukeratutako DNS zerbitzari batekin bilatzen ditu zure sarearen berberaren ordez — baliagarria zure sareak blokeatu edo birbideratzen dituenean.</string>
+    <string name="settings_help_live_engine">ExoPlayerrek kanalak askoz azkarrago irekitzen ditu eta zuzeneko azpitituluak dituen bakarra da. mpv-k ExoPlayerrek ezin dituen kanalak erreproduzitzen ditu, audio bereziko batzuk barne. Aukera konbinatuek beste erreproduzigailua saiatzen dute lehenengoak huts egiten duenean.</string>
+    <string name="settings_help_hw">Telebistaren hardware-deskodetzailea erabiltzen du: 4K leuna eta bero gutxiago. Desaktibatu soilik jario batzuk eten-etenka badabiltza edo blokeak erakusten badituzte; orduan software bidezko deskodetzaileak egiten du lana.</string>
+    <string name="settings_help_volume">Kanal, film eta atal guztiak zein bolumenetan hasten diren. 100%% gainetik jario isilak anplifikatzen dira. Erreproduzigailuan aldatzen duzun bolumena izenburu horretarako gordetzen da berrezarri arte.</string>
+    <string name="settings_help_channel_numbers">Zure hornitzailearen kanal-zenbakia izenaren ondoan erakusten du Zuzeneko telebistaren zerrendan, kanal-zerrendaren gainjartzean eta erreproduzigailuan, eta pantaila osoan urrutiko agintean zenbaki bat idazten uzten du kanal horretara saltatzeko.</string>
+    <string name="settings_help_seek_step">Zenbat saltatzen duten atzeratzeak eta aurreratzeak film edo atal batean sakatze bakarrarekin. Tekla sakatuta mantentzeak saltatzen jarraitzen du.</string>
+    <string name="settings_help_zoom_mode">Irudiak pantaila nola betetzen duen erreprodukzioa hasten denean. Egokitzeak irudi osoa erakusten du; beste aukerek betetzen, luzatzen edo forma bat behartzen dute. Erreproduzigailuan aldatutako zooma izenburu horretarako gordetzen da.</string>
+    <string name="settings_help_sub_lang">Hizkuntza honetako azpitituluak bere kabuz aktibatzen dira jarioak dituenean. Bestela azpitituluak desaktibatuta geratzen dira erreproduzigailuan pista bat aukeratu arte.</string>
+    <string name="settings_help_live_preview">Fokuan dagoen kanala Zuzeneko telebistaren zerrendaren ondoko aurrebistan erreproduzitzen da, zer dagoen ikus dezazun ireki aurretik. Aurrebistarentzat lekua duen diseinu bat behar du.</string>
+    <string name="settings_help_preview_audio">Aurrebistaren soinua ere erreproduzitzen du, ez irudia bakarrik. Desaktibatuta arakatzea isilik mantentzen du.</string>
+    <string name="settings_help_timeshift_window">Berrikusterik gabeko kanal batean Pausatu eta atzeratu zuzeneko telebistak zenbat atzera egin dezakeen. Luzeagoak kanalaren zati handiago bat mantentzen du gailu honen biltegiratzean.</string>
+    <string name="settings_help_resume">Galdetu jarraitzeko aukerak Jarraitu edo Hasi berriro eskaintzen du film edo atal batek gordetako posizioa duenean. Jarraitu beti gelditu zinen tokian jarraitzen du; Ez jarraitu inoiz hasieratik hasten da.</string>
+    <string name="settings_help_mini">Arakatzen ari zaren bitartean kanal bat izkina batean martxan mantentzen duen erreproduzigailu txikia. Aukeratu bere tamaina eta kokatzen den izkina.</string>
+    <string name="settings_help_pip">Sakatu Hasiera edo ireki beste aplikazio bat bideo bat pantaila osoan edo mini erreproduzigailuan erreproduzitzen ari den bitartean, eta leiho txiki batean jarraituko du telebistaren gainerakoaren gainean. Ireki berriro OwnTV pantaila osora itzultzeko; itxi leihoa erreprodukzioa gelditzeko. Multiview OwnTV barruan geratzen da.</string>
+    <string name="settings_key_palette">Paleta</string>
+    <string name="settings_live_preview_note">Aldaketak hemen erakusten dira mugitzen zarenean, errenkada utzi aurretik.</string>
+    <string name="settings_synced_at">Sinkronizatuta: <xliff:g id="when">%1$s</xliff:g></string>
+    <string name="settings_profile_in_use">Erabilian</string>
+    <string name="settings_profile_kids">Haurren modua</string>
+    <string name="settings_profile_pin_lock">PIN blokeoa</string>
+    <string name="settings_profile_no_lock">Blokeorik ez</string>
+    <string name="settings_profile_add">Gehitu profila</string>
+    <string name="settings_profile_add_line">Bere gogokoak, historia eta ezarpenak dituen ikusle bat</string>
+    <plurals name="settings_help_language">
+        <item quantity="one">OwnTVko menu eta mezu guztien hizkuntza. <xliff:g id="count">%1$d</xliff:g> hizkuntza; telebistaren hizkuntza propioa jarraitzen du bat aukeratu arte.</item>
+        <item quantity="other">OwnTVko menu eta mezu guztien hizkuntza. <xliff:g id="count">%1$d</xliff:g> hizkuntza; telebistaren hizkuntza propioa jarraitzen du bat aukeratu arte.</item>
+    </plurals>
+    <plurals name="settings_profile_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> profil</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> profil</item>
+    </plurals>
+    <string name="settings_seg_separate">Bereiziak</string>
+    <string name="settings_seg_guide">Gida</string>
+    <string name="settings_accent_yours">Zurea</string>
+    <string name="settings_accent_picker_hint">Ados eremuan edo ñabardura-barran, gero geziek mugitzen dute; Ados edo Atzera amaitzeko.</string>
+    <string name="settings_signed_out">Saioa itxita</string>
+    <plurals name="settings_epg_feed_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> jario</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> jario</item>
+    </plurals>
+    <string name="settings_title_date_time_weather">Data, ordua &amp; eguraldia</string>
+    <string name="settings_line_show_weather">Uneko eguraldia goiko barran</string>
+    <string name="settings_line_custom_location">Hutsik = automatikoki detektatu</string>
+    <string name="settings_line_temperature_unit">Celsius edo Fahrenheit</string>
+    <string name="settings_clock_colors">Koloreak</string>
+    <string name="settings_clock_time_color">Orduaren kolorea</string>
+    <string name="settings_line_clock_time">Erlojua</string>
+    <string name="settings_clock_date_color">Datuaren kolorea</string>
+    <string name="settings_line_clock_date">Erlojuaren azpiko data</string>
+    <string name="settings_clock_weather_color">Eguraldiaren kolorea</string>
+    <string name="settings_line_clock_weather">Tenperatura eta hiria</string>
+    <string name="settings_clock_color_white">Zuria</string>
+    <string name="settings_clock_color_grey">Grisa</string>
+    <string name="settings_clock_color_accent">Azentua</string>
+    <string name="settings_clock_color_help">Ados-ek kolore-hautatzailea irekitzen du (aurrezarpenak, paleta edo hex kodea), Azentu-koloreak erabiltzen duen bera. Aurrebista mugitzen zarenean jarraitzen du.</string>
+    <string name="settings_key_pick_color">Aukeratu kolorea</string>
+    <string name="settings_line_trending_layout">Joeren errenkada nola marrazten den</string>
+    <string name="settings_home_shown">Erakusten da</string>
+    <string name="settings_home_hide_row">Ezkutatu errenkada hau</string>
+    <string name="settings_home_show_row">Erakutsi errenkada hau</string>
+    <string name="settings_home_move_row">Mugitu (▲ ▼, gero Ados)</string>
+    <string name="settings_line_remote_shortcuts_on">Desaktibatuta zure esleipenak mantentzen ditu</string>
+    <string name="settings_language_system_help">OwnTVk telebistaren hizkuntza jarraitzen du (orain <xliff:g id="language">%1$s</xliff:g>). Aukeratu bat behean OwnTVn soilik erabiltzeko.</string>
+    <string name="settings_language_pick_help">Erabili <xliff:g id="language">%1$s</xliff:g> OwnTVn, telebista zein hizkuntzatan dagoen ere.</string>
+    <string name="settings_key_use">Erabili</string>
+    <string name="settings_line_metadata_source">Filmen &amp; Telesailen xehetasunak nondik datozen</string>
+    <string name="settings_line_metadata_language">TMDBren sinopsiak, generoak eta izenburuak</string>
+    <string name="settings_line_metadata_advanced">Zure gako propioa edo auto-ostatatutako Worker bat</string>
+    <string name="settings_line_os_advanced">Zure API gako propioa edo Worker bat</string>
+    <string name="settings_line_os_filter">Aukeratutako hizkuntza soilik</string>
+    <string name="settings_line_os_search_language">Bilaketa-emaitzetan erakusten da</string>
+    <string name="settings_subtitle_delete_help">Ezabatzeak lekua askatzen du; erreproduzigailutik berriro deskarga dezakezu.</string>
+    <plurals name="settings_home_row_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> errenkada</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> errenkada</item>
+    </plurals>
+    <plurals name="settings_subtitles_downloaded_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> deskargatuta</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> deskargatuta</item>
+    </plurals>
+    <plurals name="settings_subtitle_file_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> fitxategi</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> fitxategi</item>
+    </plurals>
+    <string name="settings_line_add_from_phone">Bete formularioa beste gailu bateko nabigatzailean</string>
+    <string name="settings_add_type_here">Idatzi hemen</string>
+    <string name="settings_line_add_type_here">Xtream, M3U edo Stalker urrutiko aginteaz</string>
+    <string name="settings_help_add_from_phone">Ireki helbidea edo eskaneatu kodea Wi-Fi sare berean dagoen edozein gailutako nabigatzailean — telefono bat, ordenagailu bat edo beste telebista bat — bete zure erreprodukzio-zerrenda han eta bidali hona. Askoz azkarragoa da URL bat urrutiko agintearekin idaztea baino.</string>
+    <string name="settings_help_add_type_here">Idatzi Xtream saio-hasiera bat, M3U helbide bat edo Stalker ataria urrutiko agintearekin, eta gero hasi inportazioa panelean.</string>
+    <string name="settings_remote_waiting">Beste gailuaren zain</string>
+    <string name="settings_remote_nothing_yet">Oraindik ez da ezer jaso</string>
+    <string name="settings_remote_new_pin">PIN berria</string>
+    <string name="settings_line_remote_new_pin">Beste norbaitek hau ikusi badu</string>
+    <string name="settings_remote_scan">Eskaneatu edo ireki nabigatzailean</string>
+    <string name="settings_remote_or_open">edo ireki</string>
+    <string name="settings_remote_details_note">Xehetasunak hemen agertzen dira; zuk Hasi inportazioa sakatzen duzu urrutiko agintearekin.</string>
+    <string name="settings_key_stop_back">Gelditu eta itzuli</string>
+    <string name="settings_source_type">Mota</string>
+    <string name="settings_line_source_type">Xtream, M3U edo Stalker ataria</string>
+    <string name="settings_choose_local_file">Aukeratu tokiko fitxategi bat…</string>
+    <string name="settings_line_local_file">.m3u edo .m3u8 telebista honetan</string>
+    <string name="settings_form_optional">Aukerakoa</string>
+    <string name="settings_form_field_help">Ados-ek teklatua irekitzen du; ▼ hurrengo eremura mugitzen da.</string>
+    <string name="settings_help_playlist_url">Zure .m3u edo .m3u8 zerrendaren helbidea.</string>
+    <string name="settings_line_fill_from_playlist">Erabili zure erreprodukzio-zerrendak ematen duen gida-helbidea</string>
+    <string name="settings_line_epg_auto_refresh">Mantendu gida eguneratuta</string>
+    <string name="settings_line_epg_logos">Erreprodukzio-zerrendakoaren ordez</string>
+    <string name="settings_help_epg_name">Gida-zerrendan eta Aukeratu EPGa eskuz atalean erakusten da.</string>
+    <string name="settings_glass_bg_title">Beira &amp; atzealdea</string>
+    <string name="settings_line_glass_bg">Atzealdea, irudiaren itxura, beira</string>
+    <string name="settings_bg_background">Atzealdea</string>
+    <string name="settings_line_bg_background">Pantaila bakoitzaren atzean dagoena</string>
+    <string name="settings_help_bg_background">Eszenak OwnTVren kolore leun propioak marrazten ditu. Irudiak zure irudi bat erakusten du pantaila bakoitzaren atzean. Arruntak bete-betean iluna den betegarri lau bat da.</string>
+    <string name="settings_bg_stage">Eszena</string>
+    <string name="settings_bg_picture">Irudia</string>
+    <string name="settings_bg_plain">Arrunta</string>
+    <string name="settings_line_bg_picture_none">Aukeratu irudi bat telebista honetatik edo Urrutikoaz</string>
 </resources>
