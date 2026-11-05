@@ -20,6 +20,7 @@ Ports upstream OwnTV Core 1.0.69, without the Sports Hub.
 - **Guide re-sync looks up what it already has in one read**
 ## core-1.0.69 — 2026-10-21
 **Database v53 · Backup v26 · Backup: two new playlist fields · Moved items keep their place**
+**Database v53 · Backup v26 · Backup: two new playlist fields, each profile's last categories · Moved items keep their place**
 
 ### ✨ New features
 
@@ -48,6 +49,9 @@ Ports upstream OwnTV Core 1.0.69, without the Sports Hub.
 - **🔀 Sources: the other versions of the channel playing** (idea from community PR TV #317 by @Aaronnn17)
 - **🔁 Auto start on boot and on wake-up: strings in every language** (community PR #40 by @Kevsosmooth)
 - **📱 Edit a playlist from a browser on another device (TV #250)**
+- **👤 Each profile remembers its own last category and channel**
+- **🧭 TV Guide follows Live TV's category, as a switch (off by default)** (community PR TV #325 by @Zangetsu-Sama)
+- **📺 Live TV restores the remembered category once its list has loaded, and only a category you pick is remembered** (community PR TV #325 by @Zangetsu-Sama)
 
 ### 🐛 Fixes
 - **🗑️ Delete confirmation strings for downloads and recordings**
