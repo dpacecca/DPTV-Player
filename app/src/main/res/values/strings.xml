@@ -81,6 +81,15 @@
     <string name="sport_dvr_sort_date">Date</string>
     <string name="sport_dvr_sort_az">A–Z</string>
     <string name="sport_dvr_empty">No recordings yet. In the guide, hold OK on a programme and choose Record.</string>
+    <string name="sport_dvr_show">Show</string>
+    <string name="sport_dvr_view_recorded">Recorded</string>
+    <string name="sport_dvr_view_scheduled">Scheduled</string>
+    <string name="sport_dvr_scheduled_hint">Press OK on a recording to cancel it</string>
+    <string name="sport_dvr_scheduled_empty">Nothing is set to record. In the guide, hold OK on a programme and choose Record, or press Record on a game in Sport.</string>
+    <string name="sport_dvr_cancel_recording">Cancel recording</string>
+    <string name="sport_dvr_stop_recording">Stop recording</string>
+    <string name="sport_dvr_game_waiting">Waiting for the guide to list its channel</string>
+    <string name="sport_dvr_game_no_channel">No channel found</string>
     <string name="sport_record_overlap_title">Recordings overlap</string>
     <string name="sport_record_overlap_message">“%1$s” overlaps “%2$s” on %3$s. Both will be recorded. While they overlap they use two streams from your provider at once, so check your connection limit.</string>
     <string name="sport_record_overlap_no_stream">“%1$s” overlaps “%2$s” on %3$s. This playlist has no free stream for a second recording, so “%1$s” won\'t start while that one is recording. To record both, raise the playlist\'s connection limit (on DPTV-Server, the user\'s Max connections) if your provider allows it, or turn off Keep one stream free for watching.</string>

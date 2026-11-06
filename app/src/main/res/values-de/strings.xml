@@ -81,6 +81,15 @@
     <string name="sport_dvr_sort_date">Datum</string>
     <string name="sport_dvr_sort_az">A–Z</string>
     <string name="sport_dvr_empty">Noch keine Aufnahmen. Im Guide OK auf einer Sendung gedrückt halten und Aufnehmen wählen.</string>
+    <string name="sport_dvr_show">Anzeigen</string>
+    <string name="sport_dvr_view_recorded">Aufgenommen</string>
+    <string name="sport_dvr_view_scheduled">Geplant</string>
+    <string name="sport_dvr_scheduled_hint">OK auf einer Aufnahme drücken, um sie abzubrechen</string>
+    <string name="sport_dvr_scheduled_empty">Nichts zur Aufnahme geplant. Im Guide OK auf einer Sendung gedrückt halten und Aufnehmen wählen, oder in Sport bei einem Spiel Aufnehmen drücken.</string>
+    <string name="sport_dvr_cancel_recording">Aufnahme abbrechen</string>
+    <string name="sport_dvr_stop_recording">Aufnahme beenden</string>
+    <string name="sport_dvr_game_waiting">Wartet darauf, dass der Guide den Sender nennt</string>
+    <string name="sport_dvr_game_no_channel">Kein Sender gefunden</string>
     <string name="sport_record_overlap_title">Aufnahmen überschneiden sich</string>
     <string name="sport_record_overlap_message">„%1$s“ überschneidet sich mit „%2$s“ auf %3$s. Beide werden aufgenommen. Während der Überschneidung nutzen sie zwei Streams deines Anbieters gleichzeitig – prüfe dein Verbindungslimit.</string>
     <string name="sport_record_overlap_no_stream">„%1$s“ überschneidet sich mit „%2$s“ auf %3$s. Diese Playlist hat keinen freien Stream für eine zweite Aufnahme, daher startet „%1$s“ nicht, solange die andere läuft. Um beide aufzunehmen, erhöhe das Verbindungslimit der Playlist (auf DPTV-Server die maximalen Verbindungen des Nutzers), falls dein Anbieter es erlaubt, oder schalte „Einen Stream zum Ansehen frei halten“ aus.</string>
