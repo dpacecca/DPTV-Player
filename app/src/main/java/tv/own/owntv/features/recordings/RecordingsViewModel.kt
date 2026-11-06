@@ -39,6 +39,7 @@ class RecordingsViewModel(
     val player: OwnTVPlayer,
     private val externalPlayerLauncher: ExternalPlayerLauncher,
     context: android.content.Context,
+    private val sportsPrefs: tv.own.owntv.features.sport.SportsPrefs,
 ) : ViewModel() {
 
     // --- Resume (v2.1): where each recording was left, so opening it again can pick up there. ---------
@@ -232,6 +233,26 @@ class RecordingsViewModel(
 
     /** Drops a scheduled recording. Nothing on disk is touched, because nothing is there yet. */
     fun cancel(recording: RecordingEntity) = recordings.cancel(recording)
+
+    /** (v2.9.9) Games marked Record in Sport, for DVR's Scheduled view. */
+    val sportPlans: StateFlow<List<tv.own.owntv.features.sport.RecordPlan>> = sportsPrefs.recordPlans
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * (v2.9.9) Scheduled view: cancel a recording set for later, or stop one under way (what it has
+     * recorded is kept). A Sport game it was scheduled for is dropped too, so its Record chip clears.
+     */
+    fun cancelOrStop(recording: RecordingEntity) {
+        if (recording.status == RecordingStatus.RECORDING) recordings.stop(recording) else recordings.cancel(recording)
+        viewModelScope.launch {
+            sportPlansFor(recording, sportPlans.value).forEach { sportsPrefs.removeRecordPlan(it.fixtureId) }
+        }
+    }
+
+    /** (v2.9.9) Scheduled view: drop a Sport game still waiting for its channel (or never given one). */
+    fun cancelSportPlan(plan: tv.own.owntv.features.sport.RecordPlan) {
+        viewModelScope.launch { sportsPrefs.removeRecordPlan(plan.fixtureId) }
+    }
 
     private val _deleteFailed = MutableStateFlow<RecordingEntity?>(null)
     /** A recording the recording server would not delete (offline or refused), until the notice is closed. */

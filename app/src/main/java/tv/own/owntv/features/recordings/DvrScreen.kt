@@ -78,6 +78,9 @@ import tv.own.owntv.ui.theme.stageText
 /** How the DVR list is ordered: newest first (the default), or by title. */
 internal enum class DvrSort { DATE, TITLE }
 
+/** (v2.9.9) What DVR lists: what has been recorded, or what is set to record. */
+internal enum class DvrView { RECORDED, SCHEDULED }
+
 /** The finished recordings in [sort] order. */
 internal fun dvrRows(recordings: List<RecordingEntity>, sort: DvrSort): List<RecordingEntity> {
     // v2.1.2: what is recording now is listed too (first), and plays as it records.
@@ -124,6 +127,18 @@ fun DvrScreen(
     val rowFocus = remember { HashMap<Long, FocusRequester>() }
     fun focusOf(id: Long) = rowFocus.getOrPut(id) { FocusRequester() }
     val sortFocus = remember { FocusRequester() }
+
+    // (v2.9.9) Recorded / Scheduled. Scheduled lists recordings set for later or under way, and games
+    // marked Record in Sport that are still waiting for their channel; OK on one offers Cancel (or Stop).
+    var viewName by rememberSaveable { mutableStateOf(DvrView.RECORDED.name) }
+    val view = DvrView.valueOf(viewName)
+    val sportPlans by vm.sportPlans.collectAsStateWithLifecycle()
+    val planned = remember(recordings, sportPlans) { dvrPlanned(recordings, sportPlans) }
+    val viewFocus = remember { FocusRequester() }
+    val plannedFocus = remember { HashMap<String, FocusRequester>() }
+    fun plannedFocusOf(key: String) = plannedFocus.getOrPut(key) { FocusRequester() }
+    val plannedState = rememberLazyListState()
+    var plannedMenuFor by remember { mutableStateOf<DvrPlanned?>(null) }
     val listState = rememberLazyListState()
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var menuFor by remember { mutableStateOf<RecordingEntity?>(null) }
@@ -149,13 +164,24 @@ fun DvrScreen(
         runCatching { focusOf(id).requestFocus() }
     }
 
-    // The rail's ▶ lands on the first recording, or on Sort when there are none.
+    // The rail's ▶ lands on the first row of the list on screen, or on the Recorded / Scheduled switch.
     val entry: () -> Boolean = {
-        val first = rows.firstOrNull()?.id
-        (first != null && runCatching { focusOf(first).requestFocus() }.getOrDefault(false)) ||
-            runCatching { sortFocus.requestFocus() }.getOrDefault(false)
+        val landed = if (view == DvrView.SCHEDULED) {
+            planned.firstOrNull()?.let { runCatching { plannedFocusOf(it.key).requestFocus() }.getOrDefault(false) } ?: false
+        } else {
+            rows.firstOrNull()?.let { runCatching { focusOf(it.id).requestFocus() }.getOrDefault(false) } ?: false
+        }
+        landed || runCatching { viewFocus.requestFocus() }.getOrDefault(false)
     }
-    DisposableEffect(onEntryHook, rows.firstOrNull()?.id) {
+
+    suspend fun focusPlanned(key: String?) {
+        if (key == null) { runCatching { viewFocus.requestFocus() }; return }
+        if (runCatching { plannedFocusOf(key).requestFocus() }.getOrDefault(false)) return
+        runCatching { plannedState.scrollToItem(planned.indexOfFirst { it.key == key }.coerceAtLeast(0)) }
+        withFrameNanos { }
+        runCatching { plannedFocusOf(key).requestFocus() }
+    }
+    DisposableEffect(onEntryHook, rows.firstOrNull()?.id, planned.firstOrNull()?.key, view) {
         onEntryHook?.invoke(entry)
         onDispose { onEntryHook?.invoke(null) }
     }
@@ -182,21 +208,65 @@ fun DvrScreen(
                 modifier = Modifier.weight(1f, fill = false),
             )
             StageTool(
-                text = stringResource(R.string.sport_dvr_sort), icon = OwnTVIcon.SORT,
-                value = stringResource(if (sort == DvrSort.DATE) R.string.sport_dvr_sort_date else R.string.sport_dvr_sort_az),
+                text = stringResource(R.string.sport_dvr_show), icon = OwnTVIcon.LIST,
+                value = stringResource(if (view == DvrView.RECORDED) R.string.sport_dvr_view_recorded else R.string.sport_dvr_view_scheduled),
                 valueAccent = true,
-                onClick = { sortName = (if (sort == DvrSort.DATE) DvrSort.TITLE else DvrSort.DATE).name },
-                modifier = Modifier.focusRequester(sortFocus),
+                onClick = { viewName = (if (view == DvrView.RECORDED) DvrView.SCHEDULED else DvrView.RECORDED).name },
+                modifier = Modifier.focusRequester(viewFocus),
             )
+            if (view == DvrView.RECORDED) {
+                StageTool(
+                    text = stringResource(R.string.sport_dvr_sort), icon = OwnTVIcon.SORT,
+                    value = stringResource(if (sort == DvrSort.DATE) R.string.sport_dvr_sort_date else R.string.sport_dvr_sort_az),
+                    valueAccent = true,
+                    onClick = { sortName = (if (sort == DvrSort.DATE) DvrSort.TITLE else DvrSort.DATE).name },
+                    modifier = Modifier.focusRequester(sortFocus),
+                )
+            }
         }
-        if (rows.isNotEmpty()) {
+        val listed = if (view == DvrView.RECORDED) rows.isNotEmpty() else planned.isNotEmpty()
+        if (listed) {
             Text(
-                stringResource(R.string.sport_dvr_hint), style = stageText(17, 600), color = StageColors.Muted,
+                stringResource(if (view == DvrView.RECORDED) R.string.sport_dvr_hint else R.string.sport_dvr_scheduled_hint),
+                style = stageText(17, 600), color = StageColors.Muted,
                 maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.mpx),
             )
         }
 
-        if (rows.isEmpty()) {
+        if (view == DvrView.SCHEDULED) {
+            if (planned.isEmpty()) {
+                Box(Modifier.fillMaxSize().padding(bottom = 120.mpx), contentAlignment = Alignment.Center) {
+                    Text(
+                        stringResource(R.string.sport_dvr_scheduled_empty), style = stageText(22, 600), color = StageColors.Muted,
+                        textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 900.mpx),
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = plannedState,
+                    modifier = Modifier.fillMaxSize().padding(top = 24.mpx),
+                    contentPadding = PaddingValues(bottom = 40.mpx),
+                    verticalArrangement = Arrangement.spacedBy(10.mpx),
+                ) {
+                    items(planned, key = { it.key }) { item ->
+                        when (item) {
+                            is DvrPlanned.Recording -> DvrRow(
+                                recording = item.recording,
+                                focus = plannedFocusOf(item.key),
+                                thumbnail = { DvrStill(item.recording) },
+                                onPlay = { plannedMenuFor = item },
+                                onMenu = { plannedMenuFor = item },
+                            )
+                            is DvrPlanned.Game -> DvrGameRow(
+                                plan = item.plan,
+                                focus = plannedFocusOf(item.key),
+                                onClick = { plannedMenuFor = item },
+                            )
+                        }
+                    }
+                }
+            }
+        } else if (rows.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(bottom = 120.mpx), contentAlignment = Alignment.Center) {
                 Text(
                     stringResource(R.string.sport_dvr_empty), style = stageText(22, 600), color = StageColors.Muted,
@@ -301,6 +371,58 @@ fun DvrScreen(
         )
     }
 
+    plannedMenuFor?.let { item ->
+        val formatDate = rememberBestDateFormatter("EEEdMMM")
+        val formatTime = rememberSystemTimeFormatter()
+        val focus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+        val sep = stringResource(R.string.content_epg_bits_separator)
+        // After a cancel, focus moves on to the next line (or the one before), as this one goes.
+        val index = planned.indexOfFirst { it.key == item.key }
+        val nextKey = (planned.getOrNull(index + 1) ?: planned.getOrNull(index - 1))?.key
+        val close: (Boolean) -> Unit = { removed ->
+            plannedMenuFor = null
+            scope.launch { withFrameNanos { }; focusPlanned(if (removed) nextKey else item.key) }
+        }
+        GuideMenuHost(x = 1150f, top = 120.mpx, width = 560.mpx, onDismiss = { close(false) }) {
+            when (item) {
+                is DvrPlanned.Recording -> {
+                    val r = item.recording
+                    StageMenuHeader(title = r.title, subtitle = listOf(formatDate(r.programmeStartMs), formatTime(r.programmeStartMs), r.channelName).joinToString(sep))
+                    if (r.status == RecordingStatus.RECORDING) {
+                        if (r.filePath != null) {
+                            StageMenuItem(
+                                text = stringResource(R.string.content_action_play), icon = OwnTVIcon.PLAY,
+                                onClick = { plannedMenuFor = null; play(r) },
+                                modifier = Modifier.focusRequester(focus),
+                            )
+                        }
+                        StageMenuItem(
+                            text = stringResource(R.string.sport_dvr_stop_recording), icon = OwnTVIcon.CLOSE,
+                            onClick = { vm.cancelOrStop(r); close(false) },
+                            modifier = if (r.filePath == null) Modifier.focusRequester(focus) else Modifier,
+                        )
+                    } else {
+                        StageMenuItem(
+                            text = stringResource(R.string.sport_dvr_cancel_recording), icon = OwnTVIcon.CLOSE,
+                            onClick = { vm.cancelOrStop(r); close(true) },
+                            modifier = Modifier.focusRequester(focus),
+                        )
+                    }
+                }
+                is DvrPlanned.Game -> {
+                    val p = item.plan
+                    StageMenuHeader(title = p.title, subtitle = listOf(formatDate(p.kickoffMs), formatTime(p.kickoffMs)).joinToString(sep))
+                    StageMenuItem(
+                        text = stringResource(R.string.sport_dvr_cancel_recording), icon = OwnTVIcon.CLOSE,
+                        onClick = { vm.cancelSportPlan(p); close(true) },
+                        modifier = Modifier.focusRequester(focus),
+                    )
+                }
+            }
+        }
+    }
+
     deleteFailed?.let { r ->
         tv.own.owntv.ui.stage.StageNotice(
             title = stringResource(R.string.sport_dvr_delete_failed_title),
@@ -385,6 +507,48 @@ private fun DvrRow(
             recording.description?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = stageText(21, 400).copy(lineHeight = 29.mpxSp), color = StageColors.Body, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
+        }
+    }
+}
+
+/**
+ * (v2.9.9) A game marked Record in Sport that has no channel yet: a Sport mark where the still goes, the
+ * game, its kick-off, and whether DPTV is still waiting for the guide to list its channel.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun DvrGameRow(plan: tv.own.owntv.features.sport.RecordPlan, focus: FocusRequester, onClick: () -> Unit) {
+    var focused by remember { mutableStateOf(false) }
+    val formatDate = rememberBestDateFormatter("EEEdMMMyyyy")
+    val formatTime = rememberSystemTimeFormatter()
+    val status = stringResource(
+        if (plan.status == tv.own.owntv.features.sport.RecordPlan.Status.NO_CHANNEL) R.string.sport_dvr_game_no_channel
+        else R.string.sport_dvr_game_waiting,
+    )
+    val line = listOf(formatDate(plan.kickoffMs), formatTime(plan.kickoffMs), status)
+        .joinToString(stringResource(R.string.content_epg_bits_separator))
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 196.mpx)
+            .focusRequester(focus)
+            .onFocusChanged { focused = it.isFocused }
+            .combinedClickable(interactionSource = null, indication = null, onClick = onClick, onLongClick = onClick)
+            .focusable()
+            .then(if (focused) Modifier.stageFocusLook(StageFocus.FX, 22.mpx) else Modifier)
+            .padding(horizontal = 18.mpx, vertical = 14.mpx),
+        horizontalArrangement = Arrangement.spacedBy(28.mpx),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(300.mpx, 169.mpx).clip(RoundedCornerShape(14.mpx)).background(stageStillBack), contentAlignment = Alignment.Center) {
+            tv.own.owntv.ui.components.OwnTVIcon(OwnTVIcon.SPORT, StageColors.Muted, Modifier.size(72.mpx))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.mpx)) {
+            Text(
+                plan.title, style = stageText(30, 800).copy(lineHeight = 36.mpxSp),
+                color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+            Text(line, style = stageText(19, 600), color = if (focused) stageAccent.accent else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
