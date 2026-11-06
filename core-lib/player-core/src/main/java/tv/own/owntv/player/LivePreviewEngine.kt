@@ -2798,7 +2798,24 @@ class LivePreviewEngine(
 
     override fun togglePlayPause() {
         val p = player ?: return
-        if (p.isPlaying) p.pause() else p.play()
+        if (p.isPlaying) {
+            p.pause()
+            tune.pausedAtMs = android.os.SystemClock.elapsedRealtime()
+            _userPaused.value = true // (v2.5.1)
+            return
+        }
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (LiveResume.backToLiveEdge(
+                live = true, fromSavedCopy = TimeshiftServer.isLocal(currentUrl), pausedAtMs = tune.pausedAtMs, nowMs = now,
+            )
+        ) {
+            LiveDiagnosticsLog.event("play after ${(now - tune.pausedAtMs) / 1000}s paused — back to the live edge")
+            _userPaused.value = false
+            retry()
+            return
+        }
+        tune.pausedAtMs = 0L
+        p.play()
         _userPaused.value = !p.playWhenReady // (v2.5.1)
     }
 
@@ -4018,6 +4035,8 @@ internal data class TuneState(
     /** `SystemClock.elapsedRealtime()` of the last forward position move. */
     var lastProgressWallMs: Long = 0L,
     var frozenChecks: Int = 0,
+    /** elapsedRealtime of the pause the user (or the media session) asked for; 0 while not paused. */
+    var pausedAtMs: Long = 0L,
     /** elapsedRealtime of the last play() call. Its first frame is timed by [FirstFrameGate]. */
     @field:Volatile var playStartedMs: Long = 0L,
 )
