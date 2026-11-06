@@ -52,6 +52,8 @@ Ports upstream OwnTV Core 1.0.69, without the Sports Hub.
 - **👤 Each profile remembers its own last category and channel**
 - **🧭 TV Guide follows Live TV's category, as a switch (off by default)** (community PR TV #325 by @Zangetsu-Sama)
 - **📺 Live TV restores the remembered category once its list has loaded, and only a category you pick is remembered** (community PR TV #325 by @Zangetsu-Sama)
+- **👆 OK previews first: one switch for Live TV, one for the TV Guide (TV #344)**
+- **📄 Program details: schedule rows carry their programme (TV #345)**
 
 ### 🐛 Fixes
 - **🗑️ Delete confirmation strings for downloads and recordings**

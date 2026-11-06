@@ -425,9 +425,14 @@ class LiveEpgReader(
     // It is now [tv.own.owntv.core.epg.GuideCandidates], which filters by no source at all — the same
     // rule every guide read already followed, and the half of it that was missing.
 
-    private fun EpgProgrammeEntity.toXt() =
-        XtEpgEntry(title = title, description = description, startMs = startMs, stopMs = stopMs)
+    /** The programme airing at [at] in start-ordered rows: the latest to have started, if two overlap. */
+    private fun List<EpgProgrammeEntity>.onAirAt(at: Long): EpgProgrammeEntity? =
+        lastOrNull { it.startMs <= at && it.stopMs > at }
 }
+
+/** A stored programme as a schedule row; its id lets a screen open the full programme (details, synopsis). */
+internal fun EpgProgrammeEntity.toXt() =
+    XtEpgEntry(title = title, description = description, startMs = startMs, stopMs = stopMs, programmeId = id)
 
 /**
  * The archive URLs Live TV builds: one for a picked catch-up programme, one for a live-rewind offset.
