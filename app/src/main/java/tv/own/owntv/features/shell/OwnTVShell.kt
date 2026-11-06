@@ -446,30 +446,32 @@ fun OwnTVShell(
     val browserRailItems by liveVm.railItems.collectAsStateWithLifecycle()
     val browserRailCounts by liveVm.railCounts.collectAsStateWithLifecycle()
     val previewChannel by liveVm.previewChannel.collectAsStateWithLifecycle()
-    // Home / screensaver with a live channel on mpv: mpv frees the stream and keeps no restore for live
-    // (ExoPlayer's live engine does), so the return found a black, paused player. Tune the same channel
-    // again; the tune reopens its saved copy and offers Resume / Go live.
-    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    // Home / screensaver / the television switched off with a live channel on mpv: mpv frees the stream
+    // and keeps no restore for live (ExoPlayer's live engine does), so the return found a black, paused
+    // player. Tune the same channel again; the tune reopens its saved copy
+    // and offers Resume / Go live. Keyed on the app's visibility, not the activity's lifecycle: a box whose
+    // activity keeps running while the television is off goes through here too.
+    val visibility = koinInject<tv.own.owntv.core.player.PlaybackVisibilityWatch>()
     val currentPlayerMode by rememberUpdatedState(playerMode)
-    DisposableEffect(lifecycle, liveVm, player) {
+    DisposableEffect(visibility, liveVm, player) {
         var mpvLiveChannel: tv.own.owntv.core.database.entity.ChannelEntity? = null
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            when (event) {
-                androidx.lifecycle.Lifecycle.Event.ON_STOP -> mpvLiveChannel = liveVm.previewChannel.value?.takeIf {
+        val listener: (Boolean) -> Unit = { visible ->
+            if (!visible) {
+                mpvLiveChannel = liveVm.previewChannel.value?.takeIf {
                     currentPlayerMode != PlayerMode.NONE && !liveVm.liveOnExo.value && player.isLiveContent
                 }
-                androidx.lifecycle.Lifecycle.Event.ON_START -> mpvLiveChannel?.let { channel ->
+            } else {
+                mpvLiveChannel?.let { channel ->
                     mpvLiveChannel = null
                     // A stream already back needs nothing. (DPTV has no category locks, so no relock check first.)
                     if (liveVm.previewChannel.value?.id == channel.id && player.currentMediaUrl == null) {
                         liveVm.ensurePlaying(channel)
                     }
                 }
-                else -> Unit
             }
         }
-        lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer) }
+        visibility.addListener(listener)
+        onDispose { visibility.removeListener(listener) }
     }
     val playerRecording by liveVm.playerRecording.collectAsStateWithLifecycle()
     val overlayProgrammes by liveVm.nowProgrammes.collectAsStateWithLifecycle()
@@ -1206,7 +1208,11 @@ fun OwnTVShell(
                 }
                 if (e.type != KeyEventType.KeyDown || playerMode != PlayerMode.MINI) return@onKeyEvent false
                 when (e.key) {
-                    Key.MediaPlayPause, Key.MediaPlay, Key.MediaPause -> { dockedEngine.togglePlayPause(); true }
+                    Key.MediaPlayPause -> { dockedEngine.togglePlayPause(); true }
+                    // PLAY and PAUSE say which one: a toggle turned a PLAY sent while already playing (a
+                    // remote, or the system after the television comes back) into a pause.
+                    Key.MediaPlay -> { if (!dockedEngine.isPlaying.value) dockedEngine.togglePlayPause(); true }
+                    Key.MediaPause -> { if (dockedEngine.isPlaying.value) dockedEngine.togglePlayPause(); true }
                     Key.ChannelUp -> dockedZap?.let { it(tv.own.owntv.player.zapDirection(up = true, playerRemoteOptions)); true } ?: false
                     Key.ChannelDown -> dockedZap?.let { it(tv.own.owntv.player.zapDirection(up = false, playerRemoteOptions)); true } ?: false
                     else -> false
