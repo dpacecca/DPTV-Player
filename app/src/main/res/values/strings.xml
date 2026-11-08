@@ -93,7 +93,7 @@
     <string name="sport_record_overlap_title">Recordings overlap</string>
     <string name="sport_record_overlap_message">“%1$s” overlaps “%2$s” on %3$s. Both will be recorded. While they overlap they use two streams from your provider at once, so check your connection limit.</string>
     <string name="sport_record_overlap_no_stream">“%1$s” overlaps “%2$s” on %3$s. This playlist has no free stream for a second recording, so “%1$s” won\'t start while that one is recording. To record both, raise the playlist\'s connection limit (on DPTV-Server, the user\'s Max connections) if your provider allows it, or turn off Keep one stream free for watching.</string>
-    <string name="sport_dvr_hint">Hold OK on a recording to play or delete it</string>
+    <string name="sport_dvr_hint">Press OK on a recording for Play and Delete</string>
     <string name="sport_dvr_delete_server_message">Deletes the recording and its file from the recording server. This can\'t be undone.</string>
     <string name="sport_dvr_delete_failed_title">Couldn\'t delete the recording</string>
     <string name="sport_dvr_delete_failed_message">The recording server didn\'t delete “%1$s”. Check that it can be reached, then try again.</string>

@@ -13,8 +13,13 @@ internal sealed interface DvrPlanned {
     val key: String
     val atMs: Long
 
+    companion object {
+        /** The list key of the recording with this id. */
+        fun keyOf(recordingId: Long): String = "r" + recordingId
+    }
+
     data class Recording(val recording: RecordingEntity) : DvrPlanned {
-        override val key: String get() = "r" + recording.id
+        override val key: String get() = keyOf(recording.id)
         override val atMs: Long get() = recording.startMs
     }
 
