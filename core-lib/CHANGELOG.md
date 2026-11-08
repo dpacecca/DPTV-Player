@@ -10,6 +10,18 @@
 > why, files and verification — belongs in the commit message, never here.
 
 ## core-1.0.72 — 2026-10-25
+## core-1.0.71
+
+### ✨ New features
+- **🔎 Sports: competitions are found by every name they go by — F1, EPL, La Liga, Formel 1 and more**
+- **🎚️ "Show likely channels" in a match page's filter**
+### 🐛 Fixes
+- **🏁 Sports: Formula 1 no longer matches Formula E, Ligue 1 no longer Ligue 2, Bundesliga no longer 2. Bundesliga**
+- **🏆 Sports: a competition inside a longer name no longer counts (Indian Premier League, CAF Champions League)**
+- **📺 Sports: a broadcaster's unrelated channels are no longer "likely" (Apple TV+ Series)**
+- **🏎️ Sports: a finished race is matched by its competition, not its first two drivers**
+- **📥 Xtream import no longer fails with "Expected a string but was BOOLEAN" (TV #349)**
+## core-1.0.70 — 2026-11-07
 
 **Database v49 (unchanged) · Breaking (PlaybackStartup.start takes no archive store; ArchiveDecodeStore removed; HDR setting replaced by Prefer SDR)**
 Ports upstream OwnTV Core 1.0.69, without the Sports Hub.
