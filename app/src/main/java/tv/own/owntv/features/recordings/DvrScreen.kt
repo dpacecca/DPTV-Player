@@ -2,7 +2,6 @@ package tv.own.owntv.features.recordings
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -59,12 +60,10 @@ import tv.own.owntv.core.database.entity.RecordingEntity
 import tv.own.owntv.core.model.RecordingStatus
 import tv.own.owntv.core.recording.RemoteRecordings
 import kotlinx.coroutines.launch
-import tv.own.owntv.features.epg.GuideMenuHost
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.format.rememberBestDateFormatter
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
 import tv.own.owntv.ui.stage.StageFocus
-import tv.own.owntv.ui.stage.StageMenuHeader
 import tv.own.owntv.ui.stage.StageMenuItem
 import tv.own.owntv.ui.stage.StageTool
 import tv.own.owntv.ui.stage.stageFocusLook
@@ -94,11 +93,12 @@ internal fun dvrRows(recordings: List<RecordingEntity>, sort: DvrSort): List<Rec
 }
 
 /**
- * DVR (v2.1): the recordings that are finished and can be watched, each with a still from the
- * recording, its title, when and where it was on, and the guide's synopsis. Sorted newest first or
- * A–Z. OK plays it; holding OK (or ☰) offers Play and Delete (v2.9.7: a hint under the header says
- * so, Delete asks first, and a server that will not delete it says so). What is recording now or scheduled is
- * counted in the header; managing those stays in the guide (Record) and Downloads › Recordings.
+ * DVR (v2.1; two panels since v2.10.0). On the left, the list: what has been recorded (newest first or
+ * A–Z) or, with Show › Scheduled, what is set to record. On the right, the highlighted line: its still,
+ * title, when and where, the guide's full description, and its actions — Play (or Resume from / Start
+ * over) and Delete for a recording; Cancel recording for one set for later or a Sport game waiting for
+ * its channel; Play and Stop recording for one under way. OK or ▶ on a line moves into its actions; ◀
+ * or Back comes back to the line. Delete asks first, and a server that will not delete says so.
  */
 @Composable
 fun DvrScreen(
@@ -116,86 +116,82 @@ fun DvrScreen(
     val recordings by vm.rows.collectAsStateWithLifecycle()
     val externalOn by vm.externalPlayerOn.collectAsStateWithLifecycle()
     val lastPlayedId by vm.lastPlayedId.collectAsStateWithLifecycle()
+    val sportPlans by vm.sportPlans.collectAsStateWithLifecycle()
+    val progressRevision by vm.progressRevision.collectAsStateWithLifecycle()
+    val deleteFailed by vm.deleteFailed.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     var sortName by rememberSaveable { mutableStateOf(DvrSort.DATE.name) }
     val sort = DvrSort.valueOf(sortName)
+    var viewName by rememberSaveable { mutableStateOf(DvrView.RECORDED.name) }
+    val view = DvrView.valueOf(viewName)
     val rows = remember(recordings, sort) { dvrRows(recordings, sort) }
+    val items: List<DvrPlanned> = remember(view, rows, recordings, sportPlans) {
+        if (view == DvrView.RECORDED) rows.map { DvrPlanned.Recording(it) } else dvrPlanned(recordings, sportPlans)
+    }
     val recordingNow = recordings.count { it.status == RecordingStatus.RECORDING }
     val scheduled = recordings.count { it.status == RecordingStatus.SCHEDULED }
 
-    val rowFocus = remember { HashMap<Long, FocusRequester>() }
-    fun focusOf(id: Long) = rowFocus.getOrPut(id) { FocusRequester() }
-    val sortFocus = remember { FocusRequester() }
+    // The highlighted line: the one the right panel shows. It stays put while focus is in the actions.
+    var selectedKey by rememberSaveable { mutableStateOf<String?>(null) }
+    val selected = items.firstOrNull { it.key == selectedKey } ?: items.firstOrNull()
+    var inActions by remember { mutableStateOf(false) }
 
-    // (v2.9.9) Recorded / Scheduled. Scheduled lists recordings set for later or under way, and games
-    // marked Record in Sport that are still waiting for their channel; OK on one offers Cancel (or Stop).
-    var viewName by rememberSaveable { mutableStateOf(DvrView.RECORDED.name) }
-    val view = DvrView.valueOf(viewName)
-    val sportPlans by vm.sportPlans.collectAsStateWithLifecycle()
-    val planned = remember(recordings, sportPlans) { dvrPlanned(recordings, sportPlans) }
+    val rowFocus = remember { HashMap<String, FocusRequester>() }
+    fun focusOf(key: String) = rowFocus.getOrPut(key) { FocusRequester() }
     val viewFocus = remember { FocusRequester() }
-    val plannedFocus = remember { HashMap<String, FocusRequester>() }
-    fun plannedFocusOf(key: String) = plannedFocus.getOrPut(key) { FocusRequester() }
-    val plannedState = rememberLazyListState()
-    var plannedMenuFor by remember { mutableStateOf<DvrPlanned?>(null) }
+    val sortFocus = remember { FocusRequester() }
+    val firstAction = remember { FocusRequester() }
     val listState = rememberLazyListState()
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    var menuFor by remember { mutableStateOf<RecordingEntity?>(null) }
     // Delete asks first, with Cancel focused: a recording is gone for good once the server deletes it.
     var confirmDeleteFor by remember { mutableStateOf<RecordingEntity?>(null) }
-    val deleteFailed by vm.deleteFailed.collectAsStateWithLifecycle()
-    // A recording that was left part-way: Resume (the default) or Start over.
-    var resumeFor by remember { mutableStateOf<RecordingEntity?>(null) }
-    val progressRevision by vm.progressRevision.collectAsStateWithLifecycle()
 
+    suspend fun focusRow(key: String?) {
+        if (key == null || items.none { it.key == key }) { runCatching { viewFocus.requestFocus() }; return }
+        selectedKey = key
+        if (runCatching { focusOf(key).requestFocus() }.getOrDefault(false)) return
+        runCatching { listState.scrollToItem(items.indexOfFirst { it.key == key }.coerceAtLeast(0)) }
+        withFrameNanos { }
+        runCatching { focusOf(key).requestFocus() }
+    }
+    val openActions: (DvrPlanned) -> Unit = { item ->
+        selectedKey = item.key
+        scope.launch { withFrameNanos { }; runCatching { firstAction.requestFocus() } }
+    }
+    val backToRow: () -> Unit = { scope.launch { focusRow(selected?.key) } }
+    // After a line goes (deleted, cancelled), focus moves on to the next one, or the one before.
+    fun neighbourOf(key: String): String? {
+        val i = items.indexOfFirst { it.key == key }
+        return (items.getOrNull(i + 1) ?: items.getOrNull(i - 1))?.key
+    }
     val start: (RecordingEntity, Boolean) -> Unit = { r, resume ->
         vm.play(r, resume = resume)
         if (!externalOn) onFullscreen()
     }
-    val play: (RecordingEntity) -> Unit = { r ->
-        if (vm.resumePositionMs(r) != null) resumeFor = r else start(r, false)
-    }
 
-    suspend fun focusRow(id: Long) {
-        if (runCatching { focusOf(id).requestFocus() }.getOrDefault(false)) return
-        runCatching { listState.scrollToItem(rows.indexOfFirst { it.id == id }.coerceAtLeast(0)) }
-        withFrameNanos { }
-        runCatching { focusOf(id).requestFocus() }
-    }
-
-    // The rail's ▶ lands on the first row of the list on screen, or on the Recorded / Scheduled switch.
+    // The rail's ▶ lands on the highlighted line (the first one), or on the Recorded / Scheduled switch.
     val entry: () -> Boolean = {
-        val landed = if (view == DvrView.SCHEDULED) {
-            planned.firstOrNull()?.let { runCatching { plannedFocusOf(it.key).requestFocus() }.getOrDefault(false) } ?: false
-        } else {
-            rows.firstOrNull()?.let { runCatching { focusOf(it.id).requestFocus() }.getOrDefault(false) } ?: false
-        }
-        landed || runCatching { viewFocus.requestFocus() }.getOrDefault(false)
+        val key = selected?.key
+        (key != null && runCatching { focusOf(key).requestFocus() }.getOrDefault(false)) ||
+            runCatching { viewFocus.requestFocus() }.getOrDefault(false)
     }
-
-    suspend fun focusPlanned(key: String?) {
-        if (key == null) { runCatching { viewFocus.requestFocus() }; return }
-        if (runCatching { plannedFocusOf(key).requestFocus() }.getOrDefault(false)) return
-        runCatching { plannedState.scrollToItem(planned.indexOfFirst { it.key == key }.coerceAtLeast(0)) }
-        withFrameNanos { }
-        runCatching { plannedFocusOf(key).requestFocus() }
-    }
-    DisposableEffect(onEntryHook, rows.firstOrNull()?.id, planned.firstOrNull()?.key, view) {
+    DisposableEffect(onEntryHook, selected?.key, view) {
         onEntryHook?.invoke(entry)
         onDispose { onEntryHook?.invoke(null) }
     }
     // Back from the player: on the recording that was played.
-    LaunchedEffect(restoreFocus, rows.size) {
-        if (!restoreFocus || rows.isEmpty()) return@LaunchedEffect
+    LaunchedEffect(restoreFocus, items.size) {
+        if (!restoreFocus || items.isEmpty()) return@LaunchedEffect
         withFrameNanos { }
-        val id = lastPlayedId
-        if (id != null && rows.any { it.id == id }) focusRow(id) else entry()
+        val key = lastPlayedId?.let { DvrPlanned.keyOf(it) }?.takeIf { k -> items.any { it.key == k } }
+        if (key != null) focusRow(key) else entry()
         onRestored()
     }
+    androidx.activity.compose.BackHandler(enabled = inActions) { backToRow() }
 
     Column(modifier.fillMaxSize().padding(start = contentStart, end = 64.mpx, top = 44.mpx)) {
-        // The sort control sits after the counts, clear of the clock and pills in the top-right corner.
+        // The switches sit after the counts, clear of the clock and pills in the top-right corner.
         Row(Modifier.padding(end = 640.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.mpx)) {
             Text(stringResource(R.string.common_nav_dvr), style = stageText(46, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
@@ -211,7 +207,7 @@ fun DvrScreen(
                 text = stringResource(R.string.sport_dvr_show), icon = OwnTVIcon.LIST,
                 value = stringResource(if (view == DvrView.RECORDED) R.string.sport_dvr_view_recorded else R.string.sport_dvr_view_scheduled),
                 valueAccent = true,
-                onClick = { viewName = (if (view == DvrView.RECORDED) DvrView.SCHEDULED else DvrView.RECORDED).name },
+                onClick = { viewName = (if (view == DvrView.RECORDED) DvrView.SCHEDULED else DvrView.RECORDED).name; selectedKey = null },
                 modifier = Modifier.focusRequester(viewFocus),
             )
             if (view == DvrView.RECORDED) {
@@ -224,8 +220,7 @@ fun DvrScreen(
                 )
             }
         }
-        val listed = if (view == DvrView.RECORDED) rows.isNotEmpty() else planned.isNotEmpty()
-        if (listed) {
+        if (items.isNotEmpty()) {
             Text(
                 stringResource(if (view == DvrView.RECORDED) R.string.sport_dvr_hint else R.string.sport_dvr_scheduled_hint),
                 style = stageText(17, 600), color = StageColors.Muted,
@@ -233,114 +228,68 @@ fun DvrScreen(
             )
         }
 
-        if (view == DvrView.SCHEDULED) {
-            if (planned.isEmpty()) {
-                Box(Modifier.fillMaxSize().padding(bottom = 120.mpx), contentAlignment = Alignment.Center) {
-                    Text(
-                        stringResource(R.string.sport_dvr_scheduled_empty), style = stageText(22, 600), color = StageColors.Muted,
-                        textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 900.mpx),
-                    )
-                }
-            } else {
-                LazyColumn(
-                    state = plannedState,
-                    modifier = Modifier.fillMaxSize().padding(top = 24.mpx),
-                    contentPadding = PaddingValues(bottom = 40.mpx),
-                    verticalArrangement = Arrangement.spacedBy(10.mpx),
-                ) {
-                    items(planned, key = { it.key }) { item ->
-                        when (item) {
-                            is DvrPlanned.Recording -> DvrRow(
-                                recording = item.recording,
-                                focus = plannedFocusOf(item.key),
-                                thumbnail = { DvrStill(item.recording) },
-                                onPlay = { plannedMenuFor = item },
-                                onMenu = { plannedMenuFor = item },
-                            )
-                            is DvrPlanned.Game -> DvrGameRow(
-                                plan = item.plan,
-                                focus = plannedFocusOf(item.key),
-                                onClick = { plannedMenuFor = item },
-                            )
-                        }
-                    }
-                }
-            }
-        } else if (rows.isEmpty()) {
+        if (items.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(bottom = 120.mpx), contentAlignment = Alignment.Center) {
                 Text(
-                    stringResource(R.string.sport_dvr_empty), style = stageText(22, 600), color = StageColors.Muted,
+                    stringResource(if (view == DvrView.RECORDED) R.string.sport_dvr_empty else R.string.sport_dvr_scheduled_empty),
+                    style = stageText(22, 600), color = StageColors.Muted,
                     textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 900.mpx),
                 )
             }
         } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize().padding(top = 24.mpx),
-                contentPadding = PaddingValues(bottom = 40.mpx),
-                verticalArrangement = Arrangement.spacedBy(10.mpx),
-            ) {
-                items(rows, key = { it.id }) { r ->
-                    DvrRow(
-                        recording = r,
-                        focus = focusOf(r.id),
-                        thumbnail = {
-                            DvrStill(r)
-                            // How far it was watched, along the bottom of the still.
-                            val watched = remember(r.id, progressRevision) { vm.progressFraction(r) }
-                            if (watched != null) {
-                                Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(6.mpx).background(StageColors.Dim.copy(alpha = 0.6f))) {
-                                    Box(Modifier.fillMaxWidth(watched).fillMaxHeight().background(stageAccent.accent))
-                                }
-                            }
+            Row(Modifier.fillMaxSize().padding(top = 20.mpx, bottom = 30.mpx), horizontalArrangement = Arrangement.spacedBy(40.mpx)) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.width(760.mpx).fillMaxHeight(),
+                    contentPadding = PaddingValues(bottom = 40.mpx),
+                    verticalArrangement = Arrangement.spacedBy(8.mpx),
+                ) {
+                    items(items, key = { it.key }) { item ->
+                        DvrListRow(
+                            item = item,
+                            selected = item.key == selected?.key,
+                            focus = focusOf(item.key),
+                            watched = (item as? DvrPlanned.Recording)?.let { r ->
+                                remember(r.recording.id, progressRevision) { vm.progressFraction(r.recording) }
+                            },
+                            onFocused = { selectedKey = item.key; inActions = false },
+                            onOpen = { openActions(item) },
+                        )
+                    }
+                }
+                selected?.let { item ->
+                    DvrDetails(
+                        item = item,
+                        watched = (item as? DvrPlanned.Recording)?.let { r ->
+                            remember(r.recording.id, progressRevision) { vm.progressFraction(r.recording) }
                         },
-                        onPlay = { play(r) },
-                        onMenu = { menuFor = r },
-                    )
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                            .onFocusChanged { inActions = it.hasFocus }
+                            // ◀ from the actions goes back to the line they belong to.
+                            .onPreviewKeyEvent { e ->
+                                if (e.key == Key.DirectionLeft && e.type == KeyEventType.KeyDown) { backToRow(); true } else false
+                            },
+                    ) {
+                        DvrActions(
+                            item = item,
+                            firstFocus = firstAction,
+                            resumeAt = (item as? DvrPlanned.Recording)?.recording?.let { vm.resumePositionMs(it) },
+                            onPlay = { r, resume -> start(r, resume) },
+                            onDelete = { r -> confirmDeleteFor = r },
+                            onCancel = { r ->
+                                val next = if (r.status == RecordingStatus.RECORDING) item.key else neighbourOf(item.key)
+                                vm.cancelOrStop(r)
+                                scope.launch { withFrameNanos { }; focusRow(next) }
+                            },
+                            onCancelGame = { p ->
+                                val next = neighbourOf(item.key)
+                                vm.cancelSportPlan(p)
+                                scope.launch { withFrameNanos { }; focusRow(next) }
+                            },
+                        )
+                    }
                 }
             }
-        }
-    }
-
-    resumeFor?.let { r ->
-        val at = vm.resumePositionMs(r) ?: 0L
-        val focus = remember { FocusRequester() }
-        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-        GuideMenuHost(x = 1150f, top = 120.mpx, width = 560.mpx, onDismiss = { resumeFor = null }) {
-            StageMenuHeader(title = r.title, subtitle = r.channelName)
-            StageMenuItem(
-                text = stringResource(R.string.sport_dvr_resume, dvrClock(at)), icon = OwnTVIcon.PLAY,
-                onClick = { resumeFor = null; start(r, true) },
-                modifier = Modifier.focusRequester(focus),
-            )
-            StageMenuItem(
-                text = stringResource(R.string.sport_dvr_start_over), icon = OwnTVIcon.REWIND,
-                onClick = { resumeFor = null; start(r, false) },
-            )
-            // (v2.9.8) Delete here too: a press on a part-watched recording lands on this prompt, and
-            // a remote whose hold is not seen as one would otherwise never reach Delete.
-            StageMenuItem(
-                text = stringResource(R.string.common_delete), icon = OwnTVIcon.TRASH,
-                onClick = { resumeFor = null; confirmDeleteFor = r },
-            )
-        }
-    }
-
-    menuFor?.let { r ->
-        val formatDate = rememberBestDateFormatter("EEEdMMM")
-        val focus = remember { FocusRequester() }
-        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-        GuideMenuHost(x = 1150f, top = 120.mpx, width = 560.mpx, onDismiss = { menuFor = null }) {
-            StageMenuHeader(title = r.title, subtitle = listOf(formatDate(r.programmeStartMs), r.channelName).joinToString(stringResource(R.string.content_epg_bits_separator)))
-            StageMenuItem(
-                text = stringResource(R.string.content_action_play), icon = OwnTVIcon.PLAY,
-                onClick = { menuFor = null; play(r) },
-                modifier = Modifier.focusRequester(focus),
-            )
-            StageMenuItem(
-                text = stringResource(R.string.common_delete), icon = OwnTVIcon.TRASH,
-                onClick = { menuFor = null; confirmDeleteFor = r },
-            )
         }
     }
 
@@ -353,74 +302,18 @@ fun DvrScreen(
             focusCancel = true,
             onConfirm = {
                 confirmDeleteFor = null
-                // Focus moves to the next recording (or the one before), as the row is about to go.
-                val index = rows.indexOfFirst { it.id == r.id }
-                val next = (rows.getOrNull(index + 1) ?: rows.getOrNull(index - 1))?.id
+                val key = DvrPlanned.keyOf(r.id)
+                val next = neighbourOf(key)
                 vm.delete(r) {
                     DvrThumbnails.delete(context, r.id)
-                    scope.launch {
-                        withFrameNanos { }
-                        if (next != null) focusRow(next) else runCatching { sortFocus.requestFocus() }
-                    }
+                    scope.launch { withFrameNanos { }; focusRow(next) }
                 }
             },
             onCancel = {
                 confirmDeleteFor = null
-                scope.launch { withFrameNanos { }; focusRow(r.id) }
+                scope.launch { withFrameNanos { }; runCatching { firstAction.requestFocus() } }
             },
         )
-    }
-
-    plannedMenuFor?.let { item ->
-        val formatDate = rememberBestDateFormatter("EEEdMMM")
-        val formatTime = rememberSystemTimeFormatter()
-        val focus = remember { FocusRequester() }
-        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-        val sep = stringResource(R.string.content_epg_bits_separator)
-        // After a cancel, focus moves on to the next line (or the one before), as this one goes.
-        val index = planned.indexOfFirst { it.key == item.key }
-        val nextKey = (planned.getOrNull(index + 1) ?: planned.getOrNull(index - 1))?.key
-        val close: (Boolean) -> Unit = { removed ->
-            plannedMenuFor = null
-            scope.launch { withFrameNanos { }; focusPlanned(if (removed) nextKey else item.key) }
-        }
-        GuideMenuHost(x = 1150f, top = 120.mpx, width = 560.mpx, onDismiss = { close(false) }) {
-            when (item) {
-                is DvrPlanned.Recording -> {
-                    val r = item.recording
-                    StageMenuHeader(title = r.title, subtitle = listOf(formatDate(r.programmeStartMs), formatTime(r.programmeStartMs), r.channelName).joinToString(sep))
-                    if (r.status == RecordingStatus.RECORDING) {
-                        if (r.filePath != null) {
-                            StageMenuItem(
-                                text = stringResource(R.string.content_action_play), icon = OwnTVIcon.PLAY,
-                                onClick = { plannedMenuFor = null; play(r) },
-                                modifier = Modifier.focusRequester(focus),
-                            )
-                        }
-                        StageMenuItem(
-                            text = stringResource(R.string.sport_dvr_stop_recording), icon = OwnTVIcon.CLOSE,
-                            onClick = { vm.cancelOrStop(r); close(false) },
-                            modifier = if (r.filePath == null) Modifier.focusRequester(focus) else Modifier,
-                        )
-                    } else {
-                        StageMenuItem(
-                            text = stringResource(R.string.sport_dvr_cancel_recording), icon = OwnTVIcon.CLOSE,
-                            onClick = { vm.cancelOrStop(r); close(true) },
-                            modifier = Modifier.focusRequester(focus),
-                        )
-                    }
-                }
-                is DvrPlanned.Game -> {
-                    val p = item.plan
-                    StageMenuHeader(title = p.title, subtitle = listOf(formatDate(p.kickoffMs), formatTime(p.kickoffMs)).joinToString(sep))
-                    StageMenuItem(
-                        text = stringResource(R.string.sport_dvr_cancel_recording), icon = OwnTVIcon.CLOSE,
-                        onClick = { vm.cancelSportPlan(p); close(true) },
-                        modifier = Modifier.focusRequester(focus),
-                    )
-                }
-            }
-        }
     }
 
     deleteFailed?.let { r ->
@@ -429,132 +322,212 @@ fun DvrScreen(
             body = stringResource(R.string.sport_dvr_delete_failed_message, r.title),
             onDismiss = {
                 vm.clearDeleteFailed()
-                scope.launch { withFrameNanos { }; focusRow(r.id) }
+                scope.launch { withFrameNanos { }; focusRow(DvrPlanned.keyOf(r.id)) }
             },
         )
     }
 }
 
-/** One recording: the still, the title (two lines), when and where, and the synopsis. */
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+/**
+ * One line of the left list: a small still (or the channel's logo, or a Sport mark for a game waiting
+ * for its channel), the title, and when and where. OK and ▶ move into the line's actions on the right.
+ * OK acts on its release, and takes the press as well, so neither half reaches the action it lands on.
+ */
 @Composable
-private fun DvrRow(
-    recording: RecordingEntity,
+private fun DvrListRow(
+    item: DvrPlanned,
+    selected: Boolean,
     focus: FocusRequester,
-    thumbnail: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit,
-    onPlay: () -> Unit,
-    onMenu: () -> Unit,
+    watched: Float?,
+    onFocused: () -> Unit,
+    onOpen: () -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
-    var okDown by remember { mutableStateOf(false) }
-    var okHeld by remember { mutableStateOf(false) }
-    val formatDate = rememberBestDateFormatter("EEEdMMMyyyy")
-    val formatTime = rememberSystemTimeFormatter()
-    val minutes = ((recording.programmeStopMs - recording.programmeStartMs) / 60_000L).toInt().coerceAtLeast(1)
-    val line = listOf(
-        formatDate(recording.programmeStartMs),
-        stringResource(R.string.content_live_time_range_plain, formatTime(recording.programmeStartMs), formatTime(recording.programmeStopMs)),
-        recording.channelName,
-        stringResource(R.string.player_duration_minutes, minutes),
-    ).joinToString(stringResource(R.string.content_epg_bits_separator))
+    val sep = stringResource(R.string.content_epg_bits_separator)
+    val (title, line) = dvrHeadline(item, sep, withYear = false)
     Row(
         Modifier
             .fillMaxWidth()
-            .heightIn(min = 196.mpx)
+            .height(124.mpx)
             .focusRequester(focus)
-            .onFocusChanged { focused = it.isFocused; if (!it.isFocused) { okDown = false; okHeld = false } }
-            // Hold OK (or ☰) for Play / Delete; a press plays. Acting on release is what lets a hold differ,
-            // and a hold opens the menu on its release too (v2.9.7): opened while OK was still down, the
-            // release landed on the menu's Play, which went straight to Resume / Start over.
+            .onFocusChanged { focused = it.isFocused; if (it.isFocused) onFocused() }
             .onPreviewKeyEvent { e ->
-                val down = e.type == KeyEventType.KeyDown
                 when (e.key) {
-                    Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> {
-                        val repeat = e.nativeKeyEvent.repeatCount
-                        if (down && repeat == 0) { okDown = true; okHeld = false }
-                        else if (down && okDown) okHeld = true
-                        else if (!down && okDown) {
-                            okDown = false
-                            // (v2.9.8) Also a hold by how long OK was down, for remotes that send no repeats.
-                            val heldMs = e.nativeKeyEvent.eventTime - e.nativeKeyEvent.downTime
-                            if (okHeld || heldMs >= HOLD_MS) { okHeld = false; onMenu() } else onPlay()
-                        }
+                    Key.DirectionCenter, Key.Enter, Key.NumPadEnter, Key.Menu -> {
+                        if (e.type == KeyEventType.KeyUp) onOpen()
                         true
                     }
-                    Key.Menu -> { if (down) onMenu(); true }
+                    Key.DirectionRight -> { if (e.type == KeyEventType.KeyDown) onOpen(); true }
                     else -> false
                 }
             }
-            .combinedClickable(interactionSource = null, indication = null, onClick = onPlay, onLongClick = onMenu)
             .focusable()
-            .then(if (focused) Modifier.stageFocusLook(StageFocus.FX, 22.mpx) else Modifier)
-            .padding(horizontal = 18.mpx, vertical = 14.mpx),
-        horizontalArrangement = Arrangement.spacedBy(28.mpx),
+            .then(
+                when {
+                    focused -> Modifier.stageFocusLook(StageFocus.FX, 18.mpx)
+                    selected -> Modifier.clip(RoundedCornerShape(18.mpx)).background(stageAccent.accent.copy(alpha = 0.10f))
+                    else -> Modifier
+                },
+            )
+            .padding(horizontal = 14.mpx, vertical = 10.mpx),
+        horizontalArrangement = Arrangement.spacedBy(20.mpx),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(300.mpx, 169.mpx).clip(RoundedCornerShape(14.mpx)).background(stageStillBack)) { thumbnail() }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.mpx)) {
-            if (recording.status == RecordingStatus.RECORDING) {
+        Box(Modifier.size(176.mpx, 99.mpx).clip(RoundedCornerShape(10.mpx)).background(stageStillBack)) {
+            DvrPicture(item, markSize = 44.mpx)
+            DvrWatchedBar(watched, 5.mpx)
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.mpx)) {
+            if ((item as? DvrPlanned.Recording)?.recording?.status == RecordingStatus.RECORDING) {
                 tv.own.owntv.features.epg.GuideTag(
-                    stringResource(R.string.sport_guide_recording), tv.own.owntv.features.epg.GuideLiveRed, filled = false, size = 15, dot = true,
+                    stringResource(R.string.sport_guide_recording), tv.own.owntv.features.epg.GuideLiveRed, filled = false, size = 13, dot = true,
                 )
             }
             Text(
-                recording.title, style = stageText(30, 800).copy(lineHeight = 36.mpxSp),
+                title, style = stageText(22, 800).copy(lineHeight = 28.mpxSp),
                 color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
-            Text(line, style = stageText(19, 600), color = if (focused) stageAccent.accent else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            recording.description?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = stageText(21, 400).copy(lineHeight = 29.mpxSp), color = StageColors.Body, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            }
+            Text(line, style = stageText(16, 600), color = if (focused) stageAccent.accent else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
 
 /**
- * (v2.9.9) A game marked Record in Sport that has no channel yet: a Sport mark where the still goes, the
- * game, its kick-off, and whether DPTV is still waiting for the guide to list its channel.
+ * The right panel: the still beside the title and when and where, the guide's whole description under
+ * them, and the line's [actions] under that. The description gives way first when space runs out.
  */
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun DvrGameRow(plan: tv.own.owntv.features.sport.RecordPlan, focus: FocusRequester, onClick: () -> Unit) {
-    var focused by remember { mutableStateOf(false) }
-    val formatDate = rememberBestDateFormatter("EEEdMMMyyyy")
-    val formatTime = rememberSystemTimeFormatter()
-    val status = stringResource(
-        if (plan.status == tv.own.owntv.features.sport.RecordPlan.Status.NO_CHANNEL) R.string.sport_dvr_game_no_channel
-        else R.string.sport_dvr_game_waiting,
-    )
-    val line = listOf(formatDate(plan.kickoffMs), formatTime(plan.kickoffMs), status)
-        .joinToString(stringResource(R.string.content_epg_bits_separator))
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 196.mpx)
-            .focusRequester(focus)
-            .onFocusChanged { focused = it.isFocused }
-            .combinedClickable(interactionSource = null, indication = null, onClick = onClick, onLongClick = onClick)
-            .focusable()
-            .then(if (focused) Modifier.stageFocusLook(StageFocus.FX, 22.mpx) else Modifier)
-            .padding(horizontal = 18.mpx, vertical = 14.mpx),
-        horizontalArrangement = Arrangement.spacedBy(28.mpx),
-        verticalAlignment = Alignment.CenterVertically,
+private fun DvrDetails(
+    item: DvrPlanned,
+    watched: Float?,
+    modifier: Modifier = Modifier,
+    actions: @Composable () -> Unit,
+) {
+    val sep = stringResource(R.string.content_epg_bits_separator)
+    val (title, line) = dvrHeadline(item, sep, withYear = true)
+    val description = (item as? DvrPlanned.Recording)?.recording?.description?.takeIf { it.isNotBlank() }
+    Column(
+        modifier
+            .clip(RoundedCornerShape(28.mpx))
+            .background(StageColors.Dim.copy(alpha = 0.10f))
+            .padding(28.mpx),
+        verticalArrangement = Arrangement.spacedBy(18.mpx),
     ) {
-        Box(Modifier.size(300.mpx, 169.mpx).clip(RoundedCornerShape(14.mpx)).background(stageStillBack), contentAlignment = Alignment.Center) {
-            tv.own.owntv.ui.components.OwnTVIcon(OwnTVIcon.SPORT, StageColors.Muted, Modifier.size(72.mpx))
+        Row(horizontalArrangement = Arrangement.spacedBy(24.mpx), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(420.mpx, 236.mpx).clip(RoundedCornerShape(16.mpx)).background(stageStillBack)) {
+                DvrPicture(item, markSize = 96.mpx)
+                DvrWatchedBar(watched, 7.mpx)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.mpx)) {
+                Text(title, style = stageText(32, 800).copy(lineHeight = 38.mpxSp), color = StageColors.Text, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text(line, style = stageText(18, 600), color = stageAccent.accent, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
         }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.mpx)) {
+        if (description != null) {
             Text(
-                plan.title, style = stageText(30, 800).copy(lineHeight = 36.mpxSp),
-                color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                description, style = stageText(20, 400).copy(lineHeight = 29.mpxSp), color = StageColors.Body,
+                maxLines = Int.MAX_VALUE, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
             )
-            Text(line, style = stageText(19, 600), color = if (focused) stageAccent.accent else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        actions()
+    }
+}
+
+/**
+ * What can be done with the highlighted line, as the old OK menu offered it. [firstFocus] goes on the
+ * first action, where OK or ▶ on the line lands.
+ */
+@Composable
+private fun DvrActions(
+    item: DvrPlanned,
+    firstFocus: FocusRequester,
+    resumeAt: Long?,
+    onPlay: (RecordingEntity, Boolean) -> Unit,
+    onDelete: (RecordingEntity) -> Unit,
+    onCancel: (RecordingEntity) -> Unit,
+    onCancelGame: (tv.own.owntv.features.sport.RecordPlan) -> Unit,
+) {
+    val actions = ArrayList<Triple<String, OwnTVIcon, () -> Unit>>()
+    when (item) {
+        is DvrPlanned.Game -> actions += Triple(stringResource(R.string.sport_dvr_cancel_recording), OwnTVIcon.CLOSE) { onCancelGame(item.plan) }
+        is DvrPlanned.Recording -> {
+            val r = item.recording
+            val playable = r.status == RecordingStatus.COMPLETED || (r.status == RecordingStatus.RECORDING && r.filePath != null)
+            if (playable) {
+                if (resumeAt != null) {
+                    actions += Triple(stringResource(R.string.sport_dvr_resume, dvrClock(resumeAt)), OwnTVIcon.PLAY) { onPlay(r, true) }
+                    actions += Triple(stringResource(R.string.sport_dvr_start_over), OwnTVIcon.REWIND) { onPlay(r, false) }
+                } else {
+                    actions += Triple(stringResource(R.string.content_action_play), OwnTVIcon.PLAY) { onPlay(r, false) }
+                }
+            }
+            when (r.status) {
+                RecordingStatus.SCHEDULED -> actions += Triple(stringResource(R.string.sport_dvr_cancel_recording), OwnTVIcon.CLOSE) { onCancel(r) }
+                RecordingStatus.RECORDING -> actions += Triple(stringResource(R.string.sport_dvr_stop_recording), OwnTVIcon.CLOSE) { onCancel(r) }
+                else -> Unit
+            }
+            if (r.status == RecordingStatus.COMPLETED || r.status == RecordingStatus.RECORDING) {
+                actions += Triple(stringResource(R.string.common_delete), OwnTVIcon.TRASH) { onDelete(r) }
+            }
+        }
+    }
+    Column(Modifier.width(560.mpx).focusGroup(), verticalArrangement = Arrangement.spacedBy(6.mpx)) {
+        actions.forEachIndexed { i, (text, icon, onClick) ->
+            StageMenuItem(
+                text = text, icon = icon, onClick = onClick,
+                modifier = if (i == 0) Modifier.focusRequester(firstFocus) else Modifier,
+            )
         }
     }
 }
 
-/** How long OK must be down to count as a hold on a DVR row. */
-private const val HOLD_MS = 500L
+/** A line's title, and its when-and-where: date, time span, channel and length; a game's kick-off and state. */
+@Composable
+private fun dvrHeadline(item: DvrPlanned, sep: String, withYear: Boolean): Pair<String, String> {
+    val formatDate = rememberBestDateFormatter(if (withYear) "EEEdMMMyyyy" else "EEEdMMM")
+    val formatTime = rememberSystemTimeFormatter()
+    return when (item) {
+        is DvrPlanned.Recording -> {
+            val r = item.recording
+            val minutes = ((r.programmeStopMs - r.programmeStartMs) / 60_000L).toInt().coerceAtLeast(1)
+            r.title to listOf(
+                formatDate(r.programmeStartMs),
+                stringResource(R.string.content_live_time_range_plain, formatTime(r.programmeStartMs), formatTime(r.programmeStopMs)),
+                r.channelName,
+                stringResource(R.string.player_duration_minutes, minutes),
+            ).joinToString(sep)
+        }
+        is DvrPlanned.Game -> {
+            val p = item.plan
+            val status = stringResource(
+                if (p.status == tv.own.owntv.features.sport.RecordPlan.Status.NO_CHANNEL) R.string.sport_dvr_game_no_channel
+                else R.string.sport_dvr_game_waiting,
+            )
+            p.title to listOf(formatDate(p.kickoffMs), formatTime(p.kickoffMs), status).joinToString(sep)
+        }
+    }
+}
+
+/** A recording's still (or channel logo), or a Sport mark for a game still waiting for its channel. */
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.DvrPicture(item: DvrPlanned, markSize: Dp) {
+    when (item) {
+        is DvrPlanned.Recording -> DvrStill(item.recording)
+        is DvrPlanned.Game -> Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
+            tv.own.owntv.ui.components.OwnTVIcon(OwnTVIcon.SPORT, StageColors.Muted, Modifier.size(markSize))
+        }
+    }
+}
+
+/** How far a recording was watched, along the bottom of its picture. */
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.DvrWatchedBar(watched: Float?, height: Dp) {
+    if (watched == null) return
+    Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(height).background(StageColors.Dim.copy(alpha = 0.6f))) {
+        Box(Modifier.fillMaxWidth(watched).fillMaxHeight().background(stageAccent.accent))
+    }
+}
 
 /** "1:05:09" or "42:17": where a recording was left. */
 internal fun dvrClock(ms: Long): String {
