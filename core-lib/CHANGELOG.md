@@ -11,6 +11,7 @@
 
 ## core-1.0.72 — 2026-10-25
 ## core-1.0.71
+## core-1.0.71 — 2026-11-09
 
 ### ✨ New features
 - **🔎 Sports: competitions are found by every name they go by — F1, EPL, La Liga, Formel 1 and more**
