@@ -1044,6 +1044,7 @@ class SeriesViewModel(
                     episode, it, tv.own.owntv.core.player.enginePinKey(show.sourceId, "EPISODE", episode.remoteId),
                 )
             }
+            val showKey = tv.own.owntv.core.player.enginePinKey(show.sourceId, "SERIES", show.remoteId)
             player.playEpisodes(
                 items = queue.map { ep ->
                     PlaylistItem(
@@ -1056,8 +1057,8 @@ class SeriesViewModel(
                             // P6 — engine pins key on this, not on the URL: for Stalker the queue's
                             // stored URL is the shared season cmd and the played URL is minted per item.
                             contentKey = tv.own.owntv.core.player.enginePinKey(show.sourceId, "EPISODE", ep.remoteId),
-                            // v44 — audio/subtitle choices are remembered per series (owner decision 11).
-                            trackKey = tv.own.owntv.core.player.enginePinKey(show.sourceId, "SERIES", show.remoteId),
+                            // v44 — audio/subtitle choices are remembered per series.
+                            trackKey = showKey,
                         ),
                         resolveUrl = if (needsResolve && source != null) {
                             { streamUrlResolver.resolve(source, ep.streamUrl, vod = true, episode = ep.episodeNumber) }
@@ -1072,10 +1073,13 @@ class SeriesViewModel(
                 userAgent = sourceUa,
                 vodEngineOverride = tv.own.owntv.core.settings.SourceOverrides.vodEngineOf(source),
             )
-            // Enable the player's OpenSubtitles search for this episode (subtitle plan §4). The parent
-            // series' TMDB id gives the strongest episode match (review R7) when metadata is available.
+            // The show's TMDB details, looked up after playback has started: its title art for the
+            // player bar (keyed on the show, so it stays for the whole queue), and its TMDB id, which
+            // gives the OpenSubtitles search its strongest episode match.
+            val showDetails = runCatching { metadata.resolveSeries(show) }.getOrNull()
+            player.setTitleLogo(showKey, tv.own.owntv.core.metadata.MetadataImages.logo(showDetails?.logoPath))
             if (pid != null) {
-                val parentTmdbId = runCatching { metadata.resolveSeries(show)?.tmdbId?.toLong() }.getOrNull()
+                val parentTmdbId = showDetails?.tmdbId?.toLong()
                 subtitleController.setEpisode(pid, show, episode, parentTmdbId)
                 // Remember the queue so player-driven advances re-point the context (Phase 5, init).
                 playingQueue = PlayingQueue(show, queue, pid, parentTmdbId)
