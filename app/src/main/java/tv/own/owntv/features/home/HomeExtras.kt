@@ -60,6 +60,12 @@ data class HomeExtras(
     val recommendedMovies: List<HomeCard> = emptyList(),
     val recommendedShows: List<HomeCard> = emptyList(),
     val watchlist: List<HomeCard> = emptyList(),
+    /**
+     * (DPTV v2.9.11) Continue watching as Home shows it: DPTV's own and Jellyfin's together, without what
+     * was last watched over a week ago or was taken off the row. Filled on Home, not by the view model.
+     */
+    val continueMovies: List<HomeCard> = emptyList(),
+    val continueShows: List<HomeCard> = emptyList(),
 )
 
 /** The pure part: VOD and Jellyfin in one Continue watching row, most recent first. */
@@ -83,6 +89,21 @@ object HomeExtrasRules {
     fun merge(own: List<HomeCard>, jellyfin: List<HomeCard>): List<HomeCard> =
         if (jellyfin.isEmpty()) own else (own + jellyfin).sortedByDescending { it.lastWatchedMs }
 
+    /** (DPTV v2.9.11) Continue watching keeps what was watched in the last week. */
+    const val CONTINUE_MAX_AGE_MS = 7L * 24L * 60L * 60L * 1000L
+
+    /**
+     * (DPTV v2.9.11) The Continue watching cards to show at [now]: none last watched over a week ago, and
+     * none taken off the row ([removed]: card key -> when it had last been watched then) unless watched
+     * again since. A card that does not say when it was last watched is kept, as before.
+     */
+    fun continueShown(cards: List<HomeCard>, now: Long, removed: Map<String, Long>): List<HomeCard> =
+        cards.filter { c ->
+            val recent = c.lastWatchedMs <= 0 || now - c.lastWatchedMs <= CONTINUE_MAX_AGE_MS
+            val kept = removed[c.key]?.let { c.lastWatchedMs > it } ?: true
+            recent && kept
+        }
+
     /** "Series · S1 · E4" style title for an episode card; a film keeps its own name. */
     fun cardTitle(item: JellyfinItem): String = if (item.kind == JellyfinKind.EPISODE) item.seriesName ?: item.name else item.name
 }
@@ -97,7 +118,47 @@ class HomeExtrasViewModel(
     private val recommendations: HomeRecommendations,
     private val traktStore: TraktStore,
     private val settings: tv.own.owntv.core.settings.SettingsRepository,
+    context: android.content.Context,
 ) : ViewModel() {
+
+    // (DPTV v2.9.11) Cards taken off Continue watching (hold OK), per profile: card key -> when it had last
+    // been watched at the time. Kept on this TV. A card comes back once it is watched again.
+    private val removedPrefs = context.applicationContext.getSharedPreferences(REMOVED_PREFS, android.content.Context.MODE_PRIVATE)
+    private val _continueRemoved = MutableStateFlow<Map<String, Long>>(emptyMap())
+    val continueRemoved: StateFlow<Map<String, Long>> = _continueRemoved.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            settings.activeProfileId.collect { pid -> _continueRemoved.value = readRemoved(pid) }
+        }
+    }
+
+    private fun readRemoved(profileId: Long): Map<String, Long> {
+        val prefix = profileId.toString() + REMOVED_SEP
+        return removedPrefs.all.mapNotNull { (k, v) ->
+            if (k.startsWith(prefix) && v is Long) k.removePrefix(prefix) to v else null
+        }.toMap()
+    }
+
+    /** Take [card] off Continue watching until it is watched again. */
+    fun removeFromContinue(card: HomeCard) {
+        viewModelScope.launch {
+            val pid = settings.activeProfileId.first().takeIf { it >= 0 } ?: return@launch
+            val now = System.currentTimeMillis()
+            val edit = removedPrefs.edit()
+            // A removal only matters while the card could still show: past a week it is gone anyway.
+            removedPrefs.all.forEach { (k, v) ->
+                if (v is Long && v > 0 && now - v > HomeExtrasRules.CONTINUE_MAX_AGE_MS) edit.remove(k)
+            }
+            edit.putLong(pid.toString() + REMOVED_SEP + card.key, card.lastWatchedMs).apply()
+            _continueRemoved.value = _continueRemoved.value + (card.key to card.lastWatchedMs)
+        }
+    }
+
+    private companion object {
+        const val REMOVED_PREFS = "home_continue_removed"
+        const val REMOVED_SEP = "|"
+    }
 
     private val _extras = MutableStateFlow(HomeExtras())
     val extras: StateFlow<HomeExtras> = _extras.asStateFlow()

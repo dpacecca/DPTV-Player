@@ -30,4 +30,21 @@ class HomeExtrasRulesTest {
         assertEquals(own, HomeExtrasRules.merge(own, emptyList()))
         assertEquals(HomeCardTarget.VodEpisode(1002, 50), own.first().target)
     }
+
+    // (DPTV v2.9.11) Continue watching keeps the last week, and what was taken off stays off until watched again.
+    @Test
+    fun continueShowsTheLastWeekOnly() {
+        val day = 24L * 60L * 60L * 1000L
+        val now = 100L * day
+        val cards = listOf(vod(1, now - day), vod(2, now - 8 * day), jf("x", now - 7 * day), jf("unknown", 0))
+        assertEquals(listOf("vod:m1", "jf:x", "jf:unknown"), HomeExtrasRules.continueShown(cards, now, emptyMap()).map { it.key })
+    }
+
+    @Test
+    fun aRemovedCardStaysOffUntilWatchedAgain() {
+        val now = 1_000_000L
+        val removed = mapOf("vod:m1" to now - 500)
+        assertEquals(emptyList<String>(), HomeExtrasRules.continueShown(listOf(vod(1, now - 500)), now, removed).map { it.key })
+        assertEquals(listOf("vod:m1"), HomeExtrasRules.continueShown(listOf(vod(1, now - 100)), now, removed).map { it.key })
+    }
 }

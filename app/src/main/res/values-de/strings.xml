@@ -81,6 +81,7 @@
     <string name="sport_dvr_sort_date">Datum</string>
     <string name="sport_dvr_sort_az">A–Z</string>
     <string name="sport_dvr_empty">Noch keine Aufnahmen. Im Guide OK auf einer Sendung gedrückt halten und Aufnehmen wählen.</string>
+    <string name="sport_home_continue_remove">Aus „Weiterschauen“ entfernen</string>
     <string name="sport_dvr_show">Anzeigen</string>
     <string name="sport_dvr_view_recorded">Aufgenommen</string>
     <string name="sport_dvr_view_scheduled">Geplant</string>

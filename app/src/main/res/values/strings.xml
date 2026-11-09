@@ -81,6 +81,7 @@
     <string name="sport_dvr_sort_date">Date</string>
     <string name="sport_dvr_sort_az">A–Z</string>
     <string name="sport_dvr_empty">No recordings yet. In the guide, hold OK on a programme and choose Record.</string>
+    <string name="sport_home_continue_remove">Remove from Continue watching</string>
     <string name="sport_dvr_show">Show</string>
     <string name="sport_dvr_view_recorded">Recorded</string>
     <string name="sport_dvr_view_scheduled">Scheduled</string>
