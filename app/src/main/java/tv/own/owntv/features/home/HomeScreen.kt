@@ -188,7 +188,34 @@ fun HomeScreen(
     val state by vm.uiState.collectAsStateWithLifecycle()
     // (DPTV v2.9.1) The Jellyfin, Recommended and Watchlist rows, and Jellyfin's half of Continue watching.
     val extrasVm: HomeExtrasViewModel = koinViewModel()
-    val extras by extrasVm.extras.collectAsStateWithLifecycle()
+    val rawExtras by extrasVm.extras.collectAsStateWithLifecycle()
+    // (DPTV v2.9.11) Continue watching as shown: the last week only, without what was taken off it.
+    val continueRemoved by extrasVm.continueRemoved.collectAsStateWithLifecycle()
+    val extras = remember(rawExtras, state.continueMovies, state.continueSeries, continueRemoved) {
+        val now = System.currentTimeMillis()
+        rawExtras.copy(
+            continueMovies = HomeExtrasRules.continueShown(
+                HomeExtrasRules.continueCards(state.continueMovies, episodes = false, jellyfin = rawExtras.jellyfinContinueMovies), now, continueRemoved,
+            ),
+            continueShows = HomeExtrasRules.continueShown(
+                HomeExtrasRules.continueCards(state.continueSeries, episodes = true, jellyfin = rawExtras.jellyfinContinueShows), now, continueRemoved,
+            ),
+        )
+    }
+    // Hold OK on a Continue watching card: its menu (Remove from Continue watching).
+    var continueMenuFor by remember { mutableStateOf<HomeCard?>(null) }
+    continueMenuFor?.let { card ->
+        val menuFocus = remember { FocusRequester() }
+        LaunchedEffect(Unit) { runCatching { menuFocus.requestFocus() } }
+        tv.own.owntv.features.epg.GuideMenuHost(x = 1150f, top = 120.mpx, width = 560.mpx, onDismiss = { continueMenuFor = null }) {
+            tv.own.owntv.ui.stage.StageMenuHeader(title = card.title, subtitle = null)
+            tv.own.owntv.ui.stage.StageMenuItem(
+                text = stringResource(R.string.sport_home_continue_remove), icon = tv.own.owntv.ui.components.OwnTVIcon.CLOSE,
+                onClick = { continueMenuFor = null; extrasVm.removeFromContinue(card) },
+                modifier = Modifier.focusRequester(menuFocus),
+            )
+        }
+    }
     LaunchedEffect(state.config, restoreFocus) { extrasVm.refresh(state.config) }
     val openCard: (HomeCard) -> Unit = { card ->
         when (val t = card.target) {
@@ -706,37 +733,22 @@ fun HomeScreen(
                     modifier = rowModifier,
                 )
 
-                // (DPTV v2.9.1) With Jellyfin films in progress, one row of both, the most recent first.
-                HomeRow.CONTINUE_MOVIES -> if (extras.jellyfinContinueMovies.isNotEmpty()) HomeCardRow(
+                // (DPTV v2.9.1) DPTV's and Jellyfin's in one row, the most recent first. (v2.9.11) Only the
+                // last week, and hold OK on a card to take it off the row.
+                HomeRow.CONTINUE_MOVIES -> HomeCardRow(
                     title = row.displayTitle(),
-                    cards = HomeExtrasRules.continueCards(state.continueMovies, episodes = false, jellyfin = extras.jellyfinContinueMovies),
+                    cards = extras.continueMovies,
                     start = contentStart, onClick = openCard, onFocus = onNonHeroFocused,
                     firstItemFocusRequester = firstItemFocusRequester, track = track, modifier = rowModifier,
-                ) else ContinuePosterRow(
-                    title = row.displayTitle(),
-                    items = state.continueMovies,
-                    start = contentStart,
-                    onItemClick = { onPlayMovie(it.sourceItemId, it.positionMs) },
-                    onFocus = onNonHeroFocused,
-                    firstItemFocusRequester = firstItemFocusRequester,
-                    track = track,
-                    modifier = rowModifier,
+                    onHold = { continueMenuFor = it },
                 )
-        
-                HomeRow.CONTINUE_SERIES -> if (extras.jellyfinContinueShows.isNotEmpty()) HomeCardRow(
+
+                HomeRow.CONTINUE_SERIES -> HomeCardRow(
                     title = row.displayTitle(),
-                    cards = HomeExtrasRules.continueCards(state.continueSeries, episodes = true, jellyfin = extras.jellyfinContinueShows),
+                    cards = extras.continueShows,
                     start = contentStart, onClick = openCard, onFocus = onNonHeroFocused,
                     firstItemFocusRequester = firstItemFocusRequester, track = track, modifier = rowModifier,
-                ) else ContinuePosterRow(
-                    title = row.displayTitle(),
-                    items = state.continueSeries,
-                    start = contentStart,
-                    onItemClick = { onPlayEpisode(0L, it.targetItemId, it.positionMs) },
-                    onFocus = onNonHeroFocused,
-                    firstItemFocusRequester = firstItemFocusRequester,
-                    track = track,
-                    modifier = rowModifier,
+                    onHold = { continueMenuFor = it },
                 )
 
                 // (DPTV v2.9.1) Recommended, the latest on Jellyfin, and the Trakt watchlist.
@@ -914,8 +926,8 @@ private fun rowHasData(row: HomeRow, state: HomeUiState, extras: HomeExtras): Bo
     }
     HomeRow.FAVORITE_MOVIES -> state.favoriteMovies.isNotEmpty()
     HomeRow.FAVORITE_SERIES -> state.favoriteSeries.isNotEmpty()
-    HomeRow.CONTINUE_MOVIES -> state.continueMovies.isNotEmpty() || extras.jellyfinContinueMovies.isNotEmpty()
-    HomeRow.CONTINUE_SERIES -> state.continueSeries.isNotEmpty() || extras.jellyfinContinueShows.isNotEmpty()
+    HomeRow.CONTINUE_MOVIES -> extras.continueMovies.isNotEmpty()
+    HomeRow.CONTINUE_SERIES -> extras.continueShows.isNotEmpty()
     HomeRow.TRENDING_MOVIES -> state.trendingMovies.isNotEmpty()
     HomeRow.TRENDING_SHOWS -> state.trendingShows.isNotEmpty()
     HomeRow.RECOMMENDED_MOVIES -> extras.recommendedMovies.isNotEmpty()
@@ -1499,43 +1511,6 @@ internal fun relativeLastWatchedLabel(lastEngagementAt: Long, nowMs: Long): Stri
     return pluralStringResource(R.plurals.home_last_watched_days, elapsedDays.toInt(), elapsedDays.toInt())
 }
 
-/** Continue watching movies / series: 196 × 294 posters (`.pc`), as P2-02 draws the series row. */
-@Composable
-private fun ContinuePosterRow(
-    title: String,
-    items: List<LauncherContinuationItem>,
-    start: Dp,
-    onItemClick: (LauncherContinuationItem) -> Unit,
-    onFocus: () -> Unit,
-    firstItemFocusRequester: FocusRequester?,
-    track: (FocusRequester) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier) {
-        HomeRowHeader(title, small = items.size.toString(), start = start)
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(20.mpx),
-            contentPadding = PaddingValues(start = start, end = 64.mpx),
-            modifier = Modifier.focusRestorer().focusGroup(),
-        ) {
-            itemsIndexed(items, key = { _, item -> item.stableKey }) { index, item ->
-                StagePoster(
-                    title = item.title,
-                    onClick = { onItemClick(item) },
-                    width = 196.mpx,
-                    height = 294.mpx,
-                    modifier = Modifier
-                        .then(if (index == 0 && firstItemFocusRequester != null) Modifier.focusRequester(firstItemFocusRequester) else Modifier)
-                        .tracked(track = track)
-                        .onFocusChanged { if (it.hasFocus) onFocus() },
-                ) {
-                    AsyncImage(model = item.posterUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                }
-            }
-        }
-    }
-}
-
 /** (DPTV v2.9.1) A row of [HomeCard]s: VOD and Jellyfin together, recommendations, the watchlist. */
 @Composable
 private fun HomeCardRow(
@@ -1547,6 +1522,8 @@ private fun HomeCardRow(
     firstItemFocusRequester: FocusRequester?,
     track: (FocusRequester) -> Unit,
     modifier: Modifier = Modifier,
+    /** (DPTV v2.9.11) Hold OK on a card; null for none. */
+    onHold: ((HomeCard) -> Unit)? = null,
 ) {
     Column(modifier) {
         HomeRowHeader(title, small = cards.size.toString(), start = start)
@@ -1559,6 +1536,7 @@ private fun HomeCardRow(
                 StagePoster(
                     title = card.title,
                     onClick = { onClick(card) },
+                    onLongClick = onHold?.let { hold -> { hold(card) } },
                     width = 196.mpx,
                     height = 294.mpx,
                     progress = card.progress,
