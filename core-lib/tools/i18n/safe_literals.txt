@@ -273,6 +273,17 @@
 1	technical	core/src/main/java/tv/own/owntv/core/catalog/ProviderCatalogMetadata.kt	__unmatchable_${rawName.hashCode().toUInt().toString(16)}
 1	technical	core/src/main/java/tv/own/owntv/core/catalog/ProviderCatalogMetadata.kt	•
 7	empty	core/src/main/java/tv/own/owntv/core/companion/CompanionController.kt	\0
+1	log	core/src/main/java/tv/own/owntv/core/categorylock/CategoryRelock.kt	CategoryRelock
+1	log	core/src/main/java/tv/own/owntv/core/categorylock/CategoryRelock.kt	category lock state unreadable; relocks check what plays
+1	log	core/src/main/java/tv/own/owntv/core/categorylock/CategoryRelock.kt	relock check failed for category $categoryId; stopping its playback
+1	technical	core/src/main/java/tv/own/owntv/core/categorylock/MenuChangeGuard.kt	hide
+1	technical	core/src/main/java/tv/own/owntv/core/categorylock/MenuChangeGuard.kt	move
+1	technical	core/src/main/java/tv/own/owntv/core/categorylock/MenuChangeGuard.kt	move_to_category
+1	technical	core/src/main/java/tv/own/owntv/core/categorylock/MenuChangeGuard.kt	remove_from_category
+1	technical	core/src/main/java/tv/own/owntv/core/categorylock/MenuChangeGuard.kt	remove_history
+1	technical	core/src/main/java/tv/own/owntv/core/categorylock/MenuChangeGuard.kt	rename
+1	technical	core/src/main/java/tv/own/owntv/core/categorylock/SealedRecordings.kt	seriesWithoutSealed
+8	technical	core/src/main/java/tv/own/owntv/core/companion/CompanionController.kt	\0
 1	technical	core/src/main/java/tv/own/owntv/core/companion/CompanionController.kt	(unnamed)
 1	technical	core/src/main/java/tv/own/owntv/core/companion/CompanionController.kt	.$extension
 1	technical	core/src/main/java/tv/own/owntv/core/companion/CompanionController.kt	.json
