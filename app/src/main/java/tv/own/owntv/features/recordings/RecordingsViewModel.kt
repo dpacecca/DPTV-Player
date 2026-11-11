@@ -109,16 +109,9 @@ class RecordingsViewModel(
         .flatMapLatest { pid -> if (pid < 0) flowOf(emptyList()) else recordings.observe(pid) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** The programmes set to record every showing, kept out of view like recordings while their channel is locked. */
+    /** The programmes set to record every showing (DPTV has no category locks, so every rule is listed). */
     val seriesRules: StateFlow<List<SeriesRecording>> = settings.activeProfileId
-        .flatMapLatest { pid ->
-            if (pid < 0) flowOf(emptyList())
-            else recordings.observeSeriesRecordings(pid).withoutSealed(
-                customize.observeVisible(pid, MediaType.LIVE).map { it.sealedCategoryIds }.distinctUntilChanged(),
-                customize.anyLockSealed(pid),
-                ::channelCategory,
-            )
-        }
+        .flatMapLatest { pid -> if (pid < 0) flowOf(emptyList()) else recordings.observeSeriesRecordings(pid) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Stops recording every showing, and cancels the showings it had scheduled; what was recorded stays. */

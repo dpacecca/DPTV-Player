@@ -86,11 +86,6 @@
 1	protocol	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	STEREO
 1	protocol	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	p
 3	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	·
-2	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	·
-1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	▲ ▼
-1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	◀
-1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgScreen.kt	◀ ▶
-1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	$channelId|
 2	empty	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	${channel.id}|$shift
 1	log	app/src/main/java/tv/own/owntv/features/epg/EpgViewModel.kt	EpgViewModel
@@ -274,6 +269,8 @@
 1	uri	app/src/main/java/tv/own/owntv/features/recordings/DvrThumbnails.kt	file:
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	r_${it.id}
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rhdr_$labelRes
+1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rhdr_series
+1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rs_${it.rule.id}
 2	empty	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	\0
 1	log	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	DvrSync
 3	preference-key	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	dur_$id
@@ -282,8 +279,6 @@
 3	preference-key	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	pos_$id
 1	preference-key	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	pos_${recording.id}
 1	log	app/src/main/java/tv/own/owntv/features/recordings/RecordingsViewModel.kt	recording server sync failed
-1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rhdr_series
-1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rs_${it.rule.id}
 2	empty	app/src/main/java/tv/own/owntv/features/search/SearchScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/search/SearchScreen.kt	,
 1	technical	app/src/main/java/tv/own/owntv/features/search/SearchScreen.kt	all-channels
@@ -484,7 +479,6 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	app_startup
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	auto_start_boot
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	auto_start_wake
-2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	brand_accent
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	browsing_lists
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	catchup
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SettingsHelpTable.kt	catchup_sources
@@ -681,10 +675,9 @@
 1	technical	app/src/main/java/tv/own/owntv/features/settings/SyncTimesSettings.kt	dMMM
 2	technical	app/src/main/java/tv/own/owntv/features/settings/SyncTimesSettings.kt	hmm
 1	empty	app/src/main/java/tv/own/owntv/features/settings/TrendingHomeSettings.kt	\0
-16	empty	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	\0
+18	empty	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	$c ›
 1	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	$exo · $mpv
-17	empty	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	\0
 5	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	${src.name} · $value
 1	locale	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	,
 1	technical	app/src/main/java/tv/own/owntv/features/settings/VideoPlayerSettingsScreen.kt	-1
@@ -801,11 +794,7 @@
 2	technical	app/src/main/java/tv/own/owntv/features/shell/components/GlassEffectPage.kt	—
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/GlassEffectPage.kt	◀ ▶
 1	empty	app/src/main/java/tv/own/owntv/features/shell/components/MediaDetailsScreen.kt	\0
-18	empty	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	\0
-19	empty	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	\0
-2	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#%06X
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#F5B400
-1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	#FFFFFF
+17	empty	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	\0
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	$CATCHUP_MANUAL_PREFIX$it
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	$CATCHUP_MANUAL_PREFIX${src.catchupOffsetMin ?: 0}
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/SettingsScreen.kt	${proxy.host}:${proxy.port}

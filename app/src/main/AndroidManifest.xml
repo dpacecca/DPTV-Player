@@ -27,7 +27,7 @@
         tools:ignore="ScopedStorage" />
 
     <!-- Settings › App › Auto start. From Android 10 an app may open itself from the background only
-         with "Display over other apps"; OwnTV asks for it when an auto-start option is turned on and
+         with "Display over other apps"; DPTV-Player asks for it when an auto-start option is turned on and
          draws nothing over other apps. RECEIVE_BOOT_COMPLETED merges in from :core. The wake listener
          is a specialUse foreground service: no other type describes waiting for the screen to come on. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />

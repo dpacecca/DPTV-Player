@@ -492,4 +492,5 @@
     <string name="content_season_specials">Speciály</string>
     <string name="content_poster_size">Velikost plakátů</string>
     <string name="content_vod_more_in">Další v kategorii <xliff:g id="category">%1$s</xliff:g></string>
+    <string name="content_key_schedule">Program</string>
 </resources>

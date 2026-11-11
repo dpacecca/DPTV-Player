@@ -452,4 +452,5 @@
     <string name="content_season_specials">പ്രത്യേക എപ്പിസോഡുകൾ</string>
     <string name="content_poster_size">പോസ്റ്റർ വലുപ്പം</string>
     <string name="content_vod_more_in"><xliff:g id="category">%1$s</xliff:g>-ൽ കൂടുതൽ</string>
+    <string name="content_key_schedule">ഷെഡ്യൂൾ</string>
 </resources>

@@ -2111,12 +2111,6 @@ fun OwnTVShell(
                             }
                         }
                     } else null,
-                    matchLine = matchSession?.takeIf { sportsConfig.scoreInInfoBar }?.let { s ->
-                        { tv.own.owntv.features.sports.MatchScoreLine(sportsPlayback, s.match, sportsConfig.spoilerFree) }
-                    },
-                    onOtherChannels = matchSession?.takeIf { it.options.size > 1 }?.let { { showOtherChannels = true } },
-                    otherChannelsCount = (matchSession?.options?.size ?: 1) - 1,
-                    onToastOk = goalToast?.let { a -> { switchToMatch(a.match) } },
                     // The channel's other versions, read when the button is pressed; a pick is an
                     // ordinary tune, the same as picking it in the channel list.
                     sources = previewChannel?.takeIf { isTunedLive }?.let { ch ->

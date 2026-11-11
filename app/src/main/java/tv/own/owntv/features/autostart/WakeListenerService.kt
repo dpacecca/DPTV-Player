@@ -85,7 +85,7 @@ class WakeListenerService : Service() {
             )
         }
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.owntv_notification)
+            .setSmallIcon(R.drawable.dptv_notification)
             .setContentTitle(title)
             .setContentText(localized.getString(R.string.auto_start_notification_text))
             .setOngoing(true)

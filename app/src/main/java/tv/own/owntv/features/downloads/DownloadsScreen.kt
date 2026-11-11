@@ -357,7 +357,6 @@ fun DownloadsScreen(
                                 onRetry = { r -> recVm.retry(r) },
                                 onDelete = { r -> confirmDelete = PendingDelete(r.id, r.title, recording = true) { recVm.delete(r) } },
                                 onStopSeries = { rule -> acted(tv.own.owntv.features.recordings.seriesRowId(rule)); recVm.stopSeries(rule) },
-                                missing = recMissing,
                             )
                         } else {
                             val askDelete: (DownloadEntity) -> Unit = { d ->

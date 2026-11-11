@@ -551,7 +551,8 @@ internal fun VodOptionsMenu(
         R.string.content_menu_group_watch, R.string.content_menu_group_library,
         R.string.content_menu_group_organise, R.string.content_menu_group_details,
     ).map { stringResource(it).uppercase(locale) }
-    val ordered = arranged(menu, actions)
+    val arrangedMenu = arranged(menu, actions)
+    val ordered = arrangedMenu.actions
     val focusKey = ordered.firstOrNull { it.key == firstFocusKey && it.key !in disabled }?.key ?: ordered.firstOrNull { it.key !in disabled }?.key
     GuideMenuHost(x = x, top = top, width = 540.mpx, onDismiss = onDismiss) {
         StageMenuHeader(
@@ -564,7 +565,8 @@ internal fun VodOptionsMenu(
         )
         var previousGroup: Int? = null
         ordered.forEach { action ->
-            if (action.group != previousGroup) StageGroupLabel(labels[action.group])
+            // Headings only in the shipped order: a rearranged menu has no runs to name.
+            if (arrangedMenu.headings && action.group != previousGroup) StageGroupLabel(labels[action.group])
             previousGroup = action.group
             StageMenuItem(
                 text = action.label, icon = action.icon, value = values[action.key],

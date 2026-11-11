@@ -1294,8 +1294,10 @@ private fun ChannelContextMenu(
                     },
                 )
                 var previousGroup: Int? = null
-                arranged(ContentMenu.LIVE, actions).forEachIndexed { index, action ->
-                    if (action.group != previousGroup) tv.own.owntv.ui.stage.StageGroupLabel(groupLabels[action.group])
+                val menu = arranged(ContentMenu.LIVE, actions)
+                menu.actions.forEachIndexed { index, action ->
+                    // Headings only in the shipped order: a rearranged menu has no runs to name.
+                    if (menu.headings && action.group != previousGroup) tv.own.owntv.ui.stage.StageGroupLabel(groupLabels[action.group])
                     previousGroup = action.group
                     tv.own.owntv.ui.stage.StageMenuItem(
                         text = action.label,

@@ -824,4 +824,6 @@
     <string name="content_poster_size">Poster size</string>
     <!-- Translators: Small heading on a movie's page above more posters from the same category: "More in Disney+ Kids Movies". Shown in capitals by the style. -->
     <string name="content_vod_more_in">More in <xliff:g id="category">%1$s</xliff:g></string>
+    <!-- Translators: Remote-key hint: pressing Right shows the channel's upcoming programmes. Short noun. -->
+    <string name="content_key_schedule">Schedule</string>
 </resources>

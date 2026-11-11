@@ -201,9 +201,6 @@ open class MainActivity : ComponentActivity() {
         // postSplashScreenTheme (Theme.OwnTV), so the activity ends up in the same theme as before.
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
-        tv.own.owntv.features.pip.PictureInPictureWindow.attach(this, get())
-        // The window only pauses the activity, so onStop's relock never runs while it is open: going into
-        // it is leaving the app, and a channel from a category the PIN opened stops there too.
         visibility.addListener(onVisibility)
         val splashDeadline = SystemClock.uptimeMillis() + SPLASH_TIMEOUT_MS
         splash.setKeepOnScreenCondition { !contentReady && SystemClock.uptimeMillis() < splashDeadline }

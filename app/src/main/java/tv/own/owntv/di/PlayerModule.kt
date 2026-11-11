@@ -37,15 +37,6 @@ val playerModule = module {
     // Whether the app can be seen and heard: the activity started and the television still connected.
     // MainActivity feeds it and frees / restores the engines on its changes.
     single { tv.own.owntv.core.player.PlaybackVisibilityWatch(androidContext()) }
-    // A screen of another app that OwnTV opens itself: no picture-in-picture, the same stop as Home.
-    single {
-        val engines = get<tv.own.owntv.player.PlaybackEngines>()
-        tv.own.owntv.features.pip.AppHandOff(
-            holdWindow = get<tv.own.owntv.features.pip.PictureInPicture>()::holdWindow,
-            stopPlayback = engines::onAppBackgrounded,
-            restorePlayback = engines::onAppForegrounded,
-        )
-    }
     // Audio focus (duck-don't-pause) + the system MediaSession, driven by whichever engine is playing.
     single { tv.own.owntv.player.PlaybackSession(androidContext()) }
     // N17 — ends itself when the session detaches; what "stop" means is assigned by the shell.

@@ -47,10 +47,6 @@ data class ArrangedMenu(val actions: List<MenuAction>, val headings: Boolean)
 fun arranged(menu: ContentMenu, actions: List<MenuAction>): ArrangedMenu {
     val settings: SettingsRepository = koinInject()
     val layout by remember(menu) { settings.menuLayout(menu) }.collectAsStateWithLifecycle(MenuLayout())
-    val gate: tv.own.owntv.features.settings.lock.MenuChangeGate = koinInject()
-    // The organising actions ask for the Settings PIN first when its long-press switch is on.
-    val guarded = actions.map { action ->
-        if (action.key in tv.own.owntv.core.categorylock.GUARDED_MENU_ACTIONS) action.copy(onClick = { gate.run(action.onClick) }) else action
-    }
-    return ArrangedMenu(arrange(menu, guarded, layout) { it.key }, layout.isShippedOrder(menu))
+    // DPTV has no Settings lock, so no action asks for a PIN first.
+    return ArrangedMenu(arrange(menu, actions, layout) { it.key }, layout.isShippedOrder(menu))
 }

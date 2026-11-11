@@ -455,12 +455,6 @@ internal fun BottomBar(
                         PlayerControl.PREVIOUS_CHANNEL -> if (onPreviousChannel != null) {
                             CtrlButton(OwnTVIcon.HISTORY, label = stringResource(R.string.player_previous_channel)) { onPreviousChannel() }
                         }
-                        // Sports Hub: only for a channel started from a match.
-                        PlayerControl.OTHER_CHANNELS -> if (onOtherChannels != null) {
-                            CtrlButton(OwnTVIcon.LIST, label = stringResource(R.string.sports_other_channels_count, otherChannelsCount)) { onOtherChannels() }
-                        }
-                        // Not shown on the TV: Back from the player already returns to the match page.
-                        PlayerControl.MATCH -> Unit
                         // The same channel in another quality, category or playlist. Live only; the
                         // list is read when it opens.
                         PlayerControl.SOURCES -> if (hasSources) {
