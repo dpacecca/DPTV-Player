@@ -592,10 +592,10 @@ class SettingsViewModel(
         settings.quickPinnedKeys.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     fun setQuickPinnedKeys(keys: List<String>) { viewModelScope.launch { settings.setQuickPinnedKeys(keys) } }
 
-    /** The saved order of one long-press content menu; empty = the order the app ships with. */
-    fun menuOrder(menu: tv.own.owntv.core.model.ContentMenu) = settings.menuOrder(menu.name.lowercase())
-    fun setMenuOrder(menu: tv.own.owntv.core.model.ContentMenu, keys: List<String>) {
-        viewModelScope.launch { settings.setMenuOrder(menu.name.lowercase(), keys) }
+    /** One long-press content menu's saved order and hidden actions; empty = as the app ships it. */
+    fun menuLayout(menu: tv.own.owntv.core.model.ContentMenu) = settings.menuLayout(menu)
+    fun setMenuLayout(menu: tv.own.owntv.core.model.ContentMenu, layout: tv.own.owntv.core.menu.MenuLayout) {
+        viewModelScope.launch { settings.setMenuLayout(menu, layout) }
     }
 
     val resumeLastChannel: StateFlow<Boolean> =
