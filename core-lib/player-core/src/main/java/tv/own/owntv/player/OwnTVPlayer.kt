@@ -92,7 +92,13 @@ data class MediaMeta(
     /** v44 — what the remembered audio/subtitle language is keyed on: the SERIES for an episode (owner
      *  decision 11), so every episode starts on the tracks last picked in that show. Null = [contentKey]. */
     val trackKey: String? = null,
-)
+    /** The film's or show's title art (TMDB logo), drawn in place of its name; null = the name as text.
+     *  Arrives after the load starts — see [OwnTVPlayer.setTitleLogo]. */
+    val titleLogoUrl: String? = null,
+) {
+    /** What title art is keyed on: the show for an episode, so one logo covers the whole queue. */
+    internal val artKey: String? get() = trackKey ?: contentKey
+}
 
 /** An item in a play queue (e.g. a season's episodes), for prev/next.
  *  [resolveUrl] mints the playable URL right before this item loads (Stalker episodes: a per-episode
@@ -324,7 +330,12 @@ class OwnTVPlayer(
         // early enough that the tolerant reopen still gets several attempts before the error UI.
         const val TOLERANT_DEMUX_AFTER_RECONNECTS = 3
         const val LIVE_OPEN_TIMEOUT_MS = 10_000L // bound FFmpeg/network loops that never emit FILE_LOADED/END_FILE
-        // C-M2 — mpv's `network-timeout` for live (FFmpeg's connect and read wait). Films keep mpv's 60 s or
+        // An early-EOF check reads this much of the response — enough for `#EXTM3U` after a BOM and blank
+        // lines — and gives up after this long, well inside the open timeout it replaces.
+        private const val EOF_CHECK_BYTES = 1024L
+        private const val EOF_CHECK_TIMEOUT_MS = 3_000L
+        private const val USER_AGENT_HEADER = "User-Agent"
+        // mpv's `network-timeout` for live (FFmpeg's connect and read wait). Films keep mpv's 60 s or
         // their own setting; on live one hung HLS segment held the picture that long, where 10 s lets FFmpeg
         // skip it — the same bound the open timeout and the stall watchdog already put on a channel.
         const val LIVE_NETWORK_TIMEOUT_SECS = 10
@@ -874,7 +885,7 @@ class OwnTVPlayer(
             MpvLoadOptions.Input(
                 url = url,
                 live = isLiveContent,
-                knownHlsHost = LiveStreamQuirks.isKnownHlsHost(url),
+                knownHlsHost = LiveStreamQuirks.isKnownHls(url),
                 prerollSecs = effectivePrerollSecs(),
                 liveBufferSecs = effectiveLiveBufferSecs(),
                 filmBufferSecs = film?.vodBufferSecs ?: 0,
@@ -1003,9 +1014,13 @@ class OwnTVPlayer(
     )
     val seekStepMs: StateFlow<Long> = _seekStepMs.asStateFlow()
 
-    /** Settings → Picture → Auto frame rate. mpv doesn't act on it (the Compose surface does), but
-     *  the ExoPlayer handoff engine has its own frame-rate mechanism that must follow the same switch. */
-    private var autoFrameRate = false
+    /** Settings → Picture → Auto frame rate, films and series. mpv doesn't act on it (the Compose
+     *  surface does), but the ExoPlayer handoff engine has its own frame-rate mechanism that must
+     *  follow the same switch. */
+    private var autoFrameRateFilms = false
+
+    /** The same for Live TV. */
+    private var autoFrameRateLive = false
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -1228,7 +1243,8 @@ class OwnTVPlayer(
         // Auto frame rate drives the display-mode switch from the Compose surface; ExoPlayer has a
         // SECOND mechanism (Surface.setFrameRate) that must follow the same switch, so the value is
         // tracked here and handed to the handoff engine in [startExo].
-        playbackSettings.field { it.autoFrameRate }.onEach { autoFrameRate = it }.launchIn(scope)
+        playbackSettings.field { it.autoFrameRateFilms }.onEach { autoFrameRateFilms = it }.launchIn(scope)
+        playbackSettings.field { it.autoFrameRateLive }.onEach { autoFrameRateLive = it }.launchIn(scope)
         // Subtitle overlay is fed by OBSERVING "sub-text" (see eventProperty) — not polling. The old
         // 250 ms getPropertyString poll logged a "property unavailable" error 4×/sec whenever no line
         // was on screen, flooding logcat and burning a cross-thread call the whole time.
@@ -1347,6 +1363,22 @@ class OwnTVPlayer(
     private val _currentMeta = MutableStateFlow(MediaMeta())
     val currentMeta: StateFlow<MediaMeta> = _currentMeta.asStateFlow()
 
+    /** The last title art handed in, with the [MediaMeta.artKey] it belongs to. */
+    private var titleLogo: Pair<String, String>? = null
+
+    /**
+     * Title art for the film or show [key] names ([MediaMeta.artKey]). The app looks it up after the
+     * load has started, so playback never waits on it; a late answer for an item no longer playing is
+     * only kept, and shows if that item comes back (the next episode of the same show). A null
+     * [key] or [url] (no provider id, no TMDB match, no logo) changes nothing.
+     */
+    fun setTitleLogo(key: String?, url: String?) {
+        if (key == null || url == null) return
+        titleLogo = key to url
+        val meta = _currentMeta.value
+        if (meta.artKey == key) _currentMeta.value = meta.copy(titleLogoUrl = url)
+    }
+
     private var preMuteVolume = 100
 
     private val _isPlaying = MutableStateFlow(false)
@@ -1377,6 +1409,7 @@ class OwnTVPlayer(
             val t = text.trim()
             if (t.isEmpty()) return
             if (isLiveContent && BROKEN_PTS_RX.containsMatchIn(t)) noteBrokenTimestamp()
+            if (isLiveContent) LiveStreamQuirks.eofReconnectOffset(t)?.let(::noteEofReconnect)
             // A broken-timestamp warning says "invalid", but it is a per-frame symptom, not a failure: kept, it
             // was a diagnostics write on nearly every frame of such a feed and became the load's error reason.
             val keep = level <= 20 /* error/fatal */ ||
@@ -1399,6 +1432,111 @@ class OwnTVPlayer(
         }
     }
 
+
+    /**
+     * FFmpeg hit EOF a few KB into a live `.ts` open and is about to re-read it from [offset]. A panel
+     * that redirects `.ts` to a manifest looks exactly like this, and `reconnect_at_eof` would re-read
+     * that playlist until the 10 s open timeout. Once per channel, find out what the response really is
+     * ([checkEarlyEof]) instead of guessing from the log line. mpv's log thread.
+     */
+    private fun noteEofReconnect(offset: Long) {
+        val l = load
+        val url = currentUrl ?: return
+        val loopingTsOpen =
+            streamLavfOptionsFor(url, isLiveContent, LiveStreamQuirks.isHlsUrl(url) && isLiveContent) != STREAM_RECONNECT_OPTIONS
+        val opening = !l.fileLoaded && l.expectingPlayback
+        if (!LiveStreamQuirks.eofCheckWanted(isLiveContent, opening, loopingTsOpen, item.eofChecked)) return
+        item.eofChecked = true
+        LiveDiagnosticsLog.event("mpv hit EOF at $offset bytes opening a live .ts — checking what the response is")
+        val gen = loadGeneration
+        scope.launch { checkEarlyEof(url, gen) }
+    }
+
+    /**
+     * Stop the looping open, read the start of the same response once, and act on what it is:
+     * - a playlist (`#EXTM3U`): learn the redirect ([LiveStreamQuirks.rememberHlsRedirect]) and reopen
+     *   the channel as its `.m3u8` sibling — the same URL the ExoPlayer → mpv handover already uses;
+     * - MPEG-TS, or no answer: a real feed that ended early — reopen it as before, without a second check;
+     * - anything else (an HTML page, an empty body): no picture is coming, so fail now rather than at
+     *   the open timeout.
+     * The open is stopped first so a one-connection panel is never asked twice at once.
+     */
+    private suspend fun checkEarlyEof(url: String, gen: Int) {
+        if (gen != loadGeneration || currentUrl != url) return
+        load.expectingPlayback = false
+        val stopped = kotlinx.coroutines.CompletableDeferred<Unit>()
+        mpvAsync {
+            try { stopWithStopClassification("live eof check") } finally { stopped.complete(Unit) }
+        }
+        kotlinx.coroutines.withTimeoutOrNull(MPV_READ_TIMEOUT_MS) { stopped.await() }
+        val headers = currentHeaders
+        val userAgent = effectiveUserAgent(url)
+        val start = withContext(Dispatchers.IO) { readResponseStart(url, headers, userAgent) }
+        if (gen != loadGeneration || currentUrl != url) return
+        when (start) {
+            LiveStreamQuirks.ResponseStart.HLS_PLAYLIST -> {
+                LiveStreamQuirks.rememberHlsRedirect(url)
+                // The `.m3u8` sibling is what opens next: the END_FILE ladder must not swap it back to `.ts`.
+                item.triedAltFormat = true
+                LiveDiagnosticsLog.event("mpv: the live .ts is an HLS playlist — reopening as .m3u8")
+                // An expiring address is minted afresh, as every reload of one is.
+                val base = reconnectUrlProvider?.let { provider ->
+                    withContext(Dispatchers.IO) { runCatching { provider.freshUrl() }.getOrNull() }
+                } ?: url
+                if (gen != loadGeneration || currentUrl != url) return
+                loadUrl(LiveStreamQuirks.toHlsUrl(base), currentMetaSnapshot(), isLive = true, startPositionMs = 0L, resetRetries = false)
+            }
+            LiveStreamQuirks.ResponseStart.OTHER -> {
+                LiveDiagnosticsLog.event("mpv: the live .ts answered neither a stream nor a playlist — failing now")
+                showLiveOpenFailure()
+            }
+            LiveStreamQuirks.ResponseStart.MPEG_TS, null -> {
+                LiveDiagnosticsLog.event("mpv: the live .ts is a stream that ended early — reopening")
+                reloadLive(url, resetRetries = false)
+            }
+        }
+    }
+
+    /**
+     * The first [EOF_CHECK_BYTES] of [url], classified; null when the request failed or was refused
+     * (that says nothing about the format). Same User-Agent and headers as mpv's own request.
+     */
+    private fun readResponseStart(url: String, headers: Map<String, String>, userAgent: String): LiveStreamQuirks.ResponseStart? =
+        runCatching {
+            val request = okhttp3.Request.Builder().url(url).apply {
+                headers.forEach { (name, value) -> header(name, value) }
+                header(USER_AGENT_HEADER, userAgent)
+            }.build()
+            eofCheckHttp.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@use null
+                val source = response.body.source()
+                source.request(EOF_CHECK_BYTES)
+                LiveStreamQuirks.classifyResponseStart(source.buffer.readByteArray(minOf(EOF_CHECK_BYTES, source.buffer.size)))
+            }
+        }.getOrNull()
+
+    /** The live client with a short overall bound: the check must finish well inside a normal open. */
+    private val eofCheckHttp by lazy {
+        streamingHttp.client.newBuilder().callTimeout(EOF_CHECK_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS).build()
+    }
+
+    /** A live open that will never show a picture: end the wait and put the failure on screen. The
+     *  caller stops mpv if it is still opening. */
+    private fun showLiveOpenFailure() {
+        load.expectingPlayback = false
+        _isPlaying.value = false
+        _buffering.value = false
+        val raw = load.lastMpvError ?: "No playable data received before timeout"
+        _error.value = PlayerErrors.visibleFailure(raw, currentUrl, PlaybackFailure.Channel)
+        _errorInfo.value = ErrorInfo(PlayerErrors.reasonFor(raw), mediaSpec(), raw)
+    }
+
+    /** The User-Agent mpv sends for [url]: the item's own, else the fallback on a panel known to block
+     *  the default, else the default. */
+    private fun effectiveUserAgent(url: String): String =
+        currentUserAgent
+            ?: HttpClient.FALLBACK_USER_AGENT.takeIf { LiveStreamQuirks.blocksDefaultUserAgent(url) }
+            ?: HttpClient.DEFAULT_USER_AGENT
 
     /**
      * mpv complained about this live feed's timestamps. Past [BROKEN_PTS_HITS] that is the pathological
@@ -1503,7 +1641,9 @@ class OwnTVPlayer(
         val w = load.currentWidthPx; val h = load.currentHeightPx
         if (w <= 0 || h <= 0) { _streamChips.value = emptyList(); return }
         val base = ArrayList<String>(5)
-        aspectLabel(w, h)?.let { base += it }
+        // The shape as Fit draws it ([displayAspect]), so the chip and the picture never disagree.
+        val shown = load.displayWidthPx > 0 && load.displayHeightPx > 0
+        (if (shown) aspectLabel(load.displayWidthPx, load.displayHeightPx) else aspectLabel(w, h))?.let { base += it }
         _videoRes.value?.let { base += it }
         val knownFps = _videoFps.value
         val m = mpv
@@ -1658,8 +1798,11 @@ class OwnTVPlayer(
         override fun onSubtitleSelected(selected: Boolean) { _exoSubtitleOn.value = selected }
         override fun onPlayingChanged(playing: Boolean) { _isPlaying.value = playing }
         override fun onBuffering(buffering: Boolean) { _buffering.value = buffering }
-        override fun onVideoSize(width: Int, height: Int) {
+        override fun onVideoSize(width: Int, height: Int, pixelRatio: Float) {
             load.currentWidthPx = width; load.currentHeightPx = height
+            // Fit's shape (see [displayAspect]); a missing or nonsense ratio means square pixels.
+            load.displayWidthPx = Math.round(width * (pixelRatio.takeIf { it > 0f && it.isFinite() } ?: 1f))
+            load.displayHeightPx = height
             if (height > 0) consecutiveHardResets = 0 // successful decode — reset thrash guard
             // Remember heaviness like the mpv path does, so the NEXT load (autoplay/toggle back to mpv)
             // knows a >1080p decoder session just ran on this surface and recreates it first.
@@ -2025,7 +2168,7 @@ class OwnTVPlayer(
         // Auto frame rate and the preferred languages used to reach mpv only, so an item that landed on
         // ExoPlayer (image-subtitle handoff, "prefer ExoPlayer for VOD", or an mpv fallback) quietly
         // ignored three settings the user had set. Same values, same source of truth.
-        engine.autoFrameRateEnabled = autoFrameRate
+        engine.autoFrameRateEnabled = autoFrameRateFilms
         playbackSettings.value?.let {
             engine.filmBufferSecs = it.vodBufferSecs
             engine.filmTimeoutSecs = it.vodNetworkTimeoutSecs
@@ -2653,6 +2796,10 @@ class OwnTVPlayer(
             observeProperty("pause", MPVLib.MpvFormat.MPV_FORMAT_FLAG)
             observeProperty("paused-for-cache", MPVLib.MpvFormat.MPV_FORMAT_FLAG)
             observeProperty("height", MPVLib.MpvFormat.MPV_FORMAT_INT64)
+            // The display size, for Fit's shape: width/height are the stored frame, which on an
+            // anamorphic stream is narrower than the picture it carries.
+            observeProperty("dwidth", MPVLib.MpvFormat.MPV_FORMAT_INT64)
+            observeProperty("dheight", MPVLib.MpvFormat.MPV_FORMAT_INT64)
             observeProperty("speed", MPVLib.MpvFormat.MPV_FORMAT_DOUBLE)
             observeProperty("container-fps", MPVLib.MpvFormat.MPV_FORMAT_DOUBLE)
             // Whole seconds: as a double it fired on every packet the demuxer took in, each event a JNI
@@ -2935,7 +3082,16 @@ class OwnTVPlayer(
         currentSeasonNumber = meta.seasonNumber
         currentEpisodeNumber = meta.episodeNumber
         currentRewindStartMs = meta.rewindStartMs
-        _currentMeta.value = meta // reactive — refreshes the HUD title / "now watching" card on every load
+        // reactive — refreshes the HUD title / "now watching" card on every load
+        _currentMeta.value = titleLogo?.takeIf { it.first == meta.artKey }?.let { meta.copy(titleLogoUrl = it.second) } ?: meta
+        // Apple FairPlay: no Android device can decrypt it, and neither engine is worth a try. Stop the
+        // previous item and say why, as [abandonLive] does.
+        if (currentDrm?.scheme == tv.own.owntv.core.drm.DrmConfig.Scheme.FAIRPLAY) {
+            LiveDiagnosticsLog.event("FairPlay-protected item — not playable on Android")
+            stop()
+            _error.value = PlaybackFailure.FairPlay
+            return
+        }
         isLiveContent = isLive
         currentUrl = url
         currentContentKey = meta.contentKey
@@ -3360,12 +3516,7 @@ class OwnTVPlayer(
                             // here too made the two paths take turns and doubled the requests a refusing
                             // panel saw.
                             LiveDiagnosticsLog.event("mpv live open timed out after ${openingMs}ms — surfacing error")
-                            load.expectingPlayback = false
-                            _isPlaying.value = false
-                            _buffering.value = false
-                            val raw = load.lastMpvError ?: "No playable data received before timeout"
-                            _error.value = PlayerErrors.visibleFailure(raw, currentUrl, PlaybackFailure.Channel)
-                            _errorInfo.value = ErrorInfo(PlayerErrors.reasonFor(raw), mediaSpec(), raw)
+                            showLiveOpenFailure()
                             mpvAsync { stopWithStopClassification("live open timeout") }
                             return@launch
                         }
@@ -3500,13 +3651,8 @@ class OwnTVPlayer(
             // newly-configured source UA takes effect without restarting the player. With no user
             // setting, a panel already caught refusing the default identity starts on the fallback one,
             // so only the channel that discovered the block ever pays for the retry.
-            setPropertyString(
-                "user-agent",
-                currentUserAgent
-                    ?: HttpClient.FALLBACK_USER_AGENT.takeIf { LiveStreamQuirks.blocksDefaultUserAgent(url) }
-                    ?: HttpClient.DEFAULT_USER_AGENT,
-            )
-            // Per-channel headers (F16). Always written, so a channel that carries none clears whatever
+            setPropertyString("user-agent", effectiveUserAgent(url))
+            // Per-channel headers. Always written, so a channel that carries none clears whatever
             // the previous item set — mpv keeps the property across loads otherwise.
             setPropertyString("http-header-fields", StreamHeaders.toMpvHeaderFields(currentHeaders))
             // reconnect_streamed helps one long-lived raw-TS response, but breaks HLS: EOF is the
@@ -3544,6 +3690,17 @@ class OwnTVPlayer(
 
     fun togglePlayPause() {
         if (exoActive) { exoEngine?.togglePlayPause(); return }
+        val url = currentUrl
+        val now = android.os.SystemClock.elapsedRealtime()
+        val pausedAt = load.pausedAtMs
+        if (url != null && !_isPlaying.value && LiveResume.backToLiveEdge(
+                live = isLiveContent, fromSavedCopy = TimeshiftServer.isLocal(url), pausedAtMs = pausedAt, nowMs = now,
+            )
+        ) {
+            LiveDiagnosticsLog.event("mpv play after ${(now - pausedAt) / 1000}s paused — back to the live edge")
+            reloadLive(url, resetRetries = false)
+            return
+        }
         if (initialized) mpvAsync { command(arrayOf("cycle", "pause")) }
     }
 
@@ -4761,6 +4918,14 @@ class OwnTVPlayer(
                 load.currentWidthPx = value.toInt()
                 updateAspect()
             }
+            "dwidth" -> {
+                load.displayWidthPx = value.toInt()
+                updateAspect()
+            }
+            "dheight" -> {
+                load.displayHeightPx = value.toInt()
+                updateAspect()
+            }
             "height" -> {
                 _videoRes.value = resolutionLabel(value.toInt())
                 load.currentHeightPx = value.toInt()
@@ -4806,7 +4971,8 @@ class OwnTVPlayer(
     private fun updateAspect() {
         val w = load.currentWidthPx
         val h = load.currentHeightPx
-        _videoAspect.value = if (w > 0 && h > 0) w.toFloat() / h.toFloat() else null
+        // Fit's shape is the display size's; Original (1:1) and frame-rate matching keep the stored size.
+        _videoAspect.value = displayAspect(w, h, load.displayWidthPx, load.displayHeightPx)
         _videoSize.value = if (w > 0 && h > 0) w to h else null
         updateStreamChips()
     }
@@ -4860,7 +5026,10 @@ class OwnTVPlayer(
     override fun eventProperty(property: String, value: Boolean) {
         if (exoActive) return
         when (property) {
-            "pause" -> _isPlaying.value = !value
+            "pause" -> {
+                _isPlaying.value = !value
+                load.pausedAtMs = if (value) android.os.SystemClock.elapsedRealtime() else 0L
+            }
             "paused-for-cache" -> { mpvPausedForCache = value; _buffering.value = value }
         }
     }
@@ -5085,7 +5254,7 @@ class OwnTVPlayer(
                 // Only when something consumes the result: Auto frame rate (the display-mode switch) or
                 // the measured-stats escape hatch (the fps chip). With both off nobody reads _videoFps,
                 // and the probe was still waking the mpv worker three times per open for nothing.
-                if (autoFrameRate || measuredStreamStats) {
+                if ((if (isLiveContent) autoFrameRateLive else autoFrameRateFilms) || measuredStreamStats) {
                     val fgen = loadGeneration
                     scope.launch {
                         delay(LIVE_FPS_PROBE_MS)
@@ -5571,6 +5740,8 @@ internal data class LoadState(
     @field:Volatile var brokenPtsHits: Int = 0,
     @field:Volatile var brokenPtsHandled: Boolean = false,
     var expectingPlayback: Boolean = false,
+    /** elapsedRealtime when mpv last went paused on this load; 0 while playing. mpv's event thread. */
+    @field:Volatile var pausedAtMs: Long = 0L,
     var pendingSeekMs: Long = 0L,
     /** Decode watchdog: if a >1080p video ends up on the software decoder, playback is aborted with a
      *  friendly error - CPU-decoding 4K on a TV chip stutters, overheats and OOM-kills the app (observed
@@ -5580,6 +5751,10 @@ internal data class LoadState(
     @field:Volatile var currentVideoCodec: String? = null,
     @field:Volatile var currentHeightPx: Int = 0,
     @field:Volatile var currentWidthPx: Int = 0,
+    /** The size the picture is meant to be shown at — the stored size with the stream's pixel shape
+     *  applied (a wide film kept in a narrower frame). 0 until an engine reports it. */
+    @field:Volatile var displayWidthPx: Int = 0,
+    @field:Volatile var displayHeightPx: Int = 0,
     @field:Volatile var decodeGuardTripped: Boolean = false,
     /** When mpv first reported a video size for this load (elapsedRealtime); 0 = not yet. Timing log only. */
     @field:Volatile var firstVideoAt: Long = 0L,
@@ -5604,6 +5779,9 @@ internal data class ItemState(
      *  catch-up archive the opposite, a panel whose live edge remuxes to HLS while its timeshift server
      *  only ever has `.ts` on disk. */
     @field:Volatile var triedAltFormat: Boolean = false,
+    /** This channel's early EOF has been checked once ([OwnTVPlayer.checkEarlyEof]). One shot, so a
+     *  response that keeps ending early falls through to the open timeout instead of reloading forever. */
+    @field:Volatile var eofChecked: Boolean = false,
     /** The catch-up `timeshift.php` query form - a SEPARATE alternate from the extension swap, for the
      *  panels that reject the path-style archive URL outright. Sharing one flag with [triedAltFormat]
      *  meant whichever alternate ran first consumed the other's turn. */

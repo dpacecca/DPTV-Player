@@ -216,8 +216,9 @@
     <string name="settings_ch_paging">Urrutiko aginteko lasterbideak</string>
     <string name="settings_ch_paging_description">Esleitu urrutiko aginteko botoi libreak nabigazio funtsezkoa babestuta mantenduz</string>
     <string name="settings_content_menus_title">Luze sakatzeko menuak</string>
-    <string name="settings_content_menus_description">Berrantolatu kanal-, film-, telesail- eta atal-menuetako ekintzak</string>
-    <string name="settings_content_menus_hint">Eutsi Ados ekintza bati hartzeko, gero Gora eta Behera mugitzeko. Sakatu Ados berriro uzteko.</string>
+    <string name="settings_content_menus_description">Berrantolatu edo ezkutatu kanal-, film-, telesail- eta atal-menuetako ekintzak</string>
+    <string name="settings_content_menus_hint">Sakatu Ados ekintza batean hura erakusteko edo ezkutatzeko. Eutsi Ados hartzeko, mugitu Gora eta Behera, eta sakatu Ados berriro uzteko.</string>
+    <string name="settings_content_menus_note">Ekintza batzuk dagozkien lekuetan bakarrik agertzen dira.</string>
     <string name="settings_browsing_lists">Arakatzea eta zerrendak</string>
     <string name="settings_browsing_description">Gogoratu azken kategoria eta azken elementua Zuzeneko telebistan, Filmetan eta Telesailetan</string>
     <string name="settings_home_root">Hasierako pantaila</string>
@@ -270,12 +271,18 @@
     <string name="settings_live_preview_description">Erreproduzitu kanal bat automatikoki fokuratzen duzunean</string>
     <string name="settings_preview_audio">Aurrebistaren audioa</string>
     <string name="settings_preview_audio_description">Erreproduzitu soinua Zuzeneko aurrebistan</string>
+    <string name="settings_preview_on_ok">OK sakatzean, lehenik aurrebista</string>
+    <string name="settings_preview_on_ok_description">OK sakatzean kanala aurrebistan erreproduzitzen da, eta berriro OK sakatzean pantaila osoan irekitzen da</string>
     <string name="settings_mini_player_root">Mini erreproduzigailua</string>
     <string name="settings_mini_player_root_description">Ainguratutako mini erreproduzigailuaren tamaina eta kokalekua</string>
     <string name="settings_prefer_sdr_description">Jario batek SDR eta HDR irudiak eskaintzen dituenean, SDR irudia erreproduzitzen da: HDRa margul edo ilunegi ikusten den telebistetarako. HDR soilik duen jarioa HDR geratzen da. ExoPlayer soilik.</string>
     <string name="settings_auto_frame_rate">Fotograma-maiztasun automatikoa</string>
     <string name="settings_auto_frame_rate_description">Egokitu telebistaren freskatze-maiztasuna bideoari (24/25/50/60 fps) pantaila osoan, Zuzeneko telebistan eta VODean, eta lehengoratu irtetean. Desaktibatu zure telebistak edo hartzaileak HDMI azkar berrehunkatzen badu kanal-aldaketa bakoitzean.</string>
     <string name="settings_auto_frame_rate_description_mobile">Egokitu pantailaren freskatze-maiztasuna bideoari (24/25/50/60 fps) pantaila osoan, Zuzeneko telebistan eta VODean, eta lehengoratu irtetean. Desaktibatu pantailak keinuka egiten badu edo ilundu egiten bada bideo bat hasten denean.</string>
+    <string name="settings_auto_frame_rate_films">Fotograma-maiztasun automatikoa filmetarako eta telesailetarako</string>
+    <string name="settings_auto_frame_rate_films_description">Egokitu telebistaren freskatze-maiztasuna filmari edo atalari (24/25/50/60 fps) pantaila osoan, eta lehengoratu irtetean.</string>
+    <string name="settings_auto_frame_rate_live">Fotograma-maiztasun automatikoa Zuzeneko telebistarako</string>
+    <string name="settings_auto_frame_rate_live_description">Egokitu telebistaren freskatze-maiztasuna kanalari (25/50/60 fps) pantaila osoan, eta lehengoratu irtetean. Desaktibatu zure telebistak edo hartzaileak HDMI azkar berrehunkatzen badu kanal-aldaketa bakoitzean.</string>
     <string name="settings_afr_pause">Pausatu pantaila-aldaketan zehar</string>
     <string name="settings_afr_pause_description">Filmetarako soilik. Telebistak pantaila-modu berri batera berriro sinkronizatu behar duenean, filmak hainbeste itxaroten du hasiera pantaila beltzean galdu ez dadin. Aldaketa leunak ez du inoiz pausatzen.</string>
     <string name="settings_afr_resolution">Parekatu bereizmena</string>
@@ -331,6 +338,11 @@
     <string name="settings_check_updates_description">Lortu azken bertsioa GitHub Releases-etik</string>
     <string name="settings_update_startup">Bilatu eguneraketak abiatzean</string>
     <string name="settings_update_startup_description">Bilatu bertsio berri bat aplikazioa irekitzean</string>
+    <string name="settings_auto_start_boot">Abiarazi automatikoki piztean</string>
+    <string name="settings_auto_start_boot_description">Ireki DPTV-Player telebista pizten denean</string>
+    <string name="settings_auto_start_wake">Abiarazi automatikoki esnatzean</string>
+    <string name="settings_auto_start_wake_description">Ireki DPTV-Player telebista lo-egoeratik esnatzen denean</string>
+    <string name="settings_auto_start_needs_overlay">“Bistaratu beste aplikazioen gainean” behar da</string>
     <string name="settings_about">Honi buruz</string>
     <string name="settings_about_description">Bertsioa, lizentzia eta proiektuaren informazioa</string>
     <string name="settings_live_latency">Zuzeneko latentzia</string>
@@ -463,6 +475,7 @@
     <string name="settings_search_keywords_startup">abiarazi ireki hasierako orria launch open landing</string>
     <string name="settings_search_keywords_updates">github bertsioa release version</string>
     <string name="settings_search_keywords_update_auto">eguneraketa automatikoa bertsio berria auto update new version</string>
+    <string name="settings_search_keywords_auto_start">abioa piztu esnatu lo egonean automatikoki ireki</string>
     <string name="settings_language_default">Lehenetsia (ingelesa)</string>
     <string name="settings_language_device">Gailuaren hizkuntza</string>
     <string name="settings_language_arabic">Arabiera</string>
@@ -705,8 +718,13 @@
     <string name="settings_glass_surface_toasts">Pantailako mezuak</string>
     <string name="settings_browsing_last_category">Gogoratu azken kategoria</string>
     <string name="settings_browsing_last_category_description">Berrireki atala utzi zenuen kategorian, ez Denak atalean.</string>
+    <string name="settings_guide_follows_live">Gidak zuzeneko telebista jarraitzen du</string>
+    <string name="settings_guide_follows_live_description">Ireki Gida zuzeneko telebistaren kategorian.</string>
+    <string name="settings_help_guide_follows_live">Aktibatuta: Gida zuzeneko telebistak gogoratzen duen kategorian irekitzen da, eta Gidan aukeratzen duzun kategoria zuzeneko telebistarena ere bihurtzen da. Desaktibatuta: Gidak bere kategoria propioa du.</string>
     <string name="settings_browsing_last_item">Gogoratu azken elementua</string>
     <string name="settings_browsing_last_item_description">Kategoria bakoitzak bere korritze-posizioa mantentzen du goian hasi beharrean. Zuzeneko telebistak fokuan egon zen azken kanala ere leheneratzen du.</string>
+    <string name="settings_browsing_live_categories">Zuzeneko telebistaren kategoriak</string>
+    <string name="settings_browsing_live_categories_description">Zuzeneko telebistan, gidan, erreproduzigailuan eta Multiview-n erakusten dira. Kanal guztiak desaktibatuta badago, zuzeneko telebista zure lehen kategorian irekitzen da, edo Gogokoetan kategoriarik ez baduzu.</string>
     <string name="settings_catchup_player">Erreproduzitu berrikustea hemen</string>
     <string name="settings_customize_title">Pertsonalizatu kategoriak eta elementuak</string>
     <string name="settings_customize_pin_locked">Pantaila hau PINez blokeatuta dago.</string>
@@ -797,6 +815,8 @@
     <string name="settings_sources_test_expiry_none">Ez da iraungitze-datarik jakinarazi</string>
     <string name="settings_sources_info">Informazioa</string>
     <string name="settings_sources_retest">Probatu berriro</string>
+    <string name="settings_sources_ignore_limit">Ez ikusiarena egin konexio-mugari</string>
+    <string name="settings_sources_ignore_limit_on">Konexio-muga ez da kontuan hartzen: Multiview-ek eta grabazioek erreprodukzio-zerrenda honek dioena baino transmisio gehiago ireki ditzakete. Hornitzaileak transmisio bat ukatzen badu, hala esango da.</string>
     <string name="settings_sources_probe_title">Erreprodukzio-zerrenda hau probatu?</string>
     <string name="settings_sources_probe_warning">Hornitzaile askok ez dute inoiz esaten zenbat kanal ikus ditzakezun aldi berean, beraz DPTV-Playerk hainbat ireki eta zeintzuk irauten duten ikusiz jakiten du. Orain erreproduzitzen ari den guztia gelditu egingo da, eta honek bi minutu arte iraun dezake.</string>
     <string name="settings_sources_probe_running">Hornitzaile honek zenbat kanal onartzen dituen egiaztatzen… (<xliff:g id="current">%1$d</xliff:g> / <xliff:g id="total">%2$d</xliff:g>)</string>
@@ -949,6 +969,7 @@
         <item quantity="other"><xliff:g id="count">%1$d</xliff:g> iturburu saltatu dira beren erreprodukzio-zerrenda motak onartzen ez direlako.</item>
     </plurals>
     <string name="settings_backup_export_error">Esportazioak huts egin du.</string>
+    <string name="settings_backup_no_file_app">Telefono honetako aplikazio batek ere ezin du fitxategia gorde. Erabili Partekatu horren ordez.</string>
     <string name="settings_backup_read_error">Ezin izan da babeskopia-fitxategia irakurri.</string>
     <string name="settings_backup_import_error">Inportazioak huts egin du.</string>
     <string name="settings_backup_invalid_locale">Babeskopia honek onartzen ez den aplikazio-hizkuntza bat zeukan. Leheneratzeak arrakasta izan du, baina zure uneko hizkuntza mantendu da.</string>
@@ -1333,6 +1354,107 @@
     <string name="app_icon_restart_title">DPTV-Player berrabiarazi?</string>
     <string name="app_icon_restart_message">Ikono eta logo berri bat aukeratu duzu. DPTV-Player berrabiarazi ondoren izango dute eragina.</string>
     <string name="app_icon_restart_now">Berrabiarazi orain</string>
+    <string name="settings_navigation">Nabigazioa</string>
+    <string name="settings_navigation_description">Ezkerreko menuak nola jokatzen duen</string>
+    <string name="settings_nav_floating">Flotatzailea</string>
+    <string name="settings_nav_floating_desc">Edukiaren gainean; arakatzen ari zaren bitartean ezkutatzen da, ertzeko ◀ botoiak berriro ekartzen du</string>
+    <string name="settings_nav_docked">Ainguratua</string>
+    <string name="settings_nav_docked_desc">Beti pantailan; edukiak lekua egiten du</string>
+    <string name="settings_nav_hide_after">Ezkutatu ondoren</string>
+    <string name="settings_nav_hide_after_desc">Flotatzailea soilik: fokua uzten duenetik barra zenbat denbora itxaroten duen</string>
+    <string name="settings_nav_widen">Zabaldu fokuan</string>
+    <string name="settings_nav_widen_desc">Ainguratua eta Trinkoa: izenak edukiaren gainean erakusten ditu barrak fokua duen bitartean</string>
+    <string name="settings_nav_menu_items">Menu-elementuak</string>
+    <string name="settings_nav_menu_items_desc">Dinamikoa: erreprodukzio-zerrendak duenari jarraitzen dio · Estatikoa: zuk aukeratzen dituzu</string>
+    <string name="settings_nav_bar">Barra</string>
+    <string name="settings_nav_labels">Etiketak</string>
+    <string name="settings_nav_icons_only">Ikonoak soilik</string>
+    <string name="settings_nav_hide_scrolling">Ezkutatu korritzean</string>
+    <string name="settings_nav_hide_scrolling_desc">Barra irristatzen da behera korritzean, eta atzera igotzean</string>
+    <string name="settings_sheet_counts">Erakutsi kopuruak</string>
+    <string name="settings_sheet_counts_desc">Kanal- eta izenburu-kopuruak orrietan</string>
+    <string name="settings_search_keywords_navigation">barra, alboko barra, menua, nabigazioa, ezkutatu, flotatzailea, ainguratua, tamaina, trinkoa, zabala, luzera, altuera osoa, rail, sidebar, menu, navigation, hide, floating, docked, size, compact, wide, length, full height</string>
+    <string name="settings_breadcrumb_eyebrow"><xliff:g id="section">%1$s</xliff:g> · <xliff:g id="group">%2$s</xliff:g></string>
+    <string name="settings_nav_size_desc">Trinkoa: ikonoak · Normala: izenak · Zabala: izenak eta kopuruak · Oso zabala: xehetasunekin</string>
+    <string name="settings_nav_size_compact">Trinkoa</string>
+    <string name="settings_nav_size_normal">Normala</string>
+    <string name="settings_nav_size_wide">Zabala</string>
+    <string name="settings_nav_size_extra_wide">Oso zabala</string>
+    <string name="settings_nav_length">Luzera</string>
+    <string name="settings_nav_length_desc">Egokitu bere elementuetara, edo pantailaren altuera osora</string>
+    <string name="settings_nav_length_fit">Egokitu elementuetara</string>
+    <string name="settings_nav_length_full">Altuera osoa</string>
+    <string name="settings_nav_hide_after_half">0,5 segundo</string>
+    <plurals name="settings_nav_hide_after_seconds">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> segundo</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> segundo</item>
+    </plurals>
+    <string name="settings_live_layout">Zuzeneko telebistaren diseinua</string>
+    <string name="settings_live_layout_description">Kategoriak orri gisa, edo beti pantailan</string>
+    <string name="settings_live_layout_stage">Eszena</string>
+    <string name="settings_live_layout_stage_description">Sakatu Ezkerra kategoriak irekitzeko. Kanal-zerrendak eta aurrebistak zabalera osoa hartzen dute.</string>
+    <string name="settings_live_layout_separate_description">Kategoriak, kanal-zerrenda eta aurrebista alboz albo.</string>
+    <string name="settings_search_keywords_live_layout">diseinua zuzeneko telebista kanalak kategoriak orria panelak eszena layout live tv channels categories sheet panels stage</string>
+    <string name="settings_panel_width_live_sheet">Kategoria-orria</string>
+    <string name="settings_panel_width_live_sheet_hint">Zein zabal irekitzen diren kategoriak zerrendaren gainean Ezkerra sakatzean. Ez da 100%%ren parte.</string>
+    <string name="settings_panel_width_summary_stage">Kategoria-orria <xliff:g id="sheet">%1$d</xliff:g>%% · Zerrenda <xliff:g id="list">%2$d</xliff:g>%% · Aurrebista <xliff:g id="preview">%3$d</xliff:g>%%</string>
+    <string name="settings_live_opens_in">Zuzeneko telebista hemen irekitzen da</string>
+    <string name="settings_live_opens_in_description">Ireki Zuzeneko telebista kanal-zerrendan edo gida-saretan. Zuzeneko telebistako Gida-ikuspegia botoiak ere aldatzen du.</string>
+    <string name="settings_reminders">Programen gogorarazpenak</string>
+    <string name="settings_reminders_description">Zer gertatzen den gogorarazpena ezarri duzun programa hasteko dagoenean.</string>
+    <string name="settings_reminder_ask">Galdetu aldatzeko</string>
+    <string name="settings_reminder_switch">Aldatu</string>
+    <string name="settings_reminder_notify">Jakinarazi soilik</string>
+    <string name="settings_reminder_lead">Gogorarazpen-ordua</string>
+    <string name="settings_reminder_lead_description">Zenbat lehenago iristen den gogorarazpena programa hasi baino.</string>
+    <string name="settings_reminder_at_start">Hasieran</string>
+    <string name="settings_search_keywords_reminders">gogorarazpena gogorarazi alerta jakinarazi programa hasiera aldatu reminder remind alert notify program programme start switch</string>
+    <string name="settings_search_keywords_live_opens_in">zuzeneko telebista irekitzen hasiera zerrenda gida sarea ikuspegia live tv opens start list guide grid view</string>
+    <string name="settings_panel_width_summary_cinematic">Kategoria-orria <xliff:g id="sheet">%1$d</xliff:g>%% · Xehetasunen altuera <xliff:g id="height">%2$d</xliff:g>%%</string>
+    <string name="settings_panel_width_cinematic_sheet_hint">Zein zabal irekitzen diren kategoriak izenburuen gainean Ezkerra sakatzean.</string>
+    <string name="settings_key_change">Aldatu</string>
+    <string name="settings_key_switch">Aldatu</string>
+    <string name="settings_key_open">Ireki</string>
+    <string name="settings_key_unpin">Desainguratu</string>
+    <string name="settings_panel_choices">Aukerak</string>
+    <string name="settings_panel_recommended">Gomendatua</string>
+    <string name="settings_part_guide_catchup">Gida &amp; berrikustea</string>
+    <string name="settings_vp_cat_controls_resume">Kontrolak &amp; jarraitzea</string>
+    <string name="settings_pinned_from"><xliff:g id="group">%1$s</xliff:g> atalekoa ainguratu da</string>
+    <string name="settings_check_now">Egiaztatu orain</string>
+    <string name="settings_line_epg_offset">Aldatu gida osoa jario baten orduak okerrak direnean</string>
+    <string name="settings_line_reminders">Zer gertatzen den gogorarazpen bat iristen denean</string>
+    <string name="settings_line_reminder_lead">Zenbat lehenago iristen den gogorarazpena</string>
+    <string name="settings_line_guide_days">Zenbat egun aurrera gordetzen dituen gidak</string>
+    <string name="settings_line_catchup">Berrikusteko artxiboek erabiltzen duten ordu-zona</string>
+    <string name="settings_line_catchup_sources">Gainidatzi ordu-zona erreprodukzio-zerrenda baterako</string>
+    <string name="settings_line_override_playlist">Gainidatzi erreprodukzio-zerrenda baterako</string>
+    <string name="settings_line_accent">Botoiak, fokua eta nabarmentzeak tindatzen ditu leku guztietan</string>
+    <string name="settings_line_fonts">Familia bat interfaze nagusirako eta leiho gainerakorretarako</string>
+    <string name="settings_line_popup_size">Eskalatu elkarrizketa-koadroak eta menuak testua aldatu gabe</string>
+    <string name="settings_line_animations">Desaktibatuta arinagoa sentitzen da gama baxuko telebista-kutxetan</string>
+    <string name="settings_line_weather">Goiko eskuineko eguraldia: kokalekua eta °C / °F</string>
+    <string name="settings_line_live_opens_in">Kanal-zerrenda, edo gida-sareta</string>
+    <string name="settings_line_vod_layout">Panel bereiziak, edo ikuspegi zinematografiko bat</string>
+    <string name="settings_line_panel_width">Kategoria-, zerrenda- eta aurrebista-panelen zabalerak</string>
+    <string name="settings_line_guide_width">Kanal-zerrenda eta kronologia</string>
+    <string name="settings_line_browsing">Gogoratu azken kategoria eta elementua</string>
+    <string name="settings_line_home">Aukeratu, berrantolatu eta iragazi errenkadak</string>
+    <string name="settings_line_content_menus">Berrantolatu edo ezkutatu ekintzak menu bakoitzean</string>
+    <string name="settings_line_remote_shortcuts">Esleitu urrutiko aginteko botoi libreak</string>
+    <string name="settings_line_customize">Ezkutatu eta erakutsi, aldatu izena eta berrantolatu</string>
+    <string name="settings_line_metadata">Posterrak, sinopsiak, aktoreak eta balorazioak Filmetarako eta Telesailetarako</string>
+    <string name="settings_line_open_subtitles">Bilatu eta deskargatu azpitituluak</string>
+    <string name="settings_line_app_icon">Abiarazlearen ikonoa</string>
+    <string name="settings_line_brand_accent">Logotipoaren play triangelua zure azentu-koloreaz</string>
+    <string name="settings_line_check_updates">Lortu azken bertsioa GitHubetik</string>
+    <string name="settings_line_when_app_opens">Aplikazioa irekitzen denean</string>
+    <string name="settings_line_proxy">Trafiko guztia HTTP proxy baten bidez</string>
+    <string name="settings_line_dns">DNS zerbitzari pertsonalizatu bat</string>
+    <string name="settings_line_quick_live_preview">Erreproduzitu fokuan dagoen kanala Zuzeneko telebistan</string>
+    <string name="settings_line_preview_sound">Zuzeneko aurrebistaren soinua</string>
+    <string name="settings_line_preview_on_ok">Lehenik aurrebista, gero pantaila osoa</string>
+    <string name="settings_line_quick_channel_numbers">Idatzi zenbaki bat urrutiko agintean sintonizatzeko</string>
     <string name="more_backup_never_body_mobile"><xliff:g id="playlists">%1$s</xliff:g>, <xliff:g id="favorites">%2$s</xliff:g>, <xliff:g id="history">%3$s</xliff:g> eta pertsonalizazio guztiak telefono honetan bakarrik daude.</string>
     <string name="more_backup_now_body_mobile">Gorde fitxategi bat telefono honetan, edo bidali beste gailu batera</string>
     <string name="more_backup_file_tv_mobile">Fitxategia telefono honetan</string>
@@ -1422,4 +1544,143 @@
     <string name="settings_bg_picture_from_phone"><xliff:g id="file" example="sunset.jpg">%1$s</xliff:g> · telefono honetatik</string>
     <string name="settings_line_glass_switch_mobile">Barrak, panelak, menuak eta leiho gainerakorrak izoztuta daude</string>
     <string name="settings_help_catchup_timezone">Berrikusteak zure hornitzailearen artxiboko saioak erreproduzitzen ditu. Automatikoak hornitzaileak adierazten duen ordu-zona erabiltzen du, edo telebistaren erlojua, ez badu bat ere adierazten; aukeratu UTC desplazamendu finko bat berrikustea oraindik ordu okerrean hasten bada. Hemen aukeratzen duzu berrikusteak zein erreproduzitzaile erabiltzen duen ere.</string>
+    <string name="settings_help_theme">Iluna da DPTV-Player diseinatuta dagoen gaia. Sistemak telebistaren ezarpen propioa jarraitzen du dagoen tokian; Argiak gela argitsu batentzat balio du.</string>
+    <string name="settings_help_accent">Botoiak, fokuaren distira, aurrerapen-barrak eta nabarmentzeak tindatzen ditu leku guztietan. Aukeratu aurrezarpen bat, edo sakatu Ados paletarako eta edozein hex koderako.</string>
+    <string name="settings_help_focus">Fokua duen edozeinen inguruan marrazten den eraztuna. Aukeratu bere kolorea eta lodiera, sofatik jarraitzeko erraza izan dadin.</string>
+    <string name="settings_help_fonts">DPTV-Player osoan erabiltzen den letra-tipoa, eta testua zein handi marrazten den. Leiho gainerakorrek letra-tipo bera erabiltzen dute.</string>
+    <string name="settings_help_popup_size">Leiho gainerakorrak, menuak eta elkarrizketa-koadroak osotasunean handiago edo txikiago egiten ditu. Erabili leiho gainerakorrak estuak sentitzen direnean edo pantaila gehiegi estaltzen dutenean.</string>
+    <string name="settings_help_zoom">Pantailako dena eskalatzen du. Handiagoa errazagoa da urrunetik irakurtzeko; txikiagoak elementu gehiago sartzen ditu pantailan. 85%% azpitik, memoria gutxiko telebista-kutxek memoria agor dezakete.</string>
+    <string name="settings_help_animations">Orriak, menuak eta fokua leunki mugitzen dira hau aktibatuta dagoen bitartean. Desaktibatuta, aldaketa guztiak berehalakoak dira.</string>
+    <string name="settings_help_weather">Tenperatura eta zure herria erakusten ditu erlojuaren ondoan. Ezarri kokalekua eskuz automatikoak huts egiten duenean — VPN baten atzean, adibidez — eta aukeratu Celsius edo Fahrenheit.</string>
+    <string name="settings_help_navigation">Flotatzailea: menua kapsula txiki gisa geratzen da edukiaren gainean eta irekitzen da ezkerrera mugitzean. Ainguratua: bere lekua hartzen du beti. Tamainak zenbat erakusten duen ezartzen du, ikonoetatik kopuru eta xehetasunetara.</string>
+    <string name="settings_help_live_layout">Eszenak kategoriak ◀ botoiarekin irristatzen den orri gisa erakusten ditu, kanal-zerrendak eta aurrebistak lekua izan dezaten. Bereiziak kategoriak pantailan mantentzen ditu zerrendaren ondoan.</string>
+    <string name="settings_help_vod_layout">Zinematografikoak fokuan dagoen izenburuaren azala erakusten du poster-sareta baten atzean. Bereiziak kategoriak, izenburuak eta xehetasunak alboz albo erakusten ditu.</string>
+    <string name="settings_help_home">Aukeratu Hasierak zein errenkada erakusten dituen eta zer ordenatan, eta Orain joeran errenkadak nolako itxura duen.</string>
+    <string name="settings_help_customize">Ezkutatu inoiz ikusten ez dituzun kategoriak eta elementuak, eman kategoriei zure izenak eta jarri zure ordenan. Ezkutatutakoak hemen itzultzen dira, inoiz ez galduta.</string>
+    <string name="settings_help_app_icon">Zure telebistaren hasierako pantailako DPTV-Player ikonoa. Baliteke abiarazleak une bat behar izatea aldaketa erakusteko.</string>
+    <string name="settings_help_brand_accent">Menuko, Honi buruz ataleko eta konfigurazioko DPTV-Player logotipoak bere play triangelua zure azentu-koloreaz erakusten du. Hasierako pantailako ikonoak bere koloreak mantentzen ditu.</string>
+    <string name="settings_help_startup">DPTV-Playerk abiatzean zer erakusten duen: Hasiera, azkenekoz ikusi duzun kanala, zure gogokoak, edo zuk aukeratutako kanal bat.</string>
+    <string name="settings_help_check_updates">GitHuben DPTV-Player berriago bat bilatzen du orain eta instalatzea eskaintzen du. Zure erreprodukzio-zerrendak, gogokoak eta ezarpenak berdin geratzen dira.</string>
+    <string name="settings_help_update_startup">Bertsio berri bat bilatzen du DPTV-Player abiatzen den bakoitzean eta jakinarazten dizu dagoenean. Ez da ezer instalatzen galdetu gabe.</string>
+    <string name="settings_help_auto_start_boot">DPTV-Player bere kabuz irekitzen du telebista abiarazi ondoren, Aplikazioaren abioa ezarpenean aukeratutako pantailan. Android-ek aplikazio bati bere kabuz irekitzen uzten dio beste aplikazioen gainean bistara badaiteke soilik; beraz, hau aktibatzean baimen horren pantaila irekitzen da. Telebista batzuek ez dute eskaintzen, eta haietan abiarazte automatikoak ezin du funtzionatu.</string>
+    <string name="settings_help_auto_start_wake">DPTV-Player irekitzen du telebista lo-egoeratik esnatzen den bakoitzean, beste aplikazio baterako esnatu baduzu ere. Aplikazioaren abioak kanal bat irekitzen badu, esnatze bakoitzak jario hori abiarazten du. Aktibatuta dagoen bitartean, DPTV-Player-k atzeko planoko zerbitzu txiki bat mantentzen du jakinarazpen isil batekin. Piztean abiaraztea bezala, beste aplikazioen gainean bistaratzeko baimena behar du.</string>
+    <string name="settings_help_dns">Zure hornitzailearen helbideak zuk aukeratutako DNS zerbitzari batekin bilatzen ditu zure sarearen berberaren ordez — baliagarria zure sareak blokeatu edo birbideratzen dituenean.</string>
+    <string name="settings_help_live_engine">ExoPlayerrek kanalak askoz azkarrago irekitzen ditu eta zuzeneko azpitituluak dituen bakarra da. mpv-k ExoPlayerrek ezin dituen kanalak erreproduzitzen ditu, audio bereziko batzuk barne. Aukera konbinatuek beste erreproduzigailua saiatzen dute lehenengoak huts egiten duenean.</string>
+    <string name="settings_help_hw">Telebistaren hardware-deskodetzailea erabiltzen du: 4K leuna eta bero gutxiago. Desaktibatu soilik jario batzuk eten-etenka badabiltza edo blokeak erakusten badituzte; orduan software bidezko deskodetzaileak egiten du lana.</string>
+    <string name="settings_help_volume">Kanal, film eta atal guztiak zein bolumenetan hasten diren. 100%% gainetik jario isilak anplifikatzen dira. Erreproduzigailuan aldatzen duzun bolumena izenburu horretarako gordetzen da berrezarri arte.</string>
+    <string name="settings_help_channel_numbers">Zure hornitzailearen kanal-zenbakia izenaren ondoan erakusten du Zuzeneko telebistaren zerrendan, kanal-zerrendaren gainjartzean eta erreproduzigailuan, eta pantaila osoan urrutiko agintean zenbaki bat idazten uzten du kanal horretara saltatzeko.</string>
+    <string name="settings_help_seek_step">Zenbat saltatzen duten atzeratzeak eta aurreratzeak film edo atal batean sakatze bakarrarekin. Tekla sakatuta mantentzeak saltatzen jarraitzen du.</string>
+    <string name="settings_help_zoom_mode">Irudiak pantaila nola betetzen duen erreprodukzioa hasten denean. Egokitzeak irudi osoa erakusten du; beste aukerek betetzen, luzatzen edo forma bat behartzen dute. Erreproduzigailuan aldatutako zooma izenburu horretarako gordetzen da.</string>
+    <string name="settings_help_sub_lang">Hizkuntza honetako azpitituluak bere kabuz aktibatzen dira jarioak dituenean. Bestela azpitituluak desaktibatuta geratzen dira erreproduzigailuan pista bat aukeratu arte.</string>
+    <string name="settings_help_live_preview">Fokuan dagoen kanala Zuzeneko telebistaren zerrendaren ondoko aurrebistan erreproduzitzen da, zer dagoen ikus dezazun ireki aurretik. Aurrebistarentzat lekua duen diseinu bat behar du.</string>
+    <string name="settings_help_preview_audio">Aurrebistaren soinua ere erreproduzitzen du, ez irudia bakarrik. Desaktibatuta arakatzea isilik mantentzen du.</string>
+    <string name="settings_help_preview_on_ok">Aukeratu non erreproduzitzen den kanal bat lehenik aurrebistan OK sakatzean, eta kanal berean berriro OK sakatzean pantaila osoan irekitzen den. Zuzeneko telebistan, aurrebista kanal horretan geratzen da nabigatzen duzun bitartean. Desaktibatuta dagoen tokietan, OK sakatzean kanala berehala irekitzen da pantaila osoan, eta aurrebistak hautapenari jarraitzen dio.</string>
+    <string name="settings_help_timeshift_window">Berrikusterik gabeko kanal batean Pausatu eta atzeratu zuzeneko telebistak zenbat atzera egin dezakeen. Luzeagoak kanalaren zati handiago bat mantentzen du gailu honen biltegiratzean.</string>
+    <string name="settings_help_resume">Galdetu jarraitzeko aukerak Jarraitu edo Hasi berriro eskaintzen du film edo atal batek gordetako posizioa duenean. Jarraitu beti gelditu zinen tokian jarraitzen du; Ez jarraitu inoiz hasieratik hasten da.</string>
+    <string name="settings_help_mini">Arakatzen ari zaren bitartean kanal bat izkina batean martxan mantentzen duen erreproduzigailu txikia. Aukeratu bere tamaina eta kokatzen den izkina.</string>
+    <string name="settings_key_palette">Paleta</string>
+    <string name="settings_live_preview_note">Aldaketak hemen erakusten dira mugitzen zarenean, errenkada utzi aurretik.</string>
+    <string name="settings_synced_at">Sinkronizatuta: <xliff:g id="when">%1$s</xliff:g></string>
+    <string name="settings_profile_in_use">Erabilian</string>
+    <string name="settings_profile_kids">Haurren modua</string>
+    <string name="settings_profile_pin_lock">PIN blokeoa</string>
+    <string name="settings_profile_no_lock">Blokeorik ez</string>
+    <string name="settings_profile_add">Gehitu profila</string>
+    <string name="settings_profile_add_line">Bere gogokoak, historia eta ezarpenak dituen ikusle bat</string>
+    <plurals name="settings_help_language">
+        <item quantity="one">DPTV-Playerko menu eta mezu guztien hizkuntza. <xliff:g id="count">%1$d</xliff:g> hizkuntza; telebistaren hizkuntza propioa jarraitzen du bat aukeratu arte.</item>
+        <item quantity="other">DPTV-Playerko menu eta mezu guztien hizkuntza. <xliff:g id="count">%1$d</xliff:g> hizkuntza; telebistaren hizkuntza propioa jarraitzen du bat aukeratu arte.</item>
+    </plurals>
+    <plurals name="settings_profile_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> profil</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> profil</item>
+    </plurals>
+    <string name="settings_seg_separate">Bereiziak</string>
+    <string name="settings_seg_guide">Gida</string>
+    <string name="settings_accent_yours">Zurea</string>
+    <string name="settings_accent_picker_hint">Ados eremuan edo ñabardura-barran, gero geziek mugitzen dute; Ados edo Atzera amaitzeko.</string>
+    <string name="settings_signed_out">Saioa itxita</string>
+    <plurals name="settings_epg_feed_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> jario</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> jario</item>
+    </plurals>
+    <string name="settings_title_date_time_weather">Data, ordua &amp; eguraldia</string>
+    <string name="settings_line_show_weather">Uneko eguraldia goiko barran</string>
+    <string name="settings_line_custom_location">Hutsik = automatikoki detektatu</string>
+    <string name="settings_line_temperature_unit">Celsius edo Fahrenheit</string>
+    <string name="settings_clock_colors">Koloreak</string>
+    <string name="settings_clock_time_color">Orduaren kolorea</string>
+    <string name="settings_line_clock_time">Erlojua</string>
+    <string name="settings_clock_date_color">Datuaren kolorea</string>
+    <string name="settings_line_clock_date">Erlojuaren azpiko data</string>
+    <string name="settings_clock_weather_color">Eguraldiaren kolorea</string>
+    <string name="settings_line_clock_weather">Tenperatura eta hiria</string>
+    <string name="settings_clock_color_white">Zuria</string>
+    <string name="settings_clock_color_grey">Grisa</string>
+    <string name="settings_clock_color_accent">Azentua</string>
+    <string name="settings_clock_color_help">Ados-ek kolore-hautatzailea irekitzen du (aurrezarpenak, paleta edo hex kodea), Azentu-koloreak erabiltzen duen bera. Aurrebista mugitzen zarenean jarraitzen du.</string>
+    <string name="settings_key_pick_color">Aukeratu kolorea</string>
+    <string name="settings_line_trending_layout">Joeren errenkada nola marrazten den</string>
+    <string name="settings_home_shown">Erakusten da</string>
+    <string name="settings_home_hide_row">Ezkutatu errenkada hau</string>
+    <string name="settings_home_show_row">Erakutsi errenkada hau</string>
+    <string name="settings_home_move_row">Mugitu (▲ ▼, gero Ados)</string>
+    <string name="settings_line_remote_shortcuts_on">Desaktibatuta zure esleipenak mantentzen ditu</string>
+    <string name="settings_language_system_help">DPTV-Playerk telebistaren hizkuntza jarraitzen du (orain <xliff:g id="language">%1$s</xliff:g>). Aukeratu bat behean DPTV-Playern soilik erabiltzeko.</string>
+    <string name="settings_language_pick_help">Erabili <xliff:g id="language">%1$s</xliff:g> DPTV-Playern, telebista zein hizkuntzatan dagoen ere.</string>
+    <string name="settings_key_use">Erabili</string>
+    <string name="settings_line_metadata_source">Filmen &amp; Telesailen xehetasunak nondik datozen</string>
+    <string name="settings_line_metadata_language">TMDBren sinopsiak, generoak eta izenburuak</string>
+    <string name="settings_line_metadata_advanced">Zure gako propioa edo auto-ostatatutako Worker bat</string>
+    <string name="settings_line_os_advanced">Zure API gako propioa edo Worker bat</string>
+    <string name="settings_line_os_filter">Aukeratutako hizkuntza soilik</string>
+    <string name="settings_line_os_search_language">Bilaketa-emaitzetan erakusten da</string>
+    <string name="settings_subtitle_delete_help">Ezabatzeak lekua askatzen du; erreproduzigailutik berriro deskarga dezakezu.</string>
+    <plurals name="settings_home_row_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> errenkada</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> errenkada</item>
+    </plurals>
+    <plurals name="settings_subtitles_downloaded_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> deskargatuta</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> deskargatuta</item>
+    </plurals>
+    <plurals name="settings_subtitle_file_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> fitxategi</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> fitxategi</item>
+    </plurals>
+    <string name="settings_line_add_from_phone">Bete formularioa beste gailu bateko nabigatzailean</string>
+    <string name="settings_add_type_here">Idatzi hemen</string>
+    <string name="settings_line_add_type_here">Xtream, M3U edo Stalker urrutiko aginteaz</string>
+    <string name="settings_help_add_from_phone">Ireki helbidea edo eskaneatu kodea Wi-Fi sare berean dagoen edozein gailutako nabigatzailean — telefono bat, ordenagailu bat edo beste telebista bat — bete zure erreprodukzio-zerrenda han eta bidali hona. Askoz azkarragoa da URL bat urrutiko agintearekin idaztea baino.</string>
+    <string name="settings_help_add_type_here">Idatzi Xtream saio-hasiera bat, M3U helbide bat edo Stalker ataria urrutiko agintearekin, eta gero hasi inportazioa panelean.</string>
+    <string name="settings_remote_waiting">Beste gailuaren zain</string>
+    <string name="settings_remote_nothing_yet">Oraindik ez da ezer jaso</string>
+    <string name="settings_remote_new_pin">PIN berria</string>
+    <string name="settings_line_remote_new_pin">Beste norbaitek hau ikusi badu</string>
+    <string name="settings_remote_scan">Eskaneatu edo ireki nabigatzailean</string>
+    <string name="settings_remote_or_open">edo ireki</string>
+    <string name="settings_remote_details_note">Xehetasunak hemen agertzen dira; zuk Hasi inportazioa sakatzen duzu urrutiko agintearekin.</string>
+    <string name="settings_remote_edit_note">Aldaketek edizio-pantaila betetzen dute; zuk sakatzen duzu Gorde urruneko agintearekin.</string>
+    <string name="settings_help_edit_from_phone">Erreprodukzio-zerrenda hau Wi-Fi sare bereko telefono, tableta edo ordenagailu bateko arakatzailean irekitzen du. Pasahitzak, MAC helbideak eta M3U zerrenden helbideak ez dira inoiz han erakusten: utzi hutsik gordetzeko. Bidaltzen duzunak pantaila hau betetzen du, eta ez da ezer aldatzen Gorde sakatu arte.</string>
+    <string name="settings_key_stop_back">Gelditu eta itzuli</string>
+    <string name="settings_source_type">Mota</string>
+    <string name="settings_line_source_type">Xtream, M3U edo Stalker ataria</string>
+    <string name="settings_choose_local_file">Aukeratu tokiko fitxategi bat…</string>
+    <string name="settings_line_local_file">.m3u edo .m3u8 telebista honetan</string>
+    <string name="settings_form_optional">Aukerakoa</string>
+    <string name="settings_form_field_help">Ados-ek teklatua irekitzen du; ▼ hurrengo eremura mugitzen da.</string>
+    <string name="settings_help_playlist_url">Zure .m3u edo .m3u8 zerrendaren helbidea.</string>
+    <string name="settings_line_fill_from_playlist">Erabili zure erreprodukzio-zerrendak ematen duen gida-helbidea</string>
+    <string name="settings_line_epg_auto_refresh">Mantendu gida eguneratuta</string>
+    <string name="settings_line_epg_logos">Erreprodukzio-zerrendakoaren ordez</string>
+    <string name="settings_help_epg_name">Gida-zerrendan eta Aukeratu EPGa eskuz atalean erakusten da.</string>
+    <string name="settings_glass_bg_title">Beira &amp; atzealdea</string>
+    <string name="settings_line_glass_bg">Atzealdea, irudiaren itxura, beira</string>
+    <string name="settings_bg_background">Atzealdea</string>
+    <string name="settings_line_bg_background">Pantaila bakoitzaren atzean dagoena</string>
+    <string name="settings_help_bg_background">Eszenak DPTV-Playerren kolore leun propioak marrazten ditu. Irudiak zure irudi bat erakusten du pantaila bakoitzaren atzean. Arruntak bete-betean iluna den betegarri lau bat da.</string>
+    <string name="settings_bg_stage">Eszena</string>
+    <string name="settings_bg_picture">Irudia</string>
+    <string name="settings_bg_plain">Arrunta</string>
+    <string name="settings_line_bg_picture_none">Aukeratu irudi bat telebista honetatik edo Urrutikoaz</string>
 </resources>

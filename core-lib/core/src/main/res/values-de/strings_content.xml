@@ -78,6 +78,11 @@
     <string name="content_remove_from_category">Aus dieser Kategorie entfernen</string>
     <string name="content_download">Herunterladen</string>
     <string name="content_download_all_episodes">Alle Folgen herunterladen</string>
+    <plurals name="content_download_episodes_confirm">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> Folge herunterladen?</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> Folgen herunterladen?</item>
+    </plurals>
+    <string name="content_download_episodes_confirm_message">Sie werden auf diesem Gerät gespeichert und belegen Speicherplatz.</string>
     <string name="content_play">Abspielen</string>
     <string name="content_next_up">Als Nächstes</string>
     <string name="content_favorited">Als Favorit markiert</string>
@@ -93,7 +98,6 @@
     <string name="content_last_watched">Zuletzt angesehen</string>
     <string name="content_play_external">Mit externem Player abspielen</string>
     <string name="content_delete_subtitles">OpenSub-Untertitel löschen</string>
-    <string name="content_tmdb_details">TMDB-Details</string>
     <string name="content_play_trailer">Trailer abspielen</string>
     <string name="content_refetch_tmdb">TMDB-Details erneut abrufen</string>
     <string name="content_set_tmdb_name">TMDB-Namen festlegen</string>
@@ -155,6 +159,9 @@
     <string name="content_catchup_jump_exact">Genaue Uhrzeit wählen…</string>
     <!-- Translators: TV remote instructions in the exact-time picker. "OK" is the select/enter button on the remote; keep whatever name that button is given elsewhere in this app. -->
     <string name="content_catchup_jump_hint">Drücke OK auf Tag, Stunde oder Minute, ändere den Wert mit Auf und Ab und drücke dann erneut OK.</string>
+    <string name="content_catchup_jump_programme_start">Anfang von „<xliff:g id="title">%1$s</xliff:g>“</string>
+    <string name="content_catchup_jump_programme_start_untitled">Anfang der Sendung</string>
+    <string name="content_catchup_jump_programme_start_at">Begann um <xliff:g id="time">%1$s</xliff:g></string>
     <string name="content_epg_match_prompt">Wählen Sie für „<xliff:g id="channel">%1$s</xliff:g>“ den Sender der Programmübersicht aus.</string>
     <string name="content_epg_match_prompt_current">Wählen Sie für „<xliff:g id="channel">%1$s</xliff:g>“ den Sender der Programmübersicht aus. Aktuell: <xliff:g id="match">%2$s</xliff:g></string>
     <string name="content_search_guide_channels">EPG-Sender suchen…</string>
@@ -356,7 +363,6 @@
     <string name="content_search_in"><xliff:g id="name">%1$s</xliff:g> durchsuchen</string>
     <string name="content_live_guide_view">Guide-Ansicht</string>
     <string name="content_key_watch">Ansehen</string>
-    <string name="content_key_schedule">Programm</string>
     <string name="content_key_options">Optionen</string>
     <string name="content_live_groups">Gruppen</string>
     <string name="content_menu_group_watch">Ansehen</string>
@@ -421,6 +427,9 @@
     <string name="content_sort_date_added_hint">Neueste zuerst</string>
     <string name="content_menu_group_library">Mediathek</string>
     <string name="content_menu_group_details">Details</string>
+    <string name="content_programme_details">Sendungsdetails</string>
+    <string name="content_programmes_earlier">Früher</string>
+    <string name="content_programmes_later">Später</string>
     <string name="content_movie_details">Filmdetails</string>
     <string name="content_series_details">Seriendetails</string>
     <plurals name="content_vod_title_count">
@@ -443,4 +452,5 @@
     <string name="content_season_specials">Specials</string>
     <string name="content_poster_size">Postergröße</string>
     <string name="content_vod_more_in">Mehr in <xliff:g id="category">%1$s</xliff:g></string>
+    <string name="content_key_schedule">Programm</string>
 </resources>

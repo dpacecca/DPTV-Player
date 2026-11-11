@@ -80,6 +80,13 @@ enum class PlayerControl(
      */
     PREVIOUS_CHANNEL(ControlCluster.MEDIA, ControlHost.BOTH, R.string.player_previous_channel),
 
+    /**
+     * The other versions of the channel playing — the same channel in another quality, category or
+     * playlist ([tv.own.owntv.core.live.ChannelVersions]) — to swap to when the stream breaks up. Live
+     * only. Read when pressed, so a zap costs nothing.
+     */
+    SOURCES(ControlCluster.MEDIA, ControlHost.BOTH, R.string.player_tool_sources),
+
     // --- The tools cluster: things about how it is being played and shown ---
 
     /** Which engine owns playback. A text pill naming it on the television; H3 matches that. */

@@ -296,7 +296,10 @@ class SettingsViewModel(
         viewModelScope.launch { settings.setPreferSdr(enabled) }
     }
 
-    val autoFrameRate: StateFlow<Boolean> = settings.autoFrameRate
+    val autoFrameRateFilms: StateFlow<Boolean> = settings.autoFrameRateFilms
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val autoFrameRateLive: StateFlow<Boolean> = settings.autoFrameRateLive
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     // Multiview (Plan D, feature B). The tile count is never reduced behind the user's back: the
@@ -321,8 +324,9 @@ class SettingsViewModel(
         }
     }
 
-    fun setAutoFrameRate(enabled: Boolean) {
-        viewModelScope.launch { settings.setAutoFrameRate(enabled) }
+    /** [live]: the Live TV switch; otherwise films and series. */
+    fun setAutoFrameRate(live: Boolean, enabled: Boolean) {
+        viewModelScope.launch { if (live) settings.setAutoFrameRateLive(enabled) else settings.setAutoFrameRateFilms(enabled) }
     }
 
     // The old surround BOOLEAN is gone from here: [surroundMode] replaced it, and the leftover flow
@@ -592,10 +596,10 @@ class SettingsViewModel(
         settings.quickPinnedKeys.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     fun setQuickPinnedKeys(keys: List<String>) { viewModelScope.launch { settings.setQuickPinnedKeys(keys) } }
 
-    /** The saved order of one long-press content menu; empty = the order the app ships with. */
-    fun menuOrder(menu: tv.own.owntv.core.model.ContentMenu) = settings.menuOrder(menu.name.lowercase())
-    fun setMenuOrder(menu: tv.own.owntv.core.model.ContentMenu, keys: List<String>) {
-        viewModelScope.launch { settings.setMenuOrder(menu.name.lowercase(), keys) }
+    /** One long-press content menu's saved order and hidden actions; empty = as the app ships it. */
+    fun menuLayout(menu: tv.own.owntv.core.model.ContentMenu) = settings.menuLayout(menu)
+    fun setMenuLayout(menu: tv.own.owntv.core.model.ContentMenu, layout: tv.own.owntv.core.menu.MenuLayout) {
+        viewModelScope.launch { settings.setMenuLayout(menu, layout) }
     }
 
     val resumeLastChannel: StateFlow<Boolean> =
@@ -1324,6 +1328,11 @@ class SettingsViewModel(
      * A single-connection provider cuts the oldest stream when a new one starts, so a picture left
      * running would both be killed by the measurement and corrupt its result.
      */
+    /** Per-playlist "Ignore connection limit": Multiview and recordings stop counting the provider's limit. */
+    fun setIgnoreConnectionLimit(source: SourceEntity, ignore: Boolean) {
+        viewModelScope.launch { sourceDao.updateIgnoreConnectionLimit(source.id, ignore) }
+    }
+
     fun retestSource(source: SourceEntity) {
         measureJob?.cancel()
         measureJob = viewModelScope.launch {

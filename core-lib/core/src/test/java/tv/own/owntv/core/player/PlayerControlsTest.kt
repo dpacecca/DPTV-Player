@@ -117,6 +117,7 @@ class PlayerControlsTest {
                 PlayerControl.FAVOURITE,
                 PlayerControl.CATCH_UP,
                 PlayerControl.PREVIOUS_CHANNEL,
+                PlayerControl.SOURCES,
                 PlayerControl.ENGINE,
                 PlayerControl.ASPECT,
                 PlayerControl.QUALITY,

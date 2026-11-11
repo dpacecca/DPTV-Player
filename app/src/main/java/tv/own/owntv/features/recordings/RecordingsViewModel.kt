@@ -15,12 +15,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tv.own.owntv.core.database.entity.RecordingEntity
+import tv.own.owntv.core.database.entity.RecordingRuleEntity
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.model.RecordingStatus
 import tv.own.owntv.core.player.ExternalPlayerLauncher
 import tv.own.owntv.core.recording.RecordingManager
 import tv.own.owntv.core.recording.RemoteRecorderException
 import tv.own.owntv.core.recording.RemoteRecordings
+import tv.own.owntv.core.recording.SeriesRecording
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.player.OwnTVPlayer
 
@@ -106,6 +108,16 @@ class RecordingsViewModel(
     val rows: StateFlow<List<RecordingEntity>> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf(emptyList()) else recordings.observe(pid) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The programmes set to record every showing (DPTV has no category locks, so every rule is listed). */
+    val seriesRules: StateFlow<List<SeriesRecording>> = settings.activeProfileId
+        .flatMapLatest { pid -> if (pid < 0) flowOf(emptyList()) else recordings.observeSeriesRecordings(pid) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Stops recording every showing, and cancels the showings it had scheduled; what was recorded stays. */
+    fun stopSeries(rule: RecordingRuleEntity) {
+        viewModelScope.launch { recordings.removeSeriesRule(rule) }
+    }
 
     /**
      * False when Android will not let the app set exact alarms, so the screen can say that a

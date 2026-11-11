@@ -19,6 +19,10 @@ internal object CompanionHttpProtocol {
     /** PIN posts and source forms — a few hundred bytes in practice. */
     const val FORM_BODY_LIMIT = 64 * 1024
 
+    /** Marks a request that belongs to an automatic pass; the host refuses an unconsented one. */
+    const val AUTO_SYNC_HEADER = "x-owntv-auto-sync"
+    const val AUTO_SYNC_MARKER = "1"
+
     private const val INITIAL_BODY_BUFFER = 64 * 1024
     private const val BODY_CHUNK = 16 * 1024
 
@@ -93,7 +97,7 @@ internal object CompanionHttpProtocol {
     }
 
     /** Parse a submitted form/JSON body, or null when its required fields are missing. */
-    fun parsePayload(contentType: String?, bodyText: String, fallbackType: SourceType): CompanionPayload? {
+    fun parsePayload(contentType: String?, bodyText: String, fallbackType: SourceType, requireFields: Boolean = true): CompanionPayload? {
         val isJson = contentType?.contains("application/json", ignoreCase = true) == true ||
             bodyText.trimStart().startsWith("{")
         val fields = if (isJson) {
@@ -123,7 +127,8 @@ internal object CompanionHttpProtocol {
         val portalUrl = pick(fields, "portalUrl", "portal_url").trim()
         val mac = pick(fields, "mac", "macAddress", "mac_address").trim()
 
-        when (type) {
+        // An edit may leave any field empty: it keeps the playlist's current value (CompanionSourceEdit).
+        if (requireFields) when (type) {
             SourceType.STALKER -> if (portalUrl.isBlank() || mac.isBlank()) return null
             // One of the two is required, not both: a URL to fetch, or a file to save.
             SourceType.M3U -> if (server.isBlank() && playlistContent.isBlank()) return null

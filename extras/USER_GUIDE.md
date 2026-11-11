@@ -389,7 +389,9 @@ time**, with a **Playing / Then** guide row.
 **Where:** long-press a programme in the **Guide**, or a channel in the **list**, or the **Record**
 button in the player
 A guide recording follows the programme's times; the others record from now. **Record every showing**
-sets a standing rule for that programme on that channel. Recordings appear in
+sets a standing rule for that programme on that channel; every rule is listed at the top of
+**Downloads → Recordings** under **Every showing**, with **Stop recording every showing** (it cancels
+the showings still to come and keeps what was recorded). Recordings appear in
 **Downloads → Recordings**. **Schedule recording…** in a channel's menu records it between a day and
 times you pick — guide or not; an end before the start means the next day, and an overlap with another
 recording on the same playlist is shown before you confirm. While a channel records, its menu offers
@@ -493,12 +495,25 @@ Pick a drawn avatar, or **Your own picture** — a file on this TV or a photo se
 **Where:** Settings → App → **App startup**
 **Home**, **Last channel**, **Live Favorites**, or one chosen channel picked from a searchable list.
 
+**Open OwnTV with the TV:** Settings → App → **Auto start on boot** · **Auto start on wake-up**, both
+off by default. *On boot* opens OwnTV once the TV has started up; *on wake-up* opens it each time the
+TV comes out of sleep, which is what most TVs do when you press the power button. A cold start lands
+on the App startup choice above; an OwnTV that was still running comes back where you left it, but a
+profile with a PIN asks for it again.
+- Android 10 and newer let an app open by itself only when it may **display over other apps**. OwnTV
+  asks for that when you turn an option on, and until it is allowed the row says so. If your TV has
+  no such screen, the option cannot work there.
+- *On wake-up* keeps a small background listener, with a silent notification, while it is on. It is
+  offered on TVs only. If Android ends the listener, it comes back with the next boot, app start or
+  visit to Settings.
+
 ---
 
 ## 🎛️ The player
 
 | Control | Where |
 |---|---|
+| Title | top left — a film's or show's title art when TMDB has it, else its name; a gold **4K** badge on a 4K picture |
 | Clock (and programme time on a replay) | top centre, always |
 | Engine pill **⇄ MPV/EXO** | control bar |
 | **Go back to…** | control bar, catch-up channels |
@@ -689,6 +704,7 @@ all settings** lists every setting whose name contains what you type, with its p
 | **Programme reminders** · **Reminder time** | Sources & guide | Ask to switch, switch, or notify; how early |
 | **Measured stream stats** | App | Live fps, bitrate and dropped frames in Stream info |
 | **Check updates on startup** | App | Be told when a newer version is on GitHub |
+| **Auto start on boot** · **Auto start on wake-up** | App | Open OwnTV when the TV starts up or wakes from sleep. Off by default |
 | **Error log** | ⋯ More → Error log | The last crash and recent playback failures — exportable |
 | **Detailed playback logging** | App | Turn on before reproducing a playback bug |
 

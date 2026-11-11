@@ -50,7 +50,6 @@
 1	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	liveLatencyCustomSecs
 1	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	liveLatencyMode
 1	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	preferHls
-1	core/src/main/java/tv/own/owntv/core/database/dao/ChannelDao.kt	SELECT COUNT(*) FROM channels WHERE sourceId IN (:sourceIds) AND catchup = 1
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	(:type = 'LIVE' AND itemId IN (SELECT id FROM channels WHERE sourceId IN (:sourceIds))) OR
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	(:type = 'LIVE' AND itemId NOT IN (SELECT id FROM channels)) OR
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	(:type = 'MOVIE' AND itemId IN (SELECT id FROM movies WHERE sourceId IN (:sourceIds))) OR
@@ -61,8 +60,6 @@
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	(mediaType = 'MOVIE' AND itemId NOT IN (SELECT id FROM movies)) OR
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	(mediaType = 'SERIES' AND itemId NOT IN (SELECT id FROM series))
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	)
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	) GROUP BY contextKey
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	AND COALESCE(c.sourceId, mv.sourceId, s.sourceId) IN (:sourceIds)
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	COALESCE(c.name, mv.name, s.name) AS name
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	COALESCE(c.remoteId, mv.remoteId, s.remoteId) AS remoteId,
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	COALESCE(c.sourceId, mv.sourceId, s.sourceId) AS sourceId,
@@ -73,9 +70,9 @@
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	FROM custom_category_members m INNER JOIN channels c ON m.mediaType = 'LIVE' AND m.itemId = c.id
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	FROM custom_category_members m INNER JOIN movies mv ON m.mediaType = 'MOVIE' AND m.itemId = mv.id
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	FROM custom_category_members m INNER JOIN series s ON m.mediaType = 'SERIES' AND m.itemId = s.id
-2	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN channels c ON m.mediaType = 'LIVE' AND m.itemId = c.id
-2	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN movies mv ON m.mediaType = 'MOVIE' AND m.itemId = mv.id
-2	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN series s ON m.mediaType = 'SERIES' AND m.itemId = s.id
+1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN channels c ON m.mediaType = 'LIVE' AND m.itemId = c.id
+1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN movies mv ON m.mediaType = 'MOVIE' AND m.itemId = mv.id
+1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN series s ON m.mediaType = 'SERIES' AND m.itemId = s.id
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	ORDER BY m.position, c.sortOrder, c.name
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	ORDER BY m.position, mv.sortOrder, mv.name
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	ORDER BY m.position, s.sortOrder, s.name
@@ -84,19 +81,14 @@
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT CAST(mv.sourceId AS TEXT) || ':' || COALESCE(mv.remoteId, mv.name)
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT CAST(s.sourceId AS TEXT) || ':' || COALESCE(s.remoteId, s.name)
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT COALESCE(MAX(position), -1) FROM custom_category_members WHERE profileId = :profileId AND mediaType = :type AND contextKey = :contextKey
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT COUNT(*) FROM custom_category_members m
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT DISTINCT contextKey FROM custom_category_members WHERE profileId = :profileId AND mediaType = :type
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT contextKey, COUNT(*) AS count FROM custom_category_members
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT itemId FROM custom_category_members WHERE profileId = :profileId AND mediaType = :type AND contextKey = :contextKey
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT m.profileId AS profileId, m.mediaType AS mediaType, m.itemId AS itemId,
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE c.sourceId = :sourceId OR mv.sourceId = :sourceId OR s.sourceId = :sourceId
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE c.sourceId IN (:sourceIds) AND c.name LIKE '%' || :query || '%'
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE m.profileId = :profileId AND m.mediaType = 'LIVE' AND m.contextKey = :contextKey
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE m.profileId = :profileId AND m.mediaType = 'MOVIE' AND m.contextKey = :contextKey
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE m.profileId = :profileId AND m.mediaType = 'SERIES' AND m.contextKey = :contextKey
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE m.profileId = :profileId AND m.mediaType = :type AND m.contextKey = :contextKey
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE mv.sourceId IN (:sourceIds) AND mv.name LIKE '%' || :query || '%'
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE profileId = :profileId AND mediaType = :type AND contextKey IN (:contextKeys) AND (
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE s.sourceId IN (:sourceIds) AND s.name LIKE '%' || :query || '%'
 1	core/src/main/java/tv/own/owntv/core/database/dao/EpgDao.kt	FROM epg_programmes WHERE epgChannelId = :epgKey
 1	core/src/main/java/tv/own/owntv/core/database/dao/EpgDao.kt	FROM epg_programmes WHERE epgChannelId IN (:epgKeys)
@@ -189,14 +181,11 @@
 1	core/src/main/java/tv/own/owntv/core/settings/SubtitleStyle.kt	top_right
 1	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	$apiBase?type=epg&action=get_simple_data_table&ch_id=${enc(channelId)}
 1	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	&date=${enc(date)}&p=$page&JsHttpRequest=1-xml
-1	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	data
 1	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	mark_archive
-1	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	max_page_items
 1	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	start_timestamp
 1	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	stop_timestamp
 1	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	time
 1	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	time_to
-1	core/src/main/java/tv/own/owntv/core/stalker/StalkerClient.kt	total_items
 1	core/src/main/java/tv/own/owntv/core/stalker/StreamUrlResolver.kt	StreamUrlResolver
 1	core/src/main/java/tv/own/owntv/core/stalker/StreamUrlResolver.kt	archive guide lookup failed ch=$channelRemoteId
 1	core/src/main/java/tv/own/owntv/core/stalker/StreamUrlResolver.kt	auto /media/$programmeId.mpg
@@ -214,7 +203,6 @@
 1	core/src/main/java/tv/own/owntv/core/util/CrashRecorder.kt	--- live diagnostics leading up to the crash ---
 1	core/src/main/java/tv/own/owntv/core/util/CrashRecorder.kt	DPTV-Player ${CoreBuildInfo.versionName} (${CoreBuildInfo.versionCode})
 1	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	body="$failureText"
-1	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	decoder failed before first frame (${error.errorCodeName}) — rebuilding the decoder and retrying once
 1	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	decoder rebuild failed: ${it.message}
 1	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	default User-Agent refused — retrying once as ${HttpClient.FALLBACK_USER_AGENT}
 1	player-core/src/main/java/tv/own/owntv/player/LivePreviewEngine.kt	insufficient resource

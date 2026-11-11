@@ -34,6 +34,9 @@ val playerModule = module {
             heroPreview = get(),
         )
     }
+    // Whether the app can be seen and heard: the activity started and the television still connected.
+    // MainActivity feeds it and frees / restores the engines on its changes.
+    single { tv.own.owntv.core.player.PlaybackVisibilityWatch(androidContext()) }
     // Audio focus (duck-don't-pause) + the system MediaSession, driven by whichever engine is playing.
     single { tv.own.owntv.player.PlaybackSession(androidContext()) }
     // N17 — ends itself when the session detaches; what "stop" means is assigned by the shell.

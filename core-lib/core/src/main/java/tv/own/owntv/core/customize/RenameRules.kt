@@ -46,6 +46,9 @@ object RenameRules {
 
     const val SEPARATOR = ";"
 
+    /** Country/provider tags in the agreed tagged forms only: XX|, |XX|, [XX], (XX). */
+    internal const val COUNTRY_TAG_PATTERN = "^(?:\\|?[A-Za-z]{2,4}\\s*\\||\\[[A-Za-z]{2,4}]|\\([A-Za-z]{2,4}\\))"
+
     /** Leading/trailing leftovers cleaned after every rule when the option is enabled. */
     private const val EDGE_SEPARATORS = "[\\s|\\-–—·:._,]+"
 
@@ -101,7 +104,7 @@ object RenameRules {
      */
     fun autoCleanupRules(): List<Rule> {
         // Country/provider tags in the agreed tagged forms only: XX|, |XX|, [XX], (XX).
-        val country = "^(?:\\|?[A-Za-z]{2,4}\\s*\\||\\[[A-Za-z]{2,4}]|\\([A-Za-z]{2,4}\\))"
+        val country = COUNTRY_TAG_PATTERN
         // Quality/codec tags are the auto-cleanup exception to boundary-only user rules: remove
         // them anywhere as standalone tokens, including their optional []/() wrappers.
         val quality =

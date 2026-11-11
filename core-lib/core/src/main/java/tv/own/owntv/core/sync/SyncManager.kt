@@ -75,7 +75,7 @@ class SyncManager(
     private val support = SyncSupport(categoryDao, channelDao, movieDao, seriesDao, sourceDao, customize, settings, chunkPauseMs = if (lowSpec) SyncSupport.LOW_SPEC_CHUNK_PAUSE_MS else 0L)
     private val xtreamSyncer = XtreamSyncer(xtream, bulkInsertHelper, support, phaseConcurrency = XtreamSyncer.phaseConcurrency(lowSpec))
     private val m3uSyncer = M3uSyncer(context, sourceDao, categoryDao, channelDao, movieDao, seriesDao, m3u, http, bulkInsertHelper, support)
-    private val stalkerSyncer = StalkerSyncer(stalkerClient, stalkerAuth, bulkInsertHelper, support, sourceDao, catalogBackfillDao, catalogPriority)
+    private val stalkerSyncer = StalkerSyncer(stalkerClient, stalkerAuth, bulkInsertHelper, support, sourceDao, catalogBackfillDao, catalogPriority, PortalCeilingStore(context))
 
     private val lastSyncStats = java.util.concurrent.ConcurrentHashMap<Long, SyncRunStats>()
 
@@ -215,21 +215,6 @@ class SyncManager(
         if (source.type != SourceType.STALKER) return@withContext StalkerSyncer.BackfillOutcome()
         stalkerSyncer.backfill(source, yieldToUser)
     }
-
-    /**
-     * Is this source's catalogue whole? (Plan N1f-4.)
-     *
-     * One read, so a caller that needs the answer per screen — "should Trending snapshot this?",
-     * "is this category still filling in?" — does not have to reason about plan rows itself. True
-     * for any source with no outstanding pages, which includes every Xtream and M3U playlist and
-     * every Stalker source imported before the lazy add existed.
-     *
-     * Note this is *not* the same question as `lastSyncAt != null`: the lazy add stamps a source
-     * synced while its catalogue is still ~3% filled, deliberately, so the user is not held at a
-     * progress bar. Nothing may read `lastSyncAt` as "the catalogue is here".
-     */
-    suspend fun catalogueComplete(sourceId: Long): Boolean =
-        catalogBackfillDao.pendingCountForSource(sourceId) == 0
 
     private fun logStats(stats: SyncRunStats) {
         val tag = "SyncManager"
