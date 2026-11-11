@@ -205,7 +205,7 @@
     <string name="companion_saved_heading">تم الإرسال إلى تلفازك ✓</string>
     <string name="companion_saved_source_body">أصبح <xliff:g id="name">%1$s</xliff:g> الآن على شاشة إضافة مصدر في التلفاز. تحقّق من التفاصيل هناك واضغط على «بدء الاستيراد» باستخدام جهاز التحكم عن بُعد.</string>
     <string name="companion_saved_send_another">إرسال مصدر آخر</string>
-    <string name="companion_edit_page_title">OwnTV — تعديل المصدر</string>
+    <string name="companion_edit_page_title">DPTV-Player — تعديل المصدر</string>
     <string name="companion_edit_heading">تعديل <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">غيّر ما تحتاج إليه واضغط إرسال إلى التلفاز. الحقل المتروك فارغًا يحتفظ بقيمته الحالية. تظهر التغييرات على التلفاز — اضغط حفظ هناك بجهاز التحكم.</string>
     <string name="companion_keep_current">اتركه فارغًا للاحتفاظ بالقيمة الحالية</string>

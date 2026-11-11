@@ -196,7 +196,7 @@
     <string name="companion_saved_heading">Inviato alla tua TV ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> è ora nella schermata Aggiungi fonte della TV. Controlla lì i dettagli e premi Avvia importazione con il telecomando.</string>
     <string name="companion_saved_send_another">Invia un\'altra fonte</string>
-    <string name="companion_edit_page_title">OwnTV — Modifica fonte</string>
+    <string name="companion_edit_page_title">DPTV-Player — Modifica fonte</string>
     <string name="companion_edit_heading">Modifica <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Cambia ciò che serve e premi Invia alla TV. Un campo lasciato vuoto mantiene il valore attuale. Le modifiche compaiono sulla TV: premi Salva lì con il telecomando.</string>
     <string name="companion_keep_current">Lascia vuoto per mantenere il valore attuale</string>

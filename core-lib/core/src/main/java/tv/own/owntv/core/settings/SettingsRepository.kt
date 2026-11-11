@@ -3896,35 +3896,6 @@ class SettingsRepository(private val context: Context, private val localeStore: 
         }
     }
 
-    // --- Backup: per-profile sports settings (dynamic "sports_config_<id>" keys) ---
-
-    /** Exports all per-profile sports blobs as { "<profileId>": { ... } }. */
-    suspend fun exportSportsConfigs(): org.json.JSONObject {
-        val out = org.json.JSONObject()
-        context.dataStore.data.first().asMap().forEach { (k, v) ->
-            if (k.name.startsWith(SPORTS_CONFIG_PREFIX) && v is String) {
-                val blob = runCatching { org.json.JSONObject(v) }.getOrNull() ?: return@forEach
-                out.put(k.name.removePrefix(SPORTS_CONFIG_PREFIX), blob)
-            }
-        }
-        return out
-    }
-
-    /**
-     * Restores sports blobs only for profile ids in [existingProfileIds] (others are dropped safely).
-     * Each blob is read through [tv.own.owntv.core.sports.SportsConfig.fromJson] and written back, so
-     * the import rules apply and a value this build does not know is left out.
-     */
-    suspend fun importSportsConfigs(o: org.json.JSONObject, existingProfileIds: Set<Long>) {
-        context.dataStore.edit { prefs ->
-            o.keys().forEach { key ->
-                val pid = key.toLongOrNull()?.takeIf { it in existingProfileIds } ?: return@forEach
-                val blob = o.optJSONObject(key) ?: return@forEach
-                prefs[sportsConfigKey(pid)] = tv.own.owntv.core.sports.SportsConfig.fromJson(blob.toString()).toJson().toString()
-            }
-        }
-    }
-
     // --- Backup: per-profile preferred languages (dynamic "pref_audio_lang_<id>" / "pref_sub_lang_<id>") ---
 
     /** Exports { "<profileId>": { "a": "<audio>", "s": "<subtitle>" } }; a side the profile never chose is absent. */
@@ -4105,8 +4076,6 @@ class SettingsRepository(private val context: Context, private val localeStore: 
     }
 }
 
-/** Per-profile sports settings blob; the profile id follows. */
-internal const val SPORTS_CONFIG_PREFIX = "sports_config_"
 internal const val DOWNLOADS_ALLOWED_PREFIX = "downloads_allowed_"
 
 /** Per-profile preferred-language keys; the profile id follows. */

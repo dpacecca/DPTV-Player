@@ -190,7 +190,7 @@
     <string name="companion_saved_heading">TV로 전송했습니다 ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g>이(가) 이제 TV의 소스 추가 화면에 표시됩니다. 해당 화면에서 세부 정보를 확인하고 리모컨으로 가져오기 시작을 누르세요.</string>
     <string name="companion_saved_send_another">다른 소스 보내기</string>
-    <string name="companion_edit_page_title">OwnTV — 소스 편집</string>
+    <string name="companion_edit_page_title">DPTV-Player — 소스 편집</string>
     <string name="companion_edit_heading"><xliff:g id="name">%1$s</xliff:g> 편집</string>
     <string name="companion_edit_description">필요한 부분을 바꾸고 TV로 보내기를 누르세요. 비워 둔 칸은 현재 값을 유지합니다. 변경 내용이 TV에 표시되면 리모컨으로 저장을 누르세요.</string>
     <string name="companion_keep_current">비워 두면 현재 값을 유지합니다</string>

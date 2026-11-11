@@ -193,7 +193,7 @@
     <string name="companion_saved_heading">आपके टीवी पर भेज दिया गया ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> अब टीवी की स्रोत जोड़ें स्क्रीन पर है। वहाँ विवरण जाँचें और रिमोट कंट्रोल पर इंपोर्ट शुरू करें दबाएँ।</string>
     <string name="companion_saved_send_another">कोई दूसरा स्रोत भेजें</string>
-    <string name="companion_edit_page_title">OwnTV — स्रोत में बदलाव करें</string>
+    <string name="companion_edit_page_title">DPTV-Player — स्रोत में बदलाव करें</string>
     <string name="companion_edit_heading"><xliff:g id="name">%1$s</xliff:g> में बदलाव करें</string>
     <string name="companion_edit_description">जो बदलना है बदलें और टीवी पर भेजें दबाएं। खाली छोड़ा गया फ़ील्ड अपना मौजूदा मान रखता है। बदलाव टीवी पर दिखेंगे — वहां रिमोट से सहेजें दबाएं।</string>
     <string name="companion_keep_current">मौजूदा मान रखने के लिए खाली छोड़ें</string>

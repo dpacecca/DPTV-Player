@@ -199,7 +199,7 @@
     <string name="companion_saved_heading">Odesláno do televizoru ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> je nyní na obrazovce Přidat zdroj v televizoru. Zkontrolujte tam údaje a pomocí dálkového ovladače stiskněte Spustit import.</string>
     <string name="companion_saved_send_another">Odeslat další zdroj</string>
-    <string name="companion_edit_page_title">OwnTV — Upravit zdroj</string>
+    <string name="companion_edit_page_title">DPTV-Player — Upravit zdroj</string>
     <string name="companion_edit_heading">Upravit <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Změňte, co potřebujete, a stiskněte Odeslat do TV. Prázdné pole si ponechá současnou hodnotu. Změny se objeví na televizi — tam stiskněte na ovladači Uložit.</string>
     <string name="companion_keep_current">Ponechte prázdné, aby zůstala současná hodnota</string>

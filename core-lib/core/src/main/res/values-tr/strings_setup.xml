@@ -193,7 +193,7 @@
     <string name="companion_saved_heading">TV\'nize gönderildi ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> artık TV\'deki Kaynak ekle ekranında. Bilgileri orada kontrol edin ve uzaktan kumandayla İçe Aktarmayı Başlat düğmesine basın.</string>
     <string name="companion_saved_send_another">Başka bir kaynak gönder</string>
-    <string name="companion_edit_page_title">OwnTV — Kaynağı düzenle</string>
+    <string name="companion_edit_page_title">DPTV-Player — Kaynağı düzenle</string>
     <string name="companion_edit_heading">Düzenle: <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Gerekeni değiştirin ve TV’ye Gönder’e basın. Boş bırakılan alan mevcut değerini korur. Değişiklikler TV’de görünür — orada kumandayla Kaydet’e basın.</string>
     <string name="companion_keep_current">Mevcut değeri korumak için boş bırakın</string>

@@ -193,7 +193,7 @@
     <string name="companion_saved_heading">Naar je tv verzonden ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> staat nu op het scherm Bron toevoegen van de tv. Controleer daar de gegevens en druk met de afstandsbediening op Importeren starten.</string>
     <string name="companion_saved_send_another">Nog een bron verzenden</string>
-    <string name="companion_edit_page_title">OwnTV — Bron bewerken</string>
+    <string name="companion_edit_page_title">DPTV-Player — Bron bewerken</string>
     <string name="companion_edit_heading"><xliff:g id="name">%1$s</xliff:g> bewerken</string>
     <string name="companion_edit_description">Wijzig wat nodig is en druk op Naar tv verzenden. Een leeg veld houdt zijn huidige waarde. De wijzigingen verschijnen op de tv — druk daar met de afstandsbediening op Opslaan.</string>
     <string name="companion_keep_current">Leeg laten om de huidige waarde te houden</string>

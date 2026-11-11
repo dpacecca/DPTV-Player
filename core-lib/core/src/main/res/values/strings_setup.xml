@@ -385,7 +385,7 @@
     <!-- Translators: Button on the companion success page to send another source. -->
     <string name="companion_saved_send_another">Send another source</string>
     <!-- Translators: Browser tab title of the companion page that edits one existing source. OwnTV is the app name. -->
-    <string name="companion_edit_page_title">OwnTV \u2014 Edit source</string>
+    <string name="companion_edit_page_title">DPTV-Player \u2014 Edit source</string>
     <!-- Translators: Heading on the companion edit page. "name" is the name of the source being edited. -->
     <string name="companion_edit_heading">Edit <xliff:g id="name">%1$s</xliff:g></string>
     <!-- Translators: Description on the companion edit page. Send to TV is the button on this page; Save is the button on the TV's edit screen. -->

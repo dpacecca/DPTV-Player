@@ -193,7 +193,7 @@
     <string name="companion_saved_heading">Skickat till din tv ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> finns nu på skärmen Lägg till källa på tv:n. Kontrollera uppgifterna där och tryck på Starta import med fjärrkontrollen.</string>
     <string name="companion_saved_send_another">Skicka en annan källa</string>
-    <string name="companion_edit_page_title">OwnTV — Redigera källa</string>
+    <string name="companion_edit_page_title">DPTV-Player — Redigera källa</string>
     <string name="companion_edit_heading">Redigera <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Ändra det som behövs och tryck på Skicka till tv:n. Ett tomt fält behåller sitt nuvarande värde. Ändringarna visas på tv:n — tryck på Spara där med fjärrkontrollen.</string>
     <string name="companion_keep_current">Lämna tomt för att behålla nuvarande värde</string>

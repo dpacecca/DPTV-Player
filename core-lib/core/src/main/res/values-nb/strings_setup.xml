@@ -193,7 +193,7 @@
     <string name="companion_saved_heading">Sendt til TV-en ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> er nå på skjermbildet «Legg til kilde» på TV-en. Kontroller opplysningene der, og trykk på Importer med fjernkontrollen.</string>
     <string name="companion_saved_send_another">Send en annen kilde</string>
-    <string name="companion_edit_page_title">OwnTV — Rediger kilde</string>
+    <string name="companion_edit_page_title">DPTV-Player — Rediger kilde</string>
     <string name="companion_edit_heading">Rediger <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Endre det du trenger, og trykk på Send til TV. Et tomt felt beholder den nåværende verdien. Endringene vises på TV-en — trykk på Lagre der med fjernkontrollen.</string>
     <string name="companion_keep_current">La stå tomt for å beholde nåværende verdi</string>

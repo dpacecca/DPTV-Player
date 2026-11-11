@@ -196,7 +196,7 @@
     <string name="companion_saved_heading">Enviado para a TV ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> encontra-se agora no ecrã Adicionar uma origem da TV. Verifique aí os dados e prima Iniciar importação com o comando.</string>
     <string name="companion_saved_send_another">Enviar outra origem</string>
-    <string name="companion_edit_page_title">OwnTV — Editar origem</string>
+    <string name="companion_edit_page_title">DPTV-Player — Editar origem</string>
     <string name="companion_edit_heading">Editar <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Altere o que precisar e toque em Enviar para a TV. Um campo deixado vazio mantém o valor atual. As alterações aparecem na TV — prima Guardar aí com o comando.</string>
     <string name="companion_keep_current">Deixe vazio para manter o valor atual</string>

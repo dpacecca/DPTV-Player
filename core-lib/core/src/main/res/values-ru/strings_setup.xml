@@ -199,7 +199,7 @@
     <string name="companion_saved_heading">Отправлено на телевизор ✓</string>
     <string name="companion_saved_source_body">Источник <xliff:g id="name">%1$s</xliff:g> теперь отображается на экране добавления источника на телевизоре. Проверьте там данные и нажмите «Начать импорт» на пульте ДУ.</string>
     <string name="companion_saved_send_another">Отправить другой источник</string>
-    <string name="companion_edit_page_title">OwnTV — Изменить источник</string>
+    <string name="companion_edit_page_title">DPTV-Player — Изменить источник</string>
     <string name="companion_edit_heading">Изменить <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Измените что нужно и нажмите «Отправить на телевизор». Пустое поле сохраняет текущее значение. Изменения появятся на телевизоре — нажмите там «Сохранить» на пульте.</string>
     <string name="companion_keep_current">Оставьте пустым, чтобы сохранить текущее значение</string>

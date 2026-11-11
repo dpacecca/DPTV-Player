@@ -196,7 +196,7 @@
     <string name="companion_saved_heading">Envoyé vers votre TV ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> se trouve maintenant sur l’écran Ajouter une source de la TV. Vérifiez les informations qui y figurent et appuyez sur Démarrer l’importation avec la télécommande.</string>
     <string name="companion_saved_send_another">Envoyer une autre source</string>
-    <string name="companion_edit_page_title">OwnTV — Modifier la source</string>
+    <string name="companion_edit_page_title">DPTV-Player — Modifier la source</string>
     <string name="companion_edit_heading">Modifier <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Changez ce qu’il faut et appuyez sur Envoyer vers la TV. Un champ laissé vide garde sa valeur actuelle. Les modifications apparaissent sur la TV — appuyez sur Enregistrer avec la télécommande.</string>
     <string name="companion_keep_current">Laisser vide pour garder la valeur actuelle</string>

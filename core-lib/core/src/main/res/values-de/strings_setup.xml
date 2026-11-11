@@ -193,7 +193,7 @@
     <string name="companion_saved_heading">An deinen TV gesendet ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> befindet sich jetzt auf dem Bildschirm „Quelle hinzufügen“ Ihres Fernsehers. Prüfen Sie dort die Angaben und drücken Sie auf der Fernbedienung „Importieren starten“.</string>
     <string name="companion_saved_send_another">Weitere Quelle senden</string>
-    <string name="companion_edit_page_title">OwnTV — Quelle bearbeiten</string>
+    <string name="companion_edit_page_title">DPTV-Player — Quelle bearbeiten</string>
     <string name="companion_edit_heading"><xliff:g id="name">%1$s</xliff:g> bearbeiten</string>
     <string name="companion_edit_description">Ändere, was nötig ist, und tippe auf An TV senden. Ein leeres Feld behält seinen aktuellen Wert. Die Änderungen erscheinen auf dem Fernseher – drücke dort mit der Fernbedienung auf Speichern.</string>
     <string name="companion_keep_current">Leer lassen, um den aktuellen Wert zu behalten</string>

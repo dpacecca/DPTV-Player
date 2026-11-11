@@ -190,7 +190,7 @@
     <string name="companion_saved_heading">TVに送信しました ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g>がTVの［ソースを追加］画面に表示されています。そこで詳細を確認し、リモコンで［インポートを開始］を押してください。</string>
     <string name="companion_saved_send_another">別のソースを送信</string>
-    <string name="companion_edit_page_title">OwnTV — ソースを編集</string>
+    <string name="companion_edit_page_title">DPTV-Player — ソースを編集</string>
     <string name="companion_edit_heading"><xliff:g id="name">%1$s</xliff:g> を編集</string>
     <string name="companion_edit_description">必要な箇所を変更して「TVに送信」を押してください。空欄のままの項目は現在の値が保たれます。変更は TV に表示されるので、リモコンで「保存」を押してください。</string>
     <string name="companion_keep_current">空欄のままにすると現在の値を保持します</string>

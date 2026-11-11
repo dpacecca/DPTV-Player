@@ -198,7 +198,7 @@
     <string name="companion_saved_heading">Elküldve a TV-dre ✓</string>
     <string name="companion_saved_source_body">A(z) <xliff:g id="name">%1$s</xliff:g> már a TV Forrás hozzáadása képernyőjén van. Ellenőrizd ott az adatokat, és nyomd meg a távirányítón az Importálás indítása gombot.</string>
     <string name="companion_saved_send_another">Másik forrás küldése</string>
-    <string name="companion_edit_page_title">OwnTV — Forrás szerkesztése</string>
+    <string name="companion_edit_page_title">DPTV-Player — Forrás szerkesztése</string>
     <string name="companion_edit_heading"><xliff:g id="name">%1$s</xliff:g> szerkesztése</string>
     <string name="companion_edit_description">Módosítsd, amit kell, és nyomd meg a Küldés a TV-re gombot. Az üresen hagyott mező megtartja a jelenlegi értékét. A módosítások megjelennek a tévén – ott nyomd meg a Mentés gombot a távirányítón.</string>
     <string name="companion_keep_current">Hagyd üresen a jelenlegi érték megtartásához</string>

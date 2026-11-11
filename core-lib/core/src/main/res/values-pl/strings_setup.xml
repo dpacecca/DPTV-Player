@@ -199,7 +199,7 @@
     <string name="companion_saved_heading">Wysłano do telewizora ✓</string>
     <string name="companion_saved_source_body">Źródło <xliff:g id="name">%1$s</xliff:g> jest teraz widoczne na ekranie Dodaj źródło na telewizorze. Sprawdź tam jego dane i wybierz pilotem opcję Rozpocznij import.</string>
     <string name="companion_saved_send_another">Wyślij kolejne źródło</string>
-    <string name="companion_edit_page_title">OwnTV — Edytuj źródło</string>
+    <string name="companion_edit_page_title">DPTV-Player — Edytuj źródło</string>
     <string name="companion_edit_heading">Edytuj <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Zmień, co trzeba, i naciśnij Wyślij do telewizora. Puste pole zachowuje obecną wartość. Zmiany pojawią się na telewizorze — naciśnij tam Zapisz na pilocie.</string>
     <string name="companion_keep_current">Zostaw puste, aby zachować obecną wartość</string>

@@ -13,31 +13,6 @@
 1	core/src/main/java/tv/own/owntv/core/catalog/ProviderCatalogMetadata.kt	2.0 Audio
 1	core/src/main/java/tv/own/owntv/core/catalog/ProviderCatalogMetadata.kt	5.1 Audio
 1	core/src/main/java/tv/own/owntv/core/catalog/ProviderCatalogMetadata.kt	7.1 Audio
-2	core/src/main/java/tv/own/owntv/core/companion/CompanionController.kt	\0
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionController.kt	Failed to save uploaded playlist
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionController.kt	Saved uploaded playlist (${file.length()} bytes) → ${file.name}
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionController.kt	companion-playlists
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionController.kt	playlist-${System.currentTimeMillis()}.m3u
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHtml.kt	%1$d
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHtml.kt	,username:(document.getElementById('user').value||''),password:(document.getElementById('pass').value||'')
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHtml.kt	<div class="card"> <h1>${title.h()}</h1><p>${description.h()}</p> <form id="f" onsubmit="return false"> $credentialFields <label>${keyLabel.h()} <input id="key" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></label> <label>${urlLabel.h()} <input id="url" type="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://"></label> <button class="go" id="send" type="submit">${send.h()}</button> </form><p id="status" class="hint"></p> </div> <script> var k=document.getElementById('key'),u=document.getElementById('url'),b=document.getElementById('send'),s=document.getElementById('status'); document.getElementById('f').addEventListener('submit',function(){ var body=new URLSearchParams({apiKey:(k.value||'').trim(),serverUrl:(u.value||'').trim()$credentialBody}).toString(); b.disabled=true;s.textContent=${sending.js()}; fetch('/serviceconfig?pin=$pin',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body}) .then(function(res){if(res.ok){return res.text().then(function(t){document.open();document.write(t);document.close();});}b.disabled=false;s.textContent=${failed.js()}.replace('__STATUS__',String(res.status));}) .catch(function(){b.disabled=false;s.textContent=${unreachable.js()};});return false; }); </script>
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHtml.kt	<div class="card"><h1>${c.savedHeading.h()}</h1> <p>${context.getString(R.string.companion_service_config_sent).h()}</p> <p><a href="/?pin=$pin">${context.getString(R.string.companion_service_config_again).h()}</a></p> </div>
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHtml.kt	<label>${context.getString(R.string.player_subtitles_username).h()} <input id="user" type="text" autocomplete="username" autocapitalize="off" spellcheck="false"></label> <label>${context.getString(R.string.player_subtitles_password).h()} <input id="pass" type="password" autocomplete="current-password"></label>
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHtml.kt	__STATUS__
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	/m3u
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	playlistFile
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	playlistFileName
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	playlist_file
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpProtocol.kt	playlist_file_name
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	/serviceconfig
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	^[A-Za-z0-9._-]{8,256}$
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	apiKey
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	https
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	password
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	serverUrl
-1	core/src/main/java/tv/own/owntv/core/companion/CompanionHttpServer.kt	username
-2	core/src/main/java/tv/own/owntv/core/companion/CompanionMode.kt	\0
-2	core/src/main/java/tv/own/owntv/core/companion/CompanionPayload.kt	\0
 1	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	${CustomizeKeys.CUSTOM_PREFIX}${UUID.randomUUID()}
 1	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	custom:
 1	core/src/main/java/tv/own/owntv/core/customize/CustomizationStore.kt	icon
@@ -75,7 +50,6 @@
 1	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	liveLatencyCustomSecs
 1	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	liveLatencyMode
 1	core/src/main/java/tv/own/owntv/core/database/OwnTVDatabase.kt	preferHls
-1	core/src/main/java/tv/own/owntv/core/database/dao/ChannelDao.kt	SELECT COUNT(*) FROM channels WHERE sourceId IN (:sourceIds) AND catchup = 1
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	(:type = 'LIVE' AND itemId IN (SELECT id FROM channels WHERE sourceId IN (:sourceIds))) OR
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	(:type = 'LIVE' AND itemId NOT IN (SELECT id FROM channels)) OR
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	(:type = 'MOVIE' AND itemId IN (SELECT id FROM movies WHERE sourceId IN (:sourceIds))) OR
@@ -86,8 +60,6 @@
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	(mediaType = 'MOVIE' AND itemId NOT IN (SELECT id FROM movies)) OR
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	(mediaType = 'SERIES' AND itemId NOT IN (SELECT id FROM series))
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	)
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	) GROUP BY contextKey
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	AND COALESCE(c.sourceId, mv.sourceId, s.sourceId) IN (:sourceIds)
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	COALESCE(c.name, mv.name, s.name) AS name
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	COALESCE(c.remoteId, mv.remoteId, s.remoteId) AS remoteId,
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	COALESCE(c.sourceId, mv.sourceId, s.sourceId) AS sourceId,
@@ -98,9 +70,9 @@
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	FROM custom_category_members m INNER JOIN channels c ON m.mediaType = 'LIVE' AND m.itemId = c.id
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	FROM custom_category_members m INNER JOIN movies mv ON m.mediaType = 'MOVIE' AND m.itemId = mv.id
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	FROM custom_category_members m INNER JOIN series s ON m.mediaType = 'SERIES' AND m.itemId = s.id
-2	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN channels c ON m.mediaType = 'LIVE' AND m.itemId = c.id
-2	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN movies mv ON m.mediaType = 'MOVIE' AND m.itemId = mv.id
-2	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN series s ON m.mediaType = 'SERIES' AND m.itemId = s.id
+1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN channels c ON m.mediaType = 'LIVE' AND m.itemId = c.id
+1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN movies mv ON m.mediaType = 'MOVIE' AND m.itemId = mv.id
+1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	LEFT JOIN series s ON m.mediaType = 'SERIES' AND m.itemId = s.id
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	ORDER BY m.position, c.sortOrder, c.name
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	ORDER BY m.position, mv.sortOrder, mv.name
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	ORDER BY m.position, s.sortOrder, s.name
@@ -109,19 +81,14 @@
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT CAST(mv.sourceId AS TEXT) || ':' || COALESCE(mv.remoteId, mv.name)
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT CAST(s.sourceId AS TEXT) || ':' || COALESCE(s.remoteId, s.name)
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT COALESCE(MAX(position), -1) FROM custom_category_members WHERE profileId = :profileId AND mediaType = :type AND contextKey = :contextKey
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT COUNT(*) FROM custom_category_members m
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT DISTINCT contextKey FROM custom_category_members WHERE profileId = :profileId AND mediaType = :type
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT contextKey, COUNT(*) AS count FROM custom_category_members
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT itemId FROM custom_category_members WHERE profileId = :profileId AND mediaType = :type AND contextKey = :contextKey
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	SELECT m.profileId AS profileId, m.mediaType AS mediaType, m.itemId AS itemId,
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE c.sourceId = :sourceId OR mv.sourceId = :sourceId OR s.sourceId = :sourceId
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE c.sourceId IN (:sourceIds) AND c.name LIKE '%' || :query || '%'
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE m.profileId = :profileId AND m.mediaType = 'LIVE' AND m.contextKey = :contextKey
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE m.profileId = :profileId AND m.mediaType = 'MOVIE' AND m.contextKey = :contextKey
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE m.profileId = :profileId AND m.mediaType = 'SERIES' AND m.contextKey = :contextKey
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE m.profileId = :profileId AND m.mediaType = :type AND m.contextKey = :contextKey
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE mv.sourceId IN (:sourceIds) AND mv.name LIKE '%' || :query || '%'
-1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE profileId = :profileId AND mediaType = :type AND contextKey IN (:contextKeys) AND (
 1	core/src/main/java/tv/own/owntv/core/database/dao/CustomCategoryDao.kt	WHERE s.sourceId IN (:sourceIds) AND s.name LIKE '%' || :query || '%'
 1	core/src/main/java/tv/own/owntv/core/database/dao/EpgDao.kt	FROM epg_programmes WHERE epgChannelId = :epgKey
 1	core/src/main/java/tv/own/owntv/core/database/dao/EpgDao.kt	FROM epg_programmes WHERE epgChannelId IN (:epgKeys)

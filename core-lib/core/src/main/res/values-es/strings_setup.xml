@@ -196,7 +196,7 @@
     <string name="companion_saved_heading">Enviado al televisor ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> ya está en la pantalla Añadir fuente del televisor. Comprueba allí los datos y pulsa Iniciar importación con el mando.</string>
     <string name="companion_saved_send_another">Enviar otra fuente</string>
-    <string name="companion_edit_page_title">OwnTV — Editar fuente</string>
+    <string name="companion_edit_page_title">DPTV-Player — Editar fuente</string>
     <string name="companion_edit_heading">Editar <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Cambia lo que necesites y pulsa Enviar a la TV. Un campo vacío conserva su valor actual. Los cambios aparecen en la TV: pulsa Guardar allí con el mando.</string>
     <string name="companion_keep_current">Déjalo vacío para conservar el valor actual</string>

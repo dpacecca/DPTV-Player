@@ -203,7 +203,6 @@ class BackupManager(
                 put("startupModes", filterByProfile(settings.exportStartupModes(), pidKeys))
                 put("startupChannels", filterByProfile(settings.exportStartupChannels(), pidKeys))
                 put("preferredLanguages", filterByProfile(settings.exportPreferredLanguages(), pidKeys))
-                put("sportsConfigs", filterByProfile(settings.exportSportsConfigs(), pidKeys))
                 put("downloadsAllowed", filterByProfile(settings.exportDownloadsAllowed(), pidKeys))
                 put("lastCategories", filterByProfile(settings.exportLastCategories(), pidKeys))
                     // The Customize PIN is stored as a salted hash, but a 4-digit PIN behind one SHA-256
@@ -1210,7 +1209,6 @@ class BackupManager(
                 }
                 settings.repairSpecificStartupModes(pids)
                 root.optJSONObject("preferredLanguages")?.let { settings.importPreferredLanguages(remapProfileKeys(it, profileIdMap), pids) }
-                root.optJSONObject("sportsConfigs")?.let { settings.importSportsConfigs(remapProfileKeys(it, profileIdMap), pids) }
                 root.optJSONObject("downloadsAllowed")?.let { settings.importDownloadsAllowed(remapProfileKeys(it, profileIdMap), pids) }
                 root.optJSONObject("lastCategories")?.let { settings.importLastCategories(remapProfileKeys(it, profileIdMap), pids) }
                     // Encrypted-only since v17, so this restores the lock exactly when the passphrase

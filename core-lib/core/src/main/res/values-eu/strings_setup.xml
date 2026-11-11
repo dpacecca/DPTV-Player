@@ -198,7 +198,7 @@
     <string name="companion_saved_heading">Zure telebistara bidali da ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> telebistaren Gehitu iturburua pantailan dago orain. Egiaztatu datuak bertan eta sakatu Hasi inportazioa urrutiko agintean.</string>
     <string name="companion_saved_send_another">Bidali beste iturburu bat</string>
-    <string name="companion_edit_page_title">OwnTV — Editatu iturburua</string>
+    <string name="companion_edit_page_title">DPTV-Player — Editatu iturburua</string>
     <string name="companion_edit_heading">Editatu <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Aldatu behar duzuna eta sakatu Bidali telebistara. Hutsik uzten den eremuak bere uneko balioa gordetzen du. Aldaketak telebistan agertuko dira — sakatu han Gorde urruneko agintearekin.</string>
     <string name="companion_keep_current">Utzi hutsik uneko balioa gordetzeko</string>

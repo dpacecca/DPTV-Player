@@ -7,8 +7,7 @@ import tv.own.owntv.core.customize.ChannelNameCleanup
 import tv.own.owntv.core.customize.EpgMatchResolver
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.matchName
-import tv.own.owntv.core.sports.WatchOption
-import tv.own.owntv.core.sports.WatchTier
+import tv.own.owntv.core.live.ChannelFacets
 
 /**
  * "Clean channel names" must never make the guide worse: everything that matches a channel to a
@@ -50,12 +49,12 @@ class CleanedNameGuideMatchTest {
     }
 
     @Test
-    fun `sports filters still see the country and quality the cleanup took off`() {
+    fun `Sources still sees the country and quality the cleanup took off`() {
         val channel = synced("UK| Arena Sports 1 FHD")
         assertEquals("Arena Sports 1", channel.name)
-        val facets = WatchOption(channel, WatchTier.LIKELY).facets
+        val facets = ChannelFacets.of(channel.matchName)
         assertEquals("UK", facets.country)
         val raw = ChannelEntity(sourceId = 42, name = "UK| Arena Sports 1 FHD", streamUrl = "https://example.com/1.ts")
-        assertEquals(WatchOption(raw, WatchTier.LIKELY).facets, facets)
+        assertEquals(ChannelFacets.of(raw.matchName), facets)
     }
 }

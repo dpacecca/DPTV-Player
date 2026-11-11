@@ -193,7 +193,7 @@
     <string name="companion_saved_heading">നിങ്ങളുടെ ടിവിയിലേക്ക് അയച്ചു ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> ഇപ്പോൾ ടിവിയിലെ ഉറവിടം ചേർക്കുക സ്ക്രീനിലുണ്ട്. അവിടെ വിവരങ്ങൾ പരിശോധിച്ച് റിമോട്ട് കൺട്രോളിൽ ഇമ്പോർട്ട് ആരംഭിക്കുക അമർത്തുക.</string>
     <string name="companion_saved_send_another">മറ്റൊരു ഉറവിടം അയയ്ക്കുക</string>
-    <string name="companion_edit_page_title">OwnTV — ഉറവിടം എഡിറ്റ് ചെയ്യുക</string>
+    <string name="companion_edit_page_title">DPTV-Player — ഉറവിടം എഡിറ്റ് ചെയ്യുക</string>
     <string name="companion_edit_heading"><xliff:g id="name">%1$s</xliff:g> എഡിറ്റ് ചെയ്യുക</string>
     <string name="companion_edit_description">ആവശ്യമുള്ളത് മാറ്റി ടിവിയിലേക്ക് അയയ്ക്കുക അമർത്തുക. ശൂന്യമായി വിടുന്ന ഫീൽഡ് നിലവിലെ മൂല്യം നിലനിർത്തും. മാറ്റങ്ങൾ ടിവിയിൽ കാണിക്കും — അവിടെ റിമോട്ട് ഉപയോഗിച്ച് സംരക്ഷിക്കുക അമർത്തുക.</string>
     <string name="companion_keep_current">നിലവിലെ മൂല്യം നിലനിർത്താൻ ശൂന്യമായി വിടുക</string>

@@ -196,7 +196,7 @@
     <string name="companion_saved_heading">Enviado para sua TV ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> agora está na tela Adicionar fonte da TV. Confira os dados e pressione Iniciar importação no controle remoto.</string>
     <string name="companion_saved_send_another">Enviar outra fonte</string>
-    <string name="companion_edit_page_title">OwnTV — Editar fonte</string>
+    <string name="companion_edit_page_title">DPTV-Player — Editar fonte</string>
     <string name="companion_edit_heading">Editar <xliff:g id="name">%1$s</xliff:g></string>
     <string name="companion_edit_description">Mude o que precisar e toque em Enviar para a TV. Um campo deixado vazio mantém o valor atual. As alterações aparecem na TV — pressione Salvar lá com o controle remoto.</string>
     <string name="companion_keep_current">Deixe vazio para manter o valor atual</string>

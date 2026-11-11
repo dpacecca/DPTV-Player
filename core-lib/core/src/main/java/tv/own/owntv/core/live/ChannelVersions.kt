@@ -16,7 +16,6 @@ import tv.own.owntv.core.database.entity.matchName
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.core.settings.SettingsRepository
-import tv.own.owntv.core.sports.ChannelFacets
 
 /**
  * One version of a live channel: the same channel in another quality, category or playlist. [name] is
@@ -103,8 +102,8 @@ class ChannelVersions(
     suspend fun of(channel: ChannelEntity): List<ChannelVersion> = withContext(Dispatchers.IO) {
         val sources = activeProfileSources(settings, sourceDao).first()
         val ids = sources.liveSourceIds
-        // observeVisible: a locked category the PIN has not opened counts as hidden, as in every list.
-        val cust = customize.observeVisible(sources.profileId, MediaType.LIVE).first()
+        // DPTV has no category locks, so the stored customizations are what every list shows.
+        val cust = customize.observe(sources.profileId, MediaType.LIVE).first()
         val fingerprint = listOf(
             sources.profileId,
             sources.sources.filter { it.syncLive }.joinToString(",") { "${it.id}@${it.lastSyncAt}" },

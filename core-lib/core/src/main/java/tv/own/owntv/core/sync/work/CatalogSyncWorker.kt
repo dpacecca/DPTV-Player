@@ -32,6 +32,7 @@ class CatalogSyncWorker(
     private val epgRepository: tv.own.owntv.core.repository.EpgRepository,
     private val settings: SettingsRepository,
     private val watchSession: tv.own.owntv.core.live.WatchSession,
+    private val syncState: tv.own.owntv.core.sync.schedule.SyncStateStore,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -62,7 +63,11 @@ class CatalogSyncWorker(
         // (WorkManager restarts it later if the wait outlives the job's time limit).
         if (reason == tv.own.owntv.core.sync.AutoRefresh.REASON && watchSession.watching.value.isNotEmpty()) {
             Log.i(TAG, "auto refresh waiting for playback to stop sourceId=$sourceId")
-            watchSession.awaitIdle()
+            // (v2.5.3) A timed run gives up at its deadline and waits for the next slot instead.
+            if (!awaitPlaybackIdle(watchSession, inputData.getLong(KEY_HOLD_UNTIL, 0L))) {
+                Log.i(TAG, "auto refresh skipped — still playing past its window sourceId=$sourceId")
+                return Result.success()
+            }
         }
 
         val effective = contentTypes.effectiveFor(source)
@@ -92,6 +97,10 @@ class CatalogSyncWorker(
             is SyncResult.Success -> {
                 val warningText = result.warnings.takeIf { it.isNotEmpty() }?.joinToString { it.phase }
                 Log.i(TAG, "Sync succeeded for source ${source.id} (${source.name}) warnings=$warningText")
+                // (v2.5.3) What the fixed times' catch-up compares against.
+                val doneAt = System.currentTimeMillis()
+                if (effective.live) syncState.markSuccess(tv.own.owntv.core.sync.schedule.ScheduledKind.LIVE, doneAt)
+                if (effective.movies || effective.series) syncState.markSuccess(tv.own.owntv.core.sync.schedule.ScheduledKind.VOD, doneAt)
                 // Remainder of a staged initial sync: stamp lastSyncAt once priority+remainder together
                 // cover the enabled catalog (SyncManager alone won't — each pass is incomplete).
                 if (completesInitialSync) {
@@ -106,7 +115,7 @@ class CatalogSyncWorker(
                 if (deferIndexes) {
                     catalogSyncScheduler.enqueueContentIndexBuild(reason = "fresh_sync")
                 }
-                // A guide sync filters the feed to the channels the user owned when it *started*,
+                // S9: a guide sync filters the feed to the channels the user owned when it *started*,
                 // so channels this pass just added have no programmes. Repair them from the cached
                 // feed (no network). A no-op for the usual case where nothing new appeared.
                 val gapFillStartedAt = SystemClock.elapsedRealtime()
@@ -124,7 +133,7 @@ class CatalogSyncWorker(
                     .getOrDefault(false)
                 val trendingVisible = runCatching {
                     sourceDao.profileIdsForSource(source.id).any { profileId ->
-                        HomeRow.TRENDING !in settings.homeConfig(profileId).first().hidden
+                        HomeRow.TRENDING in settings.homeConfig(profileId).first().visibleOrder
                     }
                 }
                     .onFailure { Log.w(TAG, "Trending Home visibility read failed sourceId=${source.id}; skip enqueue", it) }
@@ -254,6 +263,7 @@ class CatalogSyncWorker(
         const val KEY_SERIES = "series"
         const val KEY_COMPLETES_INITIAL_SYNC = "completesInitialSync"
         const val KEY_FORCE_PRUNE = "forcePrune"
+        const val KEY_HOLD_UNTIL = "holdUntil"
         const val KEY_PROGRESS_LIVE_PROCESSED = "liveProcessed"
         const val KEY_PROGRESS_MOVIES_PROCESSED = "moviesProcessed"
         const val KEY_PROGRESS_SERIES_PROCESSED = "seriesProcessed"

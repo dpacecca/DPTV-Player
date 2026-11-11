@@ -193,7 +193,7 @@
     <string name="companion_saved_heading">আপনার TV-তে পাঠানো হয়েছে ✓</string>
     <string name="companion_saved_source_body"><xliff:g id="name">%1$s</xliff:g> এখন TV-র উৎস যোগ করুন স্ক্রিনে রয়েছে। সেখানে তথ্যগুলো পরীক্ষা করে রিমোট দিয়ে ইমপোর্ট শুরু করুন চাপুন।</string>
     <string name="companion_saved_send_another">আরেকটি উৎস পাঠান</string>
-    <string name="companion_edit_page_title">OwnTV — উৎস সম্পাদনা করুন</string>
+    <string name="companion_edit_page_title">DPTV-Player — উৎস সম্পাদনা করুন</string>
     <string name="companion_edit_heading"><xliff:g id="name">%1$s</xliff:g> সম্পাদনা করুন</string>
     <string name="companion_edit_description">যা দরকার বদলান এবং TV-তে পাঠান চাপুন। খালি রাখা ঘর তার বর্তমান মান রাখে। পরিবর্তনগুলো TV-তে দেখা যাবে — সেখানে রিমোট দিয়ে সংরক্ষণ করুন চাপুন।</string>
     <string name="companion_keep_current">বর্তমান মান রাখতে খালি রাখুন</string>
